@@ -122,7 +122,6 @@ def read_config(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
-            rayleigh_coeff=0.1,
         )
 
     def _mch_ch_r04b09_config():

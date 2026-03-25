@@ -205,21 +205,13 @@ def create_experiment_configuration(
     }
     rayleigh_type = rayleigh_type_map[rayleigh_type_value]
 
-    # Extract rayleigh_coeff (can be a list or single value)
-    rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
-    if isinstance(rayleigh_coeff, list):
-        rayleigh_coeff = rayleigh_coeff[0]
-
     nonhydro_config = solve_nh.NonHydrostaticConfig(
         itime_scheme=itime_scheme,  # type: ignore[arg-type]
         iadv_rhotheta=iadv_rhotheta,  # type: ignore[arg-type]
         igradp_method=igradp_method,  # type: ignore[arg-type]
         rayleigh_type=rayleigh_type,  # type: ignore[arg-type]
-        rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,  # type: ignore[arg-type]
         divdamp_type=divdamp_type,
-        divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
-        divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
         rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
         veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
         fourth_order_divdamp_factor=nonhydrostatic_nml["divdamp_fac"],

@@ -334,7 +334,6 @@ def construct_nonhydrostatic_config(experiment: ExperimentDescription) -> solve_
         )
     elif experiment == Experiments.EXCLAIM_APE:
         return solve_nh.NonHydrostaticConfig(
-            rayleigh_coeff=0.1,
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
         )
     elif experiment == Experiments.GAUSS3D:
