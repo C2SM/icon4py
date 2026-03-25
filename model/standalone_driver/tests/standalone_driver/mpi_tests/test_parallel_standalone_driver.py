@@ -307,7 +307,9 @@ def test_run_single_step_serialized_data(
     for field_name in fields:
         print(f"verifying field {field_name}")
         global_reference_field = processor_props.comm.bcast(
-            serial_reference_fields.get(field_name) if serial_reference_fields is not None else None,
+            serial_reference_fields.get(field_name)
+            if serial_reference_fields is not None
+            else None,
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)

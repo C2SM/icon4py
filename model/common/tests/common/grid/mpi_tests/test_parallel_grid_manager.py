@@ -31,7 +31,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     experiment,
@@ -39,7 +39,6 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     topography_savepoint,
 )
-from icon4py.model.testing import parallel_helpers
 
 from . import utils
 

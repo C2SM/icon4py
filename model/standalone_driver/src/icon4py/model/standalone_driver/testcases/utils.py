@@ -190,14 +190,14 @@ def init_w(
     lb_c = grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     ub_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
 
-    z_wsfc_e = array_ns.zeros((ub_e,))
+    z_wsfc_e = array_ns.zeros((grid.num_edges,))
     for je in range(lb_e, ub_e):
         z_wsfc_e[je] = (
             vn[je, nlev - 1]
             * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlev]
         )
 
-    e_inn_c = array_ns.zeros((ub_c, 3))  # or 1
+    e_inn_c = array_ns.zeros((grid.num_cells, 3))  # or 1
     for jc in range(ub_c):
         for je in range(3):
             idx_ce = 0 if e2c[c2e][jc, je, 0] == jc else 1
@@ -208,8 +208,8 @@ def init_w(
             )
     z_wsfc_c = array_ns.sum(z_wsfc_e[c2e] * e_inn_c, axis=1)
 
-    w = array_ns.zeros((ub_c, nlev + 1))
-    w[lb_c:, nlev] = z_wsfc_c[lb_c:ub_c]
-    w[lb_c:, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
+    w = array_ns.zeros((grid.num_cells, nlev + 1))
+    w[lb_c:ub_c, nlev] = z_wsfc_c[lb_c:ub_c]
+    w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
     return w

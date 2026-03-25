@@ -256,13 +256,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         eta_v_at_edge=eta_v_at_edge.ndarray,
         array_ns=xp,
     )
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,

@@ -144,7 +144,11 @@ def test_single_node_exchange_warning_points_to_call_site(monkeypatch):
     exchange = SingleNodeExchange()
 
     exchange_line = sys._getframe().f_lineno + 1
-    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange.start(dims.CellDim), exchange_line)
+    _assert_warning_points_to_call_site(
+        monkeypatch, lambda: exchange.start(dims.CellDim), exchange_line
+    )
 
     wait_line = sys._getframe().f_lineno + 1
-    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange.exchange(dims.CellDim), wait_line)
+    _assert_warning_points_to_call_site(
+        monkeypatch, lambda: exchange.exchange(dims.CellDim), wait_line
+    )

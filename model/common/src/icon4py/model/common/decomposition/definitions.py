@@ -409,8 +409,8 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
-
     _warning_emitted: ClassVar[bool] = False
+
     @classmethod
     def _warn_if_used(cls, *, stacklevel: int = 3) -> None:
         if not cls._warning_emitted:

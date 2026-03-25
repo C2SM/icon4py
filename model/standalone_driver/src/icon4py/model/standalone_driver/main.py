@@ -7,13 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
 import pathlib
-from types import ModuleType
 from typing import Annotated
 
-import numpy as np
 import typer
 
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
