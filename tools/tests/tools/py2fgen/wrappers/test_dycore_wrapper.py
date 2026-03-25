@@ -74,7 +74,10 @@ def solve_nh_init(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    wgtfacq_c = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+    )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -90,15 +93,13 @@ def solve_nh_init(
     theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
-    zdiff_gradp_field = metrics_savepoint._get_field(
-        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    vertidx_gradp = test_utils.array_to_array_info(
+        metrics_savepoint._get_field(
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        ).ndarray
     )
-    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
-
-    vertoffset_gradp_field = metrics_savepoint._get_field(
-        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-    )
-    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
     pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
     pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
@@ -106,7 +107,10 @@ def solve_nh_init(
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    wgtfacq_e = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+    )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -133,12 +137,22 @@ def solve_nh_init(
     )
     pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     rbf_vec_coeff_e = test_utils.array_to_array_info(
-        interpolation_savepoint.rbf_vec_coeff_e().ndarray
+        interpolation_savepoint._get_field("rbf_vec_coeff_e", dims.E2C2EDim, dims.EdgeDim).ndarray
     )
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
     geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
@@ -161,8 +175,7 @@ def solve_nh_init(
         pos_on_tplane_e_2=pos_on_tplane_e_2,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         e_bln_c_s=e_bln_c_s,
-        rbf_coeff_1=rbf_coeff_1,
-        rbf_coeff_2=rbf_coeff_2,
+        rbf_vec_coeff_v=rbf_vec_coeff_v,
         geofac_div=geofac_div,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
@@ -187,7 +200,7 @@ def solve_nh_init(
         theta_ref_me=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=vertoffset_gradp,
+        vertidx_gradp=vertidx_gradp,
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         pg_exdist=pg_exdist,
@@ -227,7 +240,7 @@ def solve_nh_init(
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
         nflat_gradp=nflat_gradp,
-        backend=wrapper_common.BackendIntEnum.DEFAULT,
+        backend=wrapper_common.BackendIntEnum.GTFN,
     )
 
 
@@ -314,7 +327,10 @@ def test_dycore_wrapper_granule_inputs(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    wgtfacq_c = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+    )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -330,15 +346,13 @@ def test_dycore_wrapper_granule_inputs(
     theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
-    zdiff_gradp_field = metrics_savepoint._get_field(
-        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    vertidx_gradp = test_utils.array_to_array_info(
+        metrics_savepoint._get_field(
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        ).ndarray
     )
-    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
-
-    vertoffset_gradp_field = metrics_savepoint._get_field(
-        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-    )
-    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
     pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
     pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
@@ -346,7 +360,10 @@ def test_dycore_wrapper_granule_inputs(
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    wgtfacq_e = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+    )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -373,12 +390,21 @@ def test_dycore_wrapper_granule_inputs(
     )
     pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     rbf_vec_coeff_e = test_utils.array_to_array_info(
-        interpolation_savepoint.rbf_vec_coeff_e().ndarray
+        interpolation_savepoint._get_field("rbf_vec_coeff_e", dims.E2C2EDim, dims.EdgeDim).ndarray
     )
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
     geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
@@ -473,7 +499,7 @@ def test_dycore_wrapper_granule_inputs(
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
@@ -493,7 +519,7 @@ def test_dycore_wrapper_granule_inputs(
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -582,8 +608,7 @@ def test_dycore_wrapper_granule_inputs(
             pos_on_tplane_e_2=pos_on_tplane_e_2,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             e_bln_c_s=e_bln_c_s,
-            rbf_coeff_1=rbf_coeff_1,
-            rbf_coeff_2=rbf_coeff_2,
+            rbf_vec_coeff_v=rbf_vec_coeff_v,
             geofac_div=geofac_div,
             geofac_n2s=geofac_n2s,
             geofac_grg_x=geofac_grg_x,
@@ -608,7 +633,7 @@ def test_dycore_wrapper_granule_inputs(
             theta_ref_me=theta_ref_me,
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
-            vertoffset_gradp=vertoffset_gradp,
+            vertidx_gradp=vertidx_gradp,
             pg_edgeidx=pg_edgeidx,
             pg_vertidx=pg_vertidx,
             pg_exdist=pg_exdist,

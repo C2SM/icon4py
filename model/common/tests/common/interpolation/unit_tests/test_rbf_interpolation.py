@@ -20,6 +20,7 @@ from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
+    exchange_utils,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
 )
@@ -33,8 +34,6 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     processor_props,
 )
-
-from ... import utils
 
 
 if TYPE_CHECKING:
@@ -205,7 +204,7 @@ def test_rbf_interpolation_coeffs_cell(
         horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
-        exchange=utils.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -282,7 +281,7 @@ def test_rbf_interpolation_coeffs_vertex(
         horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
-        exchange=utils.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -361,7 +360,7 @@ def test_rbf_interpolation_coeffs_edge(
         horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
-        exchange=utils.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
 

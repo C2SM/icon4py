@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
@@ -20,7 +21,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 
 
 log = logging.getLogger(__name__)
@@ -84,8 +85,20 @@ class IconSavepoint:
     def log_meta_info(self):
         self.log.info(self.savepoint.metainfo)
 
-    def _get_field(self, name, *dimensions, dtype=float):
+    def _get_field(
+        self,
+        name,
+        *dimensions,
+        dtype=float,
+        slice_: int | slice | tuple[int | slice, ...] | None = None,
+        transpose: None | Sequence[int] = None,
+    ):
+        # Note: slice is applied before transpose!
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        if slice_ is not None:
+            buffer = buffer[slice_]
+        if transpose is not None:
+            buffer = np.transpose(buffer, axes=transpose)
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
@@ -672,31 +685,33 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)[:, 0:2]
 
     def rbf_vec_coeff_e(self):
-        return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim)
+        return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim, transpose=(1, 0))
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
-        dimensions = (dims.CellDim, dims.C2E2C2EDim)
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
-        ).transpose()
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        return gtx.as_field(dimensions, buffer, allocator=self.backend)
+        return self._get_field("rbf_vec_coeff_c1", dims.CellDim, dims.C2E2C2EDim, transpose=(1, 0))
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
-        dimensions = (dims.CellDim, dims.C2E2C2EDim)
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
-        ).transpose()
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        return gtx.as_field(dimensions, buffer, allocator=self.backend)
+        return self._get_field("rbf_vec_coeff_c2", dims.CellDim, dims.C2E2C2EDim, transpose=(1, 0))
 
     def rbf_vec_coeff_v1(self):
-        return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
+        return self._get_field(
+            "rbf_vec_coeff_v",
+            dims.VertexDim,
+            dims.V2EDim,
+            slice_=(slice(None), 0, slice(None)),
+            transpose=(1, 0),
+        )
 
     def rbf_vec_coeff_v2(self):
-        return self._get_field("rbf_vec_coeff_v2", dims.VertexDim, dims.V2EDim)
+        return self._get_field(
+            "rbf_vec_coeff_v",
+            dims.VertexDim,
+            dims.V2EDim,
+            slice_=(slice(None), 1, slice(None)),
+            transpose=(1, 0),
+        )
 
     def rbf_vec_idx_v(self):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)
@@ -805,34 +820,27 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("vwind_impl_wgt", dims.CellDim)
 
     def wgtfacq_c(self):
-        return self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
-
-    def wgtfacq_c_dsl(self):
-        ar = self.wgtfacq_c().ndarray
-        k = ar.shape[1]
-        wgtfac_c = self.wgtfac_c()
-        cell_range = wgtfac_c.domain[dims.CellDim].unit_range
-        nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
-        k_range = (nlev - k, nlev)
-        cell_kflip_domain = gtx.domain(
-            {
-                dims.CellDim: cell_range,
-                dims.KDim: k_range,
-            }
-        )
-        return data_alloc.kflip_wgtfacq(
-            arr=ar,
-            domain=cell_kflip_domain,
+        # The Fortran array stores the surface levels in reversed order.
+        wgtfacq_c_fortran = self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
+        assert len(wgtfacq_c_fortran.domain[dims.KDim].unit_range) == 3
+        nlev = self.sizes[dims.KDim]
+        return field_utils.flip(
+            wgtfacq_c_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
+            dims.KDim,
             allocator=model_backends.get_allocator(self.backend),
         )
 
     def zdiff_gradp(self):
-        return self._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
+        return self._get_field("zdiff_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim)
 
     def vertoffset_gradp(self):
-        return self._get_field(
-            "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
+        # When we translate to offsets we just subtract the current index, therefore these values will be negative.
+        # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
+        vertidx_gradp = data_alloc.adjust_fortran_indices(
+            self._get_field("vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         )
+        return field_utils.index2offset(vertidx_gradp, dims.KDim, self.backend)
 
     def coeff1_dwdz(self):
         return self._get_field("coeff1_dwdz", dims.CellDim, dims.KDim)
@@ -865,24 +873,13 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
     def wgtfacq_e(self):
-        return self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
-
-    def wgtfacq_e_dsl(self):
-        ar = self.wgtfacq_e().ndarray
-        k = ar.shape[1]
-        wgtfac_e = self.wgtfac_e()
-        edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
-        nlev = wgtfac_e.domain[dims.KDim].unit_range.stop - 1
-        k_range = (nlev - k, nlev)
-        edge_kflip_domain = gtx.domain(
-            {
-                dims.EdgeDim: edge_range,
-                dims.KDim: k_range,
-            }
-        )
-        return data_alloc.kflip_wgtfacq(
-            arr=ar,
-            domain=edge_kflip_domain,
+        # The Fortran array stores the surface levels in reversed order.
+        wgtfacq_e_fortran = self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
+        assert len(wgtfacq_e_fortran.domain[dims.KDim].unit_range) == 3
+        nlev = self.sizes[dims.KDim]
+        return field_utils.flip(
+            wgtfacq_e_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
+            dims.KDim,
             allocator=model_backends.get_allocator(self.backend),
         )
 

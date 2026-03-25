@@ -130,7 +130,7 @@ def test_no_halo():
     decomposition = decomp.SingleNodeDecomposer()
     decomposition_info = halo_generator(decomposition(np.arange(grid_size.num_cells), 1))
     # cells
-    np.testing.assert_allclose(
+    test_utils.assert_dallclose(
         np.arange(grid_size.num_cells), decomposition_info.global_index(dims.CellDim)
     )
     assert np.all(decomposition_info.owner_mask(dims.CellDim))
@@ -138,7 +138,7 @@ def test_no_halo():
         decomposition_info.halo_levels(dims.CellDim) == definitions.DecompositionFlag.OWNED
     )
     # edges
-    np.testing.assert_allclose(
+    test_utils.assert_dallclose(
         np.arange(grid_size.num_edges), decomposition_info.global_index(dims.EdgeDim)
     )
     assert np.all(
@@ -146,7 +146,7 @@ def test_no_halo():
     )
     assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
     # vertices
-    np.testing.assert_allclose(
+    test_utils.assert_dallclose(
         np.arange(grid_size.num_vertices), decomposition_info.global_index(dims.VertexDim)
     )
     assert np.all(
