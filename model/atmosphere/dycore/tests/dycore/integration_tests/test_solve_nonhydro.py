@@ -1146,7 +1146,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     reference_theta_at_cells_on_half_levels = metrics_savepoint.theta_ref_ic()
     d2dexdz2_fac1_mc = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
-    wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_c = metrics_savepoint.wgtfacq_c()
     wgtfac_c = metrics_savepoint.wgtfac_c()
     exner_w_explicit_weight_parameter = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
@@ -1218,17 +1218,24 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert test_utils.dallclose(
         perturbed_theta_v_at_cells_on_model_levels.asnumpy(), z_rth_pr_2_ref.asnumpy()
     )
+    # `z_exner_ex_pr` is only computed in a subset of the whole domain, reference may contain garbage outside this range
     assert test_utils.dallclose(
-        temporal_extrapolation_of_perturbed_exner.asnumpy(), z_exner_ex_pr_ref.asnumpy()
+        temporal_extrapolation_of_perturbed_exner.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_halo, :
+        ],
+        z_exner_ex_pr_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, :],
     )
     assert test_utils.dallclose(
         perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
     )
     assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
 
+    # `exner_at_cells_on_half_levels` is only computed in a subset of the whole domain, reference may contain garbage outside this range
     assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
-        z_exner_ic_ref.asnumpy()[:, nflatlev:],
+        exner_at_cells_on_half_levels.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:
+        ],
+        z_exner_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:],
         rtol=1e-11,
     )
 
@@ -1820,7 +1827,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     wgtfac_e = metrics_savepoint.wgtfac_e()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e()
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     nflatlev = vertical_params.nflatlev
@@ -2204,7 +2211,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
