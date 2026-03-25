@@ -56,8 +56,10 @@ def graupel_run(
             dt=dt,
             qnc=qnc,
             backend=backend_descriptor,
-            hrange=(ivstart, ivend),
-            vrange=(kstart, ke),
+            horizontal_start=ivstart,
+            horizontal_end=ivend,
+            vertical_start=kstart,
+            vertical_end=ke,
             enable_masking=enable_masking,
             wait_for_completion=wait_for_completion,
         )
