@@ -1000,8 +1000,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_advection_deepatmo_fields)
 
-    def get_int(self, name: str) -> int:
-        return int(self.get(name, factory.RetrievalType.SCALAR))
+    def get_int32(self, name: str) -> gtx.int32:
+        return gtx.int32(self.get(name, factory.RetrievalType.SCALAR))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
