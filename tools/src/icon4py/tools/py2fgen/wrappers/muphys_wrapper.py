@@ -46,6 +46,8 @@ def graupel_run(
     enable_masking: bool,
     wait_for_completion: bool,
 ):
+    assert ivstart == 0
+    assert kstart == 0
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
         backend_descriptor = {
@@ -53,11 +55,11 @@ def graupel_run(
             "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,
         }
         graupel_program = run_graupel_only.setup_graupel(
+            ncells=ivend,
+            nlevels=ke,
             dt=dt,
             qnc=qnc,
             backend=backend_descriptor,
-            hrange=(ivstart, ivend),
-            vrange=(kstart, ke),
             enable_masking=enable_masking,
             wait_for_completion=wait_for_completion,
         )

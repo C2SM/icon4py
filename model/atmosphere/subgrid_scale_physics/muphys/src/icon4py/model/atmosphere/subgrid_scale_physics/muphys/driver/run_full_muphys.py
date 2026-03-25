@@ -136,11 +136,11 @@ def setup_muphys(
             return muphys_program
     else:
         graupel_run_program = run_graupel_only.setup_graupel(
+            ncells=inp.ncells,
+            nlevels=inp.nlev,
             dt=dt,
             qnc=qnc,
             backend=backend,
-            hrange=(0, inp.ncells),
-            vrange=(0, inp.nlev),
             enable_masking=True,
         )
         with utils.recursion_limit(10**5):  # TODO(havogt): make an option in gt4py?
