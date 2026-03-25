@@ -29,7 +29,8 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
             return True
         case _:
             raise ValueError(
-                "Invalid GT4Py environment flag value: use '0 | false | off' or '1 | true | on'."
+                f"Invalid value {flag_value!r} for environment variable {name!r}: "
+                "use '0 | false | off' or '1 | true | on'."
             )
 
 
