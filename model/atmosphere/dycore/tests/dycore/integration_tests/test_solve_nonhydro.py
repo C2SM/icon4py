@@ -27,45 +27,9 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
-from icon4py.model.testing.fixtures import (
-    backend,
-    damping_height,
-    data_provider,
-    download_ser_data,
-    experiment,
-    flat_height,
-    grid_savepoint,
-    htop_moist_proc,
-    iau_wgt_dyn,
-    icon_grid,
-    interpolation_savepoint,
-    is_iau_active,
-    istep_exit,
-    istep_init,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
-    metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
-    processor_props,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_dycore_30_to_38_exit,
-    savepoint_dycore_30_to_38_init,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_step_final,
-    savepoint_velocity_init,
-    savepoint_vertically_implicit_dycore_solver_init,
-    step_date_exit,
-    step_date_init,
-    stretch_factor,
-    substep_exit,
-    substep_init,
-    top_height_limit_for_maximal_layer_thickness,
-)
 
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 if TYPE_CHECKING:
