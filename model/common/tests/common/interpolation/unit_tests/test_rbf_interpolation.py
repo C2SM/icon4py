@@ -20,6 +20,7 @@ from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
+    exchange_utils,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
 )
@@ -33,8 +34,6 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     processor_props,
 )
-
-from ... import utils
 
 
 if TYPE_CHECKING:
@@ -198,14 +197,14 @@ def test_rbf_interpolation_coeffs_cell(
         geometry_type.value,
         rbf.compute_default_rbf_scale_cell(
             geometry_type.value,
-            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
-            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+            geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
         horizontal_end,
-        grid.global_properties.domain_length,
-        grid.global_properties.domain_height,
-        exchange=utils.dummy_exchange,
+        grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
+        grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -275,14 +274,14 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry_type.value,
         rbf.compute_default_rbf_scale_vertex(
             geometry_type.value,
-            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
-            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+            geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
         horizontal_end,
-        grid.global_properties.domain_length,
-        grid.global_properties.domain_height,
-        exchange=utils.dummy_exchange,
+        grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
+        grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -336,32 +335,32 @@ def test_rbf_interpolation_coeffs_edge(
     )
 
     rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
-        geometry.get(geometry_attrs.EDGE_LAT).ndarray,
-        geometry.get(geometry_attrs.EDGE_LON).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_DUAL_U).ndarray,
-        geometry.get(geometry_attrs.EDGE_DUAL_V).ndarray,
+        edge_lat=geometry.get(geometry_attrs.EDGE_LAT).ndarray,
+        edge_lon=geometry.get(geometry_attrs.EDGE_LON).ndarray,
+        edge_center_x=geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        edge_center_y=geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        edge_center_z=geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        edge_normal_x=geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        edge_normal_y=geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        edge_normal_z=geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
+        edge_dual_normal_u=geometry.get(geometry_attrs.EDGE_DUAL_U).ndarray,
+        edge_dual_normal_v=geometry.get(geometry_attrs.EDGE_DUAL_V).ndarray,
         # NOTE: Neighbors are not in the same order. Use savepoint to make sure
         # order of coefficients computed by icon4py matches order of
         # coefficients in savepoint.
-        grid_savepoint.e2c2e(),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        geometry_type.value,
-        rbf.compute_default_rbf_scale_edge(
+        rbf_offset=grid_savepoint.e2c2e(),
+        rbf_kernel=rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        geometry_type=geometry_type.value,
+        scale_factor=rbf.compute_default_rbf_scale_edge(
             geometry_type.value,
-            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
-            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+            geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
-        horizontal_start,
-        horizontal_end,
-        grid.global_properties.domain_length,
-        grid.global_properties.domain_height,
-        exchange=utils.dummy_exchange,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
+        domain_height=grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
 

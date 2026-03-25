@@ -330,7 +330,7 @@ def test_grid_manager_grid_size(
 def assert_up_to_order(
     table: np.ndarray,
     reference_table: np.ndarray,
-    start_index: gtx.int = 0,  # type: ignore[name-defined]
+    start_index: gtx.int32 = 0,
 ) -> None:
     assert table.shape == reference_table.shape, "arrays need to have the same shape"
     reduced_table = table[start_index:, :]

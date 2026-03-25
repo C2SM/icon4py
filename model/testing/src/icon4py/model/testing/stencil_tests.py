@@ -31,6 +31,7 @@ from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metric
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
+from icon4py.model.testing import test_utils
 
 
 def allocate_data(
@@ -218,7 +219,7 @@ class StencilTest:
             )
         static_args = {name: [input_data[name]] for name in static_variant}
         backend = model_options.customize_backend(self.PROGRAM, backend_like)
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
+        program = self.PROGRAM.with_backend(backend)
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
@@ -266,7 +267,7 @@ class StencilTest:
             relative_tolerance = 3e-6
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
-                    np.testing.assert_allclose(
+                    test_utils.assert_dallclose(
                         out_field.asnumpy()[gtslice],
                         reference_outputs[name][i_out_field][refslice],
                         equal_nan=True,
@@ -276,7 +277,7 @@ class StencilTest:
             else:
                 reference_outputs_name = reference_outputs[name]  # for mypy
                 assert isinstance(reference_outputs_name, np.ndarray)
-                np.testing.assert_allclose(
+                test_utils.assert_dallclose(
                     input_data_name.asnumpy()[gtslice],
                     reference_outputs_name[refslice],
                     equal_nan=True,
