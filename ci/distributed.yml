@@ -56,6 +56,9 @@ build_distributed:
   needs: [build_distributed]
   variables:
     SLURM_JOB_NUM_NODES: 1
+    # Use only one GPU for all ranks of the test as all tests are serialized
+    SLURM_GPUS_PER_NODE: 1
+    SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: 'verbose'
     SLURM_NTASKS: 4
     SLURM_GPUS_PER_TASK: 1
@@ -84,6 +87,7 @@ build_distributed:
     - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
+    - source ci/scripts/start-cuda-mps.sh
   script:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
