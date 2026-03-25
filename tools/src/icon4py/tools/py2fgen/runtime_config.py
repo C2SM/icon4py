@@ -59,7 +59,7 @@ class Py2fgenLogLevels(eve.StrEnum):
     CRITICAL = "CRITICAL"
 
 
-LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.INFO)
+LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.WARNING)
 """Set the log level for the PY2FGEN generated bindings."""
 
 
