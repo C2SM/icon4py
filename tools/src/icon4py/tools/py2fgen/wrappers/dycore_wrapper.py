@@ -29,10 +29,15 @@ from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    config as wrapper_config,
+    grid_wrapper,
+    icon4py_export,
+)
 
 
 logger = setup_logger(__name__)
@@ -56,10 +61,9 @@ def solve_nh_init(
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.float64],
+    rbf_vec_coeff_e: wrapper_common.Float64Array2D,
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
-    rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
+    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
@@ -84,7 +88,7 @@ def solve_nh_init(
     theta_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
-    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    vertidx_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     pg_edgeidx: wrapper_common.OptionalInt32Array1D,
     pg_vertidx: wrapper_common.OptionalInt32Array1D,
     pg_exdist: wrapper_common.OptionalFloat64Array1D,
@@ -129,7 +133,8 @@ def solve_nh_init(
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = c_lin_e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    xp = c_lin_e.array_ns
+    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -181,6 +186,19 @@ def solve_nh_init(
     )
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
+    # Create separate fields for the two components of the RBF vector coefficients and swap.
+    # TODO(havogt): we could use GT4Py's named collections.
+    rbf_coeff_1 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+    )
+    rbf_coeff_2 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
+    )
+
+    # Swap indices in rbf_vec_coeff_e. TODO(havogt): Should eventually be done on the Fortran side.
+    rbf_vec_coeff_e_transposed = gtx.as_field(
+        [dims.EdgeDim, dims.E2C2EDim], xp.transpose(rbf_vec_coeff_e), allocator=allocator
+    )
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
         c_intp=c_intp,
@@ -189,7 +207,7 @@ def solve_nh_init(
         geofac_rot=geofac_rot,
         pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],
         pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],
-        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        rbf_vec_coeff_e=rbf_vec_coeff_e_transposed,
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
@@ -201,25 +219,25 @@ def solve_nh_init(
     )
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
-    k = wgtfacq_c.ndarray.shape[1]
-    cell_kflip_domain = gtx.domain(
-        {
-            dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
-            dims.KDim: (nlev - k, nlev),
-        }
-    )
-    k = wgtfacq_e.ndarray.shape[1]
-    edge_kflip_domain = gtx.domain(
-        {
-            dims.EdgeDim: wgtfac_e.domain[dims.EdgeDim].unit_range,
-            dims.KDim: (nlev - k, nlev),
-        }
-    )
-    wgtfacq_c = data_alloc.kflip_wgtfacq(
-        arr=wgtfacq_c.ndarray, domain=cell_kflip_domain, allocator=allocator
-    )
-    wgtfacq_e = data_alloc.kflip_wgtfacq(
-        arr=wgtfacq_e.ndarray, domain=edge_kflip_domain, allocator=allocator
+    if len(wgtfacq_c.domain[dims.KDim].unit_range) != 3:
+        raise ValueError(
+            f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
+        )
+    # uses GT4Py's embedded shift to move the domain to surface levels
+    wgtfacq_c = field_utils.flip(wgtfacq_c(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+
+    if len(wgtfacq_e.domain[dims.KDim].unit_range) != 3:
+        raise ValueError(
+            f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim].unit_range)}."
+        )
+    # uses GT4Py's embedded shift to move the domain to surface levels
+    wgtfacq_e = field_utils.flip(wgtfacq_e(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+
+    # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
+    # When we translate to offsets we just subtract the current index, therefore these values will be negative.
+    # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
+    vertoffset_gradp = field_utils.index2offset(
+        data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
@@ -274,6 +292,8 @@ def solve_nh_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
+    if wrapper_config.WAIT_FOR_COMPILATION:
+        gtx.wait_for_compilation()
 
 
 NumpyFloatArray1D: TypeAlias = Annotated[
