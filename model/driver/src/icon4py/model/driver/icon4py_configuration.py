@@ -90,7 +90,6 @@ def read_config(
     def _mch_ch_r04b09_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-            iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )

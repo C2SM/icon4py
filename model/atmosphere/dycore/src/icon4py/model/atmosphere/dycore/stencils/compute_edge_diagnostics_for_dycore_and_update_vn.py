@@ -169,8 +169,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
@@ -299,8 +299,8 @@ def _apply_divergence_damping_and_update_vn(
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
@@ -411,8 +411,8 @@ def compute_rho_theta_pgrad_and_update_vn(
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
@@ -467,8 +467,8 @@ def compute_rho_theta_pgrad_and_update_vn(
         - pg_exdist: vertical distance between current cell height and neighboring cell height for hydrostatic correction [m]
         - inv_dual_edge_length: inverse dual edge length [m]
         - dtime: time step [s]
-        - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
+        - iau_wgt_dyn: a scaling factor for iau increment
         - limited_area: option indicating the grid is limited area or not
         - iadv_rhotheta: advection type for air density and virtual potential temperature (see RhoThetaAdvectionType)
         - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
@@ -516,8 +516,8 @@ def compute_rho_theta_pgrad_and_update_vn(
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,
-        iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
         limited_area=limited_area,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
@@ -561,8 +561,8 @@ def apply_divergence_damping_and_update_vn(
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
@@ -605,8 +605,8 @@ def apply_divergence_damping_and_update_vn(
         - advection_explicit_weight_parameter: explicitness weight of normal_wind_advective_tendency
         - advection_implicit_weight_parameter: implicitness weight of normal_wind_advective_tendency
         - dtime: time step [s]
-        - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
+        - iau_wgt_dyn: a scaling factor for iau increment
         - limited_area: option indicating the grid is limited area or not
         - apply_2nd_order_divergence_damping: scaling factor for second order divergence damping
         - apply_4th_order_divergence_damping: scaling factor for fourth order divergence damping
@@ -640,8 +640,8 @@ def apply_divergence_damping_and_update_vn(
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         dtime=dtime,
-        iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
         limited_area=limited_area,
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,

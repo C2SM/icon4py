@@ -598,3 +598,13 @@ def rayleigh_type() -> int:
 @pytest.fixture
 def top_height_limit_for_maximal_layer_thickness() -> float:
     return 15000.0
+
+
+@pytest.fixture
+def is_iau_active() -> bool:
+    return False
+
+
+@pytest.fixture
+def iau_wgt_dyn() -> float:
+    return 0.0
