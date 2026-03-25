@@ -25,6 +25,11 @@ icon4py-standalone-driver \
     --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
     --output-path $ICON4PY_ROOT/output_path \
     --icon4py-backend gtfn_cpu
+
+
+icon4py-standalone-driver --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc --output-path $ICON4PY_ROOT/output_path --icon4py-backend gtfn_gpu
+
+
 ```
 
 #### Remarks

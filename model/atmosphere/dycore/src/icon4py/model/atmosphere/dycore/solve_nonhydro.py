@@ -357,6 +357,26 @@ class NonHydrostaticParams:
 class SolveNonhydro:
     def __init__(
         self,
+        grid,
+        static_fields,
+        backend,
+        exchange,
+    ):
+        ...
+
+    def time_step(
+        self,
+        *args,
+    ):
+        self.velocity_advection.run_predictor_step(...)
+        self.compute_rho_theta_pgrad_and_update_vn(...)
+        self.vertically_implicit_solver_at_predictor_step
+        ...
+        
+
+class SolveNonhydro:
+    def __init__(
+        self,
         grid: icon_grid.IconGrid,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,

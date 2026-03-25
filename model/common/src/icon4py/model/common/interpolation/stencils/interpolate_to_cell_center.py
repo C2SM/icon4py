@@ -14,6 +14,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
+def interpolate_to_cell_center(
+    z_kin_hor_e: fa.EdgeKField[vpfloat],                                           # type: ignore
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],            # type: ignore
+) -> fa.CellKField[vpfloat]:                                                       # type: ignore
+    z_ekinh = neighbor_sum(e_bln_c_s * z_kin_hor_e(C2E), axis=C2EDim)
+    return z_ekinh
+
+
+@gtx.field_operator
 def _interpolate_to_cell_center(
     interpolant: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],

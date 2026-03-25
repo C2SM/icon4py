@@ -659,6 +659,30 @@ def test_nonhydro_corrector_step(
         atol=1e-14,
     )
 
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+    ],
+)
+def test_run_solve_nonhydro_single_step(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *args,
+):
+    solve_nonhydro = solve_nh.SolveNonhydro(...)
+
+    solve_nonhydro.time_step(...)
+    assert test_utils.dallclose(
+        prognostics.theta_v.asnumpy(),                   # type: ignore
+        sp_step_exit.theta_v_new().asnumpy(),            # type: ignore
+    )
+    ...
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest

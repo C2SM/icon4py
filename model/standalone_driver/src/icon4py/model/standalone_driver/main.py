@@ -78,6 +78,19 @@ def main(
         do_prep_adv=False,
     )
 
+    icon4py_driver = standalone_driver.initialize_driver(
+        grid_file_path=grid_file_path,
+        output_path=output_path,
+        backend_name=icon4py_backend,
+    )
+    driver_state = initial_condition.jablonowski_williamson(
+        grid=icon4py_driver.grid,
+        backend=icon4py_driver.backend,
+    )
+    icon4py_driver.time_integration(
+        driver_state,
+    )
+
     log.info("time loop:  DONE")
 
 

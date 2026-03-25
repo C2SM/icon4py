@@ -27,6 +27,41 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def _compute_KE_grad(
+    KE_edge: fa.EdgeKField[ta.vpfloat],
+    KE_cell: fa.CellKField[ta.vpfloat],
+    grad_coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
+) -> fa.EdgeKField[ta.vpfloat]:
+    KE_grad = (
+        KE_edge * (grad_coeff[E2CDim(0)] - grad_coeff[E2CDim(1)])
+        + grad_coeff[E2CDim(1)] * KE_cell(E2C[1])
+        - grad_coeff[E2CDim(0)] * KE_cell(E2C[0])
+    )
+    return KE_grad
+
+def compute_advective_normal_wind_tendency(
+    KE_e: fa.EdgeKField[vpfloat],                                           # type: ignore
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],            # type: ignore
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],                # type: ignore
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],    # type: ignore
+    w: fa.CellKField[ta.vpfloat],                                           # type: ignore
+    vt: fa.EdgeKField[ta.vpfloat],                                                 # type: ignore
+    vn_ie: fa.EdgeKField[ta.vpfloat],                                              # type: ignore
+) -> fa.EdgeKField[vpfloat]:                                                       # type: ignore
+    KE_c = neighbor_sum(e_bln_c_s * KE_e(C2E), axis=C2EDim)                           # type: ignore
+    horizontal_adv = (
+        KE_e * (coeff_gradekin[E2CDim(0)] - coeff_gradekin[E2CDim(1)])
+        + coeff_gradekin[E2CDim(1)] * KE_c(E2C[1])
+        - coeff_gradekin[E2CDim(0)] * KE_c(E2C[0])
+    )
+    vertical_adv = (
+        neighbor_sum(c_lin_e * w(E2C), axis=E2CDim) * 
+        (vn_ie - vn_ie(Koff[1])) / ddqz_z_full_e                                   # type: ignore
+    )
+    corioslis_term = vt * (f_e + 0.5 * neighbor_sum(zeta(E2V), axis=E2VDim))              # type: ignore
+    ddt_vn_apc_pc = -(horizontal_adv + vertical_adv + corioslis_term)
+    return ddt_vn_apc_pc
+    
 @gtx.field_operator
 def _compute_advective_normal_wind_tendency(
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
@@ -81,6 +116,8 @@ def _compute_advective_normal_wind_tendency(
         )
     )
     normal_wind_advective_tendency_wp = -(horizontal_advection + vertical_advection + coriolis_term)
+    
+    
 
     return astype(normal_wind_advective_tendency_wp, vpfloat)
 
