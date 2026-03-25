@@ -289,7 +289,6 @@ def construct_decomposition(
     num_cells: int,
     num_edges: int,
     num_vertices: int,
-    num_levels: int,
     comm_id: int,
 ) -> tuple[
     definitions.ProcessProperties, definitions.DecompositionInfo, definitions.ExchangeRuntime

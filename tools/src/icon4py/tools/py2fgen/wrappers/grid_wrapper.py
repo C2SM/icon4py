@@ -141,7 +141,6 @@ def grid_init(
             v_owner_mask,
             num_cells,
             num_edges,
-            num_vertices,
             vertical_size,
             comm_id,
         )
