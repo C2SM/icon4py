@@ -16,6 +16,7 @@ from gt4py import next as gtx
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import test_utils
 
 
 _log = logging.getLogger(__file__)
@@ -79,7 +80,7 @@ def check_local_global_field(
     atol: float,
 ) -> None:
     if dim == dims.KDim:
-        np.testing.assert_allclose(global_reference_field, local_field)
+        test_utils.assert_dallclose(global_reference_field, local_field)
         return
 
     _log.info(
@@ -94,7 +95,7 @@ def check_local_global_field(
 
     # Compare halo against global reference field
     if check_halos:
-        np.testing.assert_allclose(
+        test_utils.assert_dallclose(
             global_reference_field[
                 data_alloc.as_numpy(
                     decomposition_info.global_index(
@@ -148,4 +149,4 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        np.testing.assert_allclose(sorted_, global_reference_field, atol=atol, verbose=True)
+        test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)

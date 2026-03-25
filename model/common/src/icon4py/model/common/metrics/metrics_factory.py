@@ -36,7 +36,7 @@ from icon4py.model.common.metrics import (
     compute_advection_metrics,
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_zdiff_gradp_dsl,
+    compute_zdiff_gradp,
     metric_fields as mf,
     metrics_attributes as attrs,
     reference_atmosphere,
@@ -762,9 +762,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
-        compute_zdiff_gradp_dsl_np = factory.NumpyDataProvider(
+        compute_zdiff_gradp_np = factory.NumpyDataProvider(
             func=functools.partial(
-                compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
+                compute_zdiff_gradp.compute_zdiff_gradp,
                 array_ns=self._xp,
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
@@ -793,7 +793,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
         )
-        self.register_provider(compute_zdiff_gradp_dsl_np)
+        self.register_provider(compute_zdiff_gradp_np)
 
         coeff_gradekin = factory.NumpyDataProvider(
             func=functools.partial(
