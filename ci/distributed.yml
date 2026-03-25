@@ -108,6 +108,9 @@ build_distributed:
       variables:
         # TODO(msimberg): Decrease this when enabling dace_gpu above, if possible.
         SLURM_TIMELIMIT: '01:30:00'
+        # TODO(msimberg): Use shared partition when time limit can be set to at
+        # most an hour. The shared partition only accepts jobs maximum an hour long.
+        SLURM_PARTITION: "normal"
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
