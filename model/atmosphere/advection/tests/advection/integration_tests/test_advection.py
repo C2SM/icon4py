@@ -21,6 +21,7 @@ from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
+    exchange_utils,
     grid_utils,
     grid_utils as gridtest_utils,
     serialbox as sb,
@@ -47,7 +48,6 @@ from ..utils import (
     construct_least_squares_state,
     construct_metric_state,
     construct_prep_adv,
-    dummy_exchange,
     log_serialized,
     verify_advection_fields,
 )
@@ -162,7 +162,7 @@ def test_advection_run_single_step(
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
         geometry_type=icon_grid.geometry_type,
-        exchange=dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 
     least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
@@ -270,7 +270,7 @@ def test_compute_lsq_coeffs(
         start_idx,
         min_rlcell_int,
         icon_grid.geometry_type,
-        exchange=dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 
     assert test_helpers.dallclose(

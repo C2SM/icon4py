@@ -8,11 +8,13 @@
 
 from __future__ import annotations
 
+from types import EllipsisType
 from typing import TYPE_CHECKING
 
 import pytest
 
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
@@ -34,7 +36,8 @@ from ...fixtures import (
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
+    from gt4py import next as gtx
+    from gt4py.next import typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
 
@@ -43,21 +46,48 @@ if mpi_decomposition.mpi4py is None:
     pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
+def _get_slice_tuple_from_horizontal_range(
+    grid: base_grid.Grid,
+    horizontal_dim: gtx.Dimension,
+    horizontal_range: tuple[h_grid.Zone | None, h_grid.Zone | None],
+) -> tuple[slice | None | EllipsisType, ...]:
+    # TODO(havogt): Ideally we refactor the factories to only construct fields on the domain where they matter,
+    # then this function disappears as we get the verification range directly from the constructed field.
+    start_zone, end_zone = horizontal_range
+    horizontal_start = (
+        grid.start_index(h_grid.domain(horizontal_dim)(start_zone))
+        if start_zone is not None
+        else None
+    )
+    horizontal_end = (
+        grid.end_index(h_grid.domain(horizontal_dim)(end_zone)) if end_zone is not None else None
+    )
+    return (slice(horizontal_start, horizontal_end), ...)
+
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, metrics_name",
+    "attrs_name, metrics_name, horizontal_range",
     [
-        (attrs.CELL_HEIGHT_ON_HALF_LEVEL, "z_ifc"),
-        (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e"),
-        (attrs.ZDIFF_GRADP, "zdiff_gradp"),
-        (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"),
-        (attrs.Z_MC, "z_mc"),
-        (attrs.DDQZ_Z_HALF, "ddqz_z_half"),
-        (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d"),
-        (attrs.RAYLEIGH_W, "rayleigh_w"),
-        (attrs.COEFF_GRADEKIN, "coeff_gradekin"),
+        (attrs.CELL_HEIGHT_ON_HALF_LEVEL, "z_ifc", None),
+        (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e", None),
+        (
+            attrs.ZDIFF_GRADP,
+            "zdiff_gradp",
+            (h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2, None),
+        ),
+        (
+            attrs.VERTOFFSET_GRADP,
+            "vertoffset_gradp",
+            (h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2, None),
+        ),
+        (attrs.Z_MC, "z_mc", None),
+        (attrs.DDQZ_Z_HALF, "ddqz_z_half", None),
+        (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d", None),
+        (attrs.RAYLEIGH_W, "rayleigh_w", None),
+        (attrs.COEFF_GRADEKIN, "coeff_gradekin", None),
     ],
 )
 def test_distributed_metrics_attrs(
@@ -69,6 +99,7 @@ def test_distributed_metrics_attrs(
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
+    horizontal_range: tuple[h_grid.Zone | None, h_grid.Zone | None] | None,
     experiment: test_defs.Experiment,
 ) -> None:
     if test_utils.is_embedded(backend) and metrics_name == "ddqz_z_half":
@@ -81,7 +112,15 @@ def test_distributed_metrics_attrs(
 
     field = factory.get(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
-    assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)
+    if horizontal_range is not None:
+        # We assume that the horizontal dimension exists and is the first one.
+        slicer = _get_slice_tuple_from_horizontal_range(
+            factory.grid, attrs.attrs[attrs_name]["dims"][0], horizontal_range
+        )
+        field = field[slicer]
+        field_ref = field_ref[slicer]
+
+    test_utils.assert_dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)
 
 
 @pytest.mark.datatest
@@ -188,7 +227,7 @@ def test_distributed_metrics_wgtfacq_e(
     factory = metrics_factory_from_savepoint
 
     field = factory.get(attrs.WGTFACQ_E).asnumpy()
-    field_ref = metrics_savepoint.wgtfacq_e_dsl().asnumpy()
+    field_ref = metrics_savepoint.wgtfacq_e().asnumpy()
     assert test_utils.dallclose(field, field_ref)
 
 

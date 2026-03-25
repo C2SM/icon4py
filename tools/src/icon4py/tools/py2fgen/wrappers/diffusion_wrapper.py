@@ -63,8 +63,7 @@ def diffusion_init(
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     nudgecoeff_e: fa.EdgeField[wpfloat],
-    rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
+    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
     zd_cellidx: wrapper_common.OptionalInt32Array2D,
     zd_vertidx: wrapper_common.OptionalInt32Array2D,
     zd_intcoef: wrapper_common.OptionalFloat64Array2D,
@@ -92,7 +91,8 @@ def diffusion_init(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    on_gpu = theta_ref_mc.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    xp = theta_ref_mc.array_ns
+    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -134,7 +134,6 @@ def diffusion_init(
             dims.KDim: nlev,
         }
     )
-    xp = wgtfac_c.array_ns
 
     if zd_cellidx is None:
         # then zdiffu_t is False or the list on that rank is empty, then all of the following are not initialized
@@ -192,6 +191,15 @@ def diffusion_init(
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
+    )
+
+    # Create separate fields for the two components of the RBF vector coefficients and swap.
+    # TODO(havogt): we could use GT4Py's named collections.
+    rbf_coeff_1 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+    )
+    rbf_coeff_2 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
     )
 
     # Interpolation state
