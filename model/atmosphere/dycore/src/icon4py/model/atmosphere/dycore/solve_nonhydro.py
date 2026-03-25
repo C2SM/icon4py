@@ -286,7 +286,7 @@ class NonHydrostaticConfig:
         self.deepatmos_mode: bool = deepatmos_mode
 
         #: incremental analysis init mode, defined as one of the ICON init modes
-        self.iau_init: bool = iau_init,
+        self.iau_init: bool = iau_init
 
         self._validate()
 
