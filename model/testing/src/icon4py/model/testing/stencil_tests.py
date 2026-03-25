@@ -219,7 +219,7 @@ class StencilTest:
             )
         static_args = {name: [input_data[name]] for name in static_variant}
         backend = model_options.customize_backend(self.PROGRAM, backend_like)
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
+        program = self.PROGRAM.with_backend(backend)
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
