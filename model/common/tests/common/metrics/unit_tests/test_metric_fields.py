@@ -18,12 +18,12 @@ from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils as testing_helpers
-from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
     experiment,
+    experiment_config,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -138,6 +138,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
     experiment: test_defs.ExperimentDescription,
+    experiment_config: test_defs.ExperimentConfig,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -147,18 +148,9 @@ def test_compute_rayleigh_w(
     rayleigh_w_full = data_alloc.zero_field(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
-    (
-        _,
-        _,
-        _,
-        damping_height,
-        rayleigh_coeff,
-        _,
-        _,
-        rayleigh_type,
-        _,
-        _,
-    ) = construct_metrics_config(experiment)
+    damping_height = experiment_config.vertical_grid.rayleigh_damping_height
+    rayleigh_coeff = experiment_config.nonhydrostatic.rayleigh_coeff
+    rayleigh_type = experiment_config.nonhydrostatic.rayleigh_type
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),

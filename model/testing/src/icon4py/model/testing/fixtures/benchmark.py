@@ -122,9 +122,11 @@ def metrics_field_source(
         metadata=metrics_attributes.attrs,
         rayleigh_type=RayleighType.KLEMP,
         rayleigh_coeff=5.0,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333,
+            vwind_offctr=0.2,
+            thslp_zdiffu=0.02,
+            thhgtd_zdiffu=125.0,
+        ),
     )
     yield metrics_field_source

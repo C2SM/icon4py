@@ -33,10 +33,17 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    download_ser_data,
     experiment,
+    experiment_config,
     grid_description,
     processor_props,
     topography_savepoint,
@@ -501,6 +508,7 @@ def test_metrics_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
+    experiment_config: test_defs.ExperimentConfig,
     attrs_name: str,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
@@ -511,25 +519,7 @@ def test_metrics_fields_compare_single_multi_rank(
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
 
-    (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
-    ) = test_defs.construct_metrics_config(experiment)
-    vertical_config = v_grid.VerticalGridConfig(
-        experiment.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -579,12 +569,9 @@ def test_metrics_fields_compare_single_multi_rank(
         interpolation_source=single_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
+        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
+        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
+        metrics_config=experiment_config.metrics,
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
@@ -642,12 +629,9 @@ def test_metrics_fields_compare_single_multi_rank(
         interpolation_source=multi_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
+        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
+        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
+        metrics_config=experiment_config.metrics,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
@@ -681,31 +665,14 @@ def test_metrics_mask_prog_halo_c(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
+    experiment_config: test_defs.ExperimentConfig,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
 
-    (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
-    ) = test_defs.construct_metrics_config(experiment)
-    vertical_config = v_grid.VerticalGridConfig(
-        experiment.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -775,12 +742,9 @@ def test_metrics_mask_prog_halo_c(
         interpolation_source=multi_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
+        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
+        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
+        metrics_config=experiment_config.metrics,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),

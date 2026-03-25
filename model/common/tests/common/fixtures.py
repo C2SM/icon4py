@@ -17,7 +17,6 @@ from icon4py.model.common.grid import geometry, geometry_attributes, gridfile, v
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.testing import definitions as test_defs, serialbox
-from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -26,6 +25,7 @@ from icon4py.model.testing.fixtures.datatest import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_config,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
@@ -128,6 +128,7 @@ def metrics_factory_from_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: test_defs.ExperimentDescription,
+    experiment_config: test_defs.ExperimentConfig,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
@@ -138,25 +139,7 @@ def metrics_factory_from_savepoint(
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()
-    (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
-    ) = construct_metrics_config(experiment)
-    vertical_config = vertical.VerticalGridConfig(
-        geometry_source.grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     vertical_grid = vertical.VerticalGrid(
         vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
     )
@@ -169,12 +152,9 @@ def metrics_factory_from_savepoint(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
+        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
+        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
+        metrics_config=experiment_config.metrics,
         exchange=exchange,
         global_reductions=global_reductions,
     )

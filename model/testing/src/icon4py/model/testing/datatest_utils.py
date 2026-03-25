@@ -94,7 +94,7 @@ def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
 def create_experiment_configuration(
     experiment: test_defs.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
-) -> tuple:
+) -> test_defs.ExperimentConfig:
     """
     Create configuration objects from the experiment's namelist JSON file.
 
@@ -118,6 +118,7 @@ def create_experiment_configuration(
     from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
     from icon4py.model.common.constants import RayleighType
     from icon4py.model.common.grid import vertical as v_grid
+    from icon4py.model.common.metrics import metrics_factory
     from icon4py.model.standalone_driver import config as driver_config
 
     experiment_dir = get_ranked_experiment_name_with_version(
@@ -138,7 +139,7 @@ def create_experiment_configuration(
     run_nml = nml_data["run_nml"]
 
     # Create VerticalGridConfig
-    vertical_config = v_grid.VerticalGridConfig(
+    vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=experiment.num_levels,
         lowest_layer_thickness=sleve_nml["min_lay_thckn"],
         model_top_height=sleve_nml["top_height"],
@@ -255,7 +256,7 @@ def create_experiment_configuration(
     type_t_diffu_value = diffusion_nml["itype_t_diffu"]
     type_t_diffu_map = {
         1: diffusion.TemperatureDiscretizationType.HOMOGENEOUS,
-        2: diffusion.TemperatureDiscretizationType.HETEROGENOUS,
+        2: diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
     }
     type_t_diffu = type_t_diffu_map[type_t_diffu_value]
 
@@ -303,4 +304,32 @@ def create_experiment_configuration(
         enable_statistics_output=False,
     )
 
-    return driver_cfg, vertical_config, nonhydro_config, diffusion_config
+    # Extract metrics-related parameters not in any config class
+    exner_expol = nonhydrostatic_nml["exner_expol"]
+    if isinstance(exner_expol, list):
+        exner_expol = exner_expol[0]
+
+    vwind_offctr = nonhydrostatic_nml["vwind_offctr"]
+    if isinstance(vwind_offctr, list):
+        vwind_offctr = vwind_offctr[0]
+
+    thslp_zdiffu = nonhydrostatic_nml["thslp_zdiffu"]
+    if isinstance(thslp_zdiffu, list):
+        thslp_zdiffu = thslp_zdiffu[0]
+
+    thhgtd_zdiffu = nonhydrostatic_nml["thhgtd_zdiffu"]
+    if isinstance(thhgtd_zdiffu, list):
+        thhgtd_zdiffu = thhgtd_zdiffu[0]
+
+    return test_defs.ExperimentConfig(
+        driver=driver_cfg,
+        vertical_grid=vertical_grid_config,
+        nonhydrostatic=nonhydro_config,
+        diffusion=diffusion_config,
+        metrics=metrics_factory.MetricsConfig(
+            exner_expol=exner_expol,
+            vwind_offctr=vwind_offctr,
+            thslp_zdiffu=thslp_zdiffu,
+            thhgtd_zdiffu=thhgtd_zdiffu,
+        ),
+    )

@@ -147,10 +147,12 @@ def create_static_field_factories(
         metadata=metrics_attributes.attrs,
         rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=0.1,
-        exner_expol=1.0 / 3.0,
-        vwind_offctr=0.15,
-        thslp_zdiffu=0.025,
-        thhgtd_zdiffu=200.0,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=1.0 / 3.0,
+            vwind_offctr=0.15,
+            thslp_zdiffu=0.025,
+            thhgtd_zdiffu=200.0,
+        ),
     )
 
     return driver_states.StaticFieldFactories(

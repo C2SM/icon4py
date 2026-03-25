@@ -158,6 +158,16 @@ def download_ser_data(
 
 
 @pytest.fixture
+def experiment_config(
+    download_ser_data: None,
+    experiment: test_defs.ExperimentDescription,
+    processor_props: decomposition.ProcessProperties,
+) -> test_defs.ExperimentConfig:
+    """Create experiment configuration from the namelist JSON file."""
+    return dt_utils.create_experiment_configuration(experiment, processor_props)
+
+
+@pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
     experiment: test_defs.ExperimentDescription,

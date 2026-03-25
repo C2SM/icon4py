@@ -173,27 +173,19 @@ def test_diffusion_init(
     metric_state: diffusion_states.DiffusionMetricState,
     experiment,
     step_date_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    experiment_config,
     ndyn_substeps,
     backend,
 ):
-    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = experiment_config.diffusion
+    config.n_substeps = ndyn_substeps
     additional_parameters = diffusion.DiffusionParams(config)
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -308,25 +300,17 @@ def test_verify_diffusion_init_against_savepoint(
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
     savepoint_diffusion_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    experiment_config,
     ndyn_substeps,
     backend,
 ):
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
-    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = experiment_config.diffusion
+    config.n_substeps = ndyn_substeps
     additional_parameters = diffusion.DiffusionParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -379,10 +363,7 @@ def test_run_diffusion_single_step(
     savepoint_diffusion_exit,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    experiment_config,
     ndyn_substeps,
     backend,
     orchestration,
@@ -404,13 +385,7 @@ def test_run_diffusion_single_step(
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -418,7 +393,8 @@ def test_run_diffusion_single_step(
         vct_b=vct_b,
     )
 
-    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps)
+    config = experiment_config.diffusion
+    config.n_substeps = ndyn_substeps
     additional_parameters = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -464,10 +440,7 @@ def test_run_diffusion_multiple_steps(
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
     grid_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    experiment_config,
     ndyn_substeps,
     backend,
     icon_grid,
@@ -482,19 +455,14 @@ def test_run_diffusion_multiple_steps(
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
 
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
 
-    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps)
+    config = experiment_config.diffusion
+    config.n_substeps = ndyn_substeps
     additional_parameters = diffusion.DiffusionParams(config)
 
     ######################################################################
@@ -581,10 +549,7 @@ def test_run_diffusion_multiple_steps(
 def test_run_diffusion_initial_step(
     experiment,
     linit,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    experiment_config,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
@@ -599,13 +564,7 @@ def test_run_diffusion_initial_step(
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment_config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
@@ -619,7 +578,8 @@ def test_run_diffusion_initial_step(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps=2)
+    config = experiment_config.diffusion
+    config.n_substeps = 2
     params = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -661,10 +621,11 @@ def test_run_diffusion_initial_step(
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
+    savepoint_diffusion_init, experiment, icon_grid, linit, experiment_config, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
-    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = experiment_config.diffusion
+    config.n_substeps = ndyn_substeps
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

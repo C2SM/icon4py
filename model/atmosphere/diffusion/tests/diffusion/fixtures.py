@@ -24,6 +24,7 @@ from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     exner_expol,
     experiment,
+    experiment_config,
     flat_height,
     grid_savepoint,
     htop_moist_proc,

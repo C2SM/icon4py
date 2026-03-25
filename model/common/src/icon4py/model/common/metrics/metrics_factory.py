@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
+import dataclasses
+import dataclasses
 import logging
 import math
 
@@ -54,6 +55,16 @@ vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class MetricsConfig:
+    """Configuration parameters for metrics computation."""
+
+    exner_expol: float
+    vwind_offctr: float
+    thslp_zdiffu: float
+    thhgtd_zdiffu: float
+
+
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
@@ -65,12 +76,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        rayleigh_type: int,
+        rayleigh_type: constants.RayleighType,
         rayleigh_coeff: float,
-        exner_expol: float,
-        vwind_offctr: float,
-        thslp_zdiffu: float,
-        thhgtd_zdiffu: float,
+        metrics_config: MetricsConfig,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
@@ -98,12 +106,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "damping_height": vertical_grid.config.rayleigh_damping_height,
             "rayleigh_type": rayleigh_type,
             "rayleigh_coeff": rayleigh_coeff,
-            "exner_expol": exner_expol,
-            "vwind_offctr": vwind_offctr,
+            "exner_expol": metrics_config.exner_expol,
+            "vwind_offctr": metrics_config.vwind_offctr,
             "igradp_method": 3,
             "igradp_constant": 3,
-            "thslp_zdiffu": thslp_zdiffu,
-            "thhgtd_zdiffu": thhgtd_zdiffu,
+            "thslp_zdiffu": metrics_config.thslp_zdiffu,
+            "thhgtd_zdiffu": metrics_config.thhgtd_zdiffu,
             "vct_a_1": vct_a_1,
         }
 
