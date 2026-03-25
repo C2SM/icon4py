@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import argparse
-import copy
 import pathlib
 import time
 
@@ -55,20 +54,16 @@ def get_args():
 def setup_graupel(
     dt: float,
     qnc: float,
-    backend: model_backends.BackendDescriptor,
+    backend: model_backends.BackendLike,
     horizontal_start: int,
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
     enable_masking: bool = True,
-    wait_for_completion: bool = False,
 ):
-    assert model_backends.is_backend_descriptor(backend)
-    backend_descriptor = copy.deepcopy(backend)
-    backend_descriptor["async_sdfg_call"] = not wait_for_completion
     with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(
-            backend=backend_descriptor,
+            backend=backend,
             program=graupel.graupel_run,
             constant_args={
                 "dt": ta.wpfloat(dt),

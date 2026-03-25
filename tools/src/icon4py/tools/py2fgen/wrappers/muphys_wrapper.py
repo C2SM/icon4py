@@ -51,6 +51,7 @@ def graupel_run(
         backend_descriptor = {
             "backend_factory": model_backends.make_custom_dace_backend,
             "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,
+            "async_sdfg_call": not wait_for_completion,
         }
         graupel_program = run_graupel_only.setup_graupel(
             dt=dt,
@@ -61,7 +62,6 @@ def graupel_run(
             vertical_start=kstart,
             vertical_end=ke,
             enable_masking=enable_masking,
-            wait_for_completion=wait_for_completion,
         )
 
     q = graupel.Q(qv, qc, qr, qs, qi, qg)
