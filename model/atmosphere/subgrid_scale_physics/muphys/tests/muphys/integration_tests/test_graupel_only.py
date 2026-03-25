@@ -63,8 +63,10 @@ def test_graupel_only(
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,
-        hrange=(0, inp.ncells),
-        vrange=(0, inp.nlev),
+        horizontal_start=0,
+        horizontal_end=inp.ncells,
+        vertical_start=0,
+        vertical_end=inp.nlev,
         enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
     )
 

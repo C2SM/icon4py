@@ -60,8 +60,10 @@ def setup_graupel(
     dt: float,
     qnc: float,
     backend: model_backends.BackendDescriptor,
-    hrange: tuple[int, int],
-    vrange: tuple[int, int],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
     wait_for_completion: bool = False,
@@ -85,12 +87,12 @@ def setup_graupel(
                 "enable_masking": enable_masking,
             },
             horizontal_sizes={
-                "horizontal_start": gtx.int32(hrange[0]),
-                "horizontal_end": gtx.int32(hrange[1]),
+                "horizontal_start": horizontal_start,
+                "horizontal_end": horizontal_end,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(vrange[0]),
-                "vertical_end": gtx.int32(vrange[1]),
+                "vertical_start": vertical_start,
+                "vertical_end": vertical_end,
             },
             offset_provider={"Koff": dims.KDim},
         )
@@ -136,8 +138,10 @@ def main():
         dt=args.dt,
         qnc=args.qnc,
         backend=backend,
-        hrange=(0, inp.ncells),
-        vrange=(0, inp.nlev),
+        horizontal_start=0,
+        horizontal_end=inp.ncells,
+        vertical_start=0,
+        vertical_end=inp.nlev,
         enable_masking=args.enable_masking,
     )
 

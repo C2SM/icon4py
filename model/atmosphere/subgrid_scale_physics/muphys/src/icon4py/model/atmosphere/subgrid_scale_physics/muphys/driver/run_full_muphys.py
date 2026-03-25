@@ -139,8 +139,10 @@ def setup_muphys(
             dt=dt,
             qnc=qnc,
             backend=backend,
-            hrange=(0, inp.ncells),
-            vrange=(0, inp.nlev),
+            horizontal_start=0,
+            horizontal_end=inp.ncells,
+            vertical_start=0,
+            vertical_end=inp.nlev,
             enable_masking=True,
         )
         with utils.recursion_limit(10**5):  # TODO(havogt): make an option in gt4py?
