@@ -14,27 +14,27 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions, definitions as decomp_defs
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import test_utils
 
 
-log = logging.getLogger(__file__)
-_log = log
+_log = logging.getLogger(__file__)
 
 
 def check_comm_size(
-    props: definitions.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
+    props: decomp_defs.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
 ) -> None:
     if props.comm_size not in sizes:
         pytest.xfail(f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}")
 
 
-def log_process_properties(props: definitions.ProcessProperties) -> None:
-    log.info(f"rank={props.rank}/{props.comm_size}")
+def log_process_properties(props: decomp_defs.ProcessProperties) -> None:
+    _log.info(f"rank={props.rank}/{props.comm_size}")
 
 
-def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> None:
-    log.info(
+def log_local_field_size(decomposition_info: decomp_defs.DecompositionInfo) -> None:
+    _log.info(
         f"local grid size: cells={decomposition_info.global_index(dims.CellDim).size}, "
         f"edges={decomposition_info.global_index(dims.EdgeDim).size}, "
         f"vertices={decomposition_info.global_index(dims.VertexDim).size}"
@@ -80,7 +80,7 @@ def check_local_global_field(
     atol: float,
 ) -> None:
     if dim == dims.KDim:
-        np.testing.assert_allclose(global_reference_field, local_field)
+        test_utils.assert_dallclose(global_reference_field, local_field)
         return
 
     _log.info(
@@ -98,9 +98,8 @@ def check_local_global_field(
 
     # Compare halo against global reference field
     if check_halos:
-        print("checking halos")
+        # test_utils.assert_dallclose(
         _non_blocking_allclose(
-            # np.testing.assert_allclose(
             global_reference_field[
                 data_alloc.as_numpy(
                     decomposition_info.global_index(
@@ -148,11 +147,11 @@ def check_local_global_field(
         _log.info(
             f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
         )
-        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
+        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)
         sorted_[gathered_global_indices] = gathered_field
         _log.info(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        # np.testing.assert_allclose(sorted_, global_reference_field, atol=atol, verbose=True)
+        # test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)
         _non_blocking_allclose(sorted_, global_reference_field, atol=atol, verbose=True)

@@ -13,6 +13,7 @@ from gt4py.next import common as gtx_common
 from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions, halo
 from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
 from ...fixtures import backend_like, processor_props
@@ -32,7 +33,10 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
         run_properties=processor_props,
         allocator=allocator,
     )
-    my_owned_cells = halo_generator.owned_cells(utils.SIMPLE_DISTRIBUTION)
+    xp = data_alloc.import_array_ns(allocator)
+    my_owned_cells = data_alloc.as_numpy(
+        halo_generator.owned_cells(xp.asarray(utils.SIMPLE_DISTRIBUTION))
+    )
 
     print(f"rank {processor_props.rank} owns {my_owned_cells} ")
     assert my_owned_cells.size == len(utils._CELL_OWN[processor_props.rank])

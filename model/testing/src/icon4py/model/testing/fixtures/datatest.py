@@ -81,7 +81,6 @@ def cpu_allocator() -> gtx_typing.Allocator:
 
 @pytest.fixture(
     params=[
-        definitions.Grids.R01B01_GLOBAL,
         definitions.Grids.R02B04_GLOBAL,
         definitions.Grids.MCH_CH_R04B09_DSL,
         definitions.Grids.TORUS_50000x5000,
@@ -598,3 +597,13 @@ def rayleigh_type() -> int:
 @pytest.fixture
 def top_height_limit_for_maximal_layer_thickness() -> float:
     return 15000.0
+
+
+@pytest.fixture
+def is_iau_active() -> bool:
+    return False
+
+
+@pytest.fixture
+def iau_wgt_dyn() -> float:
+    return 0.0

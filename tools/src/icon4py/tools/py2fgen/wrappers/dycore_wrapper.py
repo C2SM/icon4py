@@ -32,7 +32,12 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    config as wrapper_config,
+    grid_wrapper,
+    icon4py_export,
+)
 
 
 logger = setup_logger(__name__)
@@ -104,13 +109,12 @@ def solve_nh_init(
     rayleigh_type: gtx.int32,
     rayleigh_coeff: gtx.float64,
     divdamp_order: gtx.int32,
-    is_iau_active: bool,
-    iau_wgt_dyn: gtx.float64,
     divdamp_type: gtx.int32,
     divdamp_trans_start: gtx.float64,
     divdamp_trans_end: gtx.float64,
     l_vert_nested: bool,
     ldeepatmo: bool,
+    iau_init: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
     nudge_max_coeff: gtx.float64,  # note: this is the scaled ICON value, i.e. not the namelist value
@@ -160,13 +164,12 @@ def solve_nh_init(
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
         divdamp_type=divdamp_type,
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
         deepatmos_mode=ldeepatmo,
+        iau_init=iau_init,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         max_nudging_coefficient=nudge_max_coeff,
@@ -287,6 +290,8 @@ def solve_nh_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
+    if wrapper_config.WAIT_FOR_COMPILATION:
+        gtx.wait_for_compilation()
 
 
 NumpyFloatArray1D: TypeAlias = Annotated[
@@ -344,6 +349,8 @@ def solve_nh_run(
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
+    is_iau_active: bool,
+    iau_wgt_dyn: gtx.float64,
 ):
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
@@ -431,6 +438,8 @@ def solve_nh_run(
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     # TODO(havogt): create separate bindings for writing the timers

@@ -10,9 +10,9 @@ import numpy as np
 from gt4py import next as gtx
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
-from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
@@ -43,35 +43,26 @@ def graupel_run(
     prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    enable_masking: bool,
     wait_for_completion: bool,
-):
+) -> None:
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
-        on_gpu = t.array_ns != np
-        with muphys_utils.recursion_limit(10**4):
-            graupel_program = model_options.setup_program(
-                backend={
-                    "backend_factory": model_backends.make_custom_dace_backend,
-                    "device": model_backends.GPU if on_gpu else model_backends.CPU,
-                    "async_sdfg_call": not wait_for_completion,
-                },
-                program=graupel.graupel_run,
-                constant_args={
-                    "dt": ta.wpfloat(dt),
-                    "qnc": ta.wpfloat(qnc),
-                    "enable_masking": True,
-                },
-                horizontal_sizes={
-                    "horizontal_start": gtx.int32(ivstart),
-                    "horizontal_end": gtx.int32(ivend),
-                },
-                vertical_sizes={
-                    "vertical_start": gtx.int32(kstart),
-                    "vertical_end": gtx.int32(ke),
-                },
-                offset_provider={"Koff": dims.KDim},
-            )
-            gtx.wait_for_compilation()
+        backend_descriptor = {
+            "backend_factory": model_backends.make_custom_dace_backend,
+            "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,  # type: ignore[attr-defined]  # to be fixed in gt4py
+            "async_sdfg_call": not wait_for_completion,
+        }
+        graupel_program = run_graupel_only.setup_graupel(
+            dt=dt,
+            qnc=qnc,
+            backend=backend_descriptor,
+            horizontal_start=ivstart,
+            horizontal_end=ivend,
+            vertical_start=kstart,
+            vertical_end=ke,
+            enable_masking=enable_masking,
+        )
 
     q = graupel.Q(qv, qc, qr, qs, qi, qg)
 
@@ -98,7 +89,7 @@ def graupel_run(
 
 
 @icon4py_export.export
-def graupel_finalize():
+def graupel_finalize() -> None:
     # The atexit function is not called when embedding cpython into another application
     # with cffi, so we call it explicitly here to dump the metrics.
     gtx_metrics._dump_metrics_at_exit()

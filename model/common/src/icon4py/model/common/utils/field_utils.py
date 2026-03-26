@@ -64,11 +64,7 @@ def index2offset(
         allocator=allocator,
     )
     # use GT4Py's broadcasting and field arithmetic (includes clipping)
-    offset_field = gtx.where(  # type: ignore[attr-defined]
-        index_field >= 0,  # type: ignore[operator]
-        index_field - current_index,
-        0,
-    )
+    offset_field = gtx.where(index_field >= 0, index_field - current_index, 0)
 
     # if GT4Py embedded would propagate the allocator, we could avoid this extra conversion.
     return gtx.as_field(offset_field.domain, offset_field.ndarray, allocator=allocator)
