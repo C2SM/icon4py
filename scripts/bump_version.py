@@ -38,9 +38,9 @@ def _find_versioned_package_dirs() -> list[Path]:
 
 
 #: Pattern matching versioned icon4py cross-package dependency constraints, e.g.
-#: ``icon4py-common>=0.0.6`` or ``icon4py-tools>=0.0.6``.
+#: ``icon4py-common>=0.0.6``, ``icon4py-common~=0.0.6``, or ``icon4py-tools~=0.0.6``.
 _ICON4PY_DEP_CONSTRAINT_RE: Final = re.compile(
-    r"(icon4py-[\w-]+(?:\[[\w,]+\])?)>=([\d]+\.[\d]+\.[\d]+)"
+    r"(icon4py-[\w-]+(?:\[[\w,]+\])?)(~=|>=)([\d]+\.[\d]+\.[\d]+)"
 )
 
 
@@ -92,7 +92,7 @@ def _bump_package(pkg_dir: Path, new_version: str, dry_run: bool, verbose: bool)
 def _update_cross_package_constraints(
     current_version: str, new_version: str, dry_run: bool
 ) -> None:
-    """Replace ``icon4py-*>={current_version}`` with ``icon4py-*>={new_version}``
+    """Replace ``icon4py-*{op}{current_version}`` with ``icon4py-*{op}{new_version}``
     in every pyproject.toml across the repo (excluding .venv)."""
     for pyproject in sorted(REPO_ROOT.rglob("pyproject.toml")):
         # Skip anything inside the virtual environment
@@ -100,8 +100,8 @@ def _update_cross_package_constraints(
             continue
         text = pyproject.read_text()
         new_text = _ICON4PY_DEP_CONSTRAINT_RE.sub(
-            lambda m: f"{m.group(1)}>={new_version}"
-            if m.group(2) == current_version
+            lambda m: f"{m.group(1)}{m.group(2)}{new_version}"
+            if m.group(3) == current_version
             else m.group(0),
             text,
         )
