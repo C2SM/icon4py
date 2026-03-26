@@ -59,6 +59,7 @@ build_image_aarch64:
     - cd /icon4py
     - ls "${ICON4PY_TEST_DATA_PATH}"
     - source ci/scripts/start-cuda-mps.sh
+    - source ci/scripts/gt4py-cache.sh
   variables:
     SLURM_NTASKS: 1
     SLURM_JOB_NUM_NODES: 1
@@ -75,6 +76,9 @@ build_image_aarch64:
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+    # This is not directly a gt4py variable. It's used to derive
+    # GT4PY_BUILD_CACHE_DIR in ci/scripts/gt4py-cache.sh.
+    GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
@@ -92,7 +96,7 @@ build_image_aarch64:
   variables:
     RUNNER: "ci-runner"
     SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
+    CSCS_ADDITIONAL_MOUNTS: "[\"/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH\",\"/iopsstor/scratch/cscs/icontest:$GT4PY_BUILD_CACHE_BASE_DIR\"]"
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
