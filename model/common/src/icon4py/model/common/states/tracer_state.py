@@ -8,7 +8,7 @@
 
 
 import dataclasses
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import icon as icon_grid
+
+
+T = TypeVar("T")
 
 
 @dataclasses.dataclass
@@ -44,6 +47,20 @@ class TracerState:
         for f in dataclasses.fields(self):
             yield getattr(self, f.name)
 
+    @classmethod
+    def zero_field(cls: type[T], grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator) -> T:
+        tracer_dict = {
+            f.name: data_alloc.zero_field(
+                grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=allocator,
+                dtype=ta.wpfloat,
+            )
+            for f in dataclasses.fields(cls)
+        }
+        return cls(**tracer_dict)
+
 
 @dataclasses.dataclass
 class TracerStateTendency:
@@ -64,6 +81,20 @@ class TracerStateTendency:
     #: specific graupel content [kg/kg] at cell center
     qg_tendency: fa.CellKField[ta.wpfloat]
 
+    @classmethod
+    def zero_field(cls: type[T], grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator) -> T:
+        tracer_tendency_dict = {
+            f.name: data_alloc.zero_field(
+                grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=allocator,
+                dtype=ta.wpfloat,
+            )
+            for f in dataclasses.fields(cls)
+        }
+        return cls(**tracer_tendency_dict)
+
 
 @dataclasses.dataclass
 class TracerStateScalar:
@@ -83,54 +114,3 @@ class TracerStateScalar:
     qs: ta.wpfloat
     #: specific graupel content [kg/kg]
     qg: ta.wpfloat
-
-
-def initialize_tracer_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
-) -> TracerState:
-    """Initialize the tracer state with zero fields."""
-    qv = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    qc = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    qr = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    qi = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    qs = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    qg = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-
-    return TracerState(qv=qv, qc=qc, qr=qr, qi=qi, qs=qs, qg=qg)

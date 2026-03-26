@@ -14,6 +14,7 @@ import types
 from collections.abc import Callable
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
@@ -45,7 +46,7 @@ class Icon4pyDriver:
     def __init__(
         self,
         config: driver_config.DriverConfig,
-        backend: gtx.typing.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: IconGrid,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
@@ -79,7 +80,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self) -> gtx.typing.Backend:
+    def _allocator(self) -> gtx_typing.Backend:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property

@@ -12,7 +12,7 @@ import enum
 import functools
 import logging
 import statistics
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
 import devtools
 
@@ -20,12 +20,17 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import type_alias as ta
-from icon4py.model.common.grid import geometry as grid_geometry
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.grid import geometry as grid_geometry, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import diagnostic_state, prognostic_state, tracer_state
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 
 
 log = logging.getLogger(__name__)
@@ -66,6 +71,37 @@ class DriverStates(NamedTuple):
     prognostics: common_utils.TimeStepPair[prognostic_state.PrognosticState]
     diagnostic: diagnostic_state.DiagnosticState
     tracers: common_utils.TimeStepPair[tracer_state.TracerState]
+
+
+T = TypeVar("T")
+
+
+@dataclasses.dataclass
+class TendencyState:
+    temperature_tendency: fa.CellKField[ta.wpfloat]
+    u_tendency: fa.CellKField[ta.wpfloat]
+    v_tendency: fa.CellKField[ta.wpfloat]
+    tracer_tendency: tracer_state.TracerStateTendency
+
+    @classmethod
+    def zero_field(cls: type[T], grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator) -> T:
+        def _make_zero_field() -> fa.CellKField[ta.wpfloat]:
+            zero_field = data_alloc.zero_field(
+                grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=allocator,
+                dtype=ta.wpfloat,
+            )
+            return zero_field
+
+        tendency_dict = {}
+        for f in dataclasses.fields(cls):  # type: ignore[arg-type]
+            if f is tracer_state.TracerStateTendency:
+                tendency_dict[f.name] = tracer_state.TracerStateTendency.zero_field(grid, allocator)
+            else:
+                tendency_dict[f.name] = _make_zero_field()  # type: ignore[assignment]
+        return cls(**tendency_dict)
 
 
 @dataclasses.dataclass

@@ -353,7 +353,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
     )
-    tracer_state_now = tracers.initialize_tracer_state(
+    tracer_state_now = tracers.TracerState.zero_field(
         grid=grid,
         allocator=allocator,
     )
