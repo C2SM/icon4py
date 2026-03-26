@@ -71,7 +71,8 @@ def setup_graupel(
     if enable_dace_hooks:
         backend_descriptor["optimization_args"] = {
             "optimization_hooks": {
-                gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan
+                gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan,
+                gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost: graupel_dace_hooks.rename_intermediate_access_nodes,
             },
         }
     backend_descriptor["async_sdfg_call"] = not wait_for_completion

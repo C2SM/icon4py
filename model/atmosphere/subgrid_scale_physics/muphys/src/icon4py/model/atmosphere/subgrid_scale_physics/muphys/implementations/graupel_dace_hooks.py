@@ -552,3 +552,47 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             )
             nsdfg_conditional_block.remove_branch(else_branch)
         sdfg.validate()
+
+def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
+    sdfg.save("before_renaming_intermediate_access_nodes.sdfg")
+    assert len(sdfg.states()) == 1
+    st = sdfg.states()[0]
+    access_node_renaming_dict = {
+        "q_out_2": "q_in_2",
+        "q_out_3": "q_in_3",
+        "q_out_4": "q_in_4",
+        "q_out_5": "q_in_5",
+        "t_out": "te",
+    }
+    for node in st.nodes():
+        if isinstance(node, dace_nodes.MapEntry) and st.scope_dict()[node] is None:
+            map_entry = node
+            map_exit = st.exit_node(map_entry)
+            map_entry_input_data = [in_edge.src.data for in_edge in st.in_edges(map_entry)]
+            map_exit_output_data = [out_edge.dst.data for out_edge in st.out_edges(map_exit)]
+            if all(key in map_exit_output_data for key in access_node_renaming_dict.keys()) and all(
+                key in map_entry_input_data for key in access_node_renaming_dict.values()
+            ):
+                for out_edge in st.out_edges(map_exit):
+                    if out_edge.dst.data in access_node_renaming_dict.keys():
+                        breakpoint()
+                        new_data_name = access_node_renaming_dict[out_edge.dst.data]
+                        st.add_edge(
+                            out_edge.src,
+                            out_edge.src_conn,
+                            out_edge.dst,
+                            new_data_name,
+                            dace.Memlet(
+                                data=new_data_name,
+                                subset=copy.deepcopy(out_edge.data.subset),
+                                other_subset=copy.deepcopy(out_edge.data.other_subset),
+                            ),
+                        )
+                        out_node = out_edge.dst
+                        out_node.data = new_data_name
+                        st.remove_edge(out_edge)
+                        print(
+                            f"Renamed intermediate AccessNode from '{out_edge.dst.data}' to '{new_data_name}' in {map_exit.label}"
+                        )
+    sdfg.validate()
+    sdfg.save("after_renaming_intermediate_access_nodes.sdfg")
