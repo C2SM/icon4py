@@ -15,12 +15,16 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils import (
+    microphyiscal_processes,
+)
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.diagnostic_calculations.stencils import thermodynamic_functions
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -264,6 +268,210 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
+
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+        grid,
+        c2e=grid.get_connectivity(dims.C2E).ndarray,
+        e2c=grid.get_connectivity(dims.E2C).ndarray,
+        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
+        inv_dual_edge_length=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ).ndarray,
+        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
+        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+        vn=prognostic_state_now.vn.ndarray,
+        vct_b=vct_b.ndarray,
+        nlev=num_levels,
+        array_ns=xp,
+    )
+    log.info("U2vn computation completed.")
+
+    functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
+        rho=rho_ndarray,
+        exner=exner_ndarray,
+        theta_v=theta_v_ndarray,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        num_levels=num_levels,
+    )
+    log.info("Hydrostatic adjustment computation completed.")
+    prognostic_state_next = prognostics.PrognosticState(
+        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
+        w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
+        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
+        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
+        theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+    )
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+
+    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+        p_e_in=prognostic_states.current.vn,
+        ptr_coeff_1=rbf_vec_coeff_c1,
+        ptr_coeff_2=rbf_vec_coeff_c2,
+        p_u_out=diagnostic_state.u,
+        p_v_out=diagnostic_state.v,
+        horizontal_start=end_cell_lateral_boundary_level_2,
+        horizontal_end=end_cell_end,
+        vertical_start=0,
+        vertical_end=num_levels,
+        offset_provider=grid.connectivities,
+    )
+
+    log.info("U, V computation completed.")
+
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
+        field_a=prognostic_states.current.exner,
+        field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
+        output_field=perturbed_exner,
+        horizontal_start=0,
+        horizontal_end=num_cells,
+        vertical_start=0,
+        vertical_end=num_levels,
+        offset_provider={},
+    )
+    log.info("perturbed_exner initialization completed.")
+
+    diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+        grid=grid,
+        allocator=allocator,
+    )
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+    tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    prep_tracer_adv = advection_states.AdvectionPrepAdvState(
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+    )
+    log.info("Initialization completed.")
+
+    ds = driver_states.DriverStates(
+        prep_advection_prognostic=prep_adv,
+        solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
+        prep_tracer_advection_prognostic=prep_tracer_adv,
+        tracer_advection_diagnostic=tracer_advection_diagnostic_state,
+        diffusion_diagnostic=diffusion_diagnostic_state,
+        prognostics=prognostic_states,
+        diagnostic=diagnostic_state,
+    )
+
+    return ds
+
+
+def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
+    grid: icon_grid.IconGrid,
+    vertical_grid: v_grid.VerticalGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+    backend: gtx.typing.Backend | None,
+) -> driver_states.DriverStates:
+    """
+    Initial condition of Weisman-Klemp warm bubble test.
+
+    Args:
+        grid: IconGrid
+        vertical_grid: VerticalGrid
+        geometry_field_source: geometric field factory
+        interpolation_field_source: interpolation field factory
+        metrics_field_source: metric field factory
+        backend: GT4Py backend
+    Returns: driver state
+
+    The reference experiment config for this is in icon-exclaim/run/exp.exclaim_nh35_tri_jws_sb.
+    """
+
+    allocator = model_backends.get_allocator(backend)
+    xp = data_alloc.import_array_ns(allocator)
+
+    wgtfac_c = metrics_field_source.get(metrics_attributes.WGTFAC_C).ndarray
+    ddqz_z_half = metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF).ndarray
+    theta_ref_mc = metrics_field_source.get(metrics_attributes.THETA_REF_MC).ndarray
+    theta_ref_ic = metrics_field_source.get(metrics_attributes.THETA_REF_IC).ndarray
+    exner_ref_mc = metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray
+    d_exner_dz_ref_ic = metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
+    geopot = phy_const.GRAV * metrics_field_source.get(metrics_attributes.Z_MC).ndarray
+
+    cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
+    edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray
+    edge_lon = geometry_field_source.get(geometry_meta.EDGE_LON).ndarray
+    primal_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_U).ndarray
+
+    cell_2_edge_coeff = interpolation_field_source.get(interpolation_attributes.C_LIN_E)
+    rbf_vec_coeff_c1 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1)
+    rbf_vec_coeff_c2 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C2)
+
+    num_cells = grid.num_cells
+    num_levels = grid.num_levels
+
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    end_edge_lateral_boundary_level_2 = grid.end_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    end_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
+    end_cell_lateral_boundary_level_2 = grid.end_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
+
+    # predefined constants used for Jablonowski-Williamson initial condition
+    p_sfc = ta.wpfloat("100000.0")  # surface pressure [Pa]
+    hmin_wk = ta.wpfloat("0.0")  # base height of the profile
+    h_tropo_wk = ta.wpfloat("12000.0")  # tropopause height [m]
+    theta_0_wk = ta.wpfloat("300.0")  # potential temperature at z=0 [K]
+    theta_tropo_wk = ta.wpfloat("343.0")  # potential temperature at tropopause [K]
+    expo_theta_wk = ta.wpfloat("1.25")
+    expo_relhum_wk = ta.wpfloat("1.25")
+    t_tropo_wk = ta.wpfloat("213.0")
+    rh_min_wk = ta.wpfloat("0.1")
+    rh_max_wk = ta.wpfloat("0.95")
+    href_wk = ta.wpfloat("3000.0")
+    niter = 20
+    u_infty_wk = ta.wpfloat("15.0")  # maximum horizontal wind speed [m s-1]
+    qv_max_wk = ta.wpfloat("0.6")  # maximum moisture mixing ratio [kg kg-1]
+    bubble_lon_center = math.pi / ta.wpfloat("9.0")  # longitude of bubble
+    bubble_lat_center = ta.wpfloat("2.0") * bubble_lon_center  # latitude of bubble
+    bubble_z = ta.wpfloat("1000.0")
+
+    k_tropo = xp.argmin(xp.abs(vertical_grid.interface_physical_height.ndarray - h_tropo_wk))
+
+    exner_tropo = t_tropo_wk / theta_tropo_wk
+    e_tropo = rh_min_wk * microphyiscal_processes.sat_pres_water_scalar(t_tropo_wk)
+    pres_tropo = phy_const.P0REF * exner_tropo**phy_const.CPD_O_RD
+    qv_tropo = thermodynamic_functions.calculate_specific_humidity(pres_tropo, e_tropo)
+    theta_v_tropo = theta_tropo_wk * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_tropo)
+
+    # Initialize prognostic state, diagnostic state and other local fields
+    prognostic_state_now = prognostics.initialize_prognostic_state(
+        grid=grid,
+        allocator=allocator,
+    )
+    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
+
+    exner_ndarray = prognostic_state_now.exner.ndarray
+    rho_ndarray = prognostic_state_now.rho.ndarray
+    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
+    temperature_ndarray = diagnostic_state.temperature.ndarray
+    pressure_ndarray = diagnostic_state.pressure.ndarray
+
+    # set surface pressure
+    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
+
+    _, vct_b = v_grid.get_vct_a_and_vct_b(
+        vertical_grid.config, model_backends.get_allocator(backend)
+    )
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,

@@ -34,6 +34,7 @@ RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR
+RD_O_RV: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR
 
 #: Specific heat capacity of water vapor at constant pressure [J/K/kg]
 SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR: Final[ta.wpfloat] = 1869.46
@@ -75,6 +76,7 @@ WATER_TRIPLE_POINT_TEMPERATURE: Final[ta.wpfloat] = 273.16
 
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
+RD_O_RV_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR - 1.0
 TVMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
 
 #: Av. gravitational acceleration [m/s^2]
