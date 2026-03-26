@@ -564,18 +564,80 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         "q_out_5": "q_in_5",
         "t_out": "te",
     }
-    for dnode in st.data_nodes():
-        if dnode.data in access_node_renaming_dict:
-            old_data = dnode.data
-            new_data = access_node_renaming_dict[old_data]
-            dnode.data = new_data
-            print(f"Renamed intermediate AccessNode from '{old_data}' to '{new_data}'")
-    for edge in st.edges():
-        if edge.data.data in access_node_renaming_dict:
-            old_data = edge.data.data
-            new_data = access_node_renaming_dict[old_data]
-            edge.data.data = access_node_renaming_dict[edge.data.data]
-            print(f"Renamed edge data from '{old_data}' to '{new_data}'")
-
+    for node in st.nodes():
+        if isinstance(node, dace_nodes.MapEntry) and st.scope_dict()[node] is None:
+            map_entry = node
+            map_exit = st.exit_node(map_entry)
+            map_entry_input_data = [in_edge.src.data for in_edge in st.in_edges(map_entry)]
+            map_exit_output_data = [out_edge.dst.data for out_edge in st.out_edges(map_exit)]
+            if all(key in map_exit_output_data for key in access_node_renaming_dict.keys()) and all(
+                key in map_entry_input_data for key in access_node_renaming_dict.values()
+            ):
+                in_out_dict = {}
+                for out_edge in st.out_edges(map_exit):
+                    if out_edge.dst.data in access_node_renaming_dict.keys():
+                        new_data_name = access_node_renaming_dict[out_edge.dst.data]
+                        input_node = next(
+                            in_edge.src
+                            for in_edge in st.in_edges(map_entry)
+                            if in_edge.src.data == new_data_name
+                        )
+                        new_access_node = st.add_access(new_data_name)
+                        old_node = out_edge.dst
+                        old_data_name = old_node.data
+                        new_offset = out_edge.data.get_dst_subset(out_edge, st).min_element()
+                        for out_edge_of_old_node in st.out_edges(old_node):
+                            new_consumer_edge = gtx_transformations.utils.reroute_edge(
+                                is_producer_edge=False,
+                                current_edge=out_edge_of_old_node,
+                                ss_offset=new_offset,
+                                state=st,
+                                sdfg=sdfg,
+                                old_node=old_node,
+                                new_node=new_access_node,
+                            )
+                            gtx_transformations.utils.reconfigure_dataflow_after_rerouting(
+                                is_producer_edge=False,
+                                new_edge=new_consumer_edge,
+                                sdfg=sdfg,
+                                state=st,
+                                ss_offset=new_offset,
+                                old_node=old_node,
+                                new_node=new_access_node,
+                            )
+                        new_producer_edge = gtx_transformations.utils.reroute_edge(
+                            is_producer_edge=True,
+                            current_edge=out_edge,
+                            ss_offset=new_offset,
+                            state=st,
+                            sdfg=sdfg,
+                            old_node=old_node,
+                            new_node=new_access_node,
+                        )
+                        gtx_transformations.utils.reconfigure_dataflow_after_rerouting(
+                            is_producer_edge=True,
+                            new_edge=new_producer_edge,
+                            sdfg=sdfg,
+                            state=st,
+                            ss_offset=new_offset,
+                            old_node=old_node,
+                            new_node=new_access_node,
+                        )
+                        st.remove_node(old_node)
+                        in_out_dict[new_data_name] = (input_node, new_access_node)
+                        print(
+                            f"Renamed intermediate AccessNode from '{old_data_name}' to '{new_data_name}' in {map_exit.label}"
+                        )
+                # TODO(iomaganaris): The function below doesn't propagate the new AccessNode subsets to its children edges.
+                # This follows to segmentation faults because the new AccessNode's data are passed to nested SDFGs (ConditionalBlocks)
+                # below it by the AccessNodes still have the old subset.
+                gtx_transformations._add_local_double_buffering_to(
+                    in_out_dict,
+                    map_entry,
+                    st,
+                    sdfg,
+                )
+                # Apply this only to the first map
+                return
     sdfg.validate()
     sdfg.save("after_renaming_intermediate_access_nodes.sdfg")
