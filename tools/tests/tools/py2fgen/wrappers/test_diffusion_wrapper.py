@@ -58,10 +58,9 @@ def test_diffusion_wrapper_granule_inputs(
     type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
     type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
+    hdiff_w_efdt_ratio = 15.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
@@ -97,8 +96,17 @@ def test_diffusion_wrapper_granule_inputs(
     geofac_grg_y = test_utils.array_to_array_info(geofac_grg_y_field.ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
 
     # --- Extract Diagnostic and Prognostic State Parameters ---
     hdef_ic = test_utils.array_to_array_info(savepoint_diffusion_init.hdef_ic().ndarray)
@@ -159,8 +167,7 @@ def test_diffusion_wrapper_granule_inputs(
             geofac_grg_y=geofac_grg_y,
             geofac_n2s=geofac_n2s,
             nudgecoeff_e=nudgecoeff_e,
-            rbf_coeff_1=rbf_coeff_1,
-            rbf_coeff_2=rbf_coeff_2,
+            rbf_vec_coeff_v=rbf_vec_coeff_v,
             zd_cellidx=zd_cellidx,
             zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
@@ -174,10 +181,9 @@ def test_diffusion_wrapper_granule_inputs(
             type_t_diffu=type_t_diffu,
             type_vn_diffu=type_vn_diffu,
             hdiff_efdt_ratio=hdiff_efdt_ratio,
+            hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
             smagorinski_scaling_factor=smagorinski_scaling_factor,
             hdiff_temp=hdiff_temp,
-            thslp_zdiffu=thslp_zdiffu,
-            thhgtd_zdiffu=thhgtd_zdiffu,
             denom_diffu_v=denom_diffu_v,
             nudge_max_coeff=max_nudging_coefficient,
             itype_sher=itype_sher.value,
@@ -289,10 +295,9 @@ def test_diffusion_wrapper_single_step(
     type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
     type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
+    hdiff_w_efdt_ratio = 15.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
@@ -328,8 +333,16 @@ def test_diffusion_wrapper_single_step(
     geofac_grg_y = test_utils.array_to_array_info(geofac_grg_y_field.ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
 
     # Diagnostic state parameters
     hdef_ic = test_utils.array_to_array_info(savepoint_diffusion_init.hdef_ic().ndarray)
@@ -358,8 +371,7 @@ def test_diffusion_wrapper_single_step(
         geofac_grg_y=geofac_grg_y,
         geofac_n2s=geofac_n2s,
         nudgecoeff_e=nudgecoeff_e,
-        rbf_coeff_1=rbf_coeff_1,
-        rbf_coeff_2=rbf_coeff_2,
+        rbf_vec_coeff_v=rbf_vec_coeff_v,
         zd_cellidx=zd_cellidx,
         zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
@@ -373,10 +385,9 @@ def test_diffusion_wrapper_single_step(
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
         hdiff_efdt_ratio=hdiff_efdt_ratio,
+        hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         denom_diffu_v=denom_diffu_v,
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,

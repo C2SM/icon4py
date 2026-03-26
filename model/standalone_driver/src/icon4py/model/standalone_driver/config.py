@@ -37,7 +37,7 @@ class DriverConfig:
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
     apply_extra_second_order_divdamp: bool = False
-    vertical_cfl_threshold: ta.wpfloat = 0.85
+    vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     ntracer: int = 0

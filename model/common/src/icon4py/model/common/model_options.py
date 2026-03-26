@@ -28,7 +28,7 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
-    is_rocm_backend = backend_descriptor.get("device") == model_backends.DeviceType.ROCM
+    is_rocm_device = backend_descriptor.get("device") == model_backends.DeviceType.ROCM
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
     if program_name in [
@@ -55,7 +55,7 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
-        if not is_rocm_backend:
+        if not is_rocm_device:
             optimization_args["gpu_maxnreg"] = 80
             optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False

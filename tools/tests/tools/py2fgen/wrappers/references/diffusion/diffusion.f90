@@ -126,12 +126,10 @@ module diffusion
                                       geofac_n2s_size_1, &
                                       nudgecoeff_e, &
                                       nudgecoeff_e_size_0, &
-                                      rbf_coeff_1, &
-                                      rbf_coeff_1_size_0, &
-                                      rbf_coeff_1_size_1, &
-                                      rbf_coeff_2, &
-                                      rbf_coeff_2_size_0, &
-                                      rbf_coeff_2_size_1, &
+                                      rbf_vec_coeff_v, &
+                                      rbf_vec_coeff_v_size_0, &
+                                      rbf_vec_coeff_v_size_1, &
+                                      rbf_vec_coeff_v_size_2, &
                                       zd_cellidx, &
                                       zd_cellidx_size_0, &
                                       zd_cellidx_size_1, &
@@ -152,10 +150,9 @@ module diffusion
                                       type_t_diffu, &
                                       type_vn_diffu, &
                                       hdiff_efdt_ratio, &
+                                      hdiff_w_efdt_ratio, &
                                       smagorinski_scaling_factor, &
                                       hdiff_temp, &
-                                      thslp_zdiffu, &
-                                      thhgtd_zdiffu, &
                                       denom_diffu_v, &
                                       nudge_max_coeff, &
                                       itype_sher, &
@@ -211,17 +208,13 @@ module diffusion
 
          integer(c_int), value :: nudgecoeff_e_size_0
 
-         type(c_ptr), value, target :: rbf_coeff_1
+         type(c_ptr), value, target :: rbf_vec_coeff_v
 
-         integer(c_int), value :: rbf_coeff_1_size_0
+         integer(c_int), value :: rbf_vec_coeff_v_size_0
 
-         integer(c_int), value :: rbf_coeff_1_size_1
+         integer(c_int), value :: rbf_vec_coeff_v_size_1
 
-         type(c_ptr), value, target :: rbf_coeff_2
-
-         integer(c_int), value :: rbf_coeff_2_size_0
-
-         integer(c_int), value :: rbf_coeff_2_size_1
+         integer(c_int), value :: rbf_vec_coeff_v_size_2
 
          type(c_ptr), value, target :: zd_cellidx
 
@@ -263,13 +256,11 @@ module diffusion
 
          real(c_double), value, target :: hdiff_efdt_ratio
 
+         real(c_double), value, target :: hdiff_w_efdt_ratio
+
          real(c_double), value, target :: smagorinski_scaling_factor
 
          logical(c_int), value, target :: hdiff_temp
-
-         real(c_double), value, target :: thslp_zdiffu
-
-         real(c_double), value, target :: thhgtd_zdiffu
 
          real(c_double), value, target :: denom_diffu_v
 
@@ -486,8 +477,7 @@ contains
                              geofac_grg_y, &
                              geofac_n2s, &
                              nudgecoeff_e, &
-                             rbf_coeff_1, &
-                             rbf_coeff_2, &
+                             rbf_vec_coeff_v, &
                              zd_cellidx, &
                              zd_vertidx, &
                              zd_intcoef, &
@@ -501,10 +491,9 @@ contains
                              type_t_diffu, &
                              type_vn_diffu, &
                              hdiff_efdt_ratio, &
+                             hdiff_w_efdt_ratio, &
                              smagorinski_scaling_factor, &
                              hdiff_temp, &
-                             thslp_zdiffu, &
-                             thhgtd_zdiffu, &
                              denom_diffu_v, &
                              nudge_max_coeff, &
                              itype_sher, &
@@ -529,9 +518,7 @@ contains
 
       real(c_double), dimension(:), target :: nudgecoeff_e
 
-      real(c_double), dimension(:, :), target :: rbf_coeff_1
-
-      real(c_double), dimension(:, :), target :: rbf_coeff_2
+      real(c_double), dimension(:, :, :), target :: rbf_vec_coeff_v
 
       integer(c_int), dimension(:, :), pointer :: zd_cellidx
 
@@ -559,13 +546,11 @@ contains
 
       real(c_double), value, target :: hdiff_efdt_ratio
 
+      real(c_double), value, target :: hdiff_w_efdt_ratio
+
       real(c_double), value, target :: smagorinski_scaling_factor
 
       logical(c_int), value, target :: hdiff_temp
-
-      real(c_double), value, target :: thslp_zdiffu
-
-      real(c_double), value, target :: thhgtd_zdiffu
 
       real(c_double), value, target :: denom_diffu_v
 
@@ -609,13 +594,11 @@ contains
 
       integer(c_int) :: nudgecoeff_e_size_0
 
-      integer(c_int) :: rbf_coeff_1_size_0
+      integer(c_int) :: rbf_vec_coeff_v_size_0
 
-      integer(c_int) :: rbf_coeff_1_size_1
+      integer(c_int) :: rbf_vec_coeff_v_size_1
 
-      integer(c_int) :: rbf_coeff_2_size_0
-
-      integer(c_int) :: rbf_coeff_2_size_1
+      integer(c_int) :: rbf_vec_coeff_v_size_2
 
       integer(c_int) :: zd_cellidx_size_0
 
@@ -658,8 +641,7 @@ contains
       !$acc host_data use_device(geofac_grg_y)
       !$acc host_data use_device(geofac_n2s)
       !$acc host_data use_device(nudgecoeff_e)
-      !$acc host_data use_device(rbf_coeff_1)
-      !$acc host_data use_device(rbf_coeff_2)
+      !$acc host_data use_device(rbf_vec_coeff_v)
       !$acc host_data use_device(zd_cellidx) if(associated(zd_cellidx))
       !$acc host_data use_device(zd_vertidx) if(associated(zd_vertidx))
       !$acc host_data use_device(zd_intcoef) if(associated(zd_intcoef))
@@ -694,11 +676,9 @@ contains
 
       nudgecoeff_e_size_0 = SIZE(nudgecoeff_e, 1)
 
-      rbf_coeff_1_size_0 = SIZE(rbf_coeff_1, 1)
-      rbf_coeff_1_size_1 = SIZE(rbf_coeff_1, 2)
-
-      rbf_coeff_2_size_0 = SIZE(rbf_coeff_2, 1)
-      rbf_coeff_2_size_1 = SIZE(rbf_coeff_2, 2)
+      rbf_vec_coeff_v_size_0 = SIZE(rbf_vec_coeff_v, 1)
+      rbf_vec_coeff_v_size_1 = SIZE(rbf_vec_coeff_v, 2)
+      rbf_vec_coeff_v_size_2 = SIZE(rbf_vec_coeff_v, 3)
 
       if (associated(zd_cellidx)) then
          zd_cellidx_ptr = c_loc(zd_cellidx)
@@ -746,12 +726,10 @@ contains
                                   geofac_n2s_size_1=geofac_n2s_size_1, &
                                   nudgecoeff_e=c_loc(nudgecoeff_e), &
                                   nudgecoeff_e_size_0=nudgecoeff_e_size_0, &
-                                  rbf_coeff_1=c_loc(rbf_coeff_1), &
-                                  rbf_coeff_1_size_0=rbf_coeff_1_size_0, &
-                                  rbf_coeff_1_size_1=rbf_coeff_1_size_1, &
-                                  rbf_coeff_2=c_loc(rbf_coeff_2), &
-                                  rbf_coeff_2_size_0=rbf_coeff_2_size_0, &
-                                  rbf_coeff_2_size_1=rbf_coeff_2_size_1, &
+                                  rbf_vec_coeff_v=c_loc(rbf_vec_coeff_v), &
+                                  rbf_vec_coeff_v_size_0=rbf_vec_coeff_v_size_0, &
+                                  rbf_vec_coeff_v_size_1=rbf_vec_coeff_v_size_1, &
+                                  rbf_vec_coeff_v_size_2=rbf_vec_coeff_v_size_2, &
                                   zd_cellidx=zd_cellidx_ptr, &
                                   zd_cellidx_size_0=zd_cellidx_size_0, &
                                   zd_cellidx_size_1=zd_cellidx_size_1, &
@@ -772,17 +750,15 @@ contains
                                   type_t_diffu=type_t_diffu, &
                                   type_vn_diffu=type_vn_diffu, &
                                   hdiff_efdt_ratio=hdiff_efdt_ratio, &
+                                  hdiff_w_efdt_ratio=hdiff_w_efdt_ratio, &
                                   smagorinski_scaling_factor=smagorinski_scaling_factor, &
                                   hdiff_temp=hdiff_temp, &
-                                  thslp_zdiffu=thslp_zdiffu, &
-                                  thhgtd_zdiffu=thhgtd_zdiffu, &
                                   denom_diffu_v=denom_diffu_v, &
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
                                   ltkeshs=ltkeshs, &
                                   backend=backend, &
                                   on_gpu=on_gpu)
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

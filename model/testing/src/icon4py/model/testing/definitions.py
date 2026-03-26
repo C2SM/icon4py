@@ -226,7 +226,7 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    version: int = 2
+    version: int = 3
 
 
 class Experiments:
@@ -279,8 +279,6 @@ def construct_diffusion_config(
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
             n_substeps=ndyn_substeps,
@@ -315,7 +313,6 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
     if experiment == Experiments.MCH_CH_R04B09:
         return solve_nh.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
-            iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )

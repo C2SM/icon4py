@@ -49,9 +49,9 @@ class NoHalos(HaloConstructor):
     def _create_dummy_decomposition_arrays(
         size: int, array_ns: ModuleType = np
     ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-        indices = array_ns.arange(size, dtype=gtx.int32)  # type: ignore  [attr-defined]
+        indices = array_ns.arange(size, dtype=gtx.int32)
         owner_mask = array_ns.full((size,), True, dtype=bool)
-        halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)  # type: ignore  [attr-defined]
+        halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)
         return indices, owner_mask, halo_levels
 
 
@@ -220,7 +220,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         halo_levels = self._xp.full(
             all_indices.size,
             defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,  # type: ignore  [attr-defined]
+            dtype=gtx.int32,
         )
 
         halo_levels[owner_mask] = defs.DecompositionFlag.OWNED

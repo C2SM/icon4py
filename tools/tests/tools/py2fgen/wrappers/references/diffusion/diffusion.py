@@ -365,12 +365,10 @@ def diffusion_init_wrapper(
     geofac_n2s_size_1,
     nudgecoeff_e,
     nudgecoeff_e_size_0,
-    rbf_coeff_1,
-    rbf_coeff_1_size_0,
-    rbf_coeff_1_size_1,
-    rbf_coeff_2,
-    rbf_coeff_2_size_0,
-    rbf_coeff_2_size_1,
+    rbf_vec_coeff_v,
+    rbf_vec_coeff_v_size_0,
+    rbf_vec_coeff_v_size_1,
+    rbf_vec_coeff_v_size_2,
     zd_cellidx,
     zd_cellidx_size_0,
     zd_cellidx_size_1,
@@ -391,10 +389,9 @@ def diffusion_init_wrapper(
     type_t_diffu,
     type_vn_diffu,
     hdiff_efdt_ratio,
+    hdiff_w_efdt_ratio,
     smagorinski_scaling_factor,
     hdiff_temp,
-    thslp_zdiffu,
-    thhgtd_zdiffu,
     denom_diffu_v,
     nudge_max_coeff,
     itype_sher,
@@ -485,21 +482,12 @@ def diffusion_init_wrapper(
 
             nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), on_gpu, False)
 
-            rbf_coeff_1 = (
-                rbf_coeff_1,
+            rbf_vec_coeff_v = (
+                rbf_vec_coeff_v,
                 (
-                    rbf_coeff_1_size_0,
-                    rbf_coeff_1_size_1,
-                ),
-                on_gpu,
-                False,
-            )
-
-            rbf_coeff_2 = (
-                rbf_coeff_2,
-                (
-                    rbf_coeff_2_size_0,
-                    rbf_coeff_2_size_1,
+                    rbf_vec_coeff_v_size_0,
+                    rbf_vec_coeff_v_size_1,
+                    rbf_vec_coeff_v_size_2,
                 ),
                 on_gpu,
                 False,
@@ -562,8 +550,7 @@ def diffusion_init_wrapper(
                 geofac_grg_y=geofac_grg_y,
                 geofac_n2s=geofac_n2s,
                 nudgecoeff_e=nudgecoeff_e,
-                rbf_coeff_1=rbf_coeff_1,
-                rbf_coeff_2=rbf_coeff_2,
+                rbf_vec_coeff_v=rbf_vec_coeff_v,
                 zd_cellidx=zd_cellidx,
                 zd_vertidx=zd_vertidx,
                 zd_intcoef=zd_intcoef,
@@ -577,10 +564,9 @@ def diffusion_init_wrapper(
                 type_t_diffu=type_t_diffu,
                 type_vn_diffu=type_vn_diffu,
                 hdiff_efdt_ratio=hdiff_efdt_ratio,
+                hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
                 smagorinski_scaling_factor=smagorinski_scaling_factor,
                 hdiff_temp=hdiff_temp,
-                thslp_zdiffu=thslp_zdiffu,
-                thhgtd_zdiffu=thhgtd_zdiffu,
                 denom_diffu_v=denom_diffu_v,
                 nudge_max_coeff=nudge_max_coeff,
                 itype_sher=itype_sher,
@@ -732,34 +718,18 @@ def diffusion_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    rbf_coeff_1_arr = (
-                        _conversion.as_array(ffi, rbf_coeff_1, _definitions.FLOAT64)
-                        if rbf_coeff_1 is not None
+                    rbf_vec_coeff_v_arr = (
+                        _conversion.as_array(ffi, rbf_vec_coeff_v, _definitions.FLOAT64)
+                        if rbf_vec_coeff_v is not None
                         else None
                     )
-                    msg = "shape of rbf_coeff_1 after computation = %s" % str(
-                        rbf_coeff_1_arr.shape if rbf_coeff_1 is not None else "None"
+                    msg = "shape of rbf_vec_coeff_v after computation = %s" % str(
+                        rbf_vec_coeff_v_arr.shape if rbf_vec_coeff_v is not None else "None"
                     )
                     logger.debug(msg)
                     msg = (
-                        "rbf_coeff_1 after computation: %s" % str(rbf_coeff_1_arr)
-                        if rbf_coeff_1 is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    rbf_coeff_2_arr = (
-                        _conversion.as_array(ffi, rbf_coeff_2, _definitions.FLOAT64)
-                        if rbf_coeff_2 is not None
-                        else None
-                    )
-                    msg = "shape of rbf_coeff_2 after computation = %s" % str(
-                        rbf_coeff_2_arr.shape if rbf_coeff_2 is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "rbf_coeff_2 after computation: %s" % str(rbf_coeff_2_arr)
-                        if rbf_coeff_2 is not None
+                        "rbf_vec_coeff_v after computation: %s" % str(rbf_vec_coeff_v_arr)
+                        if rbf_vec_coeff_v is not None
                         else "None"
                     )
                     logger.debug(msg)

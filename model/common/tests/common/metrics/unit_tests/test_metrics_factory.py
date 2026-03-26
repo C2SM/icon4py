@@ -13,9 +13,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 import pytest
+from numpy import testing as np_testing
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -501,11 +503,21 @@ def test_factory_zdiff_gradp(
     )
     field_1 = factory.get(attrs.ZDIFF_GRADP)
     field_2 = factory.get(attrs.VERTOFFSET_GRADP)
-    assert test_helpers.dallclose(
-        zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-10, rtol=1e-9
+
+    # on the Fortran side, the vertidx_gradp is not initialized below start_lat_level2
+    start_lat_level2 = factory._grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    assert test_helpers.dallclose(
-        vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-10, rtol=1e-9
+    test_helpers.assert_dallclose(
+        zdiff_gradp_ref.asnumpy()[start_lat_level2:, :, :],
+        field_1.asnumpy()[start_lat_level2:, :, :],
+        atol=1.0e-10,
+        rtol=1e-9,
+    )
+
+    np_testing.assert_array_equal(
+        vertoffset_gradp_ref.asnumpy()[start_lat_level2:, :, :],
+        field_2.asnumpy()[start_lat_level2:, :, :],
     )
 
 
@@ -545,7 +557,7 @@ def test_factory_wgtfacq_e(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
-    field_ref = metrics_savepoint.wgtfacq_e_dsl()
+    field_ref = metrics_savepoint.wgtfacq_e()
     # TODO: upgrade the dallclose such that it verifies the domain ranges.
     # This field is defined on k (nlev-3, nlev) an converting to numpy
     # doesn't know if it's there or (whatever-3, whatever)
