@@ -106,6 +106,7 @@ distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools>=0.0.6"]
 io = ["icon4py-common[io]"]
 profiling = ['viztracer>=1.1.0']
+rocm7_0 = ["icon4py-common[rocm7_0]"]
 testing = ["icon4py-testing"]
 
 [project.urls]
@@ -384,7 +385,13 @@ explicit = true
 name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
+[[tool.uv.index]]
+explicit = true
+name = 'amd'
+url = 'https://pypi.amd.com/rocm-7.0.2/simple'
+
 [tool.uv.sources]
+amd-cupy = {index = "amd"}
 dace = {index = "gridtools"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
