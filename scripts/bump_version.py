@@ -39,7 +39,9 @@ def _find_versioned_package_dirs() -> list[Path]:
 
 #: Pattern matching versioned icon4py cross-package dependency constraints, e.g.
 #: ``icon4py-common>=0.0.6`` or ``icon4py-tools>=0.0.6``.
-_ICON4PY_DEP_CONSTRAINT_RE: Final = re.compile(r"(icon4py-[\w-]+)>=([\d]+\.[\d]+\.[\d]+)")
+_ICON4PY_DEP_CONSTRAINT_RE: Final = re.compile(
+    r"(icon4py-[\w-]+(?:\[[\w,]+\])?)>=([\d]+\.[\d]+\.[\d]+)"
+)
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
