@@ -190,7 +190,7 @@ class PhysicsDriver:
             dtime=dtime,
         )
 
-        self._diagnose_exner_and_theta_v_from_virtual_temperature.with_backend(self.backend)(
+        self._diagnose_exner_and_theta_v_from_virtual_temperature(
             virtual_temperature=diagnostic.virtual_temperature,
             exner=prognostic.exner,
             perturbed_exner=perturbed_exner,
@@ -218,13 +218,13 @@ class PhysicsDriver:
             stream=decomposition.DEFAULT_STREAM,
         )
         # TODO (Chia Rui): halo exchange, including ddt_u_turb and ddt_v_turb
-        self._update_exner_and_theta_v_from_virtual_temperature_in_halo.with_backend(self.backend)(
+        self._update_exner_and_theta_v_from_virtual_temperature_in_halo(
             exner=prognostic.exner,
             theta_v=prognostic.theta_v,
             rho=prognostic.rho,
             virtual_temperature=diagnostic.virtual_temperature,
         )  # min_rlcell_int-1: min_rlcell_int
-        self._update_vn_from_u_v_tendencies.with_backend(self.backend)(
+        self._update_vn_from_u_v_tendencies(
             vn=prognostic.vn,
             u_tendency=self.tendencies.u_tendency,
             v_tendency=self.tendencies.v_tendency,
