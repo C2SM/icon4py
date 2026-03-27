@@ -585,7 +585,9 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
                         new_access_node = st.add_access(new_data_name)
                         old_node = out_edge.dst
                         old_data_name = old_node.data
-                        new_offset = out_edge.data.get_dst_subset(out_edge, st).min_element()
+                        # The subsets and strides of the renamed data is the same so no reason to have an offset
+                        # Ideally we should update it with the new_subset.min_element() - old_subset.min_element()
+                        new_offset = (0, 0)
                         for out_edge_of_old_node in st.out_edges(old_node):
                             new_consumer_edge = gtx_transformations.utils.reroute_edge(
                                 is_producer_edge=False,
@@ -628,10 +630,7 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
                         print(
                             f"Renamed intermediate AccessNode from '{old_data_name}' to '{new_data_name}' in {map_exit.label}"
                         )
-                # TODO(iomaganaris): The function below doesn't propagate the new AccessNode subsets to its children edges.
-                # This follows to segmentation faults because the new AccessNode's data are passed to nested SDFGs (ConditionalBlocks)
-                # below it by the AccessNodes still have the old subset.
-                gtx_transformations._add_local_double_buffering_to(
+                gtx_local_double_buffering._add_local_double_buffering_to(
                     in_out_dict,
                     map_entry,
                     st,
