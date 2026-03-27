@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import copy
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
 
 import dace
 from dace import (
@@ -554,6 +554,7 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             nsdfg_conditional_block.remove_branch(else_branch)
         sdfg.validate()
 
+
 def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
     sdfg.save("before_renaming_intermediate_access_nodes.sdfg")
     assert len(sdfg.states()) == 1
@@ -567,11 +568,11 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
     }
 
     def _update_repl(
-            repl: dict[str, str],
-            old_name: str,
-            old_symbols: Sequence[Any],
-            new_name: str,
-            new_symbols: Sequence[Any],
+        repl: dict[str, str],
+        old_name: str,
+        old_symbols: Sequence[Any],
+        new_name: str,
+        new_symbols: Sequence[Any],
     ) -> None:
         for old_sym, new_sym in zip(old_symbols, new_symbols):
             if old_sym == new_sym:
@@ -580,9 +581,7 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
             new_ssym = str(new_sym)
             if (old_ssym in repl) and (repl[old_ssym] != new_ssym):
                 raise NotImplementedError("Found symbol conflict.")
-            elif old_ssym.isdigit() and (not new_ssym.isdigit()):
-                raise NotImplementedError()
-            elif new_ssym in repl:
+            elif (old_ssym.isdigit() and (not new_ssym.isdigit())) or new_ssym in repl:
                 raise NotImplementedError()
 
             if old_sym.is_symbol:
@@ -608,8 +607,20 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
     for old_name, new_name in access_node_renaming_dict.items():
         old_desc = sdfg.arrays[old_name]
         new_desc = sdfg.arrays[new_name]
-        _update_repl(repl, old_name=old_name, old_symbols=old_desc.shape, new_name=new_name, new_symbols=new_desc.shape)
-        _update_repl(repl, old_name=old_name, old_symbols=old_desc.strides, new_name=new_name, new_symbols=new_desc.strides)
+        _update_repl(
+            repl,
+            old_name=old_name,
+            old_symbols=old_desc.shape,
+            new_name=new_name,
+            new_symbols=new_desc.shape,
+        )
+        _update_repl(
+            repl,
+            old_name=old_name,
+            old_symbols=old_desc.strides,
+            new_name=new_name,
+            new_symbols=new_desc.strides,
+        )
 
     for dnode in st.data_nodes():
         if dnode.data in access_node_renaming_dict:
@@ -622,12 +633,11 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
             new_data = access_node_renaming_dict[old_data]
             edge.data.data = access_node_renaming_dict[edge.data.data]
 
-
-    if repl and False:
+    if repl:
         sdfg.replace_dict(
-                repldict=repl,
-                replace_keys=False,  # This will keep the old descriptor in the graph.
-                replace_in_graph=True,
+            repldict=repl,
+            replace_keys=False,  # This will keep the old descriptor in the graph.
+            replace_in_graph=True,
         )
 
     sdfg.validate()
