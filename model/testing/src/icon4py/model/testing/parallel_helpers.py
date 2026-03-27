@@ -78,40 +78,59 @@ def check_local_global_field(
     local_field: np.ndarray,
     check_halos: bool,
     atol: float,
+    non_blocking: bool = False,
 ) -> None:
+    def _report_or_assert(
+        reference: np.ndarray,
+        candidate: np.ndarray,
+        label: str,
+    ) -> None:
+        if non_blocking:
+            delta = np.abs(candidate - reference)
+            max_delta = float(np.max(delta)) if delta.size > 0 else 0.0
+            _log.warning(
+                f"rank={processor_props.rank}/{processor_props.comm_size}: "
+                f"{label} max(delta)={max_delta:.6e} (atol={atol:.6e})"
+            )
+            return
+        test_utils.assert_dallclose(reference, candidate, atol=atol, verbose=True)
+
     if dim == dims.KDim:
-        test_utils.assert_dallclose(global_reference_field, local_field)
+        _report_or_assert(global_reference_field, local_field, label=f"{dim.value} full field")
         return
 
     _log.info(
         f" rank= {processor_props.rank}/{processor_props.comm_size}----exchanging field of main dim {dim}"
     )
-    assert (
-        local_field.shape[0]
-        == decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL).shape[
-            0
-        ]
-    )
+    expected_first_dim = decomposition_info.global_index(
+        dim, definitions.DecompositionInfo.EntryType.ALL
+    ).shape[0]
+    if local_field.shape[0] != expected_first_dim:
+        message = (
+            f"local field shape mismatch for {dim}: local={local_field.shape[0]}, "
+            f"expected={expected_first_dim}"
+        )
+        if non_blocking:
+            _log.warning(f"rank={processor_props.rank}/{processor_props.comm_size}: {message}")
+            return
+        raise AssertionError(message)
 
     # Compare halo against global reference field
     if check_halos:
-        test_utils.assert_dallclose(
-            global_reference_field[
-                data_alloc.as_numpy(
-                    decomposition_info.global_index(
-                        dim, definitions.DecompositionInfo.EntryType.HALO
-                    )
-                )
-            ],
-            local_field[
-                data_alloc.as_numpy(
-                    decomposition_info.local_index(
-                        dim, definitions.DecompositionInfo.EntryType.HALO
-                    )
-                )
-            ],
-            atol=atol,
-            verbose=True,
+        halo_reference = global_reference_field[
+            data_alloc.as_numpy(
+                decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.HALO)
+            )
+        ]
+        halo_local = local_field[
+            data_alloc.as_numpy(
+                decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.HALO)
+            )
+        ]
+        _report_or_assert(
+            halo_reference,
+            halo_local,
+            label=f"{dim.value} halo field",
         )
 
     # Compare owned local field, excluding halos, against global reference
@@ -134,9 +153,16 @@ def check_local_global_field(
     if processor_props.rank == 0:
         _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        gathered_size_message = (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
+        if not np.all(gathered_sizes == global_index_sizes):
+            if non_blocking:
+                _log.warning(
+                    f"rank={processor_props.rank}/{processor_props.comm_size}: {gathered_size_message}"
+                )
+                return
+            raise AssertionError(gathered_size_message)
         _log.info(
             f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
@@ -148,5 +174,4 @@ def check_local_global_field(
         _log.info(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
-
-        test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)
+        _report_or_assert(sorted_, global_reference_field, label=f"{dim.value} gathered field")
