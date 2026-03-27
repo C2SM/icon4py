@@ -46,22 +46,24 @@ def graupel_run(
     enable_masking: bool,
     enable_dace_hooks: bool,
     wait_for_completion: bool,
-):
+) -> None:
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
         backend_descriptor = {
             "backend_factory": model_backends.make_custom_dace_backend,
-            "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,
+            "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,  # type: ignore[attr-defined]  # to be fixed in gt4py
+            "async_sdfg_call": not wait_for_completion,
         }
         graupel_program = run_graupel_only.setup_graupel(
             dt=dt,
             qnc=qnc,
             backend=backend_descriptor,
-            hrange=(ivstart, ivend),
-            vrange=(kstart, ke),
+            horizontal_start=ivstart,
+            horizontal_end=ivend,
+            vertical_start=kstart,
+            vertical_end=ke,
             enable_masking=enable_masking,
             enable_dace_hooks=enable_dace_hooks,
-            wait_for_completion=wait_for_completion,
         )
 
     q = graupel.Q(qv, qc, qr, qs, qi, qg)
@@ -89,7 +91,7 @@ def graupel_run(
 
 
 @icon4py_export.export
-def graupel_finalize():
+def graupel_finalize() -> None:
     # The atexit function is not called when embedding cpython into another application
     # with cffi, so we call it explicitly here to dump the metrics.
     gtx_metrics._dump_metrics_at_exit()

@@ -38,7 +38,12 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, mo
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    config as wrapper_config,
+    grid_wrapper,
+    icon4py_export,
+)
 
 
 logger = setup_logger(__name__)
@@ -63,8 +68,7 @@ def diffusion_init(
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     nudgecoeff_e: fa.EdgeField[wpfloat],
-    rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
+    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
     zd_cellidx: wrapper_common.OptionalInt32Array2D,
     zd_vertidx: wrapper_common.OptionalInt32Array2D,
     zd_intcoef: wrapper_common.OptionalFloat64Array2D,
@@ -92,7 +96,8 @@ def diffusion_init(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    on_gpu = theta_ref_mc.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    xp = theta_ref_mc.array_ns
+    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -134,7 +139,6 @@ def diffusion_init(
             dims.KDim: nlev,
         }
     )
-    xp = wgtfac_c.array_ns
 
     if zd_cellidx is None:
         # then zdiffu_t is False or the list on that rank is empty, then all of the following are not initialized
@@ -194,6 +198,15 @@ def diffusion_init(
         zd_diffcoef=zd_diffcoef,
     )
 
+    # Create separate fields for the two components of the RBF vector coefficients and swap.
+    # TODO(havogt): we could use GT4Py's named collections.
+    rbf_coeff_1 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+    )
+    rbf_coeff_2 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
+    )
+
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=e_bln_c_s,
@@ -223,6 +236,8 @@ def diffusion_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
+    if wrapper_config.WAIT_FOR_COMPILATION:
+        gtx.wait_for_compilation()
 
 
 @icon4py_export.export

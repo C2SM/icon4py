@@ -74,7 +74,7 @@ def test_grid_manager_eval_v2e(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    seralized_v2e = grid_savepoint.v2e()
+    seralized_v2e = data_alloc.as_numpy(grid_savepoint.v2e())
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
@@ -120,7 +120,7 @@ def test_grid_manager_eval_v2c(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    serialized_v2c = grid_savepoint.v2c()
+    serialized_v2c = data_alloc.as_numpy(grid_savepoint.v2c())
     v2c_table = grid.get_connectivity("V2C").asnumpy()
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
@@ -176,7 +176,7 @@ def test_grid_manager_eval_e2v(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
-    serialized_e2v = grid_savepoint.e2v()
+    serialized_e2v = data_alloc.as_numpy(grid_savepoint.e2v())
     e2v_table = grid.get_connectivity("E2V").asnumpy()
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
@@ -199,7 +199,7 @@ def test_grid_manager_eval_e2c(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
-    serialized_e2c = grid_savepoint.e2c()
+    serialized_e2c = data_alloc.as_numpy(grid_savepoint.e2c())
     e2c_table = grid.get_connectivity("E2C").asnumpy()
     assert has_invalid_index(serialized_e2c) == grid.limited_area
     assert has_invalid_index(e2c_table) == grid.limited_area
@@ -216,7 +216,7 @@ def test_grid_manager_eval_c2e(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
-    serialized_c2e = grid_savepoint.c2e()
+    serialized_c2e = data_alloc.as_numpy(grid_savepoint.c2e())
     c2e_table = grid.get_connectivity("C2E").asnumpy()
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
@@ -237,7 +237,7 @@ def test_grid_manager_eval_c2e2c(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     assert np.allclose(
         grid.get_connectivity("C2E2C").asnumpy(),
-        grid_savepoint.c2e2c(),
+        data_alloc.as_numpy(grid_savepoint.c2e2c()),
     )
 
 
@@ -249,7 +249,7 @@ def test_grid_manager_eval_c2e2cO(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    serialized_grid = grid_savepoint.construct_icon_grid()
+    serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
     assert np.allclose(
         grid.get_connectivity("C2E2CO").asnumpy(),
         serialized_grid.get_connectivity("C2E2CO").asnumpy(),
@@ -265,7 +265,7 @@ def test_grid_manager_eval_e2c2e(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    serialized_grid = grid_savepoint.construct_icon_grid()
+    serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
     serialized_e2c2e = serialized_grid.get_connectivity("E2C2E").asnumpy()
     serialized_e2c2eO = serialized_grid.get_connectivity("E2C2EO").asnumpy()
     assert has_invalid_index(serialized_e2c2e) == grid.limited_area
@@ -290,7 +290,7 @@ def test_grid_manager_eval_e2c2v(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    serialized_ref = grid_savepoint.e2c2v()
+    serialized_ref = data_alloc.as_numpy(grid_savepoint.e2c2v())
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(dims.EdgeDim) + 1) to end(dims.EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
     table = grid.get_connectivity("E2C2V").asnumpy()
@@ -311,7 +311,7 @@ def test_grid_manager_eval_c2v(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     c2v = grid.get_connectivity("C2V").asnumpy()
-    assert np.allclose(c2v, grid_savepoint.c2v())
+    assert np.allclose(c2v, data_alloc.as_numpy(grid_savepoint.c2v()))
 
 
 @pytest.mark.parametrize(
@@ -330,7 +330,7 @@ def test_grid_manager_grid_size(
 def assert_up_to_order(
     table: np.ndarray,
     reference_table: np.ndarray,
-    start_index: gtx.int = 0,  # type: ignore[name-defined]
+    start_index: gtx.int32 = 0,
 ) -> None:
     assert table.shape == reference_table.shape, "arrays need to have the same shape"
     reduced_table = table[start_index:, :]
@@ -397,7 +397,7 @@ def test_grid_manager_eval_c2e2c2e(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    serialized_grid = grid_savepoint.construct_icon_grid()
+    serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
     assert np.allclose(
         grid.get_connectivity("C2E2C2E").asnumpy(),
         serialized_grid.get_connectivity("C2E2C2E").asnumpy(),
@@ -415,7 +415,7 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
-    serialized_grid = grid_savepoint.construct_icon_grid()
+    serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     for domain in h_grid.get_domains_for_dim(dim):
@@ -469,11 +469,11 @@ def test_tangent_orientation(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
-    expected = grid_savepoint.tangent_orientation()
+    expected = data_alloc.as_numpy(grid_savepoint.tangent_orientation())
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
     assert test_utils.dallclose(
         manager.geometry_fields[gridfile.GeometryName.TANGENT_ORIENTATION].asnumpy(),
-        expected.asnumpy(),
+        expected,
     )
 
 
@@ -483,11 +483,11 @@ def test_edge_orientation_on_vertex(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
-    expected = grid_savepoint.vertex_edge_orientation()
+    expected = data_alloc.as_numpy(grid_savepoint.vertex_edge_orientation())
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
     assert test_utils.dallclose(
         manager.geometry_fields[gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(),
-        expected.asnumpy(),
+        expected,
     )
 
 
@@ -526,11 +526,11 @@ def test_cell_normal_orientation(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
-    expected = grid_savepoint.edge_orientation()
+    expected = data_alloc.as_numpy(grid_savepoint.edge_orientation())
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
     assert test_utils.dallclose(
         manager.geometry_fields[gridfile.GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(),
-        expected.asnumpy(),
+        expected,
     )
 
 
@@ -540,12 +540,12 @@ def test_edge_vertex_distance(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
-    expected = grid_savepoint.edge_vert_length()
+    expected = data_alloc.as_numpy(grid_savepoint.edge_vert_length())
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
 
     assert test_utils.dallclose(
         manager.geometry_fields[gridfile.GeometryName.EDGE_VERTEX_DISTANCE].asnumpy(),
-        expected.asnumpy(),
+        expected,
         equal_nan=True,
     )
 
@@ -574,10 +574,10 @@ def test_decomposition_info_single_rank(
     grid_file = experiment.grid
     gm = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     result = gm.decomposition_info
-    assert np.all(data_alloc.as_numpy(result.local_index(dim)) == expected.local_index(dim))
-    assert np.all(data_alloc.as_numpy(result.global_index(dim)) == expected.global_index(dim))
-    assert np.all(data_alloc.as_numpy(result.owner_mask(dim)) == expected.owner_mask(dim))
-    assert np.all(data_alloc.as_numpy(result.halo_levels(dim)) == expected.halo_levels(dim))
+    assert (result.local_index(dim) == expected.local_index(dim)).all()
+    assert (result.global_index(dim) == expected.global_index(dim)).all()
+    assert (result.owner_mask(dim) == expected.owner_mask(dim)).all()
+    assert (result.halo_levels(dim) == expected.halo_levels(dim)).all()
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3), ids=lambda rank: f"rank{rank}")
