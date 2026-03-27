@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import copy
+from typing import Any
 from collections.abc import Sequence
 
 import dace
@@ -564,18 +565,70 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         "q_out_5": "q_in_5",
         "t_out": "te",
     }
+
+    def _update_repl(
+            repl: dict[str, str],
+            old_name: str,
+            old_symbols: Sequence[Any],
+            new_name: str,
+            new_symbols: Sequence[Any],
+    ) -> None:
+        for old_sym, new_sym in zip(old_symbols, new_symbols):
+            if old_sym == new_sym:
+                continue
+            old_ssym = str(old_sym)
+            new_ssym = str(new_sym)
+            if (old_ssym in repl) and (repl[old_ssym] != new_ssym):
+                raise NotImplementedError("Found symbol conflict.")
+            elif old_ssym.isdigit() and (not new_ssym.isdigit()):
+                raise NotImplementedError()
+            elif new_ssym in repl:
+                raise NotImplementedError()
+
+            if old_sym.is_symbol:
+                repl[old_ssym] = new_ssym
+            else:
+                old_sfsyms = [str(fs) for fs in old_sym.free_symbols]
+                new_sfsyms = {str(fs) for fs in new_sym.free_symbols}
+                if len(old_sfsyms) != len(new_sfsyms):
+                    raise NotImplementedError()
+                for old_sfsym in old_sfsyms:
+                    if old_name not in old_sfsym:
+                        raise NotImplementedError()
+                    assert new_name not in old_sfsym
+                    new_sfsym = old_sfsym.replace(old_name, new_name)
+                    if new_sfsym not in new_sfsyms:
+                        raise NotImplementedError()
+                    if (old_sfsym in repl) and (repl[old_sfsym] != new_sfsym):
+                        raise NotImplementedError()
+                    repl[old_sfsym] = new_sfsym
+                    new_sfsyms.discard(new_sfsym)
+
+    repl: dict[str, str] = {}
+    for old_name, new_name in access_node_renaming_dict.items():
+        old_desc = sdfg.arrays[old_name]
+        new_desc = sdfg.arrays[new_name]
+        _update_repl(repl, old_name=old_name, old_symbols=old_desc.shape, new_name=new_name, new_symbols=new_desc.shape)
+        _update_repl(repl, old_name=old_name, old_symbols=old_desc.strides, new_name=new_name, new_symbols=new_desc.strides)
+
     for dnode in st.data_nodes():
         if dnode.data in access_node_renaming_dict:
             old_data = dnode.data
             new_data = access_node_renaming_dict[old_data]
             dnode.data = new_data
-            print(f"Renamed intermediate AccessNode from '{old_data}' to '{new_data}'")
     for edge in st.edges():
         if edge.data.data in access_node_renaming_dict:
             old_data = edge.data.data
             new_data = access_node_renaming_dict[old_data]
             edge.data.data = access_node_renaming_dict[edge.data.data]
-            print(f"Renamed edge data from '{old_data}' to '{new_data}'")
+
+
+    if repl and False:
+        sdfg.replace_dict(
+                repldict=repl,
+                replace_keys=False,  # This will keep the old descriptor in the graph.
+                replace_in_graph=True,
+        )
 
     sdfg.validate()
     sdfg.save("after_renaming_intermediate_access_nodes.sdfg")
