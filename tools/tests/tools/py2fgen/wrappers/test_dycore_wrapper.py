@@ -642,7 +642,6 @@ def test_dycore_wrapper_granule_inputs(
             rayleigh_type=rayleigh_type,
             divdamp_order=divdamp_order,
             divdamp_type=divdamp_type,
-            divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
             ldeepatmo=ldeepatmo,
             iau_init=iau_init,
