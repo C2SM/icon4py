@@ -73,7 +73,8 @@ def setup_graupel(
         if "optimization_args" not in backend:
             backend["optimization_args"] = {}
         backend["optimization_args"]["optimization_hooks"] = {
-            gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan
+            gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan,
+            gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost: graupel_dace_hooks.rename_intermediate_access_nodes,
         }
     with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(
