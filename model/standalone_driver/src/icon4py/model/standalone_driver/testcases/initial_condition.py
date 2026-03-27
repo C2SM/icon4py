@@ -15,9 +15,6 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils import (
-    microphyiscal_processes,
-)
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
@@ -42,6 +39,7 @@ from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
+    tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
@@ -135,6 +133,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         allocator=allocator,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
+    tracer_state_now = tracers.TracerState.zero_field(grid, allocator)
     eta_v = data_alloc.zero_field(
         grid,
         dims.CellDim,
@@ -309,6 +308,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
+    tracer_state_next = tracers.TracerState.from_tracer_state(tracer_state_now, allocator)
+    tracer_states = common_utils.TimeStepPair(tracer_state_now, tracer_state_next)
+
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
         p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
@@ -364,6 +366,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
         diagnostic=diagnostic_state,
+        tracers=tracer_states,
     )
 
     return ds
@@ -373,7 +376,6 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
     geometry_field_source: grid_geometry.GridGeometry,
-    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx.typing.Backend | None,
 ) -> driver_states.DriverStates:
@@ -384,12 +386,11 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         grid: IconGrid
         vertical_grid: VerticalGrid
         geometry_field_source: geometric field factory
-        interpolation_field_source: interpolation field factory
         metrics_field_source: metric field factory
         backend: GT4Py backend
     Returns: driver state
 
-    The reference experiment config for this is in icon-exclaim/run/exp.exclaim_nh35_tri_jws_sb.
+    The reference experiment config for this is in icon-exclaim/run/exp.exclaim_nh_weisman_klemp_sb.
     """
 
     allocator = model_backends.get_allocator(backend)
@@ -401,77 +402,211 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     theta_ref_ic = metrics_field_source.get(metrics_attributes.THETA_REF_IC).ndarray
     exner_ref_mc = metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray
     d_exner_dz_ref_ic = metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
-    geopot = phy_const.GRAV * metrics_field_source.get(metrics_attributes.Z_MC).ndarray
-
-    cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
-    edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray
-    edge_lon = geometry_field_source.get(geometry_meta.EDGE_LON).ndarray
     primal_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_U).ndarray
-
-    cell_2_edge_coeff = interpolation_field_source.get(interpolation_attributes.C_LIN_E)
-    rbf_vec_coeff_c1 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1)
-    rbf_vec_coeff_c2 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels
 
-    edge_domain = h_grid.domain(dims.EdgeDim)
-    cell_domain = h_grid.domain(dims.CellDim)
-    end_edge_lateral_boundary_level_2 = grid.end_index(
-        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    end_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
-    end_cell_lateral_boundary_level_2 = grid.end_index(
-        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
-
     # predefined constants used for Jablonowski-Williamson initial condition
-    p_sfc = ta.wpfloat("100000.0")  # surface pressure [Pa]
-    hmin_wk = ta.wpfloat("0.0")  # base height of the profile
-    h_tropo_wk = ta.wpfloat("12000.0")  # tropopause height [m]
-    theta_0_wk = ta.wpfloat("300.0")  # potential temperature at z=0 [K]
-    theta_tropo_wk = ta.wpfloat("343.0")  # potential temperature at tropopause [K]
-    expo_theta_wk = ta.wpfloat("1.25")
-    expo_relhum_wk = ta.wpfloat("1.25")
-    t_tropo_wk = ta.wpfloat("213.0")
-    rh_min_wk = ta.wpfloat("0.1")
-    rh_max_wk = ta.wpfloat("0.95")
-    href_wk = ta.wpfloat("3000.0")
-    niter = 20
-    u_infty_wk = ta.wpfloat("15.0")  # maximum horizontal wind speed [m s-1]
-    qv_max_wk = ta.wpfloat("0.6")  # maximum moisture mixing ratio [kg kg-1]
-    bubble_lon_center = math.pi / ta.wpfloat("9.0")  # longitude of bubble
-    bubble_lat_center = ta.wpfloat("2.0") * bubble_lon_center  # latitude of bubble
-    bubble_z = ta.wpfloat("1000.0")
+    HMIN = ta.wpfloat("0.0")  # base height of the profile
+    H_TROPOPAUSE = ta.wpfloat("12000.0")  # tropopause height [m]
+    THETA_SURFACE = ta.wpfloat("300.0")  # potential temperature at z=0 [K]
+    THETA_TROPOPAUSE = ta.wpfloat("343.0")  # potential temperature at tropopause [K]
+    EXP_FACTOR_THETA = ta.wpfloat("1.25")
+    EXP_FACTOR_RH = ta.wpfloat("1.25")
+    T_TROPOPAUSE = ta.wpfloat("213.0")
+    RH_MIN = ta.wpfloat("0.1")
+    RH_MAX = ta.wpfloat("0.95")
+    HREF = ta.wpfloat("3000.0")
+    U_INFTY = ta.wpfloat("15.0")  # maximum horizontal wind speed [m s-1]
+    QV_MAX = ta.wpfloat("0.6")  # maximum moisture mixing ratio [kg kg-1]
+    bubble_center_x = ta.wpfloat("0.0")
+    bubble_center_y = ta.wpfloat("0.0")
+    bubble_center_z = ta.wpfloat("1400.0")
+    bubble_width = ta.wpfloat("5000.0")
+    bubble_height = ta.wpfloat("1400.0")
+    bubble_amplitude = ta.wpfloat("2.0")
 
-    k_tropo = xp.argmin(xp.abs(vertical_grid.interface_physical_height.ndarray - h_tropo_wk))
+    model_level_height = xp.repeat(
+        xp.expand_dims(
+            0.5
+            * (
+                vertical_grid.interface_physical_height.ndarray[1:]
+                + vertical_grid.interface_physical_height.ndarray[:-1]
+            ),
+            axis=-1,
+        ),
+        axis=1,
+    )
+    above_tropopause_levels = xp.flatnonzero(model_level_height > H_TROPOPAUSE)
+    assert (
+        above_tropopause_levels.size > 0
+    ), f"model top height ({model_level_height[0]}) must be higher than the tropopaus height ({H_TROPOPAUSE}) in weisman klemp experiment."
+    k_tropopause = above_tropopause_levels[-1]
 
-    exner_tropo = t_tropo_wk / theta_tropo_wk
-    e_tropo = rh_min_wk * microphyiscal_processes.sat_pres_water_scalar(t_tropo_wk)
-    pres_tropo = phy_const.P0REF * exner_tropo**phy_const.CPD_O_RD
-    qv_tropo = thermodynamic_functions.calculate_specific_humidity(pres_tropo, e_tropo)
-    theta_v_tropo = theta_tropo_wk * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_tropo)
-
-    # Initialize prognostic state, diagnostic state and other local fields
+    # Initialize prognostic state, diagnostic state, and tracer state
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=grid,
         allocator=allocator,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
+    tracer_state_now = tracers.TracerState.zero_field(grid=grid, allocator=allocator)
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
     theta_v_ndarray = prognostic_state_now.theta_v.ndarray
     temperature_ndarray = diagnostic_state.temperature.ndarray
     pressure_ndarray = diagnostic_state.pressure.ndarray
+    qv_ndarray = tracer_state_now.qv.ndarray
+    vn_ndarray = prognostic_state_now.vn
+    theta_ndarray = xp.zeros_like(theta_v_ndarray)
+    rh_ndarray = xp.zeros_like(qv_ndarray)
 
-    # set surface pressure
-    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
-
-    _, vct_b = v_grid.get_vct_a_and_vct_b(
-        vertical_grid.config, model_backends.get_allocator(backend)
+    # tropopause parameters
+    exner_tropopause = T_TROPOPAUSE / THETA_TROPOPAUSE
+    vapor_pres_tropopause = RH_MIN * thermodynamic_functions.calculate_saturation_presssure_water(
+        T_TROPOPAUSE
     )
+    pres_tropopause = phy_const.P0REF * exner_tropopause**phy_const.CPD_O_RD
+    qv_tropopause = thermodynamic_functions.calculate_specific_humidity(
+        pres_tropopause, vapor_pres_tropopause
+    )
+    theta_v_tropopause = THETA_TROPOPAUSE * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_tropopause)
+
+    # above tropopause
+    theta_ndarray[:, : k_tropopause + 1] = THETA_TROPOPAUSE * xp.exp(
+        phy_const.GRAV_O_CPD
+        / T_TROPOPAUSE
+        * (model_level_height[:, : k_tropopause + 1] - H_TROPOPAUSE)
+    )
+    exner_ndarray[:, : k_tropopause + 1] = exner_tropopause * xp.exp(
+        -phy_const.GRAV_O_CPD
+        / T_TROPOPAUSE
+        * (model_level_height[:, : k_tropopause + 1] - H_TROPOPAUSE)
+    )
+    pressure_ndarray[:, : k_tropopause + 1] = (
+        phy_const.P0REF * exner_ndarray[:, : k_tropopause + 1] ** phy_const.CPD_O_RD
+    )
+    qv_ndarray[:, : k_tropopause + 1] = thermodynamic_functions.calculate_specific_humidity(
+        pressure=pressure_ndarray[:, : k_tropopause + 1], vapor_pressure=vapor_pres_tropopause
+    )
+    theta_v_ndarray[:, : k_tropopause + 1] = theta_ndarray[:, : k_tropopause + 1] * (
+        1.0 + phy_const.RV_O_RD_MINUS_1 * qv_ndarray[:, : k_tropopause + 1]
+    )
+    temperature_ndarray[:, : k_tropopause + 1] = T_TROPOPAUSE
+    rh_ndarray[:, : k_tropopause + 1] = RH_MIN
+
+    # below tropopause
+    theta_ndarray[:, k_tropopause + 1 :] = (
+        THETA_SURFACE
+        + (THETA_TROPOPAUSE - THETA_SURFACE)
+        * (model_level_height[:, k_tropopause + 1 :] / H_TROPOPAUSE) ** EXP_FACTOR_THETA
+    )
+    rh_ndarray[:, k_tropopause + 1 :] = xp.min(
+        1.0 - 0.75 * (model_level_height[:, k_tropopause + 1 :] / H_TROPOPAUSE) ** EXP_FACTOR_RH,
+        RH_MAX,
+    )
+
+    # piecewise vertical integration from the TP towards the bottom
+    # 1st step: preliminary estimate
+    theta_v_aux = theta_ndarray[:, k_tropopause + 1] * (
+        1.0 + phy_const.RV_O_RD_MINUS_1 * qv_tropopause
+    )
+    exner_aux = exner_tropopause - phy_const.GRAV_O_CPD * (
+        model_level_height[:, k_tropopause + 1] - H_TROPOPAUSE
+    ) / (theta_v_aux - theta_v_tropopause) * xp.log(theta_v_aux / theta_v_tropopause)
+    temperature_aux = theta_ndarray[:, k_tropopause + 1] * exner_aux
+    vapor_pres_aux = rh_ndarray[
+        :, k_tropopause + 1
+    ] * thermodynamic_functions.calculate_saturation_presssure_water(temperature_aux)
+    pressure_aux = phy_const.P0REF * exner_aux**phy_const.CPD_O_RD
+    qv_aux = thermodynamic_functions.calculate_specific_humidity(
+        pressure=pressure_aux, vapor_pressure=vapor_pres_aux
+    )
+    theta_v_aux = theta_ndarray[:, k_tropopause + 1] * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_aux)
+
+    # 2nd step: final computation
+    exner_ndarray[:, k_tropopause + 1] = exner_tropopause - phy_const.GRAV_O_CPD * (
+        model_level_height[:, k_tropopause + 1] - H_TROPOPAUSE
+    ) / (theta_v_aux - theta_v_tropopause) * xp.log(theta_v_aux / theta_v_tropopause)
+    temperature_ndarray[:, k_tropopause + 1] = (
+        theta_ndarray[:, k_tropopause + 1] * exner_ndarray[:, k_tropopause + 1]
+    )
+    vapor_pres_aux = rh_ndarray[
+        :, k_tropopause + 1
+    ] * thermodynamic_functions.calculate_saturation_presssure_water(
+        temperature_ndarray[:, k_tropopause + 1]
+    )
+    pressure_ndarray[:, k_tropopause + 1] = (
+        phy_const.P0REF * exner_ndarray[:, k_tropopause + 1] ** phy_const.CPD_O_RD
+    )
+    qv_ndarray[:, k_tropopause + 1] = thermodynamic_functions.calculate_specific_humidity(
+        pressure=pressure_ndarray[:, k_tropopause + 1], vapor_pressure=vapor_pres_aux
+    )
+    theta_v_ndarray[:, k_tropopause + 1] = theta_ndarray[:, k_tropopause + 1] * (
+        1.0 + phy_const.RV_O_RD_MINUS_1 * qv_ndarray[:, k_tropopause + 1]
+    )
+
+    # remaining model layers
+    for k in range(k_tropopause + 2, num_levels):
+        # 1st step: preliminary estimate
+        qv_extrap = xp.min(
+            QV_MAX,
+            qv_ndarray[:, k - 1]
+            + (qv_ndarray[:, k - 2] - qv_ndarray[:, k - 1])
+            / (model_level_height[:, k - 2] - model_level_height[:, k - 1])
+            * (model_level_height[:, k] - model_level_height[:, k - 1]),
+        )
+        theta_v_aux = theta_ndarray[:, k] * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_extrap)
+        exner_aux = exner_ndarray[:, k - 1] - phy_const.GRAV_O_CPD * (
+            model_level_height[:, k] - model_level_height[:, k - 1]
+        ) / (theta_v_aux - theta_v_ndarray[:, k - 1]) * xp.log(
+            theta_v_aux / theta_v_ndarray[:, k - 1]
+        )
+        temperature_aux = theta_ndarray[:, k] * exner_aux
+        vapor_pres_aux = rh_ndarray[
+            :, k
+        ] * thermodynamic_functions.calculate_saturation_presssure_water(temperature_aux)
+        pressure_aux = phy_const.P0REF * exner_aux**phy_const.CPD_O_RD
+        qv_aux = xp.min(
+            QV_MAX,
+            thermodynamic_functions.calculate_specific_humidity(
+                pressure=pressure_aux, vapor_pressure=vapor_pres_aux
+            ),
+        )
+        theta_v_aux = theta_ndarray[:, k] * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_aux)
+
+        # 2nd step: final computation
+        exner_ndarray[:, k] = exner_ndarray[:, k - 1] - phy_const.GRAV_O_CPD * (
+            model_level_height[:, k] - model_level_height[:, k - 1]
+        ) / (theta_v_aux - theta_v_ndarray[:, k - 1]) * xp.log(
+            theta_v_aux / theta_v_ndarray[:, k - 1]
+        )
+        temperature_ndarray[:, k] = theta_ndarray[:, k] * exner_ndarray[:, k]
+        vapor_pres_aux = rh_ndarray[
+            :, k
+        ] * thermodynamic_functions.calculate_saturation_presssure_water(temperature_ndarray[:, k])
+        pressure_ndarray[:, k] = phy_const.P0REF * exner_ndarray[:, k] ** phy_const.CPD_O_RD
+        qv_ndarray[:, k] = xp.min(
+            QV_MAX,
+            thermodynamic_functions.calculate_specific_humidity(
+                pressure=pressure_ndarray[:, k], vapor_pressure=vapor_pres_aux
+            ),
+        )
+        theta_v_ndarray[:, k] = theta_ndarray[:, k] * (
+            1.0 + phy_const.RV_O_RD_MINUS_1 * qv_ndarray[:, k]
+        )
+
+    rho_ndarray[:, :] = (
+        exner_ndarray[:, :] ** phy_const.CVD_O_RD
+        * phy_const.P0REF
+        / phy_const.RD
+        / theta_v_ndarray[:, :]
+    )
+    vn_ndarray[:, :] = (
+        U_INFTY * (xp.tanh((model_level_height - HMIN) / (HREF - HMIN)) - 0.45) * primal_normal_x
+    )
+    log.info("Computations of Weisman-Klemp background fields completed.")
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,
@@ -485,11 +620,11 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
         cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
         vn=prognostic_state_now.vn.ndarray,
-        vct_b=vct_b.ndarray,
+        vct_b=vertical_grid._vct_b.ndarray,  # type: ignore[union-attr]
         nlev=num_levels,
         array_ns=xp,
     )
-    log.info("U2vn computation completed.")
+    log.info("W initialization completed.")
 
     functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
         rho=rho_ndarray,
@@ -504,6 +639,29 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
+
+    domain_length = grid.global_properties.domain_length
+    domain_height = grid.global_properties.domain_height
+    functools.partial(testcases_utils.init_bubble, array_ns=xp)(
+        theta_v_ndarray=theta_v_ndarray,
+        rho_ndarray=rho_ndarray,
+        qv_ndarray=qv_ndarray,
+        exner_ndarray=exner_ndarray,
+        cell_cartesian_x=geometry_field_source.get(geometry_meta.CELL_CENTER_X).ndarray,
+        cell_cartesian_y=geometry_field_source.get(geometry_meta.CELL_CENTER_Y).ndarray,
+        z_mc=metrics_field_source.get(metrics_attributes.Z_MC).ndarray,
+        bubble_center_x=bubble_center_x,
+        bubble_center_y=bubble_center_y,
+        bubble_center_z=bubble_center_z,
+        bubble_width=bubble_width,
+        bubble_height=bubble_height,
+        bubble_amplitude=bubble_amplitude,
+        geometry_type=grid.geometry_type,
+        domain_length=domain_length,  # type: ignore[arg-type]
+        domain_height=domain_height,  # type: ignore[arg-type]
+    )
+    log.info("Bubble initialization completed.")
+
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
         w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
@@ -513,20 +671,8 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=prognostic_states.current.vn,
-        ptr_coeff_1=rbf_vec_coeff_c1,
-        ptr_coeff_2=rbf_vec_coeff_c2,
-        p_u_out=diagnostic_state.u,
-        p_v_out=diagnostic_state.v,
-        horizontal_start=end_cell_lateral_boundary_level_2,
-        horizontal_end=end_cell_end,
-        vertical_start=0,
-        vertical_end=num_levels,
-        offset_provider=grid.connectivities,
-    )
-
-    log.info("U, V computation completed.")
+    tracer_state_next = tracers.TracerState.from_tracer_state(tracer_state_now, allocator)
+    tracer_states = common_utils.TimeStepPair(tracer_state_now, tracer_state_next)
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
@@ -558,7 +704,8 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
     )
-    log.info("Initialization completed.")
+
+    log.info("Weisman-Klemp initialization completed.")
 
     ds = driver_states.DriverStates(
         prep_advection_prognostic=prep_adv,
@@ -568,6 +715,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
         diagnostic=diagnostic_state,
+        tracers=tracer_states,
     )
 
     return ds

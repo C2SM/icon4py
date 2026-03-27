@@ -49,10 +49,10 @@ def test_standalone_driver_initial_condition(
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
-        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        lowest_layer_thickness=icon4py_driver.vertical_grid.config.lowest_layer_thickness,
+        model_top_height=icon4py_driver.vertical_grid.config.model_top_height,
+        stretch_factor=icon4py_driver.vertical_grid.config.stretch_factor,
+        damping_height=icon4py_driver.vertical_grid.config.rayleigh_damping_height,
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 
