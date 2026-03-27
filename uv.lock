@@ -1400,13 +1400,13 @@ wheels = [
 
 [[package]]
 name = "ghex"
-version = "0.5.0"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/45/834e3c9c67e3ea329a6ba778155d2e472d107165b7824bdd3d9029afa0a2/ghex-0.5.0.tar.gz", hash = "sha256:e877e46cf46cd80d16671d3537c0b0e5cec9a0fc5f04b873052ab363de7f5f79", size = 8911842, upload-time = "2026-03-18T08:29:41.269Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/50/a1af817b283d4db8a40561fe5c1d0630359d455aadaa4d9cdaf51a11d9f0/ghex-0.5.1.tar.gz", hash = "sha256:1a7e96b39f3c98a885237c98e8c7b0da24a5d06d2770c496707f47a42951466c", size = 8912044, upload-time = "2026-03-26T13:49:18.161Z" }
 
 [[package]]
 name = "gitdb"
@@ -1565,7 +1565,7 @@ wheels = [
 
 [[package]]
 name = "icon4py"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "icon4py-atmosphere-advection" },
@@ -1802,7 +1802,7 @@ typing-distributed = [
 
 [[package]]
 name = "icon4py-atmosphere-advection"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/atmosphere/advection" }
 dependencies = [
     { name = "gt4py" },
@@ -1819,7 +1819,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-diffusion"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/atmosphere/diffusion" }
 dependencies = [
     { name = "gt4py" },
@@ -1836,7 +1836,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-dycore"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/atmosphere/dycore" }
 dependencies = [
     { name = "gt4py" },
@@ -1853,7 +1853,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-microphysics"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/atmosphere/subgrid_scale_physics/microphysics" }
 dependencies = [
     { name = "gt4py" },
@@ -1870,7 +1870,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-muphys"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
@@ -1889,7 +1889,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-common"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/common" }
 dependencies = [
     { name = "array-api-compat" },
@@ -1954,7 +1954,7 @@ requires-dist = [
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
-    { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.0" },
+    { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
     { name = "gt4py", specifier = "==1.1.8" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
@@ -1976,7 +1976,7 @@ provides-extras = ["all", "cuda11", "cuda12", "distributed", "io", "rocm7-0"]
 
 [[package]]
 name = "icon4py-driver"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/driver" }
 dependencies = [
     { name = "click" },
@@ -2005,7 +2005,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-standalone-driver"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/standalone_driver" }
 dependencies = [
     { name = "devtools" },
@@ -2036,7 +2036,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-testing"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "model/testing" }
 dependencies = [
     { name = "filelock" },
@@ -2065,7 +2065,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-tools"
-version = "0.0.6"
+version = "0.1.0"
 source = { editable = "tools" }
 dependencies = [
     { name = "cffi" },
