@@ -556,7 +556,6 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
 
 
 def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
-    sdfg.save("before_renaming_intermediate_access_nodes.sdfg")
     assert len(sdfg.states()) == 1
     st: dace.SDFGState = sdfg.states()[0]
     access_node_renaming_dict = {
@@ -567,7 +566,7 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         "t_out": "te",
     }
 
-    def _update_repl(
+    def _update_repl_impl(
         repl: dict[str, str],
         old_name: str,
         old_symbols: Sequence[Any],
@@ -585,8 +584,12 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
                 raise NotImplementedError()
 
             if old_sym.is_symbol:
+                # The entry is a simple symbol, i.e. `stride_0_of_array_a`.
                 repl[old_ssym] = new_ssym
             else:
+                # The entry is a composed symbol, i.e. `range_end - range_start`.
+                #  This mostly happens for the shapes, we require that also the
+                #  new symbol is a composed symbol and we perform "fancy" renaming.
                 old_sfsyms = [str(fs) for fs in old_sym.free_symbols]
                 new_sfsyms = {str(fs) for fs in new_sym.free_symbols}
                 if len(old_sfsyms) != len(new_sfsyms):
@@ -603,24 +606,26 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
                     repl[old_sfsym] = new_sfsym
                     new_sfsyms.discard(new_sfsym)
 
-    repl: dict[str, str] = {}
-    for old_name, new_name in access_node_renaming_dict.items():
+    def _update_repl(
+        sdfg: dace.SDFG,
+        repl: dict[str, str],
+        old_name: str,
+        new_name: str,
+    ) -> None:
         old_desc = sdfg.arrays[old_name]
         new_desc = sdfg.arrays[new_name]
-        _update_repl(
-            repl,
-            old_name=old_name,
-            old_symbols=old_desc.shape,
-            new_name=new_name,
-            new_symbols=new_desc.shape,
-        )
-        _update_repl(
-            repl,
-            old_name=old_name,
-            old_symbols=old_desc.strides,
-            new_name=new_name,
-            new_symbols=new_desc.strides,
-        )
+        for what in ["shape", "strides"]:
+            _update_repl(
+                repl,
+                old_name=old_name,
+                old_symbols=getattr(old_desc, what),
+                new_name=new_name,
+                new_symbols=getattr(new_desc, what),
+            )
+
+    repl: dict[str, str] = {}
+    for old_name, new_name in access_node_renaming_dict.items():
+        _update_repl(sdfg=sdfg, repl=repl, old_name=old_name, new_name=new_name)
 
     for dnode in st.data_nodes():
         if dnode.data in access_node_renaming_dict:
@@ -641,4 +646,3 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         )
 
     sdfg.validate()
-    sdfg.save("after_renaming_intermediate_access_nodes.sdfg")
