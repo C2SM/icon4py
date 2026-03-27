@@ -17,6 +17,7 @@ Fortran granule interfaces:
 """
 
 import dataclasses
+import logging
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -37,7 +38,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     config as wrapper_config,
@@ -46,7 +46,7 @@ from icon4py.tools.py2fgen.wrappers import (
 )
 
 
-logger = setup_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
