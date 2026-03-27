@@ -192,7 +192,7 @@ def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
-    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
+    dtype: npt.DTypeLike = gtx.int32,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)
@@ -221,14 +221,6 @@ def list2field(
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
     return gtx.as_field(domain, arr, allocator=allocator)
-
-
-def kflip_wgtfacq(
-    arr: NDArray,
-    domain: gtx.Domain,
-    allocator: gtx_typing.Allocator,
-) -> gtx.Field:
-    return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, dtype[Any] | Any"; expected "NDArrayObject"
 
 
 def adjust_fortran_indices(inp: NDArray) -> NDArray:

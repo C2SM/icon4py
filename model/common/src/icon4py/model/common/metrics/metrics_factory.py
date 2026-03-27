@@ -36,7 +36,7 @@ from icon4py.model.common.metrics import (
     compute_advection_metrics,
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_zdiff_gradp_dsl,
+    compute_zdiff_gradp,
     metric_fields as mf,
     metrics_attributes as attrs,
     reference_atmosphere,
@@ -762,9 +762,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
-        compute_zdiff_gradp_dsl_np = factory.NumpyDataProvider(
+        compute_zdiff_gradp_np = factory.NumpyDataProvider(
             func=functools.partial(
-                compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
+                compute_zdiff_gradp.compute_zdiff_gradp,
                 array_ns=self._xp,
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
@@ -793,7 +793,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
         )
-        self.register_provider(compute_zdiff_gradp_dsl_np)
+        self.register_provider(compute_zdiff_gradp_np)
 
         coeff_gradekin = factory.NumpyDataProvider(
             func=functools.partial(
@@ -880,7 +880,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_maxslp_maxhgtd)
 
         compute_weighted_cell_neighbor_sum = factory.ProgramFieldProvider(
-            func=mf.compute_weighted_cell_neighbor_sum,
+            func=mf.compute_weighted_cell_neighbor_sum.with_backend(self._backend),
             deps={
                 "maxslp": attrs.MAXSLP,
                 "maxhgtd": attrs.MAXHGTD,
@@ -978,7 +978,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
         compute_advection_deepatmo_fields = factory.ProgramFieldProvider(
-            func=compute_advection_metrics.compute_advection_deepatmo_fields,
+            func=compute_advection_metrics.compute_advection_deepatmo_fields.with_backend(
+                self._backend
+            ),
             domain={
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
@@ -999,6 +1001,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_advection_deepatmo_fields)
+
+    def get_int32(self, name: str) -> gtx.int32:
+        return gtx.int32(self.get(name, factory.RetrievalType.SCALAR))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

@@ -121,6 +121,8 @@ module dycore
                                     divdamp_fac_o2, &
                                     ndyn_substeps_var, &
                                     idyn_timestep, &
+                                    is_iau_active, &
+                                    iau_wgt_dyn, &
                                     on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -351,6 +353,10 @@ module dycore
 
          integer(c_int), value, target :: idyn_timestep
 
+         logical(c_int), value, target :: is_iau_active
+
+         real(c_double), value, target :: iau_wgt_dyn
+
          logical(c_int), value :: on_gpu
 
       end function solve_nh_run_wrapper
@@ -382,12 +388,10 @@ module dycore
                                      e_bln_c_s, &
                                      e_bln_c_s_size_0, &
                                      e_bln_c_s_size_1, &
-                                     rbf_coeff_1, &
-                                     rbf_coeff_1_size_0, &
-                                     rbf_coeff_1_size_1, &
-                                     rbf_coeff_2, &
-                                     rbf_coeff_2_size_0, &
-                                     rbf_coeff_2_size_1, &
+                                     rbf_vec_coeff_v, &
+                                     rbf_vec_coeff_v_size_0, &
+                                     rbf_vec_coeff_v_size_1, &
+                                     rbf_vec_coeff_v_size_2, &
                                      geofac_div, &
                                      geofac_div_size_0, &
                                      geofac_div_size_1, &
@@ -457,10 +461,10 @@ module dycore
                                      zdiff_gradp_size_0, &
                                      zdiff_gradp_size_1, &
                                      zdiff_gradp_size_2, &
-                                     vertoffset_gradp, &
-                                     vertoffset_gradp_size_0, &
-                                     vertoffset_gradp_size_1, &
-                                     vertoffset_gradp_size_2, &
+                                     vertidx_gradp, &
+                                     vertidx_gradp_size_0, &
+                                     vertidx_gradp_size_1, &
+                                     vertidx_gradp_size_2, &
                                      pg_edgeidx, &
                                      pg_edgeidx_size_0, &
                                      pg_vertidx, &
@@ -502,13 +506,12 @@ module dycore
                                      rayleigh_type, &
                                      rayleigh_coeff, &
                                      divdamp_order, &
-                                     is_iau_active, &
-                                     iau_wgt_dyn, &
                                      divdamp_type, &
                                      divdamp_trans_start, &
                                      divdamp_trans_end, &
                                      l_vert_nested, &
                                      ldeepatmo, &
+                                     iau_init, &
                                      rhotheta_offctr, &
                                      veladv_offctr, &
                                      nudge_max_coeff, &
@@ -580,17 +583,13 @@ module dycore
 
          integer(c_int), value :: e_bln_c_s_size_1
 
-         type(c_ptr), value, target :: rbf_coeff_1
+         type(c_ptr), value, target :: rbf_vec_coeff_v
 
-         integer(c_int), value :: rbf_coeff_1_size_0
+         integer(c_int), value :: rbf_vec_coeff_v_size_0
 
-         integer(c_int), value :: rbf_coeff_1_size_1
+         integer(c_int), value :: rbf_vec_coeff_v_size_1
 
-         type(c_ptr), value, target :: rbf_coeff_2
-
-         integer(c_int), value :: rbf_coeff_2_size_0
-
-         integer(c_int), value :: rbf_coeff_2_size_1
+         integer(c_int), value :: rbf_vec_coeff_v_size_2
 
          type(c_ptr), value, target :: geofac_div
 
@@ -730,13 +729,13 @@ module dycore
 
          integer(c_int), value :: zdiff_gradp_size_2
 
-         type(c_ptr), value, target :: vertoffset_gradp
+         type(c_ptr), value, target :: vertidx_gradp
 
-         integer(c_int), value :: vertoffset_gradp_size_0
+         integer(c_int), value :: vertidx_gradp_size_0
 
-         integer(c_int), value :: vertoffset_gradp_size_1
+         integer(c_int), value :: vertidx_gradp_size_1
 
-         integer(c_int), value :: vertoffset_gradp_size_2
+         integer(c_int), value :: vertidx_gradp_size_2
 
          type(c_ptr), value, target :: pg_edgeidx
 
@@ -820,10 +819,6 @@ module dycore
 
          integer(c_int), value, target :: divdamp_order
 
-         logical(c_int), value, target :: is_iau_active
-
-         real(c_double), value, target :: iau_wgt_dyn
-
          integer(c_int), value, target :: divdamp_type
 
          real(c_double), value, target :: divdamp_trans_start
@@ -833,6 +828,8 @@ module dycore
          logical(c_int), value, target :: l_vert_nested
 
          logical(c_int), value, target :: ldeepatmo
+
+         logical(c_int), value, target :: iau_init
 
          real(c_double), value, target :: rhotheta_offctr
 
@@ -910,6 +907,8 @@ contains
                            divdamp_fac_o2, &
                            ndyn_substeps_var, &
                            idyn_timestep, &
+                           is_iau_active, &
+                           iau_wgt_dyn, &
                            rc)
       use, intrinsic :: iso_c_binding
 
@@ -996,6 +995,10 @@ contains
       integer(c_int), value, target :: ndyn_substeps_var
 
       integer(c_int), value, target :: idyn_timestep
+
+      logical(c_int), value, target :: is_iau_active
+
+      real(c_double), value, target :: iau_wgt_dyn
 
       logical(c_int) :: on_gpu
 
@@ -1427,6 +1430,8 @@ contains
                                 divdamp_fac_o2=divdamp_fac_o2, &
                                 ndyn_substeps_var=ndyn_substeps_var, &
                                 idyn_timestep=idyn_timestep, &
+                                is_iau_active=is_iau_active, &
+                                iau_wgt_dyn=iau_wgt_dyn, &
                                 on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
@@ -1474,8 +1479,7 @@ contains
                             pos_on_tplane_e_2, &
                             rbf_vec_coeff_e, &
                             e_bln_c_s, &
-                            rbf_coeff_1, &
-                            rbf_coeff_2, &
+                            rbf_vec_coeff_v, &
                             geofac_div, &
                             geofac_n2s, &
                             geofac_grg_x, &
@@ -1500,7 +1504,7 @@ contains
                             theta_ref_me, &
                             ddxn_z_full, &
                             zdiff_gradp, &
-                            vertoffset_gradp, &
+                            vertidx_gradp, &
                             pg_edgeidx, &
                             pg_vertidx, &
                             pg_exdist, &
@@ -1521,13 +1525,12 @@ contains
                             rayleigh_type, &
                             rayleigh_coeff, &
                             divdamp_order, &
-                            is_iau_active, &
-                            iau_wgt_dyn, &
                             divdamp_type, &
                             divdamp_trans_start, &
                             divdamp_trans_end, &
                             l_vert_nested, &
                             ldeepatmo, &
+                            iau_init, &
                             rhotheta_offctr, &
                             veladv_offctr, &
                             nudge_max_coeff, &
@@ -1562,9 +1565,7 @@ contains
 
       real(c_double), dimension(:, :), target :: e_bln_c_s
 
-      real(c_double), dimension(:, :), target :: rbf_coeff_1
-
-      real(c_double), dimension(:, :), target :: rbf_coeff_2
+      real(c_double), dimension(:, :, :), target :: rbf_vec_coeff_v
 
       real(c_double), dimension(:, :), target :: geofac_div
 
@@ -1614,7 +1615,7 @@ contains
 
       real(c_double), dimension(:, :, :), target :: zdiff_gradp
 
-      integer(c_int), dimension(:, :, :), target :: vertoffset_gradp
+      integer(c_int), dimension(:, :, :), target :: vertidx_gradp
 
       integer(c_int), dimension(:), pointer :: pg_edgeidx
 
@@ -1656,10 +1657,6 @@ contains
 
       integer(c_int), value, target :: divdamp_order
 
-      logical(c_int), value, target :: is_iau_active
-
-      real(c_double), value, target :: iau_wgt_dyn
-
       integer(c_int), value, target :: divdamp_type
 
       real(c_double), value, target :: divdamp_trans_start
@@ -1669,6 +1666,8 @@ contains
       logical(c_int), value, target :: l_vert_nested
 
       logical(c_int), value, target :: ldeepatmo
+
+      logical(c_int), value, target :: iau_init
 
       real(c_double), value, target :: rhotheta_offctr
 
@@ -1734,13 +1733,11 @@ contains
 
       integer(c_int) :: e_bln_c_s_size_1
 
-      integer(c_int) :: rbf_coeff_1_size_0
+      integer(c_int) :: rbf_vec_coeff_v_size_0
 
-      integer(c_int) :: rbf_coeff_1_size_1
+      integer(c_int) :: rbf_vec_coeff_v_size_1
 
-      integer(c_int) :: rbf_coeff_2_size_0
-
-      integer(c_int) :: rbf_coeff_2_size_1
+      integer(c_int) :: rbf_vec_coeff_v_size_2
 
       integer(c_int) :: geofac_div_size_0
 
@@ -1832,11 +1829,11 @@ contains
 
       integer(c_int) :: zdiff_gradp_size_2
 
-      integer(c_int) :: vertoffset_gradp_size_0
+      integer(c_int) :: vertidx_gradp_size_0
 
-      integer(c_int) :: vertoffset_gradp_size_1
+      integer(c_int) :: vertidx_gradp_size_1
 
-      integer(c_int) :: vertoffset_gradp_size_2
+      integer(c_int) :: vertidx_gradp_size_2
 
       integer(c_int) :: pg_edgeidx_size_0
 
@@ -1904,8 +1901,7 @@ contains
       !$acc host_data use_device(pos_on_tplane_e_2)
       !$acc host_data use_device(rbf_vec_coeff_e)
       !$acc host_data use_device(e_bln_c_s)
-      !$acc host_data use_device(rbf_coeff_1)
-      !$acc host_data use_device(rbf_coeff_2)
+      !$acc host_data use_device(rbf_vec_coeff_v)
       !$acc host_data use_device(geofac_div)
       !$acc host_data use_device(geofac_n2s)
       !$acc host_data use_device(geofac_grg_x)
@@ -1930,7 +1926,7 @@ contains
       !$acc host_data use_device(theta_ref_me)
       !$acc host_data use_device(ddxn_z_full)
       !$acc host_data use_device(zdiff_gradp)
-      !$acc host_data use_device(vertoffset_gradp)
+      !$acc host_data use_device(vertidx_gradp)
       !$acc host_data use_device(ddqz_z_full_e)
       !$acc host_data use_device(ddxt_z_full)
       !$acc host_data use_device(wgtfac_e)
@@ -1979,11 +1975,9 @@ contains
       e_bln_c_s_size_0 = SIZE(e_bln_c_s, 1)
       e_bln_c_s_size_1 = SIZE(e_bln_c_s, 2)
 
-      rbf_coeff_1_size_0 = SIZE(rbf_coeff_1, 1)
-      rbf_coeff_1_size_1 = SIZE(rbf_coeff_1, 2)
-
-      rbf_coeff_2_size_0 = SIZE(rbf_coeff_2, 1)
-      rbf_coeff_2_size_1 = SIZE(rbf_coeff_2, 2)
+      rbf_vec_coeff_v_size_0 = SIZE(rbf_vec_coeff_v, 1)
+      rbf_vec_coeff_v_size_1 = SIZE(rbf_vec_coeff_v, 2)
+      rbf_vec_coeff_v_size_2 = SIZE(rbf_vec_coeff_v, 3)
 
       geofac_div_size_0 = SIZE(geofac_div, 1)
       geofac_div_size_1 = SIZE(geofac_div, 2)
@@ -2054,9 +2048,9 @@ contains
       zdiff_gradp_size_1 = SIZE(zdiff_gradp, 2)
       zdiff_gradp_size_2 = SIZE(zdiff_gradp, 3)
 
-      vertoffset_gradp_size_0 = SIZE(vertoffset_gradp, 1)
-      vertoffset_gradp_size_1 = SIZE(vertoffset_gradp, 2)
-      vertoffset_gradp_size_2 = SIZE(vertoffset_gradp, 3)
+      vertidx_gradp_size_0 = SIZE(vertidx_gradp, 1)
+      vertidx_gradp_size_1 = SIZE(vertidx_gradp, 2)
+      vertidx_gradp_size_2 = SIZE(vertidx_gradp, 3)
 
       ddqz_z_full_e_size_0 = SIZE(ddqz_z_full_e, 1)
       ddqz_z_full_e_size_1 = SIZE(ddqz_z_full_e, 2)
@@ -2129,12 +2123,10 @@ contains
                                  e_bln_c_s=c_loc(e_bln_c_s), &
                                  e_bln_c_s_size_0=e_bln_c_s_size_0, &
                                  e_bln_c_s_size_1=e_bln_c_s_size_1, &
-                                 rbf_coeff_1=c_loc(rbf_coeff_1), &
-                                 rbf_coeff_1_size_0=rbf_coeff_1_size_0, &
-                                 rbf_coeff_1_size_1=rbf_coeff_1_size_1, &
-                                 rbf_coeff_2=c_loc(rbf_coeff_2), &
-                                 rbf_coeff_2_size_0=rbf_coeff_2_size_0, &
-                                 rbf_coeff_2_size_1=rbf_coeff_2_size_1, &
+                                 rbf_vec_coeff_v=c_loc(rbf_vec_coeff_v), &
+                                 rbf_vec_coeff_v_size_0=rbf_vec_coeff_v_size_0, &
+                                 rbf_vec_coeff_v_size_1=rbf_vec_coeff_v_size_1, &
+                                 rbf_vec_coeff_v_size_2=rbf_vec_coeff_v_size_2, &
                                  geofac_div=c_loc(geofac_div), &
                                  geofac_div_size_0=geofac_div_size_0, &
                                  geofac_div_size_1=geofac_div_size_1, &
@@ -2204,10 +2196,10 @@ contains
                                  zdiff_gradp_size_0=zdiff_gradp_size_0, &
                                  zdiff_gradp_size_1=zdiff_gradp_size_1, &
                                  zdiff_gradp_size_2=zdiff_gradp_size_2, &
-                                 vertoffset_gradp=c_loc(vertoffset_gradp), &
-                                 vertoffset_gradp_size_0=vertoffset_gradp_size_0, &
-                                 vertoffset_gradp_size_1=vertoffset_gradp_size_1, &
-                                 vertoffset_gradp_size_2=vertoffset_gradp_size_2, &
+                                 vertidx_gradp=c_loc(vertidx_gradp), &
+                                 vertidx_gradp_size_0=vertidx_gradp_size_0, &
+                                 vertidx_gradp_size_1=vertidx_gradp_size_1, &
+                                 vertidx_gradp_size_2=vertidx_gradp_size_2, &
                                  pg_edgeidx=pg_edgeidx_ptr, &
                                  pg_edgeidx_size_0=pg_edgeidx_size_0, &
                                  pg_vertidx=pg_vertidx_ptr, &
@@ -2249,13 +2241,12 @@ contains
                                  rayleigh_type=rayleigh_type, &
                                  rayleigh_coeff=rayleigh_coeff, &
                                  divdamp_order=divdamp_order, &
-                                 is_iau_active=is_iau_active, &
-                                 iau_wgt_dyn=iau_wgt_dyn, &
                                  divdamp_type=divdamp_type, &
                                  divdamp_trans_start=divdamp_trans_start, &
                                  divdamp_trans_end=divdamp_trans_end, &
                                  l_vert_nested=l_vert_nested, &
                                  ldeepatmo=ldeepatmo, &
+                                 iau_init=iau_init, &
                                  rhotheta_offctr=rhotheta_offctr, &
                                  veladv_offctr=veladv_offctr, &
                                  nudge_max_coeff=nudge_max_coeff, &
@@ -2270,7 +2261,6 @@ contains
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
                                  on_gpu=on_gpu)
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

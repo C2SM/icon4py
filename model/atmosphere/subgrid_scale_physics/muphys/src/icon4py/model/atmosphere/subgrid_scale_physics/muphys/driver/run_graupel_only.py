@@ -52,10 +52,13 @@ def get_args():
 
 
 def setup_graupel(
-    inp: common.GraupelInput,
     dt: float,
     qnc: float,
     backend: model_backends.BackendLike,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
     enable_masking: bool = True,
 ):
     with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
@@ -68,12 +71,12 @@ def setup_graupel(
                 "enable_masking": enable_masking,
             },
             horizontal_sizes={
-                "horizontal_start": gtx.int32(0),
-                "horizontal_end": inp.ncells,
+                "horizontal_start": horizontal_start,
+                "horizontal_end": horizontal_end,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(inp.nlev),
+                "vertical_start": vertical_start,
+                "vertical_end": vertical_end,
             },
             offset_provider={"Koff": dims.KDim},
         )
@@ -116,7 +119,14 @@ def main():
     )
 
     graupel_run_program = setup_graupel(
-        inp, dt=args.dt, qnc=args.qnc, backend=backend, enable_masking=args.enable_masking
+        dt=args.dt,
+        qnc=args.qnc,
+        backend=backend,
+        horizontal_start=0,
+        horizontal_end=inp.ncells,
+        vertical_start=0,
+        vertical_end=inp.nlev,
+        enable_masking=args.enable_masking,
     )
 
     start_time = None

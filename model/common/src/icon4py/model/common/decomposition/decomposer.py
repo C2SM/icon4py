@@ -78,5 +78,5 @@ class SingleNodeDecomposer(Decomposer):
 
         return data_alloc.array_namespace(adjacency_matrix).zeros(
             adjacency_matrix.shape[0],
-            dtype=gtx.int32,  # type: ignore  [attr-defined]
+            dtype=gtx.int32,
         )

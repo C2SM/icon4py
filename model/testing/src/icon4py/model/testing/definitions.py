@@ -226,7 +226,7 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    version: int = 2
+    version: int = 3
 
 
 class Experiments:
@@ -313,7 +313,6 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
     if experiment == Experiments.MCH_CH_R04B09:
         return solve_nh.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
-            iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
