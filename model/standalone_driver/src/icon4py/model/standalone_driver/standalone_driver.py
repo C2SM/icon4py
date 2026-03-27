@@ -522,9 +522,7 @@ def _read_config(
         vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
-    nonhydro_config = solve_nh.NonHydrostaticConfig(
-        fourth_order_divdamp_factor=0.0025
-    )
+    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 
