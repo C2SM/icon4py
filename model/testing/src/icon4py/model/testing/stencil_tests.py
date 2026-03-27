@@ -15,7 +15,7 @@ import inspect
 import os
 import types
 from collections.abc import Callable, Generator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Protocol, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -32,10 +32,13 @@ from gt4py.next import (
 from gt4py.next.ffront.decorator import FieldOperator
 from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends, model_options, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation, device_utils
 
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 _STENCIL_REFERENCE_MARKER: Final = "__stencil_test_reference__"
 _INPUT_DATA_FIXTURE_MARKER: Final = "__stencil_test_input_fixture__"
@@ -251,6 +254,44 @@ def test_and_benchmark(
             ]
 
 
+class DataAllocation(Protocol):
+    """
+    This protocol mimics the 'icon4py.model.common.utils.data_allocation',
+    but with 'backend' bound in the respective functions.
+    """
+
+    def random_field(
+        self,
+        *dims: gtx.Dimension,
+        low: float = -1.0,
+        high: float = 1.0,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def random_mask(
+        self,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def zero_field(
+        self,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def constant_field(
+        self,
+        value: float,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -277,6 +318,8 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[pytest.FixtureDef]
+
+    data_alloc: DataAllocation
 
     @pytest.fixture
     def configured_program(
@@ -327,19 +370,20 @@ class StencilTest:
     #         # explicitly clear data dict after test to prevent potential memory leaks
     #         device_data.clear()
 
-    @pytest.fixture(autouse=True)
-    def data_alloc(
-        self, backend: gtx_backend.Backend | None, grid: base.Grid
+    @pytest.fixture(autouse=True, scope="class")
+    def _provision_data_alloc_fixture(
+        self, backend_like: model_backends.BackendLike, grid: base.Grid
     ) -> Generator[None, None, None]:
         """
         Convenience fixture to provide data allocation function with backend and grid already bound.
         """
+        allocator = model_backends.get_allocator(backend_like)
 
         class DataAllocationWrapper:
             def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
                 if name in ("constant_field", "random_field", "random_mask", "zero_field"):
                     alloc_fun = getattr(data_allocation, name)
-                    return functools.partial(alloc_fun, grid, backend=backend)
+                    return functools.partial(alloc_fun, grid, allocator=allocator)
                 else:
                     raise AttributeError(f"Invalid data allocation function '{name}'.")
 
