@@ -58,6 +58,8 @@ def test_run_solve_nonhydro_single_step(
     model_top_height: ta.wpfloat,
     stretch_factor: ta.wpfloat,
     damping_height: ta.wpfloat,
+    is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     interpolation_savepoint: serialbox.InterpolationSavepoint,
@@ -157,6 +159,8 @@ def test_run_solve_nonhydro_single_step(
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
         at_last_substep=(substep_init == ndyn_substeps),
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
     _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore step run ")
 

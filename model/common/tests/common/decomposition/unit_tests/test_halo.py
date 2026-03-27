@@ -13,6 +13,7 @@ from gt4py.next import common as gtx_common
 from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions, halo
 from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
 from ...fixtures import backend_like, processor_props
@@ -32,7 +33,10 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
         run_properties=processor_props,
         allocator=allocator,
     )
-    my_owned_cells = halo_generator.owned_cells(utils.SIMPLE_DISTRIBUTION)
+    xp = data_alloc.import_array_ns(allocator)
+    my_owned_cells = data_alloc.as_numpy(
+        halo_generator.owned_cells(xp.asarray(utils.SIMPLE_DISTRIBUTION))
+    )
 
     print(f"rank {processor_props.rank} owns {my_owned_cells} ")
     assert my_owned_cells.size == len(utils._CELL_OWN[processor_props.rank])
@@ -130,7 +134,7 @@ def test_no_halo():
     decomposition = decomp.SingleNodeDecomposer()
     decomposition_info = halo_generator(decomposition(np.arange(grid_size.num_cells), 1))
     # cells
-    np.testing.assert_allclose(
+    test_utils.assert_dallclose(
         np.arange(grid_size.num_cells), decomposition_info.global_index(dims.CellDim)
     )
     assert np.all(decomposition_info.owner_mask(dims.CellDim))
@@ -138,7 +142,7 @@ def test_no_halo():
         decomposition_info.halo_levels(dims.CellDim) == definitions.DecompositionFlag.OWNED
     )
     # edges
-    np.testing.assert_allclose(
+    test_utils.assert_dallclose(
         np.arange(grid_size.num_edges), decomposition_info.global_index(dims.EdgeDim)
     )
     assert np.all(
@@ -146,7 +150,7 @@ def test_no_halo():
     )
     assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
     # vertices
-    np.testing.assert_allclose(
+    test_utils.assert_dallclose(
         np.arange(grid_size.num_vertices), decomposition_info.global_index(dims.VertexDim)
     )
     assert np.all(

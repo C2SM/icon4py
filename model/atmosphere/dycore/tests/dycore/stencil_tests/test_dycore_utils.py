@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 def fourth_order_divdamp_scaling_coeff_numpy(
-    a: np.ndarray, divdamp_order: int, factor: float, mean_cell_area: float
+    a: np.ndarray, divdamp_order: gtx.int32, factor: float, mean_cell_area: float
 ) -> np.ndarray:
     b = np.maximum(0.0, a - 0.25 * factor) if divdamp_order == 24 else np.full_like(a, factor)
     return -b * mean_cell_area**2
@@ -44,7 +44,7 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(
     backend: gtx_typing.Backend,
 ) -> None:
     second_order_divdamp_factor = 3.0
-    divdamp_order = 24
+    divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0
     grid = simple_grid.simple_grid(allocator=backend)
     interpolated_fourth_order_divdamp_factor = data_alloc.random_field(

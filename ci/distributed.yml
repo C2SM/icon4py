@@ -38,26 +38,22 @@ build_distributed_baseimage_aarch64:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-    USE_MPI: NO
-    SLURM_MPI_TYPE: pmix
-    PMIX_MCA_psec: native
-    PMIX_MCA_gds: "^shmem2"
 
-.build_distributed_cpu:
+.build_distributed:
   extends: [.build_distributed_template]
   variables:
     UV_PROJECT_ENVIRONMENT: venv_dist
 
-build_distributed_cpu:
+build_distributed:
   stage: image
-  extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
+  extends: [.container-builder-cscs-gh200, .build_distributed]
   needs: [build_distributed_baseimage_aarch64]
 
 .test_template_distributed:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-  extends: [.container-runner-santis-gh200, .build_distributed_cpu]
-  needs: [build_distributed_cpu]
+  extends: [.container-runner-santis-gh200, .build_distributed]
+  needs: [build_distributed]
   variables:
     SLURM_JOB_NUM_NODES: 1
     # Use only one GPU for all ranks of the test as all tests are serialized
@@ -68,8 +64,19 @@ build_distributed_cpu:
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PYTEST_ADDOPTS: "--durations=0"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
+    # Do not use libfabric from the host system. Libfabric with slingshot
+    # support is built into the container image.
+    USE_MPI: NO
+    # Use libfabric slingshot (cxi) provider and recommended settings from
+    # https://docs.cscs.ch/software/communication/openmpi.
+    SLURM_MPI_TYPE: pmix
+    PMIX_MCA_psec: native
+    FI_PROVIDER: cxi
+    OMPI_MCA_pml: cm
+    OMPI_MCA_mtl: ofi
 
 .test_distributed_aarch64:
   stage: test
@@ -81,18 +88,28 @@ build_distributed_cpu:
     - echo "running with $(python --version)"
     - source ci/scripts/start-cuda-mps.sh
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
-        BACKEND: [embedded, gtfn_cpu, dace_cpu]
+        # TODO(msimberg): Enable dace_gpu when compilation doesn't take as long
+        # or when we can cache across CI jobs.
+        BACKEND: [embedded, gtfn_cpu, dace_cpu, gtfn_gpu]
+        LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && $BACKEND == 'dace_cpu'
+    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
+    - if: $COMPONENT == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
+      variables:
+        # TODO(msimberg): Decrease this when enabling dace_gpu above, if possible.
+        SLURM_TIMELIMIT: '01:30:00'
+        # TODO(msimberg): Use shared partition when time limit can be set to at
+        # most an hour. The shared partition only accepts jobs maximum an hour long.
+        SLURM_PARTITION: "normal"
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
