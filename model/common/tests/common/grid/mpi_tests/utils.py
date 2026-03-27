@@ -8,6 +8,8 @@
 
 import pathlib
 
+import gt4py.next as gtx
+
 from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 
@@ -22,14 +24,16 @@ NUM_LEVELS = 10
 
 
 def run_grid_manager_for_single_rank(
-    file: pathlib.Path, num_levels: int = NUM_LEVELS
+    file: pathlib.Path,
+    allocator: gtx.typing.Allocator,
+    num_levels: int = NUM_LEVELS,
 ) -> gm.GridManager:
     manager = _grid_manager(file, num_levels)
     manager(
         keep_skip_values=True,
         run_properties=decomp_defs.SingleNodeProcessProperties(),
         decomposer=decomp.SingleNodeDecomposer(),
-        allocator=None,
+        allocator=allocator,
     )
     return manager
 
@@ -38,10 +42,14 @@ def run_grid_manager_for_multi_rank(
     file: pathlib.Path,
     run_properties: decomp_defs.ProcessProperties,
     decomposer: decomp.Decomposer,
+    allocator: gtx.typing.Allocator,
     num_levels: int = NUM_LEVELS,
 ) -> gm.GridManager:
     manager = _grid_manager(file, num_levels)
     manager(
-        keep_skip_values=True, allocator=None, run_properties=run_properties, decomposer=decomposer
+        keep_skip_values=True,
+        allocator=allocator,
+        run_properties=run_properties,
+        decomposer=decomposer,
     )
     return manager

@@ -11,5 +11,5 @@ from typing import Any
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def dummy_exchange(*field: data_alloc.NDArray, stream: Any = None) -> None:
+def dummy_exchange_with_bound_dim(*field: data_alloc.NDArray, stream: Any = None) -> None:
     return None

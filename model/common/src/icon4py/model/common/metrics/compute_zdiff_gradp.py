@@ -15,7 +15,7 @@ import numpy as np
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
+def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
     e2c,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
@@ -129,6 +129,9 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
                         break
 
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
-    vertoffset_gradp[:horizontal_start_1, :, :] = 0.0
+
+    # TODO(havogt): NumpyDataProvider needs to be extended to support implict exchange.
+    exchange(zdiff_gradp[:, 0, :])
+    exchange(zdiff_gradp[:, 1, :])
 
     return zdiff_gradp, vertoffset_gradp
