@@ -266,6 +266,12 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
+    @abc.abstractmethod
+    def clone(self) -> ExchangeRuntime:
+        """Create a copy of this `ExchangeRuntime` that can be used
+        independently of the original one."""
+        ...
+
     @overload
     def start(
         self,
@@ -408,6 +414,9 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
+    def clone(self) -> SingleNodeExchange:
+        return SingleNodeExchange()
+
     def start(
         self,
         dim: gtx.Dimension,

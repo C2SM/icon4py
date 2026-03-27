@@ -9,6 +9,7 @@
 
 import dataclasses
 import logging
+from functools import partial
 from typing import Final
 
 import gt4py.next as gtx
@@ -362,13 +363,14 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: (
+            gtx_typing.Backend | model_backends.DeviceType | model_backends.BackendDescriptor | None
+        ),
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
+        self._exchange1 = exchange.clone()
+        self._exchange2 = exchange.clone()
 
         self._grid = grid
         self._config = config
@@ -434,7 +436,10 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_rho_theta_pgrad_and_update_vn = setup_program(
+        (
+            self._compute_rho_theta_pgrad_and_update_vn1,
+            self._compute_rho_theta_pgrad_and_update_vn2,
+        ) = self._setup_split_program(
             backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_rho_theta_pgrad_and_update_vn,
             constant_args={
@@ -469,8 +474,6 @@ class SolveNonhydro:
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
                 "nflat_gradp": self._metric_state_nonhydro.nflat_gradp,
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
@@ -791,6 +794,9 @@ class SolveNonhydro:
             enh_smag_fac=self.interpolated_fourth_order_divdamp_factor,
         )
 
+        self._first_half_field_cache = {}
+        self._second_half_field_cache = {}
+
         self.p_test_run = False
 
         self._dtime_previous_substep: float = 0.0
@@ -798,6 +804,76 @@ class SolveNonhydro:
         Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
+
+    def _first_half_vertical_sizes(self):
+        return {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels // 2),
+        }
+
+    def _second_half_vertical_sizes(self):
+        return {
+            "vertical_start": gtx.int32(self._grid.num_levels // 2),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+
+    def _setup_split_program(self, **kwargs):
+        existing = kwargs.pop("vertical_sizes", {})
+        return (
+            setup_program(
+                **kwargs,
+                vertical_sizes={**existing, **self._first_half_vertical_sizes()},
+            ),
+            setup_program(
+                **kwargs,
+                vertical_sizes={**existing, **self._second_half_vertical_sizes()},
+            ),
+        )
+
+    def _get_first_half_field(self, vn: gtx.Field):
+        try:
+            return self._first_half_field_cache[vn.__gt_buffer_info__.hash_key]
+        except KeyError:
+            self._first_half_field_cache[vn.__gt_buffer_info__.hash_key] = gtx_common._field(
+                vn.ndarray[:, : self._grid.num_levels // 2],
+                domain=gtx_common.Domain(
+                    dims=vn.domain.dims,
+                    ranges=(
+                        vn.domain.ranges[0],
+                        gtx_common.UnitRange(0, self._grid.num_levels // 2),
+                    ),
+                ),
+            )
+            return self._first_half_field_cache[vn.__gt_buffer_info__.hash_key]
+
+    def _get_second_half_field(self, vn: gtx.Field):
+        try:
+            return self._second_half_field_cache[vn.__gt_buffer_info__.hash_key]
+        except KeyError:
+            self._second_half_field_cache[vn.__gt_buffer_info__.hash_key] = gtx_common._field(
+                vn.ndarray[:, self._grid.num_levels // 2 :],
+                domain=gtx_common.Domain(
+                    dims=vn.domain.dims,
+                    ranges=(
+                        vn.domain.ranges[0],
+                        gtx_common.UnitRange(self._grid.num_levels // 2, self._grid.num_levels),
+                    ),
+                ),
+            )
+            return self._second_half_field_cache[vn.__gt_buffer_info__.hash_key]
+
+    # def _get_split_vn(self, vn: gtx.Field) -> gtx.Field:
+    #     return (self._get_first_half_field(vn), self._get_second_half_field(vn))
+
+    def _schedule_split_programs_and_halo_exchange(self, f11, f12, e1, e2, f21, f22, stream):
+        f11()
+        eh1 = e1()
+        f21()
+        eh2 = e2()
+        eh1.finish(stream=stream)
+        f21()
+        eh2.finish(stream=stream)
+        f22()
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -824,7 +900,11 @@ class SolveNonhydro:
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+                self._grid,
+                dims.CellDim,
+                dims.KDim,
+                dtype=ta.vpfloat,
+                allocator=allocator,
             )
         )
         """
@@ -865,7 +945,11 @@ class SolveNonhydro:
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+                self._grid,
+                dims.CellDim,
+                dims.KDim,
+                dtype=ta.vpfloat,
+                allocator=allocator,
             )
         )
         """
@@ -1132,7 +1216,28 @@ class SolveNonhydro:
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
 
-        self._compute_rho_theta_pgrad_and_update_vn(
+        self._compute_rho_theta_pgrad_and_update_vn1(
+            rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
+            theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
+            next_vn=prognostic_states.next.vn,
+            current_vn=prognostic_states.current.vn,
+            tangential_wind=diagnostic_state_nh.tangential_wind,
+            perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
+            temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level_1d_view,
+            predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
+            normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
+            normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
+            grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+            dtime=dtime,
+        )
+        self._compute_rho_theta_pgrad_and_update_vn2(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
