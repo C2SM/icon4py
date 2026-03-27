@@ -128,8 +128,10 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     nflatlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    vertical_start1: gtx.int32,
+    vertical_end1: gtx.int32,
+    vertical_start2: gtx.int32,
+    vertical_end2: gtx.int32,
 ):
     """
     This program computes a variety of diagnostic quantities and fluxes
@@ -201,7 +203,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start1, vertical_end1),
         },
     )
 
@@ -211,7 +213,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (vertical_start2, vertical_end2),
         },
     )
 

@@ -440,6 +440,8 @@ class SolveNonhydro:
             self._compute_rho_theta_pgrad_and_update_vn1,
             self._compute_rho_theta_pgrad_and_update_vn2,
         ) = self._setup_split_program(
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self._grid.num_levels),
             backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_rho_theta_pgrad_and_update_vn,
             constant_args={
@@ -478,7 +480,12 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._apply_divergence_damping_and_update_vn = setup_program(
+        (
+            self._apply_divergence_damping_and_update_vn1,
+            self._apply_divergence_damping_and_update_vn2,
+        ) = self._setup_split_program(
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self._grid.num_levels),
             backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn,
             constant_args={
@@ -504,14 +511,12 @@ class SolveNonhydro:
                 "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
                 "horizontal_end": self._end_edge_local,
             },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_horizontal_velocity_quantities_and_fluxes = setup_program(
+        # This is split manually because of the special case needed for
+        # extrapolate_at_top.
+        self._compute_horizontal_velocity_quantities_and_fluxes1 = setup_program(
             backend=backend,
             program=compute_horizontal_velocity_quantities_and_fluxes,
             constant_args={
@@ -530,32 +535,61 @@ class SolveNonhydro:
             },
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+                "vertical_start1": gtx.int32(0),
+                "vertical_end1": gtx.int32(self._grid.num_levels // 2),
+                # Disable extrapolate_at_top with empty range
+                "vertical_start2": gtx.int32(0),
+                "vertical_end2": gtx.int32(0),
             },
             offset_provider=self._grid.connectivities,
         )
-
-        self._compute_averaged_vn_and_fluxes = setup_program(
+        self._compute_horizontal_velocity_quantities_and_fluxes2 = setup_program(
             backend=backend,
-            program=compute_averaged_vn_and_fluxes,
+            program=compute_horizontal_velocity_quantities_and_fluxes,
             constant_args={
-                "e_flx_avg": self._interpolation_state.e_flx_avg,
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
-            },
-            variants={
-                "at_first_substep": [False, True],
-                "prepare_advection": [False, True],
+                "ddxn_z_full": self._metric_state_nonhydro.ddxn_z_full,
+                "ddxt_z_full": self._metric_state_nonhydro.ddxt_z_full,
+                "wgtfac_e": self._metric_state_nonhydro.wgtfac_e,
+                "wgtfacq_e": self._metric_state_nonhydro.wgtfacq_e,
+                "e_flx_avg": self._interpolation_state.e_flx_avg,
+                "geofac_grdiv": self._interpolation_state.geofac_grdiv,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
                 "horizontal_end": self._end_edge_halo_level_2,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
+                "nflatlev": self._vertical_params.nflatlev,
+                "vertical_start1": gtx.int32(self._grid.num_levels // 2),
+                "vertical_end1": gtx.int32(self._grid.num_levels),
+                "vertical_start2": gtx.int32(self._grid.num_levels),
+                "vertical_end2": gtx.int32(self._grid.num_levels + 1),
             },
             offset_provider=self._grid.connectivities,
+        )
+
+        (self._compute_averaged_vn_and_fluxes1, self._compute_averaged_vn_and_fluxes2) = (
+            self._setup_split_program(
+                vertical_start=gtx.int32(0),
+                vertical_end=gtx.int32(self._grid.num_levels),
+                backend=backend,
+                program=compute_averaged_vn_and_fluxes,
+                constant_args={
+                    "e_flx_avg": self._interpolation_state.e_flx_avg,
+                    "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
+                },
+                variants={
+                    "at_first_substep": [False, True],
+                    "prepare_advection": [False, True],
+                },
+                horizontal_sizes={
+                    "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
+                    "horizontal_end": self._end_edge_halo_level_2,
+                },
+                offset_provider=self._grid.connectivities,
+            )
         )
 
         self._vertically_implicit_solver_at_predictor_step = setup_program(
@@ -805,28 +839,37 @@ class SolveNonhydro:
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
 
-    def _first_half_vertical_sizes(self):
+    def _first_half_vertical_sizes(self, vertical_start: gtx.int32, vertical_end: gtx.int32):
         return {
-            "vertical_start": gtx.int32(0),
-            "vertical_end": gtx.int32(self._grid.num_levels // 2),
+            "vertical_start": vertical_start,
+            "vertical_end": gtx.int32(vertical_start + ((vertical_end - vertical_start) // 2)),
         }
 
-    def _second_half_vertical_sizes(self):
+    def _second_half_vertical_sizes(self, vertical_start: gtx.int32, vertical_end: gtx.int32):
         return {
-            "vertical_start": gtx.int32(self._grid.num_levels // 2),
-            "vertical_end": gtx.int32(self._grid.num_levels),
+            "vertical_start": gtx.int32(vertical_start + ((vertical_end - vertical_start) // 2)),
+            "vertical_end": vertical_end,
         }
 
-    def _setup_split_program(self, **kwargs):
+    def _setup_split_program(self, vertical_start: gtx.int32, vertical_end: gtx.int32, **kwargs):
         existing = kwargs.pop("vertical_sizes", {})
+        print(f"{(vertical_start, vertical_end)}")
+        print(f"{self._first_half_vertical_sizes(vertical_start, vertical_end)}")
+        print(f"{self._second_half_vertical_sizes(vertical_start, vertical_end)}")
         return (
             setup_program(
                 **kwargs,
-                vertical_sizes={**existing, **self._first_half_vertical_sizes()},
+                vertical_sizes={
+                    **existing,
+                    **self._first_half_vertical_sizes(vertical_start, vertical_end),
+                },
             ),
             setup_program(
                 **kwargs,
-                vertical_sizes={**existing, **self._second_half_vertical_sizes()},
+                vertical_sizes={
+                    **existing,
+                    **self._second_half_vertical_sizes(vertical_start, vertical_end),
+                },
             ),
         )
 
@@ -861,9 +904,6 @@ class SolveNonhydro:
                 ),
             )
             return self._second_half_field_cache[vn.__gt_buffer_info__.hash_key]
-
-    # def _get_split_vn(self, vn: gtx.Field) -> gtx.Field:
-    #     return (self._get_first_half_field(vn), self._get_second_half_field(vn))
 
     def _schedule_split_programs_and_halo_exchange(self, f11, f12, e1, e2, f21, f22, stream):
         f11()
@@ -1267,7 +1307,21 @@ class SolveNonhydro:
             stream=decomposition.DEFAULT_STREAM,
         )
 
-        self._compute_horizontal_velocity_quantities_and_fluxes(
+        self._compute_horizontal_velocity_quantities_and_fluxes1(
+            spatially_averaged_vn=self.z_vn_avg,
+            horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
+            tangential_wind=diagnostic_state_nh.tangential_wind,
+            mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
+            tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
+            vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
+            vn=prognostic_states.next.vn,
+            rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
+            theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+        )
+        self._compute_horizontal_velocity_quantities_and_fluxes2(
             spatially_averaged_vn=self.z_vn_avg,
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             tangential_wind=diagnostic_state_nh.tangential_wind,
@@ -1422,7 +1476,27 @@ class SolveNonhydro:
             )
         )
 
-        self._apply_divergence_damping_and_update_vn(
+        self._apply_divergence_damping_and_update_vn1(
+            horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
+            next_vn=prognostic_states.next.vn,
+            current_vn=prognostic_states.current.vn,
+            dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
+            predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
+            corrector_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.corrector,
+            normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
+            normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
+            theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
+            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
+            dtime=dtime,
+            apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
+            apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
+        self._apply_divergence_damping_and_update_vn2(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
             current_vn=prognostic_states.current.vn,
@@ -1450,7 +1524,20 @@ class SolveNonhydro:
             stream=decomposition.DEFAULT_STREAM,
         )
 
-        self._compute_averaged_vn_and_fluxes(
+        self._compute_averaged_vn_and_fluxes1(
+            spatially_averaged_vn=self.z_vn_avg,
+            mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
+            substep_and_spatially_averaged_vn=prep_adv.vn_traj,
+            substep_averaged_mass_flux=prep_adv.mass_flx_me,
+            vn=prognostic_states.next.vn,
+            rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
+            theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            prepare_advection=lprep_adv,
+            at_first_substep=at_first_substep,
+            r_nsubsteps=r_nsubsteps,
+        )
+        self._compute_averaged_vn_and_fluxes2(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
