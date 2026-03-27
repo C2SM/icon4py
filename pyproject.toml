@@ -414,7 +414,7 @@ url = 'https://pypi.amd.com/rocm-7.0.2/simple'
 [tool.uv.sources]
 amd-cupy = {index = "amd"}
 dace = {index = "gridtools"}
-gt4py = {git = "https://github.com/GridTools/gt4py", branch = "hooks_fix"}
+# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
