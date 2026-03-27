@@ -76,7 +76,7 @@ class Stream:
     ptr: int
 
     def __cuda_stream__(self) -> tuple[int, int]:
-        return 1, self.ptr
+        return 0, self.ptr
 
 
 DEFAULT_STREAM = Stream(0)

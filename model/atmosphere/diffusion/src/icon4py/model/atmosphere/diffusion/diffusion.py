@@ -54,7 +54,6 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -770,7 +769,6 @@ class Diffusion:
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
-    @dace_orchestration.orchestrate
     def _do_diffusion_step(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
@@ -934,21 +932,3 @@ class Diffusion:
             # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
-
-    # TODO(kotsaloscv): It is unsafe to set it as cached property -demands more testing-
-    def orchestration_uid(self) -> str:
-        """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
-        members_to_disregard = [
-            "_allocator",
-            "_exchange",
-            "_grid",
-            "compile_time_connectivities",
-            *[
-                name
-                for name in self.__dict__
-                if isinstance(self.__dict__[name], gtx_typing.Program)
-            ],
-        ]
-        return dace_orchestration.generate_orchestration_uid(
-            self, members_to_disregard=members_to_disregard
-        )
