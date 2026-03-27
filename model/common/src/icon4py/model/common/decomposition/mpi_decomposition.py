@@ -17,7 +17,20 @@ from types import ModuleType
 from typing import Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
+
+# try:
+import ghex  # type: ignore [import-not-found]
+import mpi4py
 import numpy as np
+from ghex.context import make_context  # type: ignore [import-not-found]
+from ghex.unstructured import (  # type: ignore [import-not-found]
+    DomainDescriptor,
+    HaloGenerator,
+    make_communication_object,
+    make_field_descriptor,
+    make_pattern,
+)
+from ghex.util import Architecture  # type: ignore [import-not-found]
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
@@ -28,26 +41,13 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-try:
-    import ghex  # type: ignore [import-not-found]
-    import mpi4py
-    from ghex.context import make_context  # type: ignore [import-not-found]
-    from ghex.unstructured import (  # type: ignore [import-not-found]
-        DomainDescriptor,
-        HaloGenerator,
-        make_communication_object,
-        make_field_descriptor,
-        make_pattern,
-    )
-    from ghex.util import Architecture  # type: ignore [import-not-found]
+mpi4py.rc.initialize = False
+mpi4py.rc.finalize = True
 
-    mpi4py.rc.initialize = False
-    mpi4py.rc.finalize = True
-
-except ImportError:
-    mpi4py = None  # type: ignore   [assignment]
-    ghex = None
-    unstructured = None
+# except ImportError:
+#     mpi4py = None  # type: ignore   [assignment]
+#     ghex = None
+#     unstructured = None
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -131,6 +131,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         props: definitions.ProcessProperties,
         domain_decomposition: definitions.DecompositionInfo,
     ):
+        self._props = props
         self._context = make_context(props.comm, False)
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
@@ -240,6 +241,12 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         else:
             assert f.ndim in (1, 2), "Buffers must be 1d or 2d"
             return self._patterns[dim](self._make_field_descriptor(dim, f))
+
+    def clone(self) -> GHexMultiNodeExchange:
+        return GHexMultiNodeExchange(
+            props=self._props,
+            domain_decomposition=self._decomposition_info,
+        )
 
     def start(
         self,
