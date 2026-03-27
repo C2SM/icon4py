@@ -523,7 +523,7 @@ def _read_config(
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
-        fourth_order_divdamp_factor=0.0025, rayleigh_coeff=0.1
+        fourth_order_divdamp_factor=0.0025
     )
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
