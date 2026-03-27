@@ -37,13 +37,13 @@ name = "icon4py-common"
 readme = "README.md"
 requires-python = ">=3.10"
 # managed by bump-my-version:
-version = "0.0.6"
+version = "0.1.0"
 
 [project.optional-dependencies]
 all = ["icon4py-common[distributed,io]"]
 cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
-distributed = ["ghex>=0.5.0", "mpi4py>=3.1.5"]
+distributed = ["ghex>=0.5.1", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
   "cartopy>=0.22.0",
@@ -68,7 +68,7 @@ repository = "https://github.com/C2SM/icon4py"
 [tool.bumpversion]
 allow_dirty = false
 commit = false
-current_version = "0.0.6"
+current_version = "0.1.0"
 ignore_missing_version = false
 message = 'Bump icon4py-common version: {current_version} → {new_version}'
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"

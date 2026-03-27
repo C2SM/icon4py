@@ -61,10 +61,13 @@ def test_graupel_only(
     )
 
     graupel_run_program = run_graupel_only.setup_graupel(
-        inp,
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,
+        horizontal_start=0,
+        horizontal_end=inp.ncells,
+        vertical_start=0,
+        vertical_end=inp.nlev,
         enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
     )
 
