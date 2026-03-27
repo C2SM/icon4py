@@ -615,7 +615,7 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         old_desc = sdfg.arrays[old_name]
         new_desc = sdfg.arrays[new_name]
         for what in ["shape", "strides"]:
-            _update_repl(
+            _update_repl_impl(
                 repl,
                 old_name=old_name,
                 old_symbols=getattr(old_desc, what),
