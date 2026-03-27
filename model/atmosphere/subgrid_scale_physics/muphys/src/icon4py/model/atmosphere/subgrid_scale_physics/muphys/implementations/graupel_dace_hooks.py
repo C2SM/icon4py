@@ -18,7 +18,7 @@ from dace import (
 )
 from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
-
+from gt4py.next.program_processors.runners.dace.transformations import local_double_buffering as gtx_local_double_buffering
 
 def _cleanup_local_self_update(
     scan_sdfg: dace.SDFG,
