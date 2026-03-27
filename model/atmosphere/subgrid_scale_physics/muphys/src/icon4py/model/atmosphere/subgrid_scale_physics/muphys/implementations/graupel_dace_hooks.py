@@ -18,7 +18,10 @@ from dace import (
 )
 from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
-from gt4py.next.program_processors.runners.dace.transformations import local_double_buffering as gtx_local_double_buffering
+from gt4py.next.program_processors.runners.dace.transformations import (
+    local_double_buffering as gtx_local_double_buffering,
+)
+
 
 def _cleanup_local_self_update(
     scan_sdfg: dace.SDFG,
@@ -445,7 +448,13 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
     scan_sdfg = scan_nsdfg_node.sdfg
     assert len(scan_sdfg.nodes()) == 3
     assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
-    scan_loop = scan_sdfg.nodes()[1]
+    scan_loop = next(
+        [
+            scan_sdfg_node
+            for scan_sdfg_node in scan_sdfg.nodes()
+            if isinstance(scan_sdfg_node, dace_sdfg.state.LoopRegion)
+        ]
+    )
     assert len(scan_loop.nodes()) == 2 and all(
         isinstance(node, dace.SDFGState) for node in scan_loop.nodes()
     )
@@ -553,8 +562,8 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             nsdfg_conditional_block.remove_branch(else_branch)
         sdfg.validate()
 
+
 def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
-    sdfg.save("before_renaming_intermediate_access_nodes.sdfg")
     assert len(sdfg.states()) == 1
     st: dace.SDFGState = sdfg.states()[0]
     access_node_renaming_dict = {
@@ -570,12 +579,12 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
             map_exit = st.exit_node(map_entry)
             map_entry_input_data = [in_edge.src.data for in_edge in st.in_edges(map_entry)]
             map_exit_output_data = [out_edge.dst.data for out_edge in st.out_edges(map_exit)]
-            if all(key in map_exit_output_data for key in access_node_renaming_dict.keys()) and all(
+            if all(key in map_exit_output_data for key in access_node_renaming_dict) and all(
                 key in map_entry_input_data for key in access_node_renaming_dict.values()
             ):
                 in_out_dict = {}
                 for out_edge in st.out_edges(map_exit):
-                    if out_edge.dst.data in access_node_renaming_dict.keys():
+                    if out_edge.dst.data in access_node_renaming_dict:
                         new_data_name = access_node_renaming_dict[out_edge.dst.data]
                         input_node = next(
                             in_edge.src
@@ -639,4 +648,3 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
                 # Apply this only to the first map
                 return
     sdfg.validate()
-    sdfg.save("after_renaming_intermediate_access_nodes.sdfg")
