@@ -49,7 +49,9 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
     def input_data(self, grid: base_grid.Grid) -> dict:
         interpolant = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = self.data_alloc.zero_field(
+            dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             wgtfac_e=wgtfac_e,

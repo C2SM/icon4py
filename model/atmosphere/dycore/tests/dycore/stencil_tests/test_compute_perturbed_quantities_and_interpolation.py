@@ -355,9 +355,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             dims.CellDim, dims.KDim
         )
         wgtfacq_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        perturbed_rho_at_cells_on_model_levels = self.data_alloc.zero_field(
-            dims.CellDim, dims.KDim
-        )
+        perturbed_rho_at_cells_on_model_levels = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         perturbed_theta_v_at_cells_on_model_levels = self.data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
@@ -393,11 +391,11 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         temporal_extrapolation_of_perturbed_exner = self.data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = self.data_alloc.zero_field(
-            dims.CellDim, dims.KDim
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+            self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         )
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = self.data_alloc.zero_field(
-            dims.CellDim, dims.KDim
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+            self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         )
         theta_v_at_cells_on_half_levels = self.data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}

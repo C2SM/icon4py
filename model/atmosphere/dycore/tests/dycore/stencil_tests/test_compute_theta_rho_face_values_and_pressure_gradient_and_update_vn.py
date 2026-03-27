@@ -465,8 +465,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         temporal_extrapolation_of_perturbed_exner = self.data_alloc.random_field(
             dims.CellDim, dims.KDim
         )
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+            self.data_alloc.random_field(dims.CellDim, dims.KDim)
         )
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             self.data_alloc.random_field(dims.CellDim, dims.KDim)
@@ -490,9 +490,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         horizontal_pressure_gradient = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         rho_at_edges_on_model_levels = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
 
-        ikoffset = self.data_alloc.zero_field(
-            dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-        )
+        ikoffset = self.data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         k_levels = grid.num_levels
 

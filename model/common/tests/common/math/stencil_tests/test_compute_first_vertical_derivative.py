@@ -48,7 +48,9 @@ class TestComputeFirstVerticalDerivative(StencilTest):
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
         inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        first_vertical_derivative = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        first_vertical_derivative = self.data_alloc.zero_field(
+            dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             cell_kdim_field=cell_kdim_field,

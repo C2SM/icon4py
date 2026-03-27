@@ -94,7 +94,9 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         z_exner_ex_pr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        zdiff_gradp = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat)
+        zdiff_gradp = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat
+        )
         ikoffset = self.data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):

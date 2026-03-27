@@ -26,8 +26,6 @@ class TestDepositionFactor(StencilTest):
     def input_data(self, grid):
         return dict(
             t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qvsi=self.data_alloc.constant_field(
-                0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            qvsi=self.data_alloc.constant_field(0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat),
             deposition_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -136,9 +136,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ikoffset = self.data_alloc.zero_field(
-            dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-        )
+        ikoffset = self.data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)

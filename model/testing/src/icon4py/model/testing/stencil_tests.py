@@ -21,12 +21,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py.next import (
-    backend as gtx_backend,
-    constructors as gtx_constructors,
-    named_collections as gtx_named_collections,
-    typing as gtx_typing,
-)
+from gt4py.next import typing as gtx_typing
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
@@ -65,7 +60,7 @@ def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
 
 def _input_data_fixture(
     func: types.FunctionType | None = None, **kwargs: Any
-) -> "_pytest.fixtures.FixtureFunctionMarker":
+) -> types.FunctionType | Callable[[types.FunctionType], types.FunctionType]:
     """
     Decorator to mark the `input_data` method of a `StencilTest` suite as a pytest fixture.
 
@@ -109,7 +104,7 @@ else:
     static_reference = _static_reference
     input_data_fixture = _input_data_fixture
 
-
+# ruff: noqa: ERA001
 # def allocate_data(
 #     allocator: gtx_typing.Allocator | None,
 #     input_data: dict[
@@ -318,7 +313,7 @@ class StencilTest:
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
-    input_data: ClassVar[pytest.FixtureDef]
+    input_data: ClassVar[Callable[..., dict[str, Any]]]
 
     data_alloc: DataAllocation
 
@@ -389,7 +384,7 @@ class StencilTest:
                     raise AttributeError(f"Invalid data allocation function '{name}'.")
 
         try:
-            self.data_alloc = DataAllocationWrapper()  # type: ignore[assignment]
+            self.data_alloc = DataAllocationWrapper()
             yield
 
         finally:

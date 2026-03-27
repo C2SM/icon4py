@@ -54,7 +54,9 @@ class TestInterpolateToSurface(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         wgtfacq_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_surface = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_surface = self.data_alloc.zero_field(
+            dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             interpolant=interpolant,

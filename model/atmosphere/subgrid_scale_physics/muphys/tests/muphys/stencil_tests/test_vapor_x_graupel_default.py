@@ -39,9 +39,7 @@ class TestVaporXGraupelDefault(StencilTest):
             t=self.data_alloc.constant_field(278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
             p=self.data_alloc.constant_field(95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=self.data_alloc.constant_field(1.20041, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg=self.data_alloc.constant_field(
-                2.056496e-16, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            qg=self.data_alloc.constant_field(2.056496e-16, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw=self.data_alloc.constant_field(
                 -0.00234674, dims.CellDim, dims.KDim, dtype=wpfloat
             ),

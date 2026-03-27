@@ -86,7 +86,9 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid):
-        zd_vertoffset = self.data_alloc.zero_field(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
+        zd_vertoffset = self.data_alloc.zero_field(
+            dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
+        )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)

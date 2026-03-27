@@ -36,9 +36,7 @@ class TestVaporXIceDefault(StencilTest):
         return dict(
             qi=self.data_alloc.constant_field(9.53048e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
             mi=self.data_alloc.constant_field(1.0e-9, dims.CellDim, dims.KDim, dtype=wpfloat),
-            eta=self.data_alloc.constant_field(
-                1.90278e-05, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            eta=self.data_alloc.constant_field(1.90278e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsi=self.data_alloc.constant_field(
                 0.000120375, dims.CellDim, dims.KDim, dtype=wpfloat
             ),

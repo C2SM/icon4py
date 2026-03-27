@@ -66,7 +66,9 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         )
 
     @input_data_fixture
-    def input_data(self, grid: base.Grid) -> ict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
+    def input_data(
+        self, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
         scalar_field = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
         geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
