@@ -1277,6 +1277,14 @@ class SolveNonhydro:
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
         )
+
+        exchange_handle1 = self._exchange1.start(
+            dims.EdgeDim,
+            self._get_first_half_field(prognostic_states.next.vn),
+            self._get_first_half_field(z_fields.rho_at_edges_on_model_levels),
+            stream=decomposition.DEFAULT_STREAM,
+        )
+
         self._compute_rho_theta_pgrad_and_update_vn2(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
@@ -1299,13 +1307,14 @@ class SolveNonhydro:
             dtime=dtime,
         )
 
-        log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
-        self._exchange.exchange(
+        exchange_handle2 = self._exchange2.start(
             dims.EdgeDim,
-            prognostic_states.next.vn,
-            z_fields.rho_at_edges_on_model_levels,
+            self._get_second_half_field(prognostic_states.next.vn),
+            self._get_second_half_field(z_fields.rho_at_edges_on_model_levels),
             stream=decomposition.DEFAULT_STREAM,
         )
+
+        exchange_handle1.finish(stream=decomposition.DEFAULT_STREAM)
 
         self._compute_horizontal_velocity_quantities_and_fluxes1(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1321,6 +1330,9 @@ class SolveNonhydro:
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
         )
+
+        exchange_handle2.finish(stream=decomposition.DEFAULT_STREAM)
+
         self._compute_horizontal_velocity_quantities_and_fluxes2(
             spatially_averaged_vn=self.z_vn_avg,
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
@@ -1496,6 +1508,13 @@ class SolveNonhydro:
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
         )
+
+        exchange_handle1 = self._exchange1.start(
+            dims.EdgeDim,
+            self._get_first_half_field(prognostic_states.next.vn),
+            stream=decomposition.DEFAULT_STREAM,
+        )
+
         self._apply_divergence_damping_and_update_vn2(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
@@ -1517,12 +1536,13 @@ class SolveNonhydro:
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-        log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange(
+        exchange_handle2 = self._exchange2.start(
             dims.EdgeDim,
-            prognostic_states.next.vn,
+            self._get_second_half_field(prognostic_states.next.vn),
             stream=decomposition.DEFAULT_STREAM,
         )
+
+        exchange_handle1.finish(stream=decomposition.DEFAULT_STREAM)
 
         self._compute_averaged_vn_and_fluxes1(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1537,6 +1557,9 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
         )
+
+        exchange_handle2.finish(stream=decomposition.DEFAULT_STREAM)
+
         self._compute_averaged_vn_and_fluxes2(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
