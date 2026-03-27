@@ -42,11 +42,8 @@ def solve_nh_init(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
     l_vert_nested = False
     ldeepatmo = False
     iau_init = False
@@ -218,11 +215,8 @@ def solve_nh_init(
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
         rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
         divdamp_type=divdamp_type,
-        divdamp_trans_start=divdamp_trans_start,
-        divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
         ldeepatmo=ldeepatmo,
         iau_init=iau_init,
@@ -289,11 +283,8 @@ def test_dycore_wrapper_granule_inputs(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
     l_vert_nested = False
     ldeepatmo = False
     iau_init = False
@@ -649,10 +640,8 @@ def test_dycore_wrapper_granule_inputs(
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
             rayleigh_type=rayleigh_type,
-            rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,
             divdamp_type=divdamp_type,
-            divdamp_trans_start=divdamp_trans_start,
             divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
             ldeepatmo=ldeepatmo,
