@@ -22,7 +22,8 @@ import numpy as np
 import pytest
 from gt4py import eve
 from gt4py.next import (
-    constructors,
+    backend as gtx_backend,
+    constructors as gtx_constructors,
     named_collections as gtx_named_collections,
     typing as gtx_typing,
 )
@@ -33,7 +34,7 @@ from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metric
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import device_utils
+from icon4py.model.common.utils import data_allocation, device_utils
 
 
 _STENCIL_REFERENCE_MARKER: Final = "__stencil_test_reference__"
@@ -60,7 +61,7 @@ def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
 
 def _input_data_fixture(
     func: types.FunctionType | None = None, **kwargs: Any
-) -> pytest.fixtures.FixtureFunctionMarker:
+) -> "_pytest.fixtures.FixtureFunctionMarker":
     """
     Decorator to mark the `input_data` method of a `StencilTest` suite as a pytest fixture.
 
@@ -83,6 +84,13 @@ def _input_data_fixture(
             f" '{func.__name__}{func_params}'."
         )
 
+    cv = inspect.getclosurevars(func)
+    if any(ref is data_allocation for ref in [*cv.globals.values(), *cv.nonlocals.values()]):
+        raise TypeError(
+            "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
+            "Use self.data_alloc inside the fixture to access data allocation functions instead."
+        )
+
     kwargs.setdefault("scope", "class")
     fixt = pytest.fixture(**kwargs)(func)
     setattr(fixt, _INPUT_DATA_FIXTURE_MARKER, True)
@@ -98,23 +106,23 @@ else:
     input_data_fixture = _input_data_fixture
 
 
-def allocate_data(
-    allocator: gtx_typing.Allocator | None,
-    input_data: dict[
-        str, Any
-    ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
-) -> dict[str, Any]:
-    def _allocate_field(f: gtx.Field) -> gtx.Field:
-        return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
+# def allocate_data(
+#     allocator: gtx_typing.Allocator | None,
+#     input_data: dict[
+#         str, Any
+#     ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
+# ) -> dict[str, Any]:
+#     def _allocate_field(f: gtx.Field) -> gtx.Field:
+#         return gtx_constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
 
-    device_input_data = {
-        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
-        if not gtx.is_scalar_type(v) and k != "domain"
-        else v
-        for k, v in input_data.items()
-    }
+#     device_input_data = {
+#         k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
+#         if not gtx.is_scalar_type(v) and k != "domain"
+#         else v
+#         for k, v in input_data.items()
+#     }
 
-    return device_input_data
+#     return device_input_data
 
 
 @dataclasses.dataclass(frozen=True)
@@ -150,10 +158,16 @@ def test_and_benchmark(
     self: StencilTest,
     benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
     grid: base.Grid,
-    device_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
+    """
+    Test and benchmark the stencil program.
+
+    Note that it is defined as a standalone function and then attached to the `StencilTest`
+    subclasses in order to use a meaningful name for the test in pytest output.
+    """
     skip_stenciltest_verification = request.config.getoption(
         "skip_stenciltest_verification"
     )  # skip verification if `--skip-stenciltest-verification` CLI option is set
@@ -161,17 +175,12 @@ def test_and_benchmark(
 
     if not skip_stenciltest_verification:
         reference_outputs = self.reference(
-            _ConnectivityConceptFixer(
-                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-            ),
-            **{
-                k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                for k, v in device_input_data.items()
-            },
+            grid=_ConnectivityConceptFixer(grid),
+            **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
         )
 
-        configured_program(**device_input_data, offset_provider=grid.connectivities)
-        self._verify_stencil_test(input_data=device_input_data, reference_outputs=reference_outputs)
+        configured_program(**input_data, offset_provider=grid.connectivities)
+        self.verify_data(input_data=input_data, reference_outputs=reference_outputs)
 
     if not skip_stenciltest_benchmark:
         warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
@@ -181,7 +190,7 @@ def test_and_benchmark(
         benchmark.pedantic(
             configured_program,
             args=(),
-            kwargs=dict(**device_input_data, offset_provider=grid.connectivities),
+            kwargs=dict(**input_data, offset_provider=grid.connectivities),
             rounds=int(
                 os.getenv("ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS", "3")
             ),  # 30 iterations in total should be stable enough
@@ -211,7 +220,7 @@ def test_and_benchmark(
             gtx_hooks.program_call_context.register(
                 _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
             )
-            configured_program(**device_input_data, offset_provider=grid.connectivities)
+            configured_program(**input_data, offset_provider=grid.connectivities)
             gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
 
             if metrics_key is None:
@@ -267,6 +276,7 @@ class StencilTest:
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
+    input_data: ClassVar[pytest.FixtureDef]
 
     @pytest.fixture
     def configured_program(
@@ -299,25 +309,48 @@ class StencilTest:
         test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
-    @pytest.fixture
-    def device_input_data(
-        self,
-        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        backend_like: model_backends.BackendLike,
-    ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...]]]:
-        # This is partially a workaround, because in the `input_data` fixture,
-        # provided by the user it does not allocate for the correct device,
-        # but it is also convenient for the verification step, where we need
-        # the data on the host as numpy arrays.
-        allocator = model_backends.get_allocator(backend_like)
-        device_data = allocate_data(allocator=allocator, input_data=input_data)
-        try:
-            yield device_data
-        finally:
-            # explicitly clear data dict after test to prevent potential memory leaks
-            device_data.clear()
+    # @pytest.fixture
+    # def device_input_data(
+    #     self,
+    #     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    #     backend_like: model_backends.BackendLike,
+    # ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...]]]:
+    #     # This is partially a workaround, because in the `input_data` fixture,
+    #     # provided by the user it does not allocate for the correct device,
+    #     # but it is also convenient for the verification step, where we need
+    #     # the data on the host as numpy arrays.
+    #     allocator = model_backends.get_allocator(backend_like)
+    #     device_data = allocate_data(allocator=allocator, input_data=input_data)
+    #     try:
+    #         yield device_data
+    #     finally:
+    #         # explicitly clear data dict after test to prevent potential memory leaks
+    #         device_data.clear()
 
-    def _verify_stencil_test(
+    @pytest.fixture(autouse=True)
+    def data_alloc(
+        self, backend: gtx_backend.Backend | None, grid: base.Grid
+    ) -> Generator[None, None, None]:
+        """
+        Convenience fixture to provide data allocation function with backend and grid already bound.
+        """
+
+        class DataAllocationWrapper:
+            def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
+                if name in ("constant_field", "random_field", "random_mask", "zero_field"):
+                    alloc_fun = getattr(data_allocation, name)
+                    return functools.partial(alloc_fun, grid, backend=backend)
+                else:
+                    raise AttributeError(f"Invalid data allocation function '{name}'.")
+
+        try:
+            self.data_alloc = DataAllocationWrapper()  # type: ignore[assignment]
+            yield
+
+        finally:
+            del self.data_alloc
+
+    def verify_data(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         reference_outputs: Mapping[str, np.ndarray | tuple[np.ndarray, ...]],
