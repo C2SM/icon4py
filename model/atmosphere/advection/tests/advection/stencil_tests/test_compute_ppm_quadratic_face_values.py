@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_valu
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -44,9 +43,9 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_face = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,

@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -47,8 +46,8 @@ class TestAddAnalysisIncrementsToVn(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_incr = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vn_incr = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         iau_wgt_dyn = wpfloat("5.0")
 
         return dict(

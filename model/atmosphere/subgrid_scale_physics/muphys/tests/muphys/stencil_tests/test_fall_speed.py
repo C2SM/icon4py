@@ -12,7 +12,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import fall_speed
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -29,9 +28,9 @@ class TestFallSpeed(StencilTest):
     @input_data_fixture
     def input_data(self, grid):
         return dict(
-            density=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            density=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             prefactor=Idx.prefactor_r,
             offset=Idx.offset_r,
             exponent=Idx.exponent_r,
-            speed=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            speed=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

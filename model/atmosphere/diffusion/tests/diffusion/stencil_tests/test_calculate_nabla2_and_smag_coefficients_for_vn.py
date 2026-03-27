@@ -175,32 +175,32 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        u_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        v_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         smag_offset = ta.vpfloat("9.0")
-        diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
+        diff_multfac_smag = self.data_alloc.random_field(dims.KDim, dtype=ta.vpfloat)
         tangent_orientation = data_alloc.random_sign(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        smag_limit = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
-        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        smag_limit = self.data_alloc.random_field(dims.KDim, dtype=ta.vpfloat)
+        inv_vert_vert_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_primal_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
 
-        primal_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        primal_normal_vert_x = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
-        primal_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        primal_normal_vert_y = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
-        dual_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        dual_normal_vert_x = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
-        dual_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        dual_normal_vert_y = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
 
-        z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        kh_smag_ec = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_nabla2_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        kh_smag_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        kh_smag_ec = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))

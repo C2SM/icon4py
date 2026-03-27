@@ -18,7 +18,6 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 from . import test_dycore_utils
@@ -76,10 +75,10 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
-        nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        interpolated_fourth_order_divdamp_factor = self.data_alloc.random_field(dims.KDim)
+        nudgecoeff_e = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        z_graddiv2_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         divdamp_order = 24
         mean_cell_area = 1000.0

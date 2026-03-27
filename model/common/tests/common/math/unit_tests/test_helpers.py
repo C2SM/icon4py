@@ -68,8 +68,8 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        input_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        result = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        input_field = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        result = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
         return dict(
             input_field=input_field,
             average=result,
@@ -102,8 +102,8 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        input_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        result = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        input_field = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        result = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             input_field=input_field,
             average=result,

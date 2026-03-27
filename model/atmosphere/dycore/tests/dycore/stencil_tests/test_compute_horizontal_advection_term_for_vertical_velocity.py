@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -84,14 +83,14 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        tangent_orientation = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_w_v = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_vt_ie = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        inv_primal_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        tangent_orientation = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        z_w_v = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
+        z_v_grad_w = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))

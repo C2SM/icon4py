@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -53,11 +52,11 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid):
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        dwdx = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        dwdy = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        dwdx = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        dwdy = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             w=w,

@@ -30,7 +30,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycor
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -184,34 +183,34 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        contravariant_correction_at_cells_on_half_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim
         )
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        reference_theta_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        current_rho = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        next_rho = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        current_theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        next_theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        reference_theta_at_cells_on_model_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim
         )
-        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
-        perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
+        exner_w_explicit_weight_parameter = self.data_alloc.random_field(dims.CellDim)
+        perturbed_exner_at_cells_on_model_levels = self.data_alloc.zero_field(
+            dims.CellDim, dims.KDim
         )
-        ddz_of_reference_exner_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+        ddz_of_reference_exner_at_cells_on_half_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim
         )
-        rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        rho_at_cells_on_half_levels = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        perturbed_theta_v_at_cells_on_half_levels = self.data_alloc.zero_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        theta_v_at_cells_on_half_levels = self.data_alloc.zero_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        nonhydro_buoy_at_cells_on_half_levels = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         dtime = 0.9
         rhotheta_explicit_weight_parameter = 0.25

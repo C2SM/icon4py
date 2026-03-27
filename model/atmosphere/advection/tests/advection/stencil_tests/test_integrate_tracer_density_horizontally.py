@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_density_horizo
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -63,16 +62,16 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_mflx = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_rhofluxdiv_c_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_fluxdiv_c_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_rho_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        p_mass_flx_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        z_rhofluxdiv_c = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_mflx = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_rho_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_rhofluxdiv_c_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_fluxdiv_c_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_rho_new_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_new_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         z_dtsub = 0.5
         nsub = 1
         return dict(

@@ -16,7 +16,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -43,11 +42,11 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        ptr_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        ptr_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        p_v_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        p_u_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        p_e_in = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        ptr_coeff_1 = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        ptr_coeff_2 = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        p_v_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        p_u_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_e_in=p_e_in,

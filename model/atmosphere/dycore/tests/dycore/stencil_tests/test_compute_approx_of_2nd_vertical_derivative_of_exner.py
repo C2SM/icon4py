@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -59,14 +58,14 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_theta_v_pr_ic = random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+        z_theta_v_pr_ic = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
-        d2dexdz2_fac1_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        d2dexdz2_fac2_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        d2dexdz2_fac1_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        d2dexdz2_fac2_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        z_dexner_dz_c_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,

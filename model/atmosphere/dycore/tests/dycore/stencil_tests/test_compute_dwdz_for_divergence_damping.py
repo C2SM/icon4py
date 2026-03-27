@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_dampin
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -52,12 +51,12 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
-        w_concorr_c = random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        w_concorr_c = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
-        z_dwdz_dd = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_dwdz_dd = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_ddqz_z_full=inv_ddqz_z_full,

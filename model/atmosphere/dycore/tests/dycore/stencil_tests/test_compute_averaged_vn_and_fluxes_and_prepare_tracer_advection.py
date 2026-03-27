@@ -11,7 +11,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
     compute_averaged_vn_and_fluxes,
 )
@@ -169,17 +168,17 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        spatially_averaged_vn = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        mass_fl_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        z_theta_v_fl_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
 
-        substep_and_spatially_averaged_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        substep_averaged_mass_flux = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        substep_and_spatially_averaged_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        substep_averaged_mass_flux = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_rho_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddqz_z_full_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_theta_v_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         prepare_advection = request.param["prepare_advection"]
         at_first_substep = request.param["at_first_substep"]
         r_nsubsteps = 0.5

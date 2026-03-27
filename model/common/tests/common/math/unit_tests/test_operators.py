@@ -15,7 +15,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, base as base_grid
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
-from icon4py.model.common.utils.data_allocation import constant_field, zero_field
 from icon4py.model.testing import reference_funcs
 from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
@@ -39,9 +38,9 @@ class TestNabla2OnCell(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
-        psi_c = constant_field(grid, 1.0, dims.CellDim)
-        geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-        nabla2_psi_c = zero_field(grid, dims.CellDim)
+        psi_c = self.data_alloc.constant_field(1.0, dims.CellDim)
+        geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
+        nabla2_psi_c = self.data_alloc.zero_field(dims.CellDim)
         return dict(
             psi_c=psi_c,
             geofac_n2s=geofac_n2s,
@@ -68,9 +67,9 @@ class TestNabla2OnCellK(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
-        geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-        nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)
+        psi_c = self.data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
+        geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
+        nabla2_psi_c = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             psi_c=psi_c,
             geofac_n2s=geofac_n2s,

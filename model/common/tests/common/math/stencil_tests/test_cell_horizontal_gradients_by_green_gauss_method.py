@@ -18,7 +18,6 @@ from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -68,11 +67,11 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        scalar_field = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        p_grad_1_u = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        p_grad_1_v = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        scalar_field = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        p_grad_1_u = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_grad_1_v = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             scalar_field=scalar_field,

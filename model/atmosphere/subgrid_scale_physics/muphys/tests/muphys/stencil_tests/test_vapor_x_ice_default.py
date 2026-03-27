@@ -11,7 +11,6 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import vapor_x_ice
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -35,17 +34,17 @@ class TestVaporXIceDefault(StencilTest):
     @input_data_fixture
     def input_data(self, grid):
         return dict(
-            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
-            mi=data_alloc.constant_field(grid, 1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
-            eta=data_alloc.constant_field(
-                grid, 1.32343e-05, dims.CellDim, dims.KDim, dtype=wpfloat
+            qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            mi=self.data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            eta=self.data_alloc.constant_field(
+                1.32343e-05, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            dvsi=data_alloc.constant_field(
-                grid, -0.000618828, dims.CellDim, dims.KDim, dtype=wpfloat
+            dvsi=self.data_alloc.constant_field(
+                -0.000618828, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            rho=data_alloc.constant_field(grid, 1.19691, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=self.data_alloc.constant_field(1.19691, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            vapor_deposition_rate=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, dtype=wpfloat
+            vapor_deposition_rate=self.data_alloc.zero_field(
+                dims.CellDim, dims.KDim, dtype=wpfloat
             ),
         )

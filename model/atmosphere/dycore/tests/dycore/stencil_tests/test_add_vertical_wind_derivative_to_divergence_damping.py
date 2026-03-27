@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.add_vertical_wind_derivative_to_di
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -70,11 +69,11 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        scalfac_dd3d = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        z_dwdz_dd = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_graddiv_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        hmask_dd3d = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        scalfac_dd3d = self.data_alloc.random_field(dims.KDim, dtype=ta.wpfloat)
+        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        z_dwdz_dd = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_graddiv_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             hmask_dd3d=hmask_dd3d,

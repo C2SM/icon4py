@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -109,14 +108,14 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
-        owner_mask = random_mask(grid, dims.CellDim)
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        cfl_clipping = self.data_alloc.random_mask(dims.CellDim, dims.KDim)
+        owner_mask = self.data_alloc.random_mask(dims.CellDim)
+        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         scalfac_exdiff = wpfloat("10.0")
         cfl_w_limit = vpfloat("3.0")
         dtime = wpfloat("2.0")

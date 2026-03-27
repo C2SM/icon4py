@@ -11,7 +11,6 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import ice_number
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -26,7 +25,7 @@ class TestIceNumber(StencilTest):
     @input_data_fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
-            number=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=self.data_alloc.constant_field(1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
+            number=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -12,7 +12,6 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -53,10 +52,10 @@ class TestMoApplyNabla2ToW(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid):
-        area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        z_nabla2_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,

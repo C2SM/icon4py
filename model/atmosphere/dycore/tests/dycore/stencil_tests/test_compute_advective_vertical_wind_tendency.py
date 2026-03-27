@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -58,11 +57,11 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
-        coeff1_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        coeff2_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddt_w_adv = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        coeff1_dwdz = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        coeff2_dwdz = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddt_w_adv = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_w_con_c=z_w_con_c,

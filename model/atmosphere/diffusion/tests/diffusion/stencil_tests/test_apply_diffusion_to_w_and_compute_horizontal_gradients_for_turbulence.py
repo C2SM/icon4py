@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing import definitions
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
@@ -143,17 +142,17 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         horizontal_start = _get_start_index_for_w_diffusion()
         horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-        geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        diff_multfac_n2w = random_field(grid, dims.KDim)
-        area = random_field(grid, dims.CellDim)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        w_old = random_field(grid, dims.CellDim, dims.KDim)
+        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        diff_multfac_n2w = self.data_alloc.random_field(dims.KDim)
+        area = self.data_alloc.random_field(dims.CellDim)
+        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        w_old = self.data_alloc.random_field(dims.CellDim, dims.KDim)
         diff_multfac_w = 5.0
 
-        w = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdx = random_field(grid, dims.CellDim, dims.KDim)
-        dwdy = random_field(grid, dims.CellDim, dims.KDim)
+        w = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        dwdx = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        dwdy = self.data_alloc.random_field(dims.CellDim, dims.KDim)
 
         return dict(
             area=area,

@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjus
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -45,35 +44,35 @@ class TestSaturationAdjustment(StencilTest):
     @input_data_fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
-            te=data_alloc.constant_field(
-                grid, 273.90911754406039, dims.CellDim, dims.KDim, dtype=wpfloat
+            te=self.data_alloc.constant_field(
+                273.90911754406039, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             q_in=Q(
-                v=data_alloc.constant_field(
-                    grid, 4.4913424511676030e-003, dims.CellDim, dims.KDim, dtype=wpfloat
+                v=self.data_alloc.constant_field(
+                    4.4913424511676030e-003, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                c=data_alloc.constant_field(
-                    grid, 6.0066941654987605e-013, dims.CellDim, dims.KDim, dtype=wpfloat
+                c=self.data_alloc.constant_field(
+                    6.0066941654987605e-013, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                r=data_alloc.constant_field(
-                    grid, 2.5939378002267028e-004, dims.CellDim, dims.KDim, dtype=wpfloat
+                r=self.data_alloc.constant_field(
+                    2.5939378002267028e-004, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                s=data_alloc.constant_field(
-                    grid, 3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
+                s=self.data_alloc.constant_field(
+                    3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                i=data_alloc.constant_field(
-                    grid, 3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
+                i=self.data_alloc.constant_field(
+                    3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                g=data_alloc.constant_field(
-                    grid, 3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
+                g=self.data_alloc.constant_field(
+                    3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
             ),
-            rho=data_alloc.constant_field(
-                grid, 1.1371657035251757, dims.CellDim, dims.KDim, dtype=wpfloat
+            rho=self.data_alloc.constant_field(
+                1.1371657035251757, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            te_out=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qve_out=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qce_out=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            te_out=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qve_out=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qce_out=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             horizontal_start=0,
             horizontal_end=grid.num_cells,
             vertical_start=0,

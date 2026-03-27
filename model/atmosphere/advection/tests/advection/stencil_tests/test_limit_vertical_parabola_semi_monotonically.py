@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_parabola_semi_mo
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -49,11 +48,11 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_face_up = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_face_low = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        l_limit = self.data_alloc.random_mask(dims.CellDim, dims.KDim, dtype=gtx.int32)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_face = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_face_up = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_face_low = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             l_limit=l_limit,
             p_cc=p_cc,

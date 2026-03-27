@@ -17,7 +17,6 @@ from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_
     interpolate_edge_field_to_half_levels_vp,
 )
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing import stencil_tests
 
 
@@ -48,9 +47,9 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
-        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolant = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

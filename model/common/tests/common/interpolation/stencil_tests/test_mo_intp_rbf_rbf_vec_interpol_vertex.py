@@ -17,7 +17,6 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
     StencilTest,
@@ -77,11 +76,11 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ptr_coeff_1 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        ptr_coeff_2 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        p_v_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
-        p_u_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
+        p_e_in = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ptr_coeff_1 = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        ptr_coeff_2 = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        p_v_out = self.data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=wpfloat)
+        p_u_out = self.data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=wpfloat)
 
         vertex_domain = h_grid.domain(dims.VertexDim)
         horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))

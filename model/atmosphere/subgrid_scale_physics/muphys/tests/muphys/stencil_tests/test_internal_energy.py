@@ -11,7 +11,6 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import internal_energy
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -35,15 +34,15 @@ class TestInternalEnergy(StencilTest):
     @input_data_fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 255.756, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qv=data_alloc.constant_field(grid, 0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qliq=data_alloc.constant_field(
-                grid, 1.63837e-20, dims.CellDim, dims.KDim, dtype=wpfloat
+            t=self.data_alloc.constant_field(255.756, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qv=self.data_alloc.constant_field(0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qliq=self.data_alloc.constant_field(
+                1.63837e-20, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            qice=data_alloc.constant_field(
-                grid, 1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat
+            qice=self.data_alloc.constant_field(
+                1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            rho=data_alloc.constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dz=data_alloc.constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
-            energy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=self.data_alloc.constant_field(0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dz=self.data_alloc.constant_field(249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
+            energy=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

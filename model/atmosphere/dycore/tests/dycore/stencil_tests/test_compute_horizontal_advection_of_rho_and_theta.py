@@ -11,7 +11,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
     _compute_horizontal_advection_of_rho_and_theta,
 )
@@ -253,40 +252,40 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        pos_on_tplane_e_1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        pos_on_tplane_e_1 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        pos_on_tplane_e_2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        pos_on_tplane_e_2 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        primal_normal_cell_1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        primal_normal_cell_1 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        dual_normal_cell_1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        dual_normal_cell_1 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        primal_normal_cell_2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        primal_normal_cell_2 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        dual_normal_cell_2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        dual_normal_cell_2 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
         p_dthalf = 2.0
 
-        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        rho_ref_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        theta_ref_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        perturbed_rho_at_cells_on_model_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        perturbed_theta_v_at_cells_on_model_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        z_rho_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_theta_v_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_vn=p_vn,

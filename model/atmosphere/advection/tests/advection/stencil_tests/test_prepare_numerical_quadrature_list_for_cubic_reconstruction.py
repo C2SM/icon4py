@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_li
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -523,27 +522,27 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        famask_int = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_1 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_3 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_4 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_5 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_6 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_7 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_8 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_9 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_10 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        famask_int = self.data_alloc.constant_field(1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_coords_dreg_v_1_x = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_x = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_x = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_x = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_y = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_y = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_y = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_y = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_dreg_area_in = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_1 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_2 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_3 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_4 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_5 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_6 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_7 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_8 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_9 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_10 = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        p_dreg_area = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001

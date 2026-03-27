@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing import stencil_tests
 
 
@@ -86,12 +85,12 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(stencil_tests.
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_kin_hor_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

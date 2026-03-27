@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -47,9 +46,9 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vec_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        geofac_rot = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        rot_vec = zero_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        vec_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        geofac_rot = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        rot_vec = self.data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vec_e=vec_e,

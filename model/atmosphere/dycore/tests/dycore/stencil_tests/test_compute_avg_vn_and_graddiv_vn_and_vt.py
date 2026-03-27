@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -67,13 +66,13 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_graddiv_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        rbf_vec_coeff_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_graddiv_vn = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vt = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,

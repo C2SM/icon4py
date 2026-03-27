@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -55,10 +54,10 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        flux_or_velocity = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        spatially_averaged_flux_or_velocity = zero_field(
-            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
+        e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        flux_or_velocity = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        spatially_averaged_flux_or_velocity = self.data_alloc.zero_field(
+            dims.EdgeDim, dims.KDim, dtype=wpfloat
         )
 
         return dict(

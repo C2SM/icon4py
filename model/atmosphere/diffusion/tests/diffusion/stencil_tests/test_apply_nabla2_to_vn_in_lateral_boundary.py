@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -36,9 +35,9 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     @input_data_fixture
     def input_data(self, grid: base.Grid):
         fac_bdydiff_v = wpfloat("5.0")
-        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        area_edge = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         return dict(
             fac_bdydiff_v=fac_bdydiff_v,
             z_nabla2_e=z_nabla2_e,

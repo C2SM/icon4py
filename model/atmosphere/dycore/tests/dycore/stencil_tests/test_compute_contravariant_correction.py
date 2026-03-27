@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -47,11 +46,11 @@ class TestComputeContravariantCorrection(StencilTest):
 
     @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddxt_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_w_concorr_me = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ddxn_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        ddxt_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
+        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_concorr_me = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

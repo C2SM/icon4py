@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_all_face_values imp
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -51,10 +50,10 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_face_in = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_face = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
         elev = grid.num_levels - 2
