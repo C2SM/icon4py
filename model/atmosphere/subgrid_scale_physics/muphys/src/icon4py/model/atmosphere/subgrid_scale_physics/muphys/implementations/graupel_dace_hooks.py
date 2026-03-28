@@ -448,13 +448,13 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
     scan_sdfg = scan_nsdfg_node.sdfg
     assert len(scan_sdfg.nodes()) == 3
     assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
-    scan_loop = next(
-        [
-            scan_sdfg_node
-            for scan_sdfg_node in scan_sdfg.nodes()
-            if isinstance(scan_sdfg_node, dace_sdfg.state.LoopRegion)
-        ]
-    )
+    loop_regions = [
+        scan_sdfg_node
+        for scan_sdfg_node in scan_sdfg.nodes()
+        if isinstance(scan_sdfg_node, dace_sdfg.state.LoopRegion)
+    ]
+    assert len(loop_regions) == 1
+    scan_loop = next(iter(loop_regions))
     assert len(scan_loop.nodes()) == 2 and all(
         isinstance(node, dace.SDFGState) for node in scan_loop.nodes()
     )
