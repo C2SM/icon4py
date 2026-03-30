@@ -30,10 +30,10 @@ def test_hydrostatic_adjustment_ndarray(backend):
     theta_v0 = 293.14
     wgtfac_c = 1.05 * xp.ones((num_cells, num_levels))
     ddqz_z_half = xp.ones((num_cells, num_levels))
-    exner_ref_mc = 0.89 * xp.ones((num_cells, num_levels))
+    reference_exner_at_cells_on_model_levels = 0.89 * xp.ones((num_cells, num_levels))
     d_exner_dz_ref_ic = 0.0 * xp.ones((num_cells, num_levels))
-    theta_ref_mc = 312 * xp.ones((num_cells, num_levels))
-    theta_ref_ic = 312 * xp.ones((num_cells, num_levels))
+    reference_theta_at_cells_on_model_levels = 312 * xp.ones((num_cells, num_levels))
+    reference_theta_at_cells_on_half_levels = 312 * xp.ones((num_cells, num_levels))
     rho = rho0 * xp.ones((num_cells, num_levels))
     exner = exner0 * xp.ones((num_cells, num_levels))
     theta_v = theta_v0 * xp.ones((num_cells, num_levels))
@@ -44,10 +44,10 @@ def test_hydrostatic_adjustment_ndarray(backend):
     )(
         wgtfac_c,
         ddqz_z_half,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
+        reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels,
         rho,
         exner,
         theta_v,
@@ -89,10 +89,10 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     theta_v0 = 293.14
     wgtfac_c = 1.05 * xp.ones((num_cells, num_levels))
     ddqz_z_half = xp.ones((num_cells, num_levels))
-    exner_ref_mc = 0.89 * xp.ones((num_cells, num_levels))
+    reference_exner_at_cells_on_model_levels = 0.89 * xp.ones((num_cells, num_levels))
     d_exner_dz_ref_ic = 0.0 * xp.ones((num_cells, num_levels))
-    theta_ref_mc = 312 * xp.ones((num_cells, num_levels))
-    theta_ref_ic = 312 * xp.ones((num_cells, num_levels))
+    reference_theta_at_cells_on_model_levels = 312 * xp.ones((num_cells, num_levels))
+    reference_theta_at_cells_on_half_levels = 312 * xp.ones((num_cells, num_levels))
     rho = rho0 * xp.ones((num_cells, num_levels))
     exner = exner0 * xp.ones((num_cells, num_levels))
     theta_v = theta_v0 * xp.ones((num_cells, num_levels))
@@ -101,10 +101,10 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     r_rho, r_exner = utils.hydrostatic_adjustment_constant_thetav_ndarray(
         wgtfac_c,
         ddqz_z_half,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
+        reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels,
         rho,
         exner,
         theta_v,

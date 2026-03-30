@@ -74,9 +74,9 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
-    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
-    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    reference_theta_at_cells_on_model_levels = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    reference_theta_at_cells_on_half_levels = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    reference_exner_at_cells_on_model_levels = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
     d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
     geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 
@@ -157,10 +157,10 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
         wgtfac_c,
         ddqz_z_half,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
+        reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels,
         rho_ndarray,
         exner_ndarray,
         theta_v_ndarray,

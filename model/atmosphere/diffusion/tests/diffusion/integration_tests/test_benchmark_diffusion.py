@@ -131,7 +131,7 @@ def test_diffusion_benchmark(
     )
 
     metric_state = diffusion_states.DiffusionMetricState(
-        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
+        reference_theta_at_cells_on_model_levels=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
         zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),

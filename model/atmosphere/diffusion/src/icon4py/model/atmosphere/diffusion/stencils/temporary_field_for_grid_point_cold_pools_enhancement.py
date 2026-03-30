@@ -16,15 +16,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _temporary_field_for_grid_point_cold_pools_enhancement(
     theta_v: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
 ) -> fa.CellKField[vpfloat]:
-    theta_ref_mc_wp = astype(theta_ref_mc, wpfloat)
+    reference_theta_at_cells_on_model_levels_wp = astype(reference_theta_at_cells_on_model_levels, wpfloat)
 
     tdiff = theta_v - neighbor_sum(theta_v(C2E2C), axis=C2E2CDim) / wpfloat("3.0")
-    trefdiff = theta_ref_mc_wp - astype(
-        neighbor_sum(theta_ref_mc(C2E2C), axis=C2E2CDim), wpfloat
+    trefdiff = reference_theta_at_cells_on_model_levels_wp - astype(
+        neighbor_sum(reference_theta_at_cells_on_model_levels(C2E2C), axis=C2E2CDim), wpfloat
     ) / wpfloat("3.0")
     enh_diffu_3d_vp = where(
         ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < wpfloat("0.0"))
@@ -38,7 +38,7 @@ def _temporary_field_for_grid_point_cold_pools_enhancement(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def temporary_field_for_grid_point_cold_pools_enhancement(
     theta_v: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     enh_diffu_3d: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
@@ -49,7 +49,7 @@ def temporary_field_for_grid_point_cold_pools_enhancement(
 ) -> None:
     _temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v,
-        theta_ref_mc,
+        reference_theta_at_cells_on_model_levels,
         thresh_tdiff,
         smallest_vpfloat,
         out=enh_diffu_3d,

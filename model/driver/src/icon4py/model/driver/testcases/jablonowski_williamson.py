@@ -82,13 +82,13 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     ddqz_z_half = data_alloc.as_field(
         data_provider.from_metrics_savepoint().ddqz_z_half(), allocator=allocator
     ).ndarray
-    theta_ref_mc = data_alloc.as_field(
+    reference_theta_at_cells_on_model_levels = data_alloc.as_field(
         data_provider.from_metrics_savepoint().theta_ref_mc(), allocator=allocator
     ).ndarray
-    theta_ref_ic = data_alloc.as_field(
+    reference_theta_at_cells_on_half_levels = data_alloc.as_field(
         data_provider.from_metrics_savepoint().theta_ref_ic(), allocator=allocator
     ).ndarray
-    exner_ref_mc = data_alloc.as_field(
+    reference_exner_at_cells_on_model_levels = data_alloc.as_field(
         data_provider.from_metrics_savepoint().exner_ref_mc(), allocator=allocator
     ).ndarray
     d_exner_dz_ref_ic = data_alloc.as_field(
@@ -256,10 +256,10 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     )(
         wgtfac_c,
         ddqz_z_half,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
+        reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels,
         rho_ndarray,
         exner_ndarray,
         theta_v_ndarray,
