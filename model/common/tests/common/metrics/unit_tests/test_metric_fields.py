@@ -427,7 +427,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore

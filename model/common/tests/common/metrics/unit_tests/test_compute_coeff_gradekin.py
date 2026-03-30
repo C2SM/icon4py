@@ -50,6 +50,6 @@ def test_compute_coeff_gradekin(
         edge_cell_length,
         inv_dual_edge_length,
         horizontal_start,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
     )
     assert test_utils.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)
