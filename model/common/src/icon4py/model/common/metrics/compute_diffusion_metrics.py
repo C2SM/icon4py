@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
@@ -20,8 +19,8 @@ def compute_max_nbhgt_array_ns(
     z_mc: data_alloc.NDArray,
     nlev: int,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e2c)
     z_mc_nlev = z_mc[:, nlev - 1]
     max_nbhgt_0_1 = array_ns.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
     max_nbhgt = array_ns.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
@@ -86,8 +85,8 @@ def _compute_k_start_end(
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     nlev: int,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(z_mc)
     condition1 = array_ns.logical_or(maxslp_avg >= thslp_zdiffu, maxhgtd_avg >= thhgtd_zdiffu)
     cell_mask = array_ns.tile(
         array_ns.where(condition1[:, nlev - 1], c_owner_mask, False), (nlev, 1)
@@ -117,8 +116,8 @@ def compute_diffusion_mask_and_coef(
     thhgtd_zdiffu: float,
     cell_nudging: int,
     nlev: int,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(c2e2c)
     n_cells = c2e2c.shape[0]
     zd_diffcoef = array_ns.zeros(shape=(n_cells, nlev))
     k_start, k_end, _ = _compute_k_start_end(
@@ -130,7 +129,6 @@ def compute_diffusion_mask_and_coef(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         nlev=nlev,
-        array_ns=array_ns,
     )
 
     # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
@@ -167,8 +165,8 @@ def compute_diffusion_intcoef_and_vertoffset(
     thhgtd_zdiffu: float,
     cell_nudging: int,
     nlev: int,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(c2e2c)
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]
@@ -187,7 +185,6 @@ def compute_diffusion_intcoef_and_vertoffset(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         nlev=nlev,
-        array_ns=array_ns,
     )
 
     # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later

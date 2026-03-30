@@ -572,8 +572,8 @@ def compute_flat_max_idx(
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(e2c)
     k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
@@ -600,11 +600,11 @@ def compute_nflat_gradp(
     min_reduction: Callable[
         [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
     ] = decomposition.single_node_reductions.min,
-    array_ns: ModuleType = np,
 ) -> int:
     """
     compute the nflat_gradp value as the minimum value of the flat_idx_max array.
     """
+    array_ns = data_alloc.array_namespace(flat_idx_max)
     boundary_mask = array_ns.arange(flat_idx_max.shape[0]) >= lateral_boundary_level
     mask_array = array_ns.where(
         e_owner_mask & boundary_mask,
@@ -926,8 +926,8 @@ def compute_exner_w_implicit_weight_parameter(
     vwind_offctr: float,
     nlev: int,
     horizontal_start_cell: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e)
     factor = max(vwind_offctr, 0.75)
 
     zn_off = array_ns.abs(z_ddxn_z_half_e[:, nlev][c2e])

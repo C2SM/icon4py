@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -92,7 +90,6 @@ def _compute_z1_z2_z3(
 def compute_wgtfacq_c_dsl(
     z_ifc: data_alloc.NDArray,
     nlev: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute weighting factor for quadratic interpolation to surface.
@@ -103,6 +100,7 @@ def compute_wgtfacq_c_dsl(
     Returns:
     Field[CellDim, KDim] (full levels)
     """
+    array_ns = data_alloc.array_namespace(z_ifc)
     wgtfacq_c = array_ns.zeros((z_ifc.shape[0], nlev + 1))
     wgtfacq_c_dsl = array_ns.zeros((z_ifc.shape[0], nlev))
     z1, z2, z3 = _compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
@@ -126,7 +124,6 @@ def compute_wgtfacq_e_dsl(
     n_edges: int,
     nlev: int,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute weighting factor for quadratic interpolation to surface.
@@ -141,6 +138,7 @@ def compute_wgtfacq_e_dsl(
     Returns:
     Field[EdgeDim, KDim] (full levels)
     """
+    array_ns = data_alloc.array_namespace(e2c)
     wgtfacq_e_dsl = array_ns.zeros(shape=(n_edges, nlev + 1))
     z_aux_c = array_ns.zeros((z_ifc.shape[0], 6))
     z1, z2, z3 = _compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
