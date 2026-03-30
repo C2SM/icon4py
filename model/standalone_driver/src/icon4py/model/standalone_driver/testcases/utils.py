@@ -172,8 +172,6 @@ def zonalwind_2_normalwind_ndarray(
 
 def init_w(
     grid: icon_grid.IconGrid,
-    c2e: data_alloc.NDArray,
-    e2c: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     edge_cell_length: data_alloc.NDArray,
@@ -189,6 +187,9 @@ def init_w(
 
     lb_c = grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     ub_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
+
+    c2e = grid.get_connectivity(dims.C2E).ndarray
+    e2c = grid.get_connectivity(dims.E2C).ndarray
 
     z_wsfc_e = array_ns.zeros((grid.num_edges,))
     for je in range(lb_e, ub_e):

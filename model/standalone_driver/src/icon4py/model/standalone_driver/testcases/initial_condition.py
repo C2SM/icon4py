@@ -268,9 +268,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
-        grid,
-        c2e=grid.get_connectivity(dims.C2E).ndarray,
-        e2c=grid.get_connectivity(dims.E2C).ndarray,
+        grid=grid,
         z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
         inv_dual_edge_length=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
