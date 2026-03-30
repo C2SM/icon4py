@@ -12,7 +12,6 @@ import logging
 import math
 import pathlib
 from collections.abc import Callable
-from types import ModuleType
 from typing import Final
 
 import gt4py.next as gtx
@@ -568,7 +567,6 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_exponent: ta.wpfloat,
     SLEVE_decay_scale_2: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute the 3D vertical coordinate field using the SLEVE coordinate
@@ -579,6 +577,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     blends smothly into the surface layer at num_lev + 1 which is the
     topography.
     """
+    array_ns = data_alloc.array_namespace(vct_a)
     num_cells = cell_areas.shape[0]
     num_levels = vct_a.shape[0] - 1
 
@@ -641,8 +640,8 @@ def _check_and_correct_layer_thickness(
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(vertical_coordinate)
     num_cells = vertical_coordinate.shape[0]
     num_levels = vertical_coordinate.shape[1] - 1
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=int)
@@ -728,8 +727,8 @@ def _check_flatness_of_flat_level(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     nflatlev: int,
-    array_ns: ModuleType = np,
 ) -> None:
+    array_ns = data_alloc.array_namespace(vertical_coordinate)
     # Check if level nflatlev is still flat
     if not array_ns.all(
         vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]
@@ -754,7 +753,6 @@ def compute_vertical_coordinate(
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute the (Cell, K) vertical coordinate field starting from the
@@ -788,7 +786,6 @@ def compute_vertical_coordinate(
         SLEVE_decay_scale_1=SLEVE_decay_scale_1,
         SLEVE_decay_exponent=SLEVE_decay_exponent,
         SLEVE_decay_scale_2=SLEVE_decay_scale_2,
-        array_ns=array_ns,
         exchange=exchange,
     )
 
@@ -800,14 +797,12 @@ def compute_vertical_coordinate(
         SLEVE_minimum_layer_thickness_2=SLEVE_minimum_layer_thickness_2,
         SLEVE_minimum_relative_layer_thickness_2=SLEVE_minimum_relative_layer_thickness_2,
         lowest_layer_thickness=lowest_layer_thickness,
-        array_ns=array_ns,
     )
 
     _check_flatness_of_flat_level(
         vertical_coordinate=vertical_coordinates_on_half_levels,
         vct_a=vct_a,
         nflatlev=nflatlev,
-        array_ns=array_ns,
     )
 
     return vertical_coordinate

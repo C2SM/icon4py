@@ -410,7 +410,7 @@ class GridManager:
         )
         global_size = self._read_full_grid_size()
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
-        limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
+        limited_area = refinement.is_limited_area_grid(cell_refinement)
 
         if limited_area and not run_properties.is_single_rank():
             raise NotImplementedError("Limited-area grids are not supported in distributed runs")
@@ -444,7 +444,7 @@ class GridManager:
         neighbor_tables = self._get_local_connectivities(global_neighbor_tables, array_ns=xp)
 
         # COMPUTE remaining derived connectivities
-        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+        neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
@@ -452,7 +452,6 @@ class GridManager:
             refinement.compute_domain_bounds,
             refinement_fields=refinement_fields,
             decomposition_info=self._decomposition_info,
-            array_ns=xp,
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
@@ -546,8 +545,9 @@ class GridManager:
 
 
 def _get_derived_connectivities(
-    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray], array_ns: ModuleType = np
+    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
 ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(next(iter(neighbor_tables.values())))
     e2v_table = neighbor_tables[dims.E2V]
     c2v_table = neighbor_tables[dims.C2V]
     e2c_table = neighbor_tables[dims.E2C]
@@ -557,19 +557,18 @@ def _get_derived_connectivities(
         e2v_table,
         c2v_table,
         e2c_table,
-        array_ns=array_ns,
     )
-    e2c2e = _construct_diamond_edges(e2c_table, c2e_table, array_ns=array_ns)
+    e2c2e = _construct_diamond_edges(e2c_table, c2e_table)
     e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0])), e2c2e))
 
-    c2e2c2e = _construct_triangle_edges(c2e2c_table, c2e_table, array_ns=array_ns)
+    c2e2c2e = _construct_triangle_edges(c2e2c_table, c2e_table)
     c2e2c0 = array_ns.column_stack(
         (
             array_ns.asarray(range(c2e2c_table.shape[0])),
             (c2e2c_table),
         )
     )
-    c2e2c2e2c = _construct_butterfly_cells(c2e2c_table, array_ns=array_ns)
+    c2e2c2e2c = _construct_butterfly_cells(c2e2c_table)
 
     return {
         dims.C2E2CO: c2e2c0,
@@ -585,7 +584,6 @@ def _construct_diamond_vertices(
     e2v: data_alloc.NDArray,
     c2v: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
@@ -614,7 +612,8 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
-    dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
+    array_ns = data_alloc.array_namespace(e2v)
+    dummy_c2v = _patch_with_dummy_lastline(c2v)
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
@@ -626,7 +625,7 @@ def _construct_diamond_vertices(
 
 
 def _determine_center_position(
-    centers: data_alloc.NDArray, neighbors: data_alloc.NDArray, array_ns: ModuleType = np
+    centers: data_alloc.NDArray, neighbors: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """Determine the position of the values in `center` in the local neighbor array `neighbors`
     Args:
@@ -638,6 +637,7 @@ def _determine_center_position(
          of neighbors or 0
 
     """
+    array_ns = data_alloc.array_namespace(centers)
     center_idx = array_ns.where(neighbors == centers)
     me_cell = array_ns.zeros(centers.shape[0], dtype=gtx.int32)
     me_cell[center_idx[0]] = center_idx[1]
@@ -645,7 +645,7 @@ def _determine_center_position(
 
 
 def _construct_diamond_edges(
-    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
+    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
@@ -672,18 +672,19 @@ def _construct_diamond_edges(
     Returns: ndarray containing the connectivity table for central edge-to- boundary edges
              on the diamond
     """
+    array_ns = data_alloc.array_namespace(e2c)
     # used to make sure that the local neighborhood is ordered in the same way as in ICON. At least
     # the compute_e_flx_avg function depends on that.
     icon_edge_order = array_ns.asarray([[1, 2], [2, 0], [0, 1]])
 
-    dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
+    dummy_c2e = _patch_with_dummy_lastline(c2e)
     expanded = dummy_c2e[e2c[:, :], :]
     n_edges, n_e2c, n_c2e = expanded.shape
     flattened = expanded.reshape(n_edges, n_e2c * n_c2e)
 
     centers = array_ns.arange(n_edges, dtype=gtx.int32)[:, None]
-    me_cell1 = _determine_center_position(centers, expanded[:, 0, :], array_ns=array_ns)
-    me_cell2 = _determine_center_position(centers, expanded[:, 1, :], array_ns=array_ns)
+    me_cell1 = _determine_center_position(centers, expanded[:, 0, :])
+    me_cell2 = _determine_center_position(centers, expanded[:, 1, :])
     ordered_local_index = array_ns.hstack(
         (icon_edge_order[me_cell1], icon_edge_order[me_cell2] + n_c2e)
     )
@@ -692,7 +693,7 @@ def _construct_diamond_edges(
 
 
 def _construct_triangle_edges(
-    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
+    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
@@ -717,13 +718,14 @@ def _construct_triangle_edges(
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
             edges of its cell neighbors
     """
-    dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
+    array_ns = data_alloc.array_namespace(c2e2c)
+    dummy_c2e = _patch_with_dummy_lastline(c2e)
     table = array_ns.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
 
 
 def _construct_butterfly_cells(
-    c2e2c: data_alloc.NDArray, array_ns: ModuleType = np
+    c2e2c: data_alloc.NDArray,
 ) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
 
@@ -750,12 +752,13 @@ def _construct_butterfly_cells(
     Returns:
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
-    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c, array_ns=array_ns)
+    array_ns = data_alloc.array_namespace(c2e2c)
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
     c2e2c2e2c = array_ns.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
     return c2e2c2e2c
 
 
-def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
+def _patch_with_dummy_lastline(ar):
     """
     Patch an array for easy access with another offset containing invalid indices (-1).
 
@@ -768,6 +771,7 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
     Returns: same array with an additional line containing only GridFile.INVALID_INDEX
 
     """
+    array_ns = data_alloc.array_namespace(ar)
     patched_ar = array_ns.append(
         ar,
         gridfile.GridFile.INVALID_INDEX * array_ns.ones((1, ar.shape[1]), dtype=gtx.int32),

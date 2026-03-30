@@ -16,7 +16,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, exchange_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
@@ -368,7 +368,6 @@ def test_compute_vertical_coordinate(
     model_top_height: float,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -427,7 +426,6 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_layer_thickness_2=500.0,
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
-        array_ns=xp,
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 

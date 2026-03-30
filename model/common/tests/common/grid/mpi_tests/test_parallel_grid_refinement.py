@@ -18,7 +18,6 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition,
 )
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, serialbox, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -84,7 +83,6 @@ def test_compute_domain_bounds(
         dim,
         refin_ctrl,
         decomposition_info,
-        array_ns=data_alloc.import_array_ns(backend),
     )
     if (
         experiment == definitions.Experiments.GAUSS3D

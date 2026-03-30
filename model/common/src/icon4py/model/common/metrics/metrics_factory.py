@@ -157,7 +157,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_coordinates_on_half_levels = factory.NumpyDataProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
-                array_ns=self._xp,
                 exchange=functools.partial(
                     self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
                 ),
