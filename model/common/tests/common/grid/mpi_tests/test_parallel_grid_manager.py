@@ -391,7 +391,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         geometry_source=single_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=interpolation_factory.InterpolationConfig(),
+        config=experiment_config.interpolation,
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
@@ -429,7 +429,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=interpolation_factory.InterpolationConfig(),
+        config=experiment_config.interpolation,
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
@@ -611,7 +611,7 @@ def test_metrics_fields_compare_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=interpolation_factory.InterpolationConfig(),
+        config=experiment_config.interpolation,
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),

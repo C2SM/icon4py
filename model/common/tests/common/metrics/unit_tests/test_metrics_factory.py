@@ -67,7 +67,7 @@ def _get_metrics_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=interpolation_attributes.attrs,
-            config=interpolation_factory.InterpolationConfig(),
+            config=experiment_config.interpolation,
             exchange=exchange,
         )
         factory = metrics_factory.MetricsFieldsFactory(

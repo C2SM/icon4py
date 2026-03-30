@@ -118,6 +118,7 @@ def create_experiment_configuration(
     from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
     from icon4py.model.common.constants import RayleighType
     from icon4py.model.common.grid import vertical as v_grid
+    from icon4py.model.common.interpolation import interpolation_factory
     from icon4py.model.common.metrics import metrics_factory
     from icon4py.model.standalone_driver import config as driver_config
 
@@ -135,6 +136,7 @@ def create_experiment_configuration(
 
     sleve_nml = nml_data["sleve_nml"]
     nonhydrostatic_nml = nml_data["nonhydrostatic_nml"]
+    interpol_nml = nml_data["interpol_nml"]
     diffusion_nml = nml_data["diffusion_nml"]
     run_nml = nml_data["run_nml"]
 
@@ -316,17 +318,31 @@ def create_experiment_configuration(
     if isinstance(thhgtd_zdiffu, list):
         thhgtd_zdiffu = thhgtd_zdiffu[0]
 
+    metrics_config = metrics_factory.MetricsConfig(
+        exner_expol=exner_expol,
+        vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+    )
+
+    interpolation_config = interpolation_factory.InterpolationConfig(
+        divergence_averaging_central_cell_weight=nml_data["dynamics_nml"]["divavg_cntrwgt"],
+        max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
+        nudge_efold_width=interpol_nml["nudge_efold_width"],
+        nudge_zone_width=interpol_nml["nudge_zone_width"],
+        rbf_kernel_cell=interpolation_factory.rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+        rbf_kernel_edge=interpolation_factory.rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+        rbf_kernel_vertex=interpolation_factory.rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+        lsq_dim_stencil=interpol_nml["lsq_high_ord"],
+    )
+
     return test_defs.ExperimentConfig(
         driver=driver_cfg,
         vertical_grid=vertical_grid_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
-        metrics=metrics_factory.MetricsConfig(
-            exner_expol=exner_expol,
-            vwind_offctr=vwind_offctr,
-            thslp_zdiffu=thslp_zdiffu,
-            thhgtd_zdiffu=thhgtd_zdiffu,
-            rayleigh_type=rayleigh_type,
-            rayleigh_coeff=rayleigh_coeff,
-        ),
+        metrics=metrics_config,
+        interpolation=interpolation_config,
     )

@@ -108,6 +108,7 @@ def interpolation_factory_from_savepoint(
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
+    experiment_config: test_defs.ExperimentConfig,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory]:
     geometry_source = geometry_from_savepoint
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
@@ -117,7 +118,7 @@ def interpolation_factory_from_savepoint(
         geometry_source=geometry_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=interpolation_factory.InterpolationConfig(),
+        config=experiment_config.interpolation,
         exchange=exchange,
     )
     yield intp_factory

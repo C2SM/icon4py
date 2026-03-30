@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
     from icon4py.model.common.grid import vertical as v_grid
+    from icon4py.model.common.interpolation import interpolation_factory
     from icon4py.model.common.metrics import metrics_factory
     from icon4py.model.standalone_driver import config as driver_config
 
@@ -275,6 +276,7 @@ class ExperimentConfig:
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
     metrics: metrics_factory.MetricsConfig
+    interpolation: interpolation_factory.InterpolationConfig
 
 
 # TODO(havogt): the following configs should be part of the serialized experiment
