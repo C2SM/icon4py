@@ -48,7 +48,7 @@ def download_and_extract(
                     shutil.rmtree(item)
         pooch.retrieve(
             url=uri,
-            known_hash=None,
+            known_hash=None,  # hashes unavailable for polybox-hosted archives
             path=str(dst),
             fname="archive.tar.gz",
             processor=pooch.Untar(extract_dir="."),
