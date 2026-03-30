@@ -378,7 +378,7 @@ def initialize(
     decomp_info = driver_init.read_decomp_info(
         path=file_path,
         grid_file=grid_file,
-        procs_props=props,
+        process_props=props,
         backend=generic_concrete_backend,
         ser_type=serialization_type,
     )
@@ -577,15 +577,15 @@ def icon4py_driver(
         )
     backend_like = model_backends.BACKENDS[icon4py_driver_backend]
 
-    parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
-    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
+    process_props = decomposition.get_process_properties(decomposition.get_runtype(with_mpi=mpi))
+    driver_init.configure_logging(run_path, experiment_type, enable_output, process_props)
 
     time_loop: TimeLoop
     ds: DriverStates
     dp: DriverParams
     time_loop, ds, dp = initialize(
         pathlib.Path(input_path),
-        parallel_props,
+        process_props,
         serialization_type,
         experiment_type,
         pathlib.Path(grid_file),

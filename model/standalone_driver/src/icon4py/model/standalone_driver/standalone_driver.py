@@ -573,15 +573,15 @@ def initialize_driver(
         Driver: driver object
     """
 
-    parallel_props = decomposition_defs.get_processor_properties(
+    process_props = decomposition_defs.get_process_properties(
         decomposition_defs.get_runtype(with_mpi=False)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
-        processor_procs=parallel_props,
+        process_props=process_props,
     )
 
-    global_reductions = decomposition_defs.create_reduction(parallel_props)
+    global_reductions = decomposition_defs.create_reduction(process_props)
     if output_path.exists():
         current_time = datetime.datetime.now()
         log.warning(f"output path {output_path} already exists, a time stamp will be added")
@@ -620,7 +620,7 @@ def initialize_driver(
         grid_manager=grid_manager,
         allocator=allocator,
     )
-    exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
+    exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(

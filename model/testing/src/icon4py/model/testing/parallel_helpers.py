@@ -72,7 +72,7 @@ def gather_field(field: np.ndarray, props: definitions.ProcessProperties) -> tup
 
 def check_local_global_field(
     decomposition_info: definitions.DecompositionInfo,
-    processor_props: definitions.ProcessProperties,  # F811 # fixture
+    process_props: definitions.ProcessProperties,  # F811 # fixture
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
@@ -84,7 +84,7 @@ def check_local_global_field(
         return
 
     _log.info(
-        f" rank= {processor_props.rank}/{processor_props.comm_size}----exchanging field of main dim {dim}"
+        f" rank= {process_props.rank}/{process_props.comm_size}----exchanging field of main dim {dim}"
     )
     assert (
         local_field.shape[0]
@@ -122,31 +122,31 @@ def check_local_global_field(
             decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
         )
     ]
-    gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
+    gathered_sizes, gathered_field = gather_field(owned_entries, process_props)
 
     global_index_sizes, gathered_global_indices = gather_field(
         data_alloc.as_numpy(
             decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
         ),
-        processor_props,
+        process_props,
     )
 
-    if processor_props.rank == 0:
-        _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
+    if process_props.rank == 0:
+        _log.info(f"rank = {process_props.rank}: asserting gathered fields: ")
 
         assert np.all(
             gathered_sizes == global_index_sizes
         ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
         _log.info(
-            f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
+            f"rank = {process_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
         _log.info(
-            f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
+            f"rank = {process_props.rank}:                      --- gathered field has size {gathered_sizes}"
         )
         sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)
         sorted_[gathered_global_indices] = gathered_field
         _log.info(
-            f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
+            f" rank = {process_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
         test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)

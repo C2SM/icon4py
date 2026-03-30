@@ -69,7 +69,7 @@ def finalize_mpi() -> None:
         MPI.Finalize()
 
 
-def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
+def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
@@ -97,11 +97,11 @@ class ParallelLogger(logging.Filter):
         return True
 
 
-@definitions.get_processor_properties.register(definitions.MultiNodeRun)
+@definitions.get_process_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
     s: definitions.MultiNodeRun, comm_id: CommId = None
 ) -> definitions.ProcessProperties:
-    return _get_processor_properties(with_mpi=True, comm_id=comm_id)
+    return _get_process_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)

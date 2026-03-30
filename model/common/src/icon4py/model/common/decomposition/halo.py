@@ -60,19 +60,19 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def __init__(
         self,
-        run_properties: defs.ProcessProperties,
+        process_props: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
     ):
         """
 
         Args:
-            run_properties: contains information on the communicator and local compute node.
+            process_props: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
             allocator: GT4Py buffer allocator
         """
         self._xp = data_alloc.import_array_ns(allocator)
-        self._props = run_properties
+        self._props = process_props
         self._connectivities = {self._value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
@@ -465,7 +465,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
 
 def get_halo_constructor(
-    run_properties: defs.ProcessProperties,
+    process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
     allocator: gtx_typing.Allocator | None,
@@ -477,22 +477,22 @@ def get_halo_constructor(
     If in the future we want to experiment with different halo types we should add an extra selection
     parameter
     Args:
-        processor_props:
+        process_props:
         full_grid_size
         allocator:
         connectivities:
 
-    Returns: a HaloConstructor suitable for the run_properties
+    Returns: a HaloConstructor suitable for the process_props
 
     """
-    if run_properties.is_single_rank():
+    if process_props.is_single_rank():
         return NoHalos(
             horizontal_size=full_grid_size,
             allocator=allocator,
         )
 
     return IconLikeHaloConstructor(
-        run_properties=run_properties,
+        process_props=process_props,
         connectivities=connectivities,
         allocator=allocator,
     )
