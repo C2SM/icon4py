@@ -26,7 +26,7 @@ def _compute_results_for_thermodynamic_variables(
     rho_ic: fa.CellKField[wpfloat],
     w: fa.CellKField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
     z_alpha: fa.CellKField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
     rho_now: fa.CellKField[wpfloat],
@@ -39,8 +39,8 @@ def _compute_results_for_thermodynamic_variables(
     fa.CellKField[wpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_55."""
-    inv_ddqz_z_full_wp, exner_ref_mc_wp, z_alpha_wp, z_beta_wp = astype(
-        (inv_ddqz_z_full, exner_ref_mc, z_alpha, z_beta), wpfloat
+    inv_ddqz_z_full_wp, reference_exner_at_cells_on_model_levels_wp, z_alpha_wp, z_beta_wp = astype(
+        (inv_ddqz_z_full, reference_exner_at_cells_on_model_levels, z_alpha, z_beta), wpfloat
     )
 
     rho_new_wp = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full_wp * (
@@ -48,7 +48,7 @@ def _compute_results_for_thermodynamic_variables(
     )
     exner_new_wp = (
         z_exner_expl
-        + exner_ref_mc_wp
+        + reference_exner_at_cells_on_model_levels_wp
         - z_beta_wp * (z_alpha_wp * w - z_alpha_wp(Koff[1]) * w(Koff[1]))
     )
     theta_v_new_wp = (
@@ -68,7 +68,7 @@ def compute_results_for_thermodynamic_variables(
     rho_ic: fa.CellKField[wpfloat],
     w: fa.CellKField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
     z_alpha: fa.CellKField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
     rho_now: fa.CellKField[wpfloat],
@@ -90,7 +90,7 @@ def compute_results_for_thermodynamic_variables(
         rho_ic,
         w,
         z_exner_expl,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         z_alpha,
         z_beta,
         rho_now,

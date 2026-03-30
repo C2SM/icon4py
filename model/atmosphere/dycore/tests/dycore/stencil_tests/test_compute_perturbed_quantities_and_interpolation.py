@@ -173,9 +173,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             extrapolate_temporally_exner_pressure_numpy(
                 connectivities=connectivities,
                 exner=current_exner,
-                exner_ref_mc=reference_exner_at_cells_on_model_levels,
+                reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
                 exner_pr=perturbed_exner_at_cells_on_model_levels,
-                exner_exfac=time_extrapolation_parameter_for_exner,
+                time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
             ),
             (
                 temporal_extrapolation_of_perturbed_exner[:, : surface_level - 1],
@@ -232,9 +232,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             & (vert_idx[: surface_level - 1] == gtx.int32(0)),
             compute_perturbation_of_rho_and_theta_numpy(
                 rho=current_rho,
-                rho_ref_mc=reference_rho_at_cells_on_model_levels,
+                reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
                 theta_v=current_theta_v,
-                theta_ref_mc=reference_theta_at_cells_on_model_levels,
+                reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
             ),
             (
                 perturbed_rho_at_cells_on_model_levels,
@@ -253,9 +253,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
                 wgtfac_c=wgtfac_c[:, : surface_level - 1],
                 rho=current_rho,
-                rho_ref_mc=reference_rho_at_cells_on_model_levels,
+                reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
                 theta_v=current_theta_v,
-                theta_ref_mc=reference_theta_at_cells_on_model_levels,
+                reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
             ),
             (
                 rho_at_cells_on_half_levels,
@@ -296,7 +296,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             set_theta_v_prime_ic_at_lower_boundary_numpy(
                 wgtfacq_c=wgtfacq_c,
                 z_rth_pr=perturbed_theta_v_at_cells_on_model_levels,
-                theta_ref_ic=reference_theta_at_cells_on_half_levels,
+                reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
                 z_theta_v_pr_ic=np.zeros_like(perturbed_theta_v_at_cells_on_half_levels),
                 theta_v_ic=np.zeros_like(theta_v_at_cells_on_half_levels),
             ),
@@ -323,9 +323,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             (start_cell_halo_level_2 <= horz_idx) & (horz_idx < end_cell_halo_level_2),
             compute_perturbation_of_rho_and_theta_numpy(
                 rho=current_rho,
-                rho_ref_mc=reference_rho_at_cells_on_model_levels,
+                reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
                 theta_v=current_theta_v,
-                theta_ref_mc=reference_theta_at_cells_on_model_levels,
+                reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
             ),
             (
                 perturbed_rho_at_cells_on_model_levels,

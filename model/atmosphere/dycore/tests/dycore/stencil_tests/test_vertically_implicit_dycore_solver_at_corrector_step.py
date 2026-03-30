@@ -323,7 +323,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 rho_ic=rho_at_cells_on_half_levels,
                 w=next_w,
                 z_exner_expl=exner_explicit_term,
-                exner_ref_mc=reference_exner_at_cells_on_model_levels,
+                reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 rho_now=current_rho,

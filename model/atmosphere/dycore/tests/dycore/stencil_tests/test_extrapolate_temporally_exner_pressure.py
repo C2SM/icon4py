@@ -25,12 +25,16 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def extrapolate_temporally_exner_pressure_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner: np.ndarray,
-    exner_ref_mc: np.ndarray,
+    reference_exner_at_cells_on_model_levels: np.ndarray,
     exner_pr: np.ndarray,
-    exner_exfac: np.ndarray,
+    time_extrapolation_parameter_for_exner: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-    exner_pr = exner - exner_ref_mc
+    z_exner_ex_pr = (
+        (1 + time_extrapolation_parameter_for_exner)
+        * (exner - reference_exner_at_cells_on_model_levels)
+        - time_extrapolation_parameter_for_exner * exner_pr
+    )
+    exner_pr = exner - reference_exner_at_cells_on_model_levels
     return (z_exner_ex_pr, exner_pr)
 
 
@@ -42,17 +46,17 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
-        exner_ref_mc: np.ndarray,
+        reference_exner_at_cells_on_model_levels: np.ndarray,
         exner_pr: np.ndarray,
-        exner_exfac: np.ndarray,
+        time_extrapolation_parameter_for_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
             connectivities,
             exner=exner,
-            exner_ref_mc=exner_ref_mc,
+            reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             exner_pr=exner_pr,
-            exner_exfac=exner_exfac,
+            time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
         )
 
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
@@ -60,15 +64,15 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_exner_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_exfac = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        time_extrapolation_parameter_for_exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_exner_ex_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
-            exner_exfac=exner_exfac,
+            time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
             exner=exner,
-            exner_ref_mc=exner_ref_mc,
+            reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             exner_pr=exner_pr,
             z_exner_ex_pr=z_exner_ex_pr,
             horizontal_start=0,

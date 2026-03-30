@@ -27,7 +27,7 @@ from .test_interpolate_to_surface import interpolate_to_surface_numpy
 def set_theta_v_prime_ic_at_lower_boundary_numpy(
     wgtfacq_c: np.ndarray,
     z_rth_pr: np.ndarray,
-    theta_ref_ic: np.ndarray,
+    reference_theta_at_cells_on_half_levels: np.ndarray,
     z_theta_v_pr_ic: np.ndarray,
     theta_v_ic: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
@@ -36,7 +36,7 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
         interpolant=z_rth_pr,
         interpolation_to_surface=z_theta_v_pr_ic,
     )
-    theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
+    theta_v_ic[:, 3:] = (reference_theta_at_cells_on_half_levels + z_theta_v_pr_ic)[:, 3:]
     return (z_theta_v_pr_ic, theta_v_ic)
 
 
@@ -49,7 +49,7 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfacq_c: np.ndarray,
         z_rth_pr: np.ndarray,
-        theta_ref_ic: np.ndarray,
+        reference_theta_at_cells_on_half_levels: np.ndarray,
         z_theta_v_pr_ic: np.ndarray,
         theta_v_ic: np.ndarray,
         **kwargs: Any,
@@ -57,7 +57,7 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
         (z_theta_v_pr_ic, theta_v_ic) = set_theta_v_prime_ic_at_lower_boundary_numpy(
             wgtfacq_c=wgtfacq_c,
             z_rth_pr=z_rth_pr,
-            theta_ref_ic=theta_ref_ic,
+            reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
         )
@@ -67,14 +67,14 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_theta_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_theta_v_pr_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,
             z_rth_pr=z_rth_pr,
-            theta_ref_ic=theta_ref_ic,
+            reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
             horizontal_start=0,

@@ -32,7 +32,7 @@ def compute_results_for_thermodynamic_variables_numpy(
     rho_ic: np.ndarray,
     w: np.ndarray,
     z_exner_expl: np.ndarray,
-    exner_ref_mc: np.ndarray,
+    reference_exner_at_cells_on_model_levels: np.ndarray,
     z_alpha: np.ndarray,
     z_beta: np.ndarray,
     rho_now: np.ndarray,
@@ -50,7 +50,7 @@ def compute_results_for_thermodynamic_variables_numpy(
     )
     exner_new = (
         z_exner_expl
-        + exner_ref_mc
+        + reference_exner_at_cells_on_model_levels
         - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
     theta_v_new = (
@@ -75,7 +75,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         rho_ic: np.ndarray,
         w: np.ndarray,
         z_exner_expl: np.ndarray,
-        exner_ref_mc: np.ndarray,
+        reference_exner_at_cells_on_model_levels: np.ndarray,
         z_alpha: np.ndarray,
         z_beta: np.ndarray,
         rho_now: np.ndarray,
@@ -92,7 +92,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
             rho_ic=rho_ic,
             w=w,
             z_exner_expl=z_exner_expl,
-            exner_ref_mc=exner_ref_mc,
+            reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             z_alpha=z_alpha,
             z_beta=z_beta,
             rho_now=rho_now,
@@ -114,7 +114,9 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        reference_exner_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         z_alpha = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
@@ -134,7 +136,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
             rho_ic=rho_ic,
             w=w,
             z_exner_expl=z_exner_expl,
-            exner_ref_mc=exner_ref_mc,
+            reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             z_alpha=z_alpha,
             z_beta=z_beta,
             rho_now=rho_now,
