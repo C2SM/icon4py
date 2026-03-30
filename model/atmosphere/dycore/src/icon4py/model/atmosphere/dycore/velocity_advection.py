@@ -53,12 +53,12 @@ class VelocityAdvection:
         | model_backends.BackendDescriptor
         | None,
     ):
-        self.grid: icon_grid.IconGrid = grid
-        self.metric_state: dycore_states.MetricStateNonHydro = metric_state
-        self.interpolation_state: dycore_states.InterpolationState = interpolation_state
-        self.vertical_params = vertical_params
-        self.edge_params = edge_params
-        self.c_owner_mask = owner_mask
+        self._grid: icon_grid.IconGrid = grid
+        self._metric_state: dycore_states.MetricStateNonHydro = metric_state
+        self._interpolation_state: dycore_states.InterpolationState = interpolation_state
+        self._vertical_params = vertical_params
+        self._edge_params = edge_params
+        self._c_owner_mask = owner_mask
 
         self.cfl_w_limit: float = 0.65
         self.scalfac_exdiff: float = 0.05
@@ -69,15 +69,15 @@ class VelocityAdvection:
             backend=backend,
             program=compute_diagnostics_from_normal_wind,
             constant_args={
-                "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
-                "wgtfac_e": self.metric_state.wgtfac_e,
-                "ddxn_z_full": self.metric_state.ddxn_z_full,
-                "ddxt_z_full": self.metric_state.ddxt_z_full,
-                "wgtfacq_e": self.metric_state.wgtfacq_e,
-                "c_intp": self.interpolation_state.c_intp,
-                "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
-                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
-                "tangent_orientation": self.edge_params.tangent_orientation,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
+                "wgtfac_e": self._metric_state.wgtfac_e,
+                "ddxn_z_full": self._metric_state.ddxn_z_full,
+                "ddxt_z_full": self._metric_state.ddxt_z_full,
+                "wgtfacq_e": self._metric_state.wgtfacq_e,
+                "c_intp": self._interpolation_state.c_intp,
+                "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
+                "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
+                "tangent_orientation": self._edge_params.tangent_orientation,
             },
             variants={
                 "skip_compute_predictor_vertical_advection": [True, False],
@@ -88,81 +88,81 @@ class VelocityAdvection:
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self.grid.num_levels + 1),
-                "nflatlev": self.vertical_params.nflatlev,
+                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+                "nflatlev": self._vertical_params.nflatlev,
             },
-            offset_provider=self.grid.connectivities,
+            offset_provider=self._grid.connectivities,
         )
 
         self._compute_advection_in_predictor_vertical_momentum = setup_program(
             backend=backend,
             program=compute_advection_in_predictor_vertical_momentum,
             constant_args={
-                "coeff1_dwdz": self.metric_state.coeff1_dwdz,
-                "coeff2_dwdz": self.metric_state.coeff2_dwdz,
-                "e_bln_c_s": self.interpolation_state.e_bln_c_s,
-                "wgtfac_c": self.metric_state.wgtfac_c,
-                "ddqz_z_half": self.metric_state.ddqz_z_half,
-                "geofac_n2s": self.interpolation_state.geofac_n2s,
-                "owner_mask": self.c_owner_mask,
+                "coeff1_dwdz": self._metric_state.coeff1_dwdz,
+                "coeff2_dwdz": self._metric_state.coeff2_dwdz,
+                "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+                "wgtfac_c": self._metric_state.wgtfac_c,
+                "ddqz_z_half": self._metric_state.ddqz_z_half,
+                "geofac_n2s": self._interpolation_state.geofac_n2s,
+                "owner_mask": self._c_owner_mask,
             },
             variants={
                 "skip_compute_predictor_vertical_advection": [True, False],
             },
             vertical_sizes={
-                "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
-                "nflatlev": self.vertical_params.nflatlev,
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
+                "nflatlev": self._vertical_params.nflatlev,
                 "vertical_start": gtx.int32(0),
-                "vertical_end": self.grid.num_levels,
+                "vertical_end": self._grid.num_levels,
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary_level_4,
                 "horizontal_end": self._end_cell_halo,
             },
-            offset_provider=self.grid.connectivities,
+            offset_provider=self._grid.connectivities,
         )
 
         self._compute_advection_in_corrector_vertical_momentum = setup_program(
             backend=backend,
             program=compute_advection_in_corrector_vertical_momentum,
             constant_args={
-                "coeff1_dwdz": self.metric_state.coeff1_dwdz,
-                "coeff2_dwdz": self.metric_state.coeff2_dwdz,
-                "c_intp": self.interpolation_state.c_intp,
-                "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
-                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
-                "tangent_orientation": self.edge_params.tangent_orientation,
-                "e_bln_c_s": self.interpolation_state.e_bln_c_s,
-                "ddqz_z_half": self.metric_state.ddqz_z_half,
-                "geofac_n2s": self.interpolation_state.geofac_n2s,
-                "owner_mask": self.c_owner_mask,
+                "coeff1_dwdz": self._metric_state.coeff1_dwdz,
+                "coeff2_dwdz": self._metric_state.coeff2_dwdz,
+                "c_intp": self._interpolation_state.c_intp,
+                "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
+                "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
+                "tangent_orientation": self._edge_params.tangent_orientation,
+                "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+                "ddqz_z_half": self._metric_state.ddqz_z_half,
+                "geofac_n2s": self._interpolation_state.geofac_n2s,
+                "owner_mask": self._c_owner_mask,
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary_level_4,
                 "horizontal_end": self._end_cell_halo,
             },
             vertical_sizes={
-                "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
                 "vertical_start": gtx.int32(0),
-                "vertical_end": self.grid.num_levels,
+                "vertical_end": self._grid.num_levels,
             },
-            offset_provider=self.grid.connectivities,
+            offset_provider=self._grid.connectivities,
         )
 
         self._compute_advection_in_horizontal_momentum = setup_program(
             backend=backend,
             program=compute_advection_in_horizontal_momentum,
             constant_args={
-                "e_bln_c_s": self.interpolation_state.e_bln_c_s,
-                "geofac_rot": self.interpolation_state.geofac_rot,
-                "coeff_gradekin": self.metric_state.coeff_gradekin,
-                "c_lin_e": self.interpolation_state.c_lin_e,
-                "ddqz_z_full_e": self.metric_state.ddqz_z_full_e,
-                "area_edge": self.edge_params.edge_areas,
-                "tangent_orientation": self.edge_params.tangent_orientation,
-                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
-                "geofac_grdiv": self.interpolation_state.geofac_grdiv,
-                "coriolis_frequency": self.edge_params.coriolis_frequency,
+                "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+                "geofac_rot": self._interpolation_state.geofac_rot,
+                "coeff_gradekin": self._metric_state.coeff_gradekin,
+                "c_lin_e": self._interpolation_state.c_lin_e,
+                "ddqz_z_full_e": self._metric_state.ddqz_z_full_e,
+                "area_edge": self._edge_params.edge_areas,
+                "tangent_orientation": self._edge_params.tangent_orientation,
+                "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
+                "geofac_grdiv": self._interpolation_state.geofac_grdiv,
+                "coriolis_frequency": self._edge_params.coriolis_frequency,
             },
             variants={
                 "apply_extra_diffusion_on_vn": [False, True],
@@ -172,64 +172,64 @@ class VelocityAdvection:
                 "horizontal_end": self._end_edge_local,
             },
             vertical_sizes={
-                "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
                 "vertical_start": gtx.int32(0),
-                "vertical_end": self.grid.num_levels,
+                "vertical_end": self._grid.num_levels,
             },
-            offset_provider=self.grid.connectivities,
+            offset_provider=self._grid.connectivities,
         )
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            self.grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
         """
         Declared as z_v_grad_w in ICON. vn dw/dn + vt dw/dt. NOTE THAT IT ONLY HAS nlev LEVELS because w[nlevp1-1] is diagnostic.
         """
 
         self._contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
         """
         Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self.vertical_cfl = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         cell_domain = h_grid.domain(dims.CellDim)
-        self._start_vertex_lateral_boundary_level_2 = self.grid.start_index(
+        self._start_vertex_lateral_boundary_level_2 = self._grid.start_index(
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        self._end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
+        self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-        self._start_edge_lateral_boundary_level_5 = self.grid.start_index(
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        self._start_edge_lateral_boundary_level_7 = self.grid.start_index(
+        self._start_edge_lateral_boundary_level_7 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
-        self._start_edge_nudging_level_2 = self.grid.start_index(
+        self._start_edge_nudging_level_2 = self._grid.start_index(
             edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
         )
 
-        self._end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        self._end_edge_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
-        self._end_edge_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        self._end_edge_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+        self._end_edge_halo_level_2 = self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
-        self._start_cell_lateral_boundary_level_3 = self.grid.start_index(
+        self._start_cell_lateral_boundary_level_3 = self._grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
-        self._start_cell_lateral_boundary_level_4 = self.grid.start_index(
+        self._start_cell_lateral_boundary_level_4 = self._grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
-        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-        self._end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
+        self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
 
     def run_predictor_step(
         self,
