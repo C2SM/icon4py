@@ -20,6 +20,7 @@ members = [
     "icon4py-atmosphere-dycore",
     "icon4py-atmosphere-microphysics",
     "icon4py-atmosphere-muphys",
+    "icon4py-bindings",
     "icon4py-common",
     "icon4py-driver",
     "icon4py-standalone-driver",
@@ -1566,9 +1567,9 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
+    { name = "icon4py-bindings" },
     { name = "icon4py-common", extra = ["distributed", "io"] },
     { name = "icon4py-testing" },
-    { name = "icon4py-tools" },
     { name = "viztracer" },
 ]
 cuda11 = [
@@ -1581,7 +1582,7 @@ distributed = [
     { name = "icon4py-common", extra = ["distributed"] },
 ]
 fortran = [
-    { name = "icon4py-tools" },
+    { name = "icon4py-bindings" },
 ]
 io = [
     { name = "icon4py-common", extra = ["io"] },
@@ -1685,6 +1686,7 @@ requires-dist = [
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
     { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
+    { name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda11"], marker = "extra == 'cuda11'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
@@ -1693,7 +1695,6 @@ requires-dist = [
     { name = "icon4py-driver", editable = "model/driver" },
     { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
-    { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
 ]
 provides-extras = ["all", "cuda11", "cuda12", "distributed", "fortran", "io", "profiling", "testing"]
@@ -1870,6 +1871,54 @@ requires-dist = [
 ]
 
 [[package]]
+name = "icon4py-bindings"
+version = "0.1.0"
+source = { editable = "bindings" }
+dependencies = [
+    { name = "cffi" },
+    { name = "gt4py" },
+    { name = "icon4py-atmosphere-diffusion" },
+    { name = "icon4py-atmosphere-dycore" },
+    { name = "icon4py-atmosphere-muphys" },
+    { name = "icon4py-common" },
+    { name = "icon4py-tools" },
+    { name = "numpy" },
+    { name = "packaging" },
+]
+
+[package.optional-dependencies]
+cuda11 = [
+    { name = "cupy-cuda11x" },
+    { name = "gt4py", extra = ["cuda11"] },
+]
+cuda12 = [
+    { name = "cupy-cuda12x" },
+    { name = "gt4py", extra = ["cuda12"] },
+]
+profiling = [
+    { name = "viztracer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cffi", specifier = ">=1.5" },
+    { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
+    { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
+    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
+    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
+    { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
+    { name = "icon4py-common", editable = "model/common" },
+    { name = "icon4py-tools", editable = "tools" },
+    { name = "numpy", specifier = ">=1.23.3" },
+    { name = "packaging", specifier = ">=20.0" },
+    { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
+]
+provides-extras = ["cuda11", "cuda12", "profiling"]
+
+[[package]]
 name = "icon4py-common"
 version = "0.1.0"
 source = { editable = "model/common" }
@@ -1994,7 +2043,6 @@ dependencies = [
     { name = "icon4py-testing" },
     { name = "numpy" },
     { name = "packaging" },
-    { name = "pytest" },
     { name = "typer" },
 ]
 
@@ -2008,7 +2056,6 @@ requires-dist = [
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
-    { name = "pytest" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 
@@ -2052,11 +2099,6 @@ dependencies = [
     { name = "configargparse" },
     { name = "fprettify" },
     { name = "gt4py" },
-    { name = "icon4py-atmosphere-advection" },
-    { name = "icon4py-atmosphere-diffusion" },
-    { name = "icon4py-atmosphere-dycore" },
-    { name = "icon4py-common" },
-    { name = "icon4py-standalone-driver" },
     { name = "numpy" },
     { name = "packaging" },
 ]
@@ -2086,11 +2128,6 @@ requires-dist = [
     { name = "gt4py", specifier = "==1.1.8" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-    { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
-    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
-    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
-    { name = "icon4py-common", editable = "model/common" },
-    { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },

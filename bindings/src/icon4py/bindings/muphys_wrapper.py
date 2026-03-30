@@ -10,10 +10,10 @@ import numpy as np
 from gt4py import next as gtx
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
+from icon4py.bindings import icon4py_export
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
-from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
 graupel_program = None

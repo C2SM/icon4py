@@ -23,19 +23,21 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
+  # workspace members
+  'icon4py-atmosphere-diffusion~=0.1.0',
+  'icon4py-atmosphere-dycore~=0.1.0',
+  'icon4py-atmosphere-muphys~=0.1.0',
+  'icon4py-common~=0.1.0',
+  'icon4py-tools~=0.1.0',
   # external dependencies
-  'clang-format>=22.1.0',
   'cffi>=1.5',
   'gt4py==1.1.8',
   "numpy>=1.23.3",
-  'packaging>=20.0',
-  'click>=8.1.7',
-  'fprettify>=v0.3.7',
-  'configargparse>=1.7.1'
+  'packaging>=20.0'
 ]
-description = 'Tools and utilities for integrating icon4py code into the ICON model.'
+description = 'Fortran bindings for icon4py model components.'
 license = {text = "BSD-3 License"}
-name = 'icon4py-tools'
+name = 'icon4py-bindings'
 readme = 'README.md'
 requires-python = '>=3.10'
 # managed by bump-my-version:
@@ -46,9 +48,6 @@ cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 profiling = ['viztracer>=1.1.0']
 
-[project.scripts]
-py2fgen = 'icon4py.tools.py2fgen._cli:main'
-
 [project.urls]
 Homepage = 'https://github.com/C2SM/icon4py'
 
@@ -58,7 +57,7 @@ allow_dirty = false
 commit = false
 current_version = "0.1.0"
 ignore_missing_version = false
-message = 'Bump icon4py-tools version: {current_version} → {new_version}'
+message = 'Bump icon4py-bindings version: {current_version} → {new_version}'
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
 serialize = ["{major}.{minor}.{patch}"]
 tag = false
@@ -75,12 +74,12 @@ version = "{current_version}"
 '''
 
 [[tool.bumpversion.files]]
-filename = "src/icon4py/tools/__init__.py"
+filename = "src/icon4py/bindings/__init__.py"
 
 # -- ruff --
 [tool.ruff]
 extend = "../pyproject.toml"
-extend-exclude = []
+extend-exclude = ["tests/bindings/references/*"]
 
 [tool.ruff.lint.isort]
 known-first-party = ['icon4py']

@@ -18,8 +18,8 @@ logging.basicConfig(
 
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_run
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
+from icon4py.bindings.dycore_wrapper import solve_nh_run
+from icon4py.bindings.dycore_wrapper import solve_nh_init
 
 
 @ffi.def_extern()
