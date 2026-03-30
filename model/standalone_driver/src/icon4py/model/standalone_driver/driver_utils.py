@@ -135,6 +135,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
+        config=interpolation_factory.InterpolationConfig(),
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(

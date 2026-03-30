@@ -71,6 +71,7 @@ def interpolation_field_source(
         geometry_source=geometry_field_source,
         backend=generic_concrete_backend,
         metadata=interpolation_attributes.attrs,
+        config=interpolation_factory.InterpolationConfig(),
     )
     yield interpolation_field_source
 

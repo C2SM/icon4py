@@ -117,6 +117,7 @@ def interpolation_factory_from_savepoint(
         geometry_source=geometry_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
+        config=interpolation_factory.InterpolationConfig(),
         exchange=exchange,
     )
     yield intp_factory

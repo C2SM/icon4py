@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
 import functools
 import logging
 
@@ -38,6 +39,30 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 log = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class InterpolationConfig:
+    """Configuration parameters for interpolation field computation."""
+
+    divergence_averaging_central_cell_weight: float = 0.5  # divavg_cntrwgt in ICON
+    weighting_factor: float = 0.0
+    max_nudging_coefficient: float = 0.375
+    nudge_efold_width: float = 2.0
+    nudge_zone_width: int = 10
+    rbf_kernel_cell: rbf.InterpolationKernel = dataclasses.field(
+        default_factory=lambda: rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
+    )
+    rbf_kernel_edge: rbf.InterpolationKernel = dataclasses.field(
+        default_factory=lambda: rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
+    )
+    rbf_kernel_vertex: rbf.InterpolationKernel = dataclasses.field(
+        default_factory=lambda: rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
+    )
+    lsq_dim_unk: int = 2
+    lsq_dim_c: int = 3
+    lsq_wgt_exp: int = 2
+    lsq_dim_stencil: int = 3
+
+
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
@@ -46,6 +71,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
+        config: InterpolationConfig,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         self._backend = backend
@@ -57,25 +83,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
+        self._config = config
         domain_length = self.grid.global_properties.domain_length
         domain_height = self.grid.global_properties.domain_height
-        # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {
-            "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
-            "weighting_factor": 0.0,
-            "max_nudging_coefficient": 0.375,
-            "nudge_efold_width": 2.0,
-            "nudge_zone_width": 10,
-            "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
-            "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
-            "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
-            "lsq_dim_unk": 2,
-            "lsq_dim_c": 3,
-            "lsq_wgt_exp": 2,
-            "lsq_dim_stencil": 3,
-            "domain_length": 0.0 if domain_length is None else domain_length,
-            "domain_height": 0.0 if domain_height is None else domain_height,
-        }
+        self._domain_length = 0.0 if domain_length is None else domain_length
+        self._domain_height = 0.0 if domain_height is None else domain_height
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -113,9 +125,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "max_nudging_coefficient": self._config["max_nudging_coefficient"],
-                "nudge_efold_width": self._config["nudge_efold_width"],
-                "nudge_zone_width": self._config["nudge_zone_width"],
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "nudge_efold_width": self._config.nudge_efold_width,
+                "nudge_zone_width": self._config.nudge_zone_width,
             },
             do_exchange=True,
         )
@@ -259,13 +271,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2c": dims.C2E2CDim},
             params={
-                "domain_length": self._config["domain_length"],
-                "domain_height": self._config["domain_height"],
+                "domain_length": self._domain_length,
+                "domain_height": self._domain_height,
                 "grid_sphere_radius": constants.EARTH_RADIUS,
-                "lsq_dim_unk": self._config["lsq_dim_unk"],
-                "lsq_dim_c": self._config["lsq_dim_c"],
-                "lsq_wgt_exp": self._config["lsq_wgt_exp"],
-                "lsq_dim_stencil": self._config["lsq_dim_stencil"],
+                "lsq_dim_unk": self._config.lsq_dim_unk,
+                "lsq_dim_c": self._config.lsq_dim_c,
+                "lsq_wgt_exp": self._config.lsq_wgt_exp,
+                "lsq_dim_stencil": self._config.lsq_dim_stencil,
                 "start_idx": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -303,9 +315,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
-                        "divergence_averaging_central_cell_weight": self._config[
-                            "divergence_averaging_central_cell_weight"
-                        ],
+                        "divergence_averaging_central_cell_weight": self._config.divergence_averaging_central_cell_weight,
                     },
                 )
                 self.register_provider(cell_average_weight)
@@ -324,7 +334,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "edges_lon": geometry_attrs.EDGE_LON,
                     },
                     connectivities={"c2e": dims.C2EDim},
-                    params={"weighting_factor": self._config["weighting_factor"]},
+                    params={"weighting_factor": self._config.weighting_factor},
                 )
                 self.register_provider(e_bln_c_s)
 
@@ -386,9 +396,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
-                        "divergence_averaging_central_cell_weight": self._config[
-                            "divergence_averaging_central_cell_weight"
-                        ],
+                        "divergence_averaging_central_cell_weight": self._config.divergence_averaging_central_cell_weight,
                     },
                 )
                 self.register_provider(cell_average_weight)
@@ -567,7 +575,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_cell"].value,
+                "rbf_kernel": self._config.rbf_kernel_cell.value,
                 "geometry_type": self._grid.global_properties.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -608,7 +616,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_edge"].value,
+                "rbf_kernel": self._config.rbf_kernel_edge.value,
                 "geometry_type": self._grid.global_properties.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -652,7 +660,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.V2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_vertex"].value,
+                "rbf_kernel": self._config.rbf_kernel_vertex.value,
                 "geometry_type": self._grid.global_properties.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)

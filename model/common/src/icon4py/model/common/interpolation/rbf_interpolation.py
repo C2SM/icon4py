@@ -42,7 +42,7 @@ class InterpolationKernel(enum.Enum):
     INVERSE_MULTIQUADRATIC: int = 3
 
 
-DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
+DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
     RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
     RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
     RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
