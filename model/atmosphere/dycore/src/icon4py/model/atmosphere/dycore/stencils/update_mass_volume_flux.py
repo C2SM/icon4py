@@ -15,14 +15,14 @@ from icon4py.model.common.type_alias import wpfloat
 def _update_mass_volume_flux(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w: fa.CellKField[wpfloat],
     mass_flx_ic: fa.CellKField[wpfloat],
     vol_flx_ic: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_58."""
-    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
+    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * exner_w_implicit_weight_parameter * w)
     mass_flx_ic_wp = mass_flx_ic + z_a
     vol_flx_ic_wp = vol_flx_ic + z_a / rho_ic
     return mass_flx_ic_wp, vol_flx_ic_wp
@@ -32,7 +32,7 @@ def _update_mass_volume_flux(
 def update_mass_volume_flux(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w: fa.CellKField[wpfloat],
     mass_flx_ic: fa.CellKField[wpfloat],
     vol_flx_ic: fa.CellKField[wpfloat],
@@ -45,7 +45,7 @@ def update_mass_volume_flux(
     _update_mass_volume_flux(
         z_contr_w_fl_l,
         rho_ic,
-        vwind_impl_wgt,
+        exner_w_implicit_weight_parameter,
         w,
         mass_flx_ic,
         vol_flx_ic,

@@ -23,14 +23,14 @@ def update_mass_volume_flux_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     z_contr_w_fl_l: np.ndarray,
     rho_ic: np.ndarray,
-    vwind_impl_wgt: np.ndarray,
+    exner_w_implicit_weight_parameter: np.ndarray,
     w: np.ndarray,
     mass_flx_ic: np.ndarray,
     vol_flx_ic: np.ndarray,
     r_nsubsteps: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
-    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
+    exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=1)
+    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * exner_w_implicit_weight_parameter * w)
     mass_flx_ic = mass_flx_ic + z_a
     vol_flx_ic = vol_flx_ic + z_a / rho_ic
     return (mass_flx_ic, vol_flx_ic)
@@ -48,7 +48,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_contr_w_fl_l: np.ndarray,
         rho_ic: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         w: np.ndarray,
         mass_flx_ic: np.ndarray,
         vol_flx_ic: np.ndarray,
@@ -59,7 +59,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
             connectivities,
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             w=w,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
@@ -71,7 +71,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
@@ -80,7 +80,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         return dict(
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             w=w,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,

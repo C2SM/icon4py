@@ -22,7 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-    vwind_impl_wgt: np.ndarray,
+    exner_w_implicit_weight_parameter: np.ndarray,
     theta_v_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
     z_alpha: np.ndarray,
@@ -36,9 +36,9 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
 ) -> tuple[np.ndarray, np.ndarray]:
     z_q = np.copy(z_q_ref)
     w = np.copy(w_ref)
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
 
-    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+    z_gamma = dtime * cpd * exner_w_implicit_weight_parameter * theta_v_ic / ddqz_z_half
     z_a = np.zeros_like(z_gamma)
     z_b = np.zeros_like(z_gamma)
     z_c = np.zeros_like(z_gamma)
@@ -64,7 +64,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vwind_impl_wgt: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         theta_v_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
         z_alpha: np.ndarray,
@@ -78,7 +78,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         **kwargs: Any,
     ) -> dict:
         z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-            vwind_impl_wgt,
+            exner_w_implicit_weight_parameter,
             theta_v_ic,
             ddqz_z_half,
             z_alpha,
@@ -94,7 +94,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_alpha = data_alloc.random_field(
@@ -118,7 +118,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         v_end = gtx.int32(grid.num_levels)
 
         return dict(
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_ic,
             ddqz_z_half=ddqz_z_half,
             z_alpha=z_alpha,

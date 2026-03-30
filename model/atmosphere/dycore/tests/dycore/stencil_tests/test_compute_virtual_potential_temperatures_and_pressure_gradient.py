@@ -27,7 +27,7 @@ def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     wgtfac_c: np.ndarray,
     z_rth_pr_2: np.ndarray,
     theta_v: np.ndarray,
-    vwind_expl_wgt: np.ndarray,
+    exner_w_explicit_weight_parameter: np.ndarray,
     exner_pr: np.ndarray,
     d_exner_dz_ref_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
@@ -36,14 +36,14 @@ def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
     theta_v_offset = np.roll(theta_v, axis=1, shift=1)
     exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
 
     z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
     z_theta_v_pr_ic[:, 0] = 0
     theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
     theta_v_ic[:, 0] = 0
     z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
+        exner_w_explicit_weight_parameter * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
         + z_theta_v_pr_ic * d_exner_dz_ref_ic
     )
     z_th_ddz_exner_c[:, 0] = 0
@@ -65,7 +65,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         wgtfac_c: np.ndarray,
         z_rth_pr_2: np.ndarray,
         theta_v: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         exner_pr: np.ndarray,
         d_exner_dz_ref_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -80,7 +80,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             wgtfac_c=wgtfac_c,
             z_rth_pr_2=z_rth_pr_2,
             theta_v=theta_v,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             exner_pr=exner_pr,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
             ddqz_z_half=ddqz_z_half,
@@ -97,7 +97,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
         exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
@@ -109,7 +109,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             wgtfac_c=wgtfac_c,
             z_rth_pr_2=z_rth_pr_2,
             theta_v=theta_v,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             exner_pr=exner_pr,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
             ddqz_z_half=ddqz_z_half,

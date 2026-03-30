@@ -29,7 +29,7 @@ def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_nump
     z_th_ddz_exner_c: np.ndarray,
     rho_ic: np.ndarray,
     w_concorr_c: np.ndarray,
-    vwind_expl_wgt: np.ndarray,
+    exner_w_explicit_weight_parameter: np.ndarray,
     dtime: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
@@ -38,8 +38,8 @@ def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_nump
     z_w_expl = w_nnow + dtime * (
         wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
     )
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + exner_w_explicit_weight_parameter * w_nnow)
     return (z_w_expl, z_contr_w_fl_l)
 
 
@@ -56,7 +56,7 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         z_th_ddz_exner_c: np.ndarray,
         rho_ic: np.ndarray,
         w_concorr_c: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         dtime: float,
         wgt_nnow_vel: float,
         wgt_nnew_vel: float,
@@ -74,7 +74,7 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
             z_th_ddz_exner_c=z_th_ddz_exner_c,
             rho_ic=rho_ic,
             w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
@@ -91,7 +91,7 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         z_w_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         z_contr_w_fl_l = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
         wgt_nnow_vel = ta.wpfloat("8.0")
@@ -107,7 +107,7 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
             w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,

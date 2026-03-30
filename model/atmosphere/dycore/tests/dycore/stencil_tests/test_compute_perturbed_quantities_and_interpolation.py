@@ -277,7 +277,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 wgtfac_c=wgtfac_c[:, : surface_level - 1],
                 z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
                 theta_v=current_theta_v,
-                vwind_expl_wgt=exner_w_explicit_weight_parameter,
+                exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
                 exner_pr=perturbed_exner_at_cells_on_model_levels,
                 d_exner_dz_ref_ic=ddz_of_reference_exner_at_cells_on_half_levels,
                 ddqz_z_half=ddqz_z_half,

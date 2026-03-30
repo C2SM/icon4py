@@ -656,8 +656,8 @@ class SolveNonhydro:
             backend=backend,
             program=update_mass_flux_weighted,
             constant_args={
-                "vwind_expl_wgt": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
-                "vwind_impl_wgt": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
+                "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
+                "exner_w_implicit_weight_parameter": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,

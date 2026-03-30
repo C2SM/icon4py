@@ -18,7 +18,7 @@ def _compute_solver_coefficients_matrix(
     rho_nnow: fa.CellKField[wpfloat],
     theta_v_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
     dtime: wpfloat,
@@ -29,7 +29,7 @@ def _compute_solver_coefficients_matrix(
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_beta_wp = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full_wp
-    z_alpha_wp = vwind_impl_wgt * theta_v_ic * rho_ic
+    z_alpha_wp = exner_w_implicit_weight_parameter * theta_v_ic * rho_ic
     return astype((z_beta_wp, z_alpha_wp), vpfloat)
 
 
@@ -41,7 +41,7 @@ def compute_solver_coefficients_matrix(
     theta_v_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     z_alpha: fa.CellKField[vpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
     dtime: wpfloat,
@@ -57,7 +57,7 @@ def compute_solver_coefficients_matrix(
         rho_nnow,
         theta_v_nnow,
         inv_ddqz_z_full,
-        vwind_impl_wgt,
+        exner_w_implicit_weight_parameter,
         theta_v_ic,
         rho_ic,
         dtime,

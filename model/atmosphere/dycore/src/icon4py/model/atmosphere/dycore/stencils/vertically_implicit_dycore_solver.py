@@ -176,7 +176,7 @@ def _compute_solver_coefficients_matrix(
 def solve_w(
     last_inner_level: gtx.int32,
     next_w: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     z_alpha: fa.CellKField[vpfloat],
@@ -192,7 +192,7 @@ def solve_w(
     ) = concat_where(
         dims.KDim > 0,
         _solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_ic,
             ddqz_z_half=ddqz_z_half,
             z_alpha=z_alpha,
@@ -332,7 +332,7 @@ def _vertically_implicit_solver_at_predictor_step(
     next_w = solve_w(
         last_inner_level=n_lev,
         next_w=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
-        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         theta_v_ic=theta_v_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
         z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -355,7 +355,7 @@ def _vertically_implicit_solver_at_predictor_step(
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
-        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
         rho_ic=rho_at_cells_on_half_levels,
         w=next_w,
@@ -645,7 +645,7 @@ def _vertically_implicit_solver_at_corrector_step(
     next_w = solve_w(
         last_inner_level=n_lev,
         next_w=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
-        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         theta_v_ic=theta_v_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
         z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -668,7 +668,7 @@ def _vertically_implicit_solver_at_corrector_step(
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
-        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
         rho_ic=rho_at_cells_on_half_levels,
         w=next_w,
@@ -700,7 +700,7 @@ def _vertically_implicit_solver_at_corrector_step(
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
-                vwind_impl_wgt=exner_w_implicit_weight_parameter,
+                exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
                 w=next_w,
                 mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,

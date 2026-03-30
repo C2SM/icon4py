@@ -15,8 +15,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _update_mass_flux_weighted(
     rho_ic: fa.CellKField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w_now: fa.CellKField[wpfloat],
     w_new: fa.CellKField[wpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
@@ -27,7 +27,7 @@ def _update_mass_flux_weighted(
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
     mass_flx_ic_wp = mass_flx_ic + (
-        r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c_wp)
+        r_nsubsteps * rho_ic * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - w_concorr_c_wp)
     )
     return mass_flx_ic_wp
 
@@ -35,8 +35,8 @@ def _update_mass_flux_weighted(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_mass_flux_weighted(
     rho_ic: fa.CellKField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w_now: fa.CellKField[wpfloat],
     w_new: fa.CellKField[wpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
@@ -49,8 +49,8 @@ def update_mass_flux_weighted(
 ) -> None:
     _update_mass_flux_weighted(
         rho_ic,
-        vwind_expl_wgt,
-        vwind_impl_wgt,
+        exner_w_explicit_weight_parameter,
+        exner_w_implicit_weight_parameter,
         w_now,
         w_new,
         w_concorr_c,

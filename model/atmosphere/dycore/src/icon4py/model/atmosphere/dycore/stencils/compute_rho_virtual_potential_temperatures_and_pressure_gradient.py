@@ -24,7 +24,7 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     theta_var: fa.CellKField[wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     exner_pr: fa.CellKField[wpfloat],
     d_exner_dz_ref_ic: fa.CellKField[vpfloat],
     dtime: wpfloat,
@@ -66,7 +66,7 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         + (wpfloat("1.0") - wgtfac_c_wp) * z_theta_tavg_m1_wp
         + z_w_backtraj_wp * (z_theta_tavg_m1_wp - z_theta_tavg_wp)
     )
-    z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (exner_pr(Koff[-1]) - exner_pr) / astype(
+    z_th_ddz_exner_c_wp = exner_w_explicit_weight_parameter * theta_v_ic_wp * (exner_pr(Koff[-1]) - exner_pr) / astype(
         ddqz_z_half, wpfloat
     ) + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
     return (
@@ -88,7 +88,7 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     theta_var: fa.CellKField[wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     exner_pr: fa.CellKField[wpfloat],
     d_exner_dz_ref_ic: fa.CellKField[vpfloat],
     rho_ic: fa.CellKField[wpfloat],
@@ -113,7 +113,7 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         theta_var,
         wgtfac_c,
         theta_ref_mc,
-        vwind_expl_wgt,
+        exner_w_explicit_weight_parameter,
         exner_pr,
         d_exner_dz_ref_ic,
         dtime,

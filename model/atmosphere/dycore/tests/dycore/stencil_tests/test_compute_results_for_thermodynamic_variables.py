@@ -27,7 +27,7 @@ dycore_consts: Final = constants.PhysicsConstants()
 def compute_results_for_thermodynamic_variables_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
-    vwind_impl_wgt: np.ndarray,
+    exner_w_implicit_weight_parameter: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
     rho_ic: np.ndarray,
     w: np.ndarray,
@@ -44,8 +44,8 @@ def compute_results_for_thermodynamic_variables_numpy(
     w_offset_0 = w[:, :-1]
     w_offset_1 = w[:, 1:]
     z_alpha_offset_1 = z_alpha[:, 1:]
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
-    rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
+    exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=1)
+    rho_new = z_rho_expl - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full * (
         rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
     )
     exner_new = (
@@ -70,7 +70,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_rho_expl: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         rho_ic: np.ndarray,
         w: np.ndarray,
@@ -87,7 +87,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             inv_ddqz_z_full=inv_ddqz_z_full,
             rho_ic=rho_ic,
             w=w,
@@ -105,7 +105,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         rho_ic = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
@@ -131,7 +131,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
 
         return dict(
             z_rho_expl=z_rho_expl,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             inv_ddqz_z_full=inv_ddqz_z_full,
             rho_ic=rho_ic,
             w=w,

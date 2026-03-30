@@ -44,8 +44,8 @@ class TestUpdateMassFluxWeighted(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_ic: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         w_now: np.ndarray,
         w_new: np.ndarray,
         w_concorr_c: np.ndarray,
@@ -53,10 +53,10 @@ class TestUpdateMassFluxWeighted(StencilTest):
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+        exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
+        exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
         mass_flx_ic = mass_flx_ic + (
-            r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
+            r_nsubsteps * rho_ic * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - w_concorr_c)
         )
         return dict(mass_flx_ic=mass_flx_ic)
 
@@ -64,8 +64,8 @@ class TestUpdateMassFluxWeighted(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
         rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
+        exner_w_implicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
         w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         w_new = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
@@ -73,8 +73,8 @@ class TestUpdateMassFluxWeighted(StencilTest):
 
         return dict(
             rho_ic=rho_ic,
-            vwind_expl_wgt=vwind_expl_wgt,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             w_now=w_now,
             w_new=w_new,
             w_concorr_c=w_concorr_c,

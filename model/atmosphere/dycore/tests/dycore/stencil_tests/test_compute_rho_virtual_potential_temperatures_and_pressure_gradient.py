@@ -31,14 +31,14 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     theta_var: np.ndarray,
     wgtfac_c: np.ndarray,
     theta_ref_mc: np.ndarray,
-    vwind_expl_wgt: np.ndarray,
+    exner_w_explicit_weight_parameter: np.ndarray,
     exner_pr: np.ndarray,
     d_exner_dz_ref_ic: np.ndarray,
     dtime: ta.wpfloat,
     wgt_nnow_rth: ta.wpfloat,
     wgt_nnew_rth: ta.wpfloat,
 ) -> tuple[np.ndarray, ...]:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
     rho_now_offset = np.roll(rho_now, shift=1, axis=1)
     rho_var_offset = np.roll(rho_var, shift=1, axis=1)
     theta_now_offset = np.roll(theta_now, shift=1, axis=1)
@@ -68,7 +68,7 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     )
     theta_v_ic[:, 0] = 0
     z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
+        exner_w_explicit_weight_parameter * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
         + z_theta_v_pr_ic * d_exner_dz_ref_ic
     )
     z_th_ddz_exner_c[:, 0] = 0
@@ -91,7 +91,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         theta_var: np.ndarray,
         wgtfac_c: np.ndarray,
         theta_ref_mc: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         exner_pr: np.ndarray,
         d_exner_dz_ref_ic: np.ndarray,
         dtime: ta.wpfloat,
@@ -114,7 +114,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
             theta_var=theta_var,
             wgtfac_c=wgtfac_c,
             theta_ref_mc=theta_ref_mc,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             exner_pr=exner_pr,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
             dtime=dtime,
@@ -142,7 +142,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         theta_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         theta_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         d_exner_dz_ref_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         rho_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
@@ -159,7 +159,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
             theta_var=theta_var,
             wgtfac_c=wgtfac_c,
             theta_ref_mc=theta_ref_mc,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             exner_pr=exner_pr,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
             rho_ic=rho_ic,

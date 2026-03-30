@@ -27,7 +27,7 @@ def compute_solver_coefficients_matrix_numpy(
     rho_nnow: np.ndarray,
     theta_v_nnow: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
-    vwind_impl_wgt: np.ndarray,
+    exner_w_implicit_weight_parameter: np.ndarray,
     theta_v_ic: np.ndarray,
     rho_ic: np.ndarray,
     dtime: float,
@@ -35,8 +35,8 @@ def compute_solver_coefficients_matrix_numpy(
     cvd: ta.wpfloat,
 ) -> tuple[np.ndarray, np.ndarray]:
     z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+    exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
+    z_alpha = exner_w_implicit_weight_parameter * theta_v_ic * rho_ic
     return (z_beta, z_alpha)
 
 
@@ -51,7 +51,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         rho_nnow: np.ndarray,
         theta_v_nnow: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         theta_v_ic: np.ndarray,
         rho_ic: np.ndarray,
         dtime: float,
@@ -65,7 +65,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
             rho_nnow=rho_nnow,
             theta_v_nnow=theta_v_nnow,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_ic,
             rho_ic=rho_ic,
             dtime=dtime,
@@ -80,7 +80,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_v_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         z_alpha = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
@@ -96,7 +96,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
             theta_v_nnow=theta_v_nnow,
             inv_ddqz_z_full=inv_ddqz_z_full,
             z_alpha=z_alpha,
-            vwind_impl_wgt=vwind_impl_wgt,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_ic,
             rho_ic=rho_ic,
             dtime=dtime,

@@ -21,7 +21,7 @@ dycore_consts: Final = constants.PhysicsConstants()
 @gtx.field_operator
 def _compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     rho_ic: fa.CellKField[wpfloat],
     w: fa.CellKField[wpfloat],
@@ -43,7 +43,7 @@ def _compute_results_for_thermodynamic_variables(
         (inv_ddqz_z_full, reference_exner_at_cells_on_model_levels, z_alpha, z_beta), wpfloat
     )
 
-    rho_new_wp = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full_wp * (
+    rho_new_wp = z_rho_expl - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full_wp * (
         rho_ic * w - rho_ic(Koff[1]) * w(Koff[1])
     )
     exner_new_wp = (
@@ -63,7 +63,7 @@ def _compute_results_for_thermodynamic_variables(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     rho_ic: fa.CellKField[wpfloat],
     w: fa.CellKField[wpfloat],
@@ -85,7 +85,7 @@ def compute_results_for_thermodynamic_variables(
 ) -> None:
     _compute_results_for_thermodynamic_variables(
         z_rho_expl,
-        vwind_impl_wgt,
+        exner_w_implicit_weight_parameter,
         inv_ddqz_z_full,
         rho_ic,
         w,

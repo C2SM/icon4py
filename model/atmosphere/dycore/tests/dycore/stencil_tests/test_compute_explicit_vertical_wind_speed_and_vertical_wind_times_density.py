@@ -29,13 +29,13 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
     z_th_ddz_exner_c: np.ndarray,
     rho_ic: np.ndarray,
     w_concorr_c: np.ndarray,
-    vwind_expl_wgt: np.ndarray,
+    exner_w_explicit_weight_parameter: np.ndarray,
     dtime: float,
     cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
+    exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, -1)
     z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + exner_w_explicit_weight_parameter * w_nnow)
     return (z_w_expl, z_contr_w_fl_l)
 
 
@@ -51,7 +51,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
         z_th_ddz_exner_c: np.ndarray,
         rho_ic: np.ndarray,
         w_concorr_c: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         dtime: float,
         cpd: float,
         **kwargs: Any,
@@ -66,7 +66,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
             z_th_ddz_exner_c=z_th_ddz_exner_c,
             rho_ic=rho_ic,
             w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             cpd=cpd,
         )
@@ -80,7 +80,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
         z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
         z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         dtime = wpfloat("5.0")
         cpd = wpfloat("10.0")
@@ -93,7 +93,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
             w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             cpd=cpd,
             horizontal_start=0,

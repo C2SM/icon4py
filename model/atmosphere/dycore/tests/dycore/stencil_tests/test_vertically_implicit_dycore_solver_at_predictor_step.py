@@ -215,7 +215,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                vwind_expl_wgt=exner_w_explicit_weight_parameter,
+                exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
                 dtime=dtime,
                 cpd=constants.CPD,
             ),
@@ -232,7 +232,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 rho_nnow=current_rho,
                 theta_v_nnow=current_theta_v,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                vwind_impl_wgt=exner_w_implicit_weight_parameter,
+                exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 dtime=dtime,
@@ -303,7 +303,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         (tridiagonal_intermediate_result, next_w[:, :n_lev]) = np.where(
             (start_cell_index_nudging <= horz_idx) & (horz_idx < end_cell_index_local),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-                vwind_impl_wgt=exner_w_implicit_weight_parameter,
+                exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 ddqz_z_half=ddqz_z_half,
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -356,7 +356,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=rho_explicit_term,
-                vwind_impl_wgt=exner_w_implicit_weight_parameter,
+                exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 rho_ic=rho_at_cells_on_half_levels,
                 w=next_w,

@@ -19,7 +19,7 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     z_th_ddz_exner_c: fa.CellKField[vpfloat],
     rho_ic: fa.CellKField[wpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
@@ -29,7 +29,7 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     )
 
     z_w_expl_wp = w_nnow + dtime * (ddt_w_adv_ntl1_wp - cpd * z_th_ddz_exner_c_wp)
-    z_contr_w_fl_l_wp = rho_ic * (-w_concorr_c_wp + vwind_expl_wgt * w_nnow)
+    z_contr_w_fl_l_wp = rho_ic * (-w_concorr_c_wp + exner_w_explicit_weight_parameter * w_nnow)
     return z_w_expl_wp, z_contr_w_fl_l_wp
 
 
@@ -42,7 +42,7 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
     horizontal_start: gtx.int32,
@@ -56,7 +56,7 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
         z_th_ddz_exner_c,
         rho_ic,
         w_concorr_c,
-        vwind_expl_wgt,
+        exner_w_explicit_weight_parameter,
         dtime,
         cpd,
         out=(z_w_expl, z_contr_w_fl_l),
