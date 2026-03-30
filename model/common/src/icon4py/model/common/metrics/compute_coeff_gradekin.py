@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -19,7 +17,6 @@ def compute_coeff_gradekin(
     inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute coefficients for improved calculation of kinetic energy gradient
@@ -30,6 +27,7 @@ def compute_coeff_gradekin(
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
     """
+    array_ns = data_alloc.array_namespace(edge_cell_length)
     coeff_gradekin_0 = array_ns.zeros_like(inv_dual_edge_length)
     coeff_gradekin_1 = array_ns.zeros_like(inv_dual_edge_length)
     coeff_gradekin_0[horizontal_start:] = (

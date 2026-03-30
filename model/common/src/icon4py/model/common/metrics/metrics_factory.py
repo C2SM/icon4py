@@ -798,7 +798,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         coeff_gradekin = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin,
-                array_ns=self._xp,
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
                 ),

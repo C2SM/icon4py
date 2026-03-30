@@ -750,7 +750,6 @@ def compute_e_flx_avg(
         primal_cart_normal_x,
         primal_cart_normal_y,
         primal_cart_normal_z,
-        array_ns=array_ns,
     )
     diamond_shape = e2c2e.shape[1]
     num_edges = e2c.shape[0]
@@ -1241,7 +1240,6 @@ def compute_lsq_coeffs(
                         cell_lat,
                         cell_lon[c2e2c[:, js]],
                         cell_lat[c2e2c[:, js]],
-                        array_ns,
                     )
                 ).T
 
