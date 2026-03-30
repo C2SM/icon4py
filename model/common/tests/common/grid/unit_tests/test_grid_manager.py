@@ -58,9 +58,6 @@ from ...decomposition import utils as decomp_utils
 from .. import utils
 
 
-MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
-
-
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
 
@@ -322,9 +319,9 @@ def test_grid_manager_grid_size(
     backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert grid_descriptor.params.num_cells == grid.size[dims.CellDim]
-    assert grid_descriptor.params.num_edges == grid.size[dims.EdgeDim]
-    assert grid_descriptor.params.num_vertices == grid.size[dims.VertexDim]
+    assert grid_descriptor.num_cells == grid.size[dims.CellDim]
+    assert grid_descriptor.num_edges == grid.size[dims.EdgeDim]
+    assert grid_descriptor.num_vertices == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(
@@ -368,20 +365,28 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, global_num_cells",
+    "grid_descriptor, expected_subdivision",
     [
-        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.params.num_cells),
-        (definitions.Grids.MCH_CH_R04B09_DSL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (
+            definitions.Grids.R02B04_GLOBAL,
+            icon.GridSubdivision(root=2, level=4),
+        ),
+        (
+            definitions.Grids.MCH_CH_R04B09_DSL,
+            icon.GridSubdivision(root=4, level=9),
+        ),
     ],
 )
 def test_grid_manager_grid_level_and_root(
-    grid_descriptor: definitions.GridDescription, global_num_cells: int, backend: gtx_typing.Backend
+    grid_descriptor: definitions.GridDescription,
+    expected_subdivision: icon.GridSubdivision,
+    backend: gtx_typing.Backend,
 ) -> None:
     assert (
-        global_num_cells
+        expected_subdivision
         == utils.run_grid_manager(
             grid_descriptor, keep_skip_values=True, backend=backend
-        ).grid.global_properties.global_num_cells
+        ).grid.global_properties.subdivision
     )
 
 

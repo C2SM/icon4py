@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
 import logging
-import math
 from collections.abc import Callable
 from typing import Final, TypeVar
 
@@ -73,15 +72,10 @@ _T = TypeVar("_T")
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
-    radius: float = constants.EARTH_RADIUS
+    radius: float | None = constants.EARTH_RADIUS
     domain_length: float | None = None
     domain_height: float | None = None
-    global_num_cells: int | None = None
     num_cells: int | None = None
-    num_edges: int | None = None
-    num_vertices: int | None = None
-    characteristic_length: float | None = None
-    limited_area: bool = False
 
     def __post_init__(self) -> None:
         if self.geometry_type is not None:
@@ -94,16 +88,6 @@ class GlobalGridParams:
                 case base.GeometryType.TORUS:
                     object.__setattr__(self, "radius", None)
 
-        if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
-            object.__setattr__(
-                self,
-                "global_num_cells",
-                compute_icosahedron_num_cells(self.grid_shape.subdivision),
-            )
-
-        if self.num_cells is None and self.global_num_cells is not None:
-            object.__setattr__(self, "num_cells", self.global_num_cells)
-
     @property
     def geometry_type(self) -> base.GeometryType | None:
         return self.grid_shape.geometry_type if self.grid_shape else None
@@ -115,21 +99,6 @@ class GlobalGridParams:
 
 def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
     return 20 * subdivision.root**2 * 4**subdivision.level
-
-
-def compute_mean_cell_area_for_sphere(radius, num_cells) -> float:
-    """
-    Compute the mean cell area.
-
-    Computes the mean cell area by dividing the sphere by the number of cells in the
-    global grid.
-
-    Args:
-        radius: average earth radius, might be rescaled by a scaling parameter
-        num_cells: number of cells on the global grid
-    Returns: mean area of one cell [m^2]
-    """
-    return 4.0 * math.pi * radius**2.0 / num_cells
 
 
 @dataclasses.dataclass(frozen=True)
