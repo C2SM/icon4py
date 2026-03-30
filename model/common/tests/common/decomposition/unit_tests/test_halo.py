@@ -29,7 +29,7 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
     processor_props = utils.DummyProps(rank=rank)
     allocator = model_backends.get_allocator(backend_like)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        neighbor_tables=simple_neighbor_tables,
         run_properties=processor_props,
         allocator=allocator,
     )
@@ -53,7 +53,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
         )
 
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        neighbor_tables=simple_neighbor_tables,
         run_properties=processor_props,
     )
 
@@ -80,7 +80,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
 def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neighbor_tables):
     processor_props = utils.DummyProps(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        neighbor_tables=simple_neighbor_tables,
         run_properties=processor_props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -164,7 +164,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
     with pytest.raises(exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
-            connectivities=simple_neighbor_tables,
+            neighbor_tables=simple_neighbor_tables,
             run_properties=processor_props,
         )
         halo_generator(np.zeros((num_cells, 3), dtype=int))
@@ -178,7 +178,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
     distribution = (processor_props.comm_size + 1) * np.ones((num_cells,), dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
-            connectivities=simple_neighbor_tables,
+            neighbor_tables=simple_neighbor_tables,
             run_properties=processor_props,
         )
         halo_generator(distribution)
@@ -190,7 +190,7 @@ def test_owned_halo_mask_contiguous(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
     props = dummy_four_ranks(rank)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        neighbor_tables=simple_neighbor_tables,
         run_properties=props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -252,7 +252,7 @@ def test_horizontal_size(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
     props = dummy_four_ranks(rank)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        neighbor_tables=simple_neighbor_tables,
         run_properties=props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)

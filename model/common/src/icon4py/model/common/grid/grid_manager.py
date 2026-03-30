@@ -434,17 +434,17 @@ class GridManager:
         halo_constructor = halo.get_halo_constructor(
             run_properties=run_properties,
             full_grid_size=global_size,
-            connectivities=global_neighbor_tables,
+            neighbor_tables=global_neighbor_tables,
             allocator=allocator,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
         distributed_size = self._decomposition_info.get_horizontal_size()
 
-        neighbor_tables = self._get_local_connectivities(global_neighbor_tables, array_ns=xp)
+        neighbor_tables = self._get_local_neighbor_tables(global_neighbor_tables, array_ns=xp)
 
         # COMPUTE remaining derived connectivities
-        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+        neighbor_tables.update(_get_derived_neighbor_tables(neighbor_tables, array_ns=xp))
 
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
@@ -475,7 +475,7 @@ class GridManager:
             refinement_control=refinement_fields,
         )
 
-    def _get_local_connectivities(
+    def _get_local_neighbor_tables(
         self,
         neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
         array_ns,
@@ -545,7 +545,7 @@ class GridManager:
         )
 
 
-def _get_derived_connectivities(
+def _get_derived_neighbor_tables(
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray], array_ns: ModuleType = np
 ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
     e2v_table = neighbor_tables[dims.E2V]

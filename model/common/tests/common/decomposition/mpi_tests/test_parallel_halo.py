@@ -51,7 +51,7 @@ def test_element_ownership_is_unique(
     parallel_helpers.check_comm_size(processor_props, sizes=[4])
 
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        neighbor_tables=simple_neighbor_tables,
         run_properties=processor_props,
         allocator=backend,
     )
