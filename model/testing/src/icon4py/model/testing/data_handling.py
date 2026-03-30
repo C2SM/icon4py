@@ -11,8 +11,8 @@ from __future__ import annotations
 import os
 import pathlib
 import shutil
-import tarfile
-import tempfile
+
+import pooch
 
 from icon4py.model.testing import config, locking
 
@@ -28,8 +28,7 @@ def download_and_extract(
         uri: download url for archived data
         dst: the archive is extracted at this path
 
-    Downloads to a temporary directory in the destination directory
-    (not /tmp to avoid space constraints).
+    Uses pooch for downloading and archive extraction.
     """
     dst.mkdir(parents=True, exist_ok=True)
 
@@ -47,23 +46,14 @@ def download_and_extract(
                     item.unlink()
                 elif item.is_dir():
                     shutil.rmtree(item)
-        _perform_download(uri, dst)
+        pooch.retrieve(
+            url=uri,
+            known_hash=None,
+            path=str(dst),
+            fname="archive.tar.gz",
+            processor=pooch.Untar(extract_dir="."),
+        )
         completion_marker.touch()
-
-
-def _perform_download(uri: str, dst: pathlib.Path) -> None:
-    try:
-        import wget  # type: ignore[import-untyped]
-    except ImportError as err:
-        raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
-
-    with tempfile.TemporaryDirectory(dir=dst) as temp_dir:
-        temp_path = pathlib.Path(temp_dir) / "download.tar.gz"
-        wget.download(uri, out=str(temp_path))
-        if not tarfile.is_tarfile(temp_path):
-            raise OSError(f"{temp_path} needs to be a valid tar file")
-        with tarfile.open(temp_path, mode="r:*") as tf:
-            tf.extractall(path=dst)
 
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
