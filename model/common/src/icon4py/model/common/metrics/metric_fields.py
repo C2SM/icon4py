@@ -598,7 +598,7 @@ def compute_nflat_gradp(
     lateral_boundary_level: int,
     nlev: int,
     min_reduction: Callable[
-        [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+        [data_alloc.NDArray], data_alloc.ScalarT
     ] = decomposition.single_node_reductions.min,
 ) -> int:
     """
@@ -611,7 +611,7 @@ def compute_nflat_gradp(
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = min_reduction(mask_array, array_ns=array_ns)
+    nflat_gradp = min_reduction(mask_array)
     return nflat_gradp
 
 

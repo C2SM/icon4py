@@ -441,7 +441,7 @@ class GridManager:
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
         distributed_size = self._decomposition_info.get_horizontal_size()
 
-        neighbor_tables = self._get_local_connectivities(global_neighbor_tables, array_ns=xp)
+        neighbor_tables = self._get_local_connectivities(global_neighbor_tables)
 
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
@@ -477,12 +477,10 @@ class GridManager:
     def _get_local_connectivities(
         self,
         neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
-        array_ns,
     ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
-        global_to_local = functools.partial(halo.global_to_local, array_ns=array_ns)
         if self.decomposition_info.is_distributed():
             return {
-                k: global_to_local(
+                k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),
                     v[self._decomposition_info.global_index(k.target[0])],
                 )

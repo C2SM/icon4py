@@ -315,10 +315,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(edge_areas)
 
         mean_edge_length_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=self._global_reductions.mean,
             domain=(),
             deps={
                 "buffer": attrs.EDGE_LENGTH,
@@ -328,10 +325,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(mean_edge_length_np)
 
         mean_dual_edge_length_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=self._global_reductions.mean,
             domain=(),
             deps={
                 "buffer": attrs.DUAL_EDGE_LENGTH,
@@ -341,10 +335,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(mean_dual_edge_length_np)
 
         mean_cell_area_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=self._global_reductions.mean,
             domain=(),
             deps={
                 "buffer": attrs.CELL_AREA,
@@ -354,10 +345,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(mean_cell_area_np)
 
         mean_dual_cell_area_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=self._global_reductions.mean,
             domain=(),
             deps={
                 "buffer": attrs.DUAL_AREA,
