@@ -8,6 +8,7 @@
 
 import copy
 from collections.abc import Sequence
+from typing import Any
 
 import dace
 from dace import (
@@ -573,78 +574,84 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         "q_out_5": "q_in_5",
         "t_out": "te",
     }
-    for node in st.nodes():
-        if isinstance(node, dace_nodes.MapEntry) and st.scope_dict()[node] is None:
-            map_entry = node
-            map_exit = st.exit_node(map_entry)
-            map_entry_input_data = [in_edge.src.data for in_edge in st.in_edges(map_entry)]
-            map_exit_output_data = [out_edge.dst.data for out_edge in st.out_edges(map_exit)]
-            if all(key in map_exit_output_data for key in access_node_renaming_dict) and all(
-                key in map_entry_input_data for key in access_node_renaming_dict.values()
-            ):
-                in_out_dict = {}
-                for out_edge in st.out_edges(map_exit):
-                    if out_edge.dst.data in access_node_renaming_dict:
-                        new_data_name = access_node_renaming_dict[out_edge.dst.data]
-                        input_node = next(
-                            in_edge.src
-                            for in_edge in st.in_edges(map_entry)
-                            if in_edge.src.data == new_data_name
-                        )
-                        new_access_node = st.add_access(new_data_name)
-                        old_node = out_edge.dst
-                        old_data_name = old_node.data
-                        # The subsets and strides of the renamed data is the same so no reason to have an offset
-                        # Ideally we should update it with the new_subset.min_element() - old_subset.min_element()
-                        new_offset = (0, 0)
-                        for out_edge_of_old_node in st.out_edges(old_node):
-                            new_consumer_edge = gtx_transformations.utils.reroute_edge(
-                                is_producer_edge=False,
-                                current_edge=out_edge_of_old_node,
-                                ss_offset=new_offset,
-                                state=st,
-                                sdfg=sdfg,
-                                old_node=old_node,
-                                new_node=new_access_node,
-                            )
-                            gtx_transformations.utils.reconfigure_dataflow_after_rerouting(
-                                is_producer_edge=False,
-                                new_edge=new_consumer_edge,
-                                sdfg=sdfg,
-                                state=st,
-                                ss_offset=new_offset,
-                                old_node=old_node,
-                                new_node=new_access_node,
-                            )
-                        new_producer_edge = gtx_transformations.utils.reroute_edge(
-                            is_producer_edge=True,
-                            current_edge=out_edge,
-                            ss_offset=new_offset,
-                            state=st,
-                            sdfg=sdfg,
-                            old_node=old_node,
-                            new_node=new_access_node,
-                        )
-                        gtx_transformations.utils.reconfigure_dataflow_after_rerouting(
-                            is_producer_edge=True,
-                            new_edge=new_producer_edge,
-                            sdfg=sdfg,
-                            state=st,
-                            ss_offset=new_offset,
-                            old_node=old_node,
-                            new_node=new_access_node,
-                        )
-                        st.remove_node(old_node)
-                        in_out_dict[new_data_name] = (input_node, new_access_node)
-                        print(
-                            f"Renamed intermediate AccessNode from '{old_data_name}' to '{new_data_name}' in {map_exit.label}"
-                        )
-                gtx_local_double_buffering._add_local_double_buffering_to(
-                    in_out_dict,
-                    map_entry,
-                    st,
-                    sdfg,
-                )
-                # Apply this only to the first map
-                return
+
+    def _update_repl_impl(
+        repl: dict[str, str],
+        old_name: str,
+        old_symbols: Sequence[Any],
+        new_name: str,
+        new_symbols: Sequence[Any],
+    ) -> None:
+        for old_sym, new_sym in zip(old_symbols, new_symbols):
+            if old_sym == new_sym:
+                continue
+            old_ssym = str(old_sym)
+            new_ssym = str(new_sym)
+            if (old_ssym in repl) and (repl[old_ssym] != new_ssym):
+                raise NotImplementedError("Found symbol conflict.")
+            elif (old_ssym.isdigit() and (not new_ssym.isdigit())) or new_ssym in repl:
+                raise NotImplementedError()
+
+            if old_sym.is_symbol:
+                # The entry is a simple symbol, i.e. `stride_0_of_array_a`.
+                repl[old_ssym] = new_ssym
+            else:
+                # The entry is a composed symbol, i.e. `range_end - range_start`.
+                #  This mostly happens for the shapes, we require that also the
+                #  new symbol is a composed symbol and we perform "fancy" renaming.
+                old_sfsyms = [str(fs) for fs in old_sym.free_symbols]
+                new_sfsyms = {str(fs) for fs in new_sym.free_symbols}
+                if len(old_sfsyms) != len(new_sfsyms):
+                    raise NotImplementedError()
+                for old_sfsym in old_sfsyms:
+                    if old_name not in old_sfsym:
+                        raise NotImplementedError()
+                    assert new_name not in old_sfsym
+                    new_sfsym = old_sfsym.replace(old_name, new_name)
+                    if new_sfsym not in new_sfsyms:
+                        raise NotImplementedError()
+                    if (old_sfsym in repl) and (repl[old_sfsym] != new_sfsym):
+                        raise NotImplementedError()
+                    repl[old_sfsym] = new_sfsym
+                    new_sfsyms.discard(new_sfsym)
+
+    def _update_repl(
+        sdfg: dace.SDFG,
+        repl: dict[str, str],
+        old_name: str,
+        new_name: str,
+    ) -> None:
+        old_desc = sdfg.arrays[old_name]
+        new_desc = sdfg.arrays[new_name]
+        for what in ["shape", "strides"]:
+            _update_repl_impl(
+                repl,
+                old_name=old_name,
+                old_symbols=getattr(old_desc, what),
+                new_name=new_name,
+                new_symbols=getattr(new_desc, what),
+            )
+
+    repl: dict[str, str] = {}
+    for old_name, new_name in access_node_renaming_dict.items():
+        _update_repl(sdfg=sdfg, repl=repl, old_name=old_name, new_name=new_name)
+
+    for dnode in st.data_nodes():
+        if dnode.data in access_node_renaming_dict:
+            old_data = dnode.data
+            new_data = access_node_renaming_dict[old_data]
+            dnode.data = new_data
+    for edge in st.edges():
+        if edge.data.data in access_node_renaming_dict:
+            old_data = edge.data.data
+            new_data = access_node_renaming_dict[old_data]
+            edge.data.data = access_node_renaming_dict[edge.data.data]
+
+    if repl:
+        sdfg.replace_dict(
+            repldict=repl,
+            replace_keys=False,  # This will keep the old descriptor in the graph.
+            replace_in_graph=True,
+        )
+
     sdfg.validate()
