@@ -23,14 +23,14 @@ from icon4py.model.testing import stencil_tests
 
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    hmask_dd3d: np.ndarray,
-    scalfac_dd3d: np.ndarray,
+    horizontal_mask_for_3d_divdamp: np.ndarray,
+    scaling_factor_for_3d_divdamp: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     z_dwdz_dd: np.ndarray,
     z_graddiv_vn: np.ndarray,
 ) -> np.ndarray:
-    scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
-    hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
+    scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
+    horizontal_mask_for_3d_divdamp = np.expand_dims(horizontal_mask_for_3d_divdamp, axis=-1)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     e2c = connectivities[dims.E2CDim]
@@ -38,7 +38,7 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
     z_graddiv_vn = z_graddiv_vn + (
-        hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
+        horizontal_mask_for_3d_divdamp * scaling_factor_for_3d_divdamp * inv_dual_edge_length * z_dwdz_dd_weighted
     )
     return z_graddiv_vn
 
@@ -51,8 +51,8 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        hmask_dd3d: np.ndarray,
-        scalfac_dd3d: np.ndarray,
+        horizontal_mask_for_3d_divdamp: np.ndarray,
+        scaling_factor_for_3d_divdamp: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         z_dwdz_dd: np.ndarray,
         z_graddiv_vn: np.ndarray,
@@ -60,8 +60,8 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
     ) -> dict:
         z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
             connectivities,
-            hmask_dd3d,
-            scalfac_dd3d,
+            horizontal_mask_for_3d_divdamp,
+            scaling_factor_for_3d_divdamp,
             inv_dual_edge_length,
             z_dwdz_dd,
             z_graddiv_vn,
@@ -70,15 +70,15 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        scalfac_dd3d = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
+        horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         z_dwdz_dd = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_graddiv_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
-            hmask_dd3d=hmask_dd3d,
-            scalfac_dd3d=scalfac_dd3d,
+            horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
+            scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
             inv_dual_edge_length=inv_dual_edge_length,
             z_dwdz_dd=z_dwdz_dd,
             z_graddiv_vn=z_graddiv_vn,

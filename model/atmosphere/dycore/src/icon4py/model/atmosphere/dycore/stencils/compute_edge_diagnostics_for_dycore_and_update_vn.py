@@ -315,8 +315,8 @@ def _apply_divergence_damping_and_update_vn(
     # above level kstart_dd3d. But we have decided to remove this manual optimization in icon4py.
     # See discussion in this PR https://github.com/C2SM/icon4py/pull/793
     horizontal_gradient_of_total_divergence = _add_vertical_wind_derivative_to_divergence_damping(
-        hmask_dd3d=horizontal_mask_for_3d_divdamp,
-        scalfac_dd3d=scaling_factor_for_3d_divdamp,
+        horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
+        scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
         inv_dual_edge_length=inv_dual_edge_length,
         z_dwdz_dd=dwdz_at_cells_on_model_levels,
         z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
