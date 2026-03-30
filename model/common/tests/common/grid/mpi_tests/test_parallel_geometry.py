@@ -23,7 +23,7 @@ from icon4py.model.common.grid import (
     geometry_attributes as attrs,
     horizontal as h_grid,
 )
-from icon4py.model.common.math import helpers as math_helpers
+from icon4py.model.common.math import vector_operations
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
@@ -194,7 +194,7 @@ def test_cartesian_geometry_attr_no_halos(
             norm = data_alloc.zero_field(
                 grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
             )
-            math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
+            vector_operations.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
             # on a torus coordinates should be within the domain

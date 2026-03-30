@@ -6,16 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import math
+"""
+Backward-compatibility re-export module.
 
-import numpy as np
+The ``compute_sqrt`` function has been moved to ``math_utils``.
+Please update imports to use ``icon4py.model.common.math.math_utils`` directly.
+"""
 
-
-def compute_sqrt(
-    input_val: np.float64,
-) -> np.float64:
-    """
-    Compute the square root of input_val.
-    math.sqrt is not sufficiently typed for the validation happening in the factories.
-    """
-    return np.float64(math.sqrt(input_val))
+from icon4py.model.common.math.math_utils import compute_sqrt  # noqa: F401

@@ -15,15 +15,19 @@ from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
-from icon4py.model.common.math.helpers import (
-    arc_length_on_edges,
-    cross_product_on_edges,
-    diff_on_edges_torus,
-    distance_on_edges_torus,
+from icon4py.model.common.math.coordinate_transformations import (
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
-    normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
+)
+from icon4py.model.common.math.distance import (
+    arc_length_on_edges,
+    diff_on_edges_torus,
+    distance_on_edges_torus,
+)
+from icon4py.model.common.math.vector_operations import (
+    cross_product_on_edges,
+    normalize_cartesian_vector_on_edges,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 

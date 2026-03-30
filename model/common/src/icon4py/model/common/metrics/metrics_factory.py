@@ -12,7 +12,7 @@ import math
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.math.helpers as math_helpers
+import icon4py.model.common.math.vertical_operations as math_vertical_ops
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import (
     constants,
@@ -187,7 +187,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(vertical_coordinates_on_half_levels)
 
         height = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
+            func=math_vertical_ops.average_two_vertical_levels_downwards_on_cells.with_backend(
                 self._backend
             ),
             domain={
@@ -499,7 +499,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         # ddxn_z_full is dependent only on attrs.DDXN_Z_HALF_E, which has halo exchange. That's why halo_exchange is set to True
         compute_ddxn_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
+            func=math_vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
             deps={
@@ -521,7 +521,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_full)
 
         compute_ddxt_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
+            func=math_vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
             deps={
