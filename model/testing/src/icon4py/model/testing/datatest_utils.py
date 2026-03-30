@@ -332,9 +332,9 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
         nudge_efold_width=interpol_nml["nudge_efold_width"],
         nudge_zone_width=interpol_nml["nudge_zone_width"],
-        rbf_kernel_cell=interpolation_factory.rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
-        rbf_kernel_edge=interpolation_factory.rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
-        rbf_kernel_vertex=interpolation_factory.rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+        rbf_kernel_cell=interpol_nml["rbf_vec_kern_c"],
+        rbf_kernel_edge=interpol_nml["rbf_vec_kern_e"],
+        rbf_kernel_vertex=interpol_nml["rbf_vec_kern_v"],
         lsq_dim_stencil=interpol_nml["lsq_high_ord"],
     )
 

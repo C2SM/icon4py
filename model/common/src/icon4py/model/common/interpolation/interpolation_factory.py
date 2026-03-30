@@ -48,15 +48,9 @@ class InterpolationConfig:
     max_nudging_coefficient: float = 0.375
     nudge_efold_width: float = 2.0
     nudge_zone_width: int = 10
-    rbf_kernel_cell: rbf.InterpolationKernel = dataclasses.field(
-        default_factory=lambda: rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
-    )
-    rbf_kernel_edge: rbf.InterpolationKernel = dataclasses.field(
-        default_factory=lambda: rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
-    )
-    rbf_kernel_vertex: rbf.InterpolationKernel = dataclasses.field(
-        default_factory=lambda: rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
-    )
+    rbf_kernel_cell: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
+    rbf_kernel_edge: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
+    rbf_kernel_vertex: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
     lsq_dim_unk: int = 2
     lsq_dim_c: int = 3
     lsq_wgt_exp: int = 2
