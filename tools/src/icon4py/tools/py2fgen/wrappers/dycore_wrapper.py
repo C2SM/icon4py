@@ -17,6 +17,7 @@ Fortran granule interfaces:
 """
 
 import dataclasses
+import logging
 from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
@@ -31,7 +32,6 @@ from icon4py.model.common import dimension as dims, model_backends, utils as com
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
-from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     config as wrapper_config,
@@ -40,7 +40,7 @@ from icon4py.tools.py2fgen.wrappers import (
 )
 
 
-logger = setup_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
