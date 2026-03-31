@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 import math
 
@@ -281,6 +282,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         nlev=num_levels,
         array_ns=xp,
     )
+    exchange(prognostic_state_now.w, dim=dims.CellDim)
     log.info("U2vn computation completed.")
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
