@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -179,7 +178,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         v_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         smag_offset = ta.vpfloat("9.0")
         diff_multfac_smag = self.data_alloc.random_field(dims.KDim, dtype=ta.vpfloat)
-        tangent_orientation = data_alloc.random_sign(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        tangent_orientation = self.data_alloc.random_sign(dims.EdgeDim, dtype=ta.wpfloat)
         vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         smag_limit = self.data_alloc.random_field(dims.KDim, dtype=ta.vpfloat)
         inv_vert_vert_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)

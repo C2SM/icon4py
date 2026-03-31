@@ -83,6 +83,12 @@ def _input_data_fixture(
             f" '{func.__name__}{func_params}'."
         )
 
+    # This allows us to check that the `input_data` fixture does not call any `data_allocation`
+    # functions directly and thus it only uses the `self.data_alloc` wrapper, which ensures
+    # that the backend and grid are properly bound. However, it might be a bit too strict,
+    # since it means that the `data_allocation` module cannot be imported in the global scope
+    # of the test module (it can be still imported in the local scope of other functions).
+    # We can remove it in the future if it causes many issues.
     cv = inspect.getclosurevars(func)
     if any(ref is data_allocation for ref in [*cv.globals.values(), *cv.nonlocals.values()]):
         raise TypeError(
@@ -104,32 +110,6 @@ else:
     static_reference = _static_reference
     input_data_fixture = _input_data_fixture
 
-# ruff: noqa: ERA001
-# def allocate_data(
-#     allocator: gtx_typing.Allocator | None,
-#     input_data: dict[
-#         str, Any
-#     ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
-# ) -> dict[str, Any]:
-#     def _allocate_field(f: gtx.Field) -> gtx.Field:
-#         return gtx_constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
-
-#     device_input_data = {
-#         k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
-#         if not gtx.is_scalar_type(v) and k != "domain"
-#         else v
-#         for k, v in input_data.items()
-#     }
-
-#     return device_input_data
-
-
-@dataclasses.dataclass(frozen=True)
-class Output:
-    name: str
-    refslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
-    gtslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
-
 
 @dataclasses.dataclass
 class _ConnectivityConceptFixer:
@@ -145,6 +125,67 @@ class _ConnectivityConceptFixer:
         if isinstance(dim, gtx.Dimension):
             dim = dim.value
         return self._grid.get_connectivity(dim).asnumpy()
+
+
+class DataAllocation(Protocol):
+    """
+    This protocol mimics the 'icon4py.model.common.utils.data_allocation',
+    but with 'backend' bound in the respective functions.
+    """
+
+    def constant_field(
+        self,
+        value: float,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def index_field(
+        self,
+        dim: gtx.Dimension,
+        extend: dict[gtx.Dimension, int] | None = None,
+        dtype: npt.DTypeLike = gtx.int32,
+        allocator: gtx_typing.Allocator | None = None,
+    ) -> gtx.Field: ...
+
+    def random_field(
+        self,
+        *dims: gtx.Dimension,
+        low: float = -1.0,
+        high: float = 1.0,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def random_mask(
+        self,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def random_sign(
+        self,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+        allocator: gtx_typing.Allocator | None = None,
+    ) -> gtx.Field: ...
+
+    def zero_field(
+        self,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+
+@dataclasses.dataclass(frozen=True)
+class Output:
+    name: str
+    refslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
+    gtslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
 
 
 class StandardStaticVariants(eve.StrEnum):
@@ -250,52 +291,6 @@ def test_and_benchmark(
             ]
 
 
-class DataAllocation(Protocol):
-    """
-    This protocol mimics the 'icon4py.model.common.utils.data_allocation',
-    but with 'backend' bound in the respective functions.
-    """
-
-    def constant_field(
-        self,
-        value: float,
-        *dims: gtx.Dimension,
-        dtype: npt.DTypeLike | None = ta.wpfloat,
-        extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
-
-    def index_field(
-        self,
-        dim: gtx.Dimension,
-        extend: dict[gtx.Dimension, int] | None = None,
-        dtype: npt.DTypeLike = gtx.int32,
-        allocator: gtx_typing.Allocator | None = None,
-    ) -> gtx.Field: ...
-
-    def random_field(
-        self,
-        *dims: gtx.Dimension,
-        low: float = -1.0,
-        high: float = 1.0,
-        dtype: npt.DTypeLike | None = None,
-        extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
-
-    def random_mask(
-        self,
-        *dims: gtx.Dimension,
-        dtype: npt.DTypeLike | None = None,
-        extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
-
-    def zero_field(
-        self,
-        *dims: gtx.Dimension,
-        dtype: npt.DTypeLike | None = ta.wpfloat,
-        extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
-
-
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -356,30 +351,12 @@ class StencilTest:
         test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
-    # @pytest.fixture
-    # def device_input_data(
-    #     self,
-    #     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-    #     backend_like: model_backends.BackendLike,
-    # ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...]]]:
-    #     # This is partially a workaround, because in the `input_data` fixture,
-    #     # provided by the user it does not allocate for the correct device,
-    #     # but it is also convenient for the verification step, where we need
-    #     # the data on the host as numpy arrays.
-    #     allocator = model_backends.get_allocator(backend_like)
-    #     device_data = allocate_data(allocator=allocator, input_data=input_data)
-    #     try:
-    #         yield device_data
-    #     finally:
-    #         # explicitly clear data dict after test to prevent potential memory leaks
-    #         device_data.clear()
-
     @pytest.fixture(autouse=True, scope="class")
     def _provision_data_alloc_fixture(
         self, backend_like: model_backends.BackendLike, grid: base.Grid
     ) -> Generator[None, None, None]:
         """
-        Convenience fixture to provide data allocation function with backend and grid already bound.
+        Convenience fixture to provide data allocation functions with backend and grid already bound.
         """
         allocator = model_backends.get_allocator(backend_like)
 
@@ -390,6 +367,7 @@ class StencilTest:
                     "index_field",
                     "random_field",
                     "random_mask",
+                    "random_sign",
                     "zero_field",
                 ):
                     alloc_fun = getattr(data_allocation, name)

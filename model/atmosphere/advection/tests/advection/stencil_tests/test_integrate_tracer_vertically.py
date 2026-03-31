@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically imp
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
