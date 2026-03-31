@@ -25,8 +25,8 @@ from icon4py.model.testing.fixtures import (
     model_top_height,
     ndyn_substeps,
     processor_props,
-    savepoint_nonhydro_exit,
     savepoint_diffusion_exit,
+    savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
     savepoint_velocity_init,
@@ -38,5 +38,5 @@ from icon4py.model.testing.fixtures import (
 
 
 @pytest.fixture
-def linit(timeloop_diffusion_linit_exit):
+def linit(timeloop_diffusion_linit_exit: bool) -> bool:
     return timeloop_diffusion_linit_exit
