@@ -630,6 +630,9 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
     repl: dict[str, str] = {}
     for old_name, new_name in access_node_renaming_dict.items():
         _update_repl(sdfg=sdfg, repl=repl, old_name=old_name, new_name=new_name)
+        print(
+            f"Renaming '{old_name}' to '{new_name}' in the SDFG because they refer to the same data."
+        )
 
     for dnode in st.data_nodes():
         if dnode.data in access_node_renaming_dict:
