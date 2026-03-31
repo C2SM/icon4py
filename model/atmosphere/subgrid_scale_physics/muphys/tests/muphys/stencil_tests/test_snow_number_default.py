@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_number
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -19,11 +20,13 @@ class TestSnowNumberDefault(StencilTest):
     OUTPUTS = ("number",)
 
     @static_reference
-    def reference(grid, t: np.ndarray, rho: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid: base.Grid, t: np.ndarray, rho: np.ndarray, qs: np.ndarray, **kwargs
+    ) -> dict:
         return dict(number=np.full(t.shape, 8.00e5))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             t=self.data_alloc.constant_field(276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=self.data_alloc.constant_field(1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),

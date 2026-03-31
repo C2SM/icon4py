@@ -70,7 +70,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         inv_dual_edge_length: np.ndarray,
         z_exner_ex_pr: np.ndarray,
         zdiff_gradp: np.ndarray,
@@ -79,6 +79,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         z_dexner_dz_c_2: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
             connectivities,
             inv_dual_edge_length,

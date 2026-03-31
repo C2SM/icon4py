@@ -35,11 +35,12 @@ class TestCalculateNabla2ForW(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         w: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 

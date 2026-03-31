@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import cloud_x_ice
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -20,12 +21,12 @@ class TestCloudXIce(StencilTest):
 
     @static_reference
     def reference(
-        grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, dt: wpfloat, **kwargs
+        grid: base.Grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, dt: wpfloat, **kwargs
     ) -> dict:
         return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             t=self.data_alloc.constant_field(
                 274.15, dims.CellDim, dims.KDim, dtype=wpfloat

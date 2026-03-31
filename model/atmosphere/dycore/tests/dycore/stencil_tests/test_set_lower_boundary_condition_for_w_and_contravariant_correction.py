@@ -37,11 +37,12 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         w_concorr_c: np.ndarray,
         z_contr_w_fl_l: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (
             w_nnew,
             z_contr_w_fl_l,

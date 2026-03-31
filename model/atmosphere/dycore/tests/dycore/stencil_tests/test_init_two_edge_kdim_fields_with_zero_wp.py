@@ -27,7 +27,7 @@ class TestInitTwoEdgeKdimFieldsWithZeroWp(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         edge_kdim_field_with_zero_wp_1: np.ndarray,
         edge_kdim_field_with_zero_wp_2: np.ndarray,
         **kwargs: Any,

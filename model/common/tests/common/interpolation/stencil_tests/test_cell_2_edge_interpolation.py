@@ -26,11 +26,12 @@ class TestCell2EdgeInterpolation(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         in_field: np.ndarray,
         coeff: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         e2c = connectivities[dims.E2CDim]
         coeff_ = np.expand_dims(coeff, axis=-1)
         out_field = np.sum(in_field[e2c] * coeff_, axis=1)

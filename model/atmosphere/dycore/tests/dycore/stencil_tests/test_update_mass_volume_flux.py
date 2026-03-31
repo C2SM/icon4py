@@ -44,7 +44,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_contr_w_fl_l: np.ndarray,
         rho_ic: np.ndarray,
         vwind_impl_wgt: np.ndarray,
@@ -54,6 +54,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (mass_flx_ic, vol_flx_ic) = update_mass_volume_flux_numpy(
             connectivities,
             z_contr_w_fl_l=z_contr_w_fl_l,

@@ -25,7 +25,7 @@ class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
         z_slope: np.ndarray,

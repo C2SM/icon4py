@@ -25,7 +25,7 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         surface_pressure: np.ndarray,
         virtual_temperature: np.ndarray,
         ddqz_z_full: np.ndarray,

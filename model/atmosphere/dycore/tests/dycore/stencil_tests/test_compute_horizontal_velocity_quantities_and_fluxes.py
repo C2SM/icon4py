@@ -114,7 +114,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         spatially_averaged_vn: np.ndarray,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         tangential_wind: np.ndarray,
@@ -142,6 +142,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         vertical_end: gtx.int32,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         k = np.arange(vertical_end)[np.newaxis, :]
         k_nlev = k[:, :-1]
 

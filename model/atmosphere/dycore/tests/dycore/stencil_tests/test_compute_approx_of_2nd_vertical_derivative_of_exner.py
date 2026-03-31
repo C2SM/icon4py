@@ -41,7 +41,7 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_theta_v_pr_ic: np.ndarray,
         d2dexdz2_fac1_mc: np.ndarray,
         d2dexdz2_fac2_mc: np.ndarray,

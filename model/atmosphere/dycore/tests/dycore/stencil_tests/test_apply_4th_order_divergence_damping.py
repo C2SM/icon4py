@@ -39,7 +39,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         interpolated_fourth_order_divdamp_factor: np.ndarray,
         z_graddiv2_vn: np.ndarray,
         vn: np.ndarray,

@@ -158,7 +158,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         normal_wind_advective_tendency: np.ndarray,
         vn: np.ndarray,
         horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
@@ -182,6 +182,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
         nlev = kwargs["vertical_end"]
         k = np.arange(nlev)

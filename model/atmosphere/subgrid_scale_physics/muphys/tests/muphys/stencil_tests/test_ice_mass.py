@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import ice_mass
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -19,11 +20,11 @@ class TestIceNumber(StencilTest):
     OUTPUTS = ("mass",)
 
     @static_reference
-    def reference(grid, qi: np.ndarray, ni: np.ndarray, **kwargs) -> dict:
+    def reference(grid: base.Grid, qi: np.ndarray, ni: np.ndarray, **kwargs) -> dict:
         return dict(mass=np.full(qi.shape, 1.0e-12))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
             ni=self.data_alloc.constant_field(5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),

@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -62,7 +63,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,
@@ -72,6 +73,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         z_temp: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             connectivities,
             zd_vertoffset,
@@ -85,7 +87,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         return dict(z_temp=z_temp)
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         zd_vertoffset = self.data_alloc.zero_field(
             dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
         )

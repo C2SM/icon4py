@@ -38,12 +38,13 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         inv_ddqz_z_full: np.ndarray,
         w: np.ndarray,
         w_concorr_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_dwdz_dd = compute_dwdz_for_divergence_damping_numpy(
             connectivities, inv_ddqz_z_full=inv_ddqz_z_full, w=w, w_concorr_c=w_concorr_c
         )

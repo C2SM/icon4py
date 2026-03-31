@@ -39,7 +39,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         exner: np.ndarray,
         ddt_exner_phy: np.ndarray,
         exner_dyn_incr: np.ndarray,
@@ -47,6 +47,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         exner_dyn_incr = update_dynamical_exner_time_increment_numpy(
             connectivities,
             exner,

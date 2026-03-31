@@ -49,7 +49,7 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         inv_dual_edge_length: np.ndarray,
         z_exner_ex_pr: np.ndarray,
         ddxn_z_full: np.ndarray,
@@ -57,6 +57,7 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         z_dexner_dz_c_1: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
             connectivities,
             inv_dual_edge_length,

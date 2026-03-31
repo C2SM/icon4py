@@ -30,7 +30,7 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_mass_flx_e: np.ndarray,
         geofac_div: np.ndarray,
         z_rhofluxdiv_c: np.ndarray,
@@ -41,6 +41,7 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
         nsub: gtx.int32,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         c2e = connectivities[dims.C2EDim]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
         geofac_div = np.expand_dims(geofac_div, axis=-1)

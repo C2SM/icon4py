@@ -105,7 +105,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         current_rho: np.ndarray,
         reference_rho_at_cells_on_model_levels: np.ndarray,
         current_theta_v: np.ndarray,
@@ -143,6 +143,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         end_cell_halo_level_2: gtx.int32,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         vert_idx = np.arange(kwargs["surface_level"])
         cell = np.arange(end_cell_halo_level_2)
         horz_idx = cell[:, np.newaxis]

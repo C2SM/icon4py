@@ -92,7 +92,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         next_w: np.ndarray,
         next_rho: np.ndarray,
         next_exner: np.ndarray,
@@ -138,6 +138,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         horizontal_start = kwargs["start_cell_index_nudging"]
         horizontal_end = kwargs["end_cell_index_local"]
         n_lev = kwargs["vertical_end_index_model_surface"] - 1

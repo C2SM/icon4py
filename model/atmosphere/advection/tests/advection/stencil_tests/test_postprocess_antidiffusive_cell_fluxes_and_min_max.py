@@ -25,7 +25,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         refin_ctrl: np.ndarray,
         p_cc: np.ndarray,
         z_tracer_new_low: np.ndarray,

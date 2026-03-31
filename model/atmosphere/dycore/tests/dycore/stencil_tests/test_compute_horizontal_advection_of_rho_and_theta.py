@@ -212,7 +212,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
@@ -230,6 +230,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
             connectivities,
             p_vn,

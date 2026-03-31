@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import rain_to_graupel
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -20,7 +21,7 @@ class TestRainToGraupel3(StencilTest):
 
     @static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         t: np.ndarray,
         rho: np.ndarray,
         qc: np.ndarray,
@@ -35,7 +36,7 @@ class TestRainToGraupel3(StencilTest):
         return dict(conversion_rate=np.full(t.shape, 5.1423851647153399e-17))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             t=self.data_alloc.constant_field(258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=self.data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),

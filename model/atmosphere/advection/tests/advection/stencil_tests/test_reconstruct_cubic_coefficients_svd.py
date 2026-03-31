@@ -37,7 +37,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cc: np.ndarray,
         lsq_pseudoinv_1: np.ndarray,
         lsq_pseudoinv_2: np.ndarray,
@@ -69,6 +69,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         p_coeff_10_dsl: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
         p_coeff_2_dsl_cp = p_coeff_2_dsl.copy()
         p_coeff_3_dsl_cp = p_coeff_3_dsl.copy()

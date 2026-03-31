@@ -35,11 +35,12 @@ class TestComputeTangentialWind(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vn: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         vt = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
         return dict(vt=vt)
 

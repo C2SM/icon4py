@@ -60,7 +60,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         area,
         geofac_n2s,
         geofac_grg_x,
@@ -80,6 +80,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         vertical_end,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         k = np.arange(w_old.shape[1])
         cell = np.arange(w_old.shape[0])
         reshaped_k = k[np.newaxis, :]

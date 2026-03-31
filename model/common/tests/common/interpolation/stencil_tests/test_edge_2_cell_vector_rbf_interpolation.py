@@ -26,12 +26,13 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_e_in: np.ndarray,
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         c2e2c2e = connectivities[dims.C2E2C2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)

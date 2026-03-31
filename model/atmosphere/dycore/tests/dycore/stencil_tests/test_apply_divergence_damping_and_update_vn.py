@@ -50,7 +50,7 @@ class TestApplyDivergenceDampingAndUpdateVn(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         next_vn: np.ndarray,
         current_vn: np.ndarray,
@@ -86,6 +86,7 @@ class TestApplyDivergenceDampingAndUpdateVn(stencil_tests.StencilTest):
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)

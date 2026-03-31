@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import collections.abc
 import dataclasses
 import enum
 import functools
@@ -74,6 +78,36 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
+class NDArrayGridConnectivitiesView(
+    collections.abc.Mapping[str | gtx.Dimension, data_alloc.NDArray]
+):
+    """View on the grid connectivities that allows to access them as numpy arrays."""
+
+    def __init__(self, grid: Grid):
+        self.grid = grid
+
+    def __getitem__(self, key: str | gtx.Dimension) -> data_alloc.NDArray:
+        connectivity = self.grid.get_connectivity(key)
+        if gtx_common.is_neighbor_table(connectivity):
+            return connectivity.asnumpy()
+        else:
+            raise TypeError(f"Connectivity {key} is not a neighbor table.")
+
+    def __iter__(self) -> collections.abc.Iterator[str]:
+        return (
+            offset
+            for offset, connectivity in self.grid.connectivities.items()
+            if gtx_common.is_neighbor_table(connectivity)
+        )
+
+    def __len__(self) -> int:
+        return sum(
+            1
+            for connectivity in self.grid.connectivities.values()
+            if gtx_common.is_neighbor_table(connectivity)
+        )
+
+
 @dataclasses.dataclass(frozen=True)
 class Grid:
     """
@@ -133,6 +167,10 @@ class Grid:
         return sizes
 
     @property
+    def ndarray_connectivities(self) -> NDArrayGridConnectivitiesView:
+        return NDArrayGridConnectivitiesView(self)
+
+    @property
     def num_cells(self) -> int:
         return self.config.num_cells
 
@@ -152,9 +190,9 @@ class Grid:
     def limited_area(self) -> bool:
         return self.config.limited_area
 
-    def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
+    def get_connectivity(self, offset: str | gtx.Dimension) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""
-        if isinstance(offset, gtx.FieldOffset):
+        if isinstance(offset, gtx.Dimension):
             offset = offset.value
         if offset not in self.connectivities:
             raise exceptions.MissingConnectivityError(

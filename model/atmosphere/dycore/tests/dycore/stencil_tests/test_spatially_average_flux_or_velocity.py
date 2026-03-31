@@ -41,11 +41,12 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         e_flx_avg: np.ndarray,
         flux_or_velocity: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         spatially_averaged_flux_or_velocity = spatially_average_flux_or_velocity_numpy(
             connectivities, e_flx_avg, flux_or_velocity
         )

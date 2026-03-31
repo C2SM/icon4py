@@ -57,7 +57,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         area_edge: np.ndarray,
         kh_smag_e: np.ndarray,
         z_nabla2_e: np.ndarray,

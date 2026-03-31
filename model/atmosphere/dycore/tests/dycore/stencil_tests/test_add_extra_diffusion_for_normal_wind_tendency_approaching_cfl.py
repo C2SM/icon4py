@@ -142,7 +142,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         levelmask: np.ndarray,
         c_lin_e: np.ndarray,
         z_w_con_c_full: np.ndarray,
@@ -159,6 +159,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         ddt_vn_apc = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
             connectivities,
             levelmask,

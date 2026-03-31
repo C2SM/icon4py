@@ -36,11 +36,12 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cell_in: np.ndarray,
         c_intp: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         p_vert_out = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
             connectivities, p_cell_in, c_intp
         )

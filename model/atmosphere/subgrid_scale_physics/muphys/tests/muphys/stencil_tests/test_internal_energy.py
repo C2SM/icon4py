@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import internal_energy
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -20,7 +21,7 @@ class TestInternalEnergy(StencilTest):
 
     @static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         t: np.ndarray,
         qv: np.ndarray,
         qliq: np.ndarray,
@@ -32,7 +33,7 @@ class TestInternalEnergy(StencilTest):
         return dict(energy=np.full(t.shape, 38265357.270336017))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             t=self.data_alloc.constant_field(255.756, dims.CellDim, dims.KDim, dtype=wpfloat),
             qv=self.data_alloc.constant_field(0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),

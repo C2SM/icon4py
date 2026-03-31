@@ -39,7 +39,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_rho_expl: np.ndarray,
         rho_incr: np.ndarray,
         z_exner_expl: np.ndarray,
@@ -47,6 +47,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         iau_wgt_dyn: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_rho_expl, z_exner_expl = add_analysis_increments_from_data_assimilation_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,

@@ -38,7 +38,7 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         rho: np.ndarray,
         rho_ref_mc: np.ndarray,
         theta_v: np.ndarray,

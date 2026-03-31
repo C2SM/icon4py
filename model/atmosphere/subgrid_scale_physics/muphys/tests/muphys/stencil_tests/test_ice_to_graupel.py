@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import ice_to_graupel
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -20,7 +21,7 @@ class TestIceToGraupel(StencilTest):
 
     @static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         rho: np.ndarray,
         qr: np.ndarray,
         qg: np.ndarray,
@@ -31,7 +32,7 @@ class TestIceToGraupel(StencilTest):
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             rho=self.data_alloc.constant_field(1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
             qr=self.data_alloc.constant_field(6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),

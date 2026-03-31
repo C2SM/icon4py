@@ -36,7 +36,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         kh_smag_e: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         theta_v_in: np.ndarray,
@@ -52,6 +52,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         apply_zdiffusion_t: bool,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         kwargs_2 = {k: v for k, v in kwargs.items() if k != "theta_v"}  # remove unused kwargs
 
         z_nabla2_e = np.zeros_like(kh_smag_e)

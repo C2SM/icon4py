@@ -25,13 +25,14 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         theta_v: np.ndarray,
         theta_ref_mc: np.ndarray,
         thresh_tdiff,
         smallest_vpfloat,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         c2e2c = connectivities[dims.C2E2CDim]
         tdiff = (
             theta_v

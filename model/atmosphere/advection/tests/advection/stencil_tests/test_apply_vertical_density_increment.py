@@ -31,7 +31,7 @@ class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         rhodz_ast: np.ndarray,
         p_mflx_contra_v: np.ndarray,
         deepatmo_divzl: np.ndarray,

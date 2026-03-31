@@ -32,11 +32,12 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_nabla2_e: np.ndarray,
         geofac_div: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 

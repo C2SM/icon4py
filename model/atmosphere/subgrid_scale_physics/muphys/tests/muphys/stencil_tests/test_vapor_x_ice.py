@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import vapor_x_ice
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -20,7 +21,7 @@ class TestVaporXIceDefault(StencilTest):
 
     @static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         qi: np.ndarray,
         mi: np.ndarray,
         eta: np.ndarray,
@@ -32,7 +33,7 @@ class TestVaporXIceDefault(StencilTest):
         return dict(vapor_deposition_rate=np.full(qi.shape, 2.2106162342610385e-09))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             qi=self.data_alloc.constant_field(9.53048e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
             mi=self.data_alloc.constant_field(1.0e-9, dims.CellDim, dims.KDim, dtype=wpfloat),

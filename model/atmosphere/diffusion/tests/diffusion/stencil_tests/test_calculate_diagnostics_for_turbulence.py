@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -34,7 +35,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         wgtfac_c: np.ndarray,
         div: np.ndarray,
         kh_c: np.ndarray,
@@ -47,7 +48,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         div = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         kh_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

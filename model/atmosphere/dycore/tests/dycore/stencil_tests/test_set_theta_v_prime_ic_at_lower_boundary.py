@@ -45,7 +45,7 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         wgtfacq_c: np.ndarray,
         z_rth_pr: np.ndarray,
         theta_ref_ic: np.ndarray,

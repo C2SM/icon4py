@@ -44,7 +44,7 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         wgtfac_c: np.ndarray,
         rho: np.ndarray,
         rho_ref_mc: np.ndarray,

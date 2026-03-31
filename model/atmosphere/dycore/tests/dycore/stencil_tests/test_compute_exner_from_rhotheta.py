@@ -26,7 +26,7 @@ class TestComputeExnerFromRhotheta(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         rho: np.ndarray,
         exner: np.ndarray,
         rd_o_cvd: float,

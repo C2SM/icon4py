@@ -34,7 +34,7 @@ class TestComputeContravariantCorrection(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vn: np.ndarray,
         ddxn_z_full: np.ndarray,
         ddxt_z_full: np.ndarray,

@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -42,20 +42,21 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         kh_smag_e: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         theta_v: np.ndarray,
         z_nabla2_e: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_nabla2_e = calculate_nabla2_for_z_numpy(
             connectivities, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
         )
         return dict(z_nabla2_e=z_nabla2_e)
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)

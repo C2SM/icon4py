@@ -34,7 +34,7 @@ class TestComputeHorizontalKineticEnergy(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vn: np.ndarray,
         vt: np.ndarray,
         **kwargs: Any,

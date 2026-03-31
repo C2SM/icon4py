@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import snow_to_rain
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -20,7 +21,7 @@ class TestSnowToRainDefault(StencilTest):
 
     @static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         t: np.ndarray,
         p: np.ndarray,
         rho: np.ndarray,
@@ -31,7 +32,7 @@ class TestSnowToRainDefault(StencilTest):
         return dict(conversion_rate=np.full(t.shape, 3.7268547760462804e-07))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             t=self.data_alloc.constant_field(275.83, dims.CellDim, dims.KDim, dtype=wpfloat),
             p=self.data_alloc.constant_field(80134.5, dims.CellDim, dims.KDim, dtype=wpfloat),

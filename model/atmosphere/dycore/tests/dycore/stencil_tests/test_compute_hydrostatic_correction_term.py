@@ -112,7 +112,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         theta_v: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,
@@ -122,6 +122,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         grav_o_cpd: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_hydro_corr = compute_hydrostatic_correction_term_numpy(
             connectivities,
             theta_v,

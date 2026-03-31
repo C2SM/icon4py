@@ -67,7 +67,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_rho_expl: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
@@ -83,6 +83,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,

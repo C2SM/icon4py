@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.prepare_ffsl_flux_area_patches_
     prepare_ffsl_flux_area_patches_list,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -840,7 +841,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         famask_int,
         p_vn,
         ptr_v3_lon,
@@ -1455,7 +1456,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         famask_int = self.data_alloc.random_mask(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         ptr_v3_lon_field = self.data_alloc.random_field(

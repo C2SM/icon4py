@@ -53,7 +53,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
         primal_normal_vert_v1: np.ndarray,
@@ -72,6 +72,7 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area: bool,
         **kwargs: Any,
     ):
+        connectivities = grid.ndarray_connectivities
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(

@@ -37,11 +37,12 @@ class TestApplyRayleighDampingMechanism(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_raylfac: np.ndarray,
         w: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         w = apply_rayleigh_damping_mechanism_numpy(connectivities, z_raylfac, w)
         return dict(w=w)
 

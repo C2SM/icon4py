@@ -45,7 +45,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_e_in: np.ndarray,
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
@@ -53,6 +53,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:
+        connectivities = grid.ndarray_connectivities
         v2e = connectivities[dims.V2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(

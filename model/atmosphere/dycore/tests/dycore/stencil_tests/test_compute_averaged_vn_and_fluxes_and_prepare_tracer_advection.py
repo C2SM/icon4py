@@ -57,7 +57,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         spatially_averaged_vn: np.ndarray,
         mass_flux_at_edges_on_model_levels: np.ndarray,
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
@@ -75,6 +75,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         initial_spatially_averaged_vn = spatially_averaged_vn.copy()
         initial_mass_flux_at_edges_on_model_levels = mass_flux_at_edges_on_model_levels.copy()
         initial_theta_v_flux_at_edges_on_model_levels = theta_v_flux_at_edges_on_model_levels.copy()

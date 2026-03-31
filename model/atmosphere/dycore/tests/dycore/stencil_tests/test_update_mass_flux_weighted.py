@@ -46,7 +46,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         rho_ic: np.ndarray,
         vwind_expl_wgt: np.ndarray,
         vwind_impl_wgt: np.ndarray,

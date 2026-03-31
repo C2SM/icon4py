@@ -38,7 +38,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         diff_multfac_smag: np.ndarray,
         tangent_orientation: np.ndarray,
         inv_primal_edge_length: np.ndarray,
@@ -58,6 +58,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         e2c2v = connectivities[dims.E2C2VDim]
 
         u_vert_e2c2v = u_vert[e2c2v]

@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_
     compute_horizontal_tracer_flux_from_cubic_coefficients,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -23,7 +24,7 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_out_e_hybrid_2: np.ndarray,
         p_mass_flx_e: np.ndarray,
         z_dreg_area: np.ndarray,
@@ -34,7 +35,7 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
         return dict(p_out_e_hybrid_2=p_out_e_hybrid_2)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         p_out_e_hybrid_2 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_mass_flx_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         z_dreg_area = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)

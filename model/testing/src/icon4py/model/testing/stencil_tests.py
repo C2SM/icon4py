@@ -15,7 +15,7 @@ import inspect
 import os
 import types
 from collections.abc import Callable, Generator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Protocol, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -49,6 +49,12 @@ def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
     if func.__name__ != "reference":
         raise ValueError(
             f"The 'reference' method must be named 'reference' but got '{func.__name__}'."
+        )
+    func_params = tuple(inspect.signature(func).parameters.keys())
+    if func_params[0] != "grid":
+        raise ValueError(
+            f"The 'reference' method signature must be 'reference(grid, ...)' but got"
+            f" '{func.__name__}{func_params}'."
         )
     if not isinstance(func, staticmethod):
         func = staticmethod(func)
@@ -111,43 +117,43 @@ else:
     input_data_fixture = _input_data_fixture
 
 
-@dataclasses.dataclass
-class _ConnectivityConceptFixer:
+@dataclasses.dataclass(frozen=True)
+class DataAllocationWrapper:
     """
-    This works around a misuse of dimensions as an identifier for connectivities.
-    Since GT4Py might change the way the mesh is represented, we could
-    keep this for a while, otherwise we need to touch all StencilTests.
-    """
-
-    _grid: base.Grid
-
-    def __getitem__(self, dim: gtx.Dimension | str) -> np.ndarray:
-        if isinstance(dim, gtx.Dimension):
-            dim = dim.value
-        return self._grid.get_connectivity(dim).asnumpy()
-
-
-class DataAllocationProtocol(Protocol):
-    """
-    This protocol mimics the 'icon4py.model.common.utils.data_allocation',
+    This wrapper mimics the 'icon4py.model.common.utils.data_allocation' functions,
     but with 'backend' and `grid` bound in the respective functions.
     """
+
+    grid: base.Grid
+    allocator: gtx_typing.Allocator | None
 
     def constant_field(
         self,
         value: float,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = ta.wpfloat,
-        extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
+    ) -> gtx.Field:
+        return data_allocation.constant_field(
+            *dims,
+            grid=self.grid,
+            value=value,
+            dtype=dtype,
+            allocator=self.allocator,
+        )
 
     def index_field(
         self,
         dim: gtx.Dimension,
         extend: dict[gtx.Dimension, int] | None = None,
         dtype: npt.DTypeLike = gtx.int32,
-        allocator: gtx_typing.Allocator | None = None,
-    ) -> gtx.Field: ...
+    ) -> gtx.Field:
+        return data_allocation.index_field(
+            grid=self.grid,
+            dim=dim,
+            extend=extend,
+            dtype=dtype,
+            allocator=self.allocator,
+        )
 
     def random_field(
         self,
@@ -156,14 +162,30 @@ class DataAllocationProtocol(Protocol):
         high: float = 1.0,
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
+    ) -> gtx.Field:
+        return data_allocation.random_field(
+            *dims,
+            grid=self.grid,
+            low=low,
+            high=high,
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
+        )
 
     def random_mask(
         self,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
+    ) -> gtx.Field:
+        return data_allocation.random_mask(
+            *dims,
+            grid=self.grid,
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
+        )
 
     def random_sign(
         self,
@@ -171,32 +193,28 @@ class DataAllocationProtocol(Protocol):
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
         allocator: gtx_typing.Allocator | None = None,
-    ) -> gtx.Field: ...
+    ) -> gtx.Field:
+        return data_allocation.random_sign(
+            *dims,
+            grid=self.grid,
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
+        )
 
     def zero_field(
         self,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = ta.wpfloat,
         extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
-
-
-_DATA_ALLOCATION_METHODS: Final = tuple(
-    key for key in DataAllocationProtocol.__dict__ if not key.startswith("_")
-)
-
-
-@dataclasses.dataclass(frozen=True)
-class DataAllocationWrapper:
-    grid: base.Grid
-    allocator: gtx_typing.Allocator | None
-
-    def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
-        if name in _DATA_ALLOCATION_METHODS:
-            alloc_fun = getattr(data_allocation, name)
-            return functools.partial(alloc_fun, self.grid, allocator=self.allocator)
-        else:
-            raise AttributeError(f"Invalid data allocation function '{name}'.")
+    ) -> gtx.Field:
+        return data_allocation.zero_field(
+            *dims,
+            grid=self.grid,
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
+        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -233,7 +251,7 @@ def test_and_benchmark(
 
     if not skip_stenciltest_verification:
         reference_outputs = self.reference(
-            grid=_ConnectivityConceptFixer(grid),
+            grid=grid,
             **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
         )
 
@@ -336,7 +354,7 @@ class StencilTest:
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[Callable[..., dict[str, Any]]]
 
-    data_alloc: DataAllocationProtocol
+    data_alloc: DataAllocationWrapper
 
     @pytest.fixture
     def configured_program(
@@ -376,12 +394,11 @@ class StencilTest:
         """
         Convenience fixture to provide data allocation functions with backend and grid already bound.
         """
-
         self.data_alloc_wrapper = DataAllocationWrapper(
             grid=grid, allocator=model_backends.get_allocator(backend_like)
         )
         try:
-            self.data_alloc = cast(DataAllocationProtocol, self.data_alloc_wrapper)
+            self.data_alloc = self.data_alloc_wrapper
             yield
 
         finally:

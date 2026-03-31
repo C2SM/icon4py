@@ -22,7 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture,
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.grid import base, base as base_grid
 
 
 class TestSaturationAdjustment(StencilTest):
@@ -31,7 +31,7 @@ class TestSaturationAdjustment(StencilTest):
 
     @static_reference
     def reference(
-        grid: base_grid.Grid,
+        grid: base.Grid,
         te: np.ndarray,
         **kwargs,
     ) -> dict:
@@ -42,7 +42,7 @@ class TestSaturationAdjustment(StencilTest):
         )
 
     @input_data_fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         return dict(
             te=self.data_alloc.constant_field(
                 273.90911754406039, dims.CellDim, dims.KDim, dtype=wpfloat

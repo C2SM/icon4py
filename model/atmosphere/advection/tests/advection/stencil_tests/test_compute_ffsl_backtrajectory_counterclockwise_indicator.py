@@ -25,7 +25,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_vn: np.ndarray,
         tangent_orientation: np.ndarray,
         lcounterclock: bool,

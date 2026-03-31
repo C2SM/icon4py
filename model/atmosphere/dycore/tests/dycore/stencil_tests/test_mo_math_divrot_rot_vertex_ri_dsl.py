@@ -36,11 +36,12 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vec_e: np.ndarray,
         geofac_rot: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         rot_vec = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vec_e, geofac_rot)
         return dict(rot_vec=rot_vec)
 

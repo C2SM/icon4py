@@ -53,12 +53,13 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         e_bln_c_s: np.ndarray,
         z_w_concorr_me: np.ndarray,
         wgtfacq_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         w_concorr_c = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
             connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
         )

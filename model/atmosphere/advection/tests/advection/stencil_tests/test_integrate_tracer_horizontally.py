@@ -25,7 +25,7 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_mflx_tracer_h: np.ndarray,
         deepatmo_divh: np.ndarray,
         tracer_now: np.ndarray,
@@ -35,6 +35,7 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now

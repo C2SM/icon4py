@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_len
     compute_ffsl_backtrajectory_length_indicator,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -23,7 +24,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         edge_cell_length: np.ndarray,
@@ -46,7 +47,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
         return dict(opt_famask_dsl=opt_famask_dsl)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         edge_cell_length = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)

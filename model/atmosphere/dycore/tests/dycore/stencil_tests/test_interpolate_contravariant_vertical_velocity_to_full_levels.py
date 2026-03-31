@@ -33,9 +33,7 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(StencilTest):
     OUTPUTS = ("z_w_con_c_full",)
 
     @static_reference
-    def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray], z_w_con_c: np.ndarray, **kwargs: Any
-    ) -> dict:
+    def reference(grid: base.Grid, z_w_con_c: np.ndarray, **kwargs: Any) -> dict:
         z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
         return dict(z_w_con_c_full=z_w_con_c_full)
 

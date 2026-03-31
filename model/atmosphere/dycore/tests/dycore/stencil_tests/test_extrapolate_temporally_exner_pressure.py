@@ -39,13 +39,14 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         exner: np.ndarray,
         exner_ref_mc: np.ndarray,
         exner_pr: np.ndarray,
         exner_exfac: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
             connectivities,
             exner=exner,

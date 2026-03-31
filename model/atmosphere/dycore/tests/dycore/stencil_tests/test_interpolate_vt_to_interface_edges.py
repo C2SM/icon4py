@@ -35,7 +35,7 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         wgtfac_e: np.ndarray,
         vt: np.ndarray,
         z_vt_ie: np.ndarray,

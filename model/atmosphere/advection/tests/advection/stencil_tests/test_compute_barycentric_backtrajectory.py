@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtraject
     compute_barycentric_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -23,7 +24,7 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         cell_idx: np.ndarray,
@@ -79,7 +80,7 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         cell_idx = grid.get_connectivity("E2C")

@@ -54,7 +54,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vn_ie: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         w: np.ndarray,
@@ -67,6 +67,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_v_grad_w[horizontal_start:horizontal_end, :] = (
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
                 connectivities,

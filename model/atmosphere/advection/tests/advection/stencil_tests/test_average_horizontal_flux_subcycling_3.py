@@ -25,7 +25,7 @@ class TestAverageHorizontalFluxSubcycling3(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_tracer_mflx_1_dsl: np.ndarray,
         z_tracer_mflx_2_dsl: np.ndarray,
         z_tracer_mflx_3_dsl: np.ndarray,

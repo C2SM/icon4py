@@ -56,7 +56,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         rho_nnow: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         z_flxdiv_mass: np.ndarray,
@@ -69,6 +69,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (z_rho_expl, z_exner_expl) = compute_explicit_part_for_rho_and_exner_numpy(
             connectivities,
             rho_nnow=rho_nnow,

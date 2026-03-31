@@ -23,7 +23,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         kh_smag_ec: np.ndarray,
         vn: np.ndarray,
         e_bln_c_s: np.ndarray,
@@ -31,6 +31,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         diff_multfac_smag: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         c2e = connectivities[dims.C2EDim]
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)

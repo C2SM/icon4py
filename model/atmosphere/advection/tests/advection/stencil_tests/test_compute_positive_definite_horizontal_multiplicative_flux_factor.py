@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horiz
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -23,7 +24,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         geofac_div: np.ndarray,
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
@@ -32,6 +33,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         dbl_eps,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         c2e = connectivities[dims.C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
@@ -53,7 +55,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         return dict(r_m=r_m)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
         p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
         p_rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)

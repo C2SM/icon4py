@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import dqsatdT_rho
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
@@ -19,11 +20,11 @@ class TestQsatRho(StencilTest):
     OUTPUTS = ("derivative",)
 
     @static_reference
-    def reference(grid, qs: np.ndarray, t: np.ndarray, **kwargs) -> dict:
+    def reference(grid: base.Grid, qs: np.ndarray, t: np.ndarray, **kwargs) -> dict:
         return dict(derivative=np.full(t.shape, 0.00030825070286492049))
 
     @input_data_fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid):
         return dict(
             qs=self.data_alloc.constant_field(0.00448941, dims.CellDim, dims.KDim, dtype=wpfloat),
             t=self.data_alloc.constant_field(273.909, dims.CellDim, dims.KDim, dtype=wpfloat),

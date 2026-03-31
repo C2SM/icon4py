@@ -28,16 +28,17 @@ class TestNabla2OnCell(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         psi_c: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:
+        connectivities = grid.ndarray_connectivities
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @input_data_fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         psi_c = self.data_alloc.constant_field(1.0, dims.CellDim)
         geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
         nabla2_psi_c = self.data_alloc.zero_field(dims.CellDim)
@@ -57,11 +58,12 @@ class TestNabla2OnCellK(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         psi_c: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 

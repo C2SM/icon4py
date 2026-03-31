@@ -48,13 +48,14 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
         geofac_grdiv: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_vn_avg, z_graddiv_vn, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,

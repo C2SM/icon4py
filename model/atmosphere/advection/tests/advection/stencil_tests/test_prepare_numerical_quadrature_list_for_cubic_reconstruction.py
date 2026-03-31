@@ -376,7 +376,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         famask_int: np.ndarray,
         p_coords_dreg_v_1_x: np.ndarray,
         p_coords_dreg_v_2_x: np.ndarray,

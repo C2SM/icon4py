@@ -11,6 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
     StencilTest,
@@ -79,7 +80,7 @@ class TestCalculateNabla4(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
         primal_normal_vert_v1: np.ndarray,
@@ -89,6 +90,7 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         z_nabla4_e2 = calculate_nabla4_numpy(
             connectivities,
             u_vert,
@@ -102,7 +104,7 @@ class TestCalculateNabla4(StencilTest):
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         u_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 

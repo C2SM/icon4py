@@ -96,7 +96,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         next_w: np.ndarray,
         next_rho: np.ndarray,
@@ -140,6 +140,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         flat_level_index_plus1: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         start_cell_index_nudging = kwargs["start_cell_index_nudging"]
         end_cell_index_local = kwargs["end_cell_index_local"]
         start_cell_index_lateral_lvl3 = kwargs["start_cell_index_lateral_lvl3"]

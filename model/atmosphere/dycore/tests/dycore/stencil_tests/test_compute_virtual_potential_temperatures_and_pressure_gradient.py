@@ -60,7 +60,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         wgtfac_c: np.ndarray,
         z_rth_pr_2: np.ndarray,
         theta_v: np.ndarray,
@@ -70,6 +70,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         ddqz_z_half: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (
             z_theta_v_pr_ic,
             theta_v_ic,

@@ -45,7 +45,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         exner_nnow: np.ndarray,
         rho_nnow: np.ndarray,
         theta_v_nnow: np.ndarray,
@@ -58,6 +58,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         cvd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (z_beta, z_alpha) = compute_solver_coefficients_matrix_numpy(
             connectivities,
             exner_nnow=exner_nnow,

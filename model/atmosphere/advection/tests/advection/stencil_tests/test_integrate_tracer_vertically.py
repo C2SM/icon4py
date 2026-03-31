@@ -25,7 +25,7 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         tracer_now: np.ndarray,
         rhodz_now: np.ndarray,
         p_mflx_tracer_v: np.ndarray,

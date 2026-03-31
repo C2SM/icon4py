@@ -43,12 +43,13 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         e_bln_c_s: np.ndarray,
         z_v_grad_w: np.ndarray,
         ddt_w_adv: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         ddt_w_adv = add_interpolated_horizontal_advection_of_w_numpy(
             connectivities, e_bln_c_s, z_v_grad_w, ddt_w_adv
         )

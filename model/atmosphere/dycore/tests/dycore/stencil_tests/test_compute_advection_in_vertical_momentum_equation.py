@@ -294,7 +294,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vertical_cfl: np.ndarray,
@@ -319,6 +319,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         nlev = kwargs["vertical_end"]
 
         horizontal_advection_of_w_at_edges_on_half_levels = compute_horizontal_advection_of_w(
@@ -498,7 +499,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
@@ -522,6 +523,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         skip_compute_predictor_vertical_advection: bool,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         nlev = kwargs["vertical_end"]
 
         # We need to store the initial return field, because we only compute on a subdomain.

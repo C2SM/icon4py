@@ -49,12 +49,13 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         scalar_field: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (
             p_grad_1_u,
             p_grad_1_v,

@@ -44,7 +44,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         w_nnow: np.ndarray,
         ddt_w_adv_ntl1: np.ndarray,
         z_th_ddz_exner_c: np.ndarray,
@@ -55,6 +55,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
         cpd: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         (
             z_w_expl,
             z_contr_w_fl_l,

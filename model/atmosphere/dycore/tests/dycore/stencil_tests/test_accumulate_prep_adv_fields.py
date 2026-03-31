@@ -41,7 +41,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_vn_avg: np.ndarray,
         mass_fl_e: np.ndarray,
         vn_traj: np.ndarray,

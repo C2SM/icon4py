@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_antidiffusive_cell_flux
     compute_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -29,7 +30,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         geofac_div: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_rhodz_new: np.ndarray,
@@ -39,6 +40,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         p_dtime: float,
         **kwargs,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         c2e = connectivities[dims.C2EDim]
         z_anti_c2e = z_anti[c2e]
 
@@ -77,7 +79,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
         p_rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
         p_rhodz_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)

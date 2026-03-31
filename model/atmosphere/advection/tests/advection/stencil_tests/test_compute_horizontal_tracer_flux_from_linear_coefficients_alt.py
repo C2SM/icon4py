@@ -25,7 +25,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.Ste
 
     @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_lsq_coeff_1: np.ndarray,
         z_lsq_coeff_2: np.ndarray,
         z_lsq_coeff_3: np.ndarray,
@@ -36,6 +36,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.Ste
         p_out_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = grid.ndarray_connectivities
         p_out_e_cp = p_out_e.copy()
         e2c = connectivities[dims.E2CDim]
         z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]

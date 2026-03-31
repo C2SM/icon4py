@@ -37,7 +37,7 @@ class TestComputeMassFlux(StencilTest):
 
     @static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_rho_e: np.ndarray,
         z_vn_avg: np.ndarray,
         ddqz_z_full_e: np.ndarray,
