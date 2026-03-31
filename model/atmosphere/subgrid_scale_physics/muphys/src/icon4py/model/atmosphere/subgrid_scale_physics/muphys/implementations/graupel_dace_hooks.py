@@ -19,9 +19,6 @@ from dace import (
 )
 from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
-from gt4py.next.program_processors.runners.dace.transformations import (
-    local_double_buffering as gtx_local_double_buffering,
-)
 
 
 def _cleanup_local_self_update(
@@ -455,7 +452,7 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
         if isinstance(scan_sdfg_node, dace_sdfg.state.LoopRegion)
     ]
     assert len(loop_regions) == 1
-    scan_loop = next(iter(loop_regions))
+    scan_loop = loop_regions[0]
     assert len(scan_loop.nodes()) == 2 and all(
         isinstance(node, dace.SDFGState) for node in scan_loop.nodes()
     )
