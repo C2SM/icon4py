@@ -93,8 +93,10 @@ def check_local_global_field(
         ]
     )
 
-    def _non_blocking_allclose(a: np.ndarray, b: np.ndarray, atol: float, verbose: bool) -> None:
-        print("max diff", np.max(np.abs(a - b)))
+    def _non_blocking_allclose(
+        a: np.ndarray, b: np.ndarray, atol: float, verbose: bool, label: str = ""
+    ) -> None:
+        print(f"{label} max diff", np.max(np.abs(a - b)))
 
     # Compare halo against global reference field
     if check_halos:
@@ -116,6 +118,7 @@ def check_local_global_field(
             ],
             atol=atol,
             verbose=True,
+            label="halos",
         )
 
     # Compare owned local field, excluding halos, against global reference
@@ -138,9 +141,9 @@ def check_local_global_field(
     if processor_props.rank == 0:
         _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        assert np.all(gathered_sizes == global_index_sizes), (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
         _log.info(
             f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
@@ -154,4 +157,6 @@ def check_local_global_field(
         )
 
         # test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)
-        _non_blocking_allclose(sorted_, global_reference_field, atol=atol, verbose=True)
+        _non_blocking_allclose(
+            sorted_, global_reference_field, atol=atol, verbose=True, label="internal"
+        )
