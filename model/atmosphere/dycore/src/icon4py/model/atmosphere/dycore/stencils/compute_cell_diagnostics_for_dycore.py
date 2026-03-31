@@ -41,11 +41,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_wp import (
     _interpolate_cell_field_to_half_levels_wp,
 )
-from icon4py.model.common.math import derivative
-
-# GT4Py field operators require direct function references
-_compute_first_vertical_derivative_at_cells = derivative._compute_first_vertical_derivative_at_cells
-
+from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

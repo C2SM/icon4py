@@ -15,22 +15,21 @@ from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
-from icon4py.model.common.math import (
-    coordinate_transformations as coord_trans,
-    distance,
-    vector_operations as vector_ops,
+from icon4py.model.common.math.coordinate_transformations import (
+    geographical_to_cartesian_on_edges,
+    geographical_to_cartesian_on_vertices,
+    zonal_and_meridional_components_on_edges,
+)
+from icon4py.model.common.math.distance import (
+    arc_length_on_edges,
+    diff_on_edges_torus,
+    distance_on_edges_torus,
+)
+from icon4py.model.common.math.vector_operations import (
+    cross_product_on_edges,
+    normalize_cartesian_vector_on_edges,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-# GT4Py field operators require direct function references
-geographical_to_cartesian_on_edges = coord_trans.geographical_to_cartesian_on_edges
-geographical_to_cartesian_on_vertices = coord_trans.geographical_to_cartesian_on_vertices
-zonal_and_meridional_components_on_edges = coord_trans.zonal_and_meridional_components_on_edges
-arc_length_on_edges = distance.arc_length_on_edges
-diff_on_edges_torus = distance.diff_on_edges_torus
-distance_on_edges_torus = distance.distance_on_edges_torus
-cross_product_on_edges = vector_ops.cross_product_on_edges
-normalize_cartesian_vector_on_edges = vector_ops.normalize_cartesian_vector_on_edges
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)

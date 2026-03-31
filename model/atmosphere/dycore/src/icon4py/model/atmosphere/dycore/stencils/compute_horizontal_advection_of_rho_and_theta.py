@@ -10,16 +10,9 @@ from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim
-from icon4py.model.common.math.stencils import (
-    cell_horizontal_gradients_by_green_gauss_method as green_gauss,
+from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
+    cell_horizontal_gradients_by_green_gauss_method,
 )
-
-# GT4Py field operators require direct function references
-# GT4Py field operators require direct function references
-cell_horizontal_gradients_by_green_gauss_method = (
-    green_gauss.cell_horizontal_gradients_by_green_gauss_method
-)
-
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
