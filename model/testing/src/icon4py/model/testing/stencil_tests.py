@@ -266,7 +266,6 @@ class DataAllocation(Protocol):
 
     def index_field(
         self,
-        grid: base.Grid,
         dim: gtx.Dimension,
         extend: dict[gtx.Dimension, int] | None = None,
         dtype: npt.DTypeLike = gtx.int32,
