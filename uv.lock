@@ -47,7 +47,7 @@ dependencies = [
 wheels = [
     { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:eca984c7b8176eecaff0dd84504b322828bedd40c177d736753295e8a4b672de" },
     { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:468ca95416f57d5bbf6663ad8ca69a6ac46b4a34166833f01e5535068fa1b4e8" },
-    { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:de3138281e2711e06efaf49a31310d0d4824998e18d43e13e288a0e52ca75ec0" },
+    { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:c3f586d3786fb02a606148a6cc5662411bb143fa6f2fc7533ce1d98b77a1ed1c" },
 ]
 
 [[package]]
