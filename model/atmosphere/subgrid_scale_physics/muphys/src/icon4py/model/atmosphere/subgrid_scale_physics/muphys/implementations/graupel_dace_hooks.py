@@ -473,8 +473,6 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             sdfg, st, scan_nsdfg_node, scan_compute_st, scan_update_st, if_stmt_node
         )
 
-    sdfg.validate()
-
     for input_access_nodes in ["te", "q_in_2", "q_in_3", "q_in_4", "q_in_5"]:
         all_maps_with_accessnode_input = [
             node
@@ -558,7 +556,7 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
                 [internal_node for internal_node in else_branch_state.nodes()]
             )
             nsdfg_conditional_block.remove_branch(else_branch)
-        sdfg.validate()
+    sdfg.validate()
 
 
 def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
