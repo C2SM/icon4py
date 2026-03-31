@@ -93,7 +93,7 @@ def _input_data_fixture(
     if any(ref is data_allocation for ref in [*cv.globals.values(), *cv.nonlocals.values()]):
         raise TypeError(
             "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
-            "Use self.data_alloc inside the fixture to access data allocation functions instead."
+            "Use `self.data_alloc` inside the fixture to access data allocation functions instead."
         )
 
     kwargs.setdefault("scope", "class")
@@ -127,10 +127,10 @@ class _ConnectivityConceptFixer:
         return self._grid.get_connectivity(dim).asnumpy()
 
 
-class DataAllocation(Protocol):
+class DataAllocationProtocol(Protocol):
     """
     This protocol mimics the 'icon4py.model.common.utils.data_allocation',
-    but with 'backend' bound in the respective functions.
+    but with 'backend' and `grid` bound in the respective functions.
     """
 
     def constant_field(
@@ -179,6 +179,24 @@ class DataAllocation(Protocol):
         dtype: npt.DTypeLike | None = ta.wpfloat,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field: ...
+
+
+_DATA_ALLOCATION_METHODS: Final = tuple(
+    key for key in DataAllocationProtocol.__dict__ if not key.startswith("_")
+)
+
+
+@dataclasses.dataclass(frozen=True)
+class DataAllocationWrapper:
+    grid: base.Grid
+    allocator: gtx_typing.Allocator | None
+
+    def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
+        if name in _DATA_ALLOCATION_METHODS:
+            alloc_fun = getattr(data_allocation, name)
+            return functools.partial(alloc_fun, self.grid, allocator=self.allocator)
+        else:
+            raise AttributeError(f"Invalid data allocation function '{name}'.")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -318,7 +336,7 @@ class StencilTest:
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[Callable[..., dict[str, Any]]]
 
-    data_alloc: DataAllocation
+    data_alloc: DataAllocationProtocol
 
     @pytest.fixture
     def configured_program(
@@ -358,25 +376,12 @@ class StencilTest:
         """
         Convenience fixture to provide data allocation functions with backend and grid already bound.
         """
-        allocator = model_backends.get_allocator(backend_like)
 
-        class DataAllocationWrapper:
-            def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
-                if name in (
-                    "constant_field",
-                    "index_field",
-                    "random_field",
-                    "random_mask",
-                    "random_sign",
-                    "zero_field",
-                ):
-                    alloc_fun = getattr(data_allocation, name)
-                    return functools.partial(alloc_fun, grid, allocator=allocator)
-                else:
-                    raise AttributeError(f"Invalid data allocation function '{name}'.")
-
+        self.data_alloc_wrapper = DataAllocationWrapper(
+            grid=grid, allocator=model_backends.get_allocator(backend_like)
+        )
         try:
-            self.data_alloc = cast(DataAllocation, DataAllocationWrapper())
+            self.data_alloc = cast(DataAllocationProtocol, self.data_alloc_wrapper)
             yield
 
         finally:
