@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import logging
 from typing import Annotated, TypeAlias
 
 import numpy as np
@@ -24,6 +25,9 @@ from icon4py.tools.py2fgen.wrappers import (
     debug_utils as wrapper_debug_utils,
     icon4py_export,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
