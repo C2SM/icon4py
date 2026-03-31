@@ -12,7 +12,6 @@ from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -73,7 +72,7 @@ class IconSavepoint:
                         # as a workaround for the lack of support for optional fields in gt4py.
                         shp = (1,) * len(dims)
                         return gtx.as_field(
-                            dims, np.zeros(shp, dtype=dtype), allocator=self.backend
+                            dims, self.xp.zeros(shp, dtype=dtype), allocator=self.backend
                         )
                     else:
                         return None
@@ -94,11 +93,11 @@ class IconSavepoint:
         transpose: None | Sequence[int] = None,
     ):
         # Note: slice is applied before transpose!
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = self.xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         if slice_ is not None:
             buffer = buffer[slice_]
         if transpose is not None:
-            buffer = np.transpose(buffer, axes=transpose)
+            buffer = self.xp.transpose(buffer, axes=transpose)
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
@@ -106,7 +105,7 @@ class IconSavepoint:
 
     def _get_field_component(self, name: str, level: int, dims: tuple[gtx.Dimension, gtx]):
         buffer = self.serializer.read(name, self.savepoint).astype(float)
-        buffer = np.squeeze(buffer)[:, :, level]
+        buffer = self.xp.squeeze(buffer)[:, :, level]
         buffer = self._reduce_to_dim_size(buffer, dims)
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dims, buffer, allocator=self.backend)
@@ -149,7 +148,9 @@ class IconSavepoint:
         return self._read(name, offset=0, dtype=bool)
 
     def _read(self, name: str, offset=0, dtype=int):
-        return np.squeeze(self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+        return self.xp.asarray(
+            self.xp.squeeze(self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+        )
 
 
 class IconGridSavepoint(IconSavepoint):
@@ -378,35 +379,35 @@ class IconGridSavepoint(IconSavepoint):
 
     def cells_start_index(self):
         start_idx = self._read_int32("c_start_index")
-        return np.where(start_idx == 0, start_idx, start_idx - 1)
+        return self.xp.where(start_idx == 0, start_idx, start_idx - 1)
 
     def cells_end_index(self):
         return self._read_int32("c_end_index")
 
     def vertex_start_index(self):
         start_idx = self._read_int32("v_start_index")
-        return np.where(start_idx == 0, start_idx, start_idx - 1)
+        return self.xp.where(start_idx == 0, start_idx, start_idx - 1)
 
     def vertex_end_index(self):
         return self._read_int32("v_end_index")
 
     def edge_start_index(self):
         start_idx = self._read_int32("e_start_index")
-        return np.where(start_idx == 0, start_idx, start_idx - 1)
+        return self.xp.where(start_idx == 0, start_idx, start_idx - 1)
 
     def edge_end_index(self):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
         # one off accounts for being exclusive [from:to)
         return self._read_int32("e_end_index")
 
-    def start_index(self) -> dict[gtx.Dimension, np.ndarray]:
+    def start_index(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
         return {
             dims.CellDim: self.cells_start_index(),
             dims.EdgeDim: self.edge_start_index(),
             dims.VertexDim: self.vertex_start_index(),
         }
 
-    def end_index(self) -> dict[gtx.Dimension, np.ndarray]:
+    def end_index(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
         return {
             dims.CellDim: self.cells_end_index(),
             dims.EdgeDim: self.edge_end_index(),
@@ -439,7 +440,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
         if reverse:
-            connectivity = np.transpose(self._read_int32(name, offset=1))[
+            connectivity = self.xp.transpose(self._read_int32(name, offset=1))[
                 : self.sizes[target_dim], :
             ]
         else:
@@ -455,7 +456,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def c2e2c2e(self):
         if self._c2e2c2e() is None:
-            return np.zeros((self.sizes[dims.CellDim], 9), dtype=gtx.int32)
+            return self.xp.zeros((self.sizes[dims.CellDim], 9), dtype=gtx.int32)
         else:
             return self._c2e2c2e()
 
@@ -514,7 +515,7 @@ class IconGridSavepoint(IconSavepoint):
                 )
 
     def owner_mask(self, dim: gtx.Dimension):
-        return np.squeeze(self._read_field_for_dim("owner_mask", self._read_bool, dim))
+        return self.xp.squeeze(self._read_field_for_dim("owner_mask", self._read_bool, dim))
 
     def global_index(self, dim: gtx.Dimension):
         return self._read_field_for_dim("glb_index", self._read_int32_shift1, dim)
@@ -559,15 +560,14 @@ class IconGridSavepoint(IconSavepoint):
             def potentially_revert_icon_index_transformation(ar):
                 return ar
         else:
-            potentially_revert_icon_index_transformation = functools.partial(
-                grid_utils.revert_repeated_index_to_invalid,
-                array_ns=data_alloc.import_array_ns(backend),
+            potentially_revert_icon_index_transformation = (
+                grid_utils.revert_repeated_index_to_invalid
             )
 
         c2e2c = self.c2e2c()
         e2c2e = potentially_revert_icon_index_transformation(self.e2c2e())
-        c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
-        e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
+        c2e2c0 = self.xp.column_stack((self.xp.asarray(range(c2e2c.shape[0])), c2e2c))
+        e2c2e0 = self.xp.column_stack((self.xp.asarray(range(e2c2e.shape[0])), e2c2e))
 
         constructor = functools.partial(
             h_grid.get_start_end_idx_from_icon_arrays,
@@ -662,7 +662,7 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("geofac_grdiv", dims.EdgeDim, dims.E2C2EODim)
 
     def geofac_grg(self):
-        grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
+        grg = self.xp.squeeze(self.serializer.read("geofac_grg", self.savepoint))
         num_cells = self.sizes[dims.CellDim]
         return gtx.as_field(
             (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 0], allocator=self.backend
@@ -759,15 +759,15 @@ class MetricSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def pg_edgeidx(self):
-        return np.squeeze(self.serializer.read("pg_edgeidx", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("pg_edgeidx", self.savepoint))
 
     @IconSavepoint.optionally_registered()
     def pg_vertidx(self):
-        return np.squeeze(self.serializer.read("pg_vertidx", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("pg_vertidx", self.savepoint))
 
     @IconSavepoint.optionally_registered()
     def pg_exdist(self):
-        return np.squeeze(self.serializer.read("pg_exdist", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("pg_exdist", self.savepoint))
 
     def pg_exdist_dsl(self):
         pg_edgeidx = self.pg_edgeidx()
@@ -893,12 +893,12 @@ class MetricSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def zd_cellidx(self):
-        return np.squeeze(self.serializer.read("zd_cellidx", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("zd_cellidx", self.savepoint))
 
     @IconSavepoint.optionally_registered()
     def zd_vertidx(self):
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
-        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0, :]
+        return self.xp.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0, :]
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
@@ -906,7 +906,7 @@ class MetricSavepoint(IconSavepoint):
         zd_vertidx = self.zd_vertidx()
         # these are the three k offsets for the C2E2C neighbors
         zd_vertoffset = (
-            np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:, :] - zd_vertidx
+            self.xp.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:, :] - zd_vertidx
         )
         cell_c2e2c_k_domain = gtx.domain(
             {
@@ -931,7 +931,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_intcoef(self):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
-        zd_intcoef = np.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
+        zd_intcoef = self.xp.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
         cell_c2e2c_k_domain = gtx.domain(
             {
                 dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
@@ -955,7 +955,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_diffcoef(self):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
-        zd_diffcoef = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
+        zd_diffcoef = self.xp.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
         return data_alloc.list2field(
             domain=self.geopot().domain,
             values=zd_diffcoef,
@@ -1032,16 +1032,16 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("exner", dims.CellDim, dims.KDim)
 
     def diff_multfac_smag(self):
-        return np.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
 
     def enh_smag_fac(self):
-        return np.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
 
     def smag_limit(self):
-        return np.squeeze(self.serializer.read("smag_limit", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("smag_limit", self.savepoint))
 
     def diff_multfac_n2w(self):
-        return np.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
+        return self.xp.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
 
     def nudgezone_diff(self) -> int:
         return self.serializer.read("nudgezone_diff", self.savepoint)[0]

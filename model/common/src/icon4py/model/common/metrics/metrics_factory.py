@@ -880,7 +880,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_maxslp_maxhgtd)
 
         compute_weighted_cell_neighbor_sum = factory.ProgramFieldProvider(
-            func=mf.compute_weighted_cell_neighbor_sum,
+            func=mf.compute_weighted_cell_neighbor_sum.with_backend(self._backend),
             deps={
                 "maxslp": attrs.MAXSLP,
                 "maxhgtd": attrs.MAXHGTD,
@@ -978,7 +978,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
         compute_advection_deepatmo_fields = factory.ProgramFieldProvider(
-            func=compute_advection_metrics.compute_advection_deepatmo_fields,
+            func=compute_advection_metrics.compute_advection_deepatmo_fields.with_backend(
+                self._backend
+            ),
             domain={
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),

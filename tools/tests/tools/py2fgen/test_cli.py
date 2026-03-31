@@ -232,64 +232,6 @@ def test_py2fgen_compilation_and_profiling(
     assert (tmp_path / "viztracer.json").exists()
 
 
-@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
-def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
-        "diffusion_init,diffusion_run,profile_enable,profile_disable",
-        "diffusion_plugin",
-        samples_path,
-        "test_diffusion",
-        test_temp_dir,
-        os.environ["NVFORTRAN_COMPILER"],
-        ("-acc", "-Minfo=acc"),
-        env_vars={"ICON4PY_BACKEND": "GPU"},
-    )
-
-
-@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
-def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
-        "diffusion_init,diffusion_run,profile_enable,profile_disable",
-        "diffusion_plugin",
-        samples_path,
-        "test_diffusion",
-        test_temp_dir,
-    )
-
-
-@pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
-def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
-        "solve_nh_init,solve_nh_run,grid_init,profile_enable,profile_disable",
-        "dycore_plugin",
-        samples_path,
-        "test_dycore",
-        test_temp_dir,
-    )
-
-
-@pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
-def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
-        "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
-        "dycore_plugin",
-        samples_path,
-        "test_dycore",
-        test_temp_dir,
-        os.environ["NVFORTRAN_COMPILER"],
-        ("-acc", "-Minfo=acc"),
-        env_vars={"ICON4PY_BACKEND": "GPU"},
-    )
-
-
 def test_py2fgen_incremental_skips_compilation_when_unchanged(
     cli_runner, square_wrapper_module, test_temp_dir, caplog
 ):

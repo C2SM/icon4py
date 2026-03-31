@@ -61,7 +61,7 @@ def write_file_if_changed(
     return True
 
 
-def setup_logger(name: str, log_level: int = logging.INFO) -> logging.Logger:
+def setup_logger(name: str, log_level: int = logging.WARNING) -> logging.Logger:
     """Set up a logger with a given name and log level."""
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
