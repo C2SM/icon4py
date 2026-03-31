@@ -15,7 +15,7 @@ import pytest
 import icon4py.model.testing.test_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
-from icon4py.model.common.math import vector_operations, vertical_operations
+from icon4py.model.common.math import vector_operations as vector_ops, vertical_operations as vertical_ops
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
@@ -34,7 +34,7 @@ def test_cross_product(backend: gtx_typing.Backend) -> None:
     y = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
     z = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
 
-    vector_operations.cross_product_on_edges.with_backend(backend)(
+    vector_ops.cross_product_on_edges.with_backend(backend)(
         x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={}
     )
     a = np.column_stack((x1.asnumpy(), y1.asnumpy(), z1.asnumpy()))
@@ -47,7 +47,7 @@ def test_cross_product(backend: gtx_typing.Backend) -> None:
 
 
 class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
-    PROGRAM = vertical_operations.average_two_vertical_levels_downwards_on_edges
+    PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_edges
     OUTPUTS = (
         stencil_tests.Output(
             "average",
@@ -81,7 +81,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
 
 
 class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
-    PROGRAM = vertical_operations.average_two_vertical_levels_downwards_on_cells
+    PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_cells
     OUTPUTS = (
         stencil_tests.Output(
             "average",

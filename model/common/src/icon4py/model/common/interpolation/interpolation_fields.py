@@ -17,14 +17,13 @@ from gt4py import next as gtx
 from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
-import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import base as base_grid, gridfile
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
-from icon4py.model.common.math.projection import diff_on_edges_torus_numpy, gnomonic_proj
+from icon4py.model.common.math import projection
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -1057,10 +1056,10 @@ def compute_pos_on_tplane_e_x_y(
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
     xyloc_plane_n1 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n2 = array_ns.zeros([2, e2c.shape[0]])
-    xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = proj.gnomonic_proj(
+    xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = projection.gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]]
     )
-    xyloc_plane_n2[0, llb:], xyloc_plane_n2[1, llb:] = proj.gnomonic_proj(
+    xyloc_plane_n2[0, llb:], xyloc_plane_n2[1, llb:] = projection.gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
 
@@ -1236,7 +1235,7 @@ def compute_lsq_coeffs(
         case base_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
                 z_dist_g[:, js, :] = array_ns.asarray(
-                    gnomonic_proj(
+                    projection.gnomonic_proj(
                         cell_lon,
                         cell_lat,
                         cell_lon[c2e2c[:, js]],
@@ -1259,7 +1258,7 @@ def compute_lsq_coeffs(
                 cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
                 for js in range(lsq_dim_stencil):
                     cc_cell[js, :] = array_ns.asarray(
-                        diff_on_edges_torus_numpy(
+                        projection.diff_on_edges_torus_numpy(
                             cell_center_x[jc],
                             cell_center_y[jc],
                             cell_center_x[ilc_s][js],

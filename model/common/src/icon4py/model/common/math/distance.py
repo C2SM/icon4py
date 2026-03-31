@@ -22,7 +22,10 @@ from gt4py.next import (
 )
 
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.math.vector_operations import dot_product_on_edges
+from icon4py.model.common.math import vector_operations as vector_ops
+
+# GT4Py field operators require direct function references
+dot_product_on_edges = vector_ops.dot_product_on_edges
 
 
 @gtx.field_operator

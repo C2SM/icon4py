@@ -18,7 +18,10 @@ import pytest
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
-from icon4py.model.common.math import coordinate_transformations, vertical_operations
+from icon4py.model.common.math import (
+    coordinate_transformations as coord_trans,
+    vertical_operations as vertical_ops,
+)
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox
@@ -154,7 +157,7 @@ def height_coordinate_source(
 
 @pytest.mark.datatest
 def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> None:
-    field_op = coordinate_transformations.geographical_to_cartesian_on_cells.with_backend(None)
+    field_op = coord_trans.geographical_to_cartesian_on_cells.with_backend(None)
 
     domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
     deps = {"lat": "lat", "lon": "lon"}
@@ -177,7 +180,7 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
 
 @pytest.mark.datatest
 def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
-    program = vertical_operations.average_two_vertical_levels_downwards_on_cells
+    program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
@@ -201,7 +204,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
 
 @pytest.mark.datatest
 def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFieldSource) -> None:
-    program = vertical_operations.average_two_vertical_levels_downwards_on_cells
+    program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),

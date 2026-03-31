@@ -17,7 +17,11 @@ from gt4py import next as gtx
 from gt4py.next import cos, sin, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.math.vector_operations import norm2_on_cells, norm2_on_edges
+from icon4py.model.common.math import vector_operations as vector_ops
+
+# GT4Py field operators require direct function references
+norm2_on_cells = vector_ops.norm2_on_cells
+norm2_on_edges = vector_ops.norm2_on_edges
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)

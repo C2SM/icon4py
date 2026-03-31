@@ -12,7 +12,10 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
+from icon4py.model.common.math import smagorinsky
+
+# GT4Py field operators require direct function references
+_en_smag_fac_for_zero_nshift = smagorinsky._en_smag_fac_for_zero_nshift
 
 
 @gtx.field_operator

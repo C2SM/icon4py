@@ -9,7 +9,10 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.math.operators import _compute_difference_on_cell_k
+from icon4py.model.common.math import operators
+
+# GT4Py programs require direct function references
+_compute_difference_on_cell_k = operators._compute_difference_on_cell_k
 
 
 @gtx.program
