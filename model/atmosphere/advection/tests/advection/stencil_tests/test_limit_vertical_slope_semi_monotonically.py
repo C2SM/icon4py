@@ -43,7 +43,7 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
         z_slope = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        k = data_alloc.index_field(grid, dims.KDim)
+        k = self.data_alloc.index_field(grid, dims.KDim)
 
         elev = k[-2].as_scalar()
         return dict(

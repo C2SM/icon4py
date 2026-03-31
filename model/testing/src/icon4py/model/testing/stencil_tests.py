@@ -15,7 +15,7 @@ import inspect
 import os
 import types
 from collections.abc import Callable, Generator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Protocol, TypeAlias, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -256,6 +256,23 @@ class DataAllocation(Protocol):
     but with 'backend' bound in the respective functions.
     """
 
+    def constant_field(
+        self,
+        value: float,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    def index_field(
+        self,
+        grid: base.Grid,
+        dim: gtx.Dimension,
+        extend: dict[gtx.Dimension, int] | None = None,
+        dtype: npt.DTypeLike = gtx.int32,
+        allocator: gtx_typing.Allocator | None = None,
+    ) -> gtx.Field: ...
+
     def random_field(
         self,
         *dims: gtx.Dimension,
@@ -274,14 +291,6 @@ class DataAllocation(Protocol):
 
     def zero_field(
         self,
-        *dims: gtx.Dimension,
-        dtype: npt.DTypeLike | None = ta.wpfloat,
-        extend: dict[gtx.Dimension, int] | None = None,
-    ) -> gtx.Field: ...
-
-    def constant_field(
-        self,
-        value: float,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = ta.wpfloat,
         extend: dict[gtx.Dimension, int] | None = None,
@@ -377,14 +386,20 @@ class StencilTest:
 
         class DataAllocationWrapper:
             def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
-                if name in ("constant_field", "random_field", "random_mask", "zero_field"):
+                if name in (
+                    "constant_field",
+                    "index_field",
+                    "random_field",
+                    "random_mask",
+                    "zero_field",
+                ):
                     alloc_fun = getattr(data_allocation, name)
                     return functools.partial(alloc_fun, grid, allocator=allocator)
                 else:
                     raise AttributeError(f"Invalid data allocation function '{name}'.")
 
         try:
-            self.data_alloc = DataAllocationWrapper()
+            self.data_alloc = cast(DataAllocation, DataAllocationWrapper())
             yield
 
         finally:
