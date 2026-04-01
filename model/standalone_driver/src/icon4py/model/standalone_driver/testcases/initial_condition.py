@@ -257,6 +257,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         eta_v_at_edge=eta_v_at_edge.ndarray,
         array_ns=xp,
     )
+    log.info("U2vn computation completed.")
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -283,7 +284,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         array_ns=xp,
     )
     exchange(prognostic_state_now.w, dim=dims.CellDim)
-    log.info("U2vn computation completed.")
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
