@@ -581,7 +581,17 @@ def initialize_driver(
         Driver: driver object
     """
 
-    with_mpi = (mpi_decomp.mpi4py is not None) and not force_serial_run
+    # Detect if we're running under MPI (not just if mpi4py is installed).
+    # - mpi4py not installed → serial
+    # - mpi4py installed but COMM_WORLD.Get_size() == 1 → serial
+    # - mpi4py installed and COMM_WORLD.Get_size() > 1 → MPI mode
+    # - force_serial_run=True → always serial (reserved for single vs distributed tests)
+    if force_serial_run or mpi_decomp.mpi4py is None:
+        with_mpi = False
+    else:
+        mpi_decomp.init_mpi()
+        with_mpi = mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1
+
     parallel_props = decomposition_defs.get_processor_properties(
         decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
