@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def compute_mass_flux_numpy(
@@ -31,11 +31,11 @@ def compute_mass_flux_numpy(
     return mass_fl_e, z_theta_v_fl_e
 
 
-class TestComputeMassFlux(StencilTest):
+class TestComputeMassFlux(stencil_tests.StencilTest):
     PROGRAM = compute_mass_flux
     OUTPUTS = ("mass_fl_e", "z_theta_v_fl_e")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         z_rho_e: np.ndarray,
@@ -53,7 +53,7 @@ class TestComputeMassFlux(StencilTest):
 
         return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_rho_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)

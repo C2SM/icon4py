@@ -16,12 +16,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -33,12 +27,12 @@ from .test_calculate_nabla4 import calculate_nabla4_numpy
 
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToVn(StencilTest):
+class TestApplyDiffusionToVn(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "start_2nd_nudge_line_idx_e",
@@ -46,14 +40,14 @@ class TestApplyDiffusionToVn(StencilTest):
             "vertical_end",
             "limited_area",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
             "limited_area",
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         u_vert: np.ndarray,
@@ -122,7 +116,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
         return dict(vn=vn)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         u_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim)
         v_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim)

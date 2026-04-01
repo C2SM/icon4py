@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damp
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_to_w_in_upper_damping_layer_numpy(
@@ -29,11 +29,11 @@ def apply_nabla2_to_w_in_upper_damping_layer_numpy(
     return w
 
 
-class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
+class TestApplyNabla2ToWInUpperDampingLayer(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_to_w_in_upper_damping_layer
     OUTPUTS = ("w",)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         diff_multfac_n2w = self.data_alloc.random_field(dims.KDim, dtype=wpfloat)
@@ -51,7 +51,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
             vertical_end=gtx.int32(grid.num_levels),
         )
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         w: np.ndarray,

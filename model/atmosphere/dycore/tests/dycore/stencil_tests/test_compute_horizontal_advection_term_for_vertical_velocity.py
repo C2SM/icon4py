@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
@@ -50,11 +49,11 @@ def compute_horizontal_advection_term_for_vertical_velocity_numpy(
     return z_v_grad_w
 
 
-class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
+class TestComputeHorizontalAdvectionTermForVerticalVelocity(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_advection_term_for_vertical_velocity
     OUTPUTS = ("z_v_grad_w",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         vn_ie: np.ndarray,
@@ -84,7 +83,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         )[horizontal_start:horizontal_end, :]
         return dict(z_v_grad_w=z_v_grad_w)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn_ie = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)

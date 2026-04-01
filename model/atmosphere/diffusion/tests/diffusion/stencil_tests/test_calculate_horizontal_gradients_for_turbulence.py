@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(
@@ -38,11 +37,11 @@ def calculate_horizontal_gradients_for_turbulence_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
+class TestCalculateHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         w: np.ndarray,
@@ -56,7 +55,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
         )
         return dict(dwdx=dwdx, dwdy=dwdy)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

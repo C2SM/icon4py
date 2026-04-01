@@ -19,15 +19,14 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 @pytest.mark.embedded_remap_error
-class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
+class TestTemporaryFieldForGridPointColdPoolsEnhancement(stencil_tests.StencilTest):
     PROGRAM = temporary_field_for_grid_point_cold_pools_enhancement
     OUTPUTS = ("enh_diffu_3d",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         theta_v: np.ndarray,
@@ -56,7 +55,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
         return dict(enh_diffu_3d=enh_diffu_3d)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

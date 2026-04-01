@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temp
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
@@ -74,11 +74,11 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
 
 
-class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
+class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(stencil_tests.StencilTest):
     PROGRAM = compute_rho_virtual_potential_temperatures_and_pressure_gradient
     OUTPUTS = ("rho_ic", "z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         w: np.ndarray,
@@ -127,7 +127,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
             z_th_ddz_exner_c=z_th_ddz_exner_c,
         )
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
         wgt_nnow_rth = ta.wpfloat("2.0")

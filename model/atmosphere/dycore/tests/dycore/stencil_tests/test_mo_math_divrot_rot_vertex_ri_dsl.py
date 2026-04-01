@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def mo_math_divrot_rot_vertex_ri_dsl_numpy(
@@ -32,11 +31,11 @@ def mo_math_divrot_rot_vertex_ri_dsl_numpy(
     return rot_vec
 
 
-class TestMoMathDivrotRotVertexRiDsl(StencilTest):
+class TestMoMathDivrotRotVertexRiDsl(stencil_tests.StencilTest):
     PROGRAM = mo_math_divrot_rot_vertex_ri_dsl
     OUTPUTS = ("rot_vec",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         vec_e: np.ndarray,
@@ -47,7 +46,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
         rot_vec = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vec_e, geofac_rot)
         return dict(rot_vec=rot_vec)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vec_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         geofac_rot = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)

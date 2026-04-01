@@ -21,7 +21,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def spatially_average_flux_or_velocity_numpy(
@@ -37,11 +36,11 @@ def spatially_average_flux_or_velocity_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestSpatiallyAverageFluxOrVelocity(StencilTest):
+class TestSpatiallyAverageFluxOrVelocity(stencil_tests.StencilTest):
     PROGRAM = spatially_average_flux_or_velocity
     OUTPUTS = ("spatially_averaged_flux_or_velocity",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         e_flx_avg: np.ndarray,
@@ -55,7 +54,7 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
 
         return dict(spatially_averaged_flux_or_velocity=spatially_averaged_flux_or_velocity)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         flux_or_velocity = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)

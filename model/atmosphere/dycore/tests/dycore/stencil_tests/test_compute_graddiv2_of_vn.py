@@ -18,7 +18,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_graddiv2_of_vn_numpy(
@@ -36,11 +35,11 @@ def compute_graddiv2_of_vn_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestComputeGraddiv2OfVn(StencilTest):
+class TestComputeGraddiv2OfVn(stencil_tests.StencilTest):
     PROGRAM = compute_graddiv2_of_vn
     OUTPUTS = ("z_graddiv2_vn",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         geofac_grdiv: np.ndarray,
@@ -51,7 +50,7 @@ class TestComputeGraddiv2OfVn(StencilTest):
         z_graddiv2_vn = compute_graddiv2_of_vn_numpy(connectivities, geofac_grdiv, z_graddiv_vn)
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_graddiv_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)

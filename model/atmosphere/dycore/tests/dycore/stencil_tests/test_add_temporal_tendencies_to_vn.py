@@ -18,7 +18,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 dycore_consts: Final = constants.PhysicsConstants()
@@ -38,11 +38,11 @@ def add_temporal_tendencies_to_vn_numpy(
     return vn_nnew
 
 
-class TestAddTemporalTendenciesToVn(StencilTest):
+class TestAddTemporalTendenciesToVn(stencil_tests.StencilTest):
     PROGRAM = add_temporal_tendencies_to_vn
     OUTPUTS = ("vn_nnew",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         vn_nnow: np.ndarray,
@@ -58,7 +58,7 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         )
         return dict(vn_nnew=vn_nnew)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
         vn_nnow = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)

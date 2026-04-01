@@ -18,20 +18,20 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 dycore_consts: Final = constants.PhysicsConstants()
 
 
-class TestUpdateThetaV(StencilTest):
+class TestUpdateThetaV(stencil_tests.StencilTest):
     PROGRAM = update_theta_and_exner_in_halo
     OUTPUTS = (
         "theta_v_new",
         "exner_new",
     )
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         mask_prog_halo_c: np.ndarray,
@@ -62,7 +62,7 @@ class TestUpdateThetaV(StencilTest):
         )
         return dict(theta_v_new=theta_v_new, exner_new=exner_new)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mask_prog_halo_c = self.data_alloc.random_mask(dims.CellDim)
         rho_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)

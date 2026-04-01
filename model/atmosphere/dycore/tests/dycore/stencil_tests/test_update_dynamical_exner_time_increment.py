@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def update_dynamical_exner_time_increment_numpy(
@@ -35,11 +34,11 @@ def update_dynamical_exner_time_increment_numpy(
     return exner_dyn_incr
 
 
-class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
+class TestUpdateDynamicalExnerTimeIncrement(stencil_tests.StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
     OUTPUTS = ("exner_dyn_incr",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         exner: np.ndarray,
@@ -60,7 +59,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         )
         return dict(exner_dyn_incr=exner_dyn_incr)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
         exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)

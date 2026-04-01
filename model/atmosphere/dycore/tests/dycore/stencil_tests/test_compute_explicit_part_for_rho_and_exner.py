@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_explicit_part_for_rho_and_exner_numpy(
@@ -52,11 +51,11 @@ def compute_explicit_part_for_rho_and_exner_numpy(
     return (z_rho_expl, z_exner_expl)
 
 
-class TestComputeExplicitPartForRhoAndExner(StencilTest):
+class TestComputeExplicitPartForRhoAndExner(stencil_tests.StencilTest):
     PROGRAM = compute_explicit_part_for_rho_and_exner
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         rho_nnow: np.ndarray,
@@ -87,7 +86,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
         rho_nnow = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)

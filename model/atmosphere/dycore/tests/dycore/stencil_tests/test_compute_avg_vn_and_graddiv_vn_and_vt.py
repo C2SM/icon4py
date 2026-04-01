@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
@@ -44,11 +43,11 @@ def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
+class TestComputeAvgVnAndGraddivVnAndVt(stencil_tests.StencilTest):
     PROGRAM = compute_avg_vn_and_graddiv_vn_and_vt
     OUTPUTS = ("z_vn_avg", "z_graddiv_vn", "vt")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         e_flx_avg: np.ndarray,
@@ -67,7 +66,7 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         )
         return dict(z_vn_avg=z_vn_avg, z_graddiv_vn=z_graddiv_vn, vt=vt)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)

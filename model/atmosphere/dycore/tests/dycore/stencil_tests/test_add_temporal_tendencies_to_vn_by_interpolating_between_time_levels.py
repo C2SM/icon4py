@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn_by_i
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
@@ -42,11 +42,11 @@ def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
     return vn_nnew
 
 
-class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest):
+class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(stencil_tests.StencilTest):
     PROGRAM = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels
     OUTPUTS = ("vn_nnew",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         vn_nnow: np.ndarray,
@@ -75,7 +75,7 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
         )
         return dict(vn_nnew=vn_nnew)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn_nnow = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         ddt_vn_apc_ntl1 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)

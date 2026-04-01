@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
@@ -40,11 +39,11 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
     return (z_w_expl, z_contr_w_fl_l)
 
 
-class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTest):
+class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(stencil_tests.StencilTest):
     PROGRAM = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         w_nnow: np.ndarray,
@@ -74,7 +73,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
         )
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_w_adv_ntl1 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

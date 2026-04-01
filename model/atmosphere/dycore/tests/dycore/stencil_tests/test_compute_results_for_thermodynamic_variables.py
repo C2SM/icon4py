@@ -19,7 +19,6 @@ from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 dycore_consts: Final = constants.PhysicsConstants()
@@ -63,11 +62,11 @@ def compute_results_for_thermodynamic_variables_numpy(
     return rho_new, exner_new, theta_v_new
 
 
-class TestComputeResultsForThermodynamicVariables(StencilTest):
+class TestComputeResultsForThermodynamicVariables(stencil_tests.StencilTest):
     PROGRAM = compute_results_for_thermodynamic_variables
     OUTPUTS = ("rho_new", "exner_new", "theta_v_new")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         z_rho_expl: np.ndarray,
@@ -104,7 +103,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_rho_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         vwind_impl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)

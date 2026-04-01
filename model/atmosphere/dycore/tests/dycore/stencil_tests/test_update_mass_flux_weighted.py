@@ -18,33 +18,28 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
+from icon4py.model.testing import stencil_tests
 
 
 @pytest.mark.continuous_benchmarking
-class TestUpdateMassFluxWeighted(StencilTest):
+class TestUpdateMassFluxWeighted(stencil_tests.StencilTest):
     PROGRAM = update_mass_flux_weighted
     OUTPUTS = ("mass_flx_ic",)
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
             "vertical_end",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         rho_ic: np.ndarray,
@@ -64,7 +59,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
         )
         return dict(mass_flx_ic=mass_flx_ic)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
         rho_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)

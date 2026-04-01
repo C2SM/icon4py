@@ -17,7 +17,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def apply_nabla2_to_w_numpy(
@@ -38,11 +37,11 @@ def apply_nabla2_to_w_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestMoApplyNabla2ToW(StencilTest):
+class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_to_w
     OUTPUTS = ("w",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         area: np.ndarray,
@@ -56,7 +55,7 @@ class TestMoApplyNabla2ToW(StencilTest):
         w = apply_nabla2_to_w_numpy(connectivities, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
         return dict(w=w)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
         z_nabla2_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

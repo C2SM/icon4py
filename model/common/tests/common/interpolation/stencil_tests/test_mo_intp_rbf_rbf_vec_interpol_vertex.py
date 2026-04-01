@@ -19,33 +19,27 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
 
 
 @pytest.mark.continuous_benchmarking
-class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
+class TestMoIntpRbfRbfVecInterpolVertex(stencil_tests.StencilTest):
     PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
     OUTPUTS = ("p_u_out", "p_v_out")
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
             "vertical_end",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         p_e_in: np.ndarray,
@@ -77,7 +71,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
         return dict(p_v_out=p_v_final_out, p_u_out=p_u_final_out)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_e_in = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ptr_coeff_1 = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)

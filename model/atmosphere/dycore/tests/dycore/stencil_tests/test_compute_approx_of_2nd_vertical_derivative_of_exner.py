@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
@@ -35,11 +35,11 @@ def compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
     return z_dexner_dz_c_2
 
 
-class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
+class TestComputeApproxOf2ndVerticalDerivativeOfExner(stencil_tests.StencilTest):
     PROGRAM = compute_approx_of_2nd_vertical_derivative_of_exner
     OUTPUTS = ("z_dexner_dz_c_2",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         z_theta_v_pr_ic: np.ndarray,
@@ -56,7 +56,7 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
         )
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_theta_v_pr_ic = self.data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat

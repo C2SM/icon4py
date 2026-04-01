@@ -18,14 +18,14 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
-class TestInitTwoEdgeKdimFieldsWithZeroWp(StencilTest):
+class TestInitTwoEdgeKdimFieldsWithZeroWp(stencil_tests.StencilTest):
     PROGRAM = init_two_edge_kdim_fields_with_zero_wp
     OUTPUTS = ("edge_kdim_field_with_zero_wp_1", "edge_kdim_field_with_zero_wp_2")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         edge_kdim_field_with_zero_wp_1: np.ndarray,
@@ -39,7 +39,7 @@ class TestInitTwoEdgeKdimFieldsWithZeroWp(StencilTest):
             edge_kdim_field_with_zero_wp_2=edge_kdim_field_with_zero_wp_2,
         )
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         edge_kdim_field_with_zero_wp_1 = self.data_alloc.zero_field(
             dims.EdgeDim, dims.KDim, dtype=wpfloat

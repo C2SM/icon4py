@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_dwdz_for_divergence_damping_numpy(
@@ -34,11 +33,11 @@ def compute_dwdz_for_divergence_damping_numpy(
     return z_dwdz_dd
 
 
-class TestComputeDwdzForDivergenceDamping(StencilTest):
+class TestComputeDwdzForDivergenceDamping(stencil_tests.StencilTest):
     PROGRAM = _compute_dwdz_for_divergence_damping
     OUTPUTS = ("out",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         inv_ddqz_z_full: np.ndarray,
@@ -52,7 +51,7 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         )
         return dict(out=z_dwdz_dd)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
         inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         w = self.data_alloc.random_field(

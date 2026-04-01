@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def extrapolate_temporally_exner_pressure_numpy(
@@ -35,11 +34,11 @@ def extrapolate_temporally_exner_pressure_numpy(
     return (z_exner_ex_pr, exner_pr)
 
 
-class TestExtrapolateTemporallyExnerPressure(StencilTest):
+class TestExtrapolateTemporallyExnerPressure(stencil_tests.StencilTest):
     PROGRAM = extrapolate_temporally_exner_pressure
     OUTPUTS = ("z_exner_ex_pr", "exner_pr")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         exner: np.ndarray,
@@ -59,7 +58,7 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
 
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         exner_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

@@ -18,33 +18,28 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
+from icon4py.model.testing import stencil_tests
 
 
 @pytest.mark.continuous_benchmarking
-class TestInitCellKdimFieldWithZeroWp(StencilTest):
+class TestInitCellKdimFieldWithZeroWp(stencil_tests.StencilTest):
     PROGRAM = init_cell_kdim_field_with_zero_wp
     OUTPUTS = ("field_with_zero_wp",)
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
             "vertical_end",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         field_with_zero_wp: np.ndarray,
@@ -53,7 +48,7 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
         field_with_zero_wp = np.zeros_like(field_with_zero_wp)
         return dict(field_with_zero_wp=field_with_zero_wp)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         field_with_zero_wp = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 

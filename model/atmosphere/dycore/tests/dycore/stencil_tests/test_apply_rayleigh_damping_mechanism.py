@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def apply_rayleigh_damping_mechanism_numpy(
@@ -33,11 +32,11 @@ def apply_rayleigh_damping_mechanism_numpy(
     return w
 
 
-class TestApplyRayleighDampingMechanism(StencilTest):
+class TestApplyRayleighDampingMechanism(stencil_tests.StencilTest):
     PROGRAM = apply_rayleigh_damping_mechanism
     OUTPUTS = ("w",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         z_raylfac: np.ndarray,
@@ -48,7 +47,7 @@ class TestApplyRayleighDampingMechanism(StencilTest):
         w = apply_rayleigh_damping_mechanism_numpy(connectivities, z_raylfac, w)
         return dict(w=w)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_raylfac = self.data_alloc.random_field(dims.KDim, dtype=wpfloat)
         w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)

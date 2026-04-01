@@ -18,7 +18,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 from . import test_dycore_utils
 
@@ -35,11 +35,11 @@ def apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
     return vn
 
 
-class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
+class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(stencil_tests.StencilTest):
     PROGRAM = apply_weighted_2nd_and_4th_order_divergence_damping
     OUTPUTS = ("vn",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         interpolated_fourth_order_divdamp_factor: np.ndarray,
@@ -73,7 +73,7 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
         )
         return dict(vn=vn)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolated_fourth_order_divdamp_factor = self.data_alloc.random_field(dims.KDim)
         nudgecoeff_e = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)

@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def calculate_nabla2_for_z_numpy(
@@ -40,11 +39,11 @@ def calculate_nabla2_for_z_numpy(
     return z_nabla2_e
 
 
-class TestCalculateNabla2ForZ(StencilTest):
+class TestCalculateNabla2ForZ(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_for_z
     OUTPUTS = ("z_nabla2_e",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         kh_smag_e: np.ndarray,
@@ -59,7 +58,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         )
         return dict(z_nabla2_e=z_nabla2_e)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)

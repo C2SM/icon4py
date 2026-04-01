@@ -17,14 +17,14 @@ from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary imp
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
-class TestComputeVnOnLateralBoundary(StencilTest):
+class TestComputeVnOnLateralBoundary(stencil_tests.StencilTest):
     PROGRAM = compute_vn_on_lateral_boundary
     OUTPUTS = ("vn_new",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         grf_tend_vn: np.ndarray,
@@ -35,7 +35,7 @@ class TestComputeVnOnLateralBoundary(StencilTest):
         vn_new = vn_now + dtime * grf_tend_vn
         return dict(vn_new=vn_new)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         grf_tend_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         vn_now = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)

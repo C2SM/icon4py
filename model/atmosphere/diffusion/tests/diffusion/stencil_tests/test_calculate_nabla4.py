@@ -16,12 +16,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calcula
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
 
 
 def calculate_nabla4_numpy(
@@ -65,24 +59,24 @@ def calculate_nabla4_numpy(
 
 
 @pytest.mark.continuous_benchmarking
-class TestCalculateNabla4(StencilTest):
+class TestCalculateNabla4(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
             "vertical_end",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         u_vert: np.ndarray,
@@ -107,7 +101,7 @@ class TestCalculateNabla4(StencilTest):
         )
         return dict(z_nabla4_e2=z_nabla4_e2)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         u_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)

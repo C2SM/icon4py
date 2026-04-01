@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def compute_contravariant_correction_numpy(
@@ -28,11 +28,11 @@ def compute_contravariant_correction_numpy(
     return z_w_concorr_me
 
 
-class TestComputeContravariantCorrection(StencilTest):
+class TestComputeContravariantCorrection(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction
     OUTPUTS = ("z_w_concorr_me",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         vn: np.ndarray,
@@ -44,7 +44,7 @@ class TestComputeContravariantCorrection(StencilTest):
         z_w_concorr_me = compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddxn_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)

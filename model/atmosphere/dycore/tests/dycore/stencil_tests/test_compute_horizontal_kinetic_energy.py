@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def compute_horizontal_kinetic_energy_numpy(vn: np.ndarray, vt: np.ndarray) -> tuple:
@@ -28,11 +28,11 @@ def compute_horizontal_kinetic_energy_numpy(vn: np.ndarray, vt: np.ndarray) -> t
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
-class TestComputeHorizontalKineticEnergy(StencilTest):
+class TestComputeHorizontalKineticEnergy(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_kinetic_energy
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         vn: np.ndarray,
@@ -42,7 +42,7 @@ class TestComputeHorizontalKineticEnergy(StencilTest):
         vn_ie, z_vt_ie, z_kin_hor_e = compute_horizontal_kinetic_energy_numpy(vn, vt)
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)

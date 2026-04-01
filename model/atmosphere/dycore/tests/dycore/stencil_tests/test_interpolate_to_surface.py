@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_to_surface_numpy(
@@ -31,11 +31,11 @@ def interpolate_to_surface_numpy(
     return interpolation_to_surface
 
 
-class TestInterpolateToSurface(StencilTest):
+class TestInterpolateToSurface(stencil_tests.StencilTest):
     PROGRAM = interpolate_to_surface
     OUTPUTS = ("interpolation_to_surface",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         interpolant: np.ndarray,
@@ -50,7 +50,7 @@ class TestInterpolateToSurface(StencilTest):
         )
         return dict(interpolation_to_surface=interpolation_to_surface)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         wgtfacq_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

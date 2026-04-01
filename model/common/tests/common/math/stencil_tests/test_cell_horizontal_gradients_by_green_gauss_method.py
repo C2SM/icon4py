@@ -23,7 +23,6 @@ from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def cell_horizontal_gradients_by_green_gauss_method_numpy(
@@ -48,11 +47,11 @@ def cell_horizontal_gradients_by_green_gauss_method_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
+class TestMoMathGradientsGradGreenGaussCellDsl(stencil_tests.StencilTest):
     PROGRAM = cell_horizontal_gradients_by_green_gauss_method
     OUTPUTS = ("out",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         scalar_field: np.ndarray,
@@ -71,7 +70,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
             out=(p_grad_1_u, p_grad_1_v),
         )
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(
         self, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:

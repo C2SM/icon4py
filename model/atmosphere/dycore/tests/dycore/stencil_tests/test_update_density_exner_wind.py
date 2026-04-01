@@ -17,14 +17,14 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
-class TestUpdateDensityExnerWind(StencilTest):
+class TestUpdateDensityExnerWind(stencil_tests.StencilTest):
     PROGRAM = update_density_exner_wind
     OUTPUTS = ("rho_new", "exner_new", "w_new")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         rho_now: np.ndarray,
@@ -41,7 +41,7 @@ class TestUpdateDensityExnerWind(StencilTest):
         w_new = w_now + dtime * grf_tend_w
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_rho = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)

@@ -13,14 +13,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
-class TestFallSpeed(StencilTest):
+class TestFallSpeed(stencil_tests.StencilTest):
     PROGRAM = fall_speed
     OUTPUTS = ("speed",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         density: np.ndarray,
@@ -31,7 +31,7 @@ class TestFallSpeed(StencilTest):
     ) -> dict:
         return dict(speed=np.full(density.shape, 0.67882452435647411))
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         return dict(
             density=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),

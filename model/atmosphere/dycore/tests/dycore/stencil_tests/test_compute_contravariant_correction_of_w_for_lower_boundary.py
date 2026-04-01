@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
@@ -49,11 +48,11 @@ def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
     return w_concorr_c
 
 
-class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
+class TestComputeContravariantCorrectionOfWForLowerBoundary(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_of_w_for_lower_boundary
     OUTPUTS = ("w_concorr_c",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         e_bln_c_s: np.ndarray,
@@ -67,7 +66,7 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
         )
         return dict(w_concorr_c=w_concorr_c)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = self.data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)

@@ -16,14 +16,14 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
-class TestUpdateWind(StencilTest):
+class TestUpdateWind(stencil_tests.StencilTest):
     PROGRAM = update_wind
     OUTPUTS = ("w_new",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         w_now: np.ndarray,
@@ -34,7 +34,7 @@ class TestUpdateWind(StencilTest):
         w_new = w_now + dtime * grf_tend_w
         return dict(w_new=w_new)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
         w_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)

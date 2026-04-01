@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn i
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_and_nabla4_to_vn_numpy(
@@ -38,11 +38,11 @@ def apply_nabla2_and_nabla4_to_vn_numpy(
     return vn
 
 
-class TestApplyNabla2AndNabla4ToVn(StencilTest):
+class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_and_nabla4_to_vn
     OUTPUTS = ("vn",)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         area_edge = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
@@ -68,7 +68,7 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
             vertical_end=gtx.int32(grid.num_levels),
         )
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         area_edge: np.ndarray,

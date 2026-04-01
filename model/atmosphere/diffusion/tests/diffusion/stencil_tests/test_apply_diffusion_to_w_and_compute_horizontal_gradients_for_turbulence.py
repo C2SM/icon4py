@@ -19,12 +19,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import definitions, stencil_tests
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
@@ -38,12 +32,12 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
+class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "halo_idx",
@@ -53,7 +47,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             "nrdmax",
             "type_shear",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
             "nrdmax",
@@ -61,7 +55,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         area,
@@ -126,7 +120,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         out_dwdy[subset] = dwdy[subset]
         return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         nrdmax = 13
         cell_domain = h_grid.domain(dims.CellDim)

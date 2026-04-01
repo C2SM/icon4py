@@ -19,12 +19,6 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import (
-    StandardStaticVariants,
-    StencilTest,
-    input_data_fixture,
-    static_reference,
-)
 
 
 def compute_hydrostatic_correction_term_numpy(
@@ -95,24 +89,24 @@ def compute_hydrostatic_correction_term_numpy(
 
 @pytest.mark.uses_as_offset
 @pytest.mark.continuous_benchmarking
-class TestComputeHydrostaticCorrectionTerm(StencilTest):
+class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
             "vertical_end",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
         ),
     }
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         theta_v: np.ndarray,
@@ -137,7 +131,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         )
         return dict(z_hydro_corr=z_hydro_corr)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ikoffset = self.data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()

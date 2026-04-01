@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
 from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
@@ -32,11 +31,11 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 @pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
 @pytest.mark.embedded_remap_error
-class TestApplyDiffusionToThetaAndExner(StencilTest):
+class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         kh_smag_e: np.ndarray,
@@ -83,7 +82,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
         return dict(theta_v=theta_v, exner=exner)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim)

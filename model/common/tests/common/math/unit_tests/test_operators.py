@@ -19,15 +19,14 @@ from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_
 from icon4py.model.testing import reference_funcs, stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 @pytest.mark.embedded_remap_error
-class TestNabla2OnCell(StencilTest):
+class TestNabla2OnCell(stencil_tests.StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         psi_c: np.ndarray,
@@ -38,7 +37,7 @@ class TestNabla2OnCell(StencilTest):
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         psi_c = self.data_alloc.constant_field(1.0, dims.CellDim)
         geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
@@ -53,11 +52,11 @@ class TestNabla2OnCell(StencilTest):
 
 
 @pytest.mark.embedded_remap_error
-class TestNabla2OnCellK(StencilTest):
+class TestNabla2OnCellK(stencil_tests.StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         psi_c: np.ndarray,
@@ -68,7 +67,7 @@ class TestNabla2OnCellK(StencilTest):
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         psi_c = self.data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
         geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)

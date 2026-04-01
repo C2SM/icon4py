@@ -20,14 +20,13 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
-class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
+class TestEnhanceDiffusionCoefficientForGridPointColdPools(stencil_tests.StencilTest):
     PROGRAM = enhance_diffusion_coefficient_for_grid_point_cold_pools
     OUTPUTS = ("kh_smag_e",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         kh_smag_e: np.ndarray,
@@ -45,7 +44,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         )
         return dict(kh_smag_e=kh_smag_e)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         enh_diffu_3d = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

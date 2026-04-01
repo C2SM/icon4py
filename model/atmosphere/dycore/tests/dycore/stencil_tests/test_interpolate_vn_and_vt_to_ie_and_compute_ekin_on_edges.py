@@ -18,14 +18,14 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
+from icon4py.model.testing import stencil_tests
 
 
-class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
+class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(stencil_tests.StencilTest):
     PROGRAM = interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         wgtfac_e: np.ndarray,
@@ -44,7 +44,7 @@ class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
         z_kin_hor_e[:, 0] = 0
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)

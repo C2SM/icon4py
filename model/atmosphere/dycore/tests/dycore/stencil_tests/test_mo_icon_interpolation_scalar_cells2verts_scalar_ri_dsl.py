@@ -20,7 +20,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
@@ -32,11 +31,11 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
     return p_vert_out
 
 
-class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
+class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(stencil_tests.StencilTest):
     PROGRAM = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl
     OUTPUTS = ("p_vert_out",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         p_cell_in: np.ndarray,
@@ -51,7 +50,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
             p_vert_out=p_vert_out,
         )
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_cell_in = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         c_intp = self.data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=wpfloat)

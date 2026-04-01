@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def calculate_nabla2_for_w_numpy(
@@ -33,11 +32,11 @@ def calculate_nabla2_for_w_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestCalculateNabla2ForW(StencilTest):
+class TestCalculateNabla2ForW(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_for_w
     OUTPUTS = ("z_nabla2_c",)
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         w: np.ndarray,
@@ -48,7 +47,7 @@ class TestCalculateNabla2ForW(StencilTest):
         z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         w = self.data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
         geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)

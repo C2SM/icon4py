@@ -19,7 +19,6 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_solver_coefficients_matrix_numpy(
@@ -41,11 +40,11 @@ def compute_solver_coefficients_matrix_numpy(
     return (z_beta, z_alpha)
 
 
-class TestComputeSolverCoefficientsMatrix(StencilTest):
+class TestComputeSolverCoefficientsMatrix(stencil_tests.StencilTest):
     PROGRAM = compute_solver_coefficients_matrix
     OUTPUTS = ("z_beta", "z_alpha")
 
-    @static_reference
+    @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         exner_nnow: np.ndarray,
@@ -76,7 +75,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         )
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
-    @input_data_fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner_nnow = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_nnow = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
