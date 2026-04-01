@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture,
 
 
 def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     e_flx_avg: np.ndarray,
     vn: np.ndarray,
     geofac_grdiv: np.ndarray,
@@ -55,7 +56,7 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_vn_avg, z_graddiv_vn, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,

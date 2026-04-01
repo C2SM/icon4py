@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -21,7 +24,7 @@ from icon4py.model.testing.stencil_tests import (
 
 
 def calculate_nabla4_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     u_vert: np.ndarray,
     v_vert: np.ndarray,
     primal_normal_vert_v1: np.ndarray,
@@ -90,7 +93,7 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_nabla4_e2 = calculate_nabla4_numpy(
             connectivities,
             u_vert,

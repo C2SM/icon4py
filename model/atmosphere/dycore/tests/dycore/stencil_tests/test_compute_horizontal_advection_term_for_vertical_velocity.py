@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture,
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     vn_ie: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     w: np.ndarray,
@@ -67,7 +68,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_v_grad_w[horizontal_start:horizontal_end, :] = (
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
                 connectivities,

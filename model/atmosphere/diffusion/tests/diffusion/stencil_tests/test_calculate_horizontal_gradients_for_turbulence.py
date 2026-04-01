@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -19,7 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture,
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     w: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
@@ -46,7 +49,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
             connectivities, w, geofac_grg_x, geofac_grg_y
         )

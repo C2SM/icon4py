@@ -18,6 +18,7 @@ from types import ModuleType
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, exceptions
@@ -78,15 +79,13 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
-class NDArrayGridConnectivitiesView(
-    collections.abc.Mapping[str | gtx.Dimension, data_alloc.NDArray]
-):
+class NumPyGridConnectivitiesView(collections.abc.Mapping[str, np.ndarray]):
     """View on the grid connectivities that allows to access them as numpy arrays."""
 
     def __init__(self, grid: Grid):
         self.grid = grid
 
-    def __getitem__(self, key: str | gtx.Dimension) -> data_alloc.NDArray:
+    def __getitem__(self, key: str) -> np.ndarray:
         connectivity = self.grid.get_connectivity(key)
         if gtx_common.is_neighbor_table(connectivity):
             return connectivity.asnumpy()
@@ -136,6 +135,8 @@ class Grid:
 
     def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
+        assert isinstance(self.connectivities, collections.abc.MutableMapping)
+        assert isinstance(dims.Koff.value, str)
         self.connectivities[dims.Koff.value] = dims.KDim
 
     @functools.cached_property
@@ -167,8 +168,8 @@ class Grid:
         return sizes
 
     @property
-    def ndarray_connectivities(self) -> NDArrayGridConnectivitiesView:
-        return NDArrayGridConnectivitiesView(self)
+    def connectivities_asnumpy(self) -> NumPyGridConnectivitiesView:
+        return NumPyGridConnectivitiesView(self)
 
     @property
     def num_cells(self) -> int:
@@ -190,10 +191,14 @@ class Grid:
     def limited_area(self) -> bool:
         return self.config.limited_area
 
-    def get_connectivity(self, offset: str | gtx.Dimension) -> gtx_common.NeighborTable:
+    def get_connectivity(
+        self, offset: str | gtx.FieldOffset | gtx.Dimension
+    ) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""
-        if isinstance(offset, gtx.Dimension):
-            offset = offset.value
+        if isinstance(offset, (gtx.FieldOffset, gtx.Dimension)):
+            offset_value = offset.value
+            assert isinstance(offset_value, str)
+            offset = offset_value
         if offset not in self.connectivities:
             raise exceptions.MissingConnectivityError(
                 f"Missing connectivity for offset {offset} in grid {self.id}."

@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     geofac_div: np.ndarray,
     mass_flux_at_edges_on_model_levels: np.ndarray,
     theta_v_flux_at_edges_on_model_levels: np.ndarray,
@@ -48,7 +49,7 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.Stenc
         z_theta_v_fl_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_flxdiv_mass, z_flxdiv_theta = compute_divergence_of_fluxes_of_rho_and_theta_numpy(
             connectivities,
             geofac_div,

@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
+from collections.abc import Mapping
+from typing import cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -31,7 +33,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         enh_diffu_3d: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         e2c = connectivities[dims.E2CDim]
         kh_smag_e = np.maximum(
             kh_smag_e,

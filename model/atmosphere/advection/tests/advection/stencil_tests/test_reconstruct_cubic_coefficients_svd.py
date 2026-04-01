@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -69,7 +70,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         p_coeff_10_dsl: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
         p_coeff_2_dsl_cp = p_coeff_2_dsl.copy()
         p_coeff_3_dsl_cp = p_coeff_3_dsl.copy()

@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture,
 
 
 def mo_math_divrot_rot_vertex_ri_dsl_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], vec_e: np.ndarray, geofac_rot: np.ndarray
+    connectivities: Mapping[gtx.Dimension, np.ndarray], vec_e: np.ndarray, geofac_rot: np.ndarray
 ) -> np.ndarray:
     v2e = connectivities[dims.V2EDim]
     geofac_rot = np.expand_dims(geofac_rot, axis=-1)
@@ -41,7 +42,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
         geofac_rot: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         rot_vec = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vec_e, geofac_rot)
         return dict(rot_vec=rot_vec)
 

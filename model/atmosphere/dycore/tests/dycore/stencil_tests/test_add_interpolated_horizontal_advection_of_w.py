@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def add_interpolated_horizontal_advection_of_w_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     e_bln_c_s: np.ndarray,
     z_v_grad_w: np.ndarray,
     ddt_w_adv: np.ndarray,
@@ -49,7 +50,7 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
         ddt_w_adv: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         ddt_w_adv = add_interpolated_horizontal_advection_of_w_numpy(
             connectivities, e_bln_c_s, z_v_grad_w, ddt_w_adv
         )

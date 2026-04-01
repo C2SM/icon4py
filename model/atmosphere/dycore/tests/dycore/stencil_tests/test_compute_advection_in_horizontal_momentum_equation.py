@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -24,7 +25,7 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 
 
 def _compute_advective_normal_wind_tendency_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     coeff_gradekin: np.ndarray,
     horizontal_kinetic_energy_at_cells_on_model_levels: np.ndarray,
@@ -64,7 +65,7 @@ def _compute_advective_normal_wind_tendency_numpy(
 
 
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     c_lin_e: np.ndarray,
     contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
@@ -182,7 +183,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
         nlev = kwargs["vertical_end"]
         k = np.arange(nlev)

@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -18,7 +21,9 @@ from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_of_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], z_nabla2_e: np.ndarray, geofac_div: np.ndarray
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    z_nabla2_e: np.ndarray,
+    geofac_div: np.ndarray,
 ) -> np.ndarray:
     c2e = connectivities[dims.C2EDim]
     geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -37,7 +42,7 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
         geofac_div: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 

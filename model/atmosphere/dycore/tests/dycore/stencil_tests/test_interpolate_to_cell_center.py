@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def interpolate_to_cell_center_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     interpolant: np.ndarray,
     e_bln_c_s: np.ndarray,
     **kwargs: Any,
@@ -47,7 +48,7 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
         e_bln_c_s: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         interpolation = interpolate_to_cell_center_numpy(connectivities, interpolant, e_bln_c_s)
         return dict(interpolation=interpolation)
 

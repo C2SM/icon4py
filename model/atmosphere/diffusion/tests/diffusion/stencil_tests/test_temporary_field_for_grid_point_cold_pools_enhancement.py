@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -32,7 +35,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         smallest_vpfloat,
         **kwargs,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         c2e2c = connectivities[dims.C2E2CDim]
         tdiff = (
             theta_v

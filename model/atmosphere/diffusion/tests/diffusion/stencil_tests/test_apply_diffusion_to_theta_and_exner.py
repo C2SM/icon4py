@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -52,7 +53,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         apply_zdiffusion_t: bool,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         kwargs_2 = {k: v for k, v in kwargs.items() if k != "theta_v"}  # remove unused kwargs
 
         z_nabla2_e = np.zeros_like(kh_smag_e)

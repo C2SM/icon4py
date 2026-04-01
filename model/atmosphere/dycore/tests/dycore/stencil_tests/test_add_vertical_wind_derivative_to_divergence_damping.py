@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     hmask_dd3d: np.ndarray,
     scalfac_dd3d: np.ndarray,
     inv_dual_edge_length: np.ndarray,
@@ -57,7 +58,7 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
             connectivities,
             hmask_dd3d,

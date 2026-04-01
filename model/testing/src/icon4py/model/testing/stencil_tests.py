@@ -134,11 +134,7 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = ta.wpfloat,
     ) -> gtx.Field:
         return data_allocation.constant_field(
-            *dims,
-            grid=self.grid,
-            value=value,
-            dtype=dtype,
-            allocator=self.allocator,
+            self.grid, value, *dims, dtype=dtype, allocator=self.allocator
         )
 
     def index_field(
@@ -148,11 +144,7 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike = gtx.int32,
     ) -> gtx.Field:
         return data_allocation.index_field(
-            grid=self.grid,
-            dim=dim,
-            extend=extend,
-            dtype=dtype,
-            allocator=self.allocator,
+            grid=self.grid, dim=dim, extend=extend, dtype=dtype, allocator=self.allocator
         )
 
     def random_field(
@@ -164,8 +156,8 @@ class DataAllocationWrapper:
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
         return data_allocation.random_field(
+            self.grid,
             *dims,
-            grid=self.grid,
             low=low,
             high=high,
             dtype=dtype,
@@ -180,11 +172,7 @@ class DataAllocationWrapper:
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
         return data_allocation.random_mask(
-            *dims,
-            grid=self.grid,
-            dtype=dtype,
-            allocator=self.allocator,
-            extend=extend,
+            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
         )
 
     def random_sign(
@@ -192,14 +180,9 @@ class DataAllocationWrapper:
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
-        allocator: gtx_typing.Allocator | None = None,
     ) -> gtx.Field:
         return data_allocation.random_sign(
-            *dims,
-            grid=self.grid,
-            dtype=dtype,
-            allocator=self.allocator,
-            extend=extend,
+            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
         )
 
     def zero_field(
@@ -209,11 +192,7 @@ class DataAllocationWrapper:
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
         return data_allocation.zero_field(
-            *dims,
-            grid=self.grid,
-            dtype=dtype,
-            allocator=self.allocator,
-            extend=extend,
+            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
         )
 
 

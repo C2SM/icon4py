@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -32,7 +33,7 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
         c_int: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         v2c = connectivities[dims.V2CDim]
         c_int = np.expand_dims(c_int, axis=-1)
         out_field = np.sum(cell_in[v2c] * c_int, axis=1)

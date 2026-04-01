@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -140,7 +141,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         flat_level_index_plus1: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         start_cell_index_nudging = kwargs["start_cell_index_nudging"]
         end_cell_index_local = kwargs["end_cell_index_local"]
         start_cell_index_lateral_lvl3 = kwargs["start_cell_index_lateral_lvl3"]

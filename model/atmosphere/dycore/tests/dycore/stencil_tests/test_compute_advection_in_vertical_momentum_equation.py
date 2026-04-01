@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -39,7 +40,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
     contravariant_correction_at_edges_on_model_levels: np.ndarray,
     e_bln_c_s: np.ndarray,
@@ -124,7 +125,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
 
 
 def compute_horizontal_advection_of_w(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     w: np.ndarray,
     tangential_wind_on_half_levels: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -154,7 +155,7 @@ def compute_horizontal_advection_of_w(
 
 
 def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
@@ -202,7 +203,7 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
 
 
 def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     vertical_wind_advective_tendency: np.ndarray,
     w: np.ndarray,
     horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
@@ -319,7 +320,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         nlev = kwargs["vertical_end"]
 
         horizontal_advection_of_w_at_edges_on_half_levels = compute_horizontal_advection_of_w(
@@ -523,7 +524,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         skip_compute_predictor_vertical_advection: bool,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         nlev = kwargs["vertical_end"]
 
         # We need to store the initial return field, because we only compute on a subdomain.

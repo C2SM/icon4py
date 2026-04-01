@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 # TODO(): copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     p_ccpr1: np.ndarray,
     p_ccpr2: np.ndarray,
     geofac_grg_x: np.ndarray,
@@ -94,7 +95,7 @@ def compute_btraj_numpy(
 
 
 def sten_16_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     p_vn: np.ndarray,
     rho_ref_me: np.ndarray,
     theta_ref_me: np.ndarray,
@@ -144,7 +145,7 @@ def sten_16_numpy(
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
@@ -230,7 +231,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
             connectivities,
             p_vn,

@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any, Final
+from collections.abc import Mapping
+from typing import Any, Final, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -24,7 +25,7 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 
 def compute_results_for_thermodynamic_variables_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
@@ -83,7 +84,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,

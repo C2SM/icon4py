@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture,
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], p_cell_in: np.ndarray, c_intp: np.ndarray
+    connectivities: Mapping[gtx.Dimension, np.ndarray], p_cell_in: np.ndarray, c_intp: np.ndarray
 ) -> np.ndarray:
     v2c = connectivities[dims.V2CDim]
     c_intp = np.expand_dims(c_intp, axis=-1)
@@ -41,7 +42,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
         c_intp: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = grid.ndarray_connectivities
+        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
         p_vert_out = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
             connectivities, p_cell_in, c_intp
         )
