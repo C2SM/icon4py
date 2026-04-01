@@ -202,7 +202,7 @@ class NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
     def __init__(self, grid: base.Grid):
         self.grid = grid
 
-    def __getitem__(self, key: str | gtx.FieldOffset | gtx.Dimension) -> np.ndarray:
+    def __getitem__(self, key: str | gtx.FieldOffset) -> np.ndarray:
         connectivity = self.grid.get_connectivity(key)
         if gtx_common.is_neighbor_table(connectivity):
             return connectivity.asnumpy()

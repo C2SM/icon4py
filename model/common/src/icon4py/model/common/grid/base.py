@@ -158,11 +158,9 @@ class Grid:
     def limited_area(self) -> bool:
         return self.config.limited_area
 
-    def get_connectivity(
-        self, offset: str | gtx.FieldOffset | gtx.Dimension
-    ) -> gtx_common.NeighborTable:
+    def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""
-        if isinstance(offset, (gtx.FieldOffset, gtx.Dimension)):
+        if isinstance(offset, gtx.FieldOffset):
             offset_value = offset.value
             assert isinstance(offset_value, str)
             offset = offset_value
