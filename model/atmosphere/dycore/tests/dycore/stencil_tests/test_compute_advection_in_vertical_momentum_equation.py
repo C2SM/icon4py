@@ -76,7 +76,7 @@ def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
     )
     contravariant_corrected_w_at_cells_on_model_levels = 0.5 * (
         contravariant_corrected_w_with_surface[:, :-1]
-        + contravariant_corrected_w_with_surface[:, 1:]  # type: ignore[operator]  # unclear why mypy complains (might be fixable in gt4py mypy plugin)
+        + contravariant_corrected_w_with_surface[:, 1:]
     )
     return contravariant_corrected_w_at_cells_on_model_levels
 
