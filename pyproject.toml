@@ -99,6 +99,7 @@ version = "0.1.0"
 all = ["icon4py[distributed,fortran,io,testing,profiling]"]
 cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
+rocm7 = ["icon4py-common[rocm7]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools~=0.1.0"]
 io = ["icon4py-common[io]"]
@@ -378,7 +379,7 @@ url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
 dace = {index = "gridtools"}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+gt4py = {git = "https://github.com/havogt/gt4py", branch = "add_cuda13_rocm7_cupy14_testing"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
