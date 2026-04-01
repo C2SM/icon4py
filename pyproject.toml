@@ -99,6 +99,7 @@ version = "0.1.0"
 all = ["icon4py[distributed,fortran,io,testing,profiling]"]
 cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
+rocm7 = ["icon4py-common[rocm7]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools~=0.1.0"]
 io = ["icon4py-common[io]"]
