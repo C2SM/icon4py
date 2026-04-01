@@ -144,11 +144,11 @@ def random_mask(
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
-    arr = np.full(shape, False).flatten()
-    num_true = int(arr.size * 0.5)
-    arr[:num_true] = True
-    rng.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape)
+    flat_arr = np.full(shape, False).flatten()
+    num_true = int(flat_arr.size * 0.5)
+    flat_arr[:num_true] = True
+    rng.shuffle(flat_arr)
+    arr = flat_arr.reshape(shape)
     if dtype:
         arr = arr.astype(dtype)
     return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
