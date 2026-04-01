@@ -30,7 +30,6 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
-    experiment_config,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -51,8 +50,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 def test_compute_diffusion_mask_and_coeff(
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: test_defs.ExperimentDescription,
-    experiment_config: test_defs.ExperimentConfig,
+    experiment: test_defs.Experiment,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -67,8 +65,8 @@ def test_compute_diffusion_mask_and_coeff(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
-    thslp_zdiffu = experiment_config.metrics.thslp_zdiffu
-    thhgtd_zdiffu = experiment_config.metrics.thhgtd_zdiffu
+    thslp_zdiffu = experiment.config.metrics.thslp_zdiffu
+    thhgtd_zdiffu = experiment.config.metrics.thhgtd_zdiffu
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(
@@ -134,8 +132,7 @@ def test_compute_diffusion_mask_and_coeff(
 @pytest.mark.datatest
 def test_compute_diffusion_intcoef_and_vertoffset(
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: test_defs.ExperimentDescription,
-    experiment_config: test_defs.ExperimentConfig,
+    experiment: test_defs.Experiment,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -150,8 +147,8 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
-    thslp_zdiffu = experiment_config.metrics.thslp_zdiffu
-    thhgtd_zdiffu = experiment_config.metrics.thhgtd_zdiffu
+    thslp_zdiffu = experiment.config.metrics.thslp_zdiffu
+    thhgtd_zdiffu = experiment.config.metrics.thhgtd_zdiffu
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(

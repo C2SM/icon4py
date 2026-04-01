@@ -25,7 +25,7 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_from_experiment(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
 ) -> gm.GridManager:
@@ -98,7 +98,7 @@ def _download_grid_file(grid: test_defs.GridDescription) -> pathlib.Path:
 
 
 def get_grid_geometry(
-    backend: gtx_typing.Backend | None, experiment: test_defs.ExperimentDescription
+    backend: gtx_typing.Backend | None, experiment: test_defs.Experiment
 ) -> geometry.GridGeometry:
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 

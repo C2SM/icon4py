@@ -69,7 +69,7 @@ def test_distributed_metrics_attrs(
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     if test_utils.is_embedded(backend) and metrics_name == "ddqz_z_half":
         pytest.xfail("Embedded backend does not support concat_where")
@@ -121,7 +121,7 @@ def test_distributed_metrics_attrs_no_halo(
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
@@ -153,7 +153,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
@@ -180,7 +180,7 @@ def test_distributed_metrics_wgtfacq_e(
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
@@ -201,7 +201,7 @@ def test_distributed_metrics_nflat_gradp(
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)

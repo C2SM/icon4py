@@ -64,7 +64,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 def _get_interpolation_factory(
     backend: gtx_typing.Backend | None,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
@@ -85,7 +85,7 @@ def _get_interpolation_factory(
 
 @pytest.mark.datatest
 def test_factory_raises_error_on_unknown_field(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
     decomposition_info: decomposition.DecompositionInfo,
 ) -> None:
@@ -107,7 +107,7 @@ def test_factory_raises_error_on_unknown_field(
 @pytest.mark.datatest
 def test_get_c_lin_e(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.c_lin_e()
@@ -122,7 +122,7 @@ def test_get_c_lin_e(
 @pytest.mark.datatest
 def test_get_geofac_div(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_div()
@@ -136,7 +136,7 @@ def test_get_geofac_div(
 @pytest.mark.datatest
 def test_get_geofac_grdiv(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_grdiv()
@@ -150,7 +150,7 @@ def test_get_geofac_grdiv(
 @pytest.mark.datatest
 def test_get_geofac_rot(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_rot()
@@ -168,7 +168,7 @@ def test_get_geofac_rot(
 @pytest.mark.datatest
 def test_get_geofac_n2s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_n2s()
@@ -183,7 +183,7 @@ def test_get_geofac_n2s(
 @pytest.mark.datatest
 def test_get_geofac_grg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_grg()
@@ -202,7 +202,7 @@ def test_get_geofac_grg(
 @pytest.mark.datatest
 def test_get_mass_conserving_cell_average_weight(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.c_bln_avg()
@@ -218,7 +218,7 @@ def test_get_mass_conserving_cell_average_weight(
 @pytest.mark.datatest
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.e_flx_avg()
@@ -241,7 +241,7 @@ def test_e_flx_avg(
 @pytest.mark.datatest
 def test_e_bln_c_s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
 ) -> None:
@@ -257,7 +257,7 @@ def test_e_bln_c_s(
 @pytest.mark.datatest
 def test_pos_on_tplane_e_x_y(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
@@ -273,7 +273,7 @@ def test_pos_on_tplane_e_x_y(
 @pytest.mark.datatest
 def test_cells_aw_verts(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.c_intp()
@@ -289,7 +289,7 @@ def test_cells_aw_verts(
 @pytest.mark.datatest
 def test_nudgecoeffs(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.nudgecoeff_e()
@@ -303,7 +303,7 @@ def test_nudgecoeffs(
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_cell(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -332,7 +332,7 @@ def test_rbf_interpolation_coeffs_cell(
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_edge(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
@@ -353,7 +353,7 @@ def test_rbf_interpolation_coeffs_edge(
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_vertex(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_v1 = interpolation_savepoint.rbf_vec_coeff_v1()

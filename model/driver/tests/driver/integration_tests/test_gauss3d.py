@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     ],
 )
 def test_gauss3d_initial_condition(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     rank: int,

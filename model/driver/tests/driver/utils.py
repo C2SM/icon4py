@@ -63,7 +63,7 @@ def exclaim_ape_icon4pyrun_config(
 
 
 def construct_icon4pyrun_config(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,

@@ -58,7 +58,7 @@ def test_grid_file_dimension() -> None:
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_grid_file_vertex_cell_edge_dimensions(
-    experiment: test_defs.ExperimentDescription, grid_savepoint: serialbox.IconGridSavepoint
+    experiment: test_defs.Experiment, grid_savepoint: serialbox.IconGridSavepoint
 ) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     parser = gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation())

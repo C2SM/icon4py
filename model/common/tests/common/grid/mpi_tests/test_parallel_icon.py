@@ -90,7 +90,7 @@ def test_start_index_end_index_local_zone_on_distributed_lam_grid(
     processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
@@ -162,7 +162,7 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     level: int,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)

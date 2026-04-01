@@ -19,6 +19,7 @@ from icon4py.model.testing import config
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import vertical as v_grid
     from icon4py.model.common.interpolation import interpolation_factory
     from icon4py.model.common.metrics import metrics_factory
@@ -226,40 +227,68 @@ SERIALIZED_DATA_ROOT_URLS: Final = {
 
 
 @dataclasses.dataclass
-class ExperimentDescription:
+class Experiment:
     name: str
     description: str
     grid: GridDescription
     num_levels: int
     version: int = 2
+    _processor_props: decomposition.ProcessProperties | None = dataclasses.field(
+        default=None, repr=False, init=False, compare=False
+    )
+    _config: ExperimentConfig | None = dataclasses.field(
+        default=None, repr=False, init=False, compare=False
+    )
+
+    @property
+    def config(self) -> ExperimentConfig:
+        """Lazily load the experiment configuration on first access.
+
+        Downloads serialized data (if needed) and reads the namelist JSON.
+        Uses processor properties injected by the test fixture, or defaults
+        to single-process properties.
+        """
+        if self._config is None:
+            from icon4py.model.common.decomposition import definitions as _decomp
+            from icon4py.model.testing import datatest_utils as dt_utils
+
+            if self._processor_props is None:
+                self._processor_props = _decomp.get_processor_properties(
+                    _decomp.get_runtype(with_mpi=False)
+                )
+            dt_utils.download_experiment(self, self._processor_props)
+            self._config = dt_utils.create_experiment_configuration(
+                self, self._processor_props
+            )
+        return self._config
 
 
 class Experiments:
-    EXCLAIM_APE: Final = ExperimentDescription(
+    EXCLAIM_APE: Final = Experiment(
         name="exclaim_ape_R02B04",
         description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
         num_levels=60,
     )
-    MCH_CH_R04B09: Final = ExperimentDescription(
+    MCH_CH_R04B09: Final = Experiment(
         name="exclaim_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
         num_levels=65,
     )
-    JW: Final = ExperimentDescription(
+    JW: Final = Experiment(
         name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
     )
-    GAUSS3D: Final = ExperimentDescription(
+    GAUSS3D: Final = Experiment(
         name="exclaim_gauss3d",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
         num_levels=35,
     )
-    WEISMAN_KLEMP_TORUS: Final = ExperimentDescription(
+    WEISMAN_KLEMP_TORUS: Final = Experiment(
         name="exclaim_nh_weisman_klemp",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
@@ -281,7 +310,7 @@ class ExperimentConfig:
 
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(
-    experiment: ExperimentDescription, ndyn_substeps: int = 5
+    experiment: Experiment, ndyn_substeps: int = 5
 ) -> diffusion.DiffusionConfig:
     from icon4py.model.atmosphere.diffusion import diffusion
 
@@ -324,7 +353,7 @@ def construct_diffusion_config(
         )
 
 
-def construct_nonhydrostatic_config(experiment: ExperimentDescription) -> solve_nh.NonHydrostaticConfig:
+def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
     from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 
     if experiment == Experiments.MCH_CH_R04B09:

@@ -23,7 +23,6 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
-    experiment_config,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -137,8 +136,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
 @pytest.mark.datatest
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
-    experiment: test_defs.ExperimentDescription,
-    experiment_config: test_defs.ExperimentConfig,
+    experiment: test_defs.Experiment,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -148,9 +146,9 @@ def test_compute_rayleigh_w(
     rayleigh_w_full = data_alloc.zero_field(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
-    damping_height = experiment_config.vertical_grid.rayleigh_damping_height
-    rayleigh_coeff = experiment_config.metrics.rayleigh_coeff
-    rayleigh_type = experiment_config.metrics.rayleigh_type
+    damping_height = experiment.config.vertical_grid.rayleigh_damping_height
+    rayleigh_coeff = experiment.config.metrics.rayleigh_coeff
+    rayleigh_type = experiment.config.metrics.rayleigh_type
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -230,7 +228,7 @@ def test_compute_exner_exfac(
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -280,7 +278,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()

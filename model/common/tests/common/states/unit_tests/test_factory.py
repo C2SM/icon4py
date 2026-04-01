@@ -132,7 +132,7 @@ def cell_coordinate_source(
 def height_coordinate_source(
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> Generator[SimpleFieldSource, None, None]:
     grid = grid_savepoint.construct_icon_grid(backend=backend)

@@ -43,7 +43,6 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     download_ser_data,
     experiment,
-    experiment_config,
     grid_description,
     processor_props,
     topography_savepoint,
@@ -391,7 +390,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         geometry_source=single_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=experiment_config.interpolation,
+        config=experiment.config.interpolation,
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
@@ -429,7 +428,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=experiment_config.interpolation,
+        config=experiment.config.interpolation,
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
@@ -510,7 +509,6 @@ def test_metrics_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
-    experiment_config: test_defs.ExperimentConfig,
     attrs_name: str,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
@@ -521,7 +519,7 @@ def test_metrics_fields_compare_single_multi_rank(
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
 
-    vertical_config = experiment_config.vertical_grid
+    vertical_config = experiment.config.vertical_grid
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -572,7 +570,7 @@ def test_metrics_fields_compare_single_multi_rank(
         interpolation_source=single_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        metrics_config=experiment_config.metrics,
+        metrics_config=experiment.config.metrics,
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
@@ -611,7 +609,7 @@ def test_metrics_fields_compare_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=experiment_config.interpolation,
+        config=experiment.config.interpolation,
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
@@ -631,7 +629,7 @@ def test_metrics_fields_compare_single_multi_rank(
         interpolation_source=multi_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        metrics_config=experiment_config.metrics,
+        metrics_config=experiment.config.metrics,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
@@ -665,14 +663,13 @@ def test_metrics_mask_prog_halo_c(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
-    experiment_config: test_defs.ExperimentConfig,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
 
-    vertical_config = experiment_config.vertical_grid
+    vertical_config = experiment.config.vertical_grid
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -743,7 +740,7 @@ def test_metrics_mask_prog_halo_c(
         interpolation_source=multi_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        metrics_config=experiment_config.metrics,
+        metrics_config=experiment.config.metrics,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),

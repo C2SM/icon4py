@@ -45,7 +45,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.parametrize("orchestration", [False])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
@@ -171,7 +171,7 @@ def test_parallel_diffusion(
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion_multiple_steps(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,

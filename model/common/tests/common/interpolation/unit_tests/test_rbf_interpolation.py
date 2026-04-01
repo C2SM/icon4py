@@ -64,7 +64,7 @@ RBF_TOLERANCES = {
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_cells(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -96,7 +96,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_edges(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -126,7 +126,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -163,7 +163,7 @@ def test_rbf_interpolation_coeffs_cell(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -240,7 +240,7 @@ def test_rbf_interpolation_coeffs_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -317,7 +317,7 @@ def test_rbf_interpolation_coeffs_edge(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid

@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     model_top_height: ta.wpfloat,
     date: str,
     *,

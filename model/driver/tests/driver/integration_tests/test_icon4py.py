@@ -104,7 +104,7 @@ if TYPE_CHECKING:
     ],
 )
 def test_run_timeloop_single_step(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,

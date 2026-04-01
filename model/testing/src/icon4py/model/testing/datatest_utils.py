@@ -16,7 +16,7 @@ import urllib.parse
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.testing import definitions as test_defs, serialbox
+from icon4py.model.testing import data_handling, definitions as test_defs, serialbox
 
 
 def get_processor_properties_for_run(
@@ -25,19 +25,19 @@ def get_processor_properties_for_run(
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_experiment_name_with_version(experiment: test_defs.ExperimentDescription) -> str:
+def get_experiment_name_with_version(experiment: test_defs.Experiment) -> str:
     """Generate experiment name with version suffix."""
     return f"{experiment.name}_v{experiment.version:02d}"
 
 
 def get_ranked_experiment_name_with_version(
-    experiment: test_defs.ExperimentDescription, comm_size: int
+    experiment: test_defs.Experiment, comm_size: int
 ) -> str:
     """Generate ranked experiment name with version suffix."""
     return f"mpitask{comm_size}_{get_experiment_name_with_version(experiment)}"
 
 
-def get_experiment_archive_filename(experiment: test_defs.ExperimentDescription, comm_size: int) -> str:
+def get_experiment_archive_filename(experiment: test_defs.Experiment, comm_size: int) -> str:
     """Generate ranked archive filename for an experiment."""
     return f"{get_ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
 
@@ -48,7 +48,7 @@ def get_serialized_data_url(root_url: str, filepath: str) -> str:
 
 
 def get_datapath_for_experiment(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment."""
@@ -60,6 +60,25 @@ def get_datapath_for_experiment(
     return test_defs.serialized_data_path().joinpath(
         experiment_dir, test_defs.SERIALIZED_DATA_SUBDIR
     )
+
+
+def download_experiment(
+    experiment: test_defs.Experiment,
+    processor_props: decomposition.ProcessProperties,
+) -> None:
+    """Download data and config for an experiment--if not already present."""
+    comm_size = processor_props.comm_size
+    try:
+        root_url = test_defs.SERIALIZED_DATA_ROOT_URLS[comm_size]
+        archive_filename = get_experiment_archive_filename(experiment, comm_size)
+        archive_path = test_defs.SERIALIZED_DATA_DIR + "/" + archive_filename
+        uri = get_serialized_data_url(root_url, archive_path)
+        destination_path = get_datapath_for_experiment(experiment, processor_props)
+        data_handling.download_test_data(destination_path.parent, uri)
+    except KeyError as err:
+        raise RuntimeError(
+            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
+        ) from err
 
 
 def create_icon_serial_data_provider(
@@ -92,7 +111,7 @@ def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
 
 
 def create_experiment_configuration(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
 ) -> test_defs.ExperimentConfig:
     """

@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="module")
-def experiment() -> test_defs.ExperimentDescription:
+def experiment() -> test_defs.Experiment:
     """The module uses hard-coded references for the MCH_CH_R04B09 experiment."""
     return test_defs.Experiments.MCH_CH_R04B09
 

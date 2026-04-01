@@ -92,7 +92,7 @@ def test_compute_c_lin_e(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_div(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
@@ -117,7 +117,7 @@ def test_compute_geofac_div(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_rot(
-    experiment: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,

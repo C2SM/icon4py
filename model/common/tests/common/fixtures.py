@@ -25,7 +25,6 @@ from icon4py.model.testing.fixtures.datatest import (
     decomposition_info,
     download_ser_data,
     experiment,
-    experiment_config,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
@@ -108,7 +107,7 @@ def interpolation_factory_from_savepoint(
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
-    experiment_config: test_defs.ExperimentConfig,
+    experiment: test_defs.Experiment,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory]:
     geometry_source = geometry_from_savepoint
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
@@ -118,7 +117,7 @@ def interpolation_factory_from_savepoint(
         geometry_source=geometry_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        config=experiment_config.interpolation,
+        config=experiment.config.interpolation,
         exchange=exchange,
     )
     yield intp_factory
@@ -129,8 +128,7 @@ def metrics_factory_from_savepoint(
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: test_defs.ExperimentDescription,
-    experiment_config: test_defs.ExperimentConfig,
+    experiment: test_defs.Experiment,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
@@ -141,7 +139,7 @@ def metrics_factory_from_savepoint(
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()
-    vertical_config = experiment_config.vertical_grid
+    vertical_config = experiment.config.vertical_grid
     vertical_grid = vertical.VerticalGrid(
         vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
     )
@@ -154,7 +152,7 @@ def metrics_factory_from_savepoint(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        metrics_config=experiment_config.metrics,
+        metrics_config=experiment.config.metrics,
         exchange=exchange,
         global_reductions=global_reductions,
     )
