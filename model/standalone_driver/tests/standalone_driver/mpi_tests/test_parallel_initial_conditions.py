@@ -6,12 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
 import pathlib
 
 import pytest
-from model.standalone_driver.tests.standalone_driver.mpi_tests.test_parallel_standalone_driver import (
-    _log,
-)
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
@@ -23,6 +21,8 @@ from icon4py.model.testing.fixtures.datatest import backend_like, experiment, pr
 
 if mpi_decomposition.mpi4py is None:
     pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
+
+_log = logging.getLogger(__file__)
 
 
 @pytest.mark.datatest
@@ -99,7 +99,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     )
 
     # TODO (jcanton/msimberg): unify the two checks below and remove code duplication
-    fields = ["vn", "w", "exner", "theta_v", "rho"]
+    fields = ["w", "vn", "exner", "theta_v", "rho"]
     serial_reference_fields: dict[str, object] = {
         field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
         for field_name in fields
