@@ -16,18 +16,19 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import apply_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def apply_nabla2_to_w_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     area: np.ndarray,
     z_nabla2_c: np.ndarray,
     geofac_n2s: np.ndarray,
     w: np.ndarray,
     diff_multfac_w: float,
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * np.sum(
@@ -51,7 +52,7 @@ class TestMoApplyNabla2ToW(StencilTest):
         diff_multfac_w: float,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         w = apply_nabla2_to_w_numpy(connectivities, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
         return dict(w=w)
 

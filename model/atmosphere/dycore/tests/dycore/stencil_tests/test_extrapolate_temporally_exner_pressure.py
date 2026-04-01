@@ -19,11 +19,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def extrapolate_temporally_exner_pressure_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     exner: np.ndarray,
     exner_ref_mc: np.ndarray,
     exner_pr: np.ndarray,
@@ -47,7 +48,7 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
         exner_exfac: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
             connectivities,
             exner=exner,

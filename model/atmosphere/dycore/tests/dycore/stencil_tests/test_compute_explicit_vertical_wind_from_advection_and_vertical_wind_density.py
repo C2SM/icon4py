@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_fro
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
     ddt_w_adv_ntl2: np.ndarray,
@@ -63,7 +64,7 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         cpd: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (
             z_w_expl,
             z_contr_w_fl_l,

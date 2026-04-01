@@ -42,8 +42,8 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
         nsub: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        c2e = connectivities[dims.C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]

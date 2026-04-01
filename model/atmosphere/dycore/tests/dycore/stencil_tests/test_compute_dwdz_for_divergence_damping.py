@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_dampin
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_dwdz_for_divergence_damping_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     inv_ddqz_z_full: np.ndarray,
     w: np.ndarray,
     w_concorr_c: np.ndarray,
@@ -45,7 +46,7 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         w_concorr_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_dwdz_dd = compute_dwdz_for_divergence_damping_numpy(
             connectivities, inv_ddqz_z_full=inv_ddqz_z_full, w=w, w_concorr_c=w_concorr_c
         )

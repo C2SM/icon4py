@@ -18,16 +18,17 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     w: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     dwdx = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1)
 
@@ -49,7 +50,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
             connectivities, w, geofac_grg_x, geofac_grg_y
         )

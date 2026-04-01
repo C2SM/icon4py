@@ -19,13 +19,14 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray], p_cell_in: np.ndarray, c_intp: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], p_cell_in: np.ndarray, c_intp: np.ndarray
 ) -> np.ndarray:
-    v2c = connectivities[dims.V2CDim]
+    v2c = connectivities[dims.V2C]
     c_intp = np.expand_dims(c_intp, axis=-1)
     p_vert_out = np.sum(np.where((v2c != -1)[:, :, np.newaxis], p_cell_in[v2c] * c_intp, 0), axis=1)
     return p_vert_out
@@ -42,7 +43,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
         c_intp: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         p_vert_out = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
             connectivities, p_cell_in, c_intp
         )

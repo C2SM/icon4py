@@ -20,11 +20,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     z_w_con_c: np.ndarray,
@@ -51,7 +52,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
         0,
     )
 
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     ddt_w_adv = np.where(
         (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv
@@ -91,7 +92,7 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
             connectivities,
             cfl_clipping,

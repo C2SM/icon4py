@@ -144,7 +144,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         end_cell_halo_level_2: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         vert_idx = np.arange(kwargs["surface_level"])
         cell = np.arange(end_cell_halo_level_2)
         horz_idx = cell[:, np.newaxis]

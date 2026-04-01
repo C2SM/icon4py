@@ -22,14 +22,14 @@ from icon4py.model.testing import stencil_tests
 
 
 def add_interpolated_horizontal_advection_of_w_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     e_bln_c_s: np.ndarray,
     z_v_grad_w: np.ndarray,
     ddt_w_adv: np.ndarray,
     **kwargs: Any,
 ) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2e = connectivities[dims.C2EDim]
+    c2e = connectivities[dims.C2E]
 
     ddt_w_adv = ddt_w_adv + np.sum(
         z_v_grad_w[c2e] * e_bln_c_s,
@@ -50,7 +50,7 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
         ddt_w_adv: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         ddt_w_adv = add_interpolated_horizontal_advection_of_w_numpy(
             connectivities, e_bln_c_s, z_v_grad_w, ddt_w_adv
         )

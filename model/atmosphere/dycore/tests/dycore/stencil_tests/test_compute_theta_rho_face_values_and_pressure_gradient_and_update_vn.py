@@ -31,7 +31,7 @@ horzpres_discr_type = HorizontalPressureDiscretizationType()
 
 
 def compute_theta_rho_face_value_by_miura_scheme_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
     pos_on_tplane_e_x: np.ndarray,
@@ -51,7 +51,7 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     pos_on_tplane_e_x = pos_on_tplane_e_x.reshape(e2c.shape)
     pos_on_tplane_e_y = pos_on_tplane_e_y.reshape(e2c.shape)
     primal_normal_cell_x = primal_normal_cell_x.reshape(e2c.shape)
@@ -210,7 +210,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         vertical_end: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         vert_idx = np.arange(vertical_end)
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
         default_shape = perturbed_rho_at_cells_on_model_levels.shape
@@ -221,7 +221,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         ddy_perturbed_theta_v = np.zeros(default_shape)
 
         # Compute Green-Gauss gradients for rho and theta
-        c2e2cO = connectivities[dims.C2E2CODim]
+        c2e2cO = connectivities[dims.C2E2CO]
 
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
         ddx_perturbed_rho = np.sum(
@@ -302,7 +302,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         )
 
         # Remaining computations at edge points
-        e2c = connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2C]
         temporal_extrapolation_of_perturbed_exner_at_edges = (
             temporal_extrapolation_of_perturbed_exner[e2c]
         )

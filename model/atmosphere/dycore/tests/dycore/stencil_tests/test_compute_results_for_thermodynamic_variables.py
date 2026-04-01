@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -25,7 +26,7 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 
 def compute_results_for_thermodynamic_variables_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
@@ -84,7 +85,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,

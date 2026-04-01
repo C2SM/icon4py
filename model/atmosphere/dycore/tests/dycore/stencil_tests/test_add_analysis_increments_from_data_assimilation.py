@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def add_analysis_increments_from_data_assimilation_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_rho_expl: np.ndarray,
     rho_incr: np.ndarray,
     z_exner_expl: np.ndarray,
@@ -48,7 +49,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         iau_wgt_dyn: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_rho_expl, z_exner_expl = add_analysis_increments_from_data_assimilation_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,

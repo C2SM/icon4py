@@ -18,7 +18,6 @@ from types import ModuleType
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, exceptions
@@ -77,34 +76,6 @@ class GridConfig:
     @property
     def num_cells(self):
         return self.horizontal_config.num_cells
-
-
-class NumPyGridConnectivitiesView(collections.abc.Mapping[str, np.ndarray]):
-    """View on the grid connectivities that allows to access them as numpy arrays."""
-
-    def __init__(self, grid: Grid):
-        self.grid = grid
-
-    def __getitem__(self, key: str) -> np.ndarray:
-        connectivity = self.grid.get_connectivity(key)
-        if gtx_common.is_neighbor_table(connectivity):
-            return connectivity.asnumpy()
-        else:
-            raise TypeError(f"Connectivity {key} is not a neighbor table.")
-
-    def __iter__(self) -> collections.abc.Iterator[str]:
-        return (
-            offset
-            for offset, connectivity in self.grid.connectivities.items()
-            if gtx_common.is_neighbor_table(connectivity)
-        )
-
-    def __len__(self) -> int:
-        return sum(
-            1
-            for connectivity in self.grid.connectivities.values()
-            if gtx_common.is_neighbor_table(connectivity)
-        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -166,10 +137,6 @@ class Grid:
                     f"Unsupported connectivity type {type(connectivity)} for offset {offset}."
                 )
         return sizes
-
-    @property
-    def connectivities_asnumpy(self) -> NumPyGridConnectivitiesView:
-        return NumPyGridConnectivitiesView(self)
 
     @property
     def num_cells(self) -> int:

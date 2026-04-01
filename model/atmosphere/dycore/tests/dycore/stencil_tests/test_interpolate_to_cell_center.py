@@ -22,13 +22,13 @@ from icon4py.model.testing import stencil_tests
 
 
 def interpolate_to_cell_center_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     interpolant: np.ndarray,
     e_bln_c_s: np.ndarray,
     **kwargs: Any,
 ) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2e = connectivities[dims.C2EDim]
+    c2e = connectivities[dims.C2E]
 
     interpolation = np.sum(
         interpolant[c2e] * e_bln_c_s,
@@ -48,7 +48,7 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
         e_bln_c_s: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         interpolation = interpolate_to_cell_center_numpy(connectivities, interpolant, e_bln_c_s)
         return dict(interpolation=interpolation)
 

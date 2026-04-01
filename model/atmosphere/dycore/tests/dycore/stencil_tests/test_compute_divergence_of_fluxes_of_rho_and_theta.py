@@ -22,12 +22,12 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     geofac_div: np.ndarray,
     mass_flux_at_edges_on_model_levels: np.ndarray,
     theta_v_flux_at_edges_on_model_levels: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    c2e = connectivities[dims.C2EDim]
+    c2e = connectivities[dims.C2E]
     geofac_div = np.expand_dims(geofac_div, axis=-1)
 
     divergence_of_mass_wp = np.sum(geofac_div * mass_flux_at_edges_on_model_levels[c2e], axis=1)
@@ -49,7 +49,7 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.Stenc
         z_theta_v_fl_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_flxdiv_mass, z_flxdiv_theta = compute_divergence_of_fluxes_of_rho_and_theta_numpy(
             connectivities,
             geofac_div,

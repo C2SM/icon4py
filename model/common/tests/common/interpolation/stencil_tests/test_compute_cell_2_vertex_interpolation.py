@@ -33,8 +33,8 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
         c_int: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        v2c = connectivities[dims.V2CDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        v2c = connectivities[dims.V2C]
         c_int = np.expand_dims(c_int, axis=-1)
         out_field = np.sum(cell_in[v2c] * c_int, axis=1)
 

@@ -33,17 +33,17 @@ def enhanced_smagorinski_factor_numpy(
 
 
 def nabla2_on_cell_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     nabla2_psi_c = np.sum(np.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
     return nabla2_psi_c
 
 
 def nabla2_on_cell_k_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     nabla2_psi_c = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], psi_c[c2e2cO] * geofac_n2s, 0), axis=1

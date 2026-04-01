@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_ter
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
     StencilTest,
@@ -27,7 +28,7 @@ from icon4py.model.testing.stencil_tests import (
 
 
 def compute_hydrostatic_correction_term_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     theta_v: np.ndarray,
     ikoffset: np.ndarray,
     zdiff_gradp: np.ndarray,
@@ -53,7 +54,7 @@ def compute_hydrostatic_correction_term_numpy(
                     ]
         return indexed, indexed_p1
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     full_shape = ikoffset.shape
 
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
@@ -123,7 +124,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         grav_o_cpd: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_hydro_corr = compute_hydrostatic_correction_term_numpy(
             connectivities,
             theta_v,

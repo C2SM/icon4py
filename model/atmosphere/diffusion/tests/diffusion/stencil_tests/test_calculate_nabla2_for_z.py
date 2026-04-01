@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def calculate_nabla2_for_z_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     kh_smag_e: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     theta_v: np.ndarray,
@@ -31,7 +32,7 @@ def calculate_nabla2_for_z_numpy(
 ) -> np.ndarray:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    theta_v_e2c = theta_v[connectivities[dims.E2CDim]]
+    theta_v_e2c = theta_v[connectivities[dims.E2C]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
     z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
@@ -52,7 +53,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         z_nabla2_e: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_nabla2_e = calculate_nabla2_for_z_numpy(
             connectivities, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
         )

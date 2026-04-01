@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_solver_coefficients_matrix
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_solver_coefficients_matrix_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     exner_nnow: np.ndarray,
     rho_nnow: np.ndarray,
     theta_v_nnow: np.ndarray,
@@ -59,7 +60,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         cvd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (z_beta, z_alpha) = compute_solver_coefficients_matrix_numpy(
             connectivities,
             exner_nnow=exner_nnow,

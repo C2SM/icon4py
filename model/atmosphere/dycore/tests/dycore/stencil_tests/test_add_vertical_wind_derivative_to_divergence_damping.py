@@ -22,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     hmask_dd3d: np.ndarray,
     scalfac_dd3d: np.ndarray,
     inv_dual_edge_length: np.ndarray,
@@ -33,7 +33,7 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     z_dwdz_dd_e2c = z_dwdz_dd[e2c]
     z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
@@ -58,7 +58,7 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
             connectivities,
             hmask_dd3d,

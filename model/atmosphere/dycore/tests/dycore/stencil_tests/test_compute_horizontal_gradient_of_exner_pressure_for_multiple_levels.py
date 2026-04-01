@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     inv_dual_edge_length: np.ndarray,
     z_exner_ex_pr: np.ndarray,
     zdiff_gradp: np.ndarray,
@@ -43,7 +44,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
                     ]
         return indexed
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
     full_shape = ikoffset.shape
@@ -80,7 +81,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         z_dexner_dz_c_2: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
             connectivities,
             inv_dual_edge_length,

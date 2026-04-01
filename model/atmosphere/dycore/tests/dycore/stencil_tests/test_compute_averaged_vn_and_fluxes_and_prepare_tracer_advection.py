@@ -76,7 +76,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         initial_spatially_averaged_vn = spatially_averaged_vn.copy()
         initial_mass_flux_at_edges_on_model_levels = mass_flux_at_edges_on_model_levels.copy()
         initial_theta_v_flux_at_edges_on_model_levels = theta_v_flux_at_edges_on_model_levels.copy()

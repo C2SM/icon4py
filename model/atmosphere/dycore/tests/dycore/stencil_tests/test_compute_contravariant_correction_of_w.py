@@ -19,16 +19,17 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_contravariant_correction_of_w_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     e_bln_c_s: np.ndarray,
     z_w_concorr_me: np.ndarray,
     wgtfac_c: np.ndarray,
 ) -> np.ndarray:
-    c2e = connectivities[dims.C2EDim]
+    c2e = connectivities[dims.C2E]
 
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
@@ -51,7 +52,7 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
         wgtfac_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         w_concorr_c = compute_contravariant_correction_of_w_numpy(
             connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c
         )

@@ -19,11 +19,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def update_dynamical_exner_time_increment_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     exner: np.ndarray,
     ddt_exner_phy: np.ndarray,
     exner_dyn_incr: np.ndarray,
@@ -48,7 +49,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         exner_dyn_incr = update_dynamical_exner_time_increment_numpy(
             connectivities,
             exner,

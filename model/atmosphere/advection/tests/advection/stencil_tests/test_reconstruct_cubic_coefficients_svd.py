@@ -70,7 +70,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         p_coeff_10_dsl: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
         p_coeff_2_dsl_cp = p_coeff_2_dsl.copy()
         p_coeff_3_dsl_cp = p_coeff_3_dsl.copy()
@@ -82,7 +82,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         p_coeff_9_dsl_cp = p_coeff_9_dsl.copy()
         p_coeff_10_dsl_cp = p_coeff_10_dsl.copy()
 
-        c2e2c2e2c = connectivities[dims.C2E2C2E2CDim]
+        c2e2c2e2c = connectivities[dims.C2E2C2E2C]
         lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
         lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
         lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)

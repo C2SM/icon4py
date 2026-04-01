@@ -25,7 +25,7 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 
 
 def _compute_advective_normal_wind_tendency_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     coeff_gradekin: np.ndarray,
     horizontal_kinetic_energy_at_cells_on_model_levels: np.ndarray,
@@ -37,7 +37,7 @@ def _compute_advective_normal_wind_tendency_numpy(
     vn_on_half_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
 ) -> np.ndarray:
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     horizontal_kinetic_energy_at_cells_on_model_levels_e2c = (
         horizontal_kinetic_energy_at_cells_on_model_levels[e2c]
     )
@@ -55,7 +55,7 @@ def _compute_advective_normal_wind_tendency_numpy(
         + tangential_wind
         * (
             coriolis_frequency
-            + 0.5 * np.sum(upward_vorticity_at_vertices[connectivities[dims.E2VDim]], axis=1)
+            + 0.5 * np.sum(upward_vorticity_at_vertices[connectivities[dims.E2V]], axis=1)
         )
         + np.sum(contravariant_corrected_w_at_cells_on_model_levels[e2c] * c_lin_e, axis=1)
         * (vn_on_half_levels[:, :-1] - vn_on_half_levels[:, 1:])
@@ -65,7 +65,7 @@ def _compute_advective_normal_wind_tendency_numpy(
 
 
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     c_lin_e: np.ndarray,
     contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
@@ -89,7 +89,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     contravariant_corrected_w_at_edges_on_model_levels = np.sum(
         np.where(
             (e2c != -1)[:, :, np.newaxis],
@@ -109,8 +109,8 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
         ),
         difcoef,
     )
-    e2v = connectivities[dims.E2VDim]
-    e2c2eo = connectivities[dims.E2C2EODim]
+    e2v = connectivities[dims.E2V]
+    e2c2eo = connectivities[dims.E2C2EO]
     normal_wind_advective_tendency = np.where(
         (np.abs(contravariant_corrected_w_at_edges_on_model_levels) > cfl_w_limit * ddqz_z_full_e),
         normal_wind_advective_tendency
@@ -183,7 +183,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
         nlev = kwargs["vertical_end"]
         k = np.arange(nlev)

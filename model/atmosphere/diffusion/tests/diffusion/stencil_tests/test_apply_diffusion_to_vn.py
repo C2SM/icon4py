@@ -15,6 +15,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
     StencilTest,
@@ -73,7 +74,7 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area: bool,
         **kwargs: Any,
     ):
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(

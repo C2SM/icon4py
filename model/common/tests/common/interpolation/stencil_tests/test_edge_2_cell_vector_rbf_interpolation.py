@@ -33,8 +33,8 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
         ptr_coeff_2: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        c2e2c2e = connectivities[dims.C2E2C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e2c2e = connectivities[dims.C2E2C2E]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
         p_u_out = np.sum(p_e_in[c2e2c2e] * ptr_coeff_1, axis=1)

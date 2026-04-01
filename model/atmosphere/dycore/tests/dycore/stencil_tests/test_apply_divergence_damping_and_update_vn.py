@@ -89,14 +89,14 @@ class TestApplyDivergenceDampingAndUpdateVn(stencil_tests.StencilTest):
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
         horizontal_mask_for_3d_divdamp = np.expand_dims(horizontal_mask_for_3d_divdamp, axis=-1)
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        e2c = connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2C]
         dwdz_at_edges_on_model_levels = dwdz_at_cells_on_model_levels[e2c]
         weighted_dwdz_at_edges_on_model_levels = (
             dwdz_at_edges_on_model_levels[:, 1] - dwdz_at_edges_on_model_levels[:, 0]
@@ -131,7 +131,7 @@ class TestApplyDivergenceDampingAndUpdateVn(stencil_tests.StencilTest):
             )
 
         if apply_4th_order_divergence_damping:
-            e2c2eO = connectivities[dims.E2C2EODim]
+            e2c2eO = connectivities[dims.E2C2EO]
             # verified for e-10
             squared_horizontal_gradient_of_total_divergence = np.where(
                 (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),

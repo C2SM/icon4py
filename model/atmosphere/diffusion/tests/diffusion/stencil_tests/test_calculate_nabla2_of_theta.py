@@ -21,11 +21,11 @@ from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_of_theta_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_nabla2_e: np.ndarray,
     geofac_div: np.ndarray,
 ) -> np.ndarray:
-    c2e = connectivities[dims.C2EDim]
+    c2e = connectivities[dims.C2E]
     geofac_div = np.expand_dims(geofac_div, axis=-1)
     z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
     return z_temp
@@ -42,7 +42,7 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
         geofac_div: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 

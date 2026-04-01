@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
@@ -53,7 +54,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         apply_zdiffusion_t: bool,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         kwargs_2 = {k: v for k, v in kwargs.items() if k != "theta_v"}  # remove unused kwargs
 
         z_nabla2_e = np.zeros_like(kh_smag_e)

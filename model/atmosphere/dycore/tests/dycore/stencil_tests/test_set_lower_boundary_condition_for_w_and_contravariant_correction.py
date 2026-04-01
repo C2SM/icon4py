@@ -19,11 +19,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     w_concorr_c: np.ndarray,
     z_contr_w_fl_l: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -43,7 +44,7 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
         z_contr_w_fl_l: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (
             w_nnew,
             z_contr_w_fl_l,

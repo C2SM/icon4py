@@ -19,11 +19,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     wgtfac_c: np.ndarray,
     z_rth_pr_2: np.ndarray,
     theta_v: np.ndarray,
@@ -71,7 +72,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         ddqz_z_half: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (
             z_theta_v_pr_ic,
             theta_v_ic,

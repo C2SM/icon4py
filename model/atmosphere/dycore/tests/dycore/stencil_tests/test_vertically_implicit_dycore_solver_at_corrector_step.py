@@ -139,7 +139,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         horizontal_start = kwargs["start_cell_index_nudging"]
         horizontal_end = kwargs["end_cell_index_local"]
         n_lev = kwargs["vertical_end_index_model_surface"] - 1

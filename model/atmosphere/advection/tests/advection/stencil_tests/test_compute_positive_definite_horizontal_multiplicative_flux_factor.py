@@ -36,8 +36,8 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         dbl_eps,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        c2e = connectivities[dims.C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
             0.0,

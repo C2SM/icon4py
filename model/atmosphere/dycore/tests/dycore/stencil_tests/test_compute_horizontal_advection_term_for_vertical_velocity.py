@@ -19,11 +19,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     vn_ie: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     w: np.ndarray,
@@ -36,8 +37,8 @@ def compute_horizontal_advection_term_for_vertical_velocity_numpy(
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-    w_e2c = w[connectivities[dims.E2CDim]]
-    z_w_v_e2v = z_w_v[connectivities[dims.E2VDim]]
+    w_e2c = w[connectivities[dims.E2C]]
+    z_w_v_e2v = z_w_v[connectivities[dims.E2V]]
 
     red_w = w_e2c[:, 0] - w_e2c[:, 1]
     red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
@@ -68,7 +69,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_v_grad_w[horizontal_start:horizontal_end, :] = (
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
                 connectivities,

@@ -23,13 +23,13 @@ from icon4py.model.testing import stencil_tests
 
 # TODO(): copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_ccpr1: np.ndarray,
     p_ccpr2: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     p_grad_1_u = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1
@@ -95,7 +95,7 @@ def compute_btraj_numpy(
 
 
 def sten_16_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_vn: np.ndarray,
     rho_ref_me: np.ndarray,
     theta_ref_me: np.ndarray,
@@ -109,7 +109,7 @@ def sten_16_numpy(
     z_rth_pr_2: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
     z_rth_pr_2_e2c = z_rth_pr_2[e2c]
     z_grad_rth_1_e2c = z_grad_rth_1[e2c]
@@ -145,7 +145,7 @@ def sten_16_numpy(
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
@@ -231,7 +231,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
             connectivities,
             p_vn,

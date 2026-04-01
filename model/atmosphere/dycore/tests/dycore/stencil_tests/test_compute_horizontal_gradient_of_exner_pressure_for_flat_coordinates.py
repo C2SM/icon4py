@@ -19,17 +19,18 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     inv_dual_edge_length: np.ndarray,
     z_exner_ex_pr: np.ndarray,
 ) -> np.ndarray:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    z_exner_ex_pr_e2c = z_exner_ex_pr[connectivities[dims.E2CDim]]
+    z_exner_ex_pr_e2c = z_exner_ex_pr[connectivities[dims.E2C]]
     z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
     z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
@@ -48,7 +49,7 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
         z_exner_ex_pr: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
             connectivities, inv_dual_edge_length, z_exner_ex_pr
         )

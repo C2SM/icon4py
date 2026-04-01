@@ -32,8 +32,8 @@ class TestCell2EdgeInterpolation(stencil_tests.StencilTest):
         coeff: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        e2c = connectivities[dims.E2CDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c = connectivities[dims.E2C]
         coeff_ = np.expand_dims(coeff, axis=-1)
         out_field = np.sum(in_field[e2c] * coeff_, axis=1)
 

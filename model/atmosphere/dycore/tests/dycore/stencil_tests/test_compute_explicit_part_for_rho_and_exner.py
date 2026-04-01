@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_explicit_part_for_rho_and_exner_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     rho_nnow: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
     z_flxdiv_mass: np.ndarray,
@@ -70,7 +71,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (z_rho_expl, z_exner_expl) = compute_explicit_part_for_rho_and_exner_numpy(
             connectivities,
             rho_nnow=rho_nnow,

@@ -18,6 +18,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
     StencilTest,
@@ -54,8 +55,8 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        v2e = connectivities[dims.V2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        v2e = connectivities[dims.V2E]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(
             np.where(np.expand_dims(v2e, axis=-1) >= 0, p_e_in[v2e] * ptr_coeff_1, 0.0), axis=1

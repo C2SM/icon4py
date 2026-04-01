@@ -32,7 +32,7 @@ from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_
 
 
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -143,7 +143,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         vertical_end: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         k = np.arange(vertical_end)[np.newaxis, :]
         k_nlev = k[:, :-1]
 

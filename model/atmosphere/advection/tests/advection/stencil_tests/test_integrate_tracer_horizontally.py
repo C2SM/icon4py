@@ -36,13 +36,13 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now
             - p_dtime
             * deepatmo_divh
-            * np.sum(p_mflx_tracer_h[connectivities[dims.C2EDim]] * geofac_div, axis=1)
+            * np.sum(p_mflx_tracer_h[connectivities[dims.C2E]] * geofac_div, axis=1)
         ) / rhodz_new
         return dict(tracer_new_hor=tracer_new_hor)
 

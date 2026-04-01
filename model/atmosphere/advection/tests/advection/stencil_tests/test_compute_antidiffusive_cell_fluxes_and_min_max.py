@@ -43,8 +43,8 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         p_dtime: float,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        c2e = connectivities[dims.C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]
         z_anti_c2e = z_anti[c2e]
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)

@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, stencil_tests
 from icon4py.model.testing.stencil_tests import (
     StandardStaticVariants,
     StencilTest,
@@ -83,7 +83,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         vertical_end,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         k = np.arange(w_old.shape[1])
         cell = np.arange(w_old.shape[0])
         reshaped_k = k[np.newaxis, :]

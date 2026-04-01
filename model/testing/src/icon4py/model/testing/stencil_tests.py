@@ -14,14 +14,14 @@ import functools
 import inspect
 import os
 import types
-from collections.abc import Callable, Generator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
+from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias, cast
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py.next import typing as gtx_typing
+from gt4py.next import common as gtx_common, typing as gtx_typing
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
@@ -196,6 +196,38 @@ class DataAllocationWrapper:
         )
 
 
+class NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
+    """View on the grid connectivities that allows to access them as numpy arrays."""
+
+    def __init__(self, grid: base.Grid):
+        self.grid = grid
+
+    def __getitem__(self, key: str | gtx.FieldOffset | gtx.Dimension) -> np.ndarray:
+        connectivity = self.grid.get_connectivity(key)
+        if gtx_common.is_neighbor_table(connectivity):
+            return connectivity.asnumpy()
+        else:
+            raise TypeError(f"Connectivity '{key}' is not a neighbor table.")
+
+    def __iter__(self) -> Iterator[str | gtx.FieldOffset]:
+        return (
+            key
+            for key, connectivity in self.grid.connectivities.items()
+            if gtx_common.is_neighbor_table(connectivity)
+        )
+
+    def __len__(self) -> int:
+        return sum(
+            1
+            for connectivity in self.grid.connectivities.values()
+            if gtx_common.is_neighbor_table(connectivity)
+        )
+
+
+def connectivities_asnumpy(grid: base.Grid) -> Mapping[gtx.FieldOffset, np.ndarray]:
+    return cast(Mapping[gtx.FieldOffset, np.ndarray], NumPyGridConnectivitiesView(grid))
+
+
 @dataclasses.dataclass(frozen=True)
 class Output:
     name: str
@@ -367,7 +399,7 @@ class StencilTest:
         return test_func
 
     @pytest.fixture(autouse=True, scope="class")
-    def _provision_data_alloc_fixture(
+    def _instance_setup_fixture(
         self, backend_like: model_backends.BackendLike, grid: base.Grid
     ) -> Generator[None, None, None]:
         """

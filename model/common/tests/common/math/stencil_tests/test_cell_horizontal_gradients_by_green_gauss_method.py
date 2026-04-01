@@ -22,16 +22,17 @@ from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def cell_horizontal_gradients_by_green_gauss_method_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     scalar_field: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     p_grad_1_u = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * scalar_field[c2e2cO], 0), axis=1
@@ -59,7 +60,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (
             p_grad_1_u,
             p_grad_1_v,

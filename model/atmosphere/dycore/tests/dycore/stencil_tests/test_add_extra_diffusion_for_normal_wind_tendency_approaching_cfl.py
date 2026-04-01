@@ -18,11 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_win
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     levelmask: np.ndarray,
     c_lin_e: np.ndarray,
     z_w_con_c_full: np.ndarray,
@@ -50,7 +51,7 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     w_con_e = np.where(
         (levelmask_offset_0) | (levelmask_offset_1),
         np.sum(
@@ -73,8 +74,8 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
         ),
         difcoef,
     )
-    e2v = connectivities[dims.E2VDim]
-    e2c2eo = connectivities[dims.E2C2EODim]
+    e2v = connectivities[dims.E2V]
+    e2c2eo = connectivities[dims.E2C2EO]
     ddt_vn_apc = np.where(
         ((levelmask_offset_0) | (levelmask_offset_1))
         & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
@@ -160,7 +161,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         ddt_vn_apc = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
             connectivities,
             levelmask,

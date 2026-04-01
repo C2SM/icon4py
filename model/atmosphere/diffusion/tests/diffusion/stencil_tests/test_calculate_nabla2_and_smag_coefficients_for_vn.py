@@ -61,8 +61,8 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        e2c2v = connectivities[dims.E2C2VDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c2v = connectivities[dims.E2C2V]
 
         u_vert_e2c2v = u_vert[e2c2v]
         v_vert_e2c2v = v_vert[e2c2v]

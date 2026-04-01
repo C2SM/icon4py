@@ -39,7 +39,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def compute_diagnostics_from_normal_wind_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -207,7 +207,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         initial_tangential_wind = tangential_wind.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
         initial_horizontal_kinetic_energy_at_edges_on_model_levels = (

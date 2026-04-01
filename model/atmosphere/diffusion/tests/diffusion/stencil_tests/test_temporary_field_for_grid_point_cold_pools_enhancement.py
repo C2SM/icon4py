@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
@@ -35,8 +36,8 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         smallest_vpfloat,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        c2e2c = connectivities[dims.C2E2CDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e2c = connectivities[dims.C2E2C]
         tdiff = (
             theta_v
             - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_v[c2e2c], 0), axis=1) / 3

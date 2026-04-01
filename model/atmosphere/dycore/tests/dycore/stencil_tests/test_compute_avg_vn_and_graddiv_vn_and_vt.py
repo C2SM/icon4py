@@ -19,18 +19,19 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     e_flx_avg: np.ndarray,
     vn: np.ndarray,
     geofac_grdiv: np.ndarray,
     rbf_vec_coeff_e: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    e2c2eO = connectivities[dims.E2C2EODim]
-    e2c2e = connectivities[dims.E2C2EDim]
+    e2c2eO = connectivities[dims.E2C2EO]
+    e2c2e = connectivities[dims.E2C2E]
     e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
     z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
     geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
@@ -56,7 +57,7 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_vn_avg, z_graddiv_vn, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,

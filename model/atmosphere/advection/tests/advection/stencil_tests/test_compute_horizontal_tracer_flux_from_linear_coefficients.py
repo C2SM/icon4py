@@ -37,9 +37,9 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(stencil_tests.Stenci
         p_out_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         p_out_e_cp = p_out_e.copy()
-        e2c = connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2C]
         z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
         z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]

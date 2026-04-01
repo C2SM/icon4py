@@ -16,11 +16,12 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import upd
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def update_mass_volume_flux_numpy(
-    connectivities: Mapping[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_contr_w_fl_l: np.ndarray,
     rho_ic: np.ndarray,
     vwind_impl_wgt: np.ndarray,
@@ -55,7 +56,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (mass_flx_ic, vol_flx_ic) = update_mass_volume_flux_numpy(
             connectivities,
             z_contr_w_fl_l=z_contr_w_fl_l,

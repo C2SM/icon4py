@@ -34,8 +34,8 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         diff_multfac_smag: np.ndarray,
         **kwargs,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
-        c2e = connectivities[dims.C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)

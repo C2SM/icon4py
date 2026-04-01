@@ -141,7 +141,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         flat_level_index_plus1: int,
         **kwargs: Any,
     ) -> dict:
-        connectivities = cast(Mapping[gtx.Dimension, np.ndarray], grid.connectivities_asnumpy)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         start_cell_index_nudging = kwargs["start_cell_index_nudging"]
         end_cell_index_local = kwargs["end_cell_index_local"]
         start_cell_index_lateral_lvl3 = kwargs["start_cell_index_lateral_lvl3"]
