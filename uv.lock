@@ -1428,8 +1428,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.8"
-source = { registry = "https://pypi.org/simple" }
+version = "1.1.8+unknown.version.details"
+source = { git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides#0a00f0a7ec61578b96256d9fa76416a87bd389bc" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1459,10 +1459,6 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5c/79/413b2dc0f3f2dc5d708ba77fba4bd8852a2e3ca716ef889bbebd3b6e567c/gt4py-1.1.8.tar.gz", hash = "sha256:6bcaea3553ecd11361c7b5e521fd8a1f472ee9398250fd787d8178163eaa9f00", size = 822711, upload-time = "2026-03-25T15:00:28.923Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/0f/854c3bb18e61416536629dfc464fa0ea918b6113625a18778fcf20e9b30f/gt4py-1.1.8-py3-none-any.whl", hash = "sha256:0aee2da8d50a29212cd578ac996491c881e511664534ffc2899ce36fa2657b42", size = 1034528, upload-time = "2026-03-25T15:00:27.338Z" },
 ]
 
 [package.optional-dependencies]
@@ -1794,7 +1790,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1811,7 +1807,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1828,7 +1824,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1845,7 +1841,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1863,7 +1859,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1933,9 +1929,9 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
-    { name = "gt4py", specifier = "==1.1.8" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1972,7 +1968,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2001,7 +1997,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2031,7 +2027,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.1.8" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2083,9 +2079,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.1.8" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace_check_array_strides" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
