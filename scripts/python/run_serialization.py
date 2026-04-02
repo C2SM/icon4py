@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -11,71 +12,43 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import time
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING, get_type_hints, Annotated
 
+import lazy_loader as lazy
 import typer
 
-from icon4py.model.testing import datatest_utils as dt_utils, definitions
+if __name__ == "__main__":
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+
+# The following lines are only to avoid very long import times due to the
+# heavy icon4py dependencies in the settings module.
+if TYPE_CHECKING:
+    from icon4py.model.testing import datatest_utils as dt_utils, definitions
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=RuntimeWarning)
+    settings = lazy.load("python._run_serialization_settings")
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
-
-
-# ======================================
-# USER CONFIGURATION
-# ======================================
-COMM_SIZES: list[int] = [1, 2, 4]
-
-EXPERIMENTS = [
-    definitions.Experiments.MCH_CH_R04B09,
-    definitions.Experiments.JW,
-    definitions.Experiments.EXCLAIM_APE,
-    definitions.Experiments.GAUSS3D,
-    definitions.Experiments.WEISMAN_KLEMP_TORUS,
-]
-
-# Slurm settings
-SBATCH_PARTITION = "normal"
-SBATCH_TIME = "00:15:00"
-SBATCH_ACCOUNT = "cwd01"
-SBATCH_UENV = "icon/25.2:v3"
-SBATCH_UENV_VIEW = "default"
-JOB_POLL_SECONDS = 10
-
-# Base directories (adjust if needed)
-PROJECTS_DIR = Path(os.environ.get("SCRATCH", str(Path.home() / "projects")))
-ICONF90_DIR = PROJECTS_DIR / "icon-exclaim.serialize"
-ICONF90_BUILD_FOLDER = "build_serialize"
-
-# Derived paths
-BUILD_DIR = ICONF90_DIR / ICONF90_BUILD_FOLDER
-RUNSCRIPTS_DIR = BUILD_DIR / "run"
-EXPERIMENTS_DIR = BUILD_DIR / "experiments"
-
-# Output location for copied ser_data and tarballs
-OUTPUT_ROOT = EXPERIMENTS_DIR / definitions.SERIALIZED_DATA_DIR
-
-# Maximum concurrent threads for running experiments
-MAX_THREADS: int = 5
-
-# ======================================
-# END USER CONFIGURATION
-# ======================================
 
 
 def get_f90exp_name(experiment: definitions.Experiment) -> str:
     return f"{experiment.name}_sb"
 
 
-def get_f90exp_dir(experiment: definitions.Experiment) -> Path:
-    return EXPERIMENTS_DIR / get_f90exp_name(experiment)
+def get_f90exp_dir(experiment: definitions.Experiment) -> pathlib.Path:
+    return settings.EXPERIMENTS_DIR / get_f90exp_name(experiment)
 
 
 def get_nmlfile_name(experiment: definitions.Experiment) -> str:
@@ -86,14 +59,16 @@ def get_slurmscript_name(experiment: definitions.Experiment) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
 
-def get_serdata_dst_dir(experiment: definitions.Experiment, comm_size: int) -> Path:
+def get_serdata_dst_dir(experiment: definitions.Experiment, comm_size: int) -> pathlib.Path:
     """Get the destination directory for serialized data."""
-    return OUTPUT_ROOT / dt_utils.get_ranked_experiment_name_with_version(experiment, comm_size)
+    return settings.OUTPUT_ROOT / dt_utils.get_ranked_experiment_name_with_version(
+        experiment, comm_size
+    )
 
 
-def get_tar_path(experiment: definitions.Experiment, comm_size: int) -> Path:
+def get_tar_path(experiment: definitions.Experiment, comm_size: int) -> pathlib.Path:
     """Get the path to the tar archive for the experiment."""
-    return OUTPUT_ROOT / dt_utils.get_experiment_archive_filename(experiment, comm_size)
+    return settings.OUTPUT_ROOT / dt_utils.get_experiment_archive_filename(experiment, comm_size)
 
 
 def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> None:
@@ -121,7 +96,7 @@ def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> No
 
 
 def run_command(
-    cmd: list[str], check: bool = True, cwd: Path | None = None
+    cmd: list[str], check: bool = True, cwd: pathlib.Path | None = None
 ) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, check=check, text=True, capture_output=True, cwd=cwd)
 
@@ -132,7 +107,7 @@ def log_status(message: str) -> None:
     print(f"[{timestamp}] {message}")
 
 
-def parse_extra_mpi_ranks(script_path: Path, comm_size: int) -> int:
+def parse_extra_mpi_ranks(script_path: pathlib.Path, comm_size: int) -> int:
     """Parse extra MPI ranks from the Fortran script by summing num_* variables
     found in the &parallel_nml section.
 
@@ -202,7 +177,7 @@ def parse_extra_mpi_ranks(script_path: Path, comm_size: int) -> int:
     return extra_ranks
 
 
-def update_slurm_variables(script_path: Path) -> None:
+def update_slurm_variables(script_path: pathlib.Path) -> None:
     """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
     content = script_path.read_text()
 
@@ -213,11 +188,11 @@ def update_slurm_variables(script_path: Path) -> None:
 
     # Prepare the new SBATCH lines to insert
     new_lines = (
-        f"#SBATCH --partition={SBATCH_PARTITION}\n"
-        f"#SBATCH --account={SBATCH_ACCOUNT}\n"
-        f"#SBATCH --time={SBATCH_TIME}\n"
-        f"#SBATCH --uenv='{SBATCH_UENV}'\n"
-        f"#SBATCH --view='{SBATCH_UENV_VIEW}'"
+        f"#SBATCH --partition={settings.SBATCH_PARTITION}\n"
+        f"#SBATCH --account={settings.SBATCH_ACCOUNT}\n"
+        f"#SBATCH --time={settings.SBATCH_TIME}\n"
+        f"#SBATCH --uenv='{settings.SBATCH_UENV}'\n"
+        f"#SBATCH --view='{settings.SBATCH_UENV_VIEW}'"
     )
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
@@ -239,7 +214,7 @@ def update_slurm_variables(script_path: Path) -> None:
     script_path.write_text(content)
 
 
-def update_slurm_ranks(script_path: Path, mpi_ranks: int, extra_mpi_ranks: int = 0) -> None:
+def update_slurm_ranks(script_path: pathlib.Path, mpi_ranks: int, extra_mpi_ranks: int = 0) -> None:
     """Update ranks in the Slurm script (ntasks-per-node and mpi_procs_pernode).
 
     Args:
@@ -268,9 +243,9 @@ def update_slurm_ranks(script_path: Path, mpi_ranks: int, extra_mpi_ranks: int =
     script_path.write_text(content)
 
 
-def submit_job(script_path: Path) -> str:
+def submit_job(script_path: pathlib.Path) -> str:
     cmd = ["sbatch", str(script_path)]
-    result = run_command(cmd, cwd=RUNSCRIPTS_DIR)
+    result = run_command(cmd, cwd=settings.RUNSCRIPTS_DIR)
     match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
     if not match:
         raise RuntimeError(f"Unable to parse job id from sbatch output: {result.stdout}")
@@ -325,7 +300,7 @@ def wait_for_success(job_id: str) -> None:
     while True:
         state = get_job_state(job_id)
         if state is None:
-            time.sleep(JOB_POLL_SECONDS)
+            time.sleep(settings.JOB_POLL_SECONDS)
             continue
 
         if state in terminal_states:
@@ -333,10 +308,10 @@ def wait_for_success(job_id: str) -> None:
                 return
             raise RuntimeError(f"Job {job_id} finished unsuccessfully with state: {state}")
 
-        time.sleep(JOB_POLL_SECONDS)
+        time.sleep(settings.JOB_POLL_SECONDS)
 
 
-def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path:
+def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> pathlib.Path:
     exp_dir = get_f90exp_dir(experiment)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
@@ -361,14 +336,16 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
 
     # Copy LOG file if available
     if job_id is not None:
-        log_file = RUNSCRIPTS_DIR / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
+        log_file = settings.RUNSCRIPTS_DIR / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
         if log_file.is_file():
             shutil.copy2(log_file, dest_dir / log_file.name)
 
     return dest_dir
 
 
-def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int) -> Path:
+def tar_folder(
+    folder: pathlib.Path, experiment: definitions.Experiment, comm_size: int
+) -> pathlib.Path:
     tar_path = get_tar_path(experiment, comm_size)
 
     with tarfile.open(tar_path, "w:gz") as tar:
@@ -382,13 +359,13 @@ def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int)
 def generate_update_script(experiment: definitions.Experiment) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
-        ICONF90_DIR / "run" / get_nmlfile_name(experiment),
-        RUNSCRIPTS_DIR / get_nmlfile_name(experiment),
+        settings.ICONF90_DIR / "run" / get_nmlfile_name(experiment),
+        settings.RUNSCRIPTS_DIR / get_nmlfile_name(experiment),
     )
 
     # run make_runscript
     cmd = ["./make_runscripts", get_f90exp_name(experiment)]
-    _ = run_command(cmd, cwd=BUILD_DIR)
+    _ = run_command(cmd, cwd=settings.BUILD_DIR)
 
 
 def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
@@ -399,7 +376,7 @@ def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
 
         generate_update_script(experiment)
 
-        script_path = RUNSCRIPTS_DIR / get_slurmscript_name(experiment)
+        script_path = settings.RUNSCRIPTS_DIR / get_slurmscript_name(experiment)
         if not script_path.exists():
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
@@ -432,25 +409,25 @@ def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
 
 
 @cli.command()
-def run_experiment_series() -> None:
+def run_serialization() -> None:
     """Run the serialization experiment series."""
-    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    settings.OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
-    total_tasks = len(EXPERIMENTS) * len(COMM_SIZES)
+    total_tasks = len(settings.EXPERIMENTS) * len(settings.COMM_SIZES)
     log_status(
-        f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments x {len(COMM_SIZES)} communicator sizes)"
+        f"Starting experiment series with {total_tasks} tasks ({len(settings.EXPERIMENTS)} experiments x {len(settings.COMM_SIZES)} communicator sizes)"
     )
 
-    for rank_idx, comm_size in enumerate(COMM_SIZES, 1):
-        num_experiments = len(EXPERIMENTS)
+    for rank_idx, comm_size in enumerate(settings.COMM_SIZES, 1):
+        num_experiments = len(settings.EXPERIMENTS)
         log_status(
-            f"Starting communicator size {rank_idx}/{len(COMM_SIZES)}: {comm_size} ranks ({num_experiments} experiments parallel)"
+            f"Starting communicator size {rank_idx}/{len(settings.COMM_SIZES)}: {comm_size} ranks ({num_experiments} experiments parallel)"
         )
 
-        with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        with ThreadPoolExecutor(max_workers=settings.MAX_THREADS) as executor:
             futures = []
 
-            for experiment in EXPERIMENTS:
+            for experiment in settings.EXPERIMENTS:
                 future = executor.submit(run_experiment, experiment, comm_size)
                 futures.append(future)
 
@@ -462,10 +439,12 @@ def run_experiment_series() -> None:
             for future in futures:
                 future.result()  # Re-raises any exceptions from the thread
 
-        log_status(f"Completed communicator size {rank_idx}/{len(COMM_SIZES)}: {comm_size} ranks")
+        log_status(
+            f"Completed communicator size {rank_idx}/{len(settings.COMM_SIZES)}: {comm_size} ranks"
+        )
 
     log_status(f"All {total_tasks} tasks completed successfully!")
 
 
 if __name__ == "__main__":
-    cli()
+    sys.exit(cli())

@@ -1,3 +1,4 @@
+#
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -7,10 +8,4 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-"""
-Package for development scripts.
-
-Dependencies for all the modules in this package should be declared
-in the 'scripts' dependency group (in 'pyproject.toml').
-
-"""
+"""Python dev-scripts package."""
