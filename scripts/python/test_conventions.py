@@ -35,8 +35,11 @@ class ExitCode(enum.IntEnum):
     UNKNOWN_FIXTURE_REQUESTS = 2
 
 
-cli = typer.Typer(no_args_is_help=True, help=__doc__)
-
+cli = typer.Typer(
+    name=__name__.split(".")[-1].replace("_", "-"),
+    no_args_is_help=True,
+    help="[DEPRECATED] " + __doc__,
+)
 
 # -- check-layout --
 _INIT_PY_DEFAULT_CONTENT = (
