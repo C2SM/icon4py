@@ -85,7 +85,7 @@ build_image_aarch64:
 #   variables:
 #     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
 #     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
-#     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda11"
+#     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
   needs: [build_image_aarch64]
