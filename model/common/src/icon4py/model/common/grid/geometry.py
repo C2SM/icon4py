@@ -203,9 +203,9 @@ class GridGeometry(factory.FieldSource):
     def _register_computed_fields(self) -> None:
         """Register all computed geometry fields."""
         # Common fields for both geometries
-        meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
-        name = meta["standard_name"]
-        self._attrs.update({name: meta})
+        # meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
+        # name = meta["standard_name"]
+        # self._attrs.update({name: meta})
 
         inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         self.register_provider(inverse_edge_length)

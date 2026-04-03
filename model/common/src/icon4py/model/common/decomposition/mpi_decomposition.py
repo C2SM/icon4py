@@ -89,12 +89,16 @@ class ParallelLogger(logging.Filter):
     def __init__(self, process_properties: definitions.ProcessProperties | None = None) -> None:
         super().__init__()
         self._rank_info = ""
+        self.rank_no = process_properties.rank # type: ignore
         if process_properties and process_properties.comm_size > 1:
             self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
 
     def filter(self, record: logging.LogRecord) -> bool:
         record.rank = self._rank_info
-        return True
+        if self.rank_no >= 1:
+            return False
+        else:
+            return True
 
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
@@ -454,7 +458,8 @@ class GlobalReductions(Reductions):
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
         local_red_val = local_reduction(buffer)
-        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        recv_buffer = array_ns.empty_like(local_red_val)
+        # recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
         if hasattr(
             array_ns, "cuda"
         ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
@@ -470,6 +475,7 @@ class GlobalReductions(Reductions):
         return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        log.debug(f"Debugging min: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
@@ -480,6 +486,7 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        log.debug(f"Debugging max: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
@@ -490,6 +497,7 @@ class GlobalReductions(Reductions):
         )
 
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        log.debug(f"Debugging sum: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -500,6 +508,7 @@ class GlobalReductions(Reductions):
         )
 
     def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        log.debug(f"Debugging mean: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")

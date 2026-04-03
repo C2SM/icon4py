@@ -8,7 +8,9 @@
 
 
 import dataclasses
+import functools
 import logging
+import operator
 import pathlib
 import sys
 import time
@@ -17,6 +19,7 @@ from typing import Any, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -182,31 +185,92 @@ def initialize_granules(
     )
 
     log.info("creating edge geometry")
+    tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION)
+    log.info("debugging 1")
+    inverse_primal_edge_lengths=geometry_field_source.get(
+        f"inverse_of_{geometry_meta.EDGE_LENGTH}"
+    )
+    log.info("debugging 2")
+    inverse_dual_edge_lengths=geometry_field_source.get(
+        f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    )
+    log.info("debugging 3")
+    inverse_vertex_vertex_lengths=geometry_field_source.get(
+        f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
+    )
+    log.info("debugging 4")
+    primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U)
+    log.info("debugging 5")
+    primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V)
+    log.info("debugging 6")
+    dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U)
+    log.info("debugging 7")
+    dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V)
+    log.info("debugging 8")
+    primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U)
+    log.info("debugging 9")
+    dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U)
+    log.info("debugging 10")
+    primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V)
+    log.info("debugging 11")
+    dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V)
+    log.info("debugging 12")
+    edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA)
+    log.info("debugging 13")
+    coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER)
+    log.info("debugging 14")
+    edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT)
+    log.info("debugging 15")
+    edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON)
+    log.info("debugging 16")
+    primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U)
+    log.info("debugging 17")
+    primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V)
+    log.info("debugging 18")
     edge_geometry = grid_states.EdgeParams(
-        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
-        inverse_primal_edge_lengths=geometry_field_source.get(
-            f"inverse_of_{geometry_meta.EDGE_LENGTH}"
-        ),
-        inverse_dual_edge_lengths=geometry_field_source.get(
-            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-        ),
-        inverse_vertex_vertex_lengths=geometry_field_source.get(
-            f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
-        ),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
-        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        # tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
+        # inverse_primal_edge_lengths=geometry_field_source.get(
+        #     f"inverse_of_{geometry_meta.EDGE_LENGTH}"
+        # ),
+        # inverse_dual_edge_lengths=geometry_field_source.get(
+        #     f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        # ),
+        # inverse_vertex_vertex_lengths=geometry_field_source.get(
+        #     f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
+        # ),
+        # primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+        # primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        # dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+        # dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        # primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+        # dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+        # primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        # dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        # edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
+        # coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
+        # edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
+        # edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
+        # primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+        # primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
+        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        dual_normal_cell_x=dual_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_areas=edge_areas,
+        coriolis_frequency=coriolis_frequency,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
     )
 
     log.info("creating diffusion interpolation state")
@@ -591,3 +655,36 @@ def get_backend_from_name(
     log.info(f"Backend name used for the model: {backend_name}")
     log.info(f"BackendLike derived from the backend name: {backend}")
     return backend
+
+
+def gather_field(field: np.ndarray, props: decomposition_defs.ProcessProperties) -> tuple:
+    if props.is_single_rank():
+        log.info(f"gather_field on rank={props.rank} - single rank, no need to gather")
+        return field.shape[0], field
+    else:
+        constant_dims = tuple(field.shape[1:])
+        log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+        # Because of sparse indexing the field may have a non-contigous layout,
+        # which Gatherv doesn't support. Make sure the field is contiguous.
+        field = np.ascontiguousarray(field)
+        constant_length = functools.reduce(operator.mul, constant_dims, 1)
+        local_sizes = np.array(props.comm.gather(field.size, root=0))
+        if props.rank == 0:
+            recv_buffer = np.empty(np.sum(local_sizes), dtype=field.dtype)
+            log.info(
+                f"gather_field on rank = {props.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
+            )
+        else:
+            recv_buffer = None
+
+        props.comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
+        if props.rank == 0:
+            local_first_dim = tuple(sz // constant_length for sz in local_sizes)
+            log.info(
+                f" gather_field on rank = 0: computed local dims {local_first_dim} - constant dims {constant_dims}"
+            )
+            gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore [union-attr]
+        else:
+            gathered_field = None
+            local_first_dim = field.shape
+        return local_first_dim, gathered_field

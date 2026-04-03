@@ -40,6 +40,12 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    dump_pickle: Annotated[
+        bool,
+        typer.Option(
+            help="Pickle dump of diagnostic variables at every hour.",
+        ),
+    ] = False,
     force_serial_run: Annotated[
         bool,
         typer.Option(
@@ -85,6 +91,7 @@ def main(
     icon4py_driver.time_integration(
         ds,
         do_prep_adv=False,
+        dump_pickle=dump_pickle,
     )
 
     log.info("time loop:  DONE")

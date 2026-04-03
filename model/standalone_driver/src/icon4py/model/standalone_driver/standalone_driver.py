@@ -10,10 +10,12 @@ import datetime
 import functools
 import logging
 import pathlib
+import pickle
 import types
 from collections.abc import Callable
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
@@ -26,11 +28,33 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
+    diagnose_pressure,
+)
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
+    diagnose_surface_pressure,
+)
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
+    diagnose_virtual_temperature_and_temperature,
+)
+from icon4py.model.common.grid import (
+    geometry_attributes as geom_attr,
+    horizontal as h_grid,
+    vertical as v_grid,
+)
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
+from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
+from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
+    edge_2_cell_vector_rbf_interpolation,
+)
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+    tracer_state as tracers,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -55,6 +79,7 @@ class Icon4pyDriver:
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
         vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
+        processor_props: decomposition_defs.ProcessProperties,
         exchange: decomposition_defs.ExchangeRuntime,
     ):
         self.config = config
@@ -70,6 +95,7 @@ class Icon4pyDriver:
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
+        self.processor_props = processor_props
         self.exchange = exchange
 
         driver_utils.display_driver_setup_in_log_file(
@@ -77,6 +103,202 @@ class Icon4pyDriver:
             self.static_field_factories.metrics_field_source._vertical_grid,
             self.config,
         )
+        
+        self.setup_diagnostic_stencils()
+        
+        self.tracer_state = tracers.TracerState(
+            qv=data_alloc.zero_field(
+                self.grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=self._allocator,
+                dtype=ta.wpfloat,
+            ),
+            qc=data_alloc.zero_field(
+                self.grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=self._allocator,
+                dtype=ta.wpfloat,
+            ),
+            qr=data_alloc.zero_field(
+                self.grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=self._allocator,
+                dtype=ta.wpfloat,
+            ),
+            qi=data_alloc.zero_field(
+                self.grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=self._allocator,
+                dtype=ta.wpfloat,
+            ),
+            qs=data_alloc.zero_field(
+                self.grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=self._allocator,
+                dtype=ta.wpfloat,
+            ),
+            qg=data_alloc.zero_field(
+                self.grid,
+                dims.CellDim,
+                dims.KDim,
+                allocator=self._allocator,
+                dtype=ta.wpfloat,
+            ),
+        )
+
+    def setup_diagnostic_stencils(self):
+        cell_domain = h_grid.domain(dims.CellDim)
+
+        self._start_cell_lateral = self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
+        self._start_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.LOCAL))
+        self._end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+        self._diagnose_temperature = setup_program(
+            backend=self.backend,
+            program=diagnose_virtual_temperature_and_temperature,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_local,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels),
+            },
+        )
+        
+        self._diagnose_pressure = setup_program(
+            backend=self.backend,
+            program=diagnose_pressure,
+            constant_args={
+                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_local,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels),
+            },
+            offset_provider=self.grid.connectivities,
+        )
+
+        self._diagnose_sfc_pressure = setup_program(
+            backend=self.backend,
+            program=diagnose_surface_pressure,
+            constant_args={
+                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_local,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(self.grid.num_levels),
+                "vertical_end": gtx.int32(self.grid.num_levels+1),
+            },
+            offset_provider=self.grid.connectivities,
+        )
+        
+        self._diagnose_uv = setup_program(
+            backend=self.backend,
+            program=edge_2_cell_vector_rbf_interpolation,
+            constant_args={
+                "ptr_coeff_1": self.static_field_factories.interpolation_field_source.get(intp_attr.RBF_VEC_COEFF_C1),
+                "ptr_coeff_2": self.static_field_factories.interpolation_field_source.get(intp_attr.RBF_VEC_COEFF_C2),
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels),
+            },
+            offset_provider=self.grid.connectivities,
+        )
+
+    def compute_model_data(
+        self,
+        diagnostic_state: diagnostics.DiagnosticState,
+        prognostic_state: prognostics.PrognosticState,
+    ) -> None:
+        self._diagnose_temperature(
+            qv=self.tracer_state.qv,
+            qc=self.tracer_state.qc,
+            qi=self.tracer_state.qi,
+            qr=self.tracer_state.qr,
+            qs=self.tracer_state.qs,
+            qg=self.tracer_state.qg,
+            theta_v=prognostic_state.theta_v,
+            exner=prognostic_state.exner,
+            virtual_temperature=diagnostic_state.virtual_temperature,
+            temperature=diagnostic_state.temperature,
+        )
+
+        self._diagnose_pressure(
+            virtual_temperature=diagnostic_state.virtual_temperature,
+            surface_pressure=diagnostic_state.surface_pressure,
+            pressure=diagnostic_state.pressure,
+            pressure_ifc=diagnostic_state.pressure_ifc,
+        )
+
+        self._diagnose_sfc_pressure(
+            exner=prognostic_state.exner,
+            virtual_temperature=diagnostic_state.virtual_temperature,
+            surface_pressure=diagnostic_state.pressure_ifc,
+        )
+
+        self._diagnose_uv(
+            p_e_in=prognostic_state.vn,
+            p_u_out=diagnostic_state.u,
+            p_v_out=diagnostic_state.v,
+        )
+
+    def pack_data(
+        self,
+        diagnostic_state: diagnostics.DiagnosticState,
+    ) -> dict:
+        distributed_model_data = {
+            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT).asnumpy(),
+            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON).asnumpy(),
+            "cell_area": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_AREA).asnumpy(),
+            "dz": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL).asnumpy(),
+            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC).asnumpy(),
+            "temperature": diagnostic_state.temperature.asnumpy(),
+            "pressure": diagnostic_state.pressure.asnumpy(),
+            "sfc_pressure": diagnostic_state.surface_pressure.asnumpy(),
+            "u": diagnostic_state.u.asnumpy(),
+            "v": diagnostic_state.v.asnumpy(),
+        }
+        gathered_model_data = {}
+        for k, v in distributed_model_data.items():
+            owned_entries = v[
+                data_alloc.as_numpy(
+                    self.decomposition_info.local_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                )
+            ]
+            gathered_sizes, gathered_field = driver_utils.gather_field(owned_entries, self.processor_props)
+
+            global_index_sizes, gathered_global_indices = driver_utils.gather_field(
+                data_alloc.as_numpy(
+                    self.decomposition_info.global_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                ),
+                self.processor_props,
+            )
+            if self.processor_props.rank == 0:
+                assert np.all(gathered_sizes == global_index_sizes), (
+                    f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {global_index_sizes}"
+                )
+                sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
+                sorted_[gathered_global_indices] = gathered_field
+                gathered_model_data[k] = sorted_
+        return gathered_model_data
 
     @functools.cached_property
     def _allocator(self) -> gtx.typing.Backend:
@@ -100,6 +322,7 @@ class Icon4pyDriver:
         self,
         ds: driver_states.DriverStates,
         do_prep_adv: bool,
+        dump_pickle: bool = False,
     ) -> None:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
@@ -107,12 +330,21 @@ class Icon4pyDriver:
         prognostic_states = ds.prognostics
         prep_adv = ds.prep_advection_prognostic
         tracer_prep_adv = ds.prep_tracer_advection_prognostic
+        diagnostic_state = ds.diagnostic
 
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
         )
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+
+        if dump_pickle:
+            log.debug("Running diagnostic calculations and output")
+            self.compute_model_data(diagnostic_state, prognostic_states.current)
+            with open("model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl", "wb") as file_obj:
+                model_data = self.pack_data(diagnostic_state)
+                if self.processor_props.rank == 0:
+                    pickle.dump(model_data, file_obj)
 
         wall_clock_starting_time = datetime.datetime.now()
 
@@ -139,8 +371,18 @@ class Icon4pyDriver:
                 prep_adv,
                 do_prep_adv,
                 tracer_prep_adv,
+                diagnostic_state,
             )
             device_utils.sync(self.backend)
+
+            if dump_pickle:
+                if self.model_time_variables.simulation_date.minute == 0 and self.model_time_variables.simulation_date.second == 0:
+                    log.debug("Running diagnostic calculations and output")
+                    self.compute_model_data(diagnostic_state, prognostic_states.current)
+                    with open("model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl", "wb") as file_obj:
+                        model_data = self.pack_data(diagnostic_state)
+                        if self.processor_props.rank == 0:
+                            pickle.dump(model_data, file_obj)
 
             self.model_time_variables.is_first_step_in_simulation = False
 
@@ -167,6 +409,7 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState,
+        diagnostic_state: diagnostics.DiagnosticState,
     ) -> None:
         log.debug(f"Running {self.solve_nonhydro.__class__}")
         self._do_dyn_substepping(
@@ -538,12 +781,12 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        dtime=datetime.timedelta(seconds=75.0),
+        end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
-        enable_statistics_output=True,
+        enable_statistics_output=False,
         profiling_stats=profiling_stats,
     )
 
@@ -601,16 +844,17 @@ def initialize_driver(
     )
 
     global_reductions = decomposition_defs.create_reduction(parallel_props)
-    if output_path.exists():
-        current_time = datetime.datetime.now()
-        log.warning(f"output path {output_path} already exists, a time stamp will be added")
-        output_path = (
-            output_path.parent
-            / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
-        )
+    if parallel_props.rank == 0:
+        if output_path.exists():
+            current_time = datetime.datetime.now()
+            log.warning(f"output path {output_path} already exists, a time stamp will be added")
+            output_path = (
+                output_path.parent
+                / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+            )
 
-    else:
-        output_path.mkdir(parents=True, exist_ok=False)
+        else:
+            output_path.mkdir(parents=True, exist_ok=False)
 
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
@@ -692,6 +936,7 @@ def initialize_driver(
         solve_nonhydro_granule=solve_nonhydro_granule,
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
+        processor_props=parallel_props,
         exchange=exchange,
     )
 
