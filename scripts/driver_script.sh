@@ -1,14 +1,14 @@
 #! /bin/bash
-#SBATCH --job-name=icon4py_driver
-#SBATCH --output=/capstor/scratch/cscs/cong/icon4py/output_%j/log_stdout.txt
-#SBATCH --error=/capstor/scratch/cscs/cong/icon4py/output_%j/log
+#SBATCH --job-name=icon4py_driver_r2b9_64nodes
+#SBATCH --output=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output_%j/log_stdout.txt
+#SBATCH --error=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output_%j/log
 #SBATCH --account=cwd01
 #SBATCH --uenv=icon/25.2:v3:/user-environment
 #SBATCH --view=default
-#SBATCH --nodes=8
+#SBATCH --nodes=64
 #SBATCH --ntasks-per-node=1
 #SBATCH --partition=normal
-#SBATCH --time=16:00:00
+#SBATCH --time=12:00:00
 
 
 # santis build command:
@@ -30,7 +30,8 @@ export GHEX_GPU_TYPE=NVIDIA
 export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export PYTHONOPTIMIZE=1
-export OUTPUT_PATH=/capstor/scratch/cscs/cong/icon4py/output_%j
+export OUTPUT_PATH=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output
+export INPUT_GRID=/capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0015_R02B09_G.nc
 
-python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --grid-file-path /capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0002_R02B06_G.nc --icon4py-backend gtfn_gpu --dump-pickle --log-level warning
+python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --output-path $OUTPUT_PATH --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning
 

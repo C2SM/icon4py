@@ -779,7 +779,7 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=75.0),
+        dtime=datetime.timedelta(seconds=10.0), # 6: 75, 7:40, 8:20, 9: 10, 10: 5
         end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
