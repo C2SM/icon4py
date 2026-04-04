@@ -112,7 +112,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # predefined constants used for Jablonowski-Williamson initial condition
     p_sfc = ta.wpfloat("100000.0")  # surface pressure (Pa)
     jw_baroclinic_amplitude = ta.wpfloat(
-        "0.0"
+        "1.0"
     )  # if doing baroclinic wave test, please set it to a nonzero value
     jw_u0 = ta.wpfloat("35.0")  # maximum zonal wind speed (m/s)
     jw_temp0 = ta.wpfloat("288.0")
@@ -269,20 +269,22 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
 
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
-        grid=grid,
-        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
-        inv_dual_edge_length=geometry_field_source.get(
-            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-        ).ndarray,
-        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
-        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
-        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
-        vn=prognostic_state_now.vn.ndarray,
-        vct_b=vct_b.ndarray,
-        nlev=num_levels,
-        array_ns=xp,
-    )
+    # TODO (Chia Rui): To eliminate potential bugs from w initialization, we set w to zero for now.
+    prognostic_state_now.w.ndarray[:, :] = ta.wpfloat("0.0")
+    # prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    #     grid=grid,
+    #     z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
+    #     inv_dual_edge_length=geometry_field_source.get(
+    #         f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    #     ).ndarray,
+    #     edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+    #     primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
+    #     cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+    #     vn=prognostic_state_now.vn.ndarray,
+    #     vct_b=vct_b.ndarray,
+    #     nlev=num_levels,
+    #     array_ns=xp,
+    # )
     exchange(prognostic_state_now.w, dim=dims.CellDim)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
