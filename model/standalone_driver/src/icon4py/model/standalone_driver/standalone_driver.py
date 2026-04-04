@@ -72,7 +72,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self) -> gtx.typing.Backend:
+    def _allocator(self) -> gtx.typing.Allocator:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property

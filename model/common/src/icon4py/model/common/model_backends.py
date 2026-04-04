@@ -5,6 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""
+This module defines the available backends for ICON4Py and provides utilities to work with them.
+
+Backends ('BackendLike') are one of the following
+- concrete GT4Py backends (instances of 'gtx_typing.Backend')
+- 'None', which indicates embedded execution
+- 'BackendDescriptor's, which are dictionaries containing the configuration parameters to construct a concrete backend
+- 'DeviceType's, which indicate the target device for which the default backend should be constructed.
+See 'model_options.customize_backend()' for details.
+
+Note: A concrete GT4Py backend (an instance of 'gtx_typing.Backend') is also a 'gtx_typing.Allocator' as it implements
+the 'FieldBufferAllocatorFactoryProtocol', while other 'BackendLike's do not.
+Use 'get_allocator' to get the allocator for any 'BackendLike'.
+"""
+
 from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
@@ -35,7 +51,7 @@ def is_backend_descriptor(
 
 def get_allocator(
     backend: BackendLike,
-) -> gtx_typing.Backend:
+) -> gtx_typing.Allocator:
     if isinstance(backend, gtx_backend.Backend):
         return backend
     if backend is None:

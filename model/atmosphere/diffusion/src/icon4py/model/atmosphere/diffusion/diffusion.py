@@ -391,10 +391,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
     ):
