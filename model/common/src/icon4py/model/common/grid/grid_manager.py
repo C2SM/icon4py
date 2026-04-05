@@ -8,6 +8,7 @@
 import functools
 import logging
 import pathlib
+import time
 from types import ModuleType
 from typing import Literal, TypeAlias
 
@@ -121,6 +122,7 @@ class GridManager:
         else:
             geometry_type = base.GeometryType.ICOSAHEDRON
 
+        _t0 = time.perf_counter()
         self._construct_decomposed_grid(
             allocator=allocator,
             keep_skip_values=keep_skip_values,
@@ -128,8 +130,17 @@ class GridManager:
             decomposer=decomposer,
             run_properties=run_properties,
         )
+        _log.warning(
+            f"TIMER: _construct_decomposed_grid completed in {time.perf_counter() - _t0:.3f}s"
+        )
+
+        _t0 = time.perf_counter()
         self._coordinates = self._read_coordinates(allocator, geometry_type)
+        _log.warning(f"TIMER: _read_coordinates completed in {time.perf_counter() - _t0:.3f}s")
+
+        _t0 = time.perf_counter()
         self._geometry = self._read_geometry_fields(allocator)
+        _log.warning(f"TIMER: _read_geometry_fields completed in {time.perf_counter() - _t0:.3f}s")
 
         self.close()
 
@@ -405,16 +416,21 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(allocator)
         ## FULL GRID PROPERTIES
+        _t0 = time.perf_counter()
         cell_refinement = xp.asarray(
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
         global_size = self._read_full_grid_size()
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
+        _log.warning(
+            f"TIMER: read full grid properties completed in {time.perf_counter() - _t0:.3f}s"
+        )
 
         if limited_area and not run_properties.is_single_rank():
             raise NotImplementedError("Limited-area grids are not supported in distributed runs")
 
+        _t0 = time.perf_counter()
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
         global_neighbor_tables = {
             dims.C2E2C: cell_to_cell_neighbors,
@@ -426,11 +442,20 @@ class GridManager:
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V, array_ns=xp),
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V, array_ns=xp),
         }
+        _log.warning(
+            f"TIMER: read global neighbor tables completed in {time.perf_counter() - _t0:.3f}s"
+        )
 
+        _t0 = time.perf_counter()
         cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, run_properties.comm_size)
+        _log.warning(
+            f"TIMER: decomposer (rank mapping) completed in {time.perf_counter() - _t0:.3f}s"
+        )
+
         # HALO CONSTRUCTION
         # TODO(halungge): reduce the set of neighbor tables used in the halo construction
         # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
+        _t0 = time.perf_counter()
         halo_constructor = halo.get_halo_constructor(
             run_properties=run_properties,
             full_grid_size=global_size,
@@ -439,13 +464,20 @@ class GridManager:
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
+        _log.warning(f"TIMER: halo construction completed in {time.perf_counter() - _t0:.3f}s")
+
         distributed_size = self._decomposition_info.get_horizontal_size()
 
+        _t0 = time.perf_counter()
         neighbor_tables = self._get_local_connectivities(global_neighbor_tables, array_ns=xp)
+        _log.warning(f"TIMER: local connectivities completed in {time.perf_counter() - _t0:.3f}s")
 
         # COMPUTE remaining derived connectivities
+        _t0 = time.perf_counter()
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+        _log.warning(f"TIMER: derived connectivities completed in {time.perf_counter() - _t0:.3f}s")
 
+        _t0 = time.perf_counter()
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
         domain_bounds_constructor = functools.partial(
@@ -455,7 +487,11 @@ class GridManager:
             array_ns=xp,
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
+        _log.warning(
+            f"TIMER: refinement + domain bounds completed in {time.perf_counter() - _t0:.3f}s"
+        )
 
+        _t0 = time.perf_counter()
         grid_config = base.GridConfig(
             horizontal_config=distributed_size,
             vertical_size=self._vertical_config.num_levels,
@@ -474,6 +510,7 @@ class GridManager:
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
+        _log.warning(f"TIMER: icon_grid construction completed in {time.perf_counter() - _t0:.3f}s")
 
     def _get_local_connectivities(
         self,
