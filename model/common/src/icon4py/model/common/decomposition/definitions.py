@@ -642,17 +642,25 @@ def create_single_node_exchange(
 
 
 @functools.singledispatch
-def create_reduction(props: ProcessProperties) -> Reductions:
+def create_reduction(props: ProcessProperties, reproducible: bool = False) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+
+    Args:
+        props: Process properties describing the parallel environment.
+        reproducible: If True, use gather-and-sort reductions that produce
+            bitwise-identical results regardless of the number of MPI ranks.
+            Only relevant for multi-node runs (single-node is always reproducible).
     """
     raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
 
 
 @create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+def create_single_reduction_exchange(
+    props: SingleNodeProcessProperties, reproducible: bool = False
+) -> Reductions:
     return SingleNodeReductions()
 
 

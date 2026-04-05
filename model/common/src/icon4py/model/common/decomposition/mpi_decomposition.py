@@ -89,7 +89,7 @@ class ParallelLogger(logging.Filter):
     def __init__(self, process_properties: definitions.ProcessProperties | None = None) -> None:
         super().__init__()
         self._rank_info = ""
-        self.rank_no = process_properties.rank # type: ignore
+        self.rank_no = process_properties.rank  # type: ignore
         if process_properties and process_properties.comm_size > 1:
             self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
 
@@ -475,7 +475,9 @@ class GlobalReductions(Reductions):
         return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        log.debug(f"Debugging min: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
+        log.debug(
+            f"Debugging min: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}"
+        )
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
@@ -486,7 +488,9 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        log.debug(f"Debugging max: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
+        log.debug(
+            f"Debugging max: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}"
+        )
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
@@ -497,7 +501,9 @@ class GlobalReductions(Reductions):
         )
 
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        log.debug(f"Debugging sum: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
+        log.debug(
+            f"Debugging sum: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}"
+        )
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -508,7 +514,9 @@ class GlobalReductions(Reductions):
         )
 
     def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        log.debug(f"Debugging mean: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
+        log.debug(
+            f"Debugging mean: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}"
+        )
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
@@ -524,6 +532,57 @@ class GlobalReductions(Reductions):
         )
 
 
+@dataclasses.dataclass
+class ReproducibleGlobalReductions(GlobalReductions):
+    """Global reductions producing bitwise-identical results regardless of MPI rank count.
+
+    For SUM: gathers full local buffers to rank 0, sorts values, sums in a
+    deterministic order, and broadcasts the result.
+    For MIN/MAX: delegates to the standard Allreduce (already order-independent).
+    """
+
+    def _reduce(
+        self,
+        buffer: data_alloc.NDArray,
+        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        global_reduction: mpi4py.MPI.Op,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        if global_reduction == mpi4py.MPI.SUM:
+            return self._reproducible_sum_reduce(buffer, array_ns)
+        # MIN and MAX are order-independent
+        return super()._reduce(buffer, local_reduction, global_reduction, array_ns)
+
+    def _reproducible_sum_reduce(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        # Move to host if on GPU
+        if hasattr(array_ns, "cuda"):
+            buf_np = buffer.get().ravel()
+        else:
+            buf_np = np.ascontiguousarray(buffer.ravel())
+
+        # Gather full local buffers to rank 0
+        all_bufs = self.props.comm.gather(buf_np, root=0)
+
+        if self.props.rank == 0:
+            full = np.concatenate(all_bufs)
+            # Sort to guarantee identical summation order regardless of decomposition
+            full.sort()
+            result = np.sum(full)
+        else:
+            result = None
+
+        result = self.props.comm.bcast(result, root=0)
+        return array_ns.asarray(result).item()
+
+
 @definitions.create_reduction.register(MPICommProcessProperties)
-def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
+def create_global_reduction(
+    props: MPICommProcessProperties, reproducible: bool = False
+) -> Reductions:
+    if reproducible:
+        return ReproducibleGlobalReductions(props)
     return GlobalReductions(props)

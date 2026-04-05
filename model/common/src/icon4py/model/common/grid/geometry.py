@@ -314,53 +314,49 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(edge_areas)
 
+        def _owned_mean(buffer, owner_mask, array_ns=self._xp):
+            """Compute global mean over owned elements only (excludes halo duplicates)."""
+            return self._global_reductions.mean(buffer[owner_mask], array_ns=array_ns)
+
         mean_edge_length_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=_owned_mean,
             domain=(),
             deps={
                 "buffer": attrs.EDGE_LENGTH,
+                "owner_mask": "edge_owner_mask",
             },
             fields=(attrs.MEAN_EDGE_LENGTH,),
         )
         self.register_provider(mean_edge_length_np)
 
         mean_dual_edge_length_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=_owned_mean,
             domain=(),
             deps={
                 "buffer": attrs.DUAL_EDGE_LENGTH,
+                "owner_mask": "edge_owner_mask",
             },
             fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
         )
         self.register_provider(mean_dual_edge_length_np)
 
         mean_cell_area_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=_owned_mean,
             domain=(),
             deps={
                 "buffer": attrs.CELL_AREA,
+                "owner_mask": "cell_owner_mask",
             },
             fields=(attrs.MEAN_CELL_AREA,),
         )
         self.register_provider(mean_cell_area_np)
 
         mean_dual_cell_area_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                self._global_reductions.mean,
-                array_ns=self._xp,
-            ),
+            func=_owned_mean,
             domain=(),
             deps={
                 "buffer": attrs.DUAL_AREA,
+                "owner_mask": "vertex_owner_mask",
             },
             fields=(attrs.MEAN_DUAL_AREA,),
         )

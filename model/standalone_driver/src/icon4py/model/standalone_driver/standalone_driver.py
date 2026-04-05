@@ -867,6 +867,7 @@ def initialize_driver(
     backend_name: str | model_backends.BackendLike | None,
     force_serial_run: bool = False,
     dtime: float = 10.0,
+    reproducible_reductions: bool = False,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -905,7 +906,9 @@ def initialize_driver(
         processor_procs=parallel_props,
     )
 
-    global_reductions = decomposition_defs.create_reduction(parallel_props)
+    global_reductions = decomposition_defs.create_reduction(
+        parallel_props, reproducible=reproducible_reductions
+    )
     if parallel_props.rank == 0:
         if output_path.exists():
             current_time = datetime.datetime.now()

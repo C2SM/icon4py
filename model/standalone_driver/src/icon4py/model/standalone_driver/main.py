@@ -59,6 +59,12 @@ def main(
             help="Time step size in seconds (default per resolution: r2b6=75, r2b7=40, r2b8=20, r2b9=10, r2b10=5).",
         ),
     ] = 10.0,
+    reproducible_reductions: Annotated[
+        bool,
+        typer.Option(
+            help="Use reproducible global reductions (gather-and-sort) to produce bitwise-identical results across different MPI rank counts.",
+        ),
+    ] = False,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -82,6 +88,7 @@ def main(
                 backend_name=icon4py_backend,
                 force_serial_run=force_serial_run,
                 dtime=dtime,
+                reproducible_reductions=reproducible_reductions,
             )
 
             log.info("Generating the initial condition")
