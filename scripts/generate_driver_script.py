@@ -43,6 +43,17 @@ DEFAULT_GRID_FILES = {
     (2, 10): f"{GRID_DIR}/icon_grid_0017_R02B10_G.nc",
 }
 
+# Recommended dtime (seconds) per resolution.
+DEFAULT_DTIME = {
+    (2, 4): 360.0,
+    (2, 5): 180.0,
+    (2, 6): 75.0,
+    (2, 7): 40.0,
+    (2, 8): 20.0,
+    (2, 9): 10.0,
+    (2, 10): 5.0,
+}
+
 
 def parse_resolution(grid_file: str) -> tuple[int, int] | None:
     """Try to extract (root, bisection) from the grid file name, e.g. R02B09."""
@@ -78,7 +89,7 @@ RUN_WRAPPER = textwrap.dedent("""\
 """)
 
 
-def generate_script(
+def generate_script(  # noqa: PLR0912
     grid_file: str | None,
     ranks: int | None,
     root: int | None,
@@ -88,6 +99,7 @@ def generate_script(
     backend: str,
     venv: str | None,
     log_level: str,
+    dtime: float | None = None,
     uenv: bool = True,
 ) -> tuple[str, str, str]:
     """Return (slurm_script, run_wrapper, job_name) strings."""
@@ -113,6 +125,11 @@ def generate_script(
         if key not in DEFAULT_GRID_FILES:
             raise SystemExit(f"No default grid file for {res_tag}. Please specify --grid-file.")
         grid_file = DEFAULT_GRID_FILES[key]
+
+    # Resolve dtime from lookup if not given explicitly
+    if dtime is None:
+        key = (res_root, res_bisection)
+        dtime = DEFAULT_DTIME.get(key, 10.0)
 
     # Resolve rank count
     if ranks is None:
@@ -194,7 +211,8 @@ def generate_script(
             --output-path ${{OUTPUT_PATH}} \\
             --grid-file-path ${{INPUT_GRID}} \\
             --icon4py-backend {backend} \\
-            --log-level {log_level}
+            --log-level {log_level} \\
+            --dtime {dtime}
     """)
     return script, RUN_WRAPPER, job_name
 
@@ -233,6 +251,13 @@ def main():
         help="Path to the virtual environment (defaults to <repo>/.venv).",
     )
     parser.add_argument("--log-level", default="warning", help="Python log level.")
+    parser.add_argument(
+        "--dtime",
+        type=float,
+        default=None,
+        help="Time step in seconds. Auto-selected from resolution if not set "
+        "(r2b6=75, r2b7=40, r2b8=20, r2b9=10, r2b10=5).",
+    )
     args = parser.parse_args()
 
     script, wrapper, job_name = generate_script(
@@ -245,6 +270,7 @@ def main():
         backend=args.backend,
         venv=args.venv,
         log_level=args.log_level,
+        dtime=args.dtime,
         uenv=not args.no_uenv,
     )
 

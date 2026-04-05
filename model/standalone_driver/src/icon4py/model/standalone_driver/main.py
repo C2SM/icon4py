@@ -52,6 +52,12 @@ def main(
             help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
         ),
     ] = False,
+    dtime: Annotated[
+        float,
+        typer.Option(
+            help="Time step size in seconds (default per resolution: r2b6=75, r2b7=40, r2b8=20, r2b9=10, r2b10=5).",
+        ),
+    ] = 10.0,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -69,6 +75,7 @@ def main(
         log_level=log_level,
         backend_name=icon4py_backend,
         force_serial_run=force_serial_run,
+        dtime=dtime,
     )
 
     log.info("Generating the initial condition")
