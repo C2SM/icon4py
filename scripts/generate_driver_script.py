@@ -88,6 +88,7 @@ def generate_script(
     backend: str,
     venv: str | None,
     log_level: str,
+    uenv: bool = True,
 ) -> tuple[str, str, str]:
     """Return (slurm_script, run_wrapper, job_name) strings."""
     # Resolve resolution: from explicit args, grid file name, or defaults
@@ -150,15 +151,20 @@ def generate_script(
         / "main.py"
     )
 
+    uenv_lines = ""
+    if uenv:
+        uenv_lines = (
+            "#SBATCH --uenv=icon/25.2:v3:/user-environment\n"
+            "#SBATCH --view=default\n"
+        )
+
     script = textwrap.dedent(f"""\
         #! /bin/bash
         #SBATCH --job-name={job_name}
         #SBATCH --output={run_dir}/log_stdout_%j.txt
         #SBATCH --error={run_dir}/log_%j.txt
         #SBATCH --account={account}
-        #SBATCH --uenv=icon/25.2:v3:/user-environment
-        #SBATCH --view=default
-        #SBATCH --nodes={nodes}
+        {uenv_lines}#SBATCH --nodes={nodes}
         #SBATCH --ntasks-per-node={ntasks_per_node}
         #SBATCH --partition=normal
         #SBATCH --time={time}
@@ -218,6 +224,11 @@ def main():
     )
     parser.add_argument("--time", default="2:00:00", help="SLURM wall-clock time limit.")
     parser.add_argument("--account", default="cwd01", help="SLURM account.")
+    parser.add_argument(
+        "--no-uenv",
+        action="store_true",
+        help="Disable #SBATCH --uenv and --view directives.",
+    )
     parser.add_argument("--backend", default="gtfn_gpu", help="GT4Py backend.")
     parser.add_argument(
         "--venv",
@@ -237,6 +248,7 @@ def main():
         backend=args.backend,
         venv=args.venv,
         log_level=args.log_level,
+        uenv=not args.no_uenv,
     )
 
     out_dir = Path.cwd() / job_name
