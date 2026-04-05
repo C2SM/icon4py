@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 import pickle
+import time
 import types
 from collections.abc import Callable
 
@@ -103,9 +104,9 @@ class Icon4pyDriver:
             self.static_field_factories.metrics_field_source._vertical_grid,
             self.config,
         )
-        
+
         self.setup_diagnostic_stencils()
-        
+
         self.tracer_state = tracers.TracerState(
             qv=data_alloc.zero_field(
                 self.grid,
@@ -170,12 +171,14 @@ class Icon4pyDriver:
                 "vertical_end": gtx.int32(self.grid.num_levels),
             },
         )
-        
+
         self._diagnose_pressure = setup_program(
             backend=self.backend,
             program=diagnose_pressure,
             constant_args={
-                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(
+                    metrics_attr.DDQZ_Z_FULL
+                ),
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_local,
@@ -192,7 +195,9 @@ class Icon4pyDriver:
             backend=self.backend,
             program=diagnose_surface_pressure,
             constant_args={
-                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(
+                    metrics_attr.DDQZ_Z_FULL
+                ),
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_local,
@@ -200,17 +205,21 @@ class Icon4pyDriver:
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(self.grid.num_levels),
-                "vertical_end": gtx.int32(self.grid.num_levels+1),
+                "vertical_end": gtx.int32(self.grid.num_levels + 1),
             },
             offset_provider=self.grid.connectivities,
         )
-        
+
         self._diagnose_uv = setup_program(
             backend=self.backend,
             program=edge_2_cell_vector_rbf_interpolation,
             constant_args={
-                "ptr_coeff_1": self.static_field_factories.interpolation_field_source.get(intp_attr.RBF_VEC_COEFF_C1),
-                "ptr_coeff_2": self.static_field_factories.interpolation_field_source.get(intp_attr.RBF_VEC_COEFF_C2),
+                "ptr_coeff_1": self.static_field_factories.interpolation_field_source.get(
+                    intp_attr.RBF_VEC_COEFF_C1
+                ),
+                "ptr_coeff_2": self.static_field_factories.interpolation_field_source.get(
+                    intp_attr.RBF_VEC_COEFF_C2
+                ),
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral,
@@ -265,11 +274,21 @@ class Icon4pyDriver:
         diagnostic_state: diagnostics.DiagnosticState,
     ) -> dict:
         distributed_model_data = {
-            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT).asnumpy(),
-            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON).asnumpy(),
-            "cell_area": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_AREA).asnumpy(),
-            "dz": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL).asnumpy(),
-            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC).asnumpy(),
+            "cell_lat": self.static_field_factories.geometry_field_source.get(
+                geom_attr.CELL_LAT
+            ).asnumpy(),
+            "cell_lon": self.static_field_factories.geometry_field_source.get(
+                geom_attr.CELL_LON
+            ).asnumpy(),
+            "cell_area": self.static_field_factories.geometry_field_source.get(
+                geom_attr.CELL_AREA
+            ).asnumpy(),
+            "dz": self.static_field_factories.metrics_field_source.get(
+                metrics_attr.DDQZ_Z_FULL
+            ).asnumpy(),
+            "z_mc": self.static_field_factories.metrics_field_source.get(
+                metrics_attr.Z_MC
+            ).asnumpy(),
             "temperature": diagnostic_state.temperature.asnumpy(),
             "pressure": diagnostic_state.pressure.asnumpy(),
             "sfc_pressure": diagnostic_state.surface_pressure.asnumpy(),
@@ -280,21 +299,27 @@ class Icon4pyDriver:
         for k, v in distributed_model_data.items():
             owned_entries = v[
                 data_alloc.as_numpy(
-                    self.decomposition_info.local_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                    self.decomposition_info.local_index(
+                        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+                    )
                 )
             ]
-            gathered_sizes, gathered_field = driver_utils.gather_field(owned_entries, self.processor_props)
+            gathered_sizes, gathered_field = driver_utils.gather_field(
+                owned_entries, self.processor_props
+            )
 
             global_index_sizes, gathered_global_indices = driver_utils.gather_field(
                 data_alloc.as_numpy(
-                    self.decomposition_info.global_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                    self.decomposition_info.global_index(
+                        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+                    )
                 ),
                 self.processor_props,
             )
             if self.processor_props.rank == 0:
-                assert np.all(gathered_sizes == global_index_sizes), (
-                    f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {global_index_sizes}"
-                )
+                assert np.all(
+                    gathered_sizes == global_index_sizes
+                ), f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {global_index_sizes}"
                 sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
                 sorted_[gathered_global_indices] = gathered_field
                 gathered_model_data[k] = sorted_
@@ -341,7 +366,14 @@ class Icon4pyDriver:
         if dump_pickle:
             log.debug("Running diagnostic calculations and output")
             self.compute_model_data(diagnostic_state, prognostic_states.current)
-            with open("model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl", "wb") as file_obj:
+            with open(
+                "model_data_day"
+                + str(self.model_time_variables.simulation_date.day)
+                + "_hour"
+                + str(self.model_time_variables.simulation_date.hour)
+                + ".pkl",
+                "wb",
+            ) as file_obj:
                 model_data = self.pack_data(diagnostic_state)
                 if self.processor_props.rank == 0:
                     pickle.dump(model_data, file_obj)
@@ -376,10 +408,20 @@ class Icon4pyDriver:
             device_utils.sync(self.backend)
 
             if dump_pickle:
-                if self.model_time_variables.simulation_date.minute == 0 and self.model_time_variables.simulation_date.second == 0:
+                if (
+                    self.model_time_variables.simulation_date.minute == 0
+                    and self.model_time_variables.simulation_date.second == 0
+                ):
                     log.debug("Running diagnostic calculations and output")
                     self.compute_model_data(diagnostic_state, prognostic_states.current)
-                    with open("model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl", "wb") as file_obj:
+                    with open(
+                        "model_data_day"
+                        + str(self.model_time_variables.simulation_date.day)
+                        + "_hour"
+                        + str(self.model_time_variables.simulation_date.hour)
+                        + ".pkl",
+                        "wb",
+                    ) as file_obj:
                         model_data = self.pack_data(diagnostic_state)
                         if self.processor_props.rank == 0:
                             pickle.dump(model_data, file_obj)
@@ -779,7 +821,7 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=10.0), # 6: 75, 7:40, 8:20, 9: 10, 10: 5
+        dtime=datetime.timedelta(seconds=10.0),  # 6: 75, 7:40, 8:20, 9: 10, 10: 5
         end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
@@ -860,13 +902,16 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
+    _t0 = time.perf_counter()
     driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
         _read_config(
             output_path=output_path,
             enable_profiling=False,
         )
     )
+    log.warning(f"TIMER: reading config completed in {time.perf_counter() - _t0:.3f}s")
 
+    _t0 = time.perf_counter()
     log.info(f"initializing the grid manager from '{grid_file_path}'")
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -875,24 +920,32 @@ def initialize_driver(
         parallel_props=parallel_props,
         global_reductions=global_reductions,
     )
+    log.warning(f"TIMER: initializing grid manager completed in {time.perf_counter() - _t0:.3f}s")
 
+    _t0 = time.perf_counter()
     log.info("creating the decomposition info")
     decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
+    log.warning(f"TIMER: creating decomposition info completed in {time.perf_counter() - _t0:.3f}s")
 
+    _t0 = time.perf_counter()
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
     )
+    log.warning(f"TIMER: initializing vertical grid completed in {time.perf_counter() - _t0:.3f}s")
 
+    _t0 = time.perf_counter()
     log.info("initializing the JW topography")
     cell_topography = topography.jablonowski_williamson(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
         u0=35.0,
         array_ns=data_alloc.import_array_ns(allocator=allocator),
     )
+    log.warning(f"TIMER: initializing JW topography completed in {time.perf_counter() - _t0:.3f}s")
 
+    _t0 = time.perf_counter()
     log.info("initializing the static-field factories")
     static_field_factories = driver_utils.create_static_field_factories(
         grid_manager=grid_manager,
@@ -903,7 +956,11 @@ def initialize_driver(
         exchange=exchange,
         global_reductions=global_reductions,
     )
+    log.warning(
+        f"TIMER: initializing static-field factories completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
+    _t0 = time.perf_counter()
     log.info("initializing granules")
     (
         diffusion_granule,
@@ -924,6 +981,9 @@ def initialize_driver(
         ),
         backend=backend,
     )
+    log.warning(f"TIMER: initializing granules completed in {time.perf_counter() - _t0:.3f}s")
+
+    _t0 = time.perf_counter()
     icon4py_driver = Icon4pyDriver(
         config=driver_config,
         backend=backend,
@@ -937,5 +997,6 @@ def initialize_driver(
         processor_props=parallel_props,
         exchange=exchange,
     )
+    log.warning(f"TIMER: constructing Icon4pyDriver completed in {time.perf_counter() - _t0:.3f}s")
 
     return icon4py_driver

@@ -52,6 +52,7 @@ from icon4py.model.standalone_driver import config as driver_config, driver_stat
 
 log = logging.getLogger(__name__)
 
+
 _LOGGING_LEVELS: dict[str, int] = {
     "notset": logging.NOTSET,
     "debug": logging.DEBUG,
@@ -174,7 +175,7 @@ def initialize_granules(
     interpolation_field_source = static_field_factories.interpolation_field_source
     metrics_field_source = static_field_factories.metrics_field_source
 
-    log.info("creating cell geometry")
+    _t0 = time.perf_counter()
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
@@ -183,9 +184,9 @@ def initialize_granules(
             geometry_meta.MEAN_CELL_AREA, states_factory.RetrievalType.SCALAR
         ),
     )
+    log.warning(f"TIMER: creating cell geometry completed in {time.perf_counter() - _t0:.3f}s")
 
-    log.info("creating edge geometry")
-    tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION)
+    _t0 = time.perf_counter()
     edge_geometry = grid_states.EdgeParams(
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
         inverse_primal_edge_lengths=geometry_field_source.get(
@@ -212,8 +213,9 @@ def initialize_granules(
         primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
+    log.warning(f"TIMER: creating edge geometry completed in {time.perf_counter() - _t0:.3f}s")
 
-    log.info("creating diffusion interpolation state")
+    _t0 = time.perf_counter()
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
@@ -224,8 +226,11 @@ def initialize_granules(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
+    log.warning(
+        f"TIMER: creating diffusion interpolation state completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
-    log.info("creating diffusion metric state")
+    _t0 = time.perf_counter()
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
@@ -233,8 +238,11 @@ def initialize_granules(
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
+    log.warning(
+        f"TIMER: creating diffusion metric state completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
-    log.info("creating solve nonhydro interpolation state")
+    _t0 = time.perf_counter()
     solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
         c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
@@ -257,8 +265,11 @@ def initialize_granules(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
+    log.warning(
+        f"TIMER: creating solve nonhydro interpolation state completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
-    log.info("creating solve nonhydro metric state")
+    _t0 = time.perf_counter()
     solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
         rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
@@ -317,9 +328,13 @@ def initialize_granules(
         coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
+    log.warning(
+        f"TIMER: creating solve nonhydro metric state completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
     diffusion_params = diffusion.DiffusionParams(diffusion_config)
 
+    _t0 = time.perf_counter()
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=diffusion_config,
@@ -332,9 +347,11 @@ def initialize_granules(
         backend=backend,
         exchange=exchange,
     )
+    log.warning(f"TIMER: creating diffusion granule completed in {time.perf_counter() - _t0:.3f}s")
 
     nonhydro_params = solve_nh.NonHydrostaticParams(solve_nh_config)
 
+    _t0 = time.perf_counter()
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=grid,
         backend=backend,
@@ -348,7 +365,11 @@ def initialize_granules(
         owner_mask=owner_mask,
         exchange=exchange,
     )
+    log.warning(
+        f"TIMER: creating solve nonhydro granule completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
+    _t0 = time.perf_counter()
     advection_granule = advection.convert_config_to_advection(
         grid=grid,
         backend=backend,
@@ -383,6 +404,7 @@ def initialize_granules(
         cell_params=cell_geometry,
         exchange=exchange,
     )
+    log.warning(f"TIMER: creating advection granule completed in {time.perf_counter() - _t0:.3f}s")
 
     return diffusion_granule, solve_nonhydro_granule, advection_granule
 
@@ -603,7 +625,9 @@ def gather_field(field: np.ndarray, props: decomposition_defs.ProcessProperties)
         return field.shape[0], field
     else:
         constant_dims = tuple(field.shape[1:])
-        log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+        log.info(
+            f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}"
+        )
         # Because of sparse indexing the field may have a non-contigous layout,
         # which Gatherv doesn't support. Make sure the field is contiguous.
         field = np.ascontiguousarray(field)
