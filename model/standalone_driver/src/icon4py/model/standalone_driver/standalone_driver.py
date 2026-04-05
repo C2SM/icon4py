@@ -349,15 +349,17 @@ class Icon4pyDriver:
         prognostic_state: prognostics.PrognosticState,
         label: str,
     ) -> None:
-        log.debug(f"Running diagnostic calculations and output ({label})")
-        self.compute_model_data(diagnostic_state, prognostic_state)
-        out_file = self.config.output_path / f"model_data_{label}.pkl"
-        model_data = self.pack_data(diagnostic_state)
-        if self.processor_props.rank == 0:
-            out_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(out_file, "wb") as file_obj:
-                pickle.dump(model_data, file_obj)
-            log.info(f"Wrote output to {out_file}")
+        timer_output = self.timer_collection.timers[driver_states.DriverTimers.OUTPUT.value]
+        with timer_output:
+            log.debug(f"Running diagnostic calculations and output ({label})")
+            self.compute_model_data(diagnostic_state, prognostic_state)
+            out_file = self.config.output_path / f"model_data_{label}.pkl"
+            model_data = self.pack_data(diagnostic_state)
+            if self.processor_props.rank == 0:
+                out_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(out_file, "wb") as file_obj:
+                    pickle.dump(model_data, file_obj)
+                log.info(f"Wrote output to {out_file}")
 
     def _should_dump(
         self,

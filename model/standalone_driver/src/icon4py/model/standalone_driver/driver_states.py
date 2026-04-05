@@ -135,10 +135,13 @@ class OutputFrequency(enum.Enum):
 
 
 class DriverTimers(enum.Enum):
+    TOTAL = "total"
+    INIT = "init"
     SOLVE_NH_FIRST_STEP = "solve_nh_first_step"
     SOLVE_NH = "solve_nh"
     DIFFUSION_FIRST_STEP = "diffusion_first_step"
     DIFFUSION = "diffusion"
+    OUTPUT = "output"
 
 
 @dataclasses.dataclass

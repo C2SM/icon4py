@@ -9,6 +9,7 @@ import logging
 import pathlib
 from typing import Annotated
 
+import devtools
 import typer
 
 from icon4py.model.common import model_backends
@@ -69,37 +70,46 @@ def main(
     The integration can then be executed by calling time_integration function in Icon4pyDriver
     """
 
-    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        output_path=output_path,
-        grid_file_path=grid_file_path,
-        log_level=log_level,
-        backend_name=icon4py_backend,
-        force_serial_run=force_serial_run,
-        dtime=dtime,
-    )
+    timer_total = devtools.Timer(driver_states.DriverTimers.TOTAL.value, dp=6, verbose=False)
+    timer_init = devtools.Timer(driver_states.DriverTimers.INIT.value, dp=6, verbose=False)
 
-    log.info("Generating the initial condition")
-    ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
-        grid=icon4py_driver.grid,
-        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
-        backend=icon4py_driver.backend,
-        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        exchange=icon4py_driver.exchange,
-    )
+    with timer_total:
+        with timer_init:
+            icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+                output_path=output_path,
+                grid_file_path=grid_file_path,
+                log_level=log_level,
+                backend_name=icon4py_backend,
+                force_serial_run=force_serial_run,
+                dtime=dtime,
+            )
 
-    log.info("driver setup: DONE")
-    log.info("time loop: START")
+            log.info("Generating the initial condition")
+            ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+                grid=icon4py_driver.grid,
+                geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
+                interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
+                metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+                backend=icon4py_driver.backend,
+                lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
+                model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
+                stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
+                damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+                exchange=icon4py_driver.exchange,
+            )
 
-    icon4py_driver.time_integration(
-        ds,
-        do_prep_adv=False,
-        output_frequency=driver_states.OutputFrequency(output_frequency),
-    )
+        log.info("driver setup: DONE")
+        log.info("time loop: START")
+
+        # Attach the init and total timers so they appear in the timer report
+        icon4py_driver.timer_collection.timers[driver_states.DriverTimers.TOTAL.value] = timer_total
+        icon4py_driver.timer_collection.timers[driver_states.DriverTimers.INIT.value] = timer_init
+
+        icon4py_driver.time_integration(
+            ds,
+            do_prep_adv=False,
+            output_frequency=driver_states.OutputFrequency(output_frequency),
+        )
 
     log.info("time loop:  DONE")
     return ds, icon4py_driver.decomposition_info
