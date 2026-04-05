@@ -153,10 +153,7 @@ def generate_script(
 
     uenv_lines = ""
     if uenv:
-        uenv_lines = (
-            "#SBATCH --uenv=icon/25.2:v3:/user-environment\n"
-            "#SBATCH --view=default\n"
-        )
+        uenv_lines = "#SBATCH --uenv=icon/25.2:v3:/user-environment\n#SBATCH --view=default\n"
 
     script = textwrap.dedent(f"""\
         #! /bin/bash
@@ -229,7 +226,7 @@ def main():
         action="store_true",
         help="Disable #SBATCH --uenv and --view directives.",
     )
-    parser.add_argument("--backend", default="gtfn_gpu", help="GT4Py backend.")
+    parser.add_argument("--backend", default="dace_gpu", help="GT4Py backend.")
     parser.add_argument(
         "--venv",
         default=None,
