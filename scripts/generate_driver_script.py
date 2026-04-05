@@ -174,7 +174,7 @@ def generate_script(
         source {venv}/bin/activate
 
         export GT4PY_BUILD_CACHE_LIFETIME=PERSISTENT
-        export GT4PY_BUILD_CACHE_DIR=${{JOB_DIR}}/gt4py_cache
+        export GT4PY_BUILD_CACHE_DIR={Path.cwd()}/gt4py_cache
         export LD_LIBRARY_PATH=${{LD_LIBRARY_PATH:-}}:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
         export CC=$(which gcc)
         export CXX=$(which g++)
