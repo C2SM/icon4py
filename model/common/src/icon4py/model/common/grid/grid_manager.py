@@ -655,10 +655,17 @@ def _construct_diamond_vertices(
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
+    # For each edge, find the 2 vertices in the diamond that are NOT on the edge itself.
+    # Compare each flat element against e2v to find matches, then pick the first 2 non-matches.
+    matches = flat[:, :, None] == e2v[:, None, :]  # (n_edges, 6, 2)
+    is_in_e2v = array_ns.any(matches, axis=2)  # (n_edges, 6)
+    is_far = ~is_in_e2v
+    cumsum = array_ns.cumsum(is_far, axis=1)
     far_indices = array_ns.zeros_like(e2v)
-    # TODO(halungge): vectorize speed this up?
-    for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
+    r1, c1 = array_ns.where((cumsum == 1) & is_far)
+    far_indices[r1, 0] = flat[r1, c1]
+    r2, c2 = array_ns.where((cumsum == 2) & is_far)
+    far_indices[r2, 1] = flat[r2, c2]
     return array_ns.hstack((e2v, far_indices))
 
 
