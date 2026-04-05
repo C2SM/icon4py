@@ -171,10 +171,8 @@ def compute_diffusion_intcoef_and_vertoffset(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
-    z_mc_off = z_mc[c2e2c]
-    nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
+    z_mc_off = z_mc[c2e2c]  # (n_cells, n_c2e2c, nlev)
 
-    z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_vertoffset = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
     zd_intcoef = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
 
@@ -190,21 +188,66 @@ def compute_diffusion_intcoef_and_vertoffset(
         array_ns=array_ns,
     )
 
-    # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
-    for jc in range(cell_nudging, n_cells):
-        kend = k_end[jc].item()
-        kstart = k_start[jc].item()
-        if kend > kstart:
-            k_range = range(kstart, kend)
-            nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
-            z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
-                k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev
+    # Identify active cells (those with non-empty k_range above nudging boundary)
+    cell_indices = array_ns.arange(n_cells)
+    active = array_ns.where((k_end > k_start) & (cell_indices >= cell_nudging))[0]
+    n_active = len(active)
+
+    if n_active > 0:
+        z_mc_active = z_mc[active, :]  # (n_active, nlev)
+        kstart_active = k_start[active]
+        kend_active = k_end[active]
+
+        # Level mask: True where level is in [kstart, kend) for each active cell
+        level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]  # (1, nlev)
+        k_mask = (level_idx >= kstart_active[:, array_ns.newaxis]) & (
+            level_idx < kend_active[:, array_ns.newaxis]
+        )  # (n_active, nlev)
+
+        for ind in range(n_c2e2c):
+            profile = z_mc_off[active, ind, :]  # (n_active, nlev), monotonically decreasing
+
+            # Row-wise searchsorted using offset trick:
+            # Negate profiles (ascending) and add per-row offsets to separate rows
+            neg_profile = -profile
+            neg_query = -z_mc_active
+
+            val_range = max(float(neg_profile.max() - neg_profile.min()), 1.0)
+            row_offsets = array_ns.arange(n_active, dtype=array_ns.float64) * val_range
+
+            flat_sorted = (neg_profile + row_offsets[:, array_ns.newaxis]).ravel()
+            flat_query = (neg_query + row_offsets[:, array_ns.newaxis]).ravel()
+
+            flat_idx = array_ns.searchsorted(flat_sorted, flat_query, side="right")
+            raw_idx = (
+                flat_idx.reshape(n_active, nlev)
+                - array_ns.arange(n_active)[:, array_ns.newaxis] * nlev
+                - 1
             )
 
-            zd_intcoef[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
+            # Mark entries where no valid bracketing interval was found:
+            # raw_idx < 0 means query is above the entire profile,
+            # raw_idx > nlev-2 means query is below the entire profile.
+            valid_bracket = (raw_idx >= 0) & (raw_idx <= nlev - 2)
+            idx_2d = array_ns.clip(raw_idx, 0, nlev - 2)
 
-            zd_vertoffset[jc, :, k_range] = (
-                nbidx[jc, :, k_range] - array_ns.tile(array_ns.array(k_range), (3, 1)).T
+            # Interpolation coefficients
+            upper = array_ns.take_along_axis(profile, idx_2d, axis=1)
+            lower = array_ns.take_along_axis(profile, idx_2d + 1, axis=1)
+            denom = upper - lower
+            denom = array_ns.where(denom == 0.0, 1.0, denom)
+            vintcoeff = (z_mc_active - lower) / denom
+
+            # For invalid brackets, use original defaults: vintcoeff=0, nbidx=1
+            vintcoeff = array_ns.where(valid_bracket, vintcoeff, 0.0)
+            idx_2d = array_ns.where(valid_bracket, idx_2d, 1)
+
+            # Write results only for valid k_range levels
+            zd_intcoef[active[:, array_ns.newaxis], ind, level_idx] = array_ns.where(
+                k_mask, vintcoeff, 0.0
+            )
+            zd_vertoffset[active[:, array_ns.newaxis], ind, level_idx] = array_ns.where(
+                k_mask, (idx_2d - level_idx).astype(gtx.int32), gtx.int32(0)
             )
 
     return zd_intcoef, zd_vertoffset

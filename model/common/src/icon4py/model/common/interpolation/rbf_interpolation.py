@@ -13,7 +13,6 @@ from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
-import scipy.linalg as sla
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -332,7 +331,6 @@ def _compute_rbf_interpolation_coeffs(
     rbf_offset_shape_full = rbf_offset.shape
     assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
-    num_elements = rbf_offset.shape[0]
 
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
@@ -448,14 +446,21 @@ def _compute_rbf_interpolation_coeffs(
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
     z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
     rhs_np = [data_alloc.as_numpy(x) for x in rhs]
-    for i in range(num_elements):
-        valid_neighbors = np.where(rbf_offset_np[i, :] >= 0)[0]
-        rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])
-        z_diag_np = sla.cho_factor(rbfmat_np)
+
+    # Batch solve by grouping elements with the same number of valid neighbors.
+    # In ICON grids, valid entries in connectivity tables are contiguous from the start.
+    n_valid = (rbf_offset_np >= 0).sum(axis=1)
+    for nv in np.unique(n_valid):
+        if nv == 0:
+            continue
+        group_idx = np.where(n_valid == nv)[0]
+        valid_cols = np.arange(nv)
+        mat_batch = z_rbfmat_np[np.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
-            rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
-                z_diag_np, rhs_np[j][i, valid_neighbors]
-            )
+            rhs_batch = rhs_np[j][np.ix_(group_idx, valid_cols)]
+            sol = np.linalg.solve(mat_batch, rhs_batch[:, :, np.newaxis])[:, :, 0]
+            rbf_vec_coeff_np[j][group_idx + horizontal_start, :nv] = sol
+
     rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])
 
     # Normalize coefficients
