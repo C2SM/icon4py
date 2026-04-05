@@ -11,9 +11,7 @@
 
 import argparse
 import math
-import os
 import re
-import subprocess
 import textwrap
 from pathlib import Path
 
@@ -44,32 +42,6 @@ DEFAULT_GRID_FILES = {
     (2, 9): f"{GRID_DIR}/icon_grid_0015_R02B09_G.nc",
     (2, 10): f"{GRID_DIR}/icon_grid_0017_R02B10_G.nc",
 }
-
-
-def _detect_slurm_account() -> str:
-    """Try to detect the default SLURM account for the current user."""
-    try:
-        result = subprocess.run(
-            [
-                "sacctmgr",
-                "show",
-                "user",
-                os.environ.get("USER", ""),
-                "withassoc",
-                "format=DefaultAccount",
-                "--noheader",
-                "--parsable2",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip().split("\n")[0]
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-    return "cwd01"
 
 
 def parse_resolution(grid_file: str) -> tuple[int, int] | None:
@@ -245,7 +217,7 @@ def main():
         "--bisection", type=int, default=None, help="Grid bisection level (e.g. 9)."
     )
     parser.add_argument("--time", default="2:00:00", help="SLURM wall-clock time limit.")
-    parser.add_argument("--account", default=None, help="SLURM account (auto-detected if not set).")
+    parser.add_argument("--account", default="cwd01", help="SLURM account.")
     parser.add_argument("--backend", default="gtfn_gpu", help="GT4Py backend.")
     parser.add_argument(
         "--venv",
@@ -255,15 +227,13 @@ def main():
     parser.add_argument("--log-level", default="warning", help="Python log level.")
     args = parser.parse_args()
 
-    account = args.account if args.account else _detect_slurm_account()
-
     script, wrapper, job_name = generate_script(
         grid_file=args.grid_file,
         ranks=args.ranks,
         root=args.root,
         bisection=args.bisection,
         time=args.time,
-        account=account,
+        account=args.account,
         backend=args.backend,
         venv=args.venv,
         log_level=args.log_level,
