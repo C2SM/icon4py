@@ -1,12 +1,12 @@
 #! /bin/bash
-#SBATCH --job-name=icon4py_driver_r2b9_64nodes
-#SBATCH --output=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output_%j/log_stdout.txt
-#SBATCH --error=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output_%j/log
+#SBATCH --job-name=icon4py_driver_r2b6_8nodes
+#SBATCH --output=/capstor/scratch/cscs/cong/run/r2b6_8nodes/output_%j/log_stdout.txt
+#SBATCH --error=/capstor/scratch/cscs/cong/run/r2b6_8nodes/output_%j/log
 #SBATCH --account=cwd01
 #SBATCH --uenv=icon/25.2:v3:/user-environment
 #SBATCH --view=default
-#SBATCH --nodes=64
-#SBATCH --ntasks-per-node=1
+#SBATCH --nodes=8
+#SBATCH --ntasks-per-node=4
 #SBATCH --partition=normal
 #SBATCH --time=12:00:00
 
@@ -30,8 +30,8 @@ export GHEX_GPU_TYPE=NVIDIA
 export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export PYTHONOPTIMIZE=1
-export OUTPUT_PATH=/capstor/scratch/cscs/cong/run/r2b8_10nodes/output
-export INPUT_GRID=/capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0033_R02B08_G.nc
+export OUTPUT_PATH=/capstor/scratch/cscs/cong/run/r2b6_8nodes/output
+export INPUT_GRID=/capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0002_R02B06_G.nc
 
-python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --output-path $OUTPUT_PATH --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning
+srun python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --output-path $OUTPUT_PATH --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning
 
