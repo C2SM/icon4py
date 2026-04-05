@@ -240,6 +240,11 @@ def main():
     )
 
     out_dir = Path.cwd() / job_name
+    if out_dir.exists():
+        answer = input(f"{out_dir}/ already exists. Override? [y/N] ").strip().lower()
+        if answer != "y":
+            raise SystemExit("Aborted.")
+
     out_dir.mkdir(parents=True, exist_ok=True)
 
     script_path = out_dir / f"{job_name}.sh"
