@@ -104,6 +104,8 @@ class Icon4pyDriver:
             self.config,
         )
         
+        self._compute_global_index_mapping()        
+            
         self.setup_diagnostic_stencils()
         
         self.tracer_state = tracers.TracerState(
@@ -151,6 +153,16 @@ class Icon4pyDriver:
             ),
         )
 
+    def _compute_global_index_mapping(self) -> None:
+        global_index_sizes, gathered_global_indices = driver_utils.gather_field(
+                data_alloc.as_numpy(
+                    self.decomposition_info.global_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                ),
+                self.processor_props,
+            )
+        self.global_index_sizes = global_index_sizes
+        self.gathered_global_indices = gathered_global_indices
+    
     def setup_diagnostic_stencils(self):
         cell_domain = h_grid.domain(dims.CellDim)
 
@@ -285,18 +297,12 @@ class Icon4pyDriver:
             ]
             gathered_sizes, gathered_field = driver_utils.gather_field(owned_entries, self.processor_props)
 
-            global_index_sizes, gathered_global_indices = driver_utils.gather_field(
-                data_alloc.as_numpy(
-                    self.decomposition_info.global_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
-                ),
-                self.processor_props,
-            )
             if self.processor_props.rank == 0:
-                assert np.all(gathered_sizes == global_index_sizes), (
-                    f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {global_index_sizes}"
+                assert np.all(gathered_sizes == self.global_index_sizes), (
+                    f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {self.global_index_sizes}"
                 )
                 sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
-                sorted_[gathered_global_indices] = gathered_field
+                sorted_[self.gathered_global_indices] = gathered_field
                 gathered_model_data[k] = sorted_
         return gathered_model_data
 
