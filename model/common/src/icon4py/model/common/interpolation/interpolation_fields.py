@@ -699,13 +699,25 @@ def _create_inverse_neighbor_index(
 
     """
     inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
-    source_offset[inverse_offset]
-    for jc in range(inverse_offset.shape[0]):
-        for i in range(inverse_offset.shape[1]):
-            if inverse_offset[jc, i] >= 0:
-                inverse_nn = array_ns.argwhere(source_offset[inverse_offset[jc, i], :] == jc)
-                # TODO (halungge): this happens for halo cells, need to handle this properly, ICON runs only over owned indices
-                inv_neighbor_idx[jc, i] = inverse_nn[0, 0] if len(inverse_nn) > 0 else MISSING
+    n_rows, n_cols = inverse_offset.shape
+    n_src_cols = source_offset.shape[1]
+
+    for i in range(n_cols):
+        nbr = inverse_offset[:, i]  # (n_rows,)
+        valid = nbr >= 0
+        if not array_ns.any(valid):
+            continue
+        # For each valid (jc, i): find which column k in source_offset[nbr[jc], :] == jc
+        nbr_v = nbr[valid]
+        jc_v = array_ns.arange(n_rows)[valid]
+        # source_offset[nbr_v, :] has shape (n_valid, n_src_cols)
+        src_rows = source_offset[nbr_v, :]  # (n_valid, n_src_cols)
+        # compare each column to jc_v
+        matches = src_rows == jc_v[:, array_ns.newaxis]  # (n_valid, n_src_cols)
+        # argmax on axis=1 gives first True index; but need to handle no-match
+        has_match = array_ns.any(matches, axis=1)
+        first_match = array_ns.argmax(matches, axis=1)
+        inv_neighbor_idx[jc_v[has_match], i] = first_match[has_match].astype(gtx.int32)
 
     return inv_neighbor_idx
 
@@ -910,34 +922,52 @@ def compute_cells_aw_verts(
         aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     cells_aw_verts = array_ns.zeros(v2e.shape)
-    for jv in range(horizontal_start, cells_aw_verts.shape[0]):
-        for je in range(v2e.shape[1]):
-            # INVALID_INDEX
-            if v2e[jv, je] == MISSING or (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
-                continue
-            ile = v2e[jv, je]
-            idx_ve = 0 if e2v[ile, 0] == jv else 1
-            cell_offset_idx_0 = e2c[ile, 0]
-            cell_offset_idx_1 = e2c[ile, 1]
-            for jc in range(v2e.shape[1]):
-                if v2c[jv, jc] == MISSING or (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
-                    continue
-                if cell_offset_idx_0 == v2c[jv, jc]:
-                    cells_aw_verts[jv, jc] = (
-                        cells_aw_verts[jv, jc]
-                        + 0.5
-                        / dual_area[jv]
-                        * edge_vert_length[ile, idx_ve]
-                        * edge_cell_length[ile, 0]
-                    )
-                elif cell_offset_idx_1 == v2c[jv, jc]:
-                    cells_aw_verts[jv, jc] = (
-                        cells_aw_verts[jv, jc]
-                        + 0.5
-                        / dual_area[jv]
-                        * edge_vert_length[ile, idx_ve]
-                        * edge_cell_length[ile, 1]
-                    )
+    num_verts = cells_aw_verts.shape[0]
+    num_edges_per_vert = v2e.shape[1]
+
+    # Precompute valid v2c mask: skip MISSING and consecutive duplicates (matching original logic)
+    v2c_valid = array_ns.ones(v2c.shape, dtype=bool)
+    v2c_valid[:, 0] = v2c[:, 0] != MISSING
+    for jc in range(1, v2c.shape[1]):
+        v2c_valid[:, jc] = (v2c[:, jc] != MISSING) & (v2c[:, jc] != v2c[:, jc - 1])
+
+    for je in range(num_edges_per_vert):
+        # edges for all vertices in this slot
+        edges = v2e[horizontal_start:, je]  # (n_verts_active,)
+        jv_range = array_ns.arange(horizontal_start, num_verts)
+
+        # skip invalid or duplicate edges
+        valid = edges != MISSING
+        if je > 0:
+            valid &= edges != v2e[horizontal_start:, je - 1]
+
+        edges_v = edges[valid]
+        jv_v = jv_range[valid]
+
+        # determine which vertex endpoint this is (0 or 1)
+        idx_ve = array_ns.where(e2v[edges_v, 0] == jv_v, 0, 1)
+
+        # contribution = 0.5 / dual_area[jv] * edge_vert_length[edge, idx_ve]
+        contrib_base = 0.5 / dual_area[jv_v] * edge_vert_length[edges_v, idx_ve]
+
+        # cells adjacent to each edge
+        cell0 = e2c[edges_v, 0]
+        cell1 = e2c[edges_v, 1]
+        contrib0 = contrib_base * edge_cell_length[edges_v, 0]
+        contrib1 = contrib_base * edge_cell_length[edges_v, 1]
+        # When both cells of an edge are the same, the original uses the if-branch only
+        # (cell_offset_idx_0 match), so cell1 should not also match.
+        same_cell = cell0 == cell1
+
+        # match against v2c to find which jc slot each cell belongs to
+        for jc in range(num_edges_per_vert):
+            vc = v2c[jv_v, jc]
+            vc_ok = v2c_valid[jv_v, jc]
+            match0 = vc_ok & (cell0 == vc)
+            match1 = vc_ok & (cell1 == vc) & ~same_cell
+            cells_aw_verts[jv_v[match0], jc] += contrib0[match0]
+            cells_aw_verts[jv_v[match1], jc] += contrib1[match1]
+
     exchange(cells_aw_verts)
     return cells_aw_verts
 
@@ -1164,15 +1194,38 @@ def compute_lsq_pseudoinv(
     lsq_dim_c: int,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    for jjb in range(lsq_dim_c):
-        for jjk in range(lsq_dim_unk):
-            for jc in range(start_idx, min_rlcell_int):
-                if cell_owner_mask[jc]:
-                    u, s, v_t = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
-                    lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
-                        lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
-                        + v_t[jjk, :lsq_dim_unk] / s[jjk] * u[jjb, jjk] * lsq_weights_c[jc, jjb]
-                    )
+    mask = cell_owner_mask[start_idx:min_rlcell_int]
+    owned = array_ns.where(mask)[0]
+    if len(owned) == 0:
+        return lsq_pseudoinv
+
+    abs_idx = owned + start_idx
+    # batch SVD: one call for all owned cells
+    u_all, s_all, vt_all = array_ns.linalg.svd(z_lsq_mat_c[abs_idx, :, :])
+    # u_all:  (n_owned, lsq_dim_c, lsq_dim_c)
+    # s_all:  (n_owned, min(lsq_dim_c, lsq_dim_c))
+    # vt_all: (n_owned, lsq_dim_c, lsq_dim_c)
+
+    # Reconstruct pseudoinverse contribution:
+    # lsq_pseudoinv[jc, :lsq_dim_unk, jjb] += sum_k( vt[k, :lsq_dim_unk] / s[k] * u[jjb, k] * w[jc, jjb] )
+    # = w[jc, jjb] * sum_k( vt[k, :lsq_dim_unk] * u[jjb, k] / s[k] )
+    #
+    # Vectorized: pinv_contrib[n, unk, b] = w[n, b] * sum_k( vt[n, k, :unk] * u[n, b, k] / s[n, k] )
+    inv_s = 1.0 / s_all[:, :lsq_dim_unk]  # (n_owned, lsq_dim_unk)
+    # vt[:, :lsq_dim_unk, :lsq_dim_unk] scaled by 1/s: (n_owned, lsq_dim_unk, lsq_dim_unk)
+    vt_scaled = vt_all[:, :lsq_dim_unk, :lsq_dim_unk] * inv_s[:, :, array_ns.newaxis]
+    # contract over k:  result[n, unk, b] = sum_k u[n, b, k] * vt_scaled[n, k, unk]
+    # u[:, :lsq_dim_c, :lsq_dim_unk]: (n_owned, lsq_dim_c, lsq_dim_unk)
+    # vt_scaled: (n_owned, lsq_dim_unk, lsq_dim_unk)
+    # want: pinv[n, unk, b] = sum_k( vt_scaled[n, k, unk] * u[n, b, k] )
+    #                       = (vt_scaled^T @ u^T)[n, unk, b] ... but simpler with einsum
+    pinv = array_ns.einsum(
+        "nku,nbk->nub", vt_scaled, u_all[:, :lsq_dim_c, :lsq_dim_unk]
+    )  # (n_owned, lsq_dim_unk, lsq_dim_c)
+    # multiply by weights: pinv[n, unk, b] *= w[n, b]
+    weights = lsq_weights_c[abs_idx, :lsq_dim_c]  # (n_owned, lsq_dim_c)
+    pinv *= weights[:, array_ns.newaxis, :]
+    lsq_pseudoinv[abs_idx, :lsq_dim_unk, :lsq_dim_c] = pinv
     return lsq_pseudoinv
 
 
@@ -1183,10 +1236,11 @@ def compute_lsq_weights_c(
     lsq_wgt_exp: int,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    for js in range(lsq_dim_stencil):
-        z_norm = array_ns.sqrt(array_ns.dot(z_dist_g[js, :], z_dist_g[js, :]))
-        lsq_weights_c_jc[js] = 1.0 / (z_norm**lsq_wgt_exp)
-    return lsq_weights_c_jc / array_ns.max(lsq_weights_c_jc)
+    # z_dist_g shape: (lsq_dim_stencil, 2)
+    z_norms = array_ns.sqrt(array_ns.sum(z_dist_g[:lsq_dim_stencil] ** 2, axis=-1))
+    lsq_weights_c_jc[:lsq_dim_stencil] = 1.0 / (z_norms**lsq_wgt_exp)
+    lsq_weights_c_jc[:lsq_dim_stencil] /= array_ns.max(lsq_weights_c_jc[:lsq_dim_stencil])
+    return lsq_weights_c_jc
 
 
 def compute_z_lsq_mat_c(
@@ -1270,18 +1324,29 @@ def compute_lsq_coeffs(
                     )
                 z_dist_g[jc, :, :] = cc_cell - cc_cv
 
-    for jc in range(start_idx, min_rlcell_int):
-        lsq_weights_c[jc, :] = compute_lsq_weights_c(
-            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp, array_ns
+    # Vectorize weights: compute norms across all cells at once
+    # z_dist_g shape: (min_rlcell_int, lsq_dim_c, 2)
+    z_norms = array_ns.sqrt(
+        array_ns.sum(z_dist_g[start_idx:min_rlcell_int, :lsq_dim_stencil, :] ** 2, axis=-1)
+    )
+    # z_norms shape: (n_cells, lsq_dim_stencil)
+    raw_weights = 1.0 / (z_norms**lsq_wgt_exp)
+    max_weights = array_ns.max(raw_weights, axis=-1, keepdims=True)
+    lsq_weights_c[start_idx:min_rlcell_int, :lsq_dim_stencil] = raw_weights / max_weights
+
+    # Vectorize z_lsq_mat_c construction
+    # For owned cells, set diagonal to 1.0 first
+    owned_mask = cell_owner_mask[start_idx:min_rlcell_int]
+    min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
+    for d in range(min_lsq_bound):
+        z_lsq_mat_c[start_idx:min_rlcell_int, d, d] = array_ns.where(
+            owned_mask, 1.0, z_lsq_mat_c[start_idx:min_rlcell_int, d, d]
         )
-        z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
-            cell_owner_mask,
-            z_lsq_mat_c,
-            lsq_weights_c,
-            z_dist_g[jc, :, :],
-            jc,
-            lsq_dim_unk,
-            lsq_dim_c,
+    # z_lsq_mat_c[jc, js, :lsq_dim_unk] = lsq_weights_c[jc, js] * z_dist_g[jc, js, :]
+    for js in range(lsq_dim_c):
+        z_lsq_mat_c[start_idx:min_rlcell_int, js, :lsq_dim_unk] = (
+            lsq_weights_c[start_idx:min_rlcell_int, js : js + 1]
+            * z_dist_g[start_idx:min_rlcell_int, js, :lsq_dim_unk]
         )
 
     exchange(lsq_weights_c)
