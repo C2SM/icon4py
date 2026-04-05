@@ -48,21 +48,31 @@ class MetisDecomposer(Decomposer):
         This method utilizes the pymetis Python bindings:
         https://github.com/inducer/pymetis
 
+        Uses the CSR (xadj/adjncy) interface instead of the Pythonic adjacency
+        interface to avoid slow Python list-of-lists conversion for large grids.
+
         Args:
-            n_part: int, number of partitions to create
+            num_partitions: int, number of partitions to create
             adjacency_matrix: nd array: neighbor table describing of the main dimension object to be distributed: for example cell -> cell neighbors
         Returns: data_alloc.NDArray: array with partition label (int, rank number) for each cell
         """
-
+        import numpy as np
         import pymetis  # type: ignore [import-untyped]
 
         # Invalid indices are not allowed here. Metis will segfault or fail if
         # there are any invalid indices in the adjacency matrix.
-        assert (adjacency_matrix >= 0).all()
+        adj = np.asarray(adjacency_matrix)
+        assert (adj >= 0).all()
+
+        # Build CSR format (xadj/adjncy) from the dense adjacency matrix.
+        # For C2E2C the matrix is (n_cells, n_neighbors_per_cell) with fixed width.
+        n_nodes, n_neighbors = adj.shape
+        xadj = np.arange(0, (n_nodes + 1) * n_neighbors, n_neighbors, dtype=np.int32)
+        adjncy = adj.ravel().astype(np.int32)
 
         # The partitioning is done on all ranks, and this assumes that the
         # partitioning is deterministic.
-        _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
+        _, partition_index = pymetis.part_graph(nparts=num_partitions, xadj=xadj, adjncy=adjncy)
         return data_alloc.array_namespace(adjacency_matrix).array(partition_index)
 
 
