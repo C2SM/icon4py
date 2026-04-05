@@ -858,7 +858,7 @@ def initialize_driver(
                 output_path.parent
                 / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
             )
-
+            output_path.mkdir(parents=True, exist_ok=False)
         else:
             output_path.mkdir(parents=True, exist_ok=False)
 
