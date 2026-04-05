@@ -405,7 +405,7 @@ class Icon4pyDriver:
                 tracer_prep_adv,
                 diagnostic_state,
             )
-            device_utils.sync(self.backend)
+            device_utils.sync(self._allocator)
 
             if dump_pickle:
                 if (
@@ -474,6 +474,7 @@ class Icon4pyDriver:
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
+                device_utils.sync(self._allocator)
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
@@ -563,6 +564,7 @@ class Icon4pyDriver:
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )
+                device_utils.sync(self._allocator)
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
