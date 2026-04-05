@@ -25,13 +25,12 @@ export CXX=$(which g++)
 export MPICH_CC=$(which gcc)
 export MPICH_CXX=$(which g++)
 export MPICH_GPU_SUPPORT_ENABLED=1
-export GHEX_USE_GPU=ON
-export GHEX_GPU_TYPE=NVIDIA
-export GHEX_GPU_ARCH=90
-export GHEX_TRANSPORT_BACKEND=MPI
+export FI_CXI_RX_MATCH_MODE=software
+export FI_MR_CACHE_MONITOR=disabled
+export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=0
+export CUPY_CACHE_IN_MEMORY=1
 export PYTHONOPTIMIZE=1
 export OUTPUT_PATH=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output
 export INPUT_GRID=/capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0015_R02B09_G.nc
 
-python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --output-path $OUTPUT_PATH --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning
-
+srun python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --output-path $OUTPUT_PATH --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning
