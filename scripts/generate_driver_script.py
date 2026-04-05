@@ -63,13 +63,25 @@ def parse_resolution(grid_file: str) -> tuple[int, int] | None:
     return None
 
 
+def is_structured_decomp_compatible(root: int, bisection: int, ranks: int) -> bool:
+    """Check if a rank count is compatible with the StructuredDecomposer."""
+    n_blocks = 20 * root**2
+    return any((n_blocks * 4**k) % ranks == 0 for k in range(bisection + 1))
+
+
 def get_default_ranks(root: int, bisection: int) -> int:
     key = (root, bisection)
     if key in DEFAULT_RANKS:
         return DEFAULT_RANKS[key]
-    # Fallback: scale from r2b8 baseline (8 ranks for ~5.2M cells)
+    # Fallback: scale from target cells per rank, then round to nearest compatible count
     num_cells = 20 * root**2 * 4**bisection
-    return max(1, round(num_cells / 650_000))
+    target = max(1, round(num_cells / 650_000))
+    # Search for nearest compatible rank count
+    for offset in range(target + 1):
+        for candidate in (target + offset, target - offset):
+            if candidate >= 1 and is_structured_decomp_compatible(root, bisection, candidate):
+                return candidate
+    return target
 
 
 RUN_WRAPPER = textwrap.dedent("""\
@@ -135,6 +147,27 @@ def generate_script(  # noqa: PLR0912
     # Resolve rank count
     if ranks is None:
         ranks = get_default_ranks(res_root, res_bisection)
+
+    # Validate rank count is compatible with StructuredDecomposer
+    if ranks > 1 and not is_structured_decomp_compatible(res_root, res_bisection, ranks):
+        n_blocks = 20 * res_root**2
+        compatible = sorted(
+            {
+                d
+                for k in range(res_bisection + 1)
+                for n_sub in [n_blocks * 4**k]
+                for d in range(2, n_sub + 1)
+                if n_sub % d == 0
+            }
+        )
+        # Show a manageable subset around the requested value
+        nearby = [r for r in compatible if abs(r - ranks) <= max(ranks // 2, 20)]
+        raise SystemExit(
+            f"Error: {ranks} ranks is not compatible with StructuredDecomposer "
+            f"for {res_tag} (will fall back to slow METIS partitioning).\n"
+            f"Compatible rank counts near {ranks}: {nearby}\n"
+            f"Use one of these values, or accept the METIS fallback at runtime."
+        )
 
     nodes = math.ceil(ranks / GPUS_PER_NODE)
     ntasks_per_node = min(ranks, GPUS_PER_NODE)

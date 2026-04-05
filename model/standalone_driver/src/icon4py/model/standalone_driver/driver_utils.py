@@ -63,6 +63,14 @@ _LOGGING_LEVELS: dict[str, int] = {
 }
 
 
+def _read_grid_root_level(grid_file_path: pathlib.Path) -> tuple[int, int]:
+    """Read grid_root and grid_level attributes from an ICON grid file."""
+    import netCDF4
+
+    with netCDF4.Dataset(str(grid_file_path), "r") as ds:
+        return int(ds.getncattr("grid_root")), int(ds.getncattr("grid_level"))
+
+
 def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
@@ -70,11 +78,27 @@ def create_grid_manager(
     parallel_props: decomposition_defs.ProcessProperties,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
-    decomposer = (
-        decomp.MetisDecomposer()
-        if not parallel_props.is_single_rank()
-        else decomp.SingleNodeDecomposer()
-    )
+    if parallel_props.is_single_rank():
+        decomposer = decomp.SingleNodeDecomposer()
+    else:
+        grid_root, grid_level = _read_grid_root_level(grid_file_path)
+        try:
+            decomposer = decomp.StructuredDecomposer(grid_root, grid_level)
+            # Validate that the rank count is supported before proceeding
+            n_blocks = 20 * grid_root**2
+            valid = False
+            for k in range(grid_level + 1):
+                if (n_blocks * 4**k) % parallel_props.comm_size == 0:
+                    valid = True
+                    break
+            if not valid:
+                raise ValueError()
+        except ValueError:
+            log.warning(
+                f"StructuredDecomposer does not support {parallel_props.comm_size} ranks "
+                f"for root={grid_root}, level={grid_level}. Falling back to MetisDecomposer."
+            )
+            decomposer = decomp.MetisDecomposer()
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,

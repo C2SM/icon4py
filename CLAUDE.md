@@ -38,6 +38,31 @@ When running the same setup with different MPI rank counts (1, 2, 4), dynamic fi
 - ranks2 vs ranks4: ~1e-9 relative (pressure), ~1e-8 relative (temperature) -- excellent
 - ranks1 vs ranks2: ~1e-8 relative (pressure), ~1e-7 relative (temperature) -- good, limited by stencil-level differences
 
+## Grid decomposition and performance
+
+### ICON grid structure
+
+- ICON grids with root R and bisection level B have `20*R²` base diamond blocks, each containing `4^B` cells in contiguous index order.
+- Cells within each block follow a recursive quad-tree subdivision: groups of `4^k` contiguous cells are always spatially compact.
+- Cross-block boundary connectivity is ~6% of all neighbor references at block level.
+
+### Decomposers (`model/common/src/icon4py/model/common/decomposition/decomposer.py`)
+
+- **StructuredDecomposer** (added 2026-04): Exploits the structured cell ordering. Assigns contiguous groups of (sub-)blocks to ranks. Sub-millisecond execution. Supported rank counts: any divisor of `20*R² * 4^k` for k=0,...,B. For R02 grids (80 base blocks): 1, 2, 4, 5, 8, 10, 16, 20, 32, 40, 64, 80, 128, 160, 256, 320, 512, ...
+- **MetisDecomposer**: Uses pymetis (CSR interface) for graph partitioning. Slow for large grids (~215s at r2b8, expected worse at r2b9). Used as fallback when rank count is not compatible with StructuredDecomposer.
+- **SingleNodeDecomposer**: Assigns all cells to rank 0.
+- Selection logic in `driver_utils.py::create_grid_manager()`: uses StructuredDecomposer by default, falls back to MetisDecomposer if rank count incompatible.
+
+### Grid init performance timers
+
+- `grid_manager.py` has fine-grained TIMER log lines (WARNING level) for all steps in `__call__` and `_construct_decomposed_grid`.
+- At r2b8/32 ranks: decomposer was the dominant cost (215s with METIS, now \<1ms with StructuredDecomposer). Derived connectivities is second (~28s).
+
+### Script generation
+
+- `scripts/generate_driver_script.py`: generates SLURM submission scripts. Validates that `--ranks` is compatible with StructuredDecomposer, suggests nearby valid counts on error.
+- `DEFAULT_RANKS` table maps (root, bisection) to recommended rank counts, all verified compatible with StructuredDecomposer.
+
 ## Development notes
 
 - Comparison script: `scripts/compare_rank_outputs.py` compares pickle dumps field-by-field
