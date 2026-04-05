@@ -14,7 +14,7 @@
 # santis build command:
 # GHEX_USE_GPU=ON GHEX_GPU_TYPE=NVIDIA GHEX_GPU_ARCH=90 GHEX_TRANSPORT_BACKEND=MPI CC=$(which gcc) CXX=$(which g++) MPICH_CXX=$(which g++) MPICH_CC=$(which gcc) uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --no-cache
 
-source /capstor/scratch/cscs/cong/icon4py/.venv/bin/activate
+source /capstor/scratch/cscs/cong/icon4py/.venv/bin/activate || { echo "Venv activation failed"; exit 1; }
 
 export GT4PY_BUILD_CACHE_LIFETIME=PERSISTENT
 export GT4PY_BUILD_CACHE_DIR=/capstor/scratch/cscs/cong/tmp_gpu/
@@ -30,8 +30,8 @@ export GHEX_GPU_TYPE=NVIDIA
 export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export PYTHONOPTIMIZE=1
-export OUTPUT_PATH=/capstor/scratch/cscs/cong/run/r2b9_64nodes/output
-export INPUT_GRID=/capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0015_R02B09_G.nc
+export OUTPUT_PATH=/capstor/scratch/cscs/cong/run/r2b8_10nodes/output
+export INPUT_GRID=/capstor/store/cscs/userlab/cwd01/cong/grids/icon_grid_0033_R02B08_G.nc
 
 python /capstor/scratch/cscs/cong/icon4py/model/standalone_driver/src/icon4py/model/standalone_driver/main.py --output-path $OUTPUT_PATH --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning
 

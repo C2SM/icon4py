@@ -341,7 +341,8 @@ class Icon4pyDriver:
         if dump_pickle:
             log.debug("Running diagnostic calculations and output")
             self.compute_model_data(diagnostic_state, prognostic_states.current)
-            with open("model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl", "wb") as file_obj:
+            pickle_file_name = "model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl"
+            with open(self.config.output_path / pickle_file_name, "wb") as file_obj:
                 model_data = self.pack_data(diagnostic_state)
                 if self.processor_props.rank == 0:
                     pickle.dump(model_data, file_obj)
@@ -379,7 +380,8 @@ class Icon4pyDriver:
                 if self.model_time_variables.simulation_date.minute == 0 and self.model_time_variables.simulation_date.second == 0:
                     log.debug("Running diagnostic calculations and output")
                     self.compute_model_data(diagnostic_state, prognostic_states.current)
-                    with open("model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl", "wb") as file_obj:
+                    pickle_file_name = "model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl"
+                    with open(self.config.output_path / pickle_file_name, "wb") as file_obj:
                         model_data = self.pack_data(diagnostic_state)
                         if self.processor_props.rank == 0:
                             pickle.dump(model_data, file_obj)
@@ -779,7 +781,7 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=10.0), # 6: 75, 7:40, 8:20, 9: 10, 10: 5
+        dtime=datetime.timedelta(seconds=75.0), # 6: 75, 7:40, 8:20, 9: 10, 10: 5
         end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
@@ -853,6 +855,8 @@ def initialize_driver(
 
         else:
             output_path.mkdir(parents=True, exist_ok=False)
+
+    log.debug(f"processor_procs: {parallel_props}, comm size: {parallel_props.comm_size}, is single rank: {parallel_props.is_single_rank}, comm rank: {parallel_props.rank}")
 
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
