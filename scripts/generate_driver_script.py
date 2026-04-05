@@ -100,6 +100,7 @@ def generate_script(  # noqa: PLR0912
     venv: str | None,
     log_level: str,
     dtime: float | None = None,
+    output_frequency: str = "none",
     uenv: bool = True,
 ) -> tuple[str, str, str]:
     """Return (slurm_script, run_wrapper, job_name) strings."""
@@ -212,7 +213,8 @@ def generate_script(  # noqa: PLR0912
             --grid-file-path ${{INPUT_GRID}} \\
             --icon4py-backend {backend} \\
             --log-level {log_level} \\
-            --dtime {dtime}
+            --dtime {dtime} \\
+            --output-frequency {output_frequency}
     """)
     return script, RUN_WRAPPER, job_name
 
@@ -258,6 +260,12 @@ def main():
         help="Time step in seconds. Auto-selected from resolution if not set "
         "(r2b6=75, r2b7=40, r2b8=20, r2b9=10, r2b10=5).",
     )
+    parser.add_argument(
+        "--output-frequency",
+        choices=["none", "hourly", "daily", "final"],
+        default="none",
+        help="Diagnostic output frequency.",
+    )
     args = parser.parse_args()
 
     script, wrapper, job_name = generate_script(
@@ -271,6 +279,7 @@ def main():
         venv=args.venv,
         log_level=args.log_level,
         dtime=args.dtime,
+        output_frequency=args.output_frequency,
         uenv=not args.no_uenv,
     )
 

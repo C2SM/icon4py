@@ -343,11 +343,37 @@ class Icon4pyDriver:
     def _full_name(self, func: Callable) -> str:
         return f"{self.__class__.__name__}:{func.__name__}"
 
+    def _dump_output(
+        self,
+        diagnostic_state: diagnostics.DiagnosticState,
+        prognostic_state: prognostics.PrognosticState,
+        label: str,
+    ) -> None:
+        log.debug(f"Running diagnostic calculations and output ({label})")
+        self.compute_model_data(diagnostic_state, prognostic_state)
+        out_file = self.config.output_path / f"model_data_{label}.pkl"
+        model_data = self.pack_data(diagnostic_state)
+        if self.processor_props.rank == 0:
+            with open(out_file, "wb") as file_obj:
+                pickle.dump(model_data, file_obj)
+            log.info(f"Wrote output to {out_file}")
+
+    def _should_dump(
+        self,
+        output_frequency: driver_states.OutputFrequency,
+    ) -> bool:
+        sim_date = self.model_time_variables.simulation_date
+        if output_frequency == driver_states.OutputFrequency.HOURLY:
+            return sim_date.minute == 0 and sim_date.second == 0
+        elif output_frequency == driver_states.OutputFrequency.DAILY:
+            return sim_date.hour == 0 and sim_date.minute == 0 and sim_date.second == 0
+        return False
+
     def time_integration(
         self,
         ds: driver_states.DriverStates,
         do_prep_adv: bool,
-        dump_pickle: bool = False,
+        output_frequency: driver_states.OutputFrequency = driver_states.OutputFrequency.NONE,
     ) -> None:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
@@ -357,26 +383,20 @@ class Icon4pyDriver:
         tracer_prep_adv = ds.prep_tracer_advection_prognostic
         diagnostic_state = ds.diagnostic
 
+        dump = output_frequency != driver_states.OutputFrequency.NONE
+
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
         )
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        if dump_pickle:
-            log.debug("Running diagnostic calculations and output")
-            self.compute_model_data(diagnostic_state, prognostic_states.current)
-            with open(
-                "model_data_day"
-                + str(self.model_time_variables.simulation_date.day)
-                + "_hour"
-                + str(self.model_time_variables.simulation_date.hour)
-                + ".pkl",
-                "wb",
-            ) as file_obj:
-                model_data = self.pack_data(diagnostic_state)
-                if self.processor_props.rank == 0:
-                    pickle.dump(model_data, file_obj)
+        if dump:
+            self._dump_output(
+                diagnostic_state,
+                prognostic_states.current,
+                label=f"day{self.model_time_variables.simulation_date.day}_hour{self.model_time_variables.simulation_date.hour}",
+            )
 
         wall_clock_starting_time = datetime.datetime.now()
 
@@ -407,30 +427,25 @@ class Icon4pyDriver:
             )
             device_utils.sync(self._allocator)
 
-            if dump_pickle:
-                if (
-                    self.model_time_variables.simulation_date.minute == 0
-                    and self.model_time_variables.simulation_date.second == 0
-                ):
-                    log.debug("Running diagnostic calculations and output")
-                    self.compute_model_data(diagnostic_state, prognostic_states.current)
-                    with open(
-                        "model_data_day"
-                        + str(self.model_time_variables.simulation_date.day)
-                        + "_hour"
-                        + str(self.model_time_variables.simulation_date.hour)
-                        + ".pkl",
-                        "wb",
-                    ) as file_obj:
-                        model_data = self.pack_data(diagnostic_state)
-                        if self.processor_props.rank == 0:
-                            pickle.dump(model_data, file_obj)
+            if dump and self._should_dump(output_frequency):
+                self._dump_output(
+                    diagnostic_state,
+                    prognostic_states.current,
+                    label=f"day{self.model_time_variables.simulation_date.day}_hour{self.model_time_variables.simulation_date.hour}",
+                )
 
             self.model_time_variables.is_first_step_in_simulation = False
 
             self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
             # TODO(OngChia): simple IO enough for JW test
+
+        if output_frequency == driver_states.OutputFrequency.FINAL:
+            self._dump_output(
+                diagnostic_state,
+                prognostic_states.current,
+                label="final",
+            )
 
         self._compute_mean_at_final_time_step(prognostic_states.current)
 

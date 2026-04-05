@@ -127,6 +127,13 @@ class ModelTimeVariables:
         self.__post_init__(config)
 
 
+class OutputFrequency(enum.Enum):
+    NONE = "none"
+    HOURLY = "hourly"
+    DAILY = "daily"
+    FINAL = "final"
+
+
 class DriverTimers(enum.Enum):
     SOLVE_NH_FIRST_STEP = "solve_nh_first_step"
     SOLVE_NH = "solve_nh"
