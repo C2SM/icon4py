@@ -5,7 +5,7 @@
 #SBATCH --account=cwd01
 #SBATCH --uenv=icon/25.2:v3:/user-environment
 #SBATCH --view=default
-#SBATCH --nodes=8
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=4
 #SBATCH --partition=normal
 #SBATCH --time=12:00:00
