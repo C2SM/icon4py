@@ -430,6 +430,9 @@ class Icon4pyDriver:
             )
             device_utils.sync(self._allocator)
 
+            if time_step % 100 == 0:
+                self._log_gpu_memory(time_step)
+
             if dump and self._should_dump(output_frequency):
                 self._dump_output(
                     diagnostic_state,
@@ -593,6 +596,23 @@ class Icon4pyDriver:
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
     # horizontal cfl is not ported
+    @staticmethod
+    def _log_gpu_memory(time_step: int) -> None:
+        try:
+            import cupy as cp
+
+            mempool = cp.get_default_memory_pool()
+            used = mempool.used_bytes()
+            total = mempool.total_bytes()
+            free, device_total = cp.cuda.runtime.memGetInfo()
+            log.warning(
+                f"TIMER: GPU memory at step {time_step}: "
+                f"cupy pool used={used / 1e9:.2f}GB, pool total={total / 1e9:.2f}GB, "
+                f"device used={( device_total - free) / 1e9:.2f}GB/{device_total / 1e9:.2f}GB"
+            )
+        except Exception:
+            pass
+
     def _adjust_ndyn_substeps_var(
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
