@@ -107,7 +107,7 @@ def create_grid_manager(
     )
     grid_manager(
         allocator=allocator,
-        keep_skip_values=True,
+        keep_skip_values=False,
         run_properties=parallel_props,
         decomposer=decomposer,
     )
