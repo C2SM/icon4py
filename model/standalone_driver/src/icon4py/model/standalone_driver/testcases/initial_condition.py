@@ -30,10 +30,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import (
-    cell_2_edge_interpolation,
-    edge_2_cell_vector_rbf_interpolation,
-)
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import (
@@ -103,7 +100,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     end_edge_lateral_boundary_level_2 = grid.end_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    end_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
     end_cell_lateral_boundary_level_2 = grid.end_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
@@ -232,18 +228,21 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
-    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
-        in_field=eta_v,
-        coeff=cell_2_edge_coeff,
-        out_field=eta_v_at_edge,
-        horizontal_start=end_edge_lateral_boundary_level_2,
-        horizontal_end=end_edge_end,
-        vertical_start=0,
-        vertical_end=num_levels,
-        offset_provider=grid.connectivities,
+    # Interpolate eta_v from cells to edges using NumPy instead of the GT4Py
+    # cell_2_edge_interpolation stencil.  The GT4Py/DaCe path compiles different
+    # CUDA kernels for different local domain sizes, which can produce 1-ULP
+    # differences due to FMA contraction decisions.  The NumPy path is bitwise
+    # deterministic regardless of domain decomposition.
+    e2c = grid.get_connectivity(dims.E2C).asnumpy()
+    c_lin_e_np = cell_2_edge_coeff.asnumpy()
+    eta_v_np = data_alloc.as_numpy(eta_v.ndarray)
+    eta_v_at_edge_np = (
+        c_lin_e_np[:, 0:1] * eta_v_np[e2c[:, 0]] + c_lin_e_np[:, 1:2] * eta_v_np[e2c[:, 1]]
     )
+    eta_v_at_edge_np[:end_edge_lateral_boundary_level_2, :] = 0.0
+    eta_v_at_edge.ndarray[:, :] = xp.asarray(eta_v_at_edge_np)
     exchange(eta_v_at_edge, dim=dims.EdgeDim)
-    log.info("Cell-to-edge eta_v computation completed.")
+    log.info("Cell-to-edge eta_v computation completed (NumPy path).")
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
