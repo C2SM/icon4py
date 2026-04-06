@@ -68,6 +68,35 @@ from icon4py.model.standalone_driver import (
 log = logging.getLogger(__name__)
 
 
+def _replace_boundary_skip_values(grid: IconGrid) -> None:
+    """Replace -1 entries in boundary connectivity tables with the max valid neighbor.
+
+    This must be called after all init computations (RBF, geometry, metrics)
+    that rely on -1 sentinel values, but before GPU stencils run during
+    timestepping.  Only connectivities from CONNECTIVITIES_ON_BOUNDARIES are
+    modified — pentagon skip values (V2E, V2C, V2E2V) are left for GT4Py to
+    handle via skip_value metadata.
+    """
+    from icon4py.model.common.grid.icon import CONNECTIVITIES_ON_BOUNDARIES
+
+    boundary_dims = set(CONNECTIVITIES_ON_BOUNDARIES)
+    for name, conn in grid.connectivities.items():
+        if not gtx.common.is_neighbor_table(conn):
+            continue
+        local_dim = conn.domain.dims[1]
+        if local_dim not in boundary_dims:
+            continue
+        table = conn.ndarray
+        array_ns = data_alloc.array_namespace(table)
+        min_val = array_ns.amin(table).item()
+        if min_val >= 0:
+            continue
+        max_valid = table.max(axis=1, keepdims=True)
+        max_valid = array_ns.where(max_valid < 0, 0, max_valid)
+        table[:] = array_ns.where(table == -1, max_valid, table)
+        log.info(f"Replaced boundary skip values in connectivity '{name}'")
+
+
 class Icon4pyDriver:
     def __init__(
         self,
@@ -1026,6 +1055,17 @@ def initialize_driver(
         backend=backend,
     )
     log.warning(f"TIMER: initializing granules completed in {time.perf_counter() - _t0:.3f}s")
+
+    # Replace -1 skip values in boundary connectivities now that all init
+    # computations (RBF, geometry, metrics) are done.  GPU stencils cannot
+    # safely access -1 indices, so we replace them with the max valid neighbor
+    # before timestepping begins.  Pentagon skip values (V2E, V2C, V2E2V) are
+    # left untouched — GT4Py handles those via skip_value metadata.
+    _t0 = time.perf_counter()
+    _replace_boundary_skip_values(grid_manager.grid)
+    log.warning(
+        f"TIMER: replacing boundary skip values completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
     _t0 = time.perf_counter()
     icon4py_driver = Icon4pyDriver(
