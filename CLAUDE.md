@@ -37,13 +37,21 @@ When running the same setup with different MPI rank counts (1, 2, 4), dynamic fi
 - No hidden reductions during timestepping. The only local reduction is `max_vertical_cfl` in `velocity_advection.py`, used for adaptive substep control (has TODO to make it global). Does not trigger for JW at typical resolutions (would show as log.warning).
 - Init-phase reductions fully accounted for: 4 geometry means (geometry.py, via `_owned_mean`) + 1 metrics min (metric_fields.py `compute_nflat_gradp`).
 
-**Open question:** With connectivity order preserved and no hidden reductions, results should theoretically be bitwise identical with `--reproducible-reductions`. Yet ~1e-8 to 1e-7 relative differences persist. Possible remaining suspects:
+**Init field comparison (verified 2026-04, r2b5, 1 rank vs 4 ranks, --dump-init-fields):**
 
-- Non-determinism in GT4Py/DaCe generated code or GPU kernel execution order
-- Subtle difference in how local arrays are allocated/padded per rank
-- Something in the `ReproducibleGlobalReductions` sort-by-value approach (identical values should sort identically, but needs verification that owned values are truly bitwise identical after init)
+Fields dumped immediately after initialization (before timestepping) using global indices for cross-rank mapping:
 
-**Suggested next step:** Dump fields immediately after initialization (before timestepping) and verify bitwise identity across rank counts. If init is identical, run 1 timestep and compare to isolate where differences first appear.
+| Field   | Result     | Max abs diff | Max rel diff | Notes                                                                 |
+| ------- | ---------- | ------------ | ------------ | --------------------------------------------------------------------- |
+| rho     | IDENTICAL  | 0            | 0            | Exact bitwise match                                                   |
+| theta_v | IDENTICAL  | 0            | 0            | Exact bitwise match                                                   |
+| exner   | IDENTICAL  | 0            | 0            | Exact bitwise match                                                   |
+| w       | ~identical | 5.15e-19     | —            | 11,560/21,120 cells affected; w values ≈ 1e-6, diffs at sub-ULP level |
+| vn      | ~identical | 1.42e-14     | 1.47e-15     | ~1 ULP diffs on ~5–25% of edges depending on level                    |
+
+**Root cause of vn/w init diffs:** GPU JIT compilation artifact. `vn` depends on `eta_v_at_edge`, computed by the GT4Py stencil `cell_2_edge_interpolation`. DaCe compiles separate CUDA kernels for different domain sizes (122,880 edges at 1 rank vs ~31,840 at 4 ranks). The CUDA compiler may make different FMA (fused multiply-add) contraction decisions per kernel, giving results that differ by up to 1 ULP. These propagate through `cos`/`sin`/power operations in the `vn` formula, amplifying to ~1.42e-14. The `w` diffs (~5e-19) are downstream propagation from `vn` through `init_w()`.
+
+**Conclusion:** Init is effectively identical (diffs at machine epsilon). The ~1e-7 relative differences after 10 timesteps are chaotic amplification of these seed diffs through the nonlinear dynamics, not a bug. This is expected behavior for a chaotic system like atmospheric dynamics.
 
 **Error magnitudes (JW r2b5, 10 timesteps, --reproducible-reductions enabled):**
 

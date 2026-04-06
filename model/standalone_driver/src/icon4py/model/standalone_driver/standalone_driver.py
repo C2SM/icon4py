@@ -968,6 +968,13 @@ def initialize_driver(
         else:
             output_path.mkdir(parents=True, exist_ok=False)
 
+    # Broadcast the (possibly updated) output_path from rank 0 to all ranks
+    if with_mpi:
+        comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
+        output_path = pathlib.Path(comm.bcast(str(output_path), root=0))
+        if parallel_props.rank != 0:
+            output_path.mkdir(parents=True, exist_ok=True)
+
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
     )

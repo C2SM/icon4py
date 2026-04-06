@@ -26,7 +26,7 @@ def _dump_init_fields(
     ds: driver_states.DriverStates,
     output_path: pathlib.Path,
 ) -> None:
-    """Dump initial prognostic fields with global indices for reproducibility verification."""
+    """Dump initial prognostic and diagnostic fields with global indices for reproducibility verification."""
     import pickle
 
     import numpy as np
@@ -43,6 +43,7 @@ def _dump_init_fields(
     edge_gidx = decomp_info.global_index(dims.EdgeDim)
 
     prog = ds.prognostics.current
+    diag = ds.diagnostic
     data = {
         "cell_global_index": _to_numpy(cell_gidx),
         "edge_global_index": _to_numpy(edge_gidx),
@@ -51,6 +52,8 @@ def _dump_init_fields(
         "exner": _to_numpy(prog.exner.ndarray),
         "w": _to_numpy(prog.w.ndarray),
         "vn": _to_numpy(prog.vn.ndarray),
+        "u": _to_numpy(diag.u.ndarray),
+        "v": _to_numpy(diag.v.ndarray),
     }
     output_path.mkdir(parents=True, exist_ok=True)
     out_file = output_path / f"init_fields_rank{rank}.pkl"
