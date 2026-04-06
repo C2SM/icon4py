@@ -9,6 +9,7 @@
 import logging
 import math
 
+import numpy as np
 from gt4py import next as gtx
 
 import icon4py.model.common.utils as common_utils
@@ -30,7 +31,6 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import (
@@ -103,7 +103,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     end_cell_lateral_boundary_level_2 = grid.end_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
     # predefined constants used for Jablonowski-Williamson initial condition
     p_sfc = ta.wpfloat("100000.0")  # surface pressure (Pa)
@@ -307,22 +306,25 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=prognostic_states.current.vn,
-        ptr_coeff_1=rbf_vec_coeff_c1,
-        ptr_coeff_2=rbf_vec_coeff_c2,
-        p_u_out=diagnostic_state.u,
-        p_v_out=diagnostic_state.v,
-        horizontal_start=end_cell_lateral_boundary_level_2,
-        horizontal_end=end_cell_end,
-        vertical_start=0,
-        vertical_end=num_levels,
-        offset_provider=grid.connectivities,
-    )
+    # RBF vector interpolation from edges to cells using NumPy for bitwise
+    # reproducibility across different domain decompositions (same rationale
+    # as the eta_v interpolation above).
+    c2e2c2e = grid.get_connectivity(dims.C2E2C2E).asnumpy()
+    coeff1_np = data_alloc.as_numpy(rbf_vec_coeff_c1.ndarray)
+    coeff2_np = data_alloc.as_numpy(rbf_vec_coeff_c2.ndarray)
+    vn_np = data_alloc.as_numpy(prognostic_states.current.vn.ndarray)
+    # vn_at_neighbors: (num_cells, 9, num_levels)
+    vn_at_neighbors = vn_np[c2e2c2e]
+    u_np = np.sum(coeff1_np[:, :, np.newaxis] * vn_at_neighbors, axis=1)
+    v_np = np.sum(coeff2_np[:, :, np.newaxis] * vn_at_neighbors, axis=1)
+    u_np[:end_cell_lateral_boundary_level_2, :] = 0.0
+    v_np[:end_cell_lateral_boundary_level_2, :] = 0.0
+    diagnostic_state.u.ndarray[:, :] = xp.asarray(u_np)
+    diagnostic_state.v.ndarray[:, :] = xp.asarray(v_np)
     exchange(diagnostic_state.u, dim=dims.CellDim)
     exchange(diagnostic_state.v, dim=dims.CellDim)
 
-    log.info("U, V computation completed.")
+    log.info("U, V computation completed (NumPy path).")
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
