@@ -1018,6 +1018,17 @@ def initialize_driver(
     )
     log.warning(f"TIMER: initializing JW topography completed in {time.perf_counter() - _t0:.3f}s")
 
+    # Use gtfn backend for factory init: much faster JIT than DaCe, and these
+    # stencils only run once.  Fields are allocated on the same device so they
+    # are compatible with the timestepping backend.
+    init_backend_name = (
+        backend_name.replace("dace_", "gtfn_") if "dace_" in backend_name else backend_name
+    )
+    init_backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(init_backend_name)
+    )
+    log.warning(f"Using '{init_backend_name}' backend for factory initialization")
+
     _t0 = time.perf_counter()
     log.info("initializing the static-field factories")
     static_field_factories = driver_utils.create_static_field_factories(
@@ -1025,7 +1036,7 @@ def initialize_driver(
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
-        backend=backend,
+        backend=init_backend,
         exchange=exchange,
         global_reductions=global_reductions,
     )
