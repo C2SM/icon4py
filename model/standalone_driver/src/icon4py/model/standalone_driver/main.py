@@ -38,7 +38,7 @@ def _dump_init_fields(
     cell_gidx = decomp_info.global_index(dims.CellDim)
     edge_gidx = decomp_info.global_index(dims.EdgeDim)
 
-    prog = ds.prognostic_states.current
+    prog = ds.prognostics.current
     data = {
         "cell_global_index": np.asarray(cell_gidx),
         "edge_global_index": np.asarray(edge_gidx),
