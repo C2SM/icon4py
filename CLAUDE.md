@@ -31,12 +31,24 @@ When running the same setup with different MPI rank counts (1, 2, 4), dynamic fi
 
 2. **Halo double-counting in mean computations** (fixed): Geometry mean providers (`mean_edge_length`, `mean_cell_area`, etc.) were passing full local buffers (owned + halo) to the mean reduction, double-counting halo values. Fix: owner masks are now applied before reduction in `geometry.py`.
 
-3. **Residual stencil-level differences** (inherent): `neighbor_sum` operations in GT4Py stencils accumulate neighbor contributions in a fixed local order, but the *values* at halo boundaries carry accumulated rounding from prior timesteps. This is inherent to domain decomposition and cannot be fixed without deterministic global evaluation.
+**Verified (2026-04):**
 
-**Error magnitudes after fixes (JW r2b5, 10 timesteps):**
+- Connectivity neighbor ordering is **preserved exactly** across different rank decompositions (verified empirically on R02B04 for C2E2C, C2E, E2C, E2V, E2C2V, E2C2E across 1/2/4 ranks).
+- No hidden reductions during timestepping. The only local reduction is `max_vertical_cfl` in `velocity_advection.py`, used for adaptive substep control (has TODO to make it global). Does not trigger for JW at typical resolutions (would show as log.warning).
+- Init-phase reductions fully accounted for: 4 geometry means (geometry.py, via `_owned_mean`) + 1 metrics min (metric_fields.py `compute_nflat_gradp`).
 
-- ranks2 vs ranks4: ~1e-9 relative (pressure), ~1e-8 relative (temperature) -- excellent
-- ranks1 vs ranks2: ~1e-8 relative (pressure), ~1e-7 relative (temperature) -- good, limited by stencil-level differences
+**Open question:** With connectivity order preserved and no hidden reductions, results should theoretically be bitwise identical with `--reproducible-reductions`. Yet ~1e-8 to 1e-7 relative differences persist. Possible remaining suspects:
+
+- Non-determinism in GT4Py/DaCe generated code or GPU kernel execution order
+- Subtle difference in how local arrays are allocated/padded per rank
+- Something in the `ReproducibleGlobalReductions` sort-by-value approach (identical values should sort identically, but needs verification that owned values are truly bitwise identical after init)
+
+**Suggested next step:** Dump fields immediately after initialization (before timestepping) and verify bitwise identity across rank counts. If init is identical, run 1 timestep and compare to isolate where differences first appear.
+
+**Error magnitudes (JW r2b5, 10 timesteps, --reproducible-reductions enabled):**
+
+- ranks2 vs ranks4: ~1e-9 relative (pressure), ~1e-8 relative (temperature)
+- ranks1 vs ranks2: ~1e-8 relative (pressure), ~1e-7 relative (temperature)
 
 ## Grid decomposition and performance
 

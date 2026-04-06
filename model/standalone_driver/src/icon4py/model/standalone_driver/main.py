@@ -21,6 +21,40 @@ from icon4py.model.standalone_driver.testcases import initial_condition
 log = logging.getLogger(__name__)
 
 
+def _dump_init_fields(
+    driver: standalone_driver.Icon4pyDriver,
+    ds: driver_states.DriverStates,
+    output_path: pathlib.Path,
+) -> None:
+    """Dump initial prognostic fields with global indices for reproducibility verification."""
+    import pickle
+
+    import numpy as np
+
+    rank = driver.processor_props.rank
+    decomp_info = driver.decomposition_info
+    from icon4py.model.common import dimension as dims
+
+    cell_gidx = decomp_info.global_index(dims.CellDim)
+    edge_gidx = decomp_info.global_index(dims.EdgeDim)
+
+    prog = ds.prognostic_states.current
+    data = {
+        "cell_global_index": np.asarray(cell_gidx),
+        "edge_global_index": np.asarray(edge_gidx),
+        "rho": np.asarray(prog.rho.ndarray),
+        "theta_v": np.asarray(prog.theta_v.ndarray),
+        "exner": np.asarray(prog.exner.ndarray),
+        "w": np.asarray(prog.w.ndarray),
+        "vn": np.asarray(prog.vn.ndarray),
+    }
+    output_path.mkdir(parents=True, exist_ok=True)
+    out_file = output_path / f"init_fields_rank{rank}.pkl"
+    with open(out_file, "wb") as f:
+        pickle.dump(data, f)
+    log.warning(f"Dumped init fields to {out_file}")
+
+
 def main(
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
@@ -65,6 +99,12 @@ def main(
             help="Use reproducible global reductions (gather-and-sort) to produce bitwise-identical results across different MPI rank counts.",
         ),
     ] = False,
+    dump_init_fields: Annotated[
+        bool,
+        typer.Option(
+            help="Dump initial prognostic fields per rank for reproducibility verification.",
+        ),
+    ] = False,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -104,6 +144,9 @@ def main(
                 damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
                 exchange=icon4py_driver.exchange,
             )
+
+        if dump_init_fields:
+            _dump_init_fields(icon4py_driver, ds, output_path=icon4py_driver.config.output_path)
 
         log.info("driver setup: DONE")
         log.info("time loop: START")
