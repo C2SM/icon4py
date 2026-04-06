@@ -31,6 +31,10 @@ def _dump_init_fields(
 
     import numpy as np
 
+    def _to_numpy(arr):
+        """Convert array to NumPy, handling CuPy arrays."""
+        return arr.get() if hasattr(arr, "get") else np.asarray(arr)
+
     rank = driver.processor_props.rank
     decomp_info = driver.decomposition_info
     from icon4py.model.common import dimension as dims
@@ -40,13 +44,13 @@ def _dump_init_fields(
 
     prog = ds.prognostics.current
     data = {
-        "cell_global_index": np.asarray(cell_gidx),
-        "edge_global_index": np.asarray(edge_gidx),
-        "rho": np.asarray(prog.rho.ndarray),
-        "theta_v": np.asarray(prog.theta_v.ndarray),
-        "exner": np.asarray(prog.exner.ndarray),
-        "w": np.asarray(prog.w.ndarray),
-        "vn": np.asarray(prog.vn.ndarray),
+        "cell_global_index": _to_numpy(cell_gidx),
+        "edge_global_index": _to_numpy(edge_gidx),
+        "rho": _to_numpy(prog.rho.ndarray),
+        "theta_v": _to_numpy(prog.theta_v.ndarray),
+        "exner": _to_numpy(prog.exner.ndarray),
+        "w": _to_numpy(prog.w.ndarray),
+        "vn": _to_numpy(prog.vn.ndarray),
     }
     output_path.mkdir(parents=True, exist_ok=True)
     out_file = output_path / f"init_fields_rank{rank}.pkl"
