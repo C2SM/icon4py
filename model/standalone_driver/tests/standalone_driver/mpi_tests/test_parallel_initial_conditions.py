@@ -145,4 +145,3 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             check_halos=True,
             atol=0.0,
         )
-

@@ -85,11 +85,18 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exner_ref_mc = metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray
     d_exner_dz_ref_ic = metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
     geopot = phy_const.GRAV * metrics_field_source.get(metrics_attributes.Z_MC).ndarray
+    z_ifc = metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
 
     cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
     edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray
     edge_lon = geometry_field_source.get(geometry_meta.EDGE_LON).ndarray
     primal_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_U).ndarray
+    inv_dual_edge_length = geometry_field_source.get(
+        f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    ).ndarray
+    edge_cell_distance = geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray
+    primal_edge_length = geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray
+    cell_area = geometry_field_source.get(geometry_meta.CELL_AREA).ndarray
 
     cell_2_edge_coeff = interpolation_field_source.get(interpolation_attributes.C_LIN_E)
     rbf_vec_coeff_c1 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1)
@@ -271,13 +278,11 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
-        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
-        inv_dual_edge_length=geometry_field_source.get(
-            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-        ).ndarray,
-        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
-        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
-        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+        z_ifc=z_ifc,
+        inv_dual_edge_length=inv_dual_edge_length,
+        edge_cell_distance=edge_cell_distance,
+        primal_edge_length=primal_edge_length,
+        cell_area=cell_area,
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
