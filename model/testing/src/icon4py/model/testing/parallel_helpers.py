@@ -93,10 +93,13 @@ def check_local_global_field(
         ]
     )
 
+    print("") # otherwise the first statement is on the same line as the test name
     def _non_blocking_allclose(
         a: np.ndarray, b: np.ndarray, atol: float, verbose: bool, label: str = ""
     ) -> None:
-        print(f"{label} max diff", np.max(np.abs(a - b)))
+        max_diff = np.max(np.abs(a - b))
+        color = "\033[1;31m" if max_diff > 0 else "\033[32m"
+        print(f"{color}{label} max diff {max_diff}\033[0m")
 
     # Compare halo against global reference field
     if check_halos:
