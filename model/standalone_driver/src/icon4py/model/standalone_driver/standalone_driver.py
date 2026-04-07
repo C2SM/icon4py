@@ -154,14 +154,16 @@ class Icon4pyDriver:
         )
 
     def _compute_global_index_mapping(self) -> None:
-        global_index_sizes, gathered_global_indices = driver_utils.gather_field(
-                data_alloc.as_numpy(
-                    self.decomposition_info.global_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
-                ),
-                self.processor_props,
-            )
-        self.global_index_sizes = global_index_sizes
-        self.gathered_global_indices = gathered_global_indices
+        self.global_index_sizes, self.gathered_global_indices = {}, {}
+        for dim in (dims.CellDim, dims.EdgeDim):
+            index_sizes, gathered_indices = driver_utils.gather_field(
+                    data_alloc.as_numpy(
+                        self.decomposition_info.global_index(dim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                    ),
+                    self.processor_props,
+                )
+            self.global_index_sizes[dim] = index_sizes
+            self.gathered_global_indices[dim] = gathered_indices
     
     def setup_diagnostic_stencils(self):
         cell_domain = h_grid.domain(dims.CellDim)
@@ -274,32 +276,37 @@ class Icon4pyDriver:
 
     def pack_data(
         self,
+        prognostic_state: prognostics.PrognosticState,
         diagnostic_state: diagnostics.DiagnosticState,
     ) -> dict:
         distributed_model_data = {
-            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT).asnumpy(),
-            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON).asnumpy(),
-            "cell_area": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_AREA).asnumpy(),
-            "dz": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL).asnumpy(),
-            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC).asnumpy(),
-            "temperature": diagnostic_state.temperature.asnumpy(),
-            "pressure": diagnostic_state.pressure.asnumpy(),
-            "sfc_pressure": diagnostic_state.surface_pressure.asnumpy(),
-            "u": diagnostic_state.u.asnumpy(),
-            "v": diagnostic_state.v.asnumpy(),
+            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT),
+            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON),
+            "cell_area": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_AREA),
+            "dz": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC),
+            "temperature": diagnostic_state.temperature,
+            "pressure": diagnostic_state.pressure,
+            "sfc_pressure": diagnostic_state.surface_pressure,
+            "vn": prognostic_state.vn,
+            "w": prognostic_state.w,
+            "u": diagnostic_state.u,
+            "v": diagnostic_state.v,
         }
         gathered_model_data = {}
         for k, v in distributed_model_data.items():
-            owned_entries = v[
+            v_numpy_array = v.as_numpy()
+            v_dim = v.domain.dims[0]
+            owned_entries = v_numpy_array[
                 data_alloc.as_numpy(
-                    self.decomposition_info.local_index(dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                    self.decomposition_info.local_index(v_dim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
                 )
             ]
             gathered_sizes, gathered_field = driver_utils.gather_field(owned_entries, self.processor_props)
 
             if self.processor_props.rank == 0:
                 assert np.all(gathered_sizes == self.global_index_sizes), (
-                    f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {self.global_index_sizes}"
+                    f"gathered field sizes do not match:  {v_dim} {gathered_sizes} - {self.global_index_sizes}"
                 )
                 sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
                 sorted_[self.gathered_global_indices] = gathered_field
@@ -349,7 +356,7 @@ class Icon4pyDriver:
             self.compute_model_data(diagnostic_state, prognostic_states.current)
             pickle_file_name = "model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl"
             with open(self.config.output_path / pickle_file_name, "wb") as file_obj:
-                model_data = self.pack_data(diagnostic_state)
+                model_data = self.pack_data(prognostic_states.current, diagnostic_state)
                 if self.processor_props.rank == 0:
                     pickle.dump(model_data, file_obj)
 
@@ -388,7 +395,7 @@ class Icon4pyDriver:
                     self.compute_model_data(diagnostic_state, prognostic_states.current)
                     pickle_file_name = "model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl"
                     with open(self.config.output_path / pickle_file_name, "wb") as file_obj:
-                        model_data = self.pack_data(diagnostic_state)
+                        model_data = self.pack_data(prognostic_states.current, diagnostic_state)
                         if self.processor_props.rank == 0:
                             pickle.dump(model_data, file_obj)
 
@@ -440,6 +447,11 @@ class Icon4pyDriver:
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
+            self.exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.w,
+                stream=decomposition_defs.DEFAULT_STREAM,
+            )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0

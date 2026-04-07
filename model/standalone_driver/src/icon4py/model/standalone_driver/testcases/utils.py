@@ -184,7 +184,7 @@ def init_w(
     array_ns: ModuleType,
 ) -> data_alloc.NDArray:
     lb_e = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    ub_e = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.INTERIOR))
+    ub_e = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.END))
 
     lb_c = grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     ub_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
