@@ -39,6 +39,7 @@ _log = logging.getLogger(__file__)
             "2021-06-20T12:00:10.000",
         ),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.JW, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -142,6 +143,12 @@ def test_parallel_diffusion(
             prognostic_state=prognostic_state,
             dtime=dtime,
         )
+        if experiment == definitions.Experiments.JW:
+            # TODO (jcanton,ongchia): move this exchange inside
+            # diffusion.run with the proper DiffusionConfig equivalent to
+            # the fortran
+            # IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
+            exchange.exchange(dims.CellDim, prognostic_state.w)
     _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
     utils.verify_diffusion_fields(
