@@ -525,6 +525,11 @@ class Icon4pyDriver:
                     self.model_time_variables.dtime_in_seconds,
                 )
                 device_utils.sync(self._allocator)
+            self.exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.w,
+                stream=decomposition_defs.DEFAULT_STREAM,
+            )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
