@@ -106,6 +106,18 @@ def main(
             help="Use reproducible global reductions (gather-and-sort) to produce bitwise-identical results across different MPI rank counts.",
         ),
     ] = False,
+    structured_decomposition: Annotated[
+        bool,
+        typer.Option(
+            help="Use structured (block-based) domain decomposition instead of METIS graph partitioning. Faster but only supports certain rank counts.",
+        ),
+    ] = False,
+    init_backend: Annotated[
+        str | None,
+        typer.Option(
+            help=f"GT4Py backend for factory initialization (geometry, interpolation, metrics). Defaults to the main backend. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
+        ),
+    ] = None,
     dump_init_fields: Annotated[
         bool,
         typer.Option(
@@ -136,6 +148,8 @@ def main(
                 force_serial_run=force_serial_run,
                 dtime=dtime,
                 reproducible_reductions=reproducible_reductions,
+                structured_decomposition=structured_decomposition,
+                init_backend_name=init_backend,
             )
 
             log.info("Generating the initial condition")

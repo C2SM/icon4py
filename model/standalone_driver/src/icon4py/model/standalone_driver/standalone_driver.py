@@ -915,6 +915,8 @@ def initialize_driver(
     force_serial_run: bool = False,
     dtime: float = 10.0,
     reproducible_reductions: bool = False,
+    structured_decomposition: bool = False,
+    init_backend_name: str | None = None,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -999,6 +1001,7 @@ def initialize_driver(
         allocator=allocator,
         parallel_props=parallel_props,
         global_reductions=global_reductions,
+        structured_decomposition=structured_decomposition,
     )
     log.warning(f"TIMER: initializing grid manager completed in {time.perf_counter() - _t0:.3f}s")
 
@@ -1025,12 +1028,8 @@ def initialize_driver(
     )
     log.warning(f"TIMER: initializing JW topography completed in {time.perf_counter() - _t0:.3f}s")
 
-    # Use gtfn backend for factory init: much faster JIT than DaCe, and these
-    # stencils only run once.  Fields are allocated on the same device so they
-    # are compatible with the timestepping backend.
-    init_backend_name = (
-        backend_name.replace("dace_", "gtfn_") if "dace_" in backend_name else backend_name
-    )
+    if init_backend_name is None:
+        init_backend_name = backend_name
     init_backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(init_backend_name)
     )
@@ -1079,11 +1078,15 @@ def initialize_driver(
     # safely access -1 indices, so we replace them with the max valid neighbor
     # before timestepping begins.  Pentagon skip values (V2E, V2C, V2E2V) are
     # left untouched — GT4Py handles those via skip_value metadata.
-    _t0 = time.perf_counter()
-    _replace_boundary_skip_values(grid_manager.grid)
-    log.warning(
-        f"TIMER: replacing boundary skip values completed in {time.perf_counter() - _t0:.3f}s"
-    )
+    if structured_decomposition:
+        # _t0 = time.perf_counter()  # noqa: ERA001
+        # _replace_boundary_skip_values(grid_manager.grid)  # noqa: ERA001
+        # log.warning(
+        #     f"TIMER: replacing boundary skip values completed in {time.perf_counter() - _t0:.3f}s"  # noqa: ERA001
+        # )  # noqa: ERA001, RUF100
+        raise RuntimeError(
+            "Boundary skip value replacement is not active, but might segfault with structured decomposition. Please set `structured_decomposition=False` or implement skip value replacement for structured decomposition."
+        )
 
     _t0 = time.perf_counter()
     icon4py_driver = Icon4pyDriver(

@@ -77,10 +77,11 @@ def create_grid_manager(
     allocator: gtx_typing.Allocator,
     parallel_props: decomposition_defs.ProcessProperties,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
+    structured_decomposition: bool = False,
 ) -> gm.GridManager:
     if parallel_props.is_single_rank():
         decomposer = decomp.SingleNodeDecomposer()
-    else:
+    elif structured_decomposition:
         grid_root, grid_level = _read_grid_root_level(grid_file_path)
         try:
             decomposer = decomp.StructuredDecomposer(grid_root, grid_level)
@@ -99,6 +100,8 @@ def create_grid_manager(
                 f"for root={grid_root}, level={grid_level}. Falling back to MetisDecomposer."
             )
             decomposer = decomp.MetisDecomposer()
+    else:
+        decomposer = decomp.MetisDecomposer()
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
