@@ -215,7 +215,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     LSQ_PSEUDOINV: dict(
         standard_name=LSQ_PSEUDOINV,
-        long_name="lsq_pseudoinv",
+        long_name="pseudo (or Moore-Penrose) inverse of least squares matrix A",
         units="",
         dims=(dims.CellDim, dims.C2E2CDim),
         icon_var_name="ptr_int_lsq%lsq_pseudoinv",

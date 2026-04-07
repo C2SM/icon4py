@@ -297,7 +297,9 @@ def wait(comm_handle: int | decomposition.ExchangeResult):
     if isinstance(comm_handle, int):
         pass
     else:
-        comm_handle.wait()
+        # There is no race condition here. On CPU it is synchronous and on GPU
+        #  we use the default stream.
+        comm_handle.finish()
 
 
 def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:

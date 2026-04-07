@@ -8,78 +8,84 @@
 
 from gt4py.eve.utils import FrozenNamespace
 
+from icon4py.model.common.type_alias import wpfloat
+
 
 g_ct = FrozenNamespace(
-    rho_00=1.225,  # reference air density
-    q1=8.0e-6,
-    qmin=1.0e-15,  # threshold for computation
-    ams=0.069,  # Formfactor in the mass-size relation of snow particles
-    bms=2.0,  # Exponent in the mass-size relation of snow particles
-    v0s=25.0,  # prefactor in snow fall speed
-    v1s=0.5,  # Exponent in the terminal velocity for snow
-    m0_ice=1.0e-12,  # initial crystal mass for cloud ice nucleation
-    ci=2108.0,  # specific heat of ice
-    tx=3339.5,
-    tfrz_het1=267.15,  # temperature for het. freezing of cloud water with supersat => TMELT - 6.0
-    tfrz_het2=248.15,  # temperature for het. freezing of cloud water => TMELT - 25.0
-    tfrz_hom=236.15,  # temperature for hom. freezing of cloud water => TMELT - 37.0
-    lvc=3135383.2031928,  # invariant part of vaporization enthalpy => alv - (cpv - clw) * tmelt
-    lsc=2899657.201,  # invariant part of vaporization enthalpy => als - (cpv - ci) * tmelt
+    rho_00=wpfloat(1.225),  # reference air density
+    q1=wpfloat(8.0e-6),
+    qmin=wpfloat(1.0e-15),  # threshold for computation
+    ams=wpfloat(0.069),  # Formfactor in the mass-size relation of snow particles
+    bms=wpfloat(2.0),  # Exponent in the mass-size relation of snow particles
+    v0s=wpfloat(25.0),  # prefactor in snow fall speed
+    v1s=wpfloat(0.5),  # Exponent in the terminal velocity for snow
+    m0_ice=wpfloat(1.0e-12),  # initial crystal mass for cloud ice nucleation
+    ci=wpfloat(2108.0),  # specific heat of ice
+    tx=wpfloat(3339.5),
+    tfrz_het1=wpfloat(
+        267.15
+    ),  # temperature for het. freezing of cloud water with supersat => TMELT - 6.0
+    tfrz_het2=wpfloat(248.15),  # temperature for het. freezing of cloud water => TMELT - 25.0
+    tfrz_hom=wpfloat(236.15),  # temperature for hom. freezing of cloud water => TMELT - 37.0
+    lvc=wpfloat(
+        3135383.2031928
+    ),  # invariant part of vaporization enthalpy => alv - (cpv - clw) * tmelt
+    lsc=wpfloat(2899657.201),  # invariant part of vaporization enthalpy => als - (cpv - ci) * tmelt
 )
 
 t_d = FrozenNamespace(
     # Thermodynamic constants for the dry and moist atmosphere
     # Dry air
-    rd=287.04,  # [J/K/kg] gas constant
-    cpd=1004.64,  # [J/K/kg] specific heat at constant pressure
-    cvd=717.60,  # [J/K/kg] specific heat at constant volume => cpd - rd
-    con_m=1.50e-5,  # [m^2/s]  kinematic viscosity of dry air
-    con_h=2.20e-5,  # [m^2/s]  scalar conductivity of dry air
-    con0_h=2.40e-2,  # [J/m/s/K] thermal conductivity of dry air
-    eta0d=1.717e-5,  # [N*s/m2] dyn viscosity of dry air at tmelt
+    rd=wpfloat(287.04),  # [J/K/kg] gas constant
+    cpd=wpfloat(1004.64),  # [J/K/kg] specific heat at constant pressure
+    cvd=wpfloat(717.60),  # [J/K/kg] specific heat at constant volume => cpd - rd
+    con_m=wpfloat(1.50e-5),  # [m^2/s]  kinematic viscosity of dry air
+    con_h=wpfloat(2.20e-5),  # [m^2/s]  scalar conductivity of dry air
+    con0_h=wpfloat(2.40e-2),  # [J/m/s/K] thermal conductivity of dry air
+    eta0d=wpfloat(1.717e-5),  # [N*s/m2] dyn viscosity of dry air at tmelt
     # H2O
     # gas
-    rv=461.51,  # [J/K/kg] gas constant for water vapor
-    cpv=1869.46,  # [J/K/kg] specific heat at constant pressure
-    cvv=1407.95,  # [J/K/kg] specific heat at constant volume => cpv - rv
-    dv0=2.22e-5,  # [m^2/s]  diff coeff of H2O vapor in dry air at tmelt
+    rv=wpfloat(461.51),  # [J/K/kg] gas constant for water vapor
+    cpv=wpfloat(1869.46),  # [J/K/kg] specific heat at constant pressure
+    cvv=wpfloat(1407.95),  # [J/K/kg] specific heat at constant volume => cpv - rv
+    dv0=wpfloat(2.22e-5),  # [m^2/s]  diff coeff of H2O vapor in dry air at tmelt
     # liquid / water
-    rhoh2o=1000.0,  # [kg/m3]  density of liquid water
+    rhoh2o=wpfloat(1000.0),  # [kg/m3]  density of liquid water
     # solid / ice
-    rhoice=916.7,  # [kg/m3]  density of pure ice
-    cv_i=2000.0,
+    rhoice=wpfloat(916.7),  # [kg/m3]  density of pure ice
+    cv_i=wpfloat(2000.0),
     # phase changes
-    alv=2.5008e6,  # [J/kg]   latent heat for vaporisation
-    als=2.8345e6,  # [J/kg]   latent heat for sublimation
-    alf=333700.0,  # [J/kg]   latent heat for fusion => als - alv
-    tmelt=273.15,  # [K]      melting temperature of ice/snow
-    t3=273.16,  # [K]      Triple point of water at 611hPa
+    alv=wpfloat(2.5008e6),  # [J/kg]   latent heat for vaporisation
+    als=wpfloat(2.8345e6),  # [J/kg]   latent heat for sublimation
+    alf=wpfloat(333700.0),  # [J/kg]   latent heat for fusion => als - alv
+    tmelt=wpfloat(273.15),  # [K]      melting temperature of ice/snow
+    t3=wpfloat(273.16),  # [K]      Triple point of water at 611hPa
     # Auxiliary constants
-    rdv=0.6219583540985028,  # [ ] rd / rv
-    vtmpc1=0.6078246934225193,  # [ ] rv / rd - 1.0
-    vtmpc2=0.8608257684344642,  # [ ] cpv / cpd - 1.0
-    rcpv=-0.46260417446749336,  # [ ] cpd / cpv - 1.0
-    alvdcp=2489.2498805542286,  # [K] alv / cpd
-    alsdcp=2821.408663799968,  # [K] als / cpd
-    rcpd=0.000995381430164039,  # [K*kg/J] 1.0 / cpd
-    rcvd=0.0013935340022296545,  # [K*kg/J] 1.0 / cvd
-    rcpl=3.1733,  # cp_d / cp_l - 1
-    clw=4192.6641119999995,  # specific heat capacity of liquid water (rcpl + 1.0) * cpd
-    cv_v=78.37934216297742,  # (rcpv + 1.0) * cpd - rv
+    rdv=wpfloat(0.6219583540985028),  # [ ] rd / rv
+    vtmpc1=wpfloat(0.6078246934225193),  # [ ] rv / rd - 1.0
+    vtmpc2=wpfloat(0.8608257684344642),  # [ ] cpv / cpd - 1.0
+    rcpv=wpfloat(-0.46260417446749336),  # [ ] cpd / cpv - 1.0
+    alvdcp=wpfloat(2489.2498805542286),  # [K] alv / cpd
+    alsdcp=wpfloat(2821.408663799968),  # [K] als / cpd
+    rcpd=wpfloat(0.000995381430164039),  # [K*kg/J] 1.0 / cpd
+    rcvd=wpfloat(0.0013935340022296545),  # [K*kg/J] 1.0 / cvd
+    rcpl=wpfloat(3.1733),  # cp_d / cp_l - 1
+    clw=wpfloat(4192.6641119999995),  # specific heat capacity of liquid water (rcpl + 1.0) * cpd
+    cv_v=wpfloat(78.37934216297742),  # (rcpv + 1.0) * cpd - rv
 )
 
 idx = FrozenNamespace(
-    prefactor_r=14.58,
-    exponent_r=0.111,
-    offset_r=1.0e-12,
-    prefactor_i=1.25,
-    exponent_i=0.160,
-    offset_i=1.0e-12,
-    prefactor_s=57.80,
-    exponent_s=0.16666666666666666,
-    offset_s=1.0e-12,
-    prefactor_g=12.24,
-    exponent_g=0.217,
-    offset_g=1.0e-08,
+    prefactor_r=wpfloat(14.58),
+    exponent_r=wpfloat(0.111),
+    offset_r=wpfloat(1.0e-12),
+    prefactor_i=wpfloat(1.25),
+    exponent_i=wpfloat(0.160),
+    offset_i=wpfloat(1.0e-12),
+    prefactor_s=wpfloat(57.80),
+    exponent_s=wpfloat(0.16666666666666666),
+    offset_s=wpfloat(1.0e-12),
+    prefactor_g=wpfloat(12.24),
+    exponent_g=wpfloat(0.217),
+    offset_g=wpfloat(1.0e-08),
     lrain=True,
 )

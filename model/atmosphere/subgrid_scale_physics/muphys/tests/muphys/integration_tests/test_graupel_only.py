@@ -16,6 +16,7 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from . import utils
@@ -40,19 +41,28 @@ class Experiments:
     )
 
 
+_GRAUPEL_TEST_CASES = [
+    (Experiments.MINI, True),
+    (Experiments.TINY, True),
+    (Experiments.R2B05, True),
+    (Experiments.R2B05, False),
+]
+
+
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
-    [
-        Experiments.MINI,
-        Experiments.TINY,
-        Experiments.R2B05,
+    ("experiment", "enable_dace_hooks"),
+    _GRAUPEL_TEST_CASES,
+    ids=[
+        f"{exp.name}-dacehooks[{enable_dace_hooks}]"
+        for exp, enable_dace_hooks in _GRAUPEL_TEST_CASES
     ],
-    ids=lambda exp: exp.name,
 )
 def test_graupel_only(
-    backend_like: model_backends.BackendLike, experiment: utils.MuphysExperiment
+    backend_like: model_backends.BackendLike,
+    experiment: utils.MuphysExperiment,
+    enable_dace_hooks: bool,
 ) -> None:
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
     inp = common.GraupelInput.load(
@@ -60,17 +70,31 @@ def test_graupel_only(
     )
 
     graupel_run_program = run_graupel_only.setup_graupel(
-        inp,
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,
+        horizontal_start=0,
+        horizontal_end=inp.ncells,
+        vertical_start=0,
+        vertical_end=inp.nlev,
+        enable_dace_hooks=enable_dace_hooks,
         enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
     )
 
+    # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
+    # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-        # TODO(havogt): see comment in `run_graupel_only.py` about inout buffers. Currently, we use separate input and output buffers.
+        references={
+            "qv": inp.qv,
+            "qc": inp.qc,
+            "qi": inp.qi,
+            "qr": inp.qr,
+            "qs": inp.qs,
+            "qg": inp.qg,
+            "t": inp.t,
+        },
     )
 
     graupel_run_program(
@@ -96,10 +120,10 @@ def test_graupel_only(
     rtol = 1e-14
     atol = 1e-16
 
-    np.testing.assert_allclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
-    np.testing.assert_allclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)
-    np.testing.assert_allclose(ref.qi.asnumpy(), out.qi.asnumpy(), atol=atol, rtol=rtol)
-    np.testing.assert_allclose(ref.qr.asnumpy(), out.qr.asnumpy(), atol=atol, rtol=rtol)
-    np.testing.assert_allclose(ref.qs.asnumpy(), out.qs.asnumpy(), atol=atol, rtol=rtol)
-    np.testing.assert_allclose(ref.qg.asnumpy(), out.qg.asnumpy(), atol=atol, rtol=rtol)
-    np.testing.assert_allclose(ref.t.asnumpy(), out.t.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), atol=atol, rtol=rtol)

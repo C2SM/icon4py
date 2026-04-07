@@ -27,7 +27,12 @@ from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import copy_cell_kdim_field
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
@@ -98,10 +103,10 @@ class AdvectionConfig:
     Contains necessary parameters to configure an advection run.
     """
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._validate()
 
-    def _validate(self):
+    def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""
 
         if not hasattr(HorizontalAdvectionType, self.horizontal_advection_type.name):
@@ -140,7 +145,7 @@ class Advection(ABC):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         """
         Run an advection step.
 
@@ -198,8 +203,13 @@ class NoAdvection(Advection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("advection run - start")
+        log.debug("communication of prep_adv cell field: mass_flx_ic - start")
+        self._exchange.exchange(
+            dims.CellDim, prep_adv.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
+        )
+        log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         log.debug("running stencil copy_cell_kdim_field - start")
         self._copy_cell_kdim_field(
@@ -238,7 +248,10 @@ class GodunovSplittingAdvection(Advection):
         # density fields
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
         self._rhodz_ast2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            allocator=model_backends.get_allocator(self._backend),
         )
         self._determine_local_domains()
         # stencils
@@ -273,7 +286,7 @@ class GodunovSplittingAdvection(Advection):
 
         log.debug("advection class init - end")
 
-    def _determine_local_domains(self):
+    def _determine_local_domains(self) -> None:
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_lateral_boundary = self._grid.start_index(
@@ -297,10 +310,15 @@ class GodunovSplittingAdvection(Advection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
+        self._exchange.exchange(
+            dims.CellDim,
+            prep_adv.mass_flx_ic,
+            stream=decomposition.DEFAULT_STREAM,
+        )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         # reintegrate density for conservation of mass
@@ -381,6 +399,15 @@ class GodunovSplittingAdvection(Advection):
             )
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 
+        # exchange updated tracer values, originally happens only if iforcing /= inwp
+        log.debug("communication of advection cell field: p_tracer_new - start")
+        self._exchange.exchange(
+            dims.CellDim,
+            p_tracer_new,
+            stream=decomposition.DEFAULT_STREAM,
+        )
+        log.debug("communication of advection cell field: p_tracer_new - end")
+
         # finalize step
         self._even_timestep = not self._even_timestep
 
@@ -396,13 +423,14 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime | None = None,
+    exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     exchange = exchange or decomposition.SingleNodeExchange()
     assert exchange is not None, "Exchange runtime must not be None."
+    horizontal_limiter: advection_horizontal.HorizontalFluxLimiter | None
     match config.horizontal_advection_limiter:
         case HorizontalAdvectionLimiter.NO_LIMITER:
-            horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
+            horizontal_limiter = advection_horizontal.NoLimiter()
         case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
             horizontal_limiter = advection_horizontal.PositiveDefinite(
                 grid=grid,
@@ -413,6 +441,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
         case _:
             raise NotImplementedError("Unknown horizontal advection limiter.")
 
+    horizontal_advection: advection_horizontal.HorizontalAdvection
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
             horizontal_advection = advection_horizontal.NoAdvection(
@@ -439,6 +468,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
         case _:
             raise NotImplementedError("Unknown horizontal advection type.")
 
+    vertical_limiter: advection_vertical.VerticalLimiter
     match config.vertical_advection_limiter:
         case VerticalAdvectionLimiter.NO_LIMITER:
             vertical_limiter = advection_vertical.NoLimiter(grid=grid, backend=backend)
@@ -447,6 +477,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
         case _:
             raise NotImplementedError("Unknown vertical advection limiter.")
 
+    vertical_advection: advection_vertical.VerticalAdvection
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
             vertical_advection = advection_vertical.NoAdvection(

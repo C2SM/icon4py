@@ -39,7 +39,7 @@ def extrapolate_at_top(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _extrapolate_at_top(
         wgtfacq_e,
         vn,

@@ -6,15 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import horizontal as h_grid, icon
-from icon4py.tools.common import logger
 
 
-log = logger.setup_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def print_grid_decomp_info(
@@ -25,7 +26,7 @@ def print_grid_decomp_info(
     num_edges: int,
     num_verts: int,
 ) -> None:
-    log.info(
+    logger.info(
         "icon_grid:cell_start for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
@@ -35,14 +36,14 @@ def print_grid_decomp_info(
             ]
         ),
     )
-    log.info(
+    logger.info(
         "icon_grid:cell_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
             [f"{k!s}  - {icon_grid.end_index(k)}" for k in h_grid.get_domains_for_dim(dims.CellDim)]
         ),
     )
-    log.info(
+    logger.info(
         "icon_grid:vert_start for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
@@ -52,7 +53,7 @@ def print_grid_decomp_info(
             ]
         ),
     )
-    log.info(
+    logger.info(
         "icon_grid:vert_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
@@ -62,7 +63,7 @@ def print_grid_decomp_info(
             ]
         ),
     )
-    log.info(
+    logger.info(
         "icon_grid:edge_start for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
@@ -72,7 +73,7 @@ def print_grid_decomp_info(
             ]
         ),
     )
-    log.info(
+    logger.info(
         "icon_grid:edge_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
@@ -82,47 +83,47 @@ def print_grid_decomp_info(
 
     for offset, connectivity in icon_grid.connectivities.items():
         if gtx_common.is_neighbor_table(connectivity):
-            log.debug(
+            logger.debug(
                 f"icon_grid:{offset} for rank {processor_props.rank} is.... {connectivity.asnumpy()}"
             )
 
-    log.info(
+    logger.info(
         "c_glb_index for rank %s is.... %s",
         processor_props.rank,
         decomposition_info.global_index(dims.CellDim)[0:num_cells],
     )
-    log.info(
+    logger.info(
         "e_glb_index for rank %s is.... %s",
         processor_props.rank,
         decomposition_info.global_index(dims.EdgeDim)[0:num_edges],
     )
-    log.info(
+    logger.info(
         "v_glb_index for rank %s is.... %s",
         processor_props.rank,
         decomposition_info.global_index(dims.VertexDim)[0:num_verts],
     )
 
-    log.info(
+    logger.info(
         "c_owner_mask for rank %s is.... %s",
         processor_props.rank,
         decomposition_info.owner_mask(dims.CellDim)[0:num_cells],
     )
-    log.info(
+    logger.info(
         "e_owner_mask for rank %s is.... %s",
         processor_props.rank,
         decomposition_info.owner_mask(dims.EdgeDim)[0:num_edges],
     )
-    log.info(
+    logger.info(
         "v_owner_mask for rank %s is.... %s",
         processor_props.rank,
         decomposition_info.owner_mask(dims.VertexDim)[0:num_verts],
     )
 
-    log.info(
+    logger.info(
         f"local cells = {decomposition_info.global_index(dims.CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
     )
-    log.info(
+    logger.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )

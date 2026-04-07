@@ -15,7 +15,7 @@ from click.testing import CliRunner
 from icon4py.tools.py2fgen import _cli, _utils
 
 
-logger = _utils.setup_logger("test_codegen_references")
+logger = _utils.setup_logger(__name__)
 
 
 @pytest.fixture
