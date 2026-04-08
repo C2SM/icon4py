@@ -193,7 +193,12 @@ class Icon4pyDriver:
                 # diffusion.run with the proper DiffusionConfig equivalent to
                 # the fortran
                 # IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
-                self.exchange.exchange(dims.CellDim, prognostic_states.next.w)
+                self.exchange.exchange(
+                    dims.CellDim,
+                    prognostic_states.next.w,
+                    prognostic_states.next.theta_v,
+                    prognostic_states.next.exner,
+                )
             timer_diffusion.capture()
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
