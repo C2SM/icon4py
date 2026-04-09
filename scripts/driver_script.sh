@@ -20,6 +20,7 @@ export GT4PY_BUILD_CACHE_LIFETIME=PERSISTENT
 export GT4PY_BUILD_CACHE_DIR=/capstor/scratch/cscs/cong/tmp_gpu/
 # export GT4PY_BUILD_CACHE_DIR=$PWD
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
+# bafrin: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-zen3/gcc-13.2.0/nvhpc-25.1-kdtcsjxvnq2o6s2xxetoirzs6apnaeq5/Linux_x86_64/25.1/compilers/lib
 export CC=$(which gcc)
 export CXX=$(which g++)
 export MPICH_CC=$(which gcc)

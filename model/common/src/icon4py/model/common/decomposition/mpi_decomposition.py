@@ -458,8 +458,8 @@ class GlobalReductions(Reductions):
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
         local_red_val = local_reduction(buffer)
-        recv_buffer = array_ns.empty_like(local_red_val)
-        # recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        # recv_buffer = array_ns.empty_like(local_red_val)
+        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
         if hasattr(
             array_ns, "cuda"
         ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
@@ -508,8 +508,8 @@ class GlobalReductions(Reductions):
         )
 
     def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        log.debug(f"Debugging mean: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)}")
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
+        log.debug(f"Debugging mean: size {buffer.shape} max {array_ns.max(buffer)} min {array_ns.min(buffer)} sum {array_ns.sum(buffer)} buffer size {global_buffer_size}")
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
 

@@ -185,7 +185,6 @@ def initialize_granules(
     )
 
     log.info("creating edge geometry")
-    tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION)
     edge_geometry = grid_states.EdgeParams(
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
         inverse_primal_edge_lengths=geometry_field_source.get(
