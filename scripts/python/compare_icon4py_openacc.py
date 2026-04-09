@@ -1,3 +1,5 @@
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -13,6 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
+import sys
 from typing import Any, TypeAlias
 
 import typer
@@ -412,3 +415,7 @@ def compare_icon4py_openacc():
 
     print("")
     print(f"Plot figure saved to {output_file}")
+
+
+if __name__ == "__main__":
+    sys.exit(cli())

@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
 #
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
@@ -21,7 +22,10 @@ from typing import Annotated, Optional
 
 import typer
 
-from . import _common as common
+if __name__ == "__main__":
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+
+from python import _common as common
 
 
 cli = typer.Typer(
@@ -220,3 +224,7 @@ def proxy(
     if failed:
         typer.echo(f"Failed: {', '.join(failed)}", err=True)
         raise typer.Exit(code=1)
+
+
+if __name__ == "__main__":
+    sys.exit(cli())

@@ -1,4 +1,5 @@
 #!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -11,7 +12,6 @@
 
 from __future__ import annotations
 
-import os
 import pathlib
 import re
 import shutil

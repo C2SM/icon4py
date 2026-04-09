@@ -1,3 +1,5 @@
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -10,18 +12,21 @@
 
 from __future__ import annotations
 
+import pathlib
 import re
 import subprocess
 import sys
-from pathlib import Path
 from typing import Annotated, Final
 
 import typer
 
-from . import _common as common
+if __name__ == "__main__":
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+
+from python import _common as common
 
 
-def _find_versioned_package_dirs() -> list[Path]:
+def _find_versioned_package_dirs() -> list[pathlib.Path]:
     """Return directories of all pyproject.toml files in the repo that have a
     ``[tool.bumpversion]`` section, sorted with the repo root last."""
     dirs = []
@@ -47,7 +52,7 @@ _ICON4PY_DEP_CONSTRAINT_RE: Final = re.compile(
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 
-def _detect_current_version(pkg_dirs: list[Path]) -> str:
+def _detect_current_version(pkg_dirs: list[pathlib.Path]) -> str:
     """Read the current version from the first versioned package found."""
     for pkg_dir in pkg_dirs:
         pyproject = pkg_dir / "pyproject.toml"
@@ -58,7 +63,7 @@ def _detect_current_version(pkg_dirs: list[Path]) -> str:
     raise RuntimeError("Could not detect current version from any namespace package.")
 
 
-def _bump_package(pkg_dir: Path, new_version: str, dry_run: bool, verbose: bool) -> None:
+def _bump_package(pkg_dir: pathlib.Path, new_version: str, dry_run: bool, verbose: bool) -> None:
     pyproject = pkg_dir / "pyproject.toml"
     if not pyproject.exists():
         typer.echo(f"  [skip] no pyproject.toml in {pkg_dir}", err=True)
@@ -137,3 +142,7 @@ def bump_versions(
     _update_cross_package_constraints(current_version, new_version, dry_run=dry_run)
 
     typer.echo("\nDone.")
+
+
+if __name__ == "__main__":
+    sys.exit(cli())

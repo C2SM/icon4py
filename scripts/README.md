@@ -16,7 +16,7 @@ other recipes through a single entry point.
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/) — the entry point uses `uv run --script`
-  with PEP 723 inline metadata, so dependencies (`typer`) are installed
+  with PEP 723 inline metadata, so dependencies (e.g. `typer`) are installed
   automatically into an ephemeral environment.
 - [bats-core](https://github.com/bats-core/bats-core) — only needed to run
   Bash tests.
@@ -27,7 +27,7 @@ other recipes through a single entry point.
 scripts/
 ├── run                      # Single entry point (uv shebang)
 │
-├── python/                  # Python package (importable modules)
+├── python/                  # Python scripts (importable package)
 │   ├── __init__.py
 │   ├── _common.py           # Shared helpers (logging, paths, subprocess)
 │   ├── _<...>.py            # Utility: helper module, not a script
