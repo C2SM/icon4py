@@ -26,7 +26,7 @@ dependencies = [
   # external dependencies
   'clang-format>=22.1.0',
   'cffi>=1.5',
-  'gt4py==1.1.8',
+  'gt4py==1.1.9',
   "numpy>=1.23.3",
   'packaging>=20.0',
   'click>=8.1.7',
@@ -42,9 +42,10 @@ requires-python = '>=3.10'
 version = "0.1.0"
 
 [project.optional-dependencies]
-cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
-cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
+cuda12 = ['icon4py-common[cuda12]']
+cuda13 = ['icon4py-common[cuda13]']
 profiling = ['viztracer>=1.1.0']
+rocm7 = ["icon4py-common[rocm7]"]
 
 [project.scripts]
 py2fgen = 'icon4py.tools.py2fgen._cli:main'

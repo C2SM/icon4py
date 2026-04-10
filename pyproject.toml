@@ -97,12 +97,13 @@ version = "0.1.0"
 
 [project.optional-dependencies]
 all = ["icon4py[distributed,fortran,io,testing,profiling]"]
-cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
+cuda13 = ["icon4py-common[cuda13]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-bindings~=0.1.0"]
 io = ["icon4py-common[io]"]
 profiling = ['viztracer>=1.1.0']
+rocm7 = ["icon4py-common[rocm7]"]
 testing = ["icon4py-testing"]
 
 [project.urls]
@@ -367,7 +368,7 @@ packages = []
 
 # -- uv: packages & workspace --
 [tool.uv]
-conflicts = [[{extra = "cuda11"}, {extra = "cuda12"}]]
+conflicts = [[{extra = "cuda12"}, {extra = "cuda13"}, {extra = "rocm7"}]]
 
 [[tool.uv.index]]
 explicit = true

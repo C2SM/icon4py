@@ -31,7 +31,7 @@ dependencies = [
   'icon4py-tools~=0.1.0',
   # external dependencies
   'cffi>=1.5',
-  'gt4py==1.1.8',
+  'gt4py==1.1.9',
   "numpy>=1.23.3",
   'packaging>=20.0'
 ]
