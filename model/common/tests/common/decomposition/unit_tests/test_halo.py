@@ -188,10 +188,10 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_owned_halo_mask_contiguous(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
-    props = dummy_four_ranks(rank)
+    process_props = dummy_four_ranks(rank)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
-        process_props=props,
+        process_props=process_props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
 
@@ -219,8 +219,8 @@ def test_global_to_local_index(offset, rank):
         for k, v in grid.connectivities.items()
         if gtx_common.is_neighbor_connectivity(v)
     }
-    props = dummy_four_ranks(rank)
-    halo_constructor = halo.IconLikeHaloConstructor(props, neighbor_tables)
+    process_props = dummy_four_ranks(rank)
+    halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)
     decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
     source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
 
@@ -250,10 +250,10 @@ def test_global_to_local_index(offset, rank):
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_horizontal_size(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
-    props = dummy_four_ranks(rank)
+    process_props = dummy_four_ranks(rank)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
-        process_props=props,
+        process_props=process_props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     horizontal_size = decomp_info.get_horizontal_size()

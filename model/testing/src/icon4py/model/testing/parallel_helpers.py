@@ -23,14 +23,14 @@ _log = logging.getLogger(__file__)
 
 
 def check_comm_size(
-    props: definitions.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
+    process_props: definitions.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
 ) -> None:
-    if props.comm_size not in sizes:
-        pytest.xfail(f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}")
+    if process_props.comm_size not in sizes:
+        pytest.xfail(f"wrong comm size: {process_props.comm_size}: test only works for comm-sizes: {sizes}")
 
 
-def log_process_properties(props: definitions.ProcessProperties) -> None:
-    _log.info(f"rank={props.rank}/{props.comm_size}")
+def log_process_properties(process_props: definitions.ProcessProperties) -> None:
+    _log.info(f"rank={process_props.rank}/{process_props.comm_size}")
 
 
 def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> None:
@@ -41,24 +41,24 @@ def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> N
     )
 
 
-def gather_field(field: np.ndarray, props: definitions.ProcessProperties) -> tuple:
+def gather_field(field: np.ndarray, process_props: definitions.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
-    _log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+    _log.info(f"gather_field on rank={process_props.rank} - gathering field of local shape {field.shape}")
     # Because of sparse indexing the field may have a non-contigous layout,
     # which Gatherv doesn't support. Make sure the field is contiguous.
     field = np.ascontiguousarray(field)
     constant_length = functools.reduce(operator.mul, constant_dims, 1)
-    local_sizes = np.array(props.comm.gather(field.size, root=0))
-    if props.rank == 0:
+    local_sizes = np.array(process_props.comm.gather(field.size, root=0))
+    if process_props.rank == 0:
         recv_buffer = np.empty(np.sum(local_sizes), dtype=field.dtype)
         _log.info(
-            f"gather_field on rank = {props.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
+            f"gather_field on rank = {process_props.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
         )
     else:
         recv_buffer = None
 
-    props.comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
-    if props.rank == 0:
+    process_props.comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
+    if process_props.rank == 0:
         local_first_dim = tuple(sz // constant_length for sz in local_sizes)
         _log.info(
             f" gather_field on rank = 0: computed local dims {local_first_dim} - constant dims {constant_dims}"

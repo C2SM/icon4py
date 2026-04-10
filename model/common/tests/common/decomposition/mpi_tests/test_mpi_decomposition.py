@@ -209,20 +209,19 @@ def test_domain_descriptor_id_are_globally_unique(
     num: int,
     process_props: definitions.ProcessProperties,
 ) -> None:
-    props = process_props
-    size = props.comm_size
-    id_gen = definitions.DomainDescriptorIdGenerator(process_props=props)
+    size = process_props.comm_size
+    id_gen = definitions.DomainDescriptorIdGenerator(process_props=process_props)
     id1 = id_gen()
-    assert id1 == props.comm_size * props.rank
-    assert id1 < props.comm_size * (props.rank + 2)
+    assert id1 == process_props.comm_size * process_props.rank
+    assert id1 < process_props.comm_size * (process_props.rank + 2)
     ids = []
     ids.append(id1)
     for _ in range(1, num * size):
         next_id = id_gen()
         assert next_id > id1
         ids.append(next_id)
-    all_ids = props.comm.gather(ids, root=0)
-    if props.rank == 0:
+    all_ids = process_props.comm.gather(ids, root=0)
+    if process_props.rank == 0:
         all_ids = np.asarray(all_ids).flatten()
         assert len(all_ids) == size * size * num
         assert len(all_ids) == len(set(all_ids))
@@ -264,9 +263,8 @@ def test_create_multi_rank_runtime_with_mpi(
     decomposition_info: definitions.DecompositionInfo,
     process_props: definitions.ProcessProperties,
 ) -> None:
-    props = process_props
-    exchange = definitions.create_exchange(props, decomposition_info)
-    if props.comm_size > 1:
+    exchange = definitions.create_exchange(process_props, decomposition_info)
+    if process_props.comm_size > 1:
         assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
         assert isinstance(exchange, definitions.SingleNodeExchange)

@@ -128,11 +128,11 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
 
     def __init__(
         self,
-        props: definitions.ProcessProperties,
+        process_props: definitions.ProcessProperties,
         domain_decomposition: definitions.DecompositionInfo,
     ):
-        self._context = make_context(props.comm, False)
-        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
+        self._context = make_context(process_props.comm, False)
+        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(process_props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
@@ -412,17 +412,17 @@ class MultiNodeResult(definitions.ExchangeResult):
 
 @definitions.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
-    props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
+    process_props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
 ) -> definitions.ExchangeRuntime:
-    if props.comm_size > 1:
-        return GHexMultiNodeExchange(props, decomp_info)
+    if process_props.comm_size > 1:
+        return GHexMultiNodeExchange(process_props, decomp_info)
     else:
         return SingleNodeExchange()
 
 
 @dataclasses.dataclass
 class GlobalReductions(Reductions):
-    props: definitions.ProcessProperties
+    process_props: definitions.ProcessProperties
 
     @staticmethod
     def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
@@ -459,7 +459,7 @@ class GlobalReductions(Reductions):
             array_ns, "cuda"
         ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
             array_ns.cuda.runtime.deviceSynchronize()
-        self.props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
+        self.process_props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
         return recv_buffer.item()
 
     def _calc_buffer_size(
@@ -516,5 +516,5 @@ class GlobalReductions(Reductions):
 
 
 @definitions.create_reduction.register(MPICommProcessProperties)
-def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
-    return GlobalReductions(props)
+def create_global_reduction(process_props: MPICommProcessProperties) -> Reductions:
+    return GlobalReductions(process_props)
