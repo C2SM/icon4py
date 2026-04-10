@@ -99,7 +99,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     )
 
     # TODO (jcanton/msimberg): unify the two checks below and remove code duplication
-    fields = ["w", "vn", "exner", "theta_v", "rho"]
+    fields = ["vn", "w", "exner", "theta_v", "rho"]
     serial_reference_fields: dict[str, object] = {
         field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
         for field_name in fields
