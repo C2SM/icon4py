@@ -590,7 +590,7 @@ def _compare_metrics_fields_single_multi_rank(
             dim=field_ref.domain.dims[0],
             global_reference_field=field_ref.asnumpy(),
             local_field=field.asnumpy(),
-            check_halos=(attrs_name != metrics_attributes.WGTFAC_E),
+            check_halos=True,
             atol=0.0,
         )
 
