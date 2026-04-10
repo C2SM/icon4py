@@ -496,6 +496,7 @@ class GlobalReductions(Reductions):
         upper_bound: gtx.int32,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
+        # TODO (nfarabullini): use owned mask instead of upper lower bound, and move as "internal argument"
         buffer = buffer[lower_bound:upper_bound]
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
@@ -513,6 +514,7 @@ class GlobalReductions(Reductions):
         upper_bound: gtx.int32,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
+        # TODO (nfarabullini): use owned mask instead of upper lower bound, and move as "internal argument"
         buffer = buffer[lower_bound:upper_bound]
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
