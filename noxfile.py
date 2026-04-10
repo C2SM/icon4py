@@ -19,7 +19,7 @@ import nox
 
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["test_model", "test_bindings"]
+nox.options.sessions = ["test_model", "test_bindings_and_tools"]
 
 
 # -- Parameter sets --
