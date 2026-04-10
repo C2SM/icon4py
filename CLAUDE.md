@@ -51,7 +51,9 @@ Fields dumped immediately after initialization (before timestepping) using globa
 
 **Root cause of vn/w init diffs:** GPU JIT compilation artifact. `vn` depends on `eta_v_at_edge`, computed by the GT4Py stencil `cell_2_edge_interpolation`. DaCe compiles separate CUDA kernels for different domain sizes (122,880 edges at 1 rank vs ~31,840 at 4 ranks). The CUDA compiler may make different FMA (fused multiply-add) contraction decisions per kernel, giving results that differ by up to 1 ULP. These propagate through `cos`/`sin`/power operations in the `vn` formula, amplifying to ~1.42e-14. The `w` diffs (~5e-19) are downstream propagation from `vn` through `init_w()`.
 
-**Conclusion:** Init is effectively identical (diffs at machine epsilon). The ~1e-7 relative differences after 10 timesteps are chaotic amplification of these seed diffs through the nonlinear dynamics, not a bug. This is expected behavior for a chaotic system like atmospheric dynamics.
+**Init conclusion:** Init is effectively identical (diffs at machine epsilon) after NumPy replacements for `cell_2_edge_interpolation` and `edge_2_cell_vector_rbf_interpolation`. With these replacements, all init fields are bitwise identical across rank counts.
+
+**Timestepping diffs (under investigation):** The ~1e-7 relative differences after 10 timesteps were initially attributed to chaotic amplification, but a missing halo exchange for `wgtfac_e` (`do_exchange=False` in `metrics_factory.py`, fixed in `edd455f16`) is a more likely cause. TODO: re-run comparison with the wgtfac_e exchange fix to verify.
 
 **Error magnitudes (JW r2b5, 10 timesteps, --reproducible-reductions enabled):**
 
@@ -71,7 +73,7 @@ Fields dumped immediately after initialization (before timestepping) using globa
 - **StructuredDecomposer** (added 2026-04): Exploits the structured cell ordering. Assigns contiguous groups of (sub-)blocks to ranks. Sub-millisecond execution. Supported rank counts: any divisor of `20*R² * 4^k` for k=0,...,B. For R02 grids (80 base blocks): 1, 2, 4, 5, 8, 10, 16, 20, 32, 40, 64, 80, 128, 160, 256, 320, 512, ...
 - **MetisDecomposer**: Uses pymetis (CSR interface) for graph partitioning. Slow for large grids (~215s at r2b8, expected worse at r2b9). Used as fallback when rank count is not compatible with StructuredDecomposer.
 - **SingleNodeDecomposer**: Assigns all cells to rank 0.
-- Selection logic in `driver_utils.py::create_grid_manager()`: uses StructuredDecomposer by default, falls back to MetisDecomposer if rank count incompatible.
+- Selection logic in `driver_utils.py::create_grid_manager()`: uses MetisDecomposer by default; `--structured-decomposition` CLI flag opts into StructuredDecomposer when rank count is compatible.
 
 ### Grid init performance timers
 
