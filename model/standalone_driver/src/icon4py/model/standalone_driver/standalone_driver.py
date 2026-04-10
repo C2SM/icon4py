@@ -135,6 +135,7 @@ class Icon4pyDriver:
         )
 
         self.setup_diagnostic_stencils()
+        self._compute_global_index_mapping()
 
         self.tracer_state = tracers.TracerState(
             qv=data_alloc.zero_field(
@@ -180,6 +181,20 @@ class Icon4pyDriver:
                 dtype=ta.wpfloat,
             ),
         )
+
+    def _compute_global_index_mapping(self) -> None:
+        self.global_index_sizes, self.gathered_global_indices = {}, {}
+        for dim in (dims.CellDim, dims.EdgeDim):
+            index_sizes, gathered_indices = driver_utils.gather_field(
+                data_alloc.as_numpy(
+                    self.decomposition_info.global_index(
+                        dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+                    )
+                ),
+                self.processor_props,
+            )
+            self.global_index_sizes[dim] = index_sizes
+            self.gathered_global_indices[dim] = gathered_indices
 
     def setup_diagnostic_stencils(self):
         cell_domain = h_grid.domain(dims.CellDim)
@@ -300,36 +315,31 @@ class Icon4pyDriver:
 
     def pack_data(
         self,
+        prognostic_state: prognostics.PrognosticState,
         diagnostic_state: diagnostics.DiagnosticState,
     ) -> dict:
         distributed_model_data = {
-            "cell_lat": self.static_field_factories.geometry_field_source.get(
-                geom_attr.CELL_LAT
-            ).asnumpy(),
-            "cell_lon": self.static_field_factories.geometry_field_source.get(
-                geom_attr.CELL_LON
-            ).asnumpy(),
-            "cell_area": self.static_field_factories.geometry_field_source.get(
-                geom_attr.CELL_AREA
-            ).asnumpy(),
-            "dz": self.static_field_factories.metrics_field_source.get(
-                metrics_attr.DDQZ_Z_FULL
-            ).asnumpy(),
-            "z_mc": self.static_field_factories.metrics_field_source.get(
-                metrics_attr.Z_MC
-            ).asnumpy(),
-            "temperature": diagnostic_state.temperature.asnumpy(),
-            "pressure": diagnostic_state.pressure.asnumpy(),
-            "sfc_pressure": diagnostic_state.surface_pressure.asnumpy(),
-            "u": diagnostic_state.u.asnumpy(),
-            "v": diagnostic_state.v.asnumpy(),
+            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT),
+            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON),
+            "cell_area": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_AREA),
+            "dz": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC),
+            "temperature": diagnostic_state.temperature,
+            "pressure": diagnostic_state.pressure,
+            "sfc_pressure": diagnostic_state.surface_pressure,
+            "vn": prognostic_state.vn,
+            "w": prognostic_state.w,
+            "u": diagnostic_state.u,
+            "v": diagnostic_state.v,
         }
         gathered_model_data = {}
         for k, v in distributed_model_data.items():
-            owned_entries = v[
+            v_numpy_array = v.asnumpy()
+            v_dim = v.domain.dims[0]
+            owned_entries = v_numpy_array[
                 data_alloc.as_numpy(
                     self.decomposition_info.local_index(
-                        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+                        v_dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
                     )
                 )
             ]
@@ -337,20 +347,12 @@ class Icon4pyDriver:
                 owned_entries, self.processor_props
             )
 
-            global_index_sizes, gathered_global_indices = driver_utils.gather_field(
-                data_alloc.as_numpy(
-                    self.decomposition_info.global_index(
-                        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.OWNED
-                    )
-                ),
-                self.processor_props,
-            )
             if self.processor_props.rank == 0:
                 assert np.all(
-                    gathered_sizes == global_index_sizes
-                ), f"gathered field sizes do not match:  {dims.CellDim} {gathered_sizes} - {global_index_sizes}"
+                    gathered_sizes == self.global_index_sizes[v_dim]
+                ), f"gathered field sizes do not match: {v_dim} {gathered_sizes} - {self.global_index_sizes[v_dim]}"
                 sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
-                sorted_[gathered_global_indices] = gathered_field
+                sorted_[self.gathered_global_indices[v_dim]] = gathered_field
                 gathered_model_data[k] = sorted_
         return gathered_model_data
 
@@ -383,7 +385,7 @@ class Icon4pyDriver:
             log.debug(f"Running diagnostic calculations and output ({label})")
             self.compute_model_data(diagnostic_state, prognostic_state)
             out_file = self.config.output_path / f"model_data_{label}.pkl"
-            model_data = self.pack_data(diagnostic_state)
+            model_data = self.pack_data(prognostic_state, diagnostic_state)
             if self.processor_props.rank == 0:
                 out_file.parent.mkdir(parents=True, exist_ok=True)
                 with open(out_file, "wb") as file_obj:
