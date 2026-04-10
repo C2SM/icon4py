@@ -248,9 +248,9 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
-        assert (
-            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+            f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        )
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:
@@ -489,7 +489,14 @@ class GlobalReductions(Reductions):
             array_ns,
         )
 
-    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def sum(
+        self,
+        buffer: data_alloc.NDArray,
+        lower_bound: gtx.int32,
+        upper_bound: gtx.int32,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        buffer = buffer[lower_bound:upper_bound]
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -499,7 +506,14 @@ class GlobalReductions(Reductions):
             array_ns,
         )
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def mean(
+        self,
+        buffer: data_alloc.NDArray,
+        lower_bound: gtx.int32,
+        upper_bound: gtx.int32,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        buffer = buffer[lower_bound:upper_bound]
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")

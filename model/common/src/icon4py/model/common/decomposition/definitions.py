@@ -593,11 +593,19 @@ class Reductions(Protocol):
     ) -> state_utils.ScalarType: ...
 
     def sum(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+        self,
+        buffer: data_alloc.NDArray,
+        lower_bound: gtx.int32,
+        upper_bound: gtx.int32,
+        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType: ...
 
     def mean(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+        self,
+        buffer: data_alloc.NDArray,
+        lower_bound: gtx.int32,
+        upper_bound: gtx.int32,
+        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType: ...
 
 
@@ -608,10 +616,22 @@ class SingleNodeReductions(Reductions):
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.max(buffer).item()
 
-    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def sum(
+        self,
+        buffer: data_alloc.NDArray,
+        lower_bound: gtx.int32,
+        upper_bound: gtx.int32,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item()
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def mean(
+        self,
+        buffer: data_alloc.NDArray,
+        lower_bound: gtx.int32,
+        upper_bound: gtx.int32,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item() / buffer.size
 
 
