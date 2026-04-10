@@ -93,7 +93,7 @@ def test_standalone_driver_compare_single_multi_rank(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=1e-6,
+            atol=0.0, # TODO (jcanton, msimberg): only on CPU (probably?)
         )
 
 

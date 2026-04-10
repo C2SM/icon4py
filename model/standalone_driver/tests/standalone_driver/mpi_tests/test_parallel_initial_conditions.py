@@ -120,7 +120,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=0.0,
+            atol=0.0, # TODO (jcanton, msimberg): only on CPU (probably?)
         )
 
     fields = ["u", "v"]
@@ -143,5 +143,5 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=0.0,
+            atol=0.0, # TODO (jcanton, msimberg): only on CPU (probably?)
         )
