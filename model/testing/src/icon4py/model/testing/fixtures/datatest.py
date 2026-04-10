@@ -121,7 +121,7 @@ def _download_ser_data(
     # not a fixture to be able to use this function outside of pytest
     comm_size = processor_props.comm_size
     try:
-        root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
+        root_url = definitions.SERIALIZED_DATA_ROOT_URL
         archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
         archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
         uri = dt_utils.get_serialized_data_url(root_url, archive_path)

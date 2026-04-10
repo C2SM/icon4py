@@ -42,7 +42,7 @@ def get_experiment_archive_filename(experiment: definitions.Experiment, comm_siz
 
 def get_serialized_data_url(root_url: str, filepath: str) -> str:
     """Build a download URL for serialized data file from root URL."""
-    return f"{root_url}/download?path=%2F&files={urllib.parse.quote(filepath)}"
+    return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 
 def get_datapath_for_experiment(

@@ -212,12 +212,8 @@ class Grids:
     )
 
 
-# Root URLs for downloading serialized data by communicator size
-SERIALIZED_DATA_ROOT_URLS: Final = {
-    1: "https://polybox.ethz.ch/index.php/s/KBsngNwwzRcMG5J",  # (jcanton)
-    2: "https://polybox.ethz.ch/index.php/s/KfmJEEnaKCFgGSM",  # (ongchia)
-    4: "https://polybox.ethz.ch/index.php/s/eLLcDtxek858ayt",  # (havogt)
-}
+# TODO(msimberg): This is a test bucket. Change to final URL.
+SERIALIZED_DATA_ROOT_URL: Final = "https://rgw.cscs.ch/c2sm:my-test-bucket"
 
 
 @dataclasses.dataclass
