@@ -93,7 +93,6 @@ def check_local_global_field(
         ]
     )
 
-    print("") # otherwise the first statement is on the same line as the test name
     def _non_blocking_allclose(
         a: np.ndarray, b: np.ndarray, atol: float, verbose: bool, label: str = ""
     ) -> None:
@@ -122,6 +121,46 @@ def check_local_global_field(
             atol=atol,
             verbose=True,
             label="halos",
+        )
+        a = global_reference_field[
+                data_alloc.as_numpy(
+                    decomposition_info.global_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_1
+                    )
+                )
+            ]
+        b = local_field[
+                data_alloc.as_numpy(
+                    decomposition_info.local_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_1
+                    )
+                )
+            ]
+        if a.shape[0] > 0 and b.shape[0] > 0:
+            _non_blocking_allclose(
+                a, b,
+                atol=atol,
+                verbose=True,
+                label="halos_1",
+            )
+        _non_blocking_allclose(
+            global_reference_field[
+                data_alloc.as_numpy(
+                    decomposition_info.global_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_2
+                    )
+                )
+            ],
+            local_field[
+                data_alloc.as_numpy(
+                    decomposition_info.local_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_2
+                    )
+                )
+            ],
+            atol=atol,
+            verbose=True,
+            label="halos_2",
         )
 
     # Compare owned local field, excluding halos, against global reference

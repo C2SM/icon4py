@@ -161,6 +161,8 @@ class DecompositionInfo:
         ALL = 0
         OWNED = 1
         HALO = 2
+        HALO_LEVEL_1 = 11
+        HALO_LEVEL_2 = 12
 
     @utils.chainable
     def set_dimension(
@@ -188,6 +190,14 @@ class DecompositionInfo:
                 index = self._to_local_index(dim)
                 mask = self._owner_mask[dim]
                 return index[~mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_1:
+                index = self._to_local_index(dim)
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.FIRST_HALO_LEVEL)
+                return index[mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_2:
+                index = self._to_local_index(dim)
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.SECOND_HALO_LEVEL)
+                return index[mask]
             case DecompositionInfo.EntryType.OWNED:
                 index = self._to_local_index(dim)
                 mask = self._owner_mask[dim]
@@ -213,6 +223,12 @@ class DecompositionInfo:
                 return self._global_index[dim][self._owner_mask[dim]]
             case DecompositionInfo.EntryType.HALO:
                 return self._global_index[dim][~self._owner_mask[dim]]
+            case DecompositionInfo.EntryType.HALO_LEVEL_1:
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.FIRST_HALO_LEVEL)
+                return self._global_index[dim][mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_2:
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.SECOND_HALO_LEVEL)
+                return self._global_index[dim][mask]
             case _:
                 raise NotImplementedError()
 
