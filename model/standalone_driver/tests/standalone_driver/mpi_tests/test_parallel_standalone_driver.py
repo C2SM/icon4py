@@ -79,7 +79,7 @@ def test_standalone_driver_compare_single_multi_rank(
     }
 
     for field_name in fields:
-        print(f"verifying field {field_name}")
+        print(f"\nverifying field {field_name}")
         global_reference_field = processor_props.comm.bcast(
             serial_reference_fields.get(field_name),
             root=0,
