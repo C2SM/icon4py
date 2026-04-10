@@ -28,10 +28,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           python-version: ${{ matrix.python-version }}
-      - name: run nox session - bindings
+      - name: run nox session - tools and bindings
         env:
           NUM_PROCESSES: auto
           PYTEST_ADDOPTS: "--durations=0"
         shell: bash
         run: |
-          uv run nox -s "test_bindings-${{matrix.python-version}}(unittest)" --
+          uv run nox -s "test_tools_and_bindings-${{matrix.python-version}}(unittest)" --

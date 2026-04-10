@@ -6,12 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import os
-
-import click.testing as click_testing
 import pytest
 
-from icon4py.model.common import type_alias
 from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
@@ -50,10 +46,7 @@ except KeyError:
     from icon4py.model.testing.pytest_hooks import *  # noqa: F403
 
 
-__all__ = [  # noqa: RUF022
-    # local:
-    "cli",
-    "test_temp_dir",
+__all__ = [
     # imported fixtures:
     "damping_height",
     "data_provider",
@@ -81,15 +74,3 @@ __all__ = [  # noqa: RUF022
     "substep_exit",
     "substep_init",
 ]
-
-
-@pytest.fixture
-def cli():
-    yield click_testing.CliRunner()
-    os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
-    type_alias.set_precision(type_alias.DEFAULT_PRECISION)
-
-
-@pytest.fixture
-def test_temp_dir():
-    return os.getenv("TEST_TEMP_DIR", None)

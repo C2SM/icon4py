@@ -245,6 +245,7 @@ markers = [
 ]
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
+  "bindings",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
@@ -253,8 +254,7 @@ pythonpath = [
   "model/driver",
   "model/standalone_driver",
   "model/testing",
-  "tools",
-  "bindings"
+  "tools"
 ]
 
 # -- ruff --
@@ -399,6 +399,7 @@ serialbox4py = {index = "test.pypi"}
 
 [tool.uv.workspace]
 members = [
+  "bindings",
   "model/atmosphere/advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
@@ -408,6 +409,5 @@ members = [
   "model/driver",
   "model/standalone_driver",
   "model/testing",
-  "tools",
-  "bindings"
+  "tools"
 ]

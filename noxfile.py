@@ -180,7 +180,7 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
         ),
     ],
 )
-def test_bindings(session: nox.Session, datatest: bool) -> None:
+def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran bindings and integration tools."""
     _install_session_venv(
         session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
