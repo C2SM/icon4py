@@ -64,7 +64,7 @@ Fields dumped immediately after initialization (before timestepping) using globa
 
 ### ICON grid structure
 
-- ICON grids with root R and bisection level B have `20*R²` base diamond blocks, each containing `4^B` cells in contiguous index order.
+- ICON grids with root R and bisection level B have `20*R²` base triangular blocks, each containing `4^B` cells in contiguous index order.
 - Cells within each block follow a recursive quad-tree subdivision: groups of `4^k` contiguous cells are always spatially compact.
 - Cross-block boundary connectivity is ~6% of all neighbor references at block level.
 

@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Protocol, runtime_checkable
+from typing import ClassVar, Protocol, runtime_checkable
 
 import gt4py.next as gtx
 
@@ -70,16 +70,37 @@ class StructuredDecomposer(Decomposer):
     """
     A decomposer that exploits the structured cell ordering of ICON grids.
 
-    ICON grids with root R and bisection level B have 20*R² base diamond blocks,
-    each containing 4^B cells in contiguous index order. The cells within each
-    block follow a recursive quad-tree subdivision, so blocks can be further
-    split into sub-blocks of 4^k cells.
+    ICON grids are built from an icosahedron (20 triangular faces). The faces
+    are ordered in 4 latitude rings of 5: north polar (0-4), north mid-lat
+    (5-9), south mid-lat (10-14), south polar (15-19). Adjacent faces pair
+    into 10 diamonds:
+      - d=0..4: face d + face d+5  (north polar + north mid-lat)
+      - d=5..9: face d+5 + face d+10  (south mid-lat + south polar)
 
-    This decomposer assigns contiguous groups of (sub-)blocks to ranks,
-    avoiding the expensive METIS graph partitioning entirely.
+    With root R, each face has R² sub-triangles, giving 10 diamonds of 2*R²
+    sub-triangles each. With bisection level B, each sub-triangle contains
+    4^B cells in contiguous index order following a recursive quad-tree.
 
-    Supported rank counts: any divisor of 20*R² * 4^k for k=0,1,...,B.
+    The decomposer assigns groups of diamonds (or sub-blocks within diamonds)
+    to ranks. At the coarsest level, 10 ranks get one diamond each. For more
+    ranks, the quad-tree subdivision within each sub-triangle is used.
+
+    Supported rank counts: any divisor of 10 * 2*R² * 4^k for k=0,...,B.
     """
+
+    N_DIAMONDS: ClassVar[int] = 10
+    DIAMOND_FACES: ClassVar[list[tuple[int, int]]] = [
+        (0, 5),
+        (1, 6),
+        (2, 7),
+        (3, 8),
+        (4, 9),  # north
+        (10, 15),
+        (11, 16),
+        (12, 17),
+        (13, 18),
+        (14, 19),  # south
+    ]
 
     def __init__(self, grid_root: int, grid_level: int):
         self._grid_root = grid_root
@@ -91,35 +112,49 @@ class StructuredDecomposer(Decomposer):
         import numpy as np
 
         n_cells = adjacency_matrix.shape[0]
-        n_base_blocks = 20 * self._grid_root**2
+        R = self._grid_root
+        B = self._grid_level
+        sub_tris_per_face = R**2
+        cells_per_sub_tri = 4**B
+        cells_per_face = sub_tris_per_face * cells_per_sub_tri
 
         # Find the smallest subdivision level k such that
-        # the number of sub-blocks is divisible by num_partitions
-        for k in range(self._grid_level + 1):
-            n_sub_blocks = n_base_blocks * (4**k)
-            if n_sub_blocks % num_partitions == 0:
+        # the total number of sub-blocks is divisible by num_partitions.
+        # At level k, each diamond has 2 * R² * 4^k sub-blocks.
+        for k in range(B + 1):
+            sub_blocks_per_diamond = 2 * sub_tris_per_face * (4**k)
+            total_sub_blocks = self.N_DIAMONDS * sub_blocks_per_diamond
+            if total_sub_blocks % num_partitions == 0:
                 break
         else:
-            valid = []
-            for kk in range(self._grid_level + 1):
-                nsb = n_base_blocks * (4**kk)
-                valid.extend(d for d in range(1, nsb + 1) if nsb % d == 0)
-            valid = sorted(set(valid))
+            valid = set()
+            for kk in range(B + 1):
+                nsb = self.N_DIAMONDS * 2 * sub_tris_per_face * (4**kk)
+                valid.update(d for d in range(1, nsb + 1) if nsb % d == 0)
+            valid_sorted = sorted(valid)
             raise ValueError(
                 f"StructuredDecomposer: {num_partitions} ranks cannot evenly divide "
-                f"the grid (root={self._grid_root}, level={self._grid_level}, "
-                f"{n_base_blocks} base blocks). "
-                f"Supported rank counts (up to {n_base_blocks * 4**self._grid_level}): "
-                f"{valid[:20]}{'...' if len(valid) > 20 else ''}"
+                f"the grid (root={R}, level={B}, {self.N_DIAMONDS} diamonds). "
+                f"Supported rank counts (up to {total_sub_blocks}): "
+                f"{valid_sorted[:20]}{'...' if len(valid_sorted) > 20 else ''}"
             )
 
-        sub_block_size = n_cells // n_sub_blocks
-        blocks_per_rank = n_sub_blocks // num_partitions
+        sub_block_size = cells_per_sub_tri // (4**k)
+        blocks_per_rank = total_sub_blocks // num_partitions
 
-        # Assign each cell to a rank based on its sub-block index
-        cell_indices = np.arange(n_cells, dtype=np.int32)
-        sub_block_ids = cell_indices // sub_block_size
-        partition = sub_block_ids // blocks_per_rank
+        partition = np.empty(n_cells, dtype=np.int32)
+        global_sub_block = 0
+
+        for face_a, face_b in self.DIAMOND_FACES:
+            for face in (face_a, face_b):
+                face_start = face * cells_per_face
+                for st in range(sub_tris_per_face):
+                    tri_start = face_start + st * cells_per_sub_tri
+                    for sb in range(4**k):
+                        cell_start = tri_start + sb * sub_block_size
+                        rank = global_sub_block // blocks_per_rank
+                        partition[cell_start : cell_start + sub_block_size] = rank
+                        global_sub_block += 1
 
         return data_alloc.array_namespace(adjacency_matrix).asarray(partition)
 
