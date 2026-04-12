@@ -28,11 +28,11 @@ from icon4py.model.common.decomposition.decomposer import StructuredDecomposer
 
 
 def valid_rank_counts(grid_root: int, grid_level: int, max_ranks: int = 320):
-    sub_tris_per_face = grid_root**2
+    max_depth = StructuredDecomposer._quad_depth(grid_root) + grid_level
     counts = set()
-    for k in range(grid_level + 1):
-        total = 10 * 2 * sub_tris_per_face * (4**k)
-        counts.update(d for d in range(1, min(total, max_ranks) + 1) if total % d == 0)
+    for d in range(max_depth + 1):
+        total = 10 * (4**d)
+        counts.update(r for r in range(1, min(total, max_ranks) + 1) if total % r == 0)
     return sorted(counts)
 
 
@@ -107,6 +107,27 @@ def precompute_grid(grid_file: str, max_ranks: int):
             "info": f"<b>{n_ranks} ranks</b> — {cells_per_rank} cells/rank",
         }
 
+    # Precompute wireframe edges (deduplicated)
+    # Offset vertices slightly outward so edges render above the mesh surface
+    r = np.sqrt(vx**2 + vy**2 + vz**2)
+    offset = 1.002  # 0.2% outward
+    ox = vx * offset / r
+    oy = vy * offset / r
+    oz = vz * offset / r
+
+    edges = set()
+    for c in range(n_cells):
+        v0, v1, v2 = voc[c]
+        for a, b in [(v0, v1), (v1, v2), (v2, v0)]:
+            edges.add((min(a, b), max(a, b)))
+
+    # Build line coordinates with None separators for Scatter3d
+    ex, ey, ez = [], [], []
+    for a, b in edges:
+        ex.extend([ox[a], ox[b], None])
+        ey.extend([oy[a], oy[b], None])
+        ez.extend([oz[a], oz[b], None])
+
     return {
         "label": label,
         "n_cells": n_cells,
@@ -116,6 +137,9 @@ def precompute_grid(grid_file: str, max_ranks: int):
         "i": voc[:, 0].tolist(),
         "j": voc[:, 1].tolist(),
         "k": voc[:, 2].tolist(),
+        "ex": ex,
+        "ey": ey,
+        "ez": ez,
         "mode_names": list(modes.keys()),
         "mode_colors": [m["colors"] for m in modes.values()],
         "mode_hover": [m["hover"] for m in modes.values()],
@@ -146,6 +170,7 @@ HTML_TEMPLATE = """\
   </select></label>
   <label>Mode: <select id="modeSelect" onchange="updatePlot()">
   </select></label>
+  <label><input type="checkbox" id="edgesCheck" onchange="toggleEdges()"> Show edges</label>
 </div>
 <div id="plot"></div>
 <div id="info"></div>
@@ -200,7 +225,7 @@ function updatePlot() {{
 }}
 
 function renderMesh(g, modeIdx) {{
-  const trace = {{
+  const mesh = {{
     type: "mesh3d",
     x: g.vx, y: g.vy, z: g.vz,
     i: g.i, j: g.j, k: g.k,
@@ -211,8 +236,21 @@ function renderMesh(g, modeIdx) {{
     lighting: {{ambient: 0.6, diffuse: 0.4, specular: 0.1}},
     lightposition: {{x: 1000, y: 1000, z: 1000}},
   }};
-  Plotly.react("plot", [trace], layout);
+  const edges = {{
+    type: "scatter3d",
+    mode: "lines",
+    x: g.ex, y: g.ey, z: g.ez,
+    line: {{color: "rgba(0,0,0,0.6)", width: 2}},
+    hoverinfo: "skip",
+    visible: document.getElementById("edgesCheck").checked,
+  }};
+  Plotly.react("plot", [mesh, edges], layout);
   document.getElementById("info").innerHTML = g.mode_info[modeIdx];
+}}
+
+function toggleEdges() {{
+  const visible = document.getElementById("edgesCheck").checked;
+  Plotly.restyle("plot", {{visible: visible}}, [1]);
 }}
 
 // Initial render

@@ -64,13 +64,18 @@ Fields dumped immediately after initialization (before timestepping) using globa
 
 ### ICON grid structure
 
-- ICON grids with root R and bisection level B have `20*R²` base triangular blocks, each containing `4^B` cells in contiguous index order.
-- Cells within each block follow a recursive quad-tree subdivision: groups of `4^k` contiguous cells are always spatially compact.
-- Cross-block boundary connectivity is ~6% of all neighbor references at block level.
+- ICON grids are built from an icosahedron (20 triangular faces), ordered in 4 latitude rings of 5: north polar (0-4), north mid-lat (5-9), south mid-lat (10-14), south polar (15-19).
+- Adjacent faces pair into **10 diamonds**: d=0..4 → face d + face d+5 (north), d=5..9 → face d+5 + face d+10 (south).
+- With root R, each face has R² sub-triangles. With bisection level B, each sub-triangle contains 4^B cells in contiguous index order.
+- The quad-tree child adjacency pattern is self-similar at every level: child 2 is the center (adjacent to 0, 1, 3); children 0, 1, 3 are corners adjacent only to 2.
+- A diamond (triangle pair A, B) recursively splits into 4 sub-diamonds: (A0,A2), (A1,B3), (A3,B1), (B0,B2). This gives 10 × 4^d sub-diamonds at depth d, all with compact diamond shapes.
 
 ### Decomposers (`model/common/src/icon4py/model/common/decomposition/decomposer.py`)
 
-- **StructuredDecomposer** (added 2026-04): Exploits the structured cell ordering. Assigns contiguous groups of (sub-)blocks to ranks. Sub-millisecond execution. Supported rank counts: any divisor of `20*R² * 4^k` for k=0,...,B. For R02 grids (80 base blocks): 1, 2, 4, 5, 8, 10, 16, 20, 32, 40, 64, 80, 128, 160, 256, 320, 512, ...
+- **StructuredDecomposer** (added 2026-04, diamond-based 2026-04-11): Recursive diamond decomposition. Sub-millisecond execution. Supported rank counts: any divisor of `10 * 4^d` for d=0,...,max_depth (max_depth = log2(R) + B). For R02B04: 1, 2, 4, 5, 8, 10, 16, 20, 32, 40, 64, 80, 160, 320, ...
+  - At `10 * 4^d` ranks: each rank gets exactly 1 diamond (compact diamond shape)
+  - At `20 * 4^d` ranks: each rank gets 2 adjacent sub-diamonds forming a parallelogram
+  - Both are suitable for rectangular iteration patterns
 - **MetisDecomposer**: Uses pymetis (CSR interface) for graph partitioning. Slow for large grids (~215s at r2b8, expected worse at r2b9). Used as fallback when rank count is not compatible with StructuredDecomposer.
 - **SingleNodeDecomposer**: Assigns all cells to rank 0.
 - Selection logic in `driver_utils.py::create_grid_manager()`: uses MetisDecomposer by default; `--structured-decomposition` CLI flag opts into StructuredDecomposer when rank count is compatible.

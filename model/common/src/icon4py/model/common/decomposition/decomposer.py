@@ -77,15 +77,21 @@ class StructuredDecomposer(Decomposer):
       - d=0..4: face d + face d+5  (north polar + north mid-lat)
       - d=5..9: face d+5 + face d+10  (south mid-lat + south polar)
 
-    With root R, each face has R² sub-triangles, giving 10 diamonds of 2*R²
-    sub-triangles each. With bisection level B, each sub-triangle contains
-    4^B cells in contiguous index order following a recursive quad-tree.
+    Within each face (for R=2^m), cells follow a recursive quad-tree where
+    each triangle splits into 4 children. The adjacency pattern at every
+    level is: child 2 is the center (adjacent to 0, 1, 3), while 0, 1, 3
+    are corners adjacent only to 2.
 
-    The decomposer assigns groups of diamonds (or sub-blocks within diamonds)
-    to ranks. At the coarsest level, 10 ranks get one diamond each. For more
-    ranks, the quad-tree subdivision within each sub-triangle is used.
+    A diamond (pair of adjacent triangles A, B) can be recursively split
+    into 4 sub-diamonds using this pattern:
+      - (A0, A2): intra-A diamond (corner + center)
+      - (A1, B3): cross diamond
+      - (A3, B1): cross diamond
+      - (B0, B2): intra-B diamond (corner + center)
 
-    Supported rank counts: any divisor of 10 * 2*R² * 4^k for k=0,...,B.
+    This gives 10 * 4^d sub-diamonds at depth d, all with compact
+    diamond shapes. Supported rank counts: any divisor of 10 * 4^d
+    for d=0,...,max_depth.
     """
 
     N_DIAMONDS: ClassVar[int] = 10
@@ -106,6 +112,45 @@ class StructuredDecomposer(Decomposer):
         self._grid_root = grid_root
         self._grid_level = grid_level
 
+    @staticmethod
+    def _quad_depth(grid_root: int) -> int:
+        """Number of quad-tree levels in R² sub-triangles (R must be a power of 2)."""
+        r = grid_root
+        depth = 0
+        while r > 1:
+            if r % 2 != 0:
+                raise ValueError(
+                    f"Recursive diamond decomposition requires grid_root to be a "
+                    f"power of 2, got {grid_root}"
+                )
+            r //= 2
+            depth += 1
+        return depth
+
+    @staticmethod
+    def _diamond_leaves(a_start, a_size, b_start, b_size, depth):
+        """
+        Yield sub-diamond leaves in recursive diamond order.
+
+        Each leaf is (tri_a_start, tri_a_size, tri_b_start, tri_b_size).
+        At depth 0, yields the diamond itself. At depth d, yields 4^d sub-diamonds.
+        """
+        if depth == 0:
+            yield (a_start, a_size, b_start, b_size)
+            return
+
+        q = a_size // 4
+        a0, a1, a2, a3 = a_start, a_start + q, a_start + 2 * q, a_start + 3 * q
+        b0, b1, b2, b3 = b_start, b_start + q, b_start + 2 * q, b_start + 3 * q
+
+        yield from StructuredDecomposer._diamond_leaves(a0, q, a2, q, depth - 1)
+        yield from StructuredDecomposer._diamond_leaves(a1, q, b3, q, depth - 1)
+        yield from StructuredDecomposer._diamond_leaves(a3, q, b1, q, depth - 1)
+        yield from StructuredDecomposer._diamond_leaves(b0, q, b2, q, depth - 1)
+
+    def _max_depth(self) -> int:
+        return self._quad_depth(self._grid_root) + self._grid_level
+
     def __call__(
         self, adjacency_matrix: data_alloc.NDArray, num_partitions: int
     ) -> data_alloc.NDArray:
@@ -114,47 +159,42 @@ class StructuredDecomposer(Decomposer):
         n_cells = adjacency_matrix.shape[0]
         R = self._grid_root
         B = self._grid_level
-        sub_tris_per_face = R**2
-        cells_per_sub_tri = 4**B
-        cells_per_face = sub_tris_per_face * cells_per_sub_tri
+        cells_per_face = R**2 * 4**B
+        max_depth = self._max_depth()
 
-        # Find the smallest subdivision level k such that
-        # the total number of sub-blocks is divisible by num_partitions.
-        # At level k, each diamond has 2 * R² * 4^k sub-blocks.
-        for k in range(B + 1):
-            sub_blocks_per_diamond = 2 * sub_tris_per_face * (4**k)
-            total_sub_blocks = self.N_DIAMONDS * sub_blocks_per_diamond
-            if total_sub_blocks % num_partitions == 0:
+        # Find minimum depth d such that 10 * 4^d is divisible by num_partitions
+        for d in range(max_depth + 1):
+            total_sub_diamonds = self.N_DIAMONDS * (4**d)
+            if total_sub_diamonds % num_partitions == 0:
                 break
         else:
             valid = set()
-            for kk in range(B + 1):
-                nsb = self.N_DIAMONDS * 2 * sub_tris_per_face * (4**kk)
-                valid.update(d for d in range(1, nsb + 1) if nsb % d == 0)
+            for dd in range(max_depth + 1):
+                nsub = self.N_DIAMONDS * (4**dd)
+                valid.update(div for div in range(1, nsub + 1) if nsub % div == 0)
             valid_sorted = sorted(valid)
             raise ValueError(
                 f"StructuredDecomposer: {num_partitions} ranks cannot evenly divide "
                 f"the grid (root={R}, level={B}, {self.N_DIAMONDS} diamonds). "
-                f"Supported rank counts (up to {total_sub_blocks}): "
+                f"Supported rank counts (up to {total_sub_diamonds}): "
                 f"{valid_sorted[:20]}{'...' if len(valid_sorted) > 20 else ''}"
             )
 
-        sub_block_size = cells_per_sub_tri // (4**k)
-        blocks_per_rank = total_sub_blocks // num_partitions
+        sub_diamonds_per_rank = total_sub_diamonds // num_partitions
 
         partition = np.empty(n_cells, dtype=np.int32)
-        global_sub_block = 0
+        sub_diamond_idx = 0
 
         for face_a, face_b in self.DIAMOND_FACES:
-            for face in (face_a, face_b):
-                face_start = face * cells_per_face
-                for st in range(sub_tris_per_face):
-                    tri_start = face_start + st * cells_per_sub_tri
-                    for sb in range(4**k):
-                        cell_start = tri_start + sb * sub_block_size
-                        rank = global_sub_block // blocks_per_rank
-                        partition[cell_start : cell_start + sub_block_size] = rank
-                        global_sub_block += 1
+            fa_start = face_a * cells_per_face
+            fb_start = face_b * cells_per_face
+            for ta_start, ta_size, tb_start, tb_size in self._diamond_leaves(
+                fa_start, cells_per_face, fb_start, cells_per_face, d
+            ):
+                rank = sub_diamond_idx // sub_diamonds_per_rank
+                partition[ta_start : ta_start + ta_size] = rank
+                partition[tb_start : tb_start + tb_size] = rank
+                sub_diamond_idx += 1
 
         return data_alloc.array_namespace(adjacency_matrix).asarray(partition)
 
