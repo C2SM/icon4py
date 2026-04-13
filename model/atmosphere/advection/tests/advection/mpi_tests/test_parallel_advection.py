@@ -243,7 +243,7 @@ def test_compute_lsq_coeffs(
     domain_length = gm.grid.global_properties.domain_length
     domain_height = gm.grid.global_properties.domain_height
     lsq_dim_stencil = 3
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange_runtime = definitions.create_exchange(processor_props, decomposition_info)
 
     coordinates = gm.coordinates
     cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
@@ -265,7 +265,7 @@ def test_compute_lsq_coeffs(
         start_idx,
         min_rlcell_int,
         icon_grid.geometry_type.value,
-        partial(exchange.exchange, dims.CellDim),
+        partial(exchange_runtime.exchange, dims.CellDim),
     )
 
     assert test_helpers.dallclose(
