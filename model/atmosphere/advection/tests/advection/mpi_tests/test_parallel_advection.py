@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from functools import partial
+
 import pytest
 from gt4py.next import typing as gtx_typing
 
@@ -155,7 +157,7 @@ def test_advection_run_single_step(
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange_runtime = definitions.create_exchange(processor_props, decomposition_info)
 
     advection_granule = advection.convert_config_to_advection(
         config=config,
@@ -167,7 +169,7 @@ def test_advection_run_single_step(
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
-        exchange=exchange,
+        exchange=exchange_runtime,
     )
 
     diagnostic_state = construct_diagnostic_init_state(
@@ -263,7 +265,7 @@ def test_compute_lsq_coeffs(
         start_idx,
         min_rlcell_int,
         icon_grid.geometry_type.value,
-        exchange,
+        partial(exchange.exchange, dims.CellDim),
     )
 
     assert test_helpers.dallclose(

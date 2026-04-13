@@ -364,7 +364,12 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx.typing.Backend | None):
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        backend: gtx.typing.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
+    ):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -374,7 +379,7 @@ class NoAdvection(HorizontalAdvection):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # stencils
         self._copy_cell_kdim_field = model_options.setup_program(
