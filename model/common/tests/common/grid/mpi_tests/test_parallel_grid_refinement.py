@@ -102,12 +102,12 @@ def test_compute_domain_bounds(
     _log.info(
         f"rank = {process_props.rank}/{process_props.comm_size}: domain={domain} : start = {computed_start} end = {computed_end} "
     )
-    assert computed_start == ref_start_index, (
-        f"rank={process_props.rank}/{process_props.comm_size} - experiment = {experiment.name}: start_index for {domain} does not match: is {computed_start}, expected {ref_start_index}"
-    )
-    assert computed_end == ref_end_index, (
-        f"rank={process_props.rank}/{process_props.comm_size} - experiment = {experiment.name}: end_index for {domain} does not match: is {computed_end}, expected {ref_end_index}"
-    )
+    assert (
+        computed_start == ref_start_index
+    ), f"rank={process_props.rank}/{process_props.comm_size} - experiment = {experiment.name}: start_index for {domain} does not match: is {computed_start}, expected {ref_start_index}"
+    assert (
+        computed_end == ref_end_index
+    ), f"rank={process_props.rank}/{process_props.comm_size} - experiment = {experiment.name}: end_index for {domain} does not match: is {computed_end}, expected {ref_end_index}"
 
 
 @pytest.mark.mpi
@@ -144,9 +144,9 @@ def test_bounds_decomposition(
     end_index = grid_manager.grid.end_index
     domain = h_grid.domain(dim)
 
-    assert test_utils.is_sorted(decomposition_info.halo_levels(dim)), (
-        f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
-    )
+    assert test_utils.is_sorted(
+        decomposition_info.halo_levels(dim)
+    ), f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
 
     local_owned_size = decomposition_info.local_index(
         dim, decomposition.DecompositionInfo.EntryType.OWNED

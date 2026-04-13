@@ -61,9 +61,9 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
     my_halo = decomp_info.global_index(dim, definitions.DecompositionInfo.EntryType.HALO)
     print(f"rank = {process_props.rank}: has halo {dim} : {my_halo}")
     expected = len(utils.HALO[dim][process_props.rank])
-    assert my_halo.size == expected, (
-        f" rank = {process_props.rank}: total halo size does not match for dim {dim}- expected {expected} bot was {my_halo.size}"
-    )
+    assert (
+        my_halo.size == expected
+    ), f" rank = {process_props.rank}: total halo size does not match for dim {dim}- expected {expected} bot was {my_halo.size}"
     assert (
         missing := np.setdiff1d(
             my_halo, utils.HALO[dim][process_props.rank], assume_unique=True
@@ -86,9 +86,9 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
     print(f"{dim.value}: rank {process_props.rank} has halo levels {my_halo_levels} ")
-    assert np.all(my_halo_levels != definitions.DecompositionFlag.UNDEFINED), (
-        "All indices should have a defined DecompositionFlag"
-    )
+    assert np.all(
+        my_halo_levels != definitions.DecompositionFlag.UNDEFINED
+    ), "All indices should have a defined DecompositionFlag"
 
     assert np.where(my_halo_levels == definitions.DecompositionFlag.OWNED)[0].size == len(
         utils.OWNED[dim][process_props.rank]
@@ -96,9 +96,9 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     owned_local_indices = decomp_info.local_index(
         dim, definitions.DecompositionInfo.EntryType.OWNED
     )
-    assert np.all(my_halo_levels[owned_local_indices] == definitions.DecompositionFlag.OWNED), (
-        "owned local indices should have DecompositionFlag.OWNED"
-    )
+    assert np.all(
+        my_halo_levels[owned_local_indices] == definitions.DecompositionFlag.OWNED
+    ), "owned local indices should have DecompositionFlag.OWNED"
     first_halo_level_local_index = np.where(
         my_halo_levels == definitions.DecompositionFlag.FIRST_HALO_LEVEL
     )[0]
@@ -200,10 +200,12 @@ def test_owned_halo_mask_contiguous(rank):
         owned_indices = np.where(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are
         # supported for icon4py domain decomposition.
-        assert test_utils.is_sorted(decomp_info.halo_levels(dim)), (
-            f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
-        )
-        assert (owned_indices == np.arange(owned_indices.size)).all(), (
+        assert test_utils.is_sorted(
+            decomp_info.halo_levels(dim)
+        ), f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
+        assert (
+            owned_indices == np.arange(owned_indices.size)
+        ).all(), (
             f"Owned indices for {dim} should be contiguous and start at 0, but are {owned_indices=}"
         )
 
@@ -256,14 +258,14 @@ def test_horizontal_size(rank):
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     horizontal_size = decomp_info.get_horizontal_size()
     expected_verts = len(utils.OWNED[dims.VertexDim][rank]) + len(utils.HALO[dims.VertexDim][rank])
-    assert horizontal_size.num_vertices == expected_verts, (
-        f"local size mismatch on rank={rank} for {dims.VertexDim}: expected {expected_verts}, but was {horizontal_size.num_vertices}"
-    )
+    assert (
+        horizontal_size.num_vertices == expected_verts
+    ), f"local size mismatch on rank={rank} for {dims.VertexDim}: expected {expected_verts}, but was {horizontal_size.num_vertices}"
     expected_edges = len(utils.OWNED[dims.EdgeDim][rank]) + len(utils.HALO[dims.EdgeDim][rank])
-    assert horizontal_size.num_edges == expected_edges, (
-        f"local size mismatch on rank={rank} for {dims.EdgeDim}: expected {expected_edges}, but was {horizontal_size.num_edges}"
-    )
+    assert (
+        horizontal_size.num_edges == expected_edges
+    ), f"local size mismatch on rank={rank} for {dims.EdgeDim}: expected {expected_edges}, but was {horizontal_size.num_edges}"
     expected_cells = len(utils.OWNED[dims.CellDim][rank]) + len(utils.HALO[dims.CellDim][rank])
-    assert horizontal_size.num_cells == expected_cells, (
-        f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
-    )
+    assert (
+        horizontal_size.num_cells == expected_cells
+    ), f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"

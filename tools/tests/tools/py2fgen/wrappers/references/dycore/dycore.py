@@ -1,12 +1,17 @@
 import pkgutil
+
 from icon4py.tools.py2fgen import runtime_config
+
 
 for callable_name in runtime_config.EXTRA_CALLABLES:
     pkgutil.resolve_name(callable_name)()
 
 import logging
+
 from dycore import ffi
-from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
+
+from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
+
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -18,8 +23,7 @@ logging.basicConfig(
 
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_run
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
+from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init, solve_nh_run
 
 
 @ffi.def_extern()
