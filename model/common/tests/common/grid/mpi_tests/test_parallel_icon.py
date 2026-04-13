@@ -103,8 +103,7 @@ def test_start_index_end_index_local_zone_on_distributed_lam_grid(
         f"rank {process_props.rank}/{process_props.comm_size} dim = {dim}  LOCAL : ({icon_grid.start_index(domain)}, {icon_grid.end_index(domain)})"
     )
     assert (
-        icon_grid.end_index(domain)
-        == LOCAL_IDX[process_props.comm_size][dim][process_props.rank]
+        icon_grid.end_index(domain) == LOCAL_IDX[process_props.comm_size][dim][process_props.rank]
     )
 
 

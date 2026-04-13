@@ -611,7 +611,9 @@ def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> 
 
 
 @functools.singledispatch
-def create_exchange(process_props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:
+def create_exchange(
+    process_props: ProcessProperties, decomp_info: DecompositionInfo
+) -> ExchangeRuntime:
     """
     Create an Exchange depending on the runtime size.
 

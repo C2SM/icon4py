@@ -215,9 +215,7 @@ def test_geometry_fields_compare_single_multi_rank_unit(
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    _compare_geometry_fields_single_multi_rank(
-        process_props, backend, grid_description, attrs_name
-    )
+    _compare_geometry_fields_single_multi_rank(process_props, backend, grid_description, attrs_name)
 
 
 @pytest.mark.level("integration")
@@ -260,9 +258,7 @@ def test_geometry_fields_compare_single_multi_rank_integration(
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    _compare_geometry_fields_single_multi_rank(
-        process_props, backend, grid_description, attrs_name
-    )
+    _compare_geometry_fields_single_multi_rank(process_props, backend, grid_description, attrs_name)
 
 
 def _compare_interpolation_fields_single_multi_rank(
@@ -387,9 +383,7 @@ def test_interpolation_fields_compare_single_multi_rank_unit(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    _compare_interpolation_fields_single_multi_rank(
-        process_props, backend, experiment, attrs_name
-    )
+    _compare_interpolation_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
 @pytest.mark.level("integration")
@@ -413,9 +407,7 @@ def test_interpolation_fields_compare_single_multi_rank_integration(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    _compare_interpolation_fields_single_multi_rank(
-        process_props, backend, experiment, attrs_name
-    )
+    _compare_interpolation_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
 def _compare_metrics_fields_single_multi_rank(
@@ -837,15 +829,17 @@ def test_validate_skip_values_in_distributed_connectivities(
         if gtx_common.is_neighbor_connectivity(c):
             skip_values_in_table = np.count_nonzero(c.asnumpy() == c.skip_value)
             found_skips = skip_values_in_table > 0
-            assert (
-                found_skips == (c.skip_value is not None)
-            ), f"rank={process_props.rank} / {process_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
+            assert found_skips == (c.skip_value is not None), (
+                f"rank={process_props.rank} / {process_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
+            )
             if skip_values_in_table > 0:
                 dim = gtx.Dimension(k, gtx.DimensionKind.LOCAL)
                 assert (
                     dim in icon.CONNECTIVITIES_ON_BOUNDARIES
                     or dim in icon.CONNECTIVITIES_ON_PENTAGONS
-                ), f"rank={process_props.rank} / {process_props.comm_size}: {k} has skip found in table, expected none"
+                ), (
+                    f"rank={process_props.rank} / {process_props.comm_size}: {k} has skip found in table, expected none"
+                )
 
 
 @pytest.mark.mpi

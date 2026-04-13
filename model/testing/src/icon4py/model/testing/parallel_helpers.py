@@ -26,7 +26,9 @@ def check_comm_size(
     process_props: definitions.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
 ) -> None:
     if process_props.comm_size not in sizes:
-        pytest.xfail(f"wrong comm size: {process_props.comm_size}: test only works for comm-sizes: {sizes}")
+        pytest.xfail(
+            f"wrong comm size: {process_props.comm_size}: test only works for comm-sizes: {sizes}"
+        )
 
 
 def log_process_properties(process_props: definitions.ProcessProperties) -> None:
@@ -43,7 +45,9 @@ def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> N
 
 def gather_field(field: np.ndarray, process_props: definitions.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
-    _log.info(f"gather_field on rank={process_props.rank} - gathering field of local shape {field.shape}")
+    _log.info(
+        f"gather_field on rank={process_props.rank} - gathering field of local shape {field.shape}"
+    )
     # Because of sparse indexing the field may have a non-contigous layout,
     # which Gatherv doesn't support. Make sure the field is contiguous.
     field = np.ascontiguousarray(field)
@@ -134,9 +138,9 @@ def check_local_global_field(
     if process_props.rank == 0:
         _log.info(f"rank = {process_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        assert np.all(gathered_sizes == global_index_sizes), (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
         _log.info(
             f"rank = {process_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )

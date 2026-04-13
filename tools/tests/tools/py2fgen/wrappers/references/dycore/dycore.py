@@ -587,7 +587,6 @@ def solve_nh_run_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
-
                     rho_now_arr = (
                         _conversion.as_array(ffi, rho_now, _definitions.FLOAT64)
                         if rho_now is not None
@@ -1858,7 +1857,6 @@ def solve_nh_init_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
-
                     c_lin_e_arr = (
                         _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)
                         if c_lin_e is not None
