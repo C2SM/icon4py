@@ -50,7 +50,6 @@ from ..utils import (
     construct_metric_state,
     construct_prep_adv,
     log_serialized,
-    verify_advection_fields,
 )
 
 
