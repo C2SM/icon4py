@@ -364,7 +364,12 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx.typing.Backend | None):
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        backend: gtx.typing.Backend | None,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+    ):
         log.debug("horizontal advection class init - start")
 
         # input arguments

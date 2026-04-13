@@ -1188,6 +1188,7 @@ def compute_lsq_weights_c(
         lsq_weights_c_jc[js] = 1.0 / (z_norm**lsq_wgt_exp)
     return lsq_weights_c_jc / array_ns.max(lsq_weights_c_jc)
 
+
 def compute_z_lsq_mat_c(
     cell_owner_mask: data_alloc.NDArray,
     z_lsq_mat_c: data_alloc.NDArray,
