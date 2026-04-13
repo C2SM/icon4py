@@ -201,7 +201,6 @@ class Icon4pyDriver:
                     prognostic_states.next.theta_v,
                     prognostic_states.next.exner,
                 )
-            timer_diffusion.capture()
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
@@ -278,20 +277,19 @@ class Icon4pyDriver:
                 at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
             )
 
-            timer_solve_nh.start()
-            self.solve_nonhydro.time_step(
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
-                prep_adv=prep_adv,
-                second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
-                dtime=self.model_time_variables.substep_timestep,
-                ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
-                at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                lprep_adv=do_prep_adv,
-                at_first_substep=self._is_first_substep(dyn_substep),
-                at_last_substep=self._is_last_substep(dyn_substep),
-            )
-            timer_solve_nh.capture()
+            with timer_solve_nh:
+                self.solve_nonhydro.time_step(
+                    solve_nonhydro_diagnostic_state,
+                    prognostic_states,
+                    prep_adv=prep_adv,
+                    second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
+                    dtime=self.model_time_variables.substep_timestep,
+                    ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
+                    at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
+                    lprep_adv=do_prep_adv,
+                    at_first_substep=self._is_first_substep(dyn_substep),
+                    at_last_substep=self._is_last_substep(dyn_substep),
+                )
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
@@ -471,11 +469,15 @@ class Icon4pyDriver:
             cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
-            total_mass = self._xp.sum(
+            local_mass = (
                 rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
             )
+            # TODO (Chia Rui): remove lower and upper bound when global reduction is implemented, currently set to avoid including halo cells in the reduction
+            global_total_mass = self.global_reductions.sum(
+                local_mass, lower_bound=gtx.int32(0), upper_bound=gtx.int32(self.grid.num_cells)
+            )
             # TODO (Chia Rui): compute total energy
-            log.info(f"TOTAL MASS: {total_mass:.15e} kg")
+            log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -551,7 +553,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 12, 0, 0),
+        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
