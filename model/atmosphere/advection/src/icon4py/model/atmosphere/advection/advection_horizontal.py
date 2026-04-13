@@ -411,7 +411,7 @@ class NoAdvection(HorizontalAdvection):
             field_out=p_tracer_new,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
-        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
+        self._exchange.exchange(dims.CellDim, p_tracer_new, stream=decomposition.BLOCK)
         log.debug("horizontal advection run - end")
 
 
