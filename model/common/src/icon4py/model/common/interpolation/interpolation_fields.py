@@ -13,7 +13,6 @@ from types import ModuleType
 from typing import Final
 
 import numpy as np
-import scipy
 from gt4py import next as gtx
 from gt4py.next import where
 
