@@ -149,6 +149,16 @@ class DiffusionConfig:
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
+        smagorinski_scaling_factor2: float = 2e-6
+        * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))),
+        smagorinski_scaling_factor3: float = 0,
+        smagorinski_scaling_factor4: float = 1,
+        smagorinski_scaling_height: float = 32500.0,
+        smagorinski_scaling_height2: float = 1600.0
+        + 50000.0
+        + math.sqrt(1600.0 * (1600 + 50000.0)),
+        smagorinski_scaling_height3: float = 50000.0,
+        smagorinski_scaling_height4: float = 90000.0,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
         velocity_boundary_diffusion_denom: float = 200.0,
@@ -199,9 +209,40 @@ class DiffusionConfig:
         #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
-        #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
+        #: Scaling factor for Smagorinsky diffusion at height smagorinski_scaling_height and below
         #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
+
+        #: Scaling factor for Smagorinsky diffusion at height smagorinski_scaling_height to smagorinski_scaling_height2
+        #: This is the linearly interpolated part
+        #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_factor2: float = smagorinski_scaling_factor2
+
+        #: Scaling factor for Smagorinsky diffusion at height smagorinski_scaling_height2 to smagorinski_scaling_height3
+        #: This is the quadratically interpolated part
+        #: Called 'hdiff_smag_fac3' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_factor3: float = smagorinski_scaling_factor3
+
+        #: Scaling factor for Smagorinsky diffusion at height smagorinski_scaling_height3 to smagorinski_scaling_height4
+        #: This is the quadratically interpolated part
+        #: Called 'hdiff_smag_fac4' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_factor4: float = smagorinski_scaling_factor4
+
+        #: Height for Smagorinsky diffusion expressing the border between constant and linear interpolation
+        #: Called 'hdiff_smag_z' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height: float = smagorinski_scaling_height
+
+        #: Height for Smagorinsky diffusion expressing the border between linear and quadratic interpolation
+        #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height2: float = smagorinski_scaling_height2
+
+        #: Height for Smagorinsky diffusion expressing the middle of the quadratic interpolation region
+        #: Called 'hdiff_smag_z3' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height3: float = smagorinski_scaling_height3
+
+        #: Height for Smagorinsky diffusion expressing the top of the quadratic interpolation region
+        #: Called 'hdiff_smag_z4' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height4: float = smagorinski_scaling_height4
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
@@ -329,53 +370,26 @@ class DiffusionParams:
             (1.0 / (config.hdiff_w_efdt_ratio * 36.0) if config.hdiff_w_efdt_ratio > 0 else 0.0),
         )
 
-        (
-            smagorinski_factor,
-            smagorinski_height,
-        ) = self._determine_smagorinski_factor(config)
-        object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
-        object.__setattr__(self, "smagorinski_height", smagorinski_height)
-
-    def _determine_smagorinski_factor(self, config: DiffusionConfig):
-        """Enhanced Smagorinsky diffusion factor.
-
-        Smagorinsky diffusion factor is defined as a profile in height
-        above sea level with 4 height sections.
-
-        It is calculated/used only in the case of diffusion_type 3 or 5
-        """
-        match config.diffusion_type:
-            case 5:
-                (
-                    smagorinski_factor,
-                    smagorinski_height,
-                ) = diffusion_type_5_smagorinski_factor(config)
-            case 4:
-                # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
-                # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
-                smagorinski_factor = (
-                    config.smagorinski_scaling_factor
-                    if config.smagorinski_scaling_factor
-                    else 0.15,
-                )
-                smagorinski_height = None
-            case _:
-                raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-        return smagorinski_factor, smagorinski_height
-
-
-def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
-    """
-    Initialize Smagorinski factors used in diffusion type 5.
-
-    The calculation and magic numbers are taken from mo_diffusion_nml.f90
-    """
-    magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
-    magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
-    magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-    factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
-    heights = (32500.0, magic_z2, 50000.0, 90000.0)
-    return factor, heights
+        object.__setattr__(
+            self,
+            "smagorinski_factor",
+            (
+                config.smagorinski_scaling_factor,
+                config.smagorinski_scaling_factor2,
+                config.smagorinski_scaling_factor3,
+                config.smagorinski_scaling_factor4,
+            ),
+        )
+        object.__setattr__(
+            self,
+            "smagorinski_height",
+            (
+                config.smagorinski_scaling_height,
+                config.smagorinski_scaling_height2,
+                config.smagorinski_scaling_height3,
+                config.smagorinski_scaling_height4,
+            ),
+        )
 
 
 class Diffusion:

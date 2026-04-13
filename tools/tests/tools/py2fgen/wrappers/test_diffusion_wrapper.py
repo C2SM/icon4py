@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import math
 from unittest import mock
 
 import cffi
@@ -60,6 +61,13 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_efdt_ratio = 24.0
     hdiff_w_efdt_ratio = 15.0
     smagorinski_scaling_factor = 0.025
+    smagorinski_scaling_factor2 = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
+    smagorinski_scaling_factor3 = 0.0
+    smagorinski_scaling_factor4 = 1.0
+    smagorinski_scaling_height = 32500.0
+    smagorinski_scaling_height2 = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
+    smagorinski_scaling_height3 = 50000.0
+    smagorinski_scaling_height4 = 90000.0
     zdiffu_t = True
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
@@ -183,6 +191,13 @@ def test_diffusion_wrapper_granule_inputs(
             hdiff_efdt_ratio=hdiff_efdt_ratio,
             hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
             smagorinski_scaling_factor=smagorinski_scaling_factor,
+            smagorinski_scaling_factor2=smagorinski_scaling_factor2,
+            smagorinski_scaling_factor3=smagorinski_scaling_factor3,
+            smagorinski_scaling_factor4=smagorinski_scaling_factor4,
+            smagorinski_scaling_height=smagorinski_scaling_height,
+            smagorinski_scaling_height2=smagorinski_scaling_height2,
+            smagorinski_scaling_height3=smagorinski_scaling_height3,
+            smagorinski_scaling_height4=smagorinski_scaling_height4,
             hdiff_temp=hdiff_temp,
             denom_diffu_v=denom_diffu_v,
             nudge_max_coeff=max_nudging_coefficient,
@@ -297,6 +312,13 @@ def test_diffusion_wrapper_single_step(
     hdiff_efdt_ratio = 24.0
     hdiff_w_efdt_ratio = 15.0
     smagorinski_scaling_factor = 0.025
+    smagorinski_scaling_factor2 = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
+    smagorinski_scaling_factor3 = 0.0
+    smagorinski_scaling_factor4 = 1.0
+    smagorinski_scaling_height = 32500.0
+    smagorinski_scaling_height2 = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
+    smagorinski_scaling_height3 = 50000.0
+    smagorinski_scaling_height4 = 90000.0
     zdiffu_t = True
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
@@ -387,6 +409,13 @@ def test_diffusion_wrapper_single_step(
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
+        smagorinski_scaling_factor2=smagorinski_scaling_factor2,
+        smagorinski_scaling_factor3=smagorinski_scaling_factor3,
+        smagorinski_scaling_factor4=smagorinski_scaling_factor4,
+        smagorinski_scaling_height=smagorinski_scaling_height,
+        smagorinski_scaling_height2=smagorinski_scaling_height2,
+        smagorinski_scaling_height3=smagorinski_scaling_height3,
+        smagorinski_scaling_height4=smagorinski_scaling_height4,
         hdiff_temp=hdiff_temp,
         denom_diffu_v=denom_diffu_v,
         nudge_max_coeff=max_nudging_coefficient,

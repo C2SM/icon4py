@@ -152,6 +152,13 @@ module diffusion
                                       hdiff_efdt_ratio, &
                                       hdiff_w_efdt_ratio, &
                                       smagorinski_scaling_factor, &
+                                      smagorinski_scaling_factor2, &
+                                      smagorinski_scaling_factor3, &
+                                      smagorinski_scaling_factor4, &
+                                      smagorinski_scaling_height, &
+                                      smagorinski_scaling_height2, &
+                                      smagorinski_scaling_height3, &
+                                      smagorinski_scaling_height4, &
                                       hdiff_temp, &
                                       denom_diffu_v, &
                                       nudge_max_coeff, &
@@ -259,6 +266,20 @@ module diffusion
          real(c_double), value, target :: hdiff_w_efdt_ratio
 
          real(c_double), value, target :: smagorinski_scaling_factor
+
+         real(c_double), value, target :: smagorinski_scaling_factor2
+
+         real(c_double), value, target :: smagorinski_scaling_factor3
+
+         real(c_double), value, target :: smagorinski_scaling_factor4
+
+         real(c_double), value, target :: smagorinski_scaling_height
+
+         real(c_double), value, target :: smagorinski_scaling_height2
+
+         real(c_double), value, target :: smagorinski_scaling_height3
+
+         real(c_double), value, target :: smagorinski_scaling_height4
 
          logical(c_int), value, target :: hdiff_temp
 
@@ -493,6 +514,13 @@ contains
                              hdiff_efdt_ratio, &
                              hdiff_w_efdt_ratio, &
                              smagorinski_scaling_factor, &
+                             smagorinski_scaling_factor2, &
+                             smagorinski_scaling_factor3, &
+                             smagorinski_scaling_factor4, &
+                             smagorinski_scaling_height, &
+                             smagorinski_scaling_height2, &
+                             smagorinski_scaling_height3, &
+                             smagorinski_scaling_height4, &
                              hdiff_temp, &
                              denom_diffu_v, &
                              nudge_max_coeff, &
@@ -549,6 +577,20 @@ contains
       real(c_double), value, target :: hdiff_w_efdt_ratio
 
       real(c_double), value, target :: smagorinski_scaling_factor
+
+      real(c_double), value, target :: smagorinski_scaling_factor2
+
+      real(c_double), value, target :: smagorinski_scaling_factor3
+
+      real(c_double), value, target :: smagorinski_scaling_factor4
+
+      real(c_double), value, target :: smagorinski_scaling_height
+
+      real(c_double), value, target :: smagorinski_scaling_height2
+
+      real(c_double), value, target :: smagorinski_scaling_height3
+
+      real(c_double), value, target :: smagorinski_scaling_height4
 
       logical(c_int), value, target :: hdiff_temp
 
@@ -752,6 +794,13 @@ contains
                                   hdiff_efdt_ratio=hdiff_efdt_ratio, &
                                   hdiff_w_efdt_ratio=hdiff_w_efdt_ratio, &
                                   smagorinski_scaling_factor=smagorinski_scaling_factor, &
+                                  smagorinski_scaling_factor2=smagorinski_scaling_factor2, &
+                                  smagorinski_scaling_factor3=smagorinski_scaling_factor3, &
+                                  smagorinski_scaling_factor4=smagorinski_scaling_factor4, &
+                                  smagorinski_scaling_height=smagorinski_scaling_height, &
+                                  smagorinski_scaling_height2=smagorinski_scaling_height2, &
+                                  smagorinski_scaling_height3=smagorinski_scaling_height3, &
+                                  smagorinski_scaling_height4=smagorinski_scaling_height4, &
                                   hdiff_temp=hdiff_temp, &
                                   denom_diffu_v=denom_diffu_v, &
                                   nudge_max_coeff=nudge_max_coeff, &

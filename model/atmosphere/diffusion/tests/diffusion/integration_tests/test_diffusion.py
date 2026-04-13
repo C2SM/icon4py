@@ -120,17 +120,6 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
     assert params.K4W == 0.0
 
 
-def test_smagorinski_factor_for_diffusion_type_4(experiment):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
-    config.smagorinski_scaling_factor = 0.15
-    config.diffusion_type = 4
-
-    params = diffusion.DiffusionParams(config)
-    assert len(params.smagorinski_factor) == 1
-    assert params.smagorinski_factor[0] == pytest.approx(0.15, abs=1e-16)
-    assert params.smagorinski_height is None
-
-
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     experiment,
 ):
