@@ -47,6 +47,8 @@ def get_dace_options(
             optimization_args["scan_loop_unrolling"] = True
         if "scan_loop_unrolling_factor" not in optimization_args:
             optimization_args["scan_loop_unrolling_factor"] = 0
+        if "fuse_tasklets" not in optimization_args:
+            optimization_args["fuse_tasklets"] = True  # ~7% speedup on MI300A by fusing DaCe tasklet ops within map scopes
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
