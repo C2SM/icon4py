@@ -77,7 +77,7 @@ def precompute_grid(grid_file: str, max_ranks: int):
     dummy_adj = np.zeros((n_cells, 3), dtype=np.int32)
     rank_options = valid_rank_counts(grid_root, grid_level, max_ranks)
 
-    print(f"  {label}: {n_cells} cells, block_size={block_size}, " f"ranks={rank_options}")
+    print(f"  {label}: {n_cells} cells, block_size={block_size}, ranks={rank_options}")
 
     # Vertex geometry
     voc = ds["vertex_of_cell"].values.T - 1
