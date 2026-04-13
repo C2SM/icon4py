@@ -17,10 +17,7 @@ import netCDF4 as nc4
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
-from icon4py.model.common.decomposition import (
-    definitions as decomposition,
-    mpi_decomposition as mpi_decomp,
-)
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base,
     icon as icon_grid,
@@ -571,8 +568,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    # TODO(OngChia): modify here when single_dispatch is ready
-    console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
+    console_handler.addFilter(decomposition.ParallelLogger(processor_procs))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})

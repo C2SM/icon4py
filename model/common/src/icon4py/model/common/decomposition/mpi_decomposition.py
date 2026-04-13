@@ -85,18 +85,6 @@ def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) ->
         return MPICommProcessProperties(current_comm)
 
 
-class ParallelLogger(logging.Filter):
-    def __init__(self, process_properties: definitions.ProcessProperties | None = None) -> None:
-        super().__init__()
-        self._rank_info = ""
-        if process_properties and process_properties.comm_size > 1:
-            self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        record.rank = self._rank_info
-        return True
-
-
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
     s: definitions.MultiNodeRun, comm_id: CommId = None
@@ -248,9 +236,9 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
-        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
-            f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
-        )
+        assert (
+            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:

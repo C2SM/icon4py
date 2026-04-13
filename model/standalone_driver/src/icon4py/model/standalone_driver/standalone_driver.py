@@ -56,6 +56,7 @@ class Icon4pyDriver:
         vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
         exchange: decomposition_defs.ExchangeRuntime,
+        global_reductions: decomposition_defs.Reductions,
     ):
         self.config = config
         self.backend = backend
@@ -71,6 +72,7 @@ class Icon4pyDriver:
             [timer.value for timer in driver_states.DriverTimers]
         )
         self.exchange = exchange
+        self.global_reductions = global_reductions
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
@@ -304,9 +306,9 @@ class Icon4pyDriver:
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
-        # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
-
+        global_max_vertical_cfl = self.global_reductions.max(
+            solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
+        )
         if (
             global_max_vertical_cfl
             > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator]
@@ -549,7 +551,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        end_date=datetime.datetime(1, 1, 1, 12, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
@@ -570,6 +572,7 @@ def initialize_driver(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
+    print_distributed_debug_msg: bool,
     backend_name: str | model_backends.BackendLike | None,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
@@ -607,19 +610,19 @@ def initialize_driver(
     )
     driver_utils.configure_logging(
         logging_level=log_level,
+        print_distributed_debug_msg=print_distributed_debug_msg,
         processor_procs=parallel_props,
     )
 
     global_reductions = decomposition_defs.create_reduction(parallel_props)
-    if output_path.exists():
-        current_time = datetime.datetime.now()
-        log.warning(f"output path {output_path} already exists, a time stamp will be added")
-        output_path = (
-            output_path.parent
-            / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
-        )
-
-    else:
+    if parallel_props.rank == 0:
+        if output_path.exists():
+            current_time = datetime.datetime.now()
+            log.warning(f"output path {output_path} already exists, a time stamp will be added")
+            output_path = (
+                output_path.parent
+                / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+            )
         output_path.mkdir(parents=True, exist_ok=False)
 
     backend = model_options.customize_backend(
@@ -703,6 +706,7 @@ def initialize_driver(
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
         exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     return icon4py_driver

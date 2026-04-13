@@ -40,6 +40,12 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    print_distributed_debug_msg: Annotated[
+        bool,
+        typer.Option(
+            help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
+        ),
+    ] = False,
     force_serial_run: Annotated[
         bool,
         typer.Option(
@@ -61,6 +67,7 @@ def main(
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,
+        print_distributed_debug_msg=print_distributed_debug_msg,
         backend_name=icon4py_backend,
         force_serial_run=force_serial_run,
     )

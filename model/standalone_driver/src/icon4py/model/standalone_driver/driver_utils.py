@@ -30,7 +30,6 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -527,6 +526,7 @@ def make_handler(
 
 def configure_logging(
     logging_level: str,
+    print_distributed_debug_msg: bool = False,
     processor_procs: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """
@@ -548,8 +548,9 @@ def configure_logging(
 
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
 
-    # TODO(OngChia): modify here when single_dispatch is ready
-    log_filter = mpi_decomp.ParallelLogger(processor_procs)
+    log_filter = decomposition_defs.ParallelLogger(
+        processor_procs, print_distributed_debug_msg=print_distributed_debug_msg
+    )
     formatter = _InfoFormatter(
         style="{",
         default_fmt="{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",

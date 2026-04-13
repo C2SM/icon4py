@@ -723,5 +723,28 @@ class DecompositionFlag(int, Enum):
     """
 
 
+class ParallelLogger(logging.Filter):
+    def __init__(
+        self,
+        process_properties: ProcessProperties | None = None,
+        print_distributed_debug_msg: bool = False,
+    ) -> None:
+        super().__init__()
+        self._rank_info = ""
+        self._print_distributed_debug_msg = print_distributed_debug_msg
+        self._rank_id = 0
+        if process_properties and process_properties.comm_size > 1:
+            self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
+            self._rank_id = process_properties.rank
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.rank = self._rank_info
+        return (
+            True
+            if self._rank_id == 0
+            else (self._print_distributed_debug_msg and record.levelno == logging.DEBUG)
+        )
+
+
 single_node_default = SingleNodeExchange()
 single_node_reductions = SingleNodeReductions()
