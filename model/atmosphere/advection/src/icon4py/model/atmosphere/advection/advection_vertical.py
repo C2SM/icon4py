@@ -680,7 +680,7 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
-        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
+        self._exchange.exchange(dims.CellDim, p_tracer_new, stream=decomposition.BLOCK)
         log.debug("vertical unknowns update - end")
 
 
