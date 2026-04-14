@@ -28,6 +28,7 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
+    is_rocm_device = backend_descriptor.get("device") == model_backends.DeviceType.ROCM
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
     if program_name in [
@@ -58,9 +59,12 @@ def get_dace_options(
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
     if program_name == "graupel_run":
-        backend_descriptor["use_zero_origin"] = True
         optimization_args["fuse_tasklets"] = True
-        optimization_args["gpu_maxnreg"] = 128
+        if not is_rocm_device:
+            optimization_args["gpu_maxnreg"] = 80
+            optimization_args["gpu_block_size_2d"] = (64, 6)
+        optimization_args["gpu_memory_pool"] = False
+        optimization_args["make_persistent"] = True
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
@@ -104,7 +108,7 @@ def customize_backend(
     )
     backend_descriptor = get_options(program_name, **backend_descriptor)
     backend_descriptor["device"] = backend_descriptor.get(
-        "device", model_backends.DeviceType.CPU
+        "device", model_backends.CPU
     )  # set default device
     backend_factory = backend_descriptor.pop(
         "backend_factory", model_backends.make_custom_dace_backend

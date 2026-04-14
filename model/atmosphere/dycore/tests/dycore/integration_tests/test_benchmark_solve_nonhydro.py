@@ -32,9 +32,8 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import factory, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
@@ -55,16 +54,12 @@ def solve_nonhydro(
     mesh = geometry_field_source.grid
 
     config = solve_nh.NonHydrostaticConfig(
-        rayleigh_coeff=0.1,
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
-        iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
@@ -176,9 +171,8 @@ def solve_nonhydro(
         ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
         vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
-        nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
-        pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
-        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
+        nflat_gradp=metrics_field_source.get_int32(metrics_attributes.NFLAT_GRADP),
+        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EXDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
         ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
         wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),
@@ -206,11 +200,7 @@ def solve_nonhydro(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=gtx.as_field(
-            (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy not take the type of owner_mask
-            allocator=allocator,
-        ),
+        owner_mask=geometry_field_source.get("cell_owner_mask"),
         backend=backend_like,
     )
 

@@ -38,7 +38,7 @@ def compute_approx_of_2nd_vertical_derivative_of_exner(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_approx_of_2nd_vertical_derivative_of_exner(
         z_theta_v_pr_ic,
         d2dexdz2_fac1_mc,

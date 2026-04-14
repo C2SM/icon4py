@@ -42,14 +42,11 @@ def solve_nh_init(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    is_iau_active = False
-    iau_wgt_dyn = 1.0
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
     l_vert_nested = False
+    ldeepatmo = False
+    iau_init = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -63,7 +60,6 @@ def solve_nh_init(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -74,7 +70,10 @@ def solve_nh_init(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c_dsl().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    wgtfacq_c = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+    )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -90,23 +89,23 @@ def solve_nh_init(
     theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
-    zdiff_gradp_field = metrics_savepoint._get_field(
-        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    vertidx_gradp = test_utils.array_to_array_info(
+        metrics_savepoint._get_field(
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        ).ndarray
     )
-    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
 
-    vertoffset_gradp_field = metrics_savepoint._get_field(
-        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-    )
-    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
-
-    pg_edgeidx_dsl = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx_dsl().ndarray)
-    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
+    pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
     )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
@@ -134,12 +133,22 @@ def solve_nh_init(
     )
     pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     rbf_vec_coeff_e = test_utils.array_to_array_info(
-        interpolation_savepoint.rbf_vec_coeff_e().ndarray
+        interpolation_savepoint._get_field("rbf_vec_coeff_e", dims.E2C2EDim, dims.EdgeDim).ndarray
     )
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
     geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
@@ -162,8 +171,7 @@ def solve_nh_init(
         pos_on_tplane_e_2=pos_on_tplane_e_2,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         e_bln_c_s=e_bln_c_s,
-        rbf_coeff_1=rbf_coeff_1,
-        rbf_coeff_2=rbf_coeff_2,
+        rbf_vec_coeff_v=rbf_vec_coeff_v,
         geofac_div=geofac_div,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
@@ -188,8 +196,9 @@ def solve_nh_init(
         theta_ref_me=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=vertoffset_gradp,
-        ipeidx_dsl=pg_edgeidx_dsl,
+        vertidx_gradp=vertidx_gradp,
+        pg_edgeidx=pg_edgeidx,
+        pg_vertidx=pg_vertidx,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -206,14 +215,11 @@ def solve_nh_init(
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
         rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
         divdamp_type=divdamp_type,
-        divdamp_trans_start=divdamp_trans_start,
-        divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
+        ldeepatmo=ldeepatmo,
+        iau_init=iau_init,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         nudge_max_coeff=max_nudging_coefficient,
@@ -226,7 +232,7 @@ def solve_nh_init(
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
         nflat_gradp=nflat_gradp,
-        backend=wrapper_common.BackendIntEnum.DEFAULT,
+        backend=wrapper_common.BackendIntEnum.GTFN,
     )
 
 
@@ -277,14 +283,11 @@ def test_dycore_wrapper_granule_inputs(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    is_iau_active = False
-    iau_wgt_dyn = 1.0
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
     l_vert_nested = False
+    ldeepatmo = False
+    iau_init = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -298,7 +301,6 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -313,7 +315,10 @@ def test_dycore_wrapper_granule_inputs(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c_dsl().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    wgtfacq_c = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+    )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -329,23 +334,23 @@ def test_dycore_wrapper_granule_inputs(
     theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
-    zdiff_gradp_field = metrics_savepoint._get_field(
-        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    vertidx_gradp = test_utils.array_to_array_info(
+        metrics_savepoint._get_field(
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        ).ndarray
     )
-    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
 
-    vertoffset_gradp_field = metrics_savepoint._get_field(
-        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-    )
-    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
-
-    pg_edgeidx_dsl = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx_dsl().ndarray)
-    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
+    pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
     )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
@@ -373,12 +378,21 @@ def test_dycore_wrapper_granule_inputs(
     )
     pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     rbf_vec_coeff_e = test_utils.array_to_array_info(
-        interpolation_savepoint.rbf_vec_coeff_e().ndarray
+        interpolation_savepoint._get_field("rbf_vec_coeff_e", dims.E2C2EDim, dims.EdgeDim).ndarray
     )
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
     geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
@@ -473,7 +487,7 @@ def test_dycore_wrapper_granule_inputs(
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
@@ -489,12 +503,11 @@ def test_dycore_wrapper_granule_inputs(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(vertical_size),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -583,8 +596,7 @@ def test_dycore_wrapper_granule_inputs(
             pos_on_tplane_e_2=pos_on_tplane_e_2,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             e_bln_c_s=e_bln_c_s,
-            rbf_coeff_1=rbf_coeff_1,
-            rbf_coeff_2=rbf_coeff_2,
+            rbf_vec_coeff_v=rbf_vec_coeff_v,
             geofac_div=geofac_div,
             geofac_n2s=geofac_n2s,
             geofac_grg_x=geofac_grg_x,
@@ -609,8 +621,9 @@ def test_dycore_wrapper_granule_inputs(
             theta_ref_me=theta_ref_me,
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
-            vertoffset_gradp=vertoffset_gradp,
-            ipeidx_dsl=pg_edgeidx_dsl,
+            vertidx_gradp=vertidx_gradp,
+            pg_edgeidx=pg_edgeidx,
+            pg_vertidx=pg_vertidx,
             pg_exdist=pg_exdist,
             ddqz_z_full_e=ddqz_z_full_e,
             ddxt_z_full=ddxt_z_full,
@@ -627,14 +640,11 @@ def test_dycore_wrapper_granule_inputs(
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
             rayleigh_type=rayleigh_type,
-            rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,
-            is_iau_active=is_iau_active,
-            iau_wgt_dyn=iau_wgt_dyn,
             divdamp_type=divdamp_type,
-            divdamp_trans_start=divdamp_trans_start,
-            divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
+            ldeepatmo=ldeepatmo,
+            iau_init=iau_init,
             rhotheta_offctr=rhotheta_offctr,
             veladv_offctr=veladv_offctr,
             nudge_max_coeff=max_nudging_coefficient,
@@ -748,6 +758,8 @@ def test_dycore_wrapper_granule_inputs(
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=substep,
+            is_iau_active=False,
+            iau_wgt_dyn=0.0,
         )
 
         # Check input arguments to SolveNonhydro.time_step
@@ -942,6 +954,8 @@ def test_granule_solve_nonhydro_single_step_regional(
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
         ndyn_substeps_var=ndyn_substeps,
         idyn_timestep=substep,
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
 
     # Comparison asserts should now use py2fgen.as_array
@@ -1130,6 +1144,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=i_substep,
+            is_iau_active=False,
+            iau_wgt_dyn=0.0,
         )
 
         w_new, w_now = w_now, w_new

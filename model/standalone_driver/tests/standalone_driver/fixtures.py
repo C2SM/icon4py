@@ -5,3 +5,38 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import pytest
+
+from icon4py.model.testing.fixtures import (
+    damping_height,
+    data_provider,
+    download_ser_data,
+    experiment,
+    flat_height,
+    grid_savepoint,
+    htop_moist_proc,
+    icon_grid,
+    interpolation_savepoint,
+    istep_exit,
+    istep_init,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    metrics_savepoint,
+    model_top_height,
+    ndyn_substeps,
+    processor_props,
+    savepoint_diffusion_exit,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_step_final,
+    savepoint_velocity_init,
+    step_date_exit,
+    step_date_init,
+    stretch_factor,
+    top_height_limit_for_maximal_layer_thickness,
+)
+
+
+@pytest.fixture
+def linit(timeloop_diffusion_linit_exit: bool) -> bool:
+    return timeloop_diffusion_linit_exit

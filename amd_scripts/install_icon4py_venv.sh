@@ -20,7 +20,7 @@ else
 fi
 
 # Install icon4py, gt4py, DaCe and other basic dependencies using uv
-uv sync --extra rocm7_0 --python $(which python3.12)
+uv sync --extra rocm7 --python $(which python3.12)
 
 # Activate virtual environment
 source .venv/bin/activate

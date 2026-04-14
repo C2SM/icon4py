@@ -6,9 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from icon4py.model.common.utils import env
 
-from icon4py.model.common.utils import data_allocation as data_alloc
 
-
-def dummy_exchange(*field: data_alloc.NDArray) -> None:
-    return None
+WAIT_FOR_COMPILATION: bool = env.flag_to_bool("ICON4PY_WAIT_FOR_COMPILATION", False)
+"""Wait in granule initialization until jit compilation is complete."""

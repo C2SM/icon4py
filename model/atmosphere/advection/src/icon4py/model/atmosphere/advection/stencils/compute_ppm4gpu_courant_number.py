@@ -156,7 +156,7 @@ def compute_ppm4gpu_courant_number(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ppm4gpu_courant_number(
         p_mflx_contra_v,
         p_cellmass_now,

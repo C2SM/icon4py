@@ -30,7 +30,7 @@ def init_two_edge_kdim_fields_with_zero_wp(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _init_two_edge_kdim_fields_with_zero_wp(
         out=(edge_kdim_field_with_zero_wp_1, edge_kdim_field_with_zero_wp_2),
         domain={

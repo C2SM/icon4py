@@ -34,7 +34,7 @@ def compute_tendency(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_tendency(
         p_tracer_now,
         p_tracer_new,

@@ -31,7 +31,7 @@ def average_horizontal_flux_subcycling_3(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _average_horizontal_flux_subcycling_3(
         z_tracer_mflx_1_dsl,
         z_tracer_mflx_2_dsl,
