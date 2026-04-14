@@ -1,17 +1,12 @@
 import pkgutil
-
 from icon4py.tools.py2fgen import runtime_config
-
 
 for callable_name in runtime_config.EXTRA_CALLABLES:
     pkgutil.resolve_name(callable_name)()
 
 import logging
-
 from dycore import ffi
-
-from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
-
+from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -23,7 +18,8 @@ logging.basicConfig(
 
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init, solve_nh_run
+from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_run
+from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
 
 
 @ffi.def_extern()
@@ -591,6 +587,7 @@ def solve_nh_run_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
+
                     rho_now_arr = (
                         _conversion.as_array(ffi, rho_now, _definitions.FLOAT64)
                         if rho_now is not None
@@ -1861,6 +1858,7 @@ def solve_nh_init_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
+
                     c_lin_e_arr = (
                         _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)
                         if c_lin_e is not None
