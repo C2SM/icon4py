@@ -34,14 +34,14 @@ def compute_contravariant_correction_of_w_numpy(
     z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
     z_w_concorr_mc_m0 = np.sum(e_bln_c_s * z_w_concorr_me[c2e], axis=1)
     z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[c2e], axis=1)
-    w_concorr_c = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
-    w_concorr_c[:, 0] = 0
-    return w_concorr_c
+    contravariant_correction_at_cells_on_half_levels = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
+    contravariant_correction_at_cells_on_half_levels[:, 0] = 0
+    return contravariant_correction_at_cells_on_half_levels
 
 
 class TestComputeContravariantCorrectionOfW(StencilTest):
     PROGRAM = compute_contravariant_correction_of_w
-    OUTPUTS = ("w_concorr_c",)
+    OUTPUTS = ("contravariant_correction_at_cells_on_half_levels",)
 
     @staticmethod
     def reference(
@@ -51,23 +51,23 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
         wgtfac_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        w_concorr_c = compute_contravariant_correction_of_w_numpy(
+        contravariant_correction_at_cells_on_half_levels = compute_contravariant_correction_of_w_numpy(
             connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c
         )
-        return dict(w_concorr_c=w_concorr_c)
+        return dict(contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        contravariant_correction_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
-            w_concorr_c=w_concorr_c,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=1,

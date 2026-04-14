@@ -26,7 +26,7 @@ def compute_hydrostatic_correction_term_numpy(
     theta_v: np.ndarray,
     ikoffset: np.ndarray,
     zdiff_gradp: np.ndarray,
-    theta_v_ic: np.ndarray,
+    theta_v_at_cells_on_half_levels: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     grav_o_cpd: float,
@@ -56,7 +56,7 @@ def compute_hydrostatic_correction_term_numpy(
     theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
 
     theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-        full_shape, theta_v_ic, e2c, ikoffset
+        full_shape, theta_v_at_cells_on_half_levels, e2c, ikoffset
     )
 
     inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
@@ -75,7 +75,7 @@ def compute_hydrostatic_correction_term_numpy(
         * inv_ddqz_z_full_at_kidx[:, 1, :]
     )
 
-    z_hydro_corr = (
+    hydrostatic_correction_on_lowest_level = (
         grav_o_cpd
         * inv_dual_edge_length
         * (z_theta2 - z_theta1)
@@ -84,13 +84,13 @@ def compute_hydrostatic_correction_term_numpy(
     )
 
     nlevels = theta_v.shape[1]
-    return z_hydro_corr[:, nlevels - 1 : nlevels]
+    return hydrostatic_correction_on_lowest_level[:, nlevels - 1 : nlevels]
 
 
 @pytest.mark.uses_as_offset
 @pytest.mark.continuous_benchmarking
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
-    OUTPUTS = ("z_hydro_corr",)
+    OUTPUTS = ("hydrostatic_correction_on_lowest_level",)
     PROGRAM = compute_hydrostatic_correction_term
     STATIC_PARAMS = {
         StandardStaticVariants.NONE: (),
@@ -112,23 +112,23 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         theta_v: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,
-        theta_v_ic: np.ndarray,
+        theta_v_at_cells_on_half_levels: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         grav_o_cpd: float,
         **kwargs: Any,
     ) -> dict:
-        z_hydro_corr = compute_hydrostatic_correction_term_numpy(
+        hydrostatic_correction_on_lowest_level = compute_hydrostatic_correction_term_numpy(
             connectivities,
             theta_v,
             ikoffset,
             zdiff_gradp,
-            theta_v_ic,
+            theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full,
             inv_dual_edge_length,
             grav_o_cpd,
         )
-        return dict(z_hydro_corr=z_hydro_corr)
+        return dict(hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -148,14 +148,14 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         zdiff_gradp = data_alloc.random_field(
             grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat
         )
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         grav_o_cpd = ta.wpfloat("10.0")
 
-        z_hydro_corr = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        hydrostatic_correction_on_lowest_level = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_hydro_corr = gtx.constructors.zeros(
+        hydrostatic_correction_on_lowest_level = gtx.constructors.zeros(
             domain={
                 dims.EdgeDim: (0, grid.num_edges),
                 dims.KDim: (grid.num_levels - 1, grid.num_levels),
@@ -166,9 +166,9 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         return dict(
             theta_v=theta_v,
             ikoffset=ikoffset,
-            z_hydro_corr=z_hydro_corr,
+            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
             zdiff_gradp=zdiff_gradp,
-            theta_v_ic=theta_v_ic,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=inv_ddqz_z_full,
             inv_dual_edge_length=inv_dual_edge_length,
             grav_o_cpd=grav_o_cpd,

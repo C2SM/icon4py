@@ -14,26 +14,26 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _add_analysis_increments_from_data_assimilation(
-    z_rho_expl: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
-    rho_incr: fa.CellKField[vpfloat],
-    exner_incr: fa.CellKField[vpfloat],
+    rho_explicit_term: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
+    rho_iau_increment: fa.CellKField[vpfloat],
+    exner_iau_increment: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_50."""
-    rho_incr_wp, exner_incr_wp = astype((rho_incr, exner_incr), wpfloat)
+    rho_incr_wp, exner_incr_wp = astype((rho_iau_increment, exner_iau_increment), wpfloat)
 
-    z_rho_expl_wp = z_rho_expl + iau_wgt_dyn * rho_incr_wp
-    z_exner_expl_wp = z_exner_expl + iau_wgt_dyn * exner_incr_wp
+    z_rho_expl_wp = rho_explicit_term + iau_wgt_dyn * rho_incr_wp
+    z_exner_expl_wp = exner_explicit_term + iau_wgt_dyn * exner_incr_wp
     return z_rho_expl_wp, z_exner_expl_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_analysis_increments_from_data_assimilation(
-    z_rho_expl: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
-    rho_incr: fa.CellKField[vpfloat],
-    exner_incr: fa.CellKField[vpfloat],
+    rho_explicit_term: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
+    rho_iau_increment: fa.CellKField[vpfloat],
+    exner_iau_increment: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -41,12 +41,12 @@ def add_analysis_increments_from_data_assimilation(
     vertical_end: gtx.int32,
 ) -> None:
     _add_analysis_increments_from_data_assimilation(
-        z_rho_expl,
-        z_exner_expl,
-        rho_incr,
-        exner_incr,
+        rho_explicit_term,
+        exner_explicit_term,
+        rho_iau_increment,
+        exner_iau_increment,
         iau_wgt_dyn,
-        out=(z_rho_expl, z_exner_expl),
+        out=(rho_explicit_term, exner_explicit_term),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

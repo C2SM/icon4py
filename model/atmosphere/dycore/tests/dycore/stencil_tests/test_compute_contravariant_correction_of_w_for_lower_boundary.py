@@ -38,19 +38,19 @@ def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
     z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[c2e], axis=1)
     z_w_concorr_mc_m2 = np.sum(e_bln_c_s * z_w_concorr_me_offset_2[c2e], axis=1)
 
-    w_concorr_c = np.zeros_like(wgtfacq_c, shape=(wgtfacq_c.shape[0], wgtfacq_c.shape[1] + 1))
-    w_concorr_c[:, -1] = (
+    contravariant_correction_at_cells_on_half_levels = np.zeros_like(wgtfacq_c, shape=(wgtfacq_c.shape[0], wgtfacq_c.shape[1] + 1))
+    contravariant_correction_at_cells_on_half_levels[:, -1] = (
         wgtfacq_c * z_w_concorr_mc_m0
         + np.roll(wgtfacq_c, shift=1, axis=1) * z_w_concorr_mc_m1
         + np.roll(wgtfacq_c, shift=2, axis=1) * z_w_concorr_mc_m2
     )[:, -1]
 
-    return w_concorr_c
+    return contravariant_correction_at_cells_on_half_levels
 
 
 class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
     PROGRAM = compute_contravariant_correction_of_w_for_lower_boundary
-    OUTPUTS = ("w_concorr_c",)
+    OUTPUTS = ("contravariant_correction_at_cells_on_half_levels",)
 
     @staticmethod
     def reference(
@@ -60,17 +60,17 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
         wgtfacq_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        w_concorr_c = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
+        contravariant_correction_at_cells_on_half_levels = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
             connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
         )
-        return dict(w_concorr_c=w_concorr_c)
+        return dict(contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = zero_field(
+        contravariant_correction_at_cells_on_half_levels = zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
 
@@ -78,7 +78,7 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
             wgtfacq_c=wgtfacq_c,
-            w_concorr_c=w_concorr_c,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(grid.num_levels),

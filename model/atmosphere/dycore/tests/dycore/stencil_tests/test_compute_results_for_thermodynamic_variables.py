@@ -26,37 +26,37 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 def compute_results_for_thermodynamic_variables_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    z_rho_expl: np.ndarray,
+    rho_explicit_term: np.ndarray,
     exner_w_implicit_weight_parameter: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
-    rho_ic: np.ndarray,
+    rho_at_cells_on_half_levels: np.ndarray,
     w: np.ndarray,
-    z_exner_expl: np.ndarray,
+    exner_explicit_term: np.ndarray,
     reference_exner_at_cells_on_model_levels: np.ndarray,
-    z_alpha: np.ndarray,
-    z_beta: np.ndarray,
-    rho_now: np.ndarray,
-    theta_v_now: np.ndarray,
-    exner_now: np.ndarray,
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: np.ndarray,
+    tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
+    current_rho: np.ndarray,
+    current_theta_v: np.ndarray,
+    current_exner: np.ndarray,
     dtime: float,
 ) -> tuple[np.ndarray, ...]:
-    rho_ic_offset_1 = rho_ic[:, 1:]
+    rho_ic_offset_1 = rho_at_cells_on_half_levels[:, 1:]
     w_offset_0 = w[:, :-1]
     w_offset_1 = w[:, 1:]
-    z_alpha_offset_1 = z_alpha[:, 1:]
+    z_alpha_offset_1 = tridiagonal_alpha_coeff_at_cells_on_half_levels[:, 1:]
     exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=1)
-    rho_new = z_rho_expl - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full * (
-        rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
+    rho_new = rho_explicit_term - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full * (
+        rho_at_cells_on_half_levels[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
     )
     exner_new = (
-        z_exner_expl
+        exner_explicit_term
         + reference_exner_at_cells_on_model_levels
-        - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
+        - tridiagonal_beta_coeff_at_cells_on_model_levels * (tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
     theta_v_new = (
-        rho_now
-        * theta_v_now
-        * ((exner_new / exner_now - 1.0) * dycore_consts.cvd_o_rd + 1.0)
+        current_rho
+        * current_theta_v
+        * ((exner_new / current_exner - 1.0) * dycore_consts.cvd_o_rd + 1.0)
         / rho_new
     )
     return rho_new, exner_new, theta_v_new
@@ -69,79 +69,79 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_rho_expl: np.ndarray,
+        rho_explicit_term: np.ndarray,
         exner_w_implicit_weight_parameter: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
-        rho_ic: np.ndarray,
+        rho_at_cells_on_half_levels: np.ndarray,
         w: np.ndarray,
-        z_exner_expl: np.ndarray,
+        exner_explicit_term: np.ndarray,
         reference_exner_at_cells_on_model_levels: np.ndarray,
-        z_alpha: np.ndarray,
-        z_beta: np.ndarray,
-        rho_now: np.ndarray,
-        theta_v_now: np.ndarray,
-        exner_now: np.ndarray,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels: np.ndarray,
+        tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
+        current_rho: np.ndarray,
+        current_theta_v: np.ndarray,
+        current_exner: np.ndarray,
         dtime: float,
         **kwargs: Any,
     ) -> dict:
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
             connectivities,
-            z_rho_expl=z_rho_expl,
+            rho_explicit_term=rho_explicit_term,
             exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            rho_ic=rho_ic,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             w=w,
-            z_exner_expl=z_exner_expl,
+            exner_explicit_term=exner_explicit_term,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-            z_alpha=z_alpha,
-            z_beta=z_beta,
-            rho_now=rho_now,
-            theta_v_now=theta_v_now,
-            exner_now=exner_now,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            current_rho=current_rho,
+            current_theta_v=current_theta_v,
+            current_exner=current_exner,
             dtime=dtime,
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_ic = data_alloc.random_field(
+        rho_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         w = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        z_alpha = data_alloc.random_field(
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         exner_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_v_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
 
         return dict(
-            z_rho_expl=z_rho_expl,
+            rho_explicit_term=rho_explicit_term,
             exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            rho_ic=rho_ic,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             w=w,
-            z_exner_expl=z_exner_expl,
+            exner_explicit_term=exner_explicit_term,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-            z_alpha=z_alpha,
-            z_beta=z_beta,
-            rho_now=rho_now,
-            theta_v_now=theta_v_now,
-            exner_now=exner_now,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            current_rho=current_rho,
+            current_theta_v=current_theta_v,
+            current_exner=current_exner,
             rho_new=rho_new,
             exner_new=exner_new,
             theta_v_new=theta_v_new,

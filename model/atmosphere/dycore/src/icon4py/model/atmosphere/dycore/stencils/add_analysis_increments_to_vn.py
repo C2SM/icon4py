@@ -14,12 +14,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _add_analysis_increments_to_vn(
-    vn_incr: fa.EdgeKField[vpfloat],
+    normal_wind_iau_increment: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     iau_wgt_dyn: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_28."""
-    vn_incr_wp = astype(vn_incr, wpfloat)
+    vn_incr_wp = astype(normal_wind_iau_increment, wpfloat)
 
     vn_wp = vn + (iau_wgt_dyn * vn_incr_wp)
     return vn_wp
@@ -27,7 +27,7 @@ def _add_analysis_increments_to_vn(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_analysis_increments_to_vn(
-    vn_incr: fa.EdgeKField[vpfloat],
+    normal_wind_iau_increment: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     iau_wgt_dyn: wpfloat,
     horizontal_start: gtx.int32,
@@ -36,7 +36,7 @@ def add_analysis_increments_to_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _add_analysis_increments_to_vn(
-        vn_incr,
+        normal_wind_iau_increment,
         vn,
         iau_wgt_dyn,
         out=vn,

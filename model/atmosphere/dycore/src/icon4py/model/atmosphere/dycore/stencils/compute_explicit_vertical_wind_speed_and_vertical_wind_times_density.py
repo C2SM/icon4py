@@ -16,32 +16,32 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     w_nnow: fa.CellKField[wpfloat],
     ddt_w_adv_ntl1: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_43."""
     ddt_w_adv_ntl1_wp, z_th_ddz_exner_c_wp, w_concorr_c_wp = astype(
-        (ddt_w_adv_ntl1, z_th_ddz_exner_c, w_concorr_c), wpfloat
+        (ddt_w_adv_ntl1, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels, contravariant_correction_at_cells_on_half_levels), wpfloat
     )
 
     z_w_expl_wp = w_nnow + dtime * (ddt_w_adv_ntl1_wp - cpd * z_th_ddz_exner_c_wp)
-    z_contr_w_fl_l_wp = rho_ic * (-w_concorr_c_wp + exner_w_explicit_weight_parameter * w_nnow)
+    z_contr_w_fl_l_wp = rho_at_cells_on_half_levels * (-w_concorr_c_wp + exner_w_explicit_weight_parameter * w_nnow)
     return z_w_expl_wp, z_contr_w_fl_l_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
-    z_w_expl: fa.CellKField[wpfloat],
+    w_explicit_term: fa.CellKField[wpfloat],
     w_nnow: fa.CellKField[wpfloat],
     ddt_w_adv_ntl1: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    z_contr_w_fl_l: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
@@ -53,13 +53,13 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
         w_nnow,
         ddt_w_adv_ntl1,
-        z_th_ddz_exner_c,
-        rho_ic,
-        w_concorr_c,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        rho_at_cells_on_half_levels,
+        contravariant_correction_at_cells_on_half_levels,
         exner_w_explicit_weight_parameter,
         dtime,
         cpd,
-        out=(z_w_expl, z_contr_w_fl_l),
+        out=(w_explicit_term, vertical_mass_flux_at_cells_on_half_levels),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

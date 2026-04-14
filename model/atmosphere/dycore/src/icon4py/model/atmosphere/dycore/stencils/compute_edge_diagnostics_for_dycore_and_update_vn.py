@@ -79,13 +79,13 @@ def apply_on_vertical_level(
 @gtx.field_operator
 def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     pg_exdist: fa.EdgeKField[ta.vpfloat],
-    z_hydro_corr: fa.EdgeField[ta.wpfloat],
-    z_gradh_exner: fa.EdgeKField[ta.vpfloat],
+    hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
+    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
     # Note: In the original Fortran code `pg_exdist` is implemented as a list,
     # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
     z_gradh_exner_vp = where(
-        pg_exdist != 0.0, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
+        pg_exdist != 0.0, horizontal_pressure_gradient + hydrostatic_correction_on_lowest_level * pg_exdist, horizontal_pressure_gradient
     )
     return z_gradh_exner_vp
 
@@ -111,29 +111,29 @@ def _compute_horizontal_pressure_gradient(
         nflat_gradp,
         on_flatlevels=_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         ),
         between_flat_and_flatgradp=_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
             ddxn_z_full=ddxn_z_full,
             c_lin_e=c_lin_e,
-            z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
         below_flatgradp=_compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
             inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
             zdiff_gradp=zdiff_gradp,
             ikoffset=ikoffset,
-            z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            z_dexner_dz_c_2=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
     )
 
     return apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
         pg_exdist=pg_exdist,
-        z_hydro_corr=hydrostatic_correction_on_lowest_level,
-        z_gradh_exner=horizontal_pressure_gradient,
+        hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
+        horizontal_pressure_gradient=horizontal_pressure_gradient,
     )
 
 
@@ -192,8 +192,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
         ((start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo)),
         _compute_horizontal_advection_of_rho_and_theta(
-            p_vn=current_vn,
-            p_vt=tangential_wind,
+            current_vn=current_vn,
+            tangential_wind=tangential_wind,
             pos_on_tplane_e_1=pos_on_tplane_e_x,
             pos_on_tplane_e_2=pos_on_tplane_e_y,
             primal_normal_cell_1=primal_normal_cell_x,
@@ -201,8 +201,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
             primal_normal_cell_2=primal_normal_cell_y,
             dual_normal_cell_2=dual_normal_cell_y,
             p_dthalf=wpfloat("0.5") * dtime,
-            rho_ref_me=reference_rho_at_edges_on_model_levels,
-            theta_ref_me=reference_theta_at_edges_on_model_levels,
+            reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
+            reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
             perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
             geofac_grg_x=geofac_grg_x,
@@ -238,11 +238,11 @@ def _compute_rho_theta_pgrad_and_update_vn(
     next_vn = concat_where(
         start_edge_nudging_level_2 <= dims.EdgeDim,
         _add_temporal_tendencies_to_vn(
-            vn_nnow=current_vn,
-            ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
-            ddt_vn_phy=normal_wind_tendency_due_to_slow_physics_process,
-            z_theta_v_e=theta_v_at_edges_on_model_levels,
-            z_gradh_exner=horizontal_pressure_gradient,
+            current_vn=current_vn,
+            predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
+            normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
+            theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient=horizontal_pressure_gradient,
             dtime=dtime,
         ),
         next_vn,
@@ -253,7 +253,7 @@ def _compute_rho_theta_pgrad_and_update_vn(
         next_vn = concat_where(
             start_edge_nudging_level_2 <= dims.EdgeDim,
             _add_analysis_increments_to_vn(
-                vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
+                normal_wind_iau_increment=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
             next_vn,
         )
@@ -318,39 +318,39 @@ def _apply_divergence_damping_and_update_vn(
         horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
         scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
         inv_dual_edge_length=inv_dual_edge_length,
-        z_dwdz_dd=dwdz_at_cells_on_model_levels,
-        z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
+        dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
+        horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
     )
 
     next_vn = _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
-        vn_nnow=current_vn,
-        ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
-        ddt_vn_apc_ntl2=corrector_normal_wind_advective_tendency,
-        ddt_vn_phy=normal_wind_tendency_due_to_slow_physics_process,
-        z_theta_v_e=theta_v_at_edges_on_model_levels,
-        z_gradh_exner=horizontal_pressure_gradient,
+        current_vn=current_vn,
+        predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
+        corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+        horizontal_pressure_gradient=horizontal_pressure_gradient,
         dtime=dtime,
-        wgt_nnow_vel=advection_explicit_weight_parameter,
-        wgt_nnew_vel=advection_implicit_weight_parameter,
+        advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+        advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         cpd=dycore_consts.cpd,
     )
 
     if apply_2nd_order_divergence_damping:
         next_vn = _apply_2nd_order_divergence_damping(
-            z_graddiv_vn=horizontal_gradient_of_total_divergence,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_total_divergence,
             vn=next_vn,
-            scal_divdamp_o2=second_order_divdamp_scaling_coeff,
+            second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
         )
 
     if apply_4th_order_divergence_damping:
         squared_horizontal_gradient_of_total_divergence = _compute_graddiv2_of_vn(
-            geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
+            geofac_grdiv=geofac_grdiv, horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_total_divergence
         )
         if limited_area:
             next_vn = _apply_weighted_2nd_and_4th_order_divergence_damping(
                 interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
                 nudgecoeff_e=nudgecoeff_e,
-                z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
+                squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence,
                 vn=next_vn,
                 divdamp_order=divdamp_order,
                 mean_cell_area=mean_cell_area,
@@ -361,7 +361,7 @@ def _apply_divergence_damping_and_update_vn(
         else:
             next_vn = _apply_4th_order_divergence_damping(
                 interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
-                z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
+                squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence,
                 vn=next_vn,
                 divdamp_order=divdamp_order,
                 mean_cell_area=mean_cell_area,
@@ -370,7 +370,7 @@ def _apply_divergence_damping_and_update_vn(
 
     if is_iau_active:
         next_vn = _add_analysis_increments_to_vn(
-            vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
+            normal_wind_iau_increment=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
         )
 
     return next_vn

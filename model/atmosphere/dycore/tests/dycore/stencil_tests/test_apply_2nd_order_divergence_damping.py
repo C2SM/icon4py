@@ -24,9 +24,9 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def apply_2nd_order_divergence_damping_numpy(
-    z_graddiv_vn: np.ndarray, vn: np.ndarray, scal_divdamp_o2: wpfloat
+    horizontal_gradient_of_normal_wind_divergence: np.ndarray, vn: np.ndarray, second_order_divdamp_scaling_coeff: wpfloat
 ) -> np.ndarray:
-    vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+    vn = vn + (second_order_divdamp_scaling_coeff * horizontal_gradient_of_normal_wind_divergence)
     return vn
 
 
@@ -37,24 +37,24 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_graddiv_vn: np.ndarray,
+        horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         vn: np.ndarray,
-        scal_divdamp_o2: ta.wpfloat,
+        second_order_divdamp_scaling_coeff: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vn = apply_2nd_order_divergence_damping_numpy(z_graddiv_vn, vn, scal_divdamp_o2)
+        vn = apply_2nd_order_divergence_damping_numpy(horizontal_gradient_of_normal_wind_divergence, vn, second_order_divdamp_scaling_coeff)
         return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        scal_divdamp_o2 = wpfloat("5.0")
+        second_order_divdamp_scaling_coeff = wpfloat("5.0")
 
         return dict(
-            z_graddiv_vn=z_graddiv_vn,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
             vn=vn,
-            scal_divdamp_o2=scal_divdamp_o2,
+            second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

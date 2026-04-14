@@ -14,33 +14,33 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _update_mass_flux_weighted(
-    rho_ic: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w_now: fa.CellKField[wpfloat],
     w_new: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    mass_flx_ic: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_65."""
-    w_concorr_c_wp = astype(w_concorr_c, wpfloat)
+    w_concorr_c_wp = astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
 
-    mass_flx_ic_wp = mass_flx_ic + (
-        r_nsubsteps * rho_ic * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - w_concorr_c_wp)
+    mass_flx_ic_wp = dynamical_vertical_mass_flux_at_cells_on_half_levels + (
+        r_nsubsteps * rho_at_cells_on_half_levels * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - w_concorr_c_wp)
     )
     return mass_flx_ic_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_mass_flux_weighted(
-    rho_ic: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w_now: fa.CellKField[wpfloat],
     w_new: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    mass_flx_ic: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -48,15 +48,15 @@ def update_mass_flux_weighted(
     vertical_end: gtx.int32,
 ) -> None:
     _update_mass_flux_weighted(
-        rho_ic,
+        rho_at_cells_on_half_levels,
         exner_w_explicit_weight_parameter,
         exner_w_implicit_weight_parameter,
         w_now,
         w_new,
-        w_concorr_c,
-        mass_flx_ic,
+        contravariant_correction_at_cells_on_half_levels,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels,
         r_nsubsteps,
-        out=mass_flx_ic,
+        out=dynamical_vertical_mass_flux_at_cells_on_half_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

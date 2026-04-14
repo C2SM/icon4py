@@ -322,13 +322,13 @@ def test_nonhydro_predictor_step(
         solve_nonhydro.perturbed_rho_at_cells_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, :
         ],
-        sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.perturbed_theta_v_at_cells_on_model_levels(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert test_utils.dallclose(
         solve_nonhydro.perturbed_theta_v_at_cells_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, :
         ],
-        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.perturbed_theta_v_at_cells_on_model_levels(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
     # stencils 12
@@ -1119,8 +1119,8 @@ def test_compute_perturbed_quantities_and_interpolation(
     reference_exner_at_cells_on_model_levels = metrics_savepoint.exner_ref_mc()
     inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
 
-    z_rth_pr_1_ref = sp_ref.z_rth_pr(0)
-    z_rth_pr_2_ref = sp_ref.z_rth_pr(1)
+    z_rth_pr_1_ref = sp_ref.perturbed_theta_v_at_cells_on_model_levels(0)
+    z_rth_pr_2_ref = sp_ref.perturbed_theta_v_at_cells_on_model_levels(1)
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
     exner_pr_ref = sp_exit.exner_pr()
     rho_ic_ref = sp_exit.rho_ic()
@@ -1182,7 +1182,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert test_utils.dallclose(
         perturbed_theta_v_at_cells_on_model_levels.asnumpy(), z_rth_pr_2_ref.asnumpy()
     )
-    # `z_exner_ex_pr` is only computed in a subset of the whole domain, reference may contain garbage outside this range
+    # `temporal_extrapolation_of_perturbed_exner` is only computed in a subset of the whole domain, reference may contain garbage outside this range
     assert test_utils.dallclose(
         temporal_extrapolation_of_perturbed_exner.asnumpy()[
             start_cell_lateral_boundary_level_3:end_cell_halo, :
@@ -1443,8 +1443,8 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     next_vn = sp_nh_init.vn_new()
     tangential_wind = sp_stencil_init.vt()
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
-    perturbed_rho_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(0)
-    perturbed_theta_v_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(1)
+    perturbed_rho_at_cells_on_model_levels = sp_stencil_init.perturbed_theta_v_at_cells_on_model_levels(0)
+    perturbed_theta_v_at_cells_on_model_levels = sp_stencil_init.perturbed_theta_v_at_cells_on_model_levels(1)
     hydrostatic_correction = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
     )
@@ -1483,10 +1483,10 @@ def test_compute_rho_theta_pgrad_and_update_vn(
             theta_v=theta_v,
             ikoffset=metrics_savepoint.vertoffset_gradp(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-            theta_v_ic=theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
             inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-            z_hydro_corr=hydrostatic_correction,
+            hydrostatic_correction_on_lowest_level=hydrostatic_correction,
             grav_o_cpd=constants.GRAV_O_CPD,
             horizontal_start=start_edge_nudging_level_2,
             horizontal_end=end_edge_local,
@@ -1828,10 +1828,10 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         backend
     )(
         spatially_averaged_vn=z_vn_avg,
-        horizontal_gradient_of_normal_wind_divergence=z_graddiv_vn,
+        horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
         tangential_wind=vt,
-        mass_flux_at_edges_on_model_levels=mass_fl_e,
-        theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         tangential_wind_on_half_levels=z_vt_ie,
         vn_on_half_levels=vn_ie,
         horizontal_kinetic_energy_at_edges_on_model_levels=z_kin_hor_e,
@@ -1841,7 +1841,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         geofac_grdiv=geofac_grdiv,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         rho_at_edges_on_model_levels=z_rho_e,
-        theta_v_at_edges_on_model_levels=z_theta_v_e,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxn_z_full=ddxn_z_full,
         ddxt_z_full=ddxt_z_full,
@@ -1868,7 +1868,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     # same tolerances as in Liskov
     assert test_utils.dallclose(
         z_graddiv_vn_ref.asnumpy(),
-        z_graddiv_vn.asnumpy(),
+        horizontal_gradient_of_normal_wind_divergence.asnumpy(),
         rtol=1.0e-2,
         atol=1.0e-20,
     )
@@ -1881,13 +1881,13 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
 
     assert test_utils.dallclose(
         mass_fl_e_ref.asnumpy(),
-        mass_fl_e.asnumpy(),
+        mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-6,
     )
 
     assert test_utils.dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
-        z_theta_v_fl_e.asnumpy(),
+        theta_v_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-6,
     )
 
@@ -1980,15 +1980,15 @@ def test_compute_averaged_vn_and_fluxes(
 
     compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes.with_backend(backend)(
         spatially_averaged_vn=z_vn_avg,
-        mass_flux_at_edges_on_model_levels=mass_fl_e,
-        theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         substep_and_spatially_averaged_vn=vn_traj,
         substep_averaged_mass_flux=mass_flx_me,
         e_flx_avg=e_flx_avg,
         vn=vn,
         rho_at_edges_on_model_levels=z_rho_e,
         ddqz_z_full_e=ddqz_z_full_e,
-        theta_v_at_edges_on_model_levels=z_theta_v_e,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         prepare_advection=True,
         at_first_substep=at_first_substep,
         r_nsubsteps=r_nsubsteps,
@@ -2010,13 +2010,13 @@ def test_compute_averaged_vn_and_fluxes(
 
     assert test_utils.dallclose(
         mass_fl_e_ref.asnumpy(),
-        mass_fl_e.asnumpy(),
+        mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-6,
     )
 
     assert test_utils.dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
-        z_theta_v_fl_e.asnumpy(),
+        theta_v_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-6,
     )
 
@@ -2213,8 +2213,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     )
     assert test_utils.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
 
-    # In ICON, z_dwdz_dd is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
-    # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
+    # In ICON, dwdz_at_cells_on_model_levels is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
+    # serialized data of dwdz_at_cells_on_model_levels can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
     # Since dwdz_at_cells_on_model_levels is computed for all levels in icon4py, we have to
     # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
     starting_vertical_index_for_3d_divdamp = (

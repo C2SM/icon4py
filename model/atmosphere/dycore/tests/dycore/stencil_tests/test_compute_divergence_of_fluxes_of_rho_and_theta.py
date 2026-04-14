@@ -39,38 +39,38 @@ def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
 
 class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
-    OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
+    OUTPUTS = ("divergence_of_mass", "divergence_of_theta_v")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
-        mass_fl_e: np.ndarray,
-        z_theta_v_fl_e: np.ndarray,
+        mass_flux_at_edges_on_model_levels: np.ndarray,
+        theta_v_flux_at_edges_on_model_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_flxdiv_mass, z_flxdiv_theta = compute_divergence_of_fluxes_of_rho_and_theta_numpy(
+        divergence_of_mass, divergence_of_theta_v = compute_divergence_of_fluxes_of_rho_and_theta_numpy(
             connectivities,
             geofac_div,
-            mass_fl_e,
-            z_theta_v_fl_e,
+            mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels,
         )
-        return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
+        return dict(divergence_of_mass=divergence_of_mass, divergence_of_theta_v=divergence_of_theta_v)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_flxdiv_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        divergence_of_theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        divergence_of_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             geofac_div=geofac_div,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_flxdiv_theta=z_flxdiv_theta,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
+            divergence_of_mass=divergence_of_mass,
+            divergence_of_theta_v=divergence_of_theta_v,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

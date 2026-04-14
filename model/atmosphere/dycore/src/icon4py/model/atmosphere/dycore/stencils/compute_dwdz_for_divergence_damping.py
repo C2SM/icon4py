@@ -17,13 +17,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_56_63."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
-        (w - w(Koff[1])) - astype(w_concorr_c - w_concorr_c(Koff[1]), wpfloat)
+        (w - w(Koff[1])) - astype(contravariant_correction_at_cells_on_half_levels - contravariant_correction_at_cells_on_half_levels(Koff[1]), wpfloat)
     )
     return astype(z_dwdz_dd_wp, vpfloat)
 
@@ -32,8 +32,8 @@ def _compute_dwdz_for_divergence_damping(
 def compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    z_dwdz_dd: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    dwdz_at_cells_on_model_levels: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -42,8 +42,8 @@ def compute_dwdz_for_divergence_damping(
     _compute_dwdz_for_divergence_damping(
         inv_ddqz_z_full,
         w,
-        w_concorr_c,
-        out=z_dwdz_dd,
+        contravariant_correction_at_cells_on_half_levels,
+        out=dwdz_at_cells_on_model_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

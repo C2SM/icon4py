@@ -26,27 +26,27 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     horizontal_mask_for_3d_divdamp: np.ndarray,
     scaling_factor_for_3d_divdamp: np.ndarray,
     inv_dual_edge_length: np.ndarray,
-    z_dwdz_dd: np.ndarray,
-    z_graddiv_vn: np.ndarray,
+    dwdz_at_cells_on_model_levels: np.ndarray,
+    horizontal_gradient_of_normal_wind_divergence: np.ndarray,
 ) -> np.ndarray:
     scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
     horizontal_mask_for_3d_divdamp = np.expand_dims(horizontal_mask_for_3d_divdamp, axis=-1)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     e2c = connectivities[dims.E2CDim]
-    z_dwdz_dd_e2c = z_dwdz_dd[e2c]
+    z_dwdz_dd_e2c = dwdz_at_cells_on_model_levels[e2c]
     z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
-    z_graddiv_vn = z_graddiv_vn + (
+    horizontal_gradient_of_normal_wind_divergence = horizontal_gradient_of_normal_wind_divergence + (
         horizontal_mask_for_3d_divdamp * scaling_factor_for_3d_divdamp * inv_dual_edge_length * z_dwdz_dd_weighted
     )
-    return z_graddiv_vn
+    return horizontal_gradient_of_normal_wind_divergence
 
 
 @pytest.mark.skip_value_error
 class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
-    OUTPUTS = ("z_graddiv_vn",)
+    OUTPUTS = ("horizontal_gradient_of_normal_wind_divergence",)
 
     @staticmethod
     def reference(
@@ -54,34 +54,34 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         horizontal_mask_for_3d_divdamp: np.ndarray,
         scaling_factor_for_3d_divdamp: np.ndarray,
         inv_dual_edge_length: np.ndarray,
-        z_dwdz_dd: np.ndarray,
-        z_graddiv_vn: np.ndarray,
+        dwdz_at_cells_on_model_levels: np.ndarray,
+        horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
+        horizontal_gradient_of_normal_wind_divergence = add_vertical_wind_derivative_to_divergence_damping_numpy(
             connectivities,
             horizontal_mask_for_3d_divdamp,
             scaling_factor_for_3d_divdamp,
             inv_dual_edge_length,
-            z_dwdz_dd,
-            z_graddiv_vn,
+            dwdz_at_cells_on_model_levels,
+            horizontal_gradient_of_normal_wind_divergence,
         )
-        return dict(z_graddiv_vn=z_graddiv_vn)
+        return dict(horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        z_dwdz_dd = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_graddiv_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        dwdz_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
             scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
             inv_dual_edge_length=inv_dual_edge_length,
-            z_dwdz_dd=z_dwdz_dd,
-            z_graddiv_vn=z_graddiv_vn,
+            dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

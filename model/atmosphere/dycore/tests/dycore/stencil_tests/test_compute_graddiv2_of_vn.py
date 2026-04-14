@@ -23,42 +23,42 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def compute_graddiv2_of_vn_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     geofac_grdiv: np.ndarray,
-    z_graddiv_vn: np.ndarray,
+    horizontal_gradient_of_normal_wind_divergence: np.ndarray,
 ) -> np.ndarray:
     e2c2eO = connectivities[dims.E2C2EODim]
     geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-    z_graddiv2_vn = np.sum(
-        np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),
+    squared_horizontal_gradient_of_total_divergence = np.sum(
+        np.where((e2c2eO != -1)[:, :, np.newaxis], horizontal_gradient_of_normal_wind_divergence[e2c2eO] * geofac_grdiv, 0),
         axis=1,
     )
-    return z_graddiv2_vn
+    return squared_horizontal_gradient_of_total_divergence
 
 
 @pytest.mark.embedded_remap_error
 class TestComputeGraddiv2OfVn(StencilTest):
     PROGRAM = compute_graddiv2_of_vn
-    OUTPUTS = ("z_graddiv2_vn",)
+    OUTPUTS = ("squared_horizontal_gradient_of_total_divergence",)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_grdiv: np.ndarray,
-        z_graddiv_vn: np.ndarray,
+        horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_graddiv2_vn = compute_graddiv2_of_vn_numpy(connectivities, geofac_grdiv, z_graddiv_vn)
-        return dict(z_graddiv2_vn=z_graddiv2_vn)
+        squared_horizontal_gradient_of_total_divergence = compute_graddiv2_of_vn_numpy(connectivities, geofac_grdiv, horizontal_gradient_of_normal_wind_divergence)
+        return dict(squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        z_graddiv2_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        squared_horizontal_gradient_of_total_divergence = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             geofac_grdiv=geofac_grdiv,
-            z_graddiv_vn=z_graddiv_vn,
-            z_graddiv2_vn=z_graddiv2_vn,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
+            squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

@@ -28,25 +28,25 @@ class TestUpdateDensityExnerWind(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        rho_now: np.ndarray,
+        current_rho: np.ndarray,
         grf_tend_rho: np.ndarray,
-        theta_v_now: np.ndarray,
+        current_theta_v: np.ndarray,
         grf_tend_thv: np.ndarray,
         w_now: np.ndarray,
         grf_tend_w: np.ndarray,
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        rho_new = rho_now + dtime * grf_tend_rho
-        exner_new = theta_v_now + dtime * grf_tend_thv
+        rho_new = current_rho + dtime * grf_tend_rho
+        exner_new = current_theta_v + dtime * grf_tend_thv
         w_new = w_now + dtime * grf_tend_w
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        current_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        current_theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_thv = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_w = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
@@ -56,9 +56,9 @@ class TestUpdateDensityExnerWind(StencilTest):
         w_new = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
-            rho_now=rho_now,
+            current_rho=current_rho,
             grf_tend_rho=grf_tend_rho,
-            theta_v_now=theta_v_now,
+            current_theta_v=current_theta_v,
             grf_tend_thv=grf_tend_thv,
             w_now=w_now,
             grf_tend_w=grf_tend_w,

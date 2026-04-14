@@ -47,24 +47,24 @@ def tridiagonal_forward_sweep_for_w(
 @gtx.field_operator
 def _solve_tridiagonal_matrix_for_w_forward_sweep(
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    w_explicit_term: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
-    z_gamma_vp = astype(dtime * cpd * exner_w_implicit_weight_parameter * theta_v_ic / ddqz_z_half_wp, vpfloat)
-    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(Koff[-1]) * z_alpha(Koff[-1])
-    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta * z_alpha(Koff[1])
-    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(Koff[-1]) + z_beta)
+    z_gamma_vp = astype(dtime * cpd * exner_w_implicit_weight_parameter * theta_v_at_cells_on_half_levels / ddqz_z_half_wp, vpfloat)
+    z_a = (vpfloat("0.0") - z_gamma_vp) * tridiagonal_beta_coeff_at_cells_on_model_levels(Koff[-1]) * tridiagonal_alpha_coeff_at_cells_on_half_levels(Koff[-1])
+    z_c = (vpfloat("0.0") - z_gamma_vp) * tridiagonal_beta_coeff_at_cells_on_model_levels * tridiagonal_alpha_coeff_at_cells_on_half_levels(Koff[1])
+    z_b = vpfloat("1.0") + z_gamma_vp * tridiagonal_alpha_coeff_at_cells_on_half_levels * (tridiagonal_beta_coeff_at_cells_on_model_levels(Koff[-1]) + tridiagonal_beta_coeff_at_cells_on_model_levels)
     z_gamma_wp = astype(z_gamma_vp, wpfloat)
-    w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(Koff[-1]) - z_exner_expl)
+    w_prep = w_explicit_term - z_gamma_wp * (exner_explicit_term(Koff[-1]) - exner_explicit_term)
     z_q_res, w_res = tridiagonal_forward_sweep_for_w(z_a, z_b, z_c, w_prep)
     return z_q_res, w_res
 
@@ -72,13 +72,13 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_forward_sweep(
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
-    z_q: fa.CellKField[vpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    w_explicit_term: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
+    tridiagonal_intermediate_result: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
@@ -89,15 +89,15 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
 ) -> None:
     _solve_tridiagonal_matrix_for_w_forward_sweep(
         exner_w_implicit_weight_parameter,
-        theta_v_ic,
+        theta_v_at_cells_on_half_levels,
         ddqz_z_half,
-        z_alpha,
-        z_beta,
-        z_w_expl,
-        z_exner_expl,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels,
+        w_explicit_term,
+        exner_explicit_term,
         dtime,
         cpd,
-        out=(z_q, w),
+        out=(tridiagonal_intermediate_result, w),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

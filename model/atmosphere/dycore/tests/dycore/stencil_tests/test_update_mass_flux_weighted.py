@@ -25,7 +25,7 @@ from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilT
 @pytest.mark.continuous_benchmarking
 class TestUpdateMassFluxWeighted(StencilTest):
     PROGRAM = update_mass_flux_weighted
-    OUTPUTS = ("mass_flx_ic",)
+    OUTPUTS = ("dynamical_vertical_mass_flux_at_cells_on_half_levels",)
     STATIC_PARAMS = {
         StandardStaticVariants.NONE: (),
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
@@ -43,42 +43,42 @@ class TestUpdateMassFluxWeighted(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        rho_ic: np.ndarray,
+        rho_at_cells_on_half_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
         exner_w_implicit_weight_parameter: np.ndarray,
         w_now: np.ndarray,
         w_new: np.ndarray,
-        w_concorr_c: np.ndarray,
-        mass_flx_ic: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
         exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
         exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
-        mass_flx_ic = mass_flx_ic + (
-            r_nsubsteps * rho_ic * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - w_concorr_c)
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = dynamical_vertical_mass_flux_at_cells_on_half_levels + (
+            r_nsubsteps * rho_at_cells_on_half_levels * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - contravariant_correction_at_cells_on_half_levels)
         )
-        return dict(mass_flx_ic=mass_flx_ic)
+        return dict(dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
         exner_w_implicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
         w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         w_new = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        mass_flx_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        contravariant_correction_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
-            rho_ic=rho_ic,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             w_now=w_now,
             w_new=w_new,
-            w_concorr_c=w_concorr_c,
-            mass_flx_ic=mass_flx_ic,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

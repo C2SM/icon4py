@@ -17,7 +17,7 @@ def _extrapolate_temporally_exner_pressure(
     time_extrapolation_parameter_for_exner: fa.CellKField[vpfloat],
     exner: fa.CellKField[wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    exner_pr: fa.CellKField[wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_02."""
     time_extrapolation_parameter_for_exner_wp, reference_exner_at_cells_on_model_levels_wp = astype(
@@ -26,7 +26,7 @@ def _extrapolate_temporally_exner_pressure(
 
     z_exner_ex_pr_wp = (wpfloat("1.0") + time_extrapolation_parameter_for_exner_wp) * (
         exner - reference_exner_at_cells_on_model_levels_wp
-    ) - time_extrapolation_parameter_for_exner_wp * exner_pr
+    ) - time_extrapolation_parameter_for_exner_wp * perturbed_exner_at_cells_on_model_levels
     exner_pr_wp = exner - reference_exner_at_cells_on_model_levels_wp
     return astype(z_exner_ex_pr_wp, vpfloat), exner_pr_wp
 
@@ -36,8 +36,8 @@ def extrapolate_temporally_exner_pressure(
     time_extrapolation_parameter_for_exner: fa.CellKField[vpfloat],
     exner: fa.CellKField[wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    exner_pr: fa.CellKField[wpfloat],
-    z_exner_ex_pr: fa.CellKField[vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -47,8 +47,8 @@ def extrapolate_temporally_exner_pressure(
         time_extrapolation_parameter_for_exner,
         exner,
         reference_exner_at_cells_on_model_levels,
-        exner_pr,
-        out=(z_exner_ex_pr, exner_pr),
+        perturbed_exner_at_cells_on_model_levels,
+        out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

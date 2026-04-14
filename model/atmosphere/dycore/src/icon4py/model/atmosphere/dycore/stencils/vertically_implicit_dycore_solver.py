@@ -177,12 +177,12 @@ def solve_w(
     last_inner_level: gtx.int32,
     next_w: fa.CellKField[wpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    w_explicit_term: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> fa.CellKField[wpfloat]:
@@ -193,12 +193,12 @@ def solve_w(
         dims.KDim > 0,
         _solve_tridiagonal_matrix_for_w_forward_sweep(
             exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
-            theta_v_ic=theta_v_ic,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
-            z_alpha=z_alpha,
-            z_beta=z_beta,
-            z_w_expl=z_w_expl,
-            z_exner_expl=z_exner_expl,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            w_explicit_term=w_explicit_term,
+            exner_explicit_term=exner_explicit_term,
             dtime=dtime,
             cpd=cpd,
         ),
@@ -207,7 +207,7 @@ def solve_w(
     next_w = concat_where(
         dims.KDim < last_inner_level,
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-            z_q=tridiagonal_intermediate_result,
+            tridiagonal_intermediate_result=tridiagonal_intermediate_result,
             w=next_w_intermediate_result,
         ),
         next_w,
@@ -263,8 +263,8 @@ def _vertically_implicit_solver_at_predictor_step(
 ]:
     divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
-        mass_fl_e=mass_flux_at_edges_on_model_levels,
-        z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
     )
 
     w_explicit_term = concat_where(
@@ -308,24 +308,24 @@ def _vertically_implicit_solver_at_predictor_step(
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
-        rho_nnow=current_rho,
+        current_rho=current_rho,
         inv_ddqz_z_full=inv_ddqz_z_full,
-        z_flxdiv_mass=divergence_of_mass,
-        z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        z_flxdiv_theta=divergence_of_theta_v,
-        theta_v_ic=theta_v_at_cells_on_half_levels,
-        ddt_exner_phy=exner_tendency_due_to_slow_physics,
+        divergence_of_mass=divergence_of_mass,
+        vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        divergence_of_theta_v=divergence_of_theta_v,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         dtime=dtime,
     )
 
     if is_iau_active:
         rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
-            z_rho_expl=rho_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            rho_incr=rho_iau_increment,
-            exner_incr=exner_iau_increment,
+            rho_explicit_term=rho_explicit_term,
+            exner_explicit_term=exner_explicit_term,
+            rho_iau_increment=rho_iau_increment,
+            exner_iau_increment=exner_iau_increment,
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
@@ -333,12 +333,12 @@ def _vertically_implicit_solver_at_predictor_step(
         last_inner_level=n_lev,
         next_w=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
-        theta_v_ic=theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        z_w_expl=w_explicit_term,
-        z_exner_expl=exner_explicit_term,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        w_explicit_term=w_explicit_term,
+        exner_explicit_term=exner_explicit_term,
         dtime=dtime,
         cpd=dycore_consts.cpd,
     )
@@ -347,25 +347,25 @@ def _vertically_implicit_solver_at_predictor_step(
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
-                z_raylfac=rayleigh_damping_factor,
+                rayleigh_damping_factor=rayleigh_damping_factor,
                 w=next_w,
             ),
             next_w,
         )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
-        z_rho_expl=rho_explicit_term,
+        rho_explicit_term=rho_explicit_term,
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
-        rho_ic=rho_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         w=next_w,
-        z_exner_expl=exner_explicit_term,
+        exner_explicit_term=exner_explicit_term,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        rho_now=current_rho,
-        theta_v_now=current_theta_v,
-        exner_now=current_exner,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        current_exner=current_exner,
         dtime=dtime,
     )
 
@@ -376,7 +376,7 @@ def _vertically_implicit_solver_at_predictor_step(
         dwdz_at_cells_on_model_levels = _compute_dwdz_for_divergence_damping(
             inv_ddqz_z_full=inv_ddqz_z_full,
             w=next_w,
-            w_concorr_c=contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         )
 
     exner_dynamical_increment = (
@@ -578,8 +578,8 @@ def _vertically_implicit_solver_at_corrector_step(
 ]:
     divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
-        mass_fl_e=mass_flux_at_edges_on_model_levels,
-        z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
     )
     w_explicit_term = concat_where(
         1 <= dims.KDim,
@@ -622,23 +622,23 @@ def _vertically_implicit_solver_at_corrector_step(
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
-        rho_nnow=current_rho,
+        current_rho=current_rho,
         inv_ddqz_z_full=inv_ddqz_z_full,
-        z_flxdiv_mass=divergence_of_mass,
-        z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        z_flxdiv_theta=divergence_of_theta_v,
-        theta_v_ic=theta_v_at_cells_on_half_levels,
-        ddt_exner_phy=exner_tendency_due_to_slow_physics,
+        divergence_of_mass=divergence_of_mass,
+        vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        divergence_of_theta_v=divergence_of_theta_v,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         dtime=dtime,
     )
     if is_iau_active:
         rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
-            z_rho_expl=rho_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            rho_incr=rho_iau_increment,
-            exner_incr=exner_iau_increment,
+            rho_explicit_term=rho_explicit_term,
+            exner_explicit_term=exner_explicit_term,
+            rho_iau_increment=rho_iau_increment,
+            exner_iau_increment=exner_iau_increment,
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
@@ -646,12 +646,12 @@ def _vertically_implicit_solver_at_corrector_step(
         last_inner_level=n_lev,
         next_w=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
-        theta_v_ic=theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        z_w_expl=w_explicit_term,
-        z_exner_expl=exner_explicit_term,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        w_explicit_term=w_explicit_term,
+        exner_explicit_term=exner_explicit_term,
         dtime=dtime,
         cpd=dycore_consts.cpd,
     )
@@ -660,25 +660,25 @@ def _vertically_implicit_solver_at_corrector_step(
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
-                z_raylfac=rayleigh_damping_factor,
+                rayleigh_damping_factor=rayleigh_damping_factor,
                 w=next_w,
             ),
             next_w,
         )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
-        z_rho_expl=rho_explicit_term,
+        rho_explicit_term=rho_explicit_term,
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
-        rho_ic=rho_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         w=next_w,
-        z_exner_expl=exner_explicit_term,
+        exner_explicit_term=exner_explicit_term,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        rho_now=current_rho,
-        theta_v_now=current_theta_v,
-        exner_now=current_exner,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        current_exner=current_exner,
         dtime=dtime,
     )
 
@@ -698,12 +698,12 @@ def _vertically_implicit_solver_at_corrector_step(
         ) = concat_where(
             1 <= dims.KDim,
             _update_mass_volume_flux(
-                z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-                rho_ic=rho_at_cells_on_half_levels,
+                vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+                rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
                 exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
                 w=next_w,
-                mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+                dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
                 r_nsubsteps=r_nsubsteps,
             ),
             (
@@ -717,8 +717,8 @@ def _vertically_implicit_solver_at_corrector_step(
             dims.KDim >= kstart_moist,
             _update_dynamical_exner_time_increment(
                 exner=next_exner,
-                ddt_exner_phy=exner_tendency_due_to_slow_physics,
-                exner_dyn_incr=exner_dynamical_increment,
+                exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
+                exner_dynamical_increment=exner_dynamical_increment,
                 ndyn_substeps_var=ndyn_substeps_var,
                 dtime=dtime,
             ),

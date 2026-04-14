@@ -25,12 +25,12 @@ def compute_dwdz_for_divergence_damping_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     inv_ddqz_z_full: np.ndarray,
     w: np.ndarray,
-    w_concorr_c: np.ndarray,
+    contravariant_correction_at_cells_on_half_levels: np.ndarray,
 ) -> np.ndarray:
-    z_dwdz_dd = inv_ddqz_z_full * (
-        (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+    dwdz_at_cells_on_model_levels = inv_ddqz_z_full * (
+        (w[:, :-1] - w[:, 1:]) - (contravariant_correction_at_cells_on_half_levels[:, :-1] - contravariant_correction_at_cells_on_half_levels[:, 1:])
     )
-    return z_dwdz_dd
+    return dwdz_at_cells_on_model_levels
 
 
 class TestComputeDwdzForDivergenceDamping(StencilTest):
@@ -42,28 +42,28 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         inv_ddqz_z_full: np.ndarray,
         w: np.ndarray,
-        w_concorr_c: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_dwdz_dd = compute_dwdz_for_divergence_damping_numpy(
-            connectivities, inv_ddqz_z_full=inv_ddqz_z_full, w=w, w_concorr_c=w_concorr_c
+        dwdz_at_cells_on_model_levels = compute_dwdz_for_divergence_damping_numpy(
+            connectivities, inv_ddqz_z_full=inv_ddqz_z_full, w=w, contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels
         )
-        return dict(out=z_dwdz_dd)
+        return dict(out=dwdz_at_cells_on_model_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
-        w_concorr_c = random_field(
+        contravariant_correction_at_cells_on_half_levels = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
-        z_dwdz_dd = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        dwdz_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_ddqz_z_full=inv_ddqz_z_full,
             w=w,
-            w_concorr_c=w_concorr_c,
-            out=z_dwdz_dd,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            out=dwdz_at_cells_on_model_levels,
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),

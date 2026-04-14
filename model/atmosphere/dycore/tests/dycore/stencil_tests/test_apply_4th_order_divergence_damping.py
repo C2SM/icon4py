@@ -26,11 +26,11 @@ from . import test_dycore_utils
 
 def apply_4th_order_divergence_damping_numpy(
     scal_divdamp: np.ndarray,
-    z_graddiv2_vn: np.ndarray,
+    squared_horizontal_gradient_of_total_divergence: np.ndarray,
     vn: np.ndarray,
 ) -> np.ndarray:
     scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
-    vn = vn + (scal_divdamp * z_graddiv2_vn)
+    vn = vn + (scal_divdamp * squared_horizontal_gradient_of_total_divergence)
     return vn
 
 
@@ -42,7 +42,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         interpolated_fourth_order_divdamp_factor: np.ndarray,
-        z_graddiv2_vn: np.ndarray,
+        squared_horizontal_gradient_of_total_divergence: np.ndarray,
         vn: np.ndarray,
         divdamp_order: gtx.int32,
         mean_cell_area: float,
@@ -55,13 +55,13 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
             second_order_divdamp_factor,
             mean_cell_area,
         )
-        vn = apply_4th_order_divergence_damping_numpy(scal_divdamp, z_graddiv2_vn, vn)
+        vn = apply_4th_order_divergence_damping_numpy(scal_divdamp, squared_horizontal_gradient_of_total_divergence, vn)
         return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
-        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        squared_horizontal_gradient_of_total_divergence = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         divdamp_order = 24
@@ -70,7 +70,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
 
         return dict(
             interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
-            z_graddiv2_vn=z_graddiv2_vn,
+            squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence,
             vn=vn,
             divdamp_order=divdamp_order,
             mean_cell_area=mean_cell_area,

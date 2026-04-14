@@ -25,44 +25,44 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     inv_dual_edge_length: np.ndarray,
-    z_exner_ex_pr: np.ndarray,
+    temporal_extrapolation_of_perturbed_exner: np.ndarray,
 ) -> np.ndarray:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    z_exner_ex_pr_e2c = z_exner_ex_pr[connectivities[dims.E2CDim]]
+    z_exner_ex_pr_e2c = temporal_extrapolation_of_perturbed_exner[connectivities[dims.E2CDim]]
     z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
-    z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
-    return z_gradh_exner
+    horizontal_pressure_gradient = inv_dual_edge_length * z_exner_ex_weighted
+    return horizontal_pressure_gradient
 
 
 @pytest.mark.skip_value_error
 class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates
-    OUTPUTS = ("z_gradh_exner",)
+    OUTPUTS = ("horizontal_pressure_gradient",)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         inv_dual_edge_length: np.ndarray,
-        z_exner_ex_pr: np.ndarray,
+        temporal_extrapolation_of_perturbed_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
-            connectivities, inv_dual_edge_length, z_exner_ex_pr
+        horizontal_pressure_gradient = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
+            connectivities, inv_dual_edge_length, temporal_extrapolation_of_perturbed_exner
         )
-        return dict(z_gradh_exner=z_gradh_exner)
+        return dict(horizontal_pressure_gradient=horizontal_pressure_gradient)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        temporal_extrapolation_of_perturbed_exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=z_exner_ex_pr,
-            z_gradh_exner=z_gradh_exner,
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+            horizontal_pressure_gradient=horizontal_pressure_gradient,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

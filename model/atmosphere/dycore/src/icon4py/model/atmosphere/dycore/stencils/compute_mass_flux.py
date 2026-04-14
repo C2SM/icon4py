@@ -17,11 +17,11 @@ def _compute_mass_and_temperature_flux(
     z_rho_e: fa.EdgeKField[wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    z_theta_v_e: fa.EdgeKField[wpfloat],
+    theta_v_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_32."""
     mass_fl_e_wp = z_rho_e * z_vn_avg * astype(ddqz_z_full_e, wpfloat)
-    z_theta_v_fl_e_wp = mass_fl_e_wp * z_theta_v_e
+    z_theta_v_fl_e_wp = mass_fl_e_wp * theta_v_at_edges_on_model_levels
     return mass_fl_e_wp, z_theta_v_fl_e_wp
 
 
@@ -30,9 +30,9 @@ def compute_mass_flux(
     z_rho_e: fa.EdgeKField[wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    z_theta_v_e: fa.EdgeKField[wpfloat],
-    mass_fl_e: fa.EdgeKField[wpfloat],
-    z_theta_v_fl_e: fa.EdgeKField[wpfloat],
+    theta_v_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
+    theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -42,8 +42,8 @@ def compute_mass_flux(
         z_rho_e,
         z_vn_avg,
         ddqz_z_full_e,
-        z_theta_v_e,
-        out=(mass_fl_e, z_theta_v_fl_e),
+        theta_v_at_edges_on_model_levels,
+        out=(mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

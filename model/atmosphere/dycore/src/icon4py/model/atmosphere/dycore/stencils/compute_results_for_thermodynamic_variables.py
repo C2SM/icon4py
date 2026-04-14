@@ -20,18 +20,18 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 @gtx.field_operator
 def _compute_results_for_thermodynamic_variables(
-    z_rho_expl: fa.CellKField[wpfloat],
+    rho_explicit_term: fa.CellKField[wpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     w: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    z_beta: fa.CellKField[vpfloat],
-    rho_now: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
-    exner_now: fa.CellKField[wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    current_exner: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ) -> tuple[
     fa.CellKField[wpfloat],
@@ -40,21 +40,21 @@ def _compute_results_for_thermodynamic_variables(
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_55."""
     inv_ddqz_z_full_wp, reference_exner_at_cells_on_model_levels_wp, z_alpha_wp, z_beta_wp = astype(
-        (inv_ddqz_z_full, reference_exner_at_cells_on_model_levels, z_alpha, z_beta), wpfloat
+        (inv_ddqz_z_full, reference_exner_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels, tridiagonal_beta_coeff_at_cells_on_model_levels), wpfloat
     )
 
-    rho_new_wp = z_rho_expl - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full_wp * (
-        rho_ic * w - rho_ic(Koff[1]) * w(Koff[1])
+    rho_new_wp = rho_explicit_term - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full_wp * (
+        rho_at_cells_on_half_levels * w - rho_at_cells_on_half_levels(Koff[1]) * w(Koff[1])
     )
     exner_new_wp = (
-        z_exner_expl
+        exner_explicit_term
         + reference_exner_at_cells_on_model_levels_wp
         - z_beta_wp * (z_alpha_wp * w - z_alpha_wp(Koff[1]) * w(Koff[1]))
     )
     theta_v_new_wp = (
-        rho_now
-        * theta_v_now
-        * ((exner_new_wp / exner_now - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
+        current_rho
+        * current_theta_v
+        * ((exner_new_wp / current_exner - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
         / rho_new_wp
     )
     return rho_new_wp, exner_new_wp, theta_v_new_wp
@@ -62,18 +62,18 @@ def _compute_results_for_thermodynamic_variables(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_results_for_thermodynamic_variables(
-    z_rho_expl: fa.CellKField[wpfloat],
+    rho_explicit_term: fa.CellKField[wpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     w: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
+    exner_explicit_term: fa.CellKField[wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    z_beta: fa.CellKField[vpfloat],
-    rho_now: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
-    exner_now: fa.CellKField[wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    current_exner: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
     theta_v_new: fa.CellKField[wpfloat],
@@ -84,18 +84,18 @@ def compute_results_for_thermodynamic_variables(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_results_for_thermodynamic_variables(
-        z_rho_expl,
+        rho_explicit_term,
         exner_w_implicit_weight_parameter,
         inv_ddqz_z_full,
-        rho_ic,
+        rho_at_cells_on_half_levels,
         w,
-        z_exner_expl,
+        exner_explicit_term,
         reference_exner_at_cells_on_model_levels,
-        z_alpha,
-        z_beta,
-        rho_now,
-        theta_v_now,
-        exner_now,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels,
+        current_rho,
+        current_theta_v,
+        current_exner,
         dtime,
         out=(rho_new, exner_new, theta_v_new),
         domain={

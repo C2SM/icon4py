@@ -36,7 +36,7 @@ def compute_perturbation_of_rho_and_theta(
     theta_v: fa.CellKField[wpfloat],
     reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     z_rth_pr_1: fa.CellKField[vpfloat],
-    z_rth_pr_2: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels_2: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -47,7 +47,7 @@ def compute_perturbation_of_rho_and_theta(
         reference_rho_at_cells_on_model_levels,
         theta_v,
         reference_theta_at_cells_on_model_levels,
-        out=(z_rth_pr_1, z_rth_pr_2),
+        out=(z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

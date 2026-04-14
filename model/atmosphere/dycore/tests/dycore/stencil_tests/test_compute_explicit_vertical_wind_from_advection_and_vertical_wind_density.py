@@ -26,26 +26,26 @@ def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_nump
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
     ddt_w_adv_ntl2: np.ndarray,
-    z_th_ddz_exner_c: np.ndarray,
-    rho_ic: np.ndarray,
-    w_concorr_c: np.ndarray,
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
+    rho_at_cells_on_half_levels: np.ndarray,
+    contravariant_correction_at_cells_on_half_levels: np.ndarray,
     exner_w_explicit_weight_parameter: np.ndarray,
     dtime: float,
-    wgt_nnow_vel: float,
-    wgt_nnew_vel: float,
+    advection_explicit_weight_parameter: float,
+    advection_implicit_weight_parameter: float,
     cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    z_w_expl = w_nnow + dtime * (
-        wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    w_explicit_term = w_nnow + dtime * (
+        advection_explicit_weight_parameter * ddt_w_adv_ntl1 + advection_implicit_weight_parameter * ddt_w_adv_ntl2 - cpd * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
     exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + exner_w_explicit_weight_parameter * w_nnow)
-    return (z_w_expl, z_contr_w_fl_l)
+    vertical_mass_flux_at_cells_on_half_levels = rho_at_cells_on_half_levels * (-contravariant_correction_at_cells_on_half_levels + exner_w_explicit_weight_parameter * w_nnow)
+    return (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels)
 
 
 class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density
-    OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
+    OUTPUTS = ("w_explicit_term", "vertical_mass_flux_at_cells_on_half_levels")
 
     @staticmethod
     def reference(
@@ -53,64 +53,64 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         w_nnow: np.ndarray,
         ddt_w_adv_ntl1: np.ndarray,
         ddt_w_adv_ntl2: np.ndarray,
-        z_th_ddz_exner_c: np.ndarray,
-        rho_ic: np.ndarray,
-        w_concorr_c: np.ndarray,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
+        rho_at_cells_on_half_levels: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
         dtime: float,
-        wgt_nnow_vel: float,
-        wgt_nnew_vel: float,
+        advection_explicit_weight_parameter: float,
+        advection_implicit_weight_parameter: float,
         cpd: float,
         **kwargs: Any,
     ) -> dict:
         (
-            z_w_expl,
-            z_contr_w_fl_l,
+            w_explicit_term,
+            vertical_mass_flux_at_cells_on_half_levels,
         ) = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
             connectivities=connectivities,
             w_nnow=w_nnow,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
             ddt_w_adv_ntl2=ddt_w_adv_ntl2,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             cpd=cpd,
         )
-        return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
+        return dict(w_explicit_term=w_explicit_term, vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         ddt_w_adv_ntl2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_w_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        z_contr_w_fl_l = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
-        wgt_nnow_vel = ta.wpfloat("8.0")
-        wgt_nnew_vel = ta.wpfloat("9.0")
+        advection_explicit_weight_parameter = ta.wpfloat("8.0")
+        advection_implicit_weight_parameter = ta.wpfloat("9.0")
         cpd = ta.wpfloat("10.0")
 
         return dict(
-            z_w_expl=z_w_expl,
+            w_explicit_term=w_explicit_term,
             w_nnow=w_nnow,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
             ddt_w_adv_ntl2=ddt_w_adv_ntl2,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             cpd=cpd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

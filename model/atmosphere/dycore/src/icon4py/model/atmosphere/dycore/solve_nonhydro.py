@@ -1063,11 +1063,11 @@ class SolveNonhydro:
                 exner=prognostic_states.next.exner,
             )
         self._update_theta_and_exner_in_halo(
-            rho_now=prognostic_states.current.rho,
+            current_rho=prognostic_states.current.rho,
             rho_new=prognostic_states.next.rho,
-            theta_v_now=prognostic_states.current.theta_v,
+            current_theta_v=prognostic_states.current.theta_v,
             theta_v_new=prognostic_states.next.theta_v,
-            exner_now=prognostic_states.current.exner,
+            current_exner=prognostic_states.current.exner,
             exner_new=prognostic_states.next.exner,
         )
 
@@ -1128,8 +1128,8 @@ class SolveNonhydro:
         log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
-            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
+            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level,
         )
 
         self._compute_rho_theta_pgrad_and_update_vn(
@@ -1209,9 +1209,9 @@ class SolveNonhydro:
 
         if self._grid.limited_area:
             self._stencils_61_62(
-                rho_now=prognostic_states.current.rho,
+                current_rho=prognostic_states.current.rho,
                 grf_tend_rho=diagnostic_state_nh.grf_tend_rho,
-                theta_v_now=prognostic_states.current.theta_v,
+                current_theta_v=prognostic_states.current.theta_v,
                 grf_tend_thv=diagnostic_state_nh.grf_tend_thv,
                 w_now=prognostic_states.current.w,
                 grf_tend_w=diagnostic_state_nh.grf_tend_w,
@@ -1224,8 +1224,8 @@ class SolveNonhydro:
         if self._grid.limited_area and self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
                 w=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-                z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
+                contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+                dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
             )
 
         if self._config.divdamp_type >= 3:
@@ -1406,11 +1406,11 @@ class SolveNonhydro:
                         field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     )
                 self._update_mass_flux_weighted(
-                    rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
+                    rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
                     w_now=prognostic_states.current.w,
                     w_new=prognostic_states.next.w,
-                    w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-                    mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+                    dynamical_vertical_mass_flux_at_cells_on_half_levels=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     r_nsubsteps=r_nsubsteps,
                 )
 

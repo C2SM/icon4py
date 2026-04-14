@@ -29,13 +29,13 @@ def compute_perturbation_of_rho_and_theta_numpy(
     reference_theta_at_cells_on_model_levels: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
     z_rth_pr_1 = rho - reference_rho_at_cells_on_model_levels
-    z_rth_pr_2 = theta_v - reference_theta_at_cells_on_model_levels
-    return (z_rth_pr_1, z_rth_pr_2)
+    perturbed_theta_v_at_cells_on_model_levels_2 = theta_v - reference_theta_at_cells_on_model_levels
+    return (z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2)
 
 
 class TestComputePerturbationOfRhoAndTheta(StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta
-    OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
+    OUTPUTS = ("z_rth_pr_1", "perturbed_theta_v_at_cells_on_model_levels_2")
 
     @staticmethod
     def reference(
@@ -46,13 +46,13 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
         reference_theta_at_cells_on_model_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        (z_rth_pr_1, z_rth_pr_2) = compute_perturbation_of_rho_and_theta_numpy(
+        (z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2) = compute_perturbation_of_rho_and_theta_numpy(
             rho=rho,
             reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
             theta_v=theta_v,
             reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
         )
-        return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
+        return dict(z_rth_pr_1=z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -61,7 +61,7 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         reference_theta_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             rho=rho,
@@ -69,7 +69,7 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
             theta_v=theta_v,
             reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
             z_rth_pr_1=z_rth_pr_1,
-            z_rth_pr_2=z_rth_pr_2,
+            perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

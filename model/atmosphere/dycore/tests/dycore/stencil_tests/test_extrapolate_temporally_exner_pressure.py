@@ -26,55 +26,55 @@ def extrapolate_temporally_exner_pressure_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner: np.ndarray,
     reference_exner_at_cells_on_model_levels: np.ndarray,
-    exner_pr: np.ndarray,
+    perturbed_exner_at_cells_on_model_levels: np.ndarray,
     time_extrapolation_parameter_for_exner: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    z_exner_ex_pr = (
+    temporal_extrapolation_of_perturbed_exner = (
         (1 + time_extrapolation_parameter_for_exner)
         * (exner - reference_exner_at_cells_on_model_levels)
-        - time_extrapolation_parameter_for_exner * exner_pr
+        - time_extrapolation_parameter_for_exner * perturbed_exner_at_cells_on_model_levels
     )
-    exner_pr = exner - reference_exner_at_cells_on_model_levels
-    return (z_exner_ex_pr, exner_pr)
+    perturbed_exner_at_cells_on_model_levels = exner - reference_exner_at_cells_on_model_levels
+    return (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels)
 
 
 class TestExtrapolateTemporallyExnerPressure(StencilTest):
     PROGRAM = extrapolate_temporally_exner_pressure
-    OUTPUTS = ("z_exner_ex_pr", "exner_pr")
+    OUTPUTS = ("temporal_extrapolation_of_perturbed_exner", "perturbed_exner_at_cells_on_model_levels")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
         reference_exner_at_cells_on_model_levels: np.ndarray,
-        exner_pr: np.ndarray,
+        perturbed_exner_at_cells_on_model_levels: np.ndarray,
         time_extrapolation_parameter_for_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
+        (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = extrapolate_temporally_exner_pressure_numpy(
             connectivities,
             exner=exner,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-            exner_pr=exner_pr,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
             time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
         )
 
-        return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
+        return dict(temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         reference_exner_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        perturbed_exner_at_cells_on_model_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         time_extrapolation_parameter_for_exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_exner_ex_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        temporal_extrapolation_of_perturbed_exner = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
             exner=exner,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-            exner_pr=exner_pr,
-            z_exner_ex_pr=z_exner_ex_pr,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

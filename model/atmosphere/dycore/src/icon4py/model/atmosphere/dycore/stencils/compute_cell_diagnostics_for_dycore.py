@@ -366,7 +366,7 @@ def compute_perturbed_quantities_and_interpolation(
         time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
         exner=current_exner,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
