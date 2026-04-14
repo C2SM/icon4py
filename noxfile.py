@@ -188,8 +188,10 @@ def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
 
     datatest_flag = "--datatest-only" if datatest else "--datatest-skip"
     pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
-    with session.chdir("tools"):
-        session.run(*pytest_base.split(), *session.posargs)
+    if not datatest:
+        # tools/ has no datatest-marked tests, so skip it in datatest mode
+        with session.chdir("tools"):
+            session.run(*pytest_base.split(), *session.posargs)
     with session.chdir("bindings"):
         session.run(*pytest_base.split(), *session.posargs)
 
