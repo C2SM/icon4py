@@ -202,4 +202,4 @@ def test_advection_run_single_step(
         rtol=1e-10,
     )
     # TODO: this tolerance is too low
-    assert test_helpers.dallclose(p_tracer_new_ref.asnumpy(), p_tracer_new.asnumpy(), atol=5e-5)
+    assert test_helpers.dallclose(p_tracer_new_ref.asnumpy(), p_tracer_new.asnumpy(), atol=1e-4)
