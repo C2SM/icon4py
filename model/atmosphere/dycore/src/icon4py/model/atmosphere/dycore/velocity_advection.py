@@ -56,9 +56,9 @@ class VelocityAdvection:
         self._grid: icon_grid.IconGrid = grid
         self._metric_state: dycore_states.MetricStateNonHydro = metric_state
         self._interpolation_state: dycore_states.InterpolationState = interpolation_state
-        self._vertical_params = vertical_params
-        self._edge_params = edge_params
-        self._c_owner_mask = owner_mask
+        self._vertical_params: v_grid.VerticalGrid = vertical_params
+        self._edge_params: grid_states.EdgeParams = edge_params
+        self._c_owner_mask: fa.CellField[bool] = owner_mask
 
         self._cfl_w_limit: float = 0.65
         self._scalfac_exdiff: float = 0.05
