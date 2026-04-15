@@ -698,10 +698,14 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
     ) -> None:
         log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
         if self.needs_exchange():
-            assert self._exchange_dim is not None, "NumpyDataProvider requires at least one domain dimension."
+            assert self._exchange_dim is not None, (
+                "NumpyDataProvider requires at least one domain dimension for exchange. "
+                "Provider was initialized with empty domain."
+            )
+            supported_dimensions = tuple(dims.MAIN_HORIZONTAL_DIMENSIONS.values())
             assert (
-                self._exchange_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            ), f"1st dimension {self._exchange_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                self._exchange_dim in supported_dimensions
+            ), f"1st dimension {self._exchange_dim} needs to be one of {supported_dimensions} for exchange"
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
                 with as_exchangeable_field(field) as buffer:
