@@ -58,7 +58,9 @@ io = [
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
   "uxarray==2024.3.0",
-  "xarray[complete]>=2024.3.0"
+  # xarray>=2026.4.0 raises TypeError when passing a Dataset as data_vars to the Dataset constructor
+  # (pydata/xarray#11139), which is used internally by uxarray==2024.3.0.
+  "xarray[complete]>=2024.3.0,<2026.4"
 ]
 rocm7 = ['gt4py[rocm7]']
 
