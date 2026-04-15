@@ -10,9 +10,9 @@ import cffi
 import numpy as np
 import pytest
 
+from icon4py.bindings import common as wrapper_common, grid_wrapper
 from icon4py.model.common import dimension as dims
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
 
 
 @pytest.fixture
