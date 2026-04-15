@@ -60,8 +60,8 @@ class VelocityAdvection:
         self._edge_params = edge_params
         self._c_owner_mask = owner_mask
 
-        self.cfl_w_limit: float = 0.65
-        self.scalfac_exdiff: float = 0.05
+        self._cfl_w_limit: float = 0.65
+        self._scalfac_exdiff: float = 0.05
         self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
@@ -194,7 +194,7 @@ class VelocityAdvection:
         Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
-        self.vertical_cfl = data_alloc.zero_field(
+        self._vertical_cfl = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
 
@@ -276,7 +276,7 @@ class VelocityAdvection:
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
             vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
-            vertical_cfl=self.vertical_cfl,
+            vertical_cfl=self._vertical_cfl,
             w=prognostic_state.w,
             horizontal_advection_of_w_at_edges_on_half_levels=self._horizontal_advection_of_w_at_edges_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
@@ -289,12 +289,12 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self.vertical_cfl.array_ns.max(
-            self.vertical_cfl.ndarray[
+        max_vertical_cfl = self._vertical_cfl.array_ns.max(
+            self._vertical_cfl.ndarray[
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
             ].ravel(order="K")
         )
-        diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
+        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
 
@@ -316,8 +316,8 @@ class VelocityAdvection:
         )
 
     def _scale_factors_by_dtime(self, dtime):
-        scaled_cfl_w_limit = self.cfl_w_limit / dtime
-        scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
+        scaled_cfl_w_limit = self._cfl_w_limit / dtime
+        scalfac_exdiff = self._scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
         return scaled_cfl_w_limit, scalfac_exdiff
 
     def run_corrector_step(
@@ -347,7 +347,7 @@ class VelocityAdvection:
         self._compute_advection_in_corrector_vertical_momentum(
             vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.corrector,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
-            vertical_cfl=self.vertical_cfl,
+            vertical_cfl=self._vertical_cfl,
             w=prognostic_state.w,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
@@ -360,13 +360,13 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self.vertical_cfl.array_ns.max(
-            self.vertical_cfl.ndarray[
+        max_vertical_cfl = self._vertical_cfl.array_ns.max(
+            self._vertical_cfl.ndarray[
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
             ].ravel(order="K")
         )
 
-        diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
+        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
 
