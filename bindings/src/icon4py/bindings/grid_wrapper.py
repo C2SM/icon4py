@@ -15,16 +15,16 @@ from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 import icon4py.model.common.grid.states as grid_states
+from icon4py.bindings import (
+    common as wrapper_common,
+    debug_utils as wrapper_debug_utils,
+    icon4py_export,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen.wrappers import (
-    common as wrapper_common,
-    debug_utils as wrapper_debug_utils,
-    icon4py_export,
-)
 
 
 logger = logging.getLogger(__name__)
