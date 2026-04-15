@@ -636,7 +636,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         return list(self._dependencies.values())
 
 
-class NumpyDataProvider(FieldProvider):
+class NumpyDataProvider(FieldProvider, NeedsExchange):
     """
     Computes a field defined by a numpy function.
 
@@ -649,7 +649,7 @@ class NumpyDataProvider(FieldProvider):
         connectivities: dict[str, Dimension] dict where the key is the variable named used in the
             function and the value the sparse Dimension of the connectivity field
         params: scalar arguments for the function
-        do_exchange: a flag that governs whether or not a halo exchange is needed after the field has been computed. Defaults to True
+        do_exchange: a flag that governs whether or not a halo exchange is needed after the field has been computed. Defaults to False
     """
 
     def __init__(
@@ -660,6 +660,7 @@ class NumpyDataProvider(FieldProvider):
         deps: dict[str, str],
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
+        do_exchange: bool = False,
     ):
         self._func = func
         self._dims = tuple(map(replace_khalfdim, domain))
@@ -669,6 +670,7 @@ class NumpyDataProvider(FieldProvider):
         self._dependencies = deps
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
+        self._do_exchange = do_exchange
 
     def __call__(
         self,
@@ -681,6 +683,10 @@ class NumpyDataProvider(FieldProvider):
         if any([f is None for f in self.fields.values()]):
             log.info(f"computing field {field_name}")
             self._compute(factory, backend, grid)
+            exchangeable_fields = {
+                name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
+            }
+            self.exchange(exchangeable_fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(
