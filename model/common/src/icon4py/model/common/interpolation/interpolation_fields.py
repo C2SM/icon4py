@@ -910,34 +910,79 @@ def compute_cells_aw_verts(
         aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     cells_aw_verts = array_ns.zeros(v2e.shape)
-    for jv in range(horizontal_start, cells_aw_verts.shape[0]):
-        for je in range(v2e.shape[1]):
-            # INVALID_INDEX
-            if v2e[jv, je] == MISSING or (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
-                continue
-            ile = v2e[jv, je]
-            idx_ve = 0 if e2v[ile, 0] == jv else 1
-            cell_offset_idx_0 = e2c[ile, 0]
-            cell_offset_idx_1 = e2c[ile, 1]
-            for jc in range(v2e.shape[1]):
-                if v2c[jv, jc] == MISSING or (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
-                    continue
-                if cell_offset_idx_0 == v2c[jv, jc]:
-                    cells_aw_verts[jv, jc] = (
-                        cells_aw_verts[jv, jc]
-                        + 0.5
-                        / dual_area[jv]
-                        * edge_vert_length[ile, idx_ve]
-                        * edge_cell_length[ile, 0]
-                    )
-                elif cell_offset_idx_1 == v2c[jv, jc]:
-                    cells_aw_verts[jv, jc] = (
-                        cells_aw_verts[jv, jc]
-                        + 0.5
-                        / dual_area[jv]
-                        * edge_vert_length[ile, idx_ve]
-                        * edge_cell_length[ile, 1]
-                    )
+    num_verts = cells_aw_verts.shape[0]
+    num_edges_per_vert = v2e.shape[1]
+
+    # Precompute valid v2c mask: skip MISSING and consecutive duplicates (matching original logic)
+    v2c_valid = array_ns.ones(v2c.shape, dtype=bool)
+    v2c_valid[:, 0] = v2c[:, 0] != MISSING
+    for jc in range(1, v2c.shape[1]):
+        v2c_valid[:, jc] = (v2c[:, jc] != MISSING) & (v2c[:, jc] != v2c[:, jc - 1])
+
+    for je in range(num_edges_per_vert):
+        # edges for all vertices in this slot
+        edges = v2e[horizontal_start:, je]  # (n_verts_active,)
+        jv_range = array_ns.arange(horizontal_start, num_verts)
+
+        # skip invalid or duplicate edges
+        valid = edges != MISSING
+        if je > 0:
+            valid &= edges != v2e[horizontal_start:, je - 1]
+
+        edges_v = edges[valid]
+        jv_v = jv_range[valid]
+
+        # determine which vertex endpoint this is (0 or 1)
+        idx_ve = array_ns.where(e2v[edges_v, 0] == jv_v, 0, 1)
+
+        # contribution = 0.5 / dual_area[jv] * edge_vert_length[edge, idx_ve]
+        contrib_base = 0.5 / dual_area[jv_v] * edge_vert_length[edges_v, idx_ve]
+
+        # cells adjacent to each edge
+        cell0 = e2c[edges_v, 0]
+        cell1 = e2c[edges_v, 1]
+        contrib0 = contrib_base * edge_cell_length[edges_v, 0]
+        contrib1 = contrib_base * edge_cell_length[edges_v, 1]
+        # When both cells of an edge are the same, the original uses the if-branch only
+        # (cell_offset_idx_0 match), so cell1 should not also match.
+        same_cell = cell0 == cell1
+
+        # match against v2c to find which jc slot each cell belongs to
+        for jc in range(num_edges_per_vert):
+            vc = v2c[jv_v, jc]
+            vc_ok = v2c_valid[jv_v, jc]
+            match0 = vc_ok & (cell0 == vc)
+            match1 = vc_ok & (cell1 == vc) & ~same_cell
+            cells_aw_verts[jv_v[match0], jc] += contrib0[match0]
+            cells_aw_verts[jv_v[match1], jc] += contrib1[match1]
+    # for jv in range(horizontal_start, cells_aw_verts.shape[0]):
+    #     for je in range(v2e.shape[1]):
+    #         # INVALID_INDEX
+    #         if v2e[jv, je] == MISSING or (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
+    #             continue
+    #         ile = v2e[jv, je]
+    #         idx_ve = 0 if e2v[ile, 0] == jv else 1
+    #         cell_offset_idx_0 = e2c[ile, 0]
+    #         cell_offset_idx_1 = e2c[ile, 1]
+    #         for jc in range(v2e.shape[1]):
+    #             if v2c[jv, jc] == MISSING or (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
+    #                 continue
+    #             if cell_offset_idx_0 == v2c[jv, jc]:
+    #                 cells_aw_verts[jv, jc] = (
+    #                     cells_aw_verts[jv, jc]
+    #                     + 0.5
+    #                     / dual_area[jv]
+    #                     * edge_vert_length[ile, idx_ve]
+    #                     * edge_cell_length[ile, 0]
+    #                 )
+    #             elif cell_offset_idx_1 == v2c[jv, jc]:
+    #                 cells_aw_verts[jv, jc] = (
+    #                     cells_aw_verts[jv, jc]
+    #                     + 0.5
+    #                     / dual_area[jv]
+    #                     * edge_vert_length[ile, idx_ve]
+    #                     * edge_cell_length[ile, 1]
+    #                 )
     exchange(cells_aw_verts)
     return cells_aw_verts
 

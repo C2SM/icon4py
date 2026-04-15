@@ -618,10 +618,10 @@ def _construct_diamond_vertices(
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = array_ns.zeros_like(e2v)
-    # TODO(halungge): vectorize speed this up?
-    for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
+    far_indices = ~array_ns.isin(flat[:, :], e2v[:, :])
+    e2v_far = flat[far_indices]
+    assert e2v_far.size == e2v.size, "There should be exactly two far vertices for each edge"
+    e2v_far = e2v_far.reshape(e2v.shape)
     return array_ns.hstack((e2v, far_indices))
 
 
