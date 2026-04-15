@@ -31,6 +31,7 @@ class MuphysExperiment:
     name: str
     type: ExperimentType
     uri: str
+    known_hash: str | None = None  # TODO(msimberg): compute and add hashes
     dt: float = 30.0
     qnc: float = 100.0
 
@@ -49,4 +50,8 @@ class MuphysExperiment:
 @pytest.fixture(autouse=True)
 def download_test_data(experiment: MuphysExperiment) -> None:
     """Downloads test data for an experiment (implicit fixture)."""
-    data_handling.download_test_data(_path_to_experiment_testdata(experiment), uri=experiment.uri)
+    data_handling.download_test_data(
+        _path_to_experiment_testdata(experiment),
+        uri=experiment.uri,
+        known_hash=experiment.known_hash,
+    )

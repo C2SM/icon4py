@@ -20,6 +20,7 @@ from icon4py.model.testing import config, locking
 def download_and_extract(
     uri: str,
     dst: pathlib.Path,
+    known_hash: str | None = None,
 ) -> None:
     """
     Download and extract a tar file with locking.
@@ -27,6 +28,8 @@ def download_and_extract(
     Args:
         uri: download url for archived data
         dst: the archive is extracted at this path
+        known_hash: expected hash of the archive for integrity verification,
+            or None to skip verification
 
     Uses pooch for downloading and archive extraction.
     """
@@ -48,7 +51,7 @@ def download_and_extract(
                     shutil.rmtree(item)
         pooch.retrieve(
             url=uri,
-            known_hash=None,  # hashes unavailable for polybox-hosted archives
+            known_hash=known_hash,
             path=str(dst),
             fname="archive.tar.gz",
             processor=pooch.Untar(extract_dir="."),
@@ -56,9 +59,9 @@ def download_and_extract(
         completion_marker.touch()
 
 
-def download_test_data(dst: pathlib.Path, uri: str) -> None:
+def download_test_data(dst: pathlib.Path, uri: str, known_hash: str | None = None) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
-        download_and_extract(uri, dst)
+        download_and_extract(uri, dst, known_hash=known_hash)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user

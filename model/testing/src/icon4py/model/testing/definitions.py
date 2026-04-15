@@ -41,6 +41,7 @@ class GridDescription:
     params: icon_grid.GlobalGridParams
     file_name: str
     uri: str
+    known_hash: str | None = None  # TODO(msimberg): compute and add hashes
 
 
 class Grids:
