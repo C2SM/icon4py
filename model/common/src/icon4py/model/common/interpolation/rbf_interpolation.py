@@ -152,6 +152,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
 def _dot_product(
     v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(v1)
     # alias: array_ns.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = array_ns.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
@@ -176,6 +177,7 @@ def _compute_distance_pairwise(
            dimension of the points.
         array_ns: numpy or cupy module to use for computations.
     """
+    array_ns = data_alloc.array_namespace(v)
     match geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
@@ -224,6 +226,7 @@ def _compute_distance_vector_matrix(
             of the points.
         array_ns: numpy or cupy module to use for computations.
     """
+    array_ns = data_alloc.array_namespace(v1)
     match geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
@@ -253,6 +256,7 @@ def _compute_distance_vector_matrix(
 def _gaussian(
     lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(lengths)
     val = lengths / scale
     return array_ns.exp(-1.0 * val * val)
 
@@ -262,6 +266,7 @@ def _inverse_multiquadratic(
     scale: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(distance)
     val = distance / scale
     return 1.0 / array_ns.sqrt(1.0 + val * val)
 
@@ -272,6 +277,7 @@ def _kernel(
     scale: ta.wpfloat,
     array_ns: ModuleType = np,
 ):
+    array_ns = data_alloc.array_namespace(lengths)
     match kernel:
         case InterpolationKernel.GAUSSIAN:
             return _gaussian(lengths, scale, array_ns=array_ns)
@@ -289,6 +295,7 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
     v: data_alloc.NDArray,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(lat)
     match geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
             cos_lat = array_ns.cos(lat)
@@ -329,6 +336,7 @@ def _compute_rbf_interpolation_coeffs(
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
+    array_ns = data_alloc.array_namespace(element_center_lat)
     rbf_offset_shape_full = rbf_offset.shape
     assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
@@ -491,6 +499,7 @@ def compute_rbf_interpolation_coeffs_cell(
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(cell_center_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
@@ -542,6 +551,7 @@ def compute_rbf_interpolation_coeffs_edge(
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(edge_lat)
     return _compute_rbf_interpolation_coeffs(
         edge_lat,
         edge_lon,
@@ -591,6 +601,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(vertex_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
