@@ -19,7 +19,14 @@ from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import parallel_helpers
 
-from ..fixtures import backend, data_provider, decomposition_info, download_ser_data, grid_savepoint, processor_props
+from ..fixtures import (
+    backend,
+    data_provider,
+    decomposition_info,
+    download_ser_data,
+    grid_savepoint,
+    processor_props,
+)
 from ..unit_tests.test_factory import SimpleFieldSource
 
 
@@ -51,7 +58,9 @@ def test_program_provider_exchange(
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = processor_props.rank + 10
-    input_field = data_alloc.constant_field(grid, number, dims.CellDim, dims.KDim, allocator=backend)
+    input_field = data_alloc.constant_field(
+        grid, number, dims.CellDim, dims.KDim, allocator=backend
+    )
     source = SimpleFieldSource(
         data_={"in": (input_field, {"standard_name": "in", "units": ""})},
         backend=backend,
@@ -76,7 +85,9 @@ def test_program_provider_exchange(
         decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO)
     )
     owned_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED)
+        decomposition_info.local_index(
+            dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
+        )
     )
     assert (field.ndarray[owned_points, :] == number).all()
     assert not (field.ndarray[halo_points, :] == number).all()
@@ -96,7 +107,9 @@ def test_numpy_provider_exchange(
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = processor_props.rank + 10
-    input_field = data_alloc.constant_field(grid, number, dims.CellDim, dims.KDim, allocator=backend)
+    input_field = data_alloc.constant_field(
+        grid, number, dims.CellDim, dims.KDim, allocator=backend
+    )
     source = SimpleFieldSource(
         data_={"in": (input_field, {"standard_name": "in", "units": ""})},
         backend=backend,
@@ -121,7 +134,9 @@ def test_numpy_provider_exchange(
         decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO)
     )
     owned_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED)
+        decomposition_info.local_index(
+            dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
+        )
     )
     assert (field.ndarray[owned_points, :] == number).all()
     assert not (field.ndarray[halo_points, :] == number).all()
