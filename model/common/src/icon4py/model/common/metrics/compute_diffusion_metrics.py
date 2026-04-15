@@ -29,54 +29,6 @@ def compute_max_nbhgt_array_ns(
     return max_nbhgt
 
 
-def _compute_nbidx(
-    k_range: range,
-    z_mc: data_alloc.NDArray,
-    z_mc_off: data_alloc.NDArray,
-    nbidx: data_alloc.NDArray,
-    jc: int,
-    nlev: int,
-) -> data_alloc.NDArray:
-    for ind in range(3):
-        jk_start = nlev - 1
-        for jk in reversed(k_range):
-            for jk1 in reversed(range(jk_start)):
-                if (
-                    z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
-                    and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
-                ):
-                    nbidx[jc, ind, jk] = jk1
-                    jk_start = jk1 + 1
-                    break
-
-    return nbidx[jc, :, :]
-
-
-def _compute_z_vintcoeff(
-    k_range: range,
-    z_mc: data_alloc.NDArray,
-    z_mc_off: data_alloc.NDArray,
-    z_vintcoeff: data_alloc.NDArray,
-    jc: int,
-    nlev: int,
-) -> data_alloc.NDArray:
-    for ind in range(3):
-        jk_start = nlev - 1
-        for jk in reversed(k_range):
-            for jk1 in reversed(range(jk_start)):
-                if (
-                    z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
-                    and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
-                ):
-                    z_vintcoeff[jc, ind, jk] = (z_mc[jc, jk] - z_mc_off[jc, ind, jk1 + 1]) / (
-                        z_mc_off[jc, ind, jk1] - z_mc_off[jc, ind, jk1 + 1]
-                    )
-                    jk_start = jk1 + 1
-                    break
-
-    return z_vintcoeff[jc, :, :]
-
-
 def _compute_k_start_end(
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,
