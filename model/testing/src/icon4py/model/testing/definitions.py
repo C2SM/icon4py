@@ -41,7 +41,7 @@ class GridDescription:
     params: icon_grid.GlobalGridParams
     file_name: str
     uri: str
-    known_hash: str | None = None  # TODO(msimberg): compute and add hashes
+    known_hash: str | None
 
 
 class Grids:
@@ -238,9 +238,9 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    version: int = 3
     # Per-rank known hashes for serialized data archives, keyed by communicator size (1, 2, 4).
-    known_hashes: dict[int, str | None] = dataclasses.field(default_factory=dict)
+    known_hashes: dict[int, str | None]
+    version: int = 3
 
 
 class Experiments:

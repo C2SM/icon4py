@@ -37,6 +37,7 @@ class Experiments:
         name="mini",
         type=utils.ExperimentType.FULL_MUPHYS,
         uri="https://polybox.ethz.ch/index.php/s/F8bK2C8tkpf8Xy2/download?files=mini.tar.gz",
+        known_hash=None,  # TODO(msimberg)
     )
 
 

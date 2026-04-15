@@ -127,7 +127,7 @@ def _download_ser_data(
         uri = dt_utils.get_serialized_data_url(root_url, archive_path)
         destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
         data_handling.download_test_data(
-            destination_path.parent, uri, known_hash=_experiment.known_hashes.get(comm_size)
+            destination_path.parent, uri, known_hash=_experiment.known_hashes[comm_size]
         )
     except KeyError as err:
         raise RuntimeError(

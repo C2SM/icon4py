@@ -28,16 +28,19 @@ class Experiments:
         name="mini",
         type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=mini.tar.gz",
+        known_hash=None,  # TODO(msimberg)
     )
     TINY: Final = utils.MuphysExperiment(
         name="tiny",
         type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=tiny.tar.gz",
+        known_hash=None,  # TODO(msimberg)
     )
     R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
         type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=R2B05.tar.gz",
+        known_hash=None,  # TODO(msimberg)
     )
 
 

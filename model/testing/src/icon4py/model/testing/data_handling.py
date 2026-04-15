@@ -20,7 +20,7 @@ from icon4py.model.testing import config, locking
 def download_and_extract(
     uri: str,
     dst: pathlib.Path,
-    known_hash: str | None = None,
+    known_hash: str | None,
 ) -> None:
     """
     Download and extract a tar file with locking.
@@ -59,7 +59,7 @@ def download_and_extract(
         completion_marker.touch()
 
 
-def download_test_data(dst: pathlib.Path, uri: str, known_hash: str | None = None) -> None:
+def download_test_data(dst: pathlib.Path, uri: str, known_hash: str | None) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
         download_and_extract(uri, dst, known_hash=known_hash)
     else:

@@ -31,7 +31,7 @@ class MuphysExperiment:
     name: str
     type: ExperimentType
     uri: str
-    known_hash: str | None = None  # TODO(msimberg): compute and add hashes
+    known_hash: str | None
     dt: float = 30.0
     qnc: float = 100.0
 
