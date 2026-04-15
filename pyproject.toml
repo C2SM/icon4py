@@ -144,7 +144,7 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src/icon4py/model/atmosphere/subgrid_scale_physics/microphysics/microphysics_options.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
