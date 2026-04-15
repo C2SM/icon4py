@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -48,8 +48,14 @@ def get_dace_options(
             optimization_args["scan_loop_unrolling"] = True
         if "scan_loop_unrolling_factor" not in optimization_args:
             optimization_args["scan_loop_unrolling_factor"] = 0
-        if "fuse_tasklets" not in optimization_args:
-            optimization_args["fuse_tasklets"] = True  # ~7% speedup on MI300A by fusing DaCe tasklet ops within map scopes
+        if "blocking_dim" not in optimization_args:
+            optimization_args["blocking_dim"] = dims.KDim
+        if "blocking_size" not in optimization_args:
+            optimization_args["blocking_size"] = 4
+        if "promote_independent_memlets_for_blocking" not in optimization_args:
+            optimization_args["promote_independent_memlets_for_blocking"] = True
+        if "blocking_independent_node_threshold" not in optimization_args:
+            optimization_args["blocking_independent_node_threshold"] = 3
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
@@ -60,6 +66,14 @@ def get_dace_options(
     if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
+        # AMD MI300A: ~7% speedup by fusing DaCe tasklet ops within map scopes.
+        optimization_args.setdefault("fuse_tasklets", True)
+        # AMD MI300A: skip gpu_maxnreg (causes 2.5x slowdown due to register
+        # spilling — occupancy is already maxed at 8 waves/SIMD).
+        optimization_args.setdefault("blocking_gpu_maxnreg", None)
+        # AMD MI300A: 256x1x1 blocks are 19% faster than 64x1x1 in synthetic
+        # benchmarks matching the solver's access pattern.
+        optimization_args.setdefault("blocking_gpu_block_size", (256, 1, 1))
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if not is_rocm_device:
