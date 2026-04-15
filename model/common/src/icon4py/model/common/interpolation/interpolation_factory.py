@@ -153,9 +153,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geofac_n2s = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_geofac_n2s,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_N2S,),
@@ -170,15 +167,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(geofac_n2s)
 
         geofac_grdiv = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_geofac_grdiv,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_GRDIV,),
@@ -194,6 +189,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
 
         self.register_provider(geofac_grdiv)
@@ -331,11 +327,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 pos_on_tplane_e_x_y = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_pos_on_tplane_e_x_y,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.EdgeDim,
-                            stream=decomposition.BLOCK,
-                        ),
                         array_ns=self._xp,
                     ),
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
@@ -358,6 +349,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                         ),
                     },
+                    do_exchange=True,
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
 
@@ -409,11 +401,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 pos_on_tplane_e_x_y = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.EdgeDim,
-                            stream=decomposition.BLOCK,
-                        ),
                         array_ns=self._xp,
                     ),
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
@@ -423,15 +410,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                     connectivities={"e2c": dims.E2CDim},
                     params={},
+                    do_exchange=True,
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
 
         c_lin_e = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_c_lin_e,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.C_LIN_E,),
@@ -446,6 +431,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(c_lin_e)
 
@@ -513,11 +499,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         cells_aw_verts = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_cells_aw_verts,
-                exchange=functools.partial(
-                    self._exchange.exchange,
-                    dims.VertexDim,
-                    stream=decomposition.BLOCK,
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.CELL_AW_VERTS,),
@@ -538,15 +519,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(cells_aw_verts)
 
         rbf_vec_coeff_c = factory.NumpyDataProvider(
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_cell,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
@@ -580,15 +559,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 if self._grid.global_properties.domain_height
                 else -1.0,
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_c)
 
         rbf_vec_coeff_e = factory.NumpyDataProvider(
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_edge,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.RBF_VEC_COEFF_E,),
@@ -621,17 +598,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 if self._grid.global_properties.domain_height
                 else -1.0,
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_e)
 
         rbf_vec_coeff_v = factory.NumpyDataProvider(
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_vertex,
-                exchange=functools.partial(
-                    self._exchange.exchange,
-                    dims.VertexDim,
-                    stream=decomposition.BLOCK,
-                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
@@ -665,6 +638,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 if self._grid.global_properties.domain_height
                 else -1.0,
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_v)
 

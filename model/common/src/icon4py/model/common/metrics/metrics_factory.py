@@ -799,9 +799,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin,
                 array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
             ),
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
@@ -814,6 +811,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(coeff_gradekin)
 
@@ -905,9 +903,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_diffusion_metrics.compute_max_nbhgt_array_ns,
                 array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -918,6 +913,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "nlev": self._grid.num_levels,
             },
+            do_exchange=True,
         )
         self.register_provider(compute_max_nbhgt)
 

@@ -671,6 +671,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
         self._do_exchange = do_exchange
+        self._exchange_dim = self._dims[0] if self._dims else None
 
     def __call__(
         self,
@@ -683,12 +684,29 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         if any([f is None for f in self.fields.values()]):
             log.info(f"computing field {field_name}")
             self._compute(factory, backend, grid)
-            if self._do_exchange:
-                exchangeable_fields = {
-                    name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
-                }
-                self.exchange(exchangeable_fields, exchange=exchange)
+            exchangeable_fields = {
+                name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
+            }
+            self.exchange(exchangeable_fields, exchange=exchange)
         return self.fields[field_name]
+
+    def exchange(
+        self,
+        fields: Mapping[str, state_utils.FieldType],
+        exchange: decomposition.ExchangeRuntime,
+        stream: decomposition.StreamLike | decomposition.Block = decomposition.DEFAULT_STREAM,
+    ) -> None:
+        log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
+        if self.needs_exchange():
+            assert self._exchange_dim is not None, "NumpyDataProvider requires at least one domain dimension."
+            assert (
+                self._exchange_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            ), f"1st dimension {self._exchange_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+            for name, field in fields.items():
+                log.debug(f"preparing exchange of {name} - {field}")
+                with as_exchangeable_field(field) as buffer:
+                    exchange.exchange(self._exchange_dim, buffer, stream=stream)
+                log.debug(f"exchanged buffer for {name}")
 
     def _compute(
         self,

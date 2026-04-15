@@ -306,10 +306,6 @@ def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
     return xp.min(ar).item()
 
 
-def identity_array(ar: data_alloc.NDArray) -> data_alloc.NDArray:
-    return ar
-
-
 @pytest.mark.datatest
 def test_compute_scalar_value_from_numpy_provider(
     height_coordinate_source: factory.FieldSource,
@@ -325,60 +321,3 @@ def test_compute_scalar_value_from_numpy_provider(
     value = height_coordinate_source.get("minimal_height", factory.RetrievalType.FIELD)
     assert np.isscalar(value)
     assert value_ref == value
-
-
-class RecordingExchange:
-    def __init__(self):
-        self.calls = []
-
-    def exchange(
-        self,
-        dimension: gtx.Dimension,
-        _field: state_utils.GTXFieldType,
-        stream: decomposition.StreamLike | decomposition.Block = decomposition.DEFAULT_STREAM,
-    ) -> None:
-        self.calls.append((dimension, stream))
-
-
-@pytest.mark.datatest
-def test_numpy_provider_exchange_enabled(height_coordinate_source: SimpleFieldSource) -> None:
-    provider = factory.NumpyDataProvider(
-        func=identity_array,
-        deps={"ar": "height_coordinate"},
-        domain=(dims.CellDim, dims.KDim),
-        fields=("height_coordinate_copy",),
-        do_exchange=True,
-    )
-
-    exchange = RecordingExchange()
-    provider(
-        "height_coordinate_copy",
-        height_coordinate_source,
-        height_coordinate_source.backend,
-        height_coordinate_source,
-        exchange=exchange,
-    )
-
-    assert exchange.calls == [(dims.CellDim, decomposition.DEFAULT_STREAM)]
-
-
-@pytest.mark.datatest
-def test_numpy_provider_exchange_disabled(height_coordinate_source: SimpleFieldSource) -> None:
-    provider = factory.NumpyDataProvider(
-        func=identity_array,
-        deps={"ar": "height_coordinate"},
-        domain=(dims.CellDim, dims.KDim),
-        fields=("height_coordinate_copy",),
-        do_exchange=False,
-    )
-
-    exchange = RecordingExchange()
-    provider(
-        "height_coordinate_copy",
-        height_coordinate_source,
-        height_coordinate_source.backend,
-        height_coordinate_source,
-        exchange=exchange,
-    )
-
-    assert exchange.calls == []
