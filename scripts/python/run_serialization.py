@@ -12,6 +12,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+import os
 import pathlib
 import re
 import shutil
@@ -19,36 +21,113 @@ import subprocess
 import sys
 import tarfile
 import time
-import warnings
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import TYPE_CHECKING, get_type_hints, Annotated
+from typing import TYPE_CHECKING
 
-import lazy_loader as lazy
 import typer
 
-if __name__ == "__main__":
-    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-# The following lines are only to avoid very long import times due to the
-# heavy icon4py dependencies in the settings module.
 if TYPE_CHECKING:
     from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", category=RuntimeWarning)
-    settings = lazy.load("python._run_serialization_settings")
-
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
+
+
+@dataclasses.dataclass(frozen=True)
+class SerializationSettings:
+    comm_sizes: list[int]
+    experiments: list[definitions.Experiment]
+    sbatch_partition: str
+    sbatch_time: str
+    sbatch_account: str
+    sbatch_uenv: str
+    sbatch_uenv_view: str
+    job_poll_seconds: int
+    projects_dir: pathlib.Path
+    iconf90_dir: pathlib.Path
+    iconf90_build_folder: str
+    build_dir: pathlib.Path
+    runscript_dir: pathlib.Path
+    experiments_dir: pathlib.Path
+    output_root: pathlib.Path
+    max_threads: int
+
+    @classmethod
+    def defaults(cls) -> SerializationSettings:
+        # We hardcode the settings here for simplicity, but they could be
+        # extended to be read from a config file or command-line arguments
+        # if needed in the future.
+
+        from icon4py.model.testing import (
+            definitions,  # Import here to reduce startup time for the CLI
+        )
+
+        COMM_SIZES: list[int] = [1, 2, 4]
+
+        EXPERIMENTS = [
+            definitions.Experiments.MCH_CH_R04B09,
+            definitions.Experiments.JW,
+            definitions.Experiments.EXCLAIM_APE,
+            definitions.Experiments.GAUSS3D,
+            definitions.Experiments.WEISMAN_KLEMP_TORUS,
+        ]
+
+        # Slurm settings
+        SBATCH_PARTITION = "normal"
+        SBATCH_TIME = "00:15:00"
+        SBATCH_ACCOUNT = "cwd01"
+        SBATCH_UENV = "icon/25.2:v3"
+        SBATCH_UENV_VIEW = "default"
+        JOB_POLL_SECONDS = 10
+
+        # Base directories (adjust if needed)
+        PROJECTS_DIR = pathlib.Path(
+            os.environ.get("SCRATCH", str(pathlib.Path.home() / "projects"))
+        )
+        ICONF90_DIR = PROJECTS_DIR / "icon-exclaim.serialize"
+        ICONF90_BUILD_FOLDER = "build_serialize"
+
+        # Derived paths
+        BUILD_DIR = ICONF90_DIR / ICONF90_BUILD_FOLDER
+        RUNSCRIPTS_DIR = BUILD_DIR / "run"
+        EXPERIMENTS_DIR = BUILD_DIR / "experiments"
+
+        # Output location for copied ser_data and tarballs
+        OUTPUT_ROOT = EXPERIMENTS_DIR / definitions.SERIALIZED_DATA_DIR
+
+        # Maximum concurrent threads for running experiments
+        MAX_THREADS: int = 5
+
+        return cls(
+            comm_sizes=COMM_SIZES,
+            experiments=EXPERIMENTS,
+            sbatch_partition=SBATCH_PARTITION,
+            sbatch_time=SBATCH_TIME,
+            sbatch_account=SBATCH_ACCOUNT,
+            sbatch_uenv=SBATCH_UENV,
+            sbatch_uenv_view=SBATCH_UENV_VIEW,
+            job_poll_seconds=JOB_POLL_SECONDS,
+            projects_dir=PROJECTS_DIR,
+            iconf90_dir=ICONF90_DIR,
+            iconf90_build_folder=ICONF90_BUILD_FOLDER,
+            build_dir=BUILD_DIR,
+            runscript_dir=RUNSCRIPTS_DIR,
+            experiments_dir=EXPERIMENTS_DIR,
+            output_root=OUTPUT_ROOT,
+            max_threads=MAX_THREADS,
+        )
 
 
 def get_f90exp_name(experiment: definitions.Experiment) -> str:
     return f"{experiment.name}_sb"
 
 
-def get_f90exp_dir(experiment: definitions.Experiment) -> pathlib.Path:
-    return settings.EXPERIMENTS_DIR / get_f90exp_name(experiment)
+def get_f90exp_dir(
+    experiment: definitions.Experiment, *, settings: SerializationSettings
+) -> pathlib.Path:
+    return settings.experiments_dir / get_f90exp_name(experiment)
 
 
 def get_nmlfile_name(experiment: definitions.Experiment) -> str:
@@ -59,19 +138,25 @@ def get_slurmscript_name(experiment: definitions.Experiment) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
 
-def get_serdata_dst_dir(experiment: definitions.Experiment, comm_size: int) -> pathlib.Path:
+def get_serdata_dst_dir(
+    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+) -> pathlib.Path:
     """Get the destination directory for serialized data."""
-    return settings.OUTPUT_ROOT / dt_utils.get_ranked_experiment_name_with_version(
+    return settings.output_root / dt_utils.get_ranked_experiment_name_with_version(
         experiment, comm_size
     )
 
 
-def get_tar_path(experiment: definitions.Experiment, comm_size: int) -> pathlib.Path:
+def get_tar_path(
+    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+) -> pathlib.Path:
     """Get the path to the tar archive for the experiment."""
-    return settings.OUTPUT_ROOT / dt_utils.get_experiment_archive_filename(experiment, comm_size)
+    return settings.output_root / dt_utils.get_experiment_archive_filename(experiment, comm_size)
 
 
-def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> None:
+def cleanup_exp_output(
+    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+) -> None:
     """Clean up experiment output directories and archives.
 
     Deletes:
@@ -80,17 +165,17 @@ def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> No
     - Tar archive (tar_path)
     """
     # Delete experiment directory
-    exp_dir = get_f90exp_dir(experiment)
+    exp_dir = get_f90exp_dir(experiment, settings=settings)
     if exp_dir.exists():
         shutil.rmtree(exp_dir)
 
     # Delete serialized data destination directory
-    dest_dir = get_serdata_dst_dir(experiment, comm_size)
+    dest_dir = get_serdata_dst_dir(experiment, comm_size, settings=settings)
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
 
     # Delete tar archive
-    tar_path = get_tar_path(experiment, comm_size)
+    tar_path = get_tar_path(experiment, comm_size, settings=settings)
     if tar_path.exists():
         tar_path.unlink()
 
@@ -177,7 +262,7 @@ def parse_extra_mpi_ranks(script_path: pathlib.Path, comm_size: int) -> int:
     return extra_ranks
 
 
-def update_slurm_variables(script_path: pathlib.Path) -> None:
+def update_slurm_variables(script_path: pathlib.Path, *, settings: SerializationSettings) -> None:
     """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
     content = script_path.read_text()
 
@@ -188,11 +273,11 @@ def update_slurm_variables(script_path: pathlib.Path) -> None:
 
     # Prepare the new SBATCH lines to insert
     new_lines = (
-        f"#SBATCH --partition={settings.SBATCH_PARTITION}\n"
-        f"#SBATCH --account={settings.SBATCH_ACCOUNT}\n"
-        f"#SBATCH --time={settings.SBATCH_TIME}\n"
-        f"#SBATCH --uenv='{settings.SBATCH_UENV}'\n"
-        f"#SBATCH --view='{settings.SBATCH_UENV_VIEW}'"
+        f"#SBATCH --partition={settings.sbatch_partition}\n"
+        f"#SBATCH --account={settings.sbatch_account}\n"
+        f"#SBATCH --time={settings.sbatch_time}\n"
+        f"#SBATCH --uenv='{settings.sbatch_uenv}'\n"
+        f"#SBATCH --view='{settings.sbatch_uenv_view}'"
     )
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
@@ -243,9 +328,9 @@ def update_slurm_ranks(script_path: pathlib.Path, mpi_ranks: int, extra_mpi_rank
     script_path.write_text(content)
 
 
-def submit_job(script_path: pathlib.Path) -> str:
+def submit_job(script_path: pathlib.Path, *, settings: SerializationSettings) -> str:
     cmd = ["sbatch", str(script_path)]
-    result = run_command(cmd, cwd=settings.RUNSCRIPTS_DIR)
+    result = run_command(cmd, cwd=settings.runscript_dir)
     match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
     if not match:
         raise RuntimeError(f"Unable to parse job id from sbatch output: {result.stdout}")
@@ -287,7 +372,7 @@ def get_job_state(job_id: str) -> str | None:
     return None
 
 
-def wait_for_success(job_id: str) -> None:
+def wait_for_success(job_id: str, *, settings: SerializationSettings) -> None:
     terminal_states = {
         "COMPLETED": True,
         "FAILED": False,
@@ -300,7 +385,7 @@ def wait_for_success(job_id: str) -> None:
     while True:
         state = get_job_state(job_id)
         if state is None:
-            time.sleep(settings.JOB_POLL_SECONDS)
+            time.sleep(settings.job_poll_seconds)
             continue
 
         if state in terminal_states:
@@ -308,17 +393,23 @@ def wait_for_success(job_id: str) -> None:
                 return
             raise RuntimeError(f"Job {job_id} finished unsuccessfully with state: {state}")
 
-        time.sleep(settings.JOB_POLL_SECONDS)
+        time.sleep(settings.job_poll_seconds)
 
 
-def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> pathlib.Path:
-    exp_dir = get_f90exp_dir(experiment)
+def copy_ser_data(
+    experiment,
+    comm_size: int,
+    job_id: str | None = None,
+    *,
+    settings: SerializationSettings,
+) -> pathlib.Path:
+    exp_dir = get_f90exp_dir(experiment, settings=settings)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
     # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
-    dest_dir = get_serdata_dst_dir(experiment, comm_size)
+    dest_dir = get_serdata_dst_dir(experiment, comm_size, settings=settings)
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
@@ -336,7 +427,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> path
 
     # Copy LOG file if available
     if job_id is not None:
-        log_file = settings.RUNSCRIPTS_DIR / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
+        log_file = settings.runscript_dir / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
         if log_file.is_file():
             shutil.copy2(log_file, dest_dir / log_file.name)
 
@@ -344,9 +435,13 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> path
 
 
 def tar_folder(
-    folder: pathlib.Path, experiment: definitions.Experiment, comm_size: int
+    folder: pathlib.Path,
+    experiment: definitions.Experiment,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
 ) -> pathlib.Path:
-    tar_path = get_tar_path(experiment, comm_size)
+    tar_path = get_tar_path(experiment, comm_size, settings=settings)
 
     with tarfile.open(tar_path, "w:gz") as tar:
         # Add only the contents of the folder (NAMELIST files and ser_data), not the folder itself
@@ -356,27 +451,31 @@ def tar_folder(
     return tar_path
 
 
-def generate_update_script(experiment: definitions.Experiment) -> None:
+def generate_update_script(
+    experiment: definitions.Experiment, *, settings: SerializationSettings
+) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
-        settings.ICONF90_DIR / "run" / get_nmlfile_name(experiment),
-        settings.RUNSCRIPTS_DIR / get_nmlfile_name(experiment),
+        settings.iconf90_dir / "run" / get_nmlfile_name(experiment),
+        settings.runscript_dir / get_nmlfile_name(experiment),
     )
 
     # run make_runscript
     cmd = ["./make_runscripts", get_f90exp_name(experiment)]
-    _ = run_command(cmd, cwd=settings.BUILD_DIR)
+    _ = run_command(cmd, cwd=settings.build_dir)
 
 
-def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
+def run_experiment(
+    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
         # Clean up previous experiment output
-        cleanup_exp_output(experiment, comm_size)
+        cleanup_exp_output(experiment, comm_size, settings=settings)
 
-        generate_update_script(experiment)
+        generate_update_script(experiment, settings=settings)
 
-        script_path = settings.RUNSCRIPTS_DIR / get_slurmscript_name(experiment)
+        script_path = settings.runscript_dir / get_slurmscript_name(experiment)
         if not script_path.exists():
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
@@ -387,20 +486,20 @@ def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
             f"Setting up {experiment.name} with {comm_size} ranks"
             + (f" + {extra_mpi_ranks} extra" if extra_mpi_ranks > 0 else "")
         )
-        update_slurm_variables(script_path)
+        update_slurm_variables(script_path, settings=settings)
         update_slurm_ranks(script_path, comm_size, extra_mpi_ranks)
 
         log_status(f"Submitting {experiment.name} with {comm_size} ranks")
-        job_id = submit_job(script_path)
+        job_id = submit_job(script_path, settings=settings)
 
         log_status(f"Waiting for {experiment.name} (ranks={comm_size}, job_id={job_id})")
-        wait_for_success(job_id)
+        wait_for_success(job_id, settings=settings)
 
         log_status(f"Copying ser_data for {experiment.name} with {comm_size} ranks")
-        dest_dir = copy_ser_data(experiment, comm_size, job_id)
+        dest_dir = copy_ser_data(experiment, comm_size, job_id, settings=settings)
 
         log_status(f"Creating tar archive for {experiment.name} with {comm_size} ranks")
-        tar_folder(dest_dir, experiment, comm_size)
+        tar_folder(dest_dir, experiment, comm_size, settings=settings)
 
         log_status(f"Completed {experiment.name} with {comm_size} ranks")
     except Exception as e:
@@ -411,24 +510,25 @@ def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
 @cli.command()
 def run_serialization() -> None:
     """Run the serialization experiment series."""
-    settings.OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    settings = SerializationSettings.defaults()
+    settings.output_root.mkdir(parents=True, exist_ok=True)
 
-    total_tasks = len(settings.EXPERIMENTS) * len(settings.COMM_SIZES)
+    total_tasks = len(settings.experiments) * len(settings.comm_sizes)
     log_status(
-        f"Starting experiment series with {total_tasks} tasks ({len(settings.EXPERIMENTS)} experiments x {len(settings.COMM_SIZES)} communicator sizes)"
+        f"Starting experiment series with {total_tasks} tasks ({len(settings.experiments)} experiments x {len(settings.comm_sizes)} communicator sizes)"
     )
 
-    for rank_idx, comm_size in enumerate(settings.COMM_SIZES, 1):
-        num_experiments = len(settings.EXPERIMENTS)
+    for rank_idx, comm_size in enumerate(settings.comm_sizes, 1):
+        num_experiments = len(settings.experiments)
         log_status(
-            f"Starting communicator size {rank_idx}/{len(settings.COMM_SIZES)}: {comm_size} ranks ({num_experiments} experiments parallel)"
+            f"Starting communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks ({num_experiments} experiments parallel)"
         )
 
-        with ThreadPoolExecutor(max_workers=settings.MAX_THREADS) as executor:
+        with ThreadPoolExecutor(max_workers=settings.max_threads) as executor:
             futures = []
 
-            for experiment in settings.EXPERIMENTS:
-                future = executor.submit(run_experiment, experiment, comm_size)
+            for experiment in settings.experiments:
+                future = executor.submit(run_experiment, experiment, comm_size, settings=settings)
                 futures.append(future)
 
             log_status(
@@ -440,7 +540,7 @@ def run_serialization() -> None:
                 future.result()  # Re-raises any exceptions from the thread
 
         log_status(
-            f"Completed communicator size {rank_idx}/{len(settings.COMM_SIZES)}: {comm_size} ranks"
+            f"Completed communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks"
         )
 
     log_status(f"All {total_tasks} tasks completed successfully!")

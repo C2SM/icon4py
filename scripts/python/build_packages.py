@@ -17,15 +17,11 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+from typing import Annotated
+
 import tomllib
-from typing import Annotated, Optional
-
 import typer
-
-if __name__ == "__main__":
-    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-
-from python import _common as common
+from helpers import common
 
 
 cli = typer.Typer(
@@ -34,7 +30,7 @@ cli = typer.Typer(
 
 
 def _read_pyproject(project_root: pathlib.Path) -> dict:
-    with open(project_root / "pyproject.toml", "rb") as f:
+    with pathlib.Path.open(project_root / "pyproject.toml", "rb") as f:
         return tomllib.load(f)
 
 
@@ -63,7 +59,7 @@ def _run_uv_build(
         cmd.append("--wheel")
     if verbose:
         cmd.append("--verbose")
-    return subprocess.run(cmd, capture_output=not verbose)
+    return subprocess.run(cmd, capture_output=not verbose, check=False)
 
 
 def _collect_targets(
@@ -76,9 +72,7 @@ def _collect_targets(
     if packages:
         member_paths: list[str] = []
         for pkg in packages:
-            if pkg in workspace_members:
-                member_paths.append(pkg)
-            elif (common.REPO_ROOT / pkg / "pyproject.toml").is_file():
+            if pkg in workspace_members or (common.REPO_ROOT / pkg / "pyproject.toml").is_file():
                 member_paths.append(pkg)
             else:
                 typer.echo(f"Warning: '{pkg}' is not a valid workspace member, skipping.", err=True)
@@ -105,7 +99,7 @@ def build(
         bool, typer.Option("--verbose", "-v", help="Enable verbose output.")
     ] = False,
     packages: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Argument(
             help=(
                 "Workspace member paths to build (e.g. 'model/common tools'). "
@@ -160,7 +154,7 @@ def proxy(
         bool, typer.Option("--verbose", "-v", help="Enable verbose output.")
     ] = False,
     packages: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Argument(
             help=(
                 "Workspace member paths to build proxies for (e.g. 'model/common tools'). "

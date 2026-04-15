@@ -19,11 +19,7 @@ import sys
 from typing import Annotated, Final
 
 import typer
-
-if __name__ == "__main__":
-    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-
-from python import _common as common
+from helpers import common
 
 
 def _find_versioned_package_dirs() -> list[pathlib.Path]:
