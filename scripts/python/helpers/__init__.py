@@ -7,4 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-"""Python dev-scripts package."""
+from __future__ import annotations
+
+import lazy_loader as lazy
+
+
+submodules = ["common"]
+
+__getattr__, __dir__, _ = lazy.attach(__name__, submodules)

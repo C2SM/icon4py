@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import typer
 
+
 if TYPE_CHECKING:
     from icon4py.model.testing import definitions
 
@@ -28,7 +29,7 @@ cli = typer.Typer(
 
 
 def get_validation_grids() -> list[definitions.GridDescription]:
-    from icon4py.model.testing import definitions
+    from icon4py.model.testing import definitions  # Import here to reduce startup time of the CLI
 
     return [
         definitions.Grids.R01B01_GLOBAL,

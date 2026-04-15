@@ -26,8 +26,7 @@ from typing import Annotated, NamedTuple, TypeAlias
 import pytest
 import rich
 import typer
-
-from . import _common as common
+from helpers import common
 
 
 class ExitCode(enum.IntEnum):

@@ -20,6 +20,7 @@ from typing import Any, TypeAlias
 
 import typer
 
+
 VariantDescriptor: TypeAlias = tuple[str, dict[str, Any]]
 
 cli = typer.Typer()
@@ -181,7 +182,6 @@ def load_openacc_log(filename: pathlib.Path) -> dict:
 
 
 def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
-    import matplotlib.pyplot as plt
     import numpy as np
 
     log.info(f"Loading icon4py data from {filename}")
@@ -394,10 +394,12 @@ def compare_icon4py_openacc():
     ax.set_xlabel("Total compute time [s]")
     ax.set_ylabel(f"Stencil name (speedup w.r.t. {openacc_backend} next to the bars)")
     ax.set_yticks(
-        np.concatenate([
-            index + (bar_width * len(backends)) / 2,
-            extended_index + (bar_width * (len(backends) - 1)) / 2,
-        ])
+        np.concatenate(
+            [
+                index + (bar_width * len(backends)) / 2,
+                extended_index + (bar_width * (len(backends) - 1)) / 2,
+            ]
+        )
         - bar_width / 2
     )
     ax.set_yticklabels(stencil_names + unmatched_stencil_names, rotation=0)
