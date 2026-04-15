@@ -4,7 +4,7 @@ include:
 .test_model_stencils:
   stage: test
   script:
-    - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+    - nox -s "test_model-3.14(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   rules:
     - if: $BACKEND == 'dace_gpu'
       variables:
@@ -26,7 +26,7 @@ test_model_stencils_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+    - nox -s "test_model-3.14(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]

@@ -8,8 +8,8 @@ stages:
   - benchmark
 
 variables:
-  PYVERSION_PREFIX: py310
-  PYVERSION: 3.10.9
+  PYVERSION_PREFIX: py314
+  PYVERSION: 3.14.0
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:
