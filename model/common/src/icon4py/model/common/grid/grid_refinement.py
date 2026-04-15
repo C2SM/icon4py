@@ -325,5 +325,4 @@ def is_limited_area_grid(
     ... )
     >>> assert is_limited_area_grid(non_nested_edge_refinement)
     """
-    array_ns = data_alloc.array_namespace(refinement_field)
-    return array_ns.any(refinement_field > 0).item()
+    return (refinement_field > 0).any().item()

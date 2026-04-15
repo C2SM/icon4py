@@ -34,6 +34,7 @@ def hydrostatic_adjustment_ndarray(
     num_levels: int,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(wgtfac_c)
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -130,6 +131,7 @@ def zonalwind_2_normalwind_ndarray(
     Returns: normal wind
     """
     # TODO(OngChia): this function needs a test
+    array_ns = data_alloc.array_namespace(edge_lat)
 
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[

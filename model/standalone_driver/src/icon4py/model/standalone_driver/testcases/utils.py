@@ -30,6 +30,7 @@ def apply_hydrostatic_adjustment_ndarray(
     """
     apply hydrostatic adjustment to update rho, exner, and theta_v arrays
     """
+    array_ns = data_alloc.array_namespace(rho)
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -123,6 +124,7 @@ def zonalwind_2_normalwind_ndarray(
         eta_v_at_edge: vertical eta coordinate at edge center
     Returns: normal wind
     """
+    array_ns = data_alloc.array_namespace(edge_lat)
     # TODO(OngChia): this function needs a test
     ub = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
@@ -184,6 +186,7 @@ def init_w(
     nlev: int,
     array_ns: ModuleType,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e)
     lb_e = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     ub_e = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.INTERIOR))
 

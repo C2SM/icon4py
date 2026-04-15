@@ -728,11 +728,10 @@ def _check_flatness_of_flat_level(
     vct_a: data_alloc.NDArray,
     nflatlev: int,
 ) -> None:
-    array_ns = data_alloc.array_namespace(vertical_coordinate)
     # Check if level nflatlev is still flat
-    if not array_ns.all(
+    if not (
         vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]
-    ):
+    ).all():
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 
