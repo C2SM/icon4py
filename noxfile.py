@@ -19,7 +19,7 @@ import nox
 
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["test_model", "test_tools"]
+nox.options.sessions = ["test_model", "test_bindings_and_tools"]
 
 
 # -- Parameter sets --
@@ -167,7 +167,7 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
 
 
-# Tools test sessions
+# Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11", "3.14"])
 @nox.parametrize(
@@ -180,17 +180,20 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
         ),
     ],
 )
-def test_tools(session: nox.Session, datatest: bool) -> None:
-    """Run tests for the Fortran integration tools."""
+def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
+    """Run tests for the Fortran bindings and integration tools."""
     _install_session_venv(
         session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
     )
 
-    with session.chdir("tools"):
-        session.run(
-            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
-            *session.posargs,
-        )
+    datatest_flag = "--datatest-only" if datatest else "--datatest-skip"
+    pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
+    if not datatest:
+        # tools/ has no datatest-marked tests, so skip it in datatest mode
+        with session.chdir("tools"):
+            session.run(*pytest_base.split(), *session.posargs)
+    with session.chdir("bindings"):
+        session.run(*pytest_base.split(), *session.posargs)
 
 
 # -- utils --

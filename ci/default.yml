@@ -30,7 +30,7 @@ test_model_stencils_aarch64:
 .test_tools_datatests:
   stage: test
   script:
-    - nox -s 'test_tools-3.14(datatest)'
+    - nox -s 'test_tools_and_bindings-3.14(datatest)'
 # test_tools_x86_64:
 #   extends: [.test_tools_datatests, .test_template_x86_64]
 test_tools_datatests_aarch64:

@@ -18,7 +18,7 @@ logging.basicConfig(
 
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.grid_wrapper import grid_init
+from icon4py.bindings.grid_wrapper import grid_init
 
 
 @ffi.def_extern()

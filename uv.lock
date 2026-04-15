@@ -21,6 +21,7 @@ members = [
     "icon4py-atmosphere-dycore",
     "icon4py-atmosphere-microphysics",
     "icon4py-atmosphere-muphys",
+    "icon4py-bindings",
     "icon4py-common",
     "icon4py-driver",
     "icon4py-standalone-driver",
@@ -824,6 +825,29 @@ wheels = [
 ]
 
 [[package]]
+name = "cupy-cuda11x"
+version = "13.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastrlock" },
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/0e/f49b7a3c9d798644622ff443c607d06ba9dc27935eb1341bdb6528902219/cupy_cuda11x-13.6.0-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:d107f0e5079c4ee72714f2b7e4fd8655f5d45418bcfd82727cdd16ab755f9351", size = 111954192, upload-time = "2025-08-18T08:22:47.031Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/97/eed12e6d7289c8270f11357a4d0419c28de5e321715b1c1155ab173d05e8/cupy_cuda11x-13.6.0-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:0d7f29e4644b468a00d1ef443e9394bba79932b57b8f77746c19d31dccd9ec94", size = 99017783, upload-time = "2025-08-18T08:22:52.821Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/a6/461932ad0a2469f3f70922dee3274d245c96f54b43d85992a6fcb3ad6dc2/cupy_cuda11x-13.6.0-cp310-cp310-win_amd64.whl", hash = "sha256:8c369423302a7cc654f5cc7ce8969cfb4fb70ffa54349e90c8fb841ffb822253", size = 76852583, upload-time = "2025-08-18T08:22:58.197Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/3e/0e3a433c321fa5457c8aa0fa5d6d54db2f6bc4a95a2bf574a264254a69ee/cupy_cuda11x-13.6.0-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:a89efc831b561077e9d940474f77e1d84f81701a9456061c0da8a2a7907610c8", size = 113626278, upload-time = "2025-08-18T08:23:03.433Z" },
+    { url = "https://files.pythonhosted.org/packages/20/4d/4acce55d4994d6bad3b88910398456660360a8277ef8b072fd3b5a50ec0f/cupy_cuda11x-13.6.0-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:6fbbc042580d3c6170a449a2643235bef16e74cc997a143767c47d4d6ce95ed2", size = 99814083, upload-time = "2025-08-18T08:23:09.422Z" },
+    { url = "https://files.pythonhosted.org/packages/37/a3/a1d27567e5218768f1be360351c8dd4e8562e5435bb20084a087f321bc75/cupy_cuda11x-13.6.0-cp311-cp311-win_amd64.whl", hash = "sha256:5097ea9f88b991e9abe31e93b1be0106ecc74f3f1fe43461803eb673574eb642", size = 76864166, upload-time = "2025-08-18T08:23:15.064Z" },
+    { url = "https://files.pythonhosted.org/packages/be/c9/7d54937bdffb73f5240bc4cda6be786331ad4b17e335adc66b54ed7eb596/cupy_cuda11x-13.6.0-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:389a94e1943457fd155836fe7f532fa713024cfd34f22141019718a42aad346e", size = 112939931, upload-time = "2025-08-18T08:23:20.896Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/a6/59b66e26d8530a91f3621c7d5c1fa45515242adc0fa2ad843fc839db0780/cupy_cuda11x-13.6.0-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:0418f788908985cb615d4c8fe1dda46bf0c09462626e643eda694b33002ae296", size = 99664904, upload-time = "2025-08-18T08:23:27.428Z" },
+    { url = "https://files.pythonhosted.org/packages/be/36/89ef386bf8b2556592d2e081cc4e0eec2c77a220bead1ca61286e78fbef3/cupy_cuda11x-13.6.0-cp312-cp312-win_amd64.whl", hash = "sha256:fad3d7fa1e38638dbc5d6101d9c486cc8fe2dec4ce48f3f4709afcaf45770993", size = 76766421, upload-time = "2025-08-18T08:23:32.116Z" },
+    { url = "https://files.pythonhosted.org/packages/df/ab/3396cc8870d211536c90319acdf3cf2131dcb5d2ec99c9415829b003eb0b/cupy_cuda11x-13.6.0-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:ad8d6d85ad8dd1e166ddc9ff32fb006db6f73079e8db323fef2c062084e2976c", size = 112506592, upload-time = "2025-08-18T08:23:37.158Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/4b/57ebf7bc1af49400eb2449898aba1d78a47166aa87770743cf59ed37840a/cupy_cuda11x-13.6.0-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:20f9f9e7d789b9e567fb5defe8e2f3c7e26a1a9a0fd027d89ece127d371d5e49", size = 99430157, upload-time = "2025-08-18T08:23:42.515Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/62/d57e70323b1e7be0b68c26a4fa938303cf52fac260fa6f47f4617372bbff/cupy_cuda11x-13.6.0-cp313-cp313-win_amd64.whl", hash = "sha256:b61e1c68650b39af0ca0649575444de03de85fae7b6b34c34799ab201382beda", size = 76732019, upload-time = "2025-08-18T08:23:47.156Z" },
+]
+
+[[package]]
 name = "cupy-cuda12x"
 version = "13.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1599,9 +1623,9 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
+    { name = "icon4py-bindings" },
     { name = "icon4py-common", extra = ["distributed", "io"] },
     { name = "icon4py-testing" },
-    { name = "icon4py-tools" },
     { name = "viztracer" },
 ]
 cuda12 = [
@@ -1614,7 +1638,7 @@ distributed = [
     { name = "icon4py-common", extra = ["distributed"] },
 ]
 fortran = [
-    { name = "icon4py-tools" },
+    { name = "icon4py-bindings" },
 ]
 io = [
     { name = "icon4py-common", extra = ["io"] },
@@ -1721,6 +1745,7 @@ requires-dist = [
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
     { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
+    { name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
@@ -1730,7 +1755,6 @@ requires-dist = [
     { name = "icon4py-driver", editable = "model/driver" },
     { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
-    { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
 ]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "fortran", "io", "profiling", "rocm7", "testing"]
@@ -1907,6 +1931,54 @@ requires-dist = [
 ]
 
 [[package]]
+name = "icon4py-bindings"
+version = "0.1.0"
+source = { editable = "bindings" }
+dependencies = [
+    { name = "cffi" },
+    { name = "gt4py" },
+    { name = "icon4py-atmosphere-diffusion" },
+    { name = "icon4py-atmosphere-dycore" },
+    { name = "icon4py-atmosphere-muphys" },
+    { name = "icon4py-common" },
+    { name = "icon4py-tools" },
+    { name = "numpy" },
+    { name = "packaging" },
+]
+
+[package.optional-dependencies]
+cuda11 = [
+    { name = "cupy-cuda11x" },
+    { name = "gt4py" },
+]
+cuda12 = [
+    { name = "cupy-cuda12x" },
+    { name = "gt4py", extra = ["cuda12"] },
+]
+profiling = [
+    { name = "viztracer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cffi", specifier = ">=1.5" },
+    { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
+    { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
+    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
+    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
+    { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
+    { name = "icon4py-common", editable = "model/common" },
+    { name = "icon4py-tools", editable = "tools" },
+    { name = "numpy", specifier = ">=1.23.3" },
+    { name = "packaging", specifier = ">=20.0" },
+    { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
+]
+provides-extras = ["cuda11", "cuda12", "profiling"]
+
+[[package]]
 name = "icon4py-common"
 version = "0.1.0"
 source = { editable = "model/common" }
@@ -2033,7 +2105,6 @@ dependencies = [
     { name = "icon4py-testing" },
     { name = "numpy" },
     { name = "packaging" },
-    { name = "pytest" },
     { name = "typer" },
 ]
 
@@ -2047,7 +2118,6 @@ requires-dist = [
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
-    { name = "pytest" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 
@@ -2091,11 +2161,6 @@ dependencies = [
     { name = "configargparse" },
     { name = "fprettify" },
     { name = "gt4py" },
-    { name = "icon4py-atmosphere-advection" },
-    { name = "icon4py-atmosphere-diffusion" },
-    { name = "icon4py-atmosphere-dycore" },
-    { name = "icon4py-common" },
-    { name = "icon4py-standalone-driver" },
     { name = "numpy" },
     { name = "packaging" },
 ]
@@ -2122,14 +2187,9 @@ requires-dist = [
     { name = "configargparse", specifier = ">=1.7.1" },
     { name = "fprettify", specifier = ">=0.3.7" },
     { name = "gt4py", specifier = "==1.1.9" },
-    { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
-    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
-    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
-    { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
     { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
-    { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
