@@ -54,6 +54,7 @@ def compute_c_lin_e(
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
+    array_ns = data_alloc.array_namespace(edge_cell_length)
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
     c_lin_e = array_ns.transpose(array_ns.vstack((c_lin_e_, (1.0 - c_lin_e_))))
     c_lin_e[0:horizontal_start, :] = 0.0
@@ -130,6 +131,7 @@ def compute_geofac_n2s(
     Returns:
         geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
     """
+    array_ns = data_alloc.array_namespace(dual_edge_length)
     num_cells = c2e.shape[0]
     geofac_n2s = array_ns.zeros([num_cells, 4])
     index = array_ns.transpose(
@@ -176,6 +178,7 @@ def compute_geofac_grg(
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(primal_normal_cell_x)
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
     inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
     primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
@@ -239,6 +242,7 @@ def compute_geofac_grdiv(
     Returns:
         geofac_grdiv:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(geofac_div)
     num_edges = e2c.shape[0]
     geofac_grdiv = array_ns.zeros([num_edges, 1 + 2 * e2c.shape[1]])
     index = array_ns.arange(horizontal_start, num_edges)
@@ -301,6 +305,7 @@ def _rotate_latlon(
         rotlat:
         rotlon:
     """
+    array_ns = data_alloc.array_namespace(lat)
     rotlat = array_ns.arcsin(
         array_ns.sin(lat) * array_ns.sin(pollat)
         + array_ns.cos(lat) * array_ns.cos(pollat) * array_ns.cos(lon - pollon)
@@ -347,6 +352,7 @@ def _weighting_factors(
         Returns:
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(ytemp)
     rotate = functools.partial(_rotate_latlon, array_ns=array_ns)
 
     pollat = array_ns.where(yloc >= 0.0, yloc - math.pi * 0.5, yloc + math.pi * 0.5)
@@ -410,6 +416,7 @@ def _compute_c_bln_avg(
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(c2e2c)
     num_cells = c2e2c.shape[0]
     ytemp = array_ns.zeros([c2e2c.shape[1], num_cells - horizontal_start])
     xtemp = array_ns.zeros([c2e2c.shape[1], num_cells - horizontal_start])
@@ -467,6 +474,7 @@ def _force_mass_conservation_to_c_bln_avg(
     Returns:
 
     """
+    array_ns = data_alloc.array_namespace(c2e2c0)
 
     def _compute_local_weights(
         c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
@@ -597,6 +605,7 @@ def _compute_uniform_c_bln_avg(
     Returns:
         c_bln_avg
     """
+    array_ns = data_alloc.array_namespace(c2e2c)
     local_weight = divergence_averaging_central_cell_weight
     neighbor_weight = (1.0 - divergence_averaging_central_cell_weight) / 3.0
 
@@ -622,6 +631,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e2c0)
     c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:],
         lat,
@@ -655,6 +665,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e2c0)
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:],
         divergence_averaging_central_cell_weight,
@@ -698,6 +709,7 @@ def _create_inverse_neighbor_index(
         ndarray of the same shape as target_offset
 
     """
+    array_ns = data_alloc.array_namespace(source_offset)
     inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
     source_offset[inverse_offset]
     for jc in range(inverse_offset.shape[0]):
@@ -746,6 +758,7 @@ def compute_e_flx_avg(
     Returns:
         e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(c_bln_avg)
     primal_cart_normal = compute_primal_cart_normal(
         primal_cart_normal_x,
         primal_cart_normal_y,
@@ -908,6 +921,7 @@ def compute_cells_aw_verts(
     Returns:
         aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(dual_area)
     cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         for je in range(v2e.shape[1]):
@@ -964,6 +978,7 @@ def compute_e_bln_c_s(
     Returns:
         e_bln_c_s: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(c2e)
     llb = 0
     num_cells = c2e.shape[0]
     e_bln_c_s = array_ns.zeros([num_cells, c2e.shape[1]])
@@ -1004,6 +1019,7 @@ def compute_e_bln_c_s_torus(
     Returns:
         e_bln_c_s
     """
+    array_ns = data_alloc.array_namespace(c2e)
     return array_ns.full_like(c2e, 1.0 / 3.0, dtype=ta.wpfloat)
 
 
@@ -1051,6 +1067,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         pos_on_tplane_e_y: //
     """
+    array_ns = data_alloc.array_namespace(primal_normal_v1)
     llb = horizontal_start
     pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
@@ -1128,6 +1145,7 @@ def compute_pos_on_tplane_e_x_y_torus(
         pos_on_tplane_e_x
         pos_on_tplane_e_y
     """
+    array_ns = data_alloc.array_namespace(dual_edge_length)
     # The implementation makes the simplifying assumptions that:
     # - The torus grid consists of equilateral triangles, which means that the
     #   neighboring cell centers must always be at 0.5 * dual_edge_length from
@@ -1163,6 +1181,7 @@ def compute_lsq_pseudoinv(
     lsq_dim_c: int,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(cell_owner_mask)
     for jjb in range(lsq_dim_c):
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
@@ -1182,6 +1201,7 @@ def compute_lsq_weights_c(
     lsq_wgt_exp: int,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(z_dist_g)
     for js in range(lsq_dim_stencil):
         z_norm = array_ns.sqrt(array_ns.dot(z_dist_g[js, :], z_dist_g[js, :]))
         lsq_weights_c_jc[js] = 1.0 / (z_norm**lsq_wgt_exp)
@@ -1227,6 +1247,7 @@ def compute_lsq_coeffs(
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(cell_center_x)
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
     lsq_pseudoinv = array_ns.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
     z_lsq_mat_c = array_ns.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
