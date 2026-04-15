@@ -91,7 +91,7 @@ def update_temperature_by_newton_iteration(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_temperature_by_newton_iteration(
         temperature,
         qv,
@@ -165,7 +165,7 @@ def update_temperature_qv_qc_tendencies(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_temperature_qv_qc_tendencies(
         dtime,
         temperature,
@@ -255,7 +255,7 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_subsaturated_case_and_initialize_newton_iterations(
         tolerance,
         temperature,

@@ -120,7 +120,7 @@ class SaturationAdjustment:
     def output_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
 
-    def _allocate_local_variables(self):
+    def _allocate_local_variables(self) -> None:
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
@@ -142,7 +142,7 @@ class SaturationAdjustment:
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
 
-    def _initialize_gt4py_programs(self):
+    def _initialize_gt4py_programs(self) -> None:
         self._compute_subsaturated_case_and_initialize_newton_iterations = (
             model_options.setup_program(
                 backend=self._backend,
@@ -200,7 +200,7 @@ class SaturationAdjustment:
             },
         )
 
-    def _determine_horizontal_domains(self):
+    def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.END))
@@ -223,7 +223,7 @@ class SaturationAdjustment:
         temperature_tendency: fa.CellKField[ta.wpfloat],
         qv_tendency: fa.CellKField[ta.wpfloat],
         qc_tendency: fa.CellKField[ta.wpfloat],
-    ):
+    ) -> None:
         """
         Adjust saturation at each grid point.
         Saturation adjustment condenses/evaporates specific humidity (qv) into/from

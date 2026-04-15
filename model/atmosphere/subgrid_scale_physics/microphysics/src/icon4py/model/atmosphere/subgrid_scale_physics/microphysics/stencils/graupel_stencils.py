@@ -45,7 +45,7 @@ _microphy_const: eve_utils.FrozenNamespace[ta.wpfloat] = (
 )
 
 
-@gtx.scan_operator(
+@gtx.scan_operator(  # type: ignore[call-overload]  # gt4py stubs don't support tuple init
     axis=dims.KDim,
     forward=True,
     init=(
@@ -143,7 +143,36 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     qs: ta.wpfloat,
     qg: ta.wpfloat,
     qnc: ta.wpfloat,
-):
+) -> tuple[
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    ta.wpfloat,
+    gtx.int32,
+]:
     """
     This is the ICON graupel scheme. The structure of the code can be split into several steps as follow:
         1. initialize tracer at k-1 level, and some pre-computed coefficients including the snow intercept parameter for later uses.
@@ -1046,7 +1075,7 @@ def icon_graupel(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _icon_graupel(
         ground_level,
         liquid_autoconversion_option,
@@ -1173,7 +1202,7 @@ def icon_graupel_flux_at_ground(
     horizontal_end: gtx.int32,
     ground_level: gtx.int32,
     model_num_levels: gtx.int32,
-):
+) -> None:
     _icon_graupel_flux_at_ground(
         do_latent_heat_nudging,
         dtime,
