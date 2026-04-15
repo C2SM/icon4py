@@ -61,6 +61,7 @@ def test_program_provider_exchange(
     provider = factory.ProgramFieldProvider(
         func=math_helpers.average_two_vertical_levels_downwards_on_cells,
         domain={
+            # Use full local horizontal range so the field is computed before implicit exchange.
             dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
             dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
         },
