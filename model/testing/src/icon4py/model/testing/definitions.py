@@ -59,6 +59,7 @@ class Grids:
         ),
         file_name="icon_grid_R01B01.nc",
         uri="https://polybox.ethz.ch/index.php/s/9M5JX4LJr3LGPqz/download",
+        known_hash=None,  # TODO(msimberg)
     )
     R02B04_GLOBAL: Final = GridDescription(
         name="r02b04_global",
@@ -74,6 +75,7 @@ class Grids:
         ),
         file_name="icon_grid_0013_R02B04_R.nc",
         uri="https://polybox.ethz.ch/index.php/s/BRiF7XrCCpGqpEF/download",
+        known_hash=None,  # TODO(msimberg)
     )
     R02B06_GLOBAL: Final = GridDescription(
         name="r02b06_global",
@@ -89,6 +91,7 @@ class Grids:
         ),
         file_name="icon_grid_0021_R02B06_G.nc",
         uri="https://polybox.ethz.ch/index.php/s/WsHr5e2MKpHkkmp/download",
+        known_hash=None,  # TODO(msimberg)
     )
     R02B07_GLOBAL: Final = GridDescription(
         name="r02b07_global",
@@ -104,6 +107,7 @@ class Grids:
         ),
         file_name="icon_grid_0023_R02B07_G.nc",
         uri="https://polybox.ethz.ch/index.php/s/RMqNbaeHLD5tDd6/download",
+        known_hash=None,  # TODO(msimberg)
     )
     R19_B07_MCH_LOCAL: Final = GridDescription(
         name="mch_opr_r19b07_icon_ch2",
@@ -120,6 +124,7 @@ class Grids:
         ),
         file_name="icon_grid_0002_R19B07_mch.nc",
         uri="https://polybox.ethz.ch/index.php/s/tFQian4aDzTES6c/download",
+        known_hash=None,  # TODO(msimberg)
     )
     MCH_OPR_R04B07_DOMAIN01: Final = GridDescription(
         name="mch_opr_r4b7",
@@ -136,6 +141,7 @@ class Grids:
         ),
         file_name="mch_opr_r4b7_DOM01.nc",
         uri="https://polybox.ethz.ch/index.php/s/ZL7LeEDijGCSJGz/download",
+        known_hash=None,  # TODO(msimberg)
     )
     MCH_OPR_R19B08_DOMAIN01: Final = GridDescription(
         name="mch_opr_r19b08",
@@ -152,6 +158,7 @@ class Grids:
         ),
         file_name="domain1_DOM01.nc",
         uri="https://polybox.ethz.ch/index.php/s/P6XfWcYjnrsNmeX/download",
+        known_hash=None,  # TODO(msimberg)
     )
     MCH_CH_R04B09_DSL: Final = GridDescription(
         name="mch_ch_r04b09_dsl",
@@ -168,6 +175,7 @@ class Grids:
         ),
         file_name="grid.nc",
         uri="https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download",
+        known_hash=None,  # TODO(msimberg)
     )
     TORUS_100X116_1000M: Final = GridDescription(
         name="torus_100x116_res1000",
@@ -182,6 +190,7 @@ class Grids:
         ),
         file_name="Torus_Triangles_100x116_1000m.nc",
         uri="https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download",
+        known_hash=None,  # TODO(msimberg)
     )
     TORUS_50000x5000: Final = GridDescription(
         name="torus_50000x5000_res500",
@@ -196,6 +205,7 @@ class Grids:
         ),
         file_name="Torus_Triangles_50000m_x_5000m_res500m.nc",
         uri="https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download",
+        known_hash=None,  # TODO(msimberg)
     )
     TORUS_1000X1000_250M: Final = GridDescription(
         name="torus_1000x1000_res250",
@@ -210,6 +220,7 @@ class Grids:
         ),
         file_name="Torus_Triangles_1000m_x_1000m_res250m.nc",
         uri="https://polybox.ethz.ch/index.php/s/eMDbDbdmKLkDiwp/download",
+        known_hash=None,  # TODO(msimberg)
     )
 
 
@@ -228,6 +239,8 @@ class Experiment:
     grid: GridDescription
     num_levels: int
     version: int = 3
+    # Per-rank known hashes for serialized data archives, keyed by communicator size (1, 2, 4).
+    known_hashes: dict[int, str | None] = dataclasses.field(default_factory=dict)
 
 
 class Experiments:
@@ -236,30 +249,35 @@ class Experiments:
         description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
         num_levels=60,
+        known_hashes={1: None, 2: None, 4: None},  # TODO(msimberg)
     )
     MCH_CH_R04B09: Final = Experiment(
         name="exclaim_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
         num_levels=65,
+        known_hashes={1: None, 2: None, 4: None},  # TODO(msimberg)
     )
     JW: Final = Experiment(
         name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
+        known_hashes={1: None, 2: None, 4: None},  # TODO(msimberg)
     )
     GAUSS3D: Final = Experiment(
         name="exclaim_gauss3d",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
         num_levels=35,
+        known_hashes={1: None, 2: None, 4: None},  # TODO(msimberg)
     )
     WEISMAN_KLEMP_TORUS: Final = Experiment(
         name="exclaim_nh_weisman_klemp",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
+        known_hashes={1: None, 2: None, 4: None},  # TODO(msimberg)
     )
 
 
