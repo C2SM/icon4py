@@ -306,7 +306,7 @@ def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
     return xp.min(ar).item()
 
 
-def copy_array(ar: data_alloc.NDArray) -> data_alloc.NDArray:
+def identity_array(ar: data_alloc.NDArray) -> data_alloc.NDArray:
     return ar
 
 
@@ -343,7 +343,7 @@ class RecordingExchange:
 @pytest.mark.datatest
 def test_numpy_provider_exchange_enabled(height_coordinate_source: SimpleFieldSource) -> None:
     provider = factory.NumpyDataProvider(
-        func=copy_array,
+        func=identity_array,
         deps={"ar": "height_coordinate"},
         domain=(dims.CellDim, dims.KDim),
         fields=("height_coordinate_copy",),
@@ -365,7 +365,7 @@ def test_numpy_provider_exchange_enabled(height_coordinate_source: SimpleFieldSo
 @pytest.mark.datatest
 def test_numpy_provider_exchange_disabled(height_coordinate_source: SimpleFieldSource) -> None:
     provider = factory.NumpyDataProvider(
-        func=copy_array,
+        func=identity_array,
         deps={"ar": "height_coordinate"},
         domain=(dims.CellDim, dims.KDim),
         fields=("height_coordinate_copy",),

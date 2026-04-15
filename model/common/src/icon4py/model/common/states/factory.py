@@ -683,10 +683,11 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         if any([f is None for f in self.fields.values()]):
             log.info(f"computing field {field_name}")
             self._compute(factory, backend, grid)
-            exchangeable_fields = {
-                name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
-            }
-            self.exchange(exchangeable_fields, exchange=exchange)
+            if self._do_exchange:
+                exchangeable_fields = {
+                    name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
+                }
+                self.exchange(exchangeable_fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(
