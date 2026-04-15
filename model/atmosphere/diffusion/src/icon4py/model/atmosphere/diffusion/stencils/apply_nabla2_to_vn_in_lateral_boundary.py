@@ -32,7 +32,7 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_to_vn_in_lateral_boundary(
         z_nabla2_e,
         area_edge,

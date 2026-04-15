@@ -34,7 +34,7 @@ def compute_graddiv2_of_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_graddiv2_of_vn(
         geofac_grdiv,
         z_graddiv_vn,

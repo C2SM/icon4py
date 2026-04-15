@@ -59,7 +59,7 @@ class DiagnosticMetricState:
 
 def initialize_diagnostic_state(
     grid: icon_grid.IconGrid,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> DiagnosticState:
     """Initialize the diagnostic state with zero fields."""
     pressure = data_alloc.zero_field(

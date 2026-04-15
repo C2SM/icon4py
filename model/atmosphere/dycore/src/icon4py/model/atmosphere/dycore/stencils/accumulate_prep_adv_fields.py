@@ -36,7 +36,7 @@ def accumulate_prep_adv_fields(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _accumulate_prep_adv_fields(
         z_vn_avg,
         mass_fl_e,

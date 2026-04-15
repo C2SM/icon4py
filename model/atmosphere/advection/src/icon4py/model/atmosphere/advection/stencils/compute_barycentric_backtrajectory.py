@@ -89,7 +89,7 @@ def compute_barycentric_backtrajectory(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_barycentric_backtrajectory(
         p_vn,
         p_vt,

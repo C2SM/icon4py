@@ -9,7 +9,7 @@
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import broadcast
+from gt4py.next import broadcast, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
@@ -29,9 +29,6 @@ from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping
 )
 from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping import (
     _apply_4th_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
-    _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
 from icon4py.model.atmosphere.dycore.stencils.apply_weighted_2nd_and_4th_order_divergence_damping import (
     _apply_weighted_2nd_and_4th_order_divergence_damping,
@@ -80,6 +77,20 @@ def apply_on_vertical_level(
 
 
 @gtx.field_operator
+def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+    pg_exdist: fa.EdgeKField[ta.vpfloat],
+    z_hydro_corr: fa.EdgeField[ta.wpfloat],
+    z_gradh_exner: fa.EdgeKField[ta.vpfloat],
+) -> fa.EdgeKField[ta.vpfloat]:
+    # Note: In the original Fortran code `pg_exdist` is implemented as a list,
+    # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
+    z_gradh_exner_vp = where(
+        pg_exdist != 0.0, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
+    )
+    return z_gradh_exner_vp
+
+
+@gtx.field_operator
 def _compute_horizontal_pressure_gradient(
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -89,7 +100,6 @@ def _compute_horizontal_pressure_gradient(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nflatlev: gtx.int32,
@@ -120,8 +130,7 @@ def _compute_horizontal_pressure_gradient(
         ),
     )
 
-    return _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-        ipeidx_dsl=ipeidx_dsl,
+    return apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
         pg_exdist=pg_exdist,
         z_hydro_corr=hydrostatic_correction_on_lowest_level,
         z_gradh_exner=horizontal_pressure_gradient,
@@ -157,12 +166,11 @@ def _compute_rho_theta_pgrad_and_update_vn(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
@@ -218,7 +226,6 @@ def _compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         nflatlev=nflatlev,
@@ -292,8 +299,8 @@ def _apply_divergence_damping_and_update_vn(
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
@@ -401,12 +408,11 @@ def compute_rho_theta_pgrad_and_update_vn(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
@@ -458,12 +464,11 @@ def compute_rho_theta_pgrad_and_update_vn(
         - c_lin_e: interpolation coefficient for computation of interpolating a cell-based variables to an edge-based variable
         - ikoffset: k offset index (offset from the lowest k index where the neighboring cell centers lie within the thickness of the layer) for hyrostatic correction
         - zdiff_gradp: vertical distance between current cell height and neighboring cell height for pressure gradient over multiple levels [m]
-        - ipeidx_dsl: A mask for hydrostatic correction
         - pg_exdist: vertical distance between current cell height and neighboring cell height for hydrostatic correction [m]
         - inv_dual_edge_length: inverse dual edge length [m]
         - dtime: time step [s]
-        - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
+        - iau_wgt_dyn: a scaling factor for iau increment
         - limited_area: option indicating the grid is limited area or not
         - iadv_rhotheta: advection type for air density and virtual potential temperature (see RhoThetaAdvectionType)
         - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
@@ -508,12 +513,11 @@ def compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,
-        iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
         limited_area=limited_area,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
@@ -557,8 +561,8 @@ def apply_divergence_damping_and_update_vn(
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
-    iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
@@ -571,7 +575,7 @@ def apply_divergence_damping_and_update_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_solve_nonhydro_stencil_15_to_28_corrector.
 
@@ -601,8 +605,8 @@ def apply_divergence_damping_and_update_vn(
         - advection_explicit_weight_parameter: explicitness weight of normal_wind_advective_tendency
         - advection_implicit_weight_parameter: implicitness weight of normal_wind_advective_tendency
         - dtime: time step [s]
-        - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
+        - iau_wgt_dyn: a scaling factor for iau increment
         - limited_area: option indicating the grid is limited area or not
         - apply_2nd_order_divergence_damping: scaling factor for second order divergence damping
         - apply_4th_order_divergence_damping: scaling factor for fourth order divergence damping
@@ -636,8 +640,8 @@ def apply_divergence_damping_and_update_vn(
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         dtime=dtime,
-        iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
         limited_area=limited_area,
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,

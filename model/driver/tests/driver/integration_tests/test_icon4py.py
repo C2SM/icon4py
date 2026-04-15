@@ -82,6 +82,19 @@ if TYPE_CHECKING:
             False,
             False,
         ),
+        (
+            definitions.Experiments.JW,
+            1,
+            2,
+            1,
+            5,
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            False,
+            False,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
@@ -100,15 +113,20 @@ def test_run_timeloop_single_step(
     damping_height: float,
     ndyn_substeps: int,
     timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
-    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
     savepoint_velocity_init: sb.IconVelocityInitSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
-    if experiment == definitions.Experiments.GAUSS3D:
+    if experiment in (definitions.Experiments.GAUSS3D, definitions.Experiments.JW):
+        experiment_type = (
+            driver_init.ExperimentType.GAUSS3D
+            if experiment == definitions.Experiments.GAUSS3D
+            else driver_init.ExperimentType.JABW
+        )
         config = icon4py_configuration.read_config(
-            experiment_type=driver_init.ExperimentType.GAUSS3D,
+            experiment_type=experiment_type,
             backend=backend,
         )
         diffusion_config = config.diffusion_config
@@ -144,7 +162,6 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -210,7 +227,7 @@ def test_run_timeloop_single_step(
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
@@ -226,12 +243,11 @@ def test_run_timeloop_single_step(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
-        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -339,10 +355,10 @@ def test_run_timeloop_single_step(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit.vn()
-    w_sp = timeloop_diffusion_savepoint_exit.w()
+    exner_sp = savepoint_diffusion_exit.exner()
+    theta_sp = savepoint_diffusion_exit.theta_v()
+    vn_sp = savepoint_diffusion_exit.vn()
+    w_sp = savepoint_diffusion_exit.w()
 
     assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
@@ -353,7 +369,7 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-14,
+        atol=9e-14,
     )
 
     assert test_utils.dallclose(

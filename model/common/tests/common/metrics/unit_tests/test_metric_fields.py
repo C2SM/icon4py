@@ -17,7 +17,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_helpers
+from icon4py.model.testing import definitions, exchange_utils, test_utils as testing_helpers
 from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -30,8 +30,6 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     processor_props,
 )
-
-from ... import utils
 
 
 if TYPE_CHECKING:
@@ -406,8 +404,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    pg_exdist_ref = metrics_savepoint.pg_exdist()
-    pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
+    pg_exdist_ref = metrics_savepoint.pg_exdist_dsl()
 
     nlev = icon_grid.num_levels
     z_mc = metrics_savepoint.z_mc()
@@ -418,9 +415,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
-    edge_mask = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=backend
-    )
     ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
@@ -433,7 +427,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=utils.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore
@@ -446,7 +440,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         flat_idx_max=flat_idx,
         e_lev=edges,
         k_lev=k,
-        pg_edgeidx_dsl=edge_mask,
         pg_exdist_dsl=ex_distance,
         horizontal_start_distance=start_edge_nudging,
         horizontal_end_distance=icon_grid.num_edges,
@@ -461,7 +454,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     )
 
     assert testing_helpers.dallclose(pg_exdist_ref.asnumpy(), ex_distance.asnumpy(), rtol=1.0e-9)
-    assert testing_helpers.dallclose(pg_edgeidx_dsl_ref.asnumpy(), edge_mask.asnumpy())
 
 
 @pytest.mark.datatest

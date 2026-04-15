@@ -86,7 +86,7 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _solve_tridiagonal_matrix_for_w_forward_sweep(
         vwind_impl_wgt,
         theta_v_ic,

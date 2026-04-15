@@ -40,7 +40,7 @@ def apply_nabla2_to_w(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_to_w(
         area,
         z_nabla2_c,

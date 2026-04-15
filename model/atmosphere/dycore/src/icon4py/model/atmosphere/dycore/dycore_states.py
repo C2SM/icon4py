@@ -275,11 +275,15 @@ class MetricStateNonHydro:
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32]
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat]
     nflat_gradp: gtx.int32
-    """The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
+    """
+    The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
     horizontal pressure gradient can be computed by first order discretization scheme.
     """
-    pg_edgeidx_dsl: fa.EdgeKField[bool]
+
     pg_exdist: fa.EdgeKField[ta.vpfloat]
+    """
+    Extrapolation distance needed for HorizontalPressureDiscretizationType.TAYLOR_HYDRO.
+    """
 
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat]
     """
@@ -329,7 +333,7 @@ class PrepAdvection:
 def initialize_solve_nonhydro_diagnostic_state(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     grid: icon_grid.IconGrid,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> DiagnosticStateNonHydro:
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
@@ -453,7 +457,7 @@ def initialize_solve_nonhydro_diagnostic_state(
 
 
 def initialize_prep_advection(
-    grid: icon_grid.IconGrid, allocator: gtx_typing.FieldBufferAllocationUtil
+    grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator
 ) -> PrepAdvection:
     vn_traj = data_alloc.zero_field(
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat

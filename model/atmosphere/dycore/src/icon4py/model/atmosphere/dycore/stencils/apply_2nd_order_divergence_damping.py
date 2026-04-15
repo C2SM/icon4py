@@ -34,7 +34,7 @@ def apply_2nd_order_divergence_damping(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_2nd_order_divergence_damping(
         z_graddiv_vn,
         vn,
