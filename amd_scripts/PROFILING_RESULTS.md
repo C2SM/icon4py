@@ -253,61 +253,76 @@ tiling heuristic. Testing with `DACE_compiler_cuda_default_block_size="256,1,1"`
 improvement** because DaCe still generated dim3(32,8) blocks. Changing this requires modifying
 the GT4Py/DaCe block tiling logic in `gpu_utils.py`.
 
+## GPU Block Size Tuning
+
+Date: 2026-04-14
+
+### (256,1,1) block size for all maps
+
+Setting `gpu_block_size=(256,1,1)` for all 1D and 2D maps on MI300A gives a significant
+improvement by putting all threads on the Cell (horizontal) dimension for maximum coalescing.
+
+```python
+# In model_options.py, ROCM device block:
+optimization_args["gpu_block_size"] = (256, 1, 1)
+optimization_args["gpu_block_size_1d"] = (256, 1, 1)
+optimization_args["gpu_block_size_2d"] = (256, 1, 1)
+```
+
+### Results (GT4Py Timer median, 30 runs)
+
+| Config | Block size | GT4Py Median | vs Baseline |
+|--------|-----------|-------------|-------------|
+| Baseline | (32,8,1) default | 0.820 ms | — |
+| **(256,1,1) all maps** | **(256,1,1)** | **0.703 ms** | **-14.3%** |
+| (64,6,1) all maps | (64,6,1) | 0.756 ms | -7.8% |
+
+### Why (256,1,1) is faster
+
+- All 256 threads in a block process consecutive cells → perfect coalescing for `array[cell, K]`
+- The default (32,8,1) spreads 8 threads across K levels, which wastes coalescing potential
+  since K is the non-unit-stride dimension
+- MI300A wavefronts are 64 wide, so 256 = 4 wavefronts per block — good occupancy
+
 ## Loop Blocking (K-Blocking) Experiment
 
 Date: 2026-04-14
 
 ### What is loop blocking
 
-Splits the K loop into an outer coarse loop and an inner sequential loop. K-independent
-work (connectivity reads, geofac_div, cell-only arrays) is hoisted outside the inner loop,
-reducing redundant loads by a factor of `blocking_size`.
+Tiles the K dimension into blocks of `blocking_size`. Computations that don't depend on K
+(e.g. connectivity reads, geofac_div, cell-only arrays) are moved outside the inner K-loop,
+so they execute once per block instead of once per K-level.
 
 Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris:gt4py:extend_loopblocking
 
-### Configuration
-
-```python
-# In model_options.py for the solver stencils:
-optimization_args["blocking_dim"] = dims.KDim
-optimization_args["blocking_size"] = 4
-optimization_args["promote_independent_memlets_for_blocking"] = True
-optimization_args["blocking_independent_node_threshold"] = 3
-
-# AMD-specific (in ROCM device block):
-optimization_args["blocking_gpu_maxnreg"] = None       # skip — causes __maxnreg__ compilation error in HIP
-optimization_args["blocking_gpu_block_size"] = (256, 1, 1)  # all threads on Cell dimension
-```
-
 ### Results (GT4Py Timer median, 30 runs per config)
 
-| Config | Block size | GT4Py Median | vs Baseline |
-|--------|-----------|-------------|-------------|
-| Baseline (no blocking) | (32,8,1) default | 0.820 ms | — |
-| Blocking + default layout | (32,8,1) overwritten | 0.797 ms | **-2.8%** |
-| Blocking + (64,6,1) | (64,6,1) | 0.756 ms | **-7.8%** |
-| **Blocking + (256,1,1)** | **(256,1,1)** | **0.700 ms** | **-14.6%** |
+| Config | GT4Py Median | vs Baseline |
+|--------|-------------|-------------|
+| Baseline (32,8) | 0.820 ms | — |
+| Blocking only (32,8 overwritten) | 0.797 ms | -2.8% |
+| Blocking + (256,1,1) blocked map only | 0.700 ms | -14.6% |
+| (256,1,1) all maps, no blocking | 0.703 ms | -14.3% |
+| (256,1,1) all maps + blocking threshold=3 | 0.716 ms | -12.7% |
+| (256,1,1) all maps + blocking threshold=1 | 0.730 ms | -11.0% |
+| (256,1,1) all maps + blocking threshold=0 | 0.723 ms | -11.8% |
 
 ### Analysis
 
-- Loop blocking alone (hoisting K-independent work) accounts for ~2.8%
-- Block size tuning from (32,8) to (256,1,1) adds another ~12% from improved coalescing
-- Only **1 kernel** (map_0, contravariant correction, 59 μs) got blocked — the heavy kernels
-  (map_100_1=207μs, map_111_1=183μs, map_60=133μs) didn't meet `independent_node_threshold=3`
-- These 3 unblocked kernels are **71% of total kernel time** — lowering the threshold could
-  unlock much larger gains
-
-### Which kernels got blocked
-
-| Kernel | Baseline time | Blocked? | Block size |
-|--------|-------------|----------|------------|
-| map_0 (contravariant) | 59 μs | **Yes** | (256,1,1) |
-| map_100_1 (thermo) | 207 μs | No | (32,8,1) |
-| map_111_1 (rho/exner) | 183 μs | No | (32,8,1) |
-| map_60 (solver coeff) | 133 μs | No | (32,8,1) |
-| map_31 (w explicit) | 41 μs | No | (32,8,1) |
-| map_85 (tridiag fwd) | 58 μs | No (scan) | (64,1,1) |
-| map_90 (tridiag back) | 25 μs | No (scan) | (64,1,1) |
+- Loop blocking by itself gives a 2.8% speedup by reducing redundant K-independent work
+  in map_0 (the only kernel that met `independent_node_threshold=3`)
+- The block size change from (32,8) to (256,1,1) is responsible for most of the improvement
+  (~12% out of the 14.6% total)
+- When (256,1,1) is already set globally on all maps, enabling loop blocking on top actually
+  makes things slightly worse (0.703→0.716ms). The extra overhead from the coarse loop
+  (bounds checks, `min()` calls) outweighs the savings, since the coalescing improvement
+  — which was the main driver — is already captured by the global block size setting
+- We also tried lowering `independent_node_threshold` to 1 and 0 to block more kernels,
+  but this degraded performance further
+- **Bottom line: setting (256,1,1) on all maps is the best approach for MI300A (14.3%).
+  Loop blocking gives 2.8% on its own but becomes redundant once (256,1,1) is applied
+  globally**
 
 ### Bugs found and fixed in GT4Py transformation pipeline
 
@@ -318,8 +333,7 @@ optimization_args["blocking_gpu_block_size"] = (256, 1, 1)  # all threads on Cel
 
 2. **`__maxnreg__` is CUDA-only, breaks HIP:** DaCe emits `__maxnreg__(N)` when `gpu_maxnreg>0`,
    which is not valid in HIP/ROCm (causes compilation error). Changed `LoopBlocking` property
-   defaults to `None` so nothing is set unless explicitly requested. AMD path sets
-   `blocking_gpu_maxnreg=None`.
+   defaults to `None` so nothing is set unless explicitly requested.
 
 3. **Block size was (32,8,1) not (256,1,1):** After blocking, outer map has 2 dims
    (Cell, __gtx_coarse_K). `GPUSetBlockSize` classified it as 2D and applied `(32,8,1)`.
@@ -329,40 +343,34 @@ optimization_args["blocking_gpu_block_size"] = (256, 1, 1)  # all threads on Cel
 
 **loop_blocking.py:**
 - Added `gpu_block_size` and `gpu_maxnreg` as configurable properties (default `None`)
-- Added to `__init__` as constructor parameters
 - Made `apply()` conditional — only sets when not `None`
 
 **auto_optimize.py:**
-- Added `blocking_gpu_block_size` (default `(64,1,1)`) and `blocking_gpu_maxnreg` (default `64`)
-  parameters to `gt_auto_optimize()` and `_gt_auto_process_dataflow_inside_maps()`
-- Added post-GPU-transformation override in `_gt_auto_configure_maps_and_strides()` for
-  maps with `__gtx_coarse_` parameter
+- Added `blocking_gpu_block_size` and `blocking_gpu_maxnreg` parameters
+- Added post-GPU-transformation override in `_gt_auto_configure_maps_and_strides()`
 
 ## Optimization Opportunities
 
 ### Confirmed helpful
 1. **`fuse_tasklets`** — 7% improvement, one-line config change in `model_options.py`
-2. **Loop blocking + (256,1,1) block size** — 14.6% improvement. K-blocking with
-   `blocking_size=4` and AMD-tuned block size. Currently only 1 kernel blocked;
-   lowering `independent_node_threshold` could improve further.
+2. **GPU block size (256,1,1) for all maps** — 14.3% improvement on MI300A. All threads on
+   Cell dimension maximizes coalescing.
 
 ### Worth investigating
-3. **Lower blocking threshold** — the 3 heaviest kernels (71% of time) aren't blocked yet.
-   `independent_node_threshold=0` or `require_independent_nodes=False` could enable blocking
-   on more kernels.
+3. **Grid size divisible by 6** — preliminary data shows additional ~4% improvement (0.617→0.594ms
+   on a different gt4py branch). Possibly related to even work distribution across MI300A's
+   6 XCDs. Needs further investigation.
 4. **Kernel fusion** — reduces 12 kernel launches to fewer, eliminating ~86 μs inter-kernel
-   overhead (10%). Blocked by DaCe `SubgraphFusion` limitations. Options:
-   - Extend DaCe fusion pass to handle multi-consumer intermediates (rematerialization)
-   - Restructure GT4Py `concat_where` lowering to avoid K-domain splits
-   - Combine field operators in the Python source
+   overhead (10%). Blocked by DaCe `SubgraphFusion` limitations.
 
 ### Not helpful (confirmed)
-5. ~~C2E scatter / edge reordering~~ — C2E is well-localized (85.7% cache utilization)
-6. ~~Occupancy tuning~~ — already at max, causes spilling
-7. ~~Register limiting via compiler flags~~ — not available in ROCm 7.1.0
-8. ~~CSE~~ — compiler handles it
-9. ~~Many-array BW limitation~~ — synthetic benchmark proves MI300A handles 20+ arrays at 93% peak
-10. ~~Block size (64,6,1)~~ — worse than (256,1,1) by 7% despite using same thread count
+5. ~~Loop blocking on MI300A~~ — 2.8% alone, but redundant when (256,1,1) is applied globally; combining both is slower than (256,1,1) alone
+6. ~~C2E scatter / edge reordering~~ — C2E is well-localized (85.7% cache utilization)
+7. ~~Occupancy tuning~~ — already at max, causes spilling
+8. ~~Register limiting via compiler flags~~ — not available in ROCm 7.1.0
+9. ~~CSE~~ — compiler handles it
+10. ~~Many-array BW limitation~~ — synthetic benchmark proves MI300A handles 20+ arrays at 93% peak
+11. ~~Block size (64,6,1)~~ — worse than (256,1,1) by 7%
 
 ## Tooling Notes
 
