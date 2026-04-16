@@ -58,7 +58,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
-    exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.SingleNodeExchange,
+    exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.single_node_exchange,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -249,7 +249,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(eta_v_at_edge, dim=dims.EdgeDim)
+    exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
@@ -288,7 +288,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         nlev=num_levels,
         array_ns=xp,
     )
-    exchange(prognostic_state_now.w, dim=dims.CellDim)
+    exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
@@ -325,8 +325,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(diagnostic_state.u, dim=dims.CellDim)
-    exchange(diagnostic_state.v, dim=dims.CellDim)
+    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
 
     log.info("U, V computation completed.")
 
