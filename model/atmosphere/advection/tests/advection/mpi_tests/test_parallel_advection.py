@@ -66,15 +66,15 @@ except ImportError:
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
-        # (
-        #     "2021-06-20T12:00:10.000",
-        #     False,
-        #     1,
-        #     advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-        #     advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-        #     advection.VerticalAdvectionType.NO_ADVECTION,
-        #     advection.VerticalAdvectionLimiter.NO_LIMITER,
-        # ),
+        (
+            "2021-06-20T12:00:10.000",
+            False,
+            1,
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
         (
             "2021-06-20T12:00:20.000",
             True,
@@ -84,24 +84,24 @@ except ImportError:
             advection.VerticalAdvectionType.NO_ADVECTION,
             advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
-        # (
-        #     "2021-06-20T12:00:10.000",
-        #     False,
-        #     4,
-        #     advection.HorizontalAdvectionType.NO_ADVECTION,
-        #     advection.HorizontalAdvectionLimiter.NO_LIMITER,
-        #     advection.VerticalAdvectionType.PPM_3RD_ORDER,
-        #     advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-        # ),
-        # (
-        #     "2021-06-20T12:00:20.000",
-        #     True,
-        #     4,
-        #     advection.HorizontalAdvectionType.NO_ADVECTION,
-        #     advection.HorizontalAdvectionLimiter.NO_LIMITER,
-        #     advection.VerticalAdvectionType.PPM_3RD_ORDER,
-        #     advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-        # ),
+        (
+            "2021-06-20T12:00:10.000",
+            False,
+            4,
+            advection.HorizontalAdvectionType.NO_ADVECTION,
+            advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+        ),
+        (
+            "2021-06-20T12:00:20.000",
+            True,
+            4,
+            advection.HorizontalAdvectionType.NO_ADVECTION,
+            advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+        ),
     ],
 )
 @pytest.mark.mpi
