@@ -526,7 +526,7 @@ def make_handler(
 
 def configure_logging(
     logging_level: str,
-    print_distributed_debug_msg: bool = False,
+    print_distributed_debug_msg: bool,
     processor_procs: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """

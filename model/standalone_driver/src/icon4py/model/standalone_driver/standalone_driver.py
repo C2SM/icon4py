@@ -574,8 +574,8 @@ def initialize_driver(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
-    print_distributed_debug_msg: bool,
     backend_name: str | model_backends.BackendLike | None,
+    print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """
