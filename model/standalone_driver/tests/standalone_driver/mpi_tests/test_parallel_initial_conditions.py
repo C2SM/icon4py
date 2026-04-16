@@ -44,21 +44,18 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
 
-    backend_name = "embedded"  # shut up pyright/mypy
-    for k, v in model_backends.BACKENDS.items():
-        if backend_like == v:
-            backend_name = k
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}")
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+            output_path=tmp_path / "ci_driver_output_for_backend_serial_rank0",
             grid_file_path=grid_file_path,
             log_level="info",
-            backend_name=backend_name,
+            backend_like=backend_like,
             force_serial_run=True,
         )
     )
@@ -78,10 +75,10 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+            output_path=tmp_path / f"ci_driver_output_mpi_rank_{processor_props.rank}",
             grid_file_path=grid_file_path,
             log_level="info",
-            backend_name=backend_name,
+            backend_like=backend_like,
         )
     )
 
@@ -120,7 +117,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=0.0, # TODO (jcanton, msimberg): only on CPU (probably?)
+            atol=atol,
         )
 
     fields = ["u", "v"]
@@ -143,5 +140,5 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=0.0, # TODO (jcanton, msimberg): only on CPU (probably?)
+            atol=atol,
         )

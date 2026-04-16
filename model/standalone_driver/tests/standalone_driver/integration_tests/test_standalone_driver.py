@@ -46,14 +46,11 @@ def test_standalone_driver(
     substep_exit: int,
     timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    backend_name = next(
-        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
-    )
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
+    output_path = tmp_path / "ci_driver_output"
     ds, _ = main.main(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_name,
+        icon4py_backend=backend_like,
         output_path=output_path,
     )
 

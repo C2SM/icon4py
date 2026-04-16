@@ -49,27 +49,24 @@ def test_standalone_driver_compare_single_multi_rank(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
 
-    backend_name = "embedded"  # shut up pyright/mypy
-    for k, v in model_backends.BACKENDS.items():
-        if backend_like == v:
-            backend_name = k
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}")
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     single_rank_ds, _ = main.main(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_name,
-        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+        icon4py_backend=backend_like,
+        output_path=tmp_path / "ci_driver_output_serial_rank0",
         force_serial_run=True,
     )
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_name,
+        icon4py_backend=backend_like,
         output_path=tmp_path
-        / f"ci_driver_output_for_backend_{backend_name}_mpi_rank_{processor_props.rank}",
+        / f"ci_driver_output_mpi_rank_{processor_props.rank}",
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
@@ -93,7 +90,7 @@ def test_standalone_driver_compare_single_multi_rank(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=0.0, # TODO (jcanton, msimberg): only on CPU (probably?)
+            atol=atol,
         )
 
 
@@ -128,18 +125,13 @@ def test_run_single_step_serialized_data(
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
 
-    backend_name = "embedded"  # shut up pyright/mypy
-    for k, v in model_backends.BACKENDS.items():
-        if backend_like == v:
-            backend_name = k
-
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_name,
+        icon4py_backend=backend_like,
         output_path=tmp_path
-        / f"ci_driver_output_for_backend_{backend_name}_mpi_rank_{processor_props.rank}",
+        / f"ci_driver_output_mpi_rank_{processor_props.rank}",
     )
 
     serial_reference_fields = None
@@ -157,7 +149,7 @@ def test_run_single_step_serialized_data(
         data_handling.download_test_data(data_path.parent, uri)
 
         backend = model_options.customize_backend(
-            program=None, backend=driver_utils.get_backend_from_name(backend_name)
+            program=None, backend=backend_like
         )
         data_provider = dt_utils.create_icon_serial_data_provider(
             data_path, single_rank_processor_props.rank, backend

@@ -582,12 +582,13 @@ def configure_logging(
 def get_backend_from_name(
     backend_name: str | model_backends.BackendLike | None,
 ) -> model_backends.BackendLike:
+    if not isinstance(backend_name, str):
+        return backend_name
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
             f"Available backends are {', '.join([*model_backends.BACKENDS.keys()])}"
         )
-    assert isinstance(backend_name, str)
     backend = model_backends.BACKENDS[backend_name]
     log.info(f"Backend name used for the model: {backend_name}")
     log.info(f"BackendLike derived from the backend name: {backend}")

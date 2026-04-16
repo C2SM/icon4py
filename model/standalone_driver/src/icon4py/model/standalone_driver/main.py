@@ -26,7 +26,7 @@ def main(
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
     icon4py_backend: Annotated[
-        str,
+        str | model_backends.BackendLike,
         typer.Option(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
         ),
@@ -63,12 +63,14 @@ def main(
     The integration can then be executed by calling time_integration function in Icon4pyDriver
     """
 
+    icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
+
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
-        backend_name=icon4py_backend,
+        backend_like=icon4py_backend,
         force_serial_run=force_serial_run,
     )
 

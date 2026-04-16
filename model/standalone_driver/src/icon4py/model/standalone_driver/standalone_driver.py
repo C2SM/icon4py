@@ -574,7 +574,7 @@ def initialize_driver(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
-    backend_name: str | model_backends.BackendLike | None,
+    backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
@@ -591,7 +591,7 @@ def initialize_driver(
         output_path: path where to store the simulation output
         grid_file_path: path of the grid file
         log_level: logging level
-        backend: GT4Py backend-like
+        backend_like: backend-like
     Returns:
         Driver: driver object
     """
@@ -628,7 +628,7 @@ def initialize_driver(
         output_path.mkdir(parents=True, exist_ok=False)
 
     backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+        program=None, backend=driver_utils.get_backend_from_name(backend_like)
     )
     allocator = model_backends.get_allocator(backend)
 
