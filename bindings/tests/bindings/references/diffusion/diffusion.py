@@ -18,8 +18,8 @@ logging.basicConfig(
 
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import diffusion_run
-from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import diffusion_init
+from icon4py.bindings.diffusion_wrapper import diffusion_run
+from icon4py.bindings.diffusion_wrapper import diffusion_init
 
 
 @ffi.def_extern()
