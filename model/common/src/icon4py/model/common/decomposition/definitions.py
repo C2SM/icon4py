@@ -635,14 +635,6 @@ class SingleNodeReductions(Reductions):
         return array_ns.sum(buffer).item() / buffer.size
 
 
-@overload
-def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
-
-
-@overload
-def get_runtype(with_mpi: Literal[False]) -> SingleNodeRun: ...
-
-
 def get_runtype(with_mpi: bool = False) -> RunType:
     if with_mpi:
         return MultiNodeRun()
