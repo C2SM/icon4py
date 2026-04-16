@@ -309,7 +309,7 @@ class Icon4pyDriver:
         )
         if (
             global_max_vertical_cfl
-            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator]
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator] # problem with ScalarLikeArray
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
@@ -322,8 +322,8 @@ class Icon4pyDriver:
                 self.model_time_variables.ndyn_substeps_var / self.config.ndyn_substeps
             )
             if (
-                global_max_vertical_cfl * substep_fraction  # type: ignore[operator] # problem with ScalarLikeArray
-                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
+                global_max_vertical_cfl * substep_fraction
+                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator] # problem with ScalarLikeArray
             ):
                 log.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
@@ -339,8 +339,8 @@ class Icon4pyDriver:
                     ndyn_substeps_increment = max(
                         1,
                         round(
-                            self.model_time_variables.ndyn_substeps_var
-                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)  # type: ignore[operator] # problem with ScalarLikeArray
+                            self.model_time_variables.ndyn_substeps_var  # type: ignore[arg-type] # problem with ScalarLikeArray
+                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
                             / vertical_cfl_threshold_for_increment
                         ),
                     )
@@ -361,11 +361,11 @@ class Icon4pyDriver:
             if (
                 self.model_time_variables.ndyn_substeps_var > self.config.ndyn_substeps
                 and global_max_vertical_cfl
-                * ta.wpfloat(  # type: ignore[operator] # problem with ScalarLikeArray
+                * ta.wpfloat(
                     self.model_time_variables.ndyn_substeps_var
                     / (self.model_time_variables.ndyn_substeps_var - 1)
                 )
-                < vertical_cfl_threshold_for_decrement
+                < vertical_cfl_threshold_for_decrement  # type: ignore[operator] # problem with ScalarLikeArray
             ):
                 self.model_time_variables.update_ndyn_substeps(
                     self.model_time_variables.ndyn_substeps_var - 1
@@ -543,9 +543,7 @@ def _read_config(
         vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
-    nonhydro_config = solve_nh.NonHydrostaticConfig(
-        fourth_order_divdamp_factor=0.0025, rayleigh_coeff=0.1
-    )
+    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 

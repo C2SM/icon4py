@@ -65,17 +65,17 @@ def check_generated_files(bindings_name: str) -> None:
     [
         (
             "diffusion",
-            "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
+            "icon4py.bindings.diffusion_wrapper",
             "diffusion_run, diffusion_init",
         ),
         (
             "dycore",
-            "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
+            "icon4py.bindings.dycore_wrapper",
             "solve_nh_run, solve_nh_init",
         ),
         (
             "grid",
-            "icon4py.tools.py2fgen.wrappers.grid_wrapper",
+            "icon4py.bindings.grid_wrapper",
             "grid_init",
         ),
     ],

@@ -27,17 +27,17 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
-from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen.wrappers import (
+from icon4py.bindings import (
     common as wrapper_common,
     config as wrapper_config,
     grid_wrapper,
     icon4py_export,
 )
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
+from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
+from icon4py.tools import py2fgen
 
 
 logger = logging.getLogger(__name__)
@@ -107,11 +107,8 @@ def solve_nh_init(
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
     rayleigh_type: gtx.int32,
-    rayleigh_coeff: gtx.float64,
     divdamp_order: gtx.int32,
     divdamp_type: gtx.int32,
-    divdamp_trans_start: gtx.float64,
-    divdamp_trans_end: gtx.float64,
     l_vert_nested: bool,
     ldeepatmo: bool,
     iau_init: bool,
@@ -162,11 +159,8 @@ def solve_nh_init(
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
         rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
         divdamp_type=divdamp_type,
-        divdamp_trans_start=divdamp_trans_start,
-        divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
         deepatmos_mode=ldeepatmo,
         iau_init=iau_init,
