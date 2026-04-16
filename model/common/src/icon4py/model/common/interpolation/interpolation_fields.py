@@ -38,7 +38,7 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -112,7 +112,7 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -173,7 +173,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -220,7 +220,7 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -441,7 +441,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -619,7 +619,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
@@ -652,7 +652,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
@@ -723,7 +723,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -888,7 +888,7 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1021,7 +1021,7 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
@@ -1108,7 +1108,7 @@ def compute_pos_on_tplane_e_x_y(
 def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1225,7 +1225,7 @@ def compute_lsq_coeffs(
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))

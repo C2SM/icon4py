@@ -86,7 +86,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
     ):
         self._grid = grid
         self._interpolation_state = interpolation_state
@@ -487,7 +487,7 @@ class SemiLagrangian(FiniteVolume):
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
     ):
         log.debug("horizontal advection class init - start")
 

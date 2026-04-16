@@ -167,7 +167,7 @@ class NoAdvection(Advection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
     ):
         log.debug("advection class init - start")
 
@@ -231,7 +231,7 @@ class GodunovSplittingAdvection(Advection):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
         even_timestep: bool = False,
     ):
         log.debug("advection class init - start")
@@ -423,7 +423,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+    exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     exchange = exchange or decomposition.SingleNodeExchange()
     assert exchange is not None, "Exchange runtime must not be None."
@@ -517,7 +517,7 @@ def convert_config_to_advection(
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     even_timestep: bool = False,
 ) -> Advection:
     exchange = exchange or decomposition.SingleNodeExchange()
