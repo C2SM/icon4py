@@ -143,12 +143,12 @@ def _assert_warning_points_to_call_site(monkeypatch, func, expected_line):
 def test_single_node_exchange_warning_points_to_call_site(monkeypatch):
     exchange = SingleNodeExchange()
 
-    exchange_line = sys._getframe().f_lineno + 1
+    exchange_line = sys._getframe().f_lineno + 2
     _assert_warning_points_to_call_site(
         monkeypatch, lambda: exchange.start(dims.CellDim), exchange_line
     )
 
-    wait_line = sys._getframe().f_lineno + 1
+    wait_line = sys._getframe().f_lineno + 2
     _assert_warning_points_to_call_site(
         monkeypatch, lambda: exchange.exchange(dims.CellDim), wait_line
     )
