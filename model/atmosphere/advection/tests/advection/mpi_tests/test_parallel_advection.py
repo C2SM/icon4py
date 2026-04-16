@@ -194,9 +194,7 @@ def test_advection_run_single_step(
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     cell_domain = h_grid.domain(dims.CellDim)
-    start_cell_lateral_boundary = icon_grid.start_index(
-        cell_domain(h_grid.Zone.LATERAL_BOUNDARY)
-    )
+    start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
     start_cell_lateral_boundary_level_2 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
@@ -231,5 +229,6 @@ def test_advection_run_single_step(
 
     assert test_helpers.dallclose(
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
-        p_tracer_new.asnumpy()[p_tracer_new_range, :], atol=1e-10
+        p_tracer_new.asnumpy()[p_tracer_new_range, :],
+        atol=1e-10,
     )
