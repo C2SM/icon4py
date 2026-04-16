@@ -32,15 +32,18 @@ def is_backend_descriptor(
         return all(isinstance(key, str) for key in backend)
     return False
 
+
 def is_cpu_backend(
     backend: BackendLike,
 ) -> bool:
     return get_allocator(backend).device_type == CPU
 
+
 def is_gpu_backend(
     backend: BackendLike,
 ) -> bool:
     return get_allocator(backend).device_type == GPU
+
 
 def get_allocator(
     backend: BackendLike,

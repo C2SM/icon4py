@@ -51,7 +51,9 @@ def test_standalone_driver_compare_single_multi_rank(
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}")
+    _log.info(
+        f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}"
+    )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
@@ -65,8 +67,7 @@ def test_standalone_driver_compare_single_multi_rank(
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
-        output_path=tmp_path
-        / f"ci_driver_output_mpi_rank_{processor_props.rank}",
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{processor_props.rank}",
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
@@ -130,8 +131,7 @@ def test_run_single_step_serialized_data(
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
-        output_path=tmp_path
-        / f"ci_driver_output_mpi_rank_{processor_props.rank}",
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{processor_props.rank}",
     )
 
     serial_reference_fields = None
@@ -148,9 +148,7 @@ def test_run_single_step_serialized_data(
         data_path = dt_utils.get_datapath_for_experiment(experiment, single_rank_processor_props)
         data_handling.download_test_data(data_path.parent, uri)
 
-        backend = model_options.customize_backend(
-            program=None, backend=backend_like
-        )
+        backend = model_options.customize_backend(program=None, backend=backend_like)
         data_provider = dt_utils.create_icon_serial_data_provider(
             data_path, single_rank_processor_props.rank, backend
         )

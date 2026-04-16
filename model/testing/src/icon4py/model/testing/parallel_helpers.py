@@ -102,14 +102,10 @@ def check_local_global_field(
         ]
         for entry_type in halo_entry_types:
             desired = global_reference_field[
-                data_alloc.as_numpy(
-                    decomposition_info.global_index(dim, entry_type)
-                )
+                data_alloc.as_numpy(decomposition_info.global_index(dim, entry_type))
             ]
             actual = local_field[
-                data_alloc.as_numpy(
-                    decomposition_info.local_index(dim, entry_type)
-                )
+                data_alloc.as_numpy(decomposition_info.local_index(dim, entry_type))
             ]
             if actual.shape[0] > 0 and desired.shape[0] > 0:
                 test_utils.assert_dallclose(actual, desired, atol=atol, err_msg=entry_type.name)

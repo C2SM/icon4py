@@ -46,7 +46,9 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}")
+    _log.info(
+        f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}"
+    )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
@@ -98,10 +100,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     fields_to_check: list[tuple[str, object, object]] = [
         (name, single_rank_ds.prognostics.current, multi_rank_ds.prognostics.current)
         for name in ("vn", "w", "exner", "theta_v", "rho")
-    ] + [
-        (name, single_rank_ds.diagnostic, multi_rank_ds.diagnostic)
-        for name in ("u", "v")
-    ]
+    ] + [(name, single_rank_ds.diagnostic, multi_rank_ds.diagnostic) for name in ("u", "v")]
 
     for field_name, serial_source, local_source in fields_to_check:
         print(f"verifying field {field_name}")
