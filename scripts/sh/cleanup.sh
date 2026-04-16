@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove common build/cache artifacts from the repo tree.
+# [help] Remove common build/cache artifacts from the repo tree.
 # Invoked via:  ./scripts/run cleanup [--dry-run]
 
 source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
@@ -22,6 +22,7 @@ done
 
 PATTERNS=(
     "__pycache__"
+    ".gt4py_cache"
     ".mypy_cache"
     ".pytest_cache"
     ".ruff_cache"

@@ -82,6 +82,18 @@ if __name__ == "__main__":
                     app.add_typer(module.cli)
 
     # ── Shell sub-commands (auto-discovered wrappers) ────────────────────────────
+    def _extract_shell_help(script_path: pathlib.Path) -> str | None:
+        """Extract help text from lines with a ``[help]`` marker in a shell script."""
+        help_lines: list[str] = []
+        with open(script_path) as fh:
+            for line in fh:
+                comment_body = line.strip().lstrip("#").lstrip()
+                if comment_body.startswith("[help]"):
+                    text = comment_body[len("[help]"):].strip()
+                    if text:
+                        help_lines.append(text)
+        return "\n".join(help_lines) if help_lines else None
+
     def _make_shell_runner(script_path: pathlib.Path):
         """Factory: returns a Typer-compatible function that delegates to a bash script."""
 
@@ -95,7 +107,10 @@ if __name__ == "__main__":
             result = subprocess.run(cmd, cwd=common.SCRIPTS_DIR)
             raise SystemExit(result.returncode)
 
-        _run.__doc__ = f"Run {script_path.relative_to(common.SCRIPTS_DIR)}."
+        _run.__doc__ = (
+            _extract_shell_help(script_path)
+            or f"Run {script_path.relative_to(common.SCRIPTS_DIR)}."
+        )
         return _run
 
     _sh_dir = common.SCRIPTS_DIR / "sh"
