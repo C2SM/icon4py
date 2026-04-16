@@ -1105,6 +1105,5 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        self._exchange.exchange(dims.CellDim, p_tracer_new, stream=decomposition.BLOCK)
         log.debug("running stencil integrate_tracer_vertically - end")
         log.debug("vertical unknowns update - end")

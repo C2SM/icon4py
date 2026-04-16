@@ -102,10 +102,11 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         # edge indices
         edge_domain = h_grid.domain(dims.EdgeDim)
+
         self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.INTERIOR)) #HALO
 
         # limiter fields
         self._r_m = data_alloc.zero_field(
