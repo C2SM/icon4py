@@ -55,6 +55,19 @@ def assert_dallclose(
     )
 
 
+def nonblocking_dallclose(
+    actual: npt.ArrayLike,
+    desired: npt.ArrayLike,
+    atol: float,
+    verbose: bool,
+    err_msg: str = "",
+) -> None:
+    """Non-blocking version of `assert_dallclose`: prints max diff instead of raising."""
+    max_diff = np.max(np.abs(np.asarray(actual) - np.asarray(desired)))
+    color = "\033[1;31m" if max_diff > 0 else "\033[32m"
+    print(f"{color}{err_msg} max diff {max_diff}\033[0m")
+
+
 def is_sorted(array: np.ndarray) -> bool:
     return bool((array[:-1] <= array[1:]).all())
 

@@ -93,75 +93,26 @@ def check_local_global_field(
         ]
     )
 
-    def _non_blocking_allclose(
-        a: np.ndarray, b: np.ndarray, atol: float, verbose: bool, label: str = ""
-    ) -> None:
-        max_diff = np.max(np.abs(a - b))
-        color = "\033[1;31m" if max_diff > 0 else "\033[32m"
-        print(f"{color}{label} max diff {max_diff}\033[0m")
-
     # Compare halo against global reference field
     if check_halos:
-        # test_utils.assert_dallclose(
-        _non_blocking_allclose(
-            global_reference_field[
+        halo_entry_types = [
+            decomp_defs.DecompositionInfo.EntryType.HALO,
+            decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_1,
+            decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_2,
+        ]
+        for entry_type in halo_entry_types:
+            desired = global_reference_field[
                 data_alloc.as_numpy(
-                    decomposition_info.global_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
-                    )
-                )
-            ],
-            local_field[
-                data_alloc.as_numpy(
-                    decomposition_info.local_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
-                    )
-                )
-            ],
-            atol=atol,
-            verbose=True,
-            label="halos",
-        )
-        a = global_reference_field[
-                data_alloc.as_numpy(
-                    decomposition_info.global_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_1
-                    )
+                    decomposition_info.global_index(dim, entry_type)
                 )
             ]
-        b = local_field[
+            actual = local_field[
                 data_alloc.as_numpy(
-                    decomposition_info.local_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_1
-                    )
+                    decomposition_info.local_index(dim, entry_type)
                 )
             ]
-        if a.shape[0] > 0 and b.shape[0] > 0:
-            _non_blocking_allclose(
-                a, b,
-                atol=atol,
-                verbose=True,
-                label="halos_1",
-            )
-        _non_blocking_allclose(
-            global_reference_field[
-                data_alloc.as_numpy(
-                    decomposition_info.global_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_2
-                    )
-                )
-            ],
-            local_field[
-                data_alloc.as_numpy(
-                    decomposition_info.local_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_2
-                    )
-                )
-            ],
-            atol=atol,
-            verbose=True,
-            label="halos_2",
-        )
+            if actual.shape[0] > 0 and desired.shape[0] > 0:
+                test_utils.assert_dallclose(actual, desired, atol=atol, err_msg=entry_type.name)
 
     # Compare owned local field, excluding halos, against global reference
     # field, by gathering owned entries to the first rank. This ensures that in
@@ -198,7 +149,6 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        # test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)
-        _non_blocking_allclose(
-            sorted_, global_reference_field, atol=atol, verbose=True, label="internal"
+        test_utils.assert_dallclose(
+            actual=sorted_, desired=global_reference_field, atol=atol, err_msg="internal"
         )
