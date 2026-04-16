@@ -368,7 +368,7 @@ class NoAdvection(HorizontalAdvection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("horizontal advection class init - start")
 

@@ -410,7 +410,7 @@ class NoAdvection(VerticalAdvection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("vertical advection class init - start")
 
@@ -549,7 +549,7 @@ class FirstOrderUpwind(FiniteVolume):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("vertical advection class init - start")
 
@@ -699,7 +699,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("vertical advection class init - start")
 
