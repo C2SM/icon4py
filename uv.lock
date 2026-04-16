@@ -817,6 +817,14 @@ wheels = [
 ]
 
 [[package]]
+name = "cuda-pathfinder"
+version = "1.5.3"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d3/d6/ac63065d33dd700fee7ebd7d287332401b54e31b9346e142f871e1f0b116/cuda_pathfinder-1.5.3-py3-none-any.whl", hash = "sha256:dff021123aedbb4117cc7ec81717bbfe198fb4e8b5f1ee57e0e084fec5c8577d", size = 49991, upload-time = "2026-04-14T20:09:27.037Z" },
+]
+
+[[package]]
 name = "cupy-cuda11x"
 version = "13.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -857,6 +865,47 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/02/e94f7c26a5f446888d8753d4b6642e5107f9fde166d1ac23b7de95ccea7b/cupy_cuda12x-13.3.0-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:bbd0d916310391faf0d7dc9c58fff7a6dc996b67e5768199160bbceb5ebdda8c", size = 103894953, upload-time = "2024-08-22T07:07:15.106Z" },
     { url = "https://files.pythonhosted.org/packages/90/dc/da09e5184d94146b8cbf240c2bef1c4851cbafd7e2d60cc71b1530c766ec/cupy_cuda12x-13.3.0-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:e206bd8664f0763732b6012431f484ee535bffd77a5ae95e9bfe1c7c72396625", size = 90980377, upload-time = "2024-08-22T07:07:20.23Z" },
     { url = "https://files.pythonhosted.org/packages/14/11/8bc53cab1466605ba88ba3c7243078a784ee2cd8974f5602a491882af9af/cupy_cuda12x-13.3.0-cp312-cp312-win_amd64.whl", hash = "sha256:88ef1478f00ae252da0026e7f04f70c9bb6a2dc130ba5f1e5bc5e8069a928bf5", size = 69499349, upload-time = "2024-08-22T07:07:25.167Z" },
+]
+
+[[package]]
+name = "cupy-cuda13x"
+version = "14.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cuda-pathfinder" },
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0c/9d/5f271070c17aac8e30b140b5ec9c129983f57b49899a8fc34c3f114d09f7/cupy_cuda13x-14.0.1-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:4d6d5ae87eb1a6eb55f5a3d54c606f5263c54319c3d85afe4627cb7fff403050", size = 72993295, upload-time = "2026-02-20T10:23:48.346Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/49/bd6867acfa356c822971d90792e814fce1fcfc54baaa20b1cadb8eec5c52/cupy_cuda13x-14.0.1-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:3d292c204eb7a2cfe04698b26de44b4173a1c576f603d6da9f0b0b6444225a63", size = 68923997, upload-time = "2026-02-20T10:23:53.046Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/62/25a256acdc0127c70153799a3b094adbeee11630e3be118f8a840415cafc/cupy_cuda13x-14.0.1-cp310-cp310-win_amd64.whl", hash = "sha256:a3e34e0b29e09a4f80c9c1fef963cd75540fb003cbbb6183ac3f784a8a02aef3", size = 35450515, upload-time = "2026-02-20T10:23:56.602Z" },
+    { url = "https://files.pythonhosted.org/packages/37/a2/84f2a9739e914cb119807b8b91d48b2c7628794e4eee66daa3402a2d7442/cupy_cuda13x-14.0.1-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:5c368d7b9fa9eef8a5d209d6335f468f84893cf875defdd1d195b6b27da941c9", size = 74276076, upload-time = "2026-02-20T10:24:00.841Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/fe/064f73bab30460eb9024e1a52319b8b69ef0c1cd853301189d1b4579e686/cupy_cuda13x-14.0.1-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:97fe8f0ff683ed5f39b82d0e56ad90368fc001c1b191a3bc662d31a0ac8cb482", size = 70267352, upload-time = "2026-02-20T10:24:05.105Z" },
+    { url = "https://files.pythonhosted.org/packages/df/3c/a0de0513ad575f3a9f9543efd9ae408303101205c206d9cfe5a37b59bddc/cupy_cuda13x-14.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:9dda18b7100a19a54536b4325e63a29c1fb58891a0973623c6c8c80642b3f933", size = 35450158, upload-time = "2026-02-20T10:24:09.205Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/9b/7983b4e24749937dd4ab34565561a8c015e88df4ff9fd4678337b710b3ee/cupy_cuda13x-14.0.1-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:763f33f5641a28db5ac91788301271930e910813f1b1279119b504babeb1b863", size = 73616635, upload-time = "2026-02-20T10:24:14.115Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/d4/42f79f6baea881c604982df18d158456e40071925bfdd53c1b6eb82f6e75/cupy_cuda13x-14.0.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:a06cdc0d6a0054663fca4770e32df6a39cbeb7396a08b23f97965e5e1c0edb7d", size = 69793920, upload-time = "2026-02-20T10:24:20.287Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/0c/83c6be011fa00a270c0d08985844fd992d59c34a6bb91755dad4f31942e8/cupy_cuda13x-14.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:e91052340bab0860bdf1fd4e5a4fc85846800df6cc9a1de02a5afa1dd8655550", size = 35353554, upload-time = "2026-02-20T10:24:24.337Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/de/679a7a571dcd1b654378cc4f9c5cd6f6d4af09ec8973eb4b2dce276adce4/cupy_cuda13x-14.0.1-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:a8488a6a9c934c417f98078ac7dd2a47059c39195199b7e557c84d01b3071c75", size = 73167833, upload-time = "2026-02-20T10:24:30.645Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/05/f60525718e83c0ea10efc4ae3183ea9c5309935b76c200b6d9c2569185de/cupy_cuda13x-14.0.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:1c206483aaea40cd38bfbd1a29f4df0c19d555d306ffe43ef16f39db0e7e7a7f", size = 69416450, upload-time = "2026-02-20T10:24:35.982Z" },
+    { url = "https://files.pythonhosted.org/packages/73/4e/8b4b996690d91745e34ce6103fbf8a9fb51f2e46b4e47c45ea8b3fff9d2b/cupy_cuda13x-14.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:cd01307b4f67e3bf242537f02ac8e5db729a557510728f70ee41a32490ce1e1a", size = 35336403, upload-time = "2026-02-20T10:24:40.355Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/f9/e5480aefcc86cfa45abe12c323e8e65b8a04727c227f67dff1cae99ead1b/cupy_cuda13x-14.0.1-cp314-cp314-manylinux2014_aarch64.whl", hash = "sha256:70a5b3d4b20367abf978e2c75bd0235f0768b5901a6102398877aef044628151", size = 73012147, upload-time = "2026-02-20T10:24:45.12Z" },
+    { url = "https://files.pythonhosted.org/packages/61/9e/cd8ddc220283272a7891a8277fb911a584a9224bd1c8f56d75ca6f62d976/cupy_cuda13x-14.0.1-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:2e6fbfb24bc336ba91507e9e6488589665a4c7366453bb80c717d874fce3c373", size = 68714185, upload-time = "2026-02-20T10:24:49.984Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/f5/273193563cdc37cdb22de3b73e7db12819b39fafb73de6bcf7d48f20945e/cupy_cuda13x-14.0.1-cp314-cp314-win_amd64.whl", hash = "sha256:22b50139e05c4612fac905dd6c3390f8687e0e390f0e200d5be14be1726e3d04", size = 35474838, upload-time = "2026-02-20T10:24:54.198Z" },
+]
+
+[[package]]
+name = "cupy-rocm-7-0"
+version = "14.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3a/02/22d7b42a4331a70d861bdf076497c6ad125bba5e93af5798cd9bf1861b2e/cupy_rocm_7_0-14.0.1-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:9ca588b2e7c69aab2bbc81d1aa5b62bff5e071ad8db14f183f1cc82a3b9eebf7", size = 72938910, upload-time = "2026-02-20T10:24:59.462Z" },
+    { url = "https://files.pythonhosted.org/packages/db/43/0c81e8ebd4090157261f93681393f3bd74ca885df703fd0464e0e42cf565/cupy_rocm_7_0-14.0.1-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:1397fad61f7599e1a4497aaa747a57c7ae3dfdbdceb3f45e85f9817272f42b40", size = 74401556, upload-time = "2026-02-20T10:25:09.186Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/e3/8d5a6d93391ebbc0d9f169516c7c207c91136ed6bc9ee0e7b2ece16d33f0/cupy_rocm_7_0-14.0.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:a05bb1792ac144ac8e6e8457a3ecf1cae7e50627c273b3789c24012316378193", size = 74424366, upload-time = "2026-02-20T10:25:15.502Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/00/6fa63cead848e16122521d7e64cf76edc3be60f1d1382bc8885f8cf71e95/cupy_rocm_7_0-14.0.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:ebe78b4cc37e619ae42555e09d6c18d06552472abcd12a7dcc4401d1b6bd0bb0", size = 73929980, upload-time = "2026-02-20T10:25:20.308Z" },
+    { url = "https://files.pythonhosted.org/packages/25/b2/8437671ac54c4ae02e771b50a894472c67094801bf38e92f992ef4028294/cupy_rocm_7_0-14.0.1-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:a4ec04e6039c34f4916cbeab72fa7f1ab38be04c9116364c43b3e8d8cbaffbc4", size = 73278385, upload-time = "2026-02-20T10:25:24.745Z" },
 ]
 
 [[package]]
@@ -1433,8 +1482,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.6.post10+8f3567da"
-source = { git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching#8f3567da4fba75ad9ec68c29409f785d9ea95333" }
+version = "1.1.9"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1465,13 +1514,20 @@ dependencies = [
     { name = "versioningit" },
     { name = "xxhash" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/8d/5c/245aa4c321d4e0e6e3c707feeca7fa6e18561bdcf985572f3a56b4816532/gt4py-1.1.9.tar.gz", hash = "sha256:0331966d2df32e6f129d472e0165748d366ab01b03cce10b48d34c0c0ec99655", size = 823365, upload-time = "2026-04-01T12:43:14.601Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/cf/8ab8cb704761f0fc7b1f9a1954de0b93517ac7a5b95faf2bf21557db78ef/gt4py-1.1.9-py3-none-any.whl", hash = "sha256:f88a9323ae6ec3c8e90fb514d17ad39a469c845eb5e888771170904508a705aa", size = 1034973, upload-time = "2026-04-01T12:43:12.927Z" },
+]
 
 [package.optional-dependencies]
-cuda11 = [
-    { name = "cupy-cuda11x" },
-]
 cuda12 = [
     { name = "cupy-cuda12x" },
+]
+cuda13 = [
+    { name = "cupy-cuda13x" },
+]
+rocm7 = [
+    { name = "cupy-rocm-7-0" },
 ]
 
 [[package]]
@@ -1799,7 +1855,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1816,7 +1872,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1833,7 +1889,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1850,7 +1906,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1868,7 +1924,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1893,7 +1949,7 @@ dependencies = [
 [package.optional-dependencies]
 cuda11 = [
     { name = "cupy-cuda11x" },
-    { name = "gt4py", extra = ["cuda11"] },
+    { name = "gt4py" },
 ]
 cuda12 = [
     { name = "cupy-cuda12x" },
@@ -1908,9 +1964,9 @@ requires-dist = [
     { name = "cffi", specifier = ">=1.5" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
@@ -1956,7 +2012,7 @@ cuda12 = [
     { name = "gt4py", extra = ["cuda12"] },
 ]
 cuda13 = [
-    { name = "gt4py" },
+    { name = "gt4py", extra = ["cuda13"] },
 ]
 distributed = [
     { name = "ghex" },
@@ -1975,7 +2031,7 @@ io = [
     { name = "xarray", extra = ["complete"] },
 ]
 rocm7 = [
-    { name = "gt4py" },
+    { name = "gt4py", extra = ["rocm7"] },
 ]
 
 [package.metadata]
@@ -1987,10 +2043,10 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
-    { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
-    { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
+    { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2027,7 +2083,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2055,7 +2111,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2084,7 +2140,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2130,7 +2186,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "configargparse", specifier = ">=1.7.1" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", specifier = "==1.1.9" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
     { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
