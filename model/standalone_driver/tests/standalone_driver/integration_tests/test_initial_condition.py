@@ -33,7 +33,7 @@ def test_standalone_driver_initial_condition(
     data_provider: sb.IconSerialDataProvider,
 ) -> None:
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
+        output_path=tmp_path / "ci_driver_output",
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_like=backend_like,
