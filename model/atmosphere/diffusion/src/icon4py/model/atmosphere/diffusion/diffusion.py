@@ -158,8 +158,8 @@ class DiffusionConfig:
         smagorinski_scaling_factor: float = 0.015,
         smagorinski_scaling_factor2: float = 2e-6
         * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))),
-        smagorinski_scaling_factor3: float = 0,
-        smagorinski_scaling_factor4: float = 1,
+        smagorinski_scaling_factor3: float = 0.0,
+        smagorinski_scaling_factor4: float = 1.0,
         smagorinski_scaling_height: float = 32500.0,
         smagorinski_scaling_height2: float = 1600.0
         + 50000.0
