@@ -73,7 +73,7 @@ def compute_diffusion_mask_and_coef(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     zd_diffcoef = array_ns.zeros(shape=(n_cells, nlev))
-    k_start, k_end, _ = _compute_k_start_end(
+    k_start, k_end, cell_index_mask = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
         maxslp_avg=maxslp_avg,
@@ -85,25 +85,27 @@ def compute_diffusion_mask_and_coef(
         array_ns=array_ns,
     )
 
-    # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
-    for jc in range(cell_nudging, n_cells):
-        kend = k_end[jc].item()
-        kstart = k_start[jc].item()
-        if kend > kstart:
-            k_range = range(kstart, kend)
+    cell_sequence = array_ns.arange(n_cells)
+    valid_cell_mask = cell_index_mask & (cell_sequence >= cell_nudging)
+    masked_kend = k_end[valid_cell_mask]
+    masked_kstart = k_start[valid_cell_mask]
+    default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]  # (1, nlev)
+    krange_mask = (default_level_idx >= masked_kstart[:, array_ns.newaxis]) & (
+        default_level_idx < masked_kend[:, array_ns.newaxis]
+    )  # (None, nlev)
 
-            zd_diffcoef_var = array_ns.maximum(
-                0.0,
-                array_ns.maximum(
-                    array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu))
-                    / 250.0,
-                    2.0e-4
-                    * array_ns.sqrt(
-                        array_ns.maximum(0.0, maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)
-                    ),
-                ),
-            )
-            zd_diffcoef[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_var)
+    zd_diffcoef_var = array_ns.maximum(
+        0.0,
+        array_ns.maximum(
+            array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[valid_cell_mask, :] - thslp_zdiffu))
+            / 250.0,
+            2.0e-4
+            * array_ns.sqrt(array_ns.maximum(0.0, maxhgtd_avg[valid_cell_mask, :] - thhgtd_zdiffu)),
+        ),
+    )
+    zd_diffcoef[valid_cell_mask, :] = array_ns.where(
+        krange_mask, array_ns.minimum(0.002, zd_diffcoef_var), 0.0
+    )
 
     return zd_diffcoef
 
@@ -156,7 +158,7 @@ def compute_diffusion_intcoef_and_vertoffset(
         default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]  # (1, nlev)
         krange_mask = (default_level_idx >= masked_kstart[:, array_ns.newaxis]) & (
             default_level_idx < masked_kend[:, array_ns.newaxis]
-        )  # (n_cells, nlev)
+        )  # (None, nlev)
 
         for c2e2c_idx in range(n_c2e2c):
             # get the neighboring cell
@@ -180,7 +182,7 @@ def compute_diffusion_intcoef_and_vertoffset(
                 flat_neighbor_k_idx.reshape(n_active, nlev)
                 - array_ns.arange(n_active)[:, array_ns.newaxis] * nlev
                 - 1
-            )  # -1 is added  because of the property of searchsorted with side=right (nactive, nlev)
+            )  # -1 is added because of the searchsorted with side=right starts with 1 when the value is >= minimum (nactive, nlev)
             vertoffset = array_ns.clip(neighbor_k_idx, 0, nlev - 2)  # (nactive, nlev)
 
             # Vertical interpolation coefficients

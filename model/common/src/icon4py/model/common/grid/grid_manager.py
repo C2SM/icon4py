@@ -617,12 +617,23 @@ def _construct_diamond_vertices(
     dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
+    # flat includes double counting of v1 and v3 of the diamond stencil, hence the shape is (n_edges, 2 * 3)
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = ~array_ns.isin(flat[:, :], e2v[:, :])
-    e2v_far = flat[far_indices]
-    assert e2v_far.size == e2v.size, "There should be exactly two far vertices for each edge"
-    e2v_far = e2v_far.reshape(e2v.shape)
-    return array_ns.hstack((e2v, far_indices))
+    # find which vertices in flat are not v1 or v3, this will result in an array of shape (n_edges, 2, 6), because it loops over 6 vertices and check which one is not in e2v[0] and then which one not in e2v[1]
+    far_indices = ~array_ns.equal(flat[:, array_ns.newaxis, :], e2v[:, :, array_ns.newaxis])
+    # make it into an ascending array in order to pick the first two True values which correspond to v0 and v2 of the diamond stencil.
+    ascending_far_indices = array_ns.cumsum((far_indices[:, 0, :] & far_indices[:, 1, :]), axis=1)
+    e2v_far = array_ns.empty(e2v.shape, dtype=e2v.dtype)
+    # find the first and second neighboring index of e2c2v that belongs to far indices (v0 and v2)
+    far_index_1 = array_ns.argmax(ascending_far_indices == 1, axis=1)
+    far_index_2 = array_ns.argmax(ascending_far_indices == 2, axis=1)
+    e2v_far[:, 0] = array_ns.squeeze(
+        array_ns.take_along_axis(flat, far_index_1[:, array_ns.newaxis], axis=1)
+    )
+    e2v_far[:, 1] = array_ns.squeeze(
+        array_ns.take_along_axis(flat, far_index_2[:, array_ns.newaxis], axis=1)
+    )
+    return array_ns.hstack((e2v, e2v_far))
 
 
 def _determine_center_position(
