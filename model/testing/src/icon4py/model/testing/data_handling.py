@@ -8,11 +8,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import pathlib
 import shutil
 
-import pooch
+import pooch  # type: ignore[import-untyped]
 
 from icon4py.model.testing import config, locking
 
@@ -31,9 +32,15 @@ def download_and_extract(
         known_hash: expected hash of the archive for integrity verification,
             or None to skip verification
 
-    Uses pooch for downloading and archive extraction.
+    Downloads the archive to a temporary cache directory (configured via
+    ``ICON4PY_DOWNLOAD_CACHE``, defaulting to a subdirectory of the system
+    temp directory), extracts to ``dst``, and deletes the archive. If
+    extraction fails the archive is left in the cache so that a subsequent
+    run can reuse it without re-downloading.
     """
     dst.mkdir(parents=True, exist_ok=True)
+    cache = config.DOWNLOAD_CACHE_PATH
+    cache.mkdir(parents=True, exist_ok=True)
 
     completion_marker = dst / ".extraction_complete"
     lockfile = "filelock.lock"
@@ -49,14 +56,18 @@ def download_and_extract(
                     item.unlink()
                 elif item.is_dir():
                     shutil.rmtree(item)
+        # Use a URI-derived filename to avoid collisions between different downloads
+        uri_hash = hashlib.sha256(uri.encode()).hexdigest()[:16]
+        archive_fname = f"archive_{uri_hash}.tar.gz"
         pooch.retrieve(
             url=uri,
             known_hash=known_hash,
-            path=str(dst),
-            fname="archive.tar.gz",
-            processor=pooch.Untar(extract_dir="."),
+            path=str(cache),
+            fname=archive_fname,
+            processor=pooch.Untar(extract_dir=str(dst.resolve())),
         )
         completion_marker.touch()
+        (cache / archive_fname).unlink(missing_ok=True)
 
 
 def download_test_data(dst: pathlib.Path, uri: str, known_hash: str | None) -> None:
