@@ -140,10 +140,11 @@ class TimeLoop:
             and self._is_first_step_in_simulation
         ):
             log.info("running initial step to diffuse fields before time loop starts")
-            self.diffusion.initial_run(
+            self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.current,
                 self.dtime_in_seconds,
+                initial_run=True,
             )
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"

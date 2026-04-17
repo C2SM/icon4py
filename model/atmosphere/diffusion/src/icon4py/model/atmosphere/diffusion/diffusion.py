@@ -874,6 +874,12 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
+        self.halo_exchange_wait(
+            handle_edge_comm,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+        )  # need to do this here, since we currently only use 1 communication object.
+        log.debug("communication of prognostic.vn - end")
+
         if self.config.apply_to_temperature:
             log.debug(
                 "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
@@ -897,28 +903,23 @@ class Diffusion:
             )
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
             if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
-                log.debug("communication of prognostic cell field: w - start")
+                log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(
                     dims.CellDim,
-                    prognostic_state.w,
                     prognostic_state.theta_v,
                     prognostic_state.exner,
                     stream=decomposition.DEFAULT_STREAM,
                 )
-                log.debug("communication of prognostic cell field: w - done")
-
-        self.halo_exchange_wait(
-            handle_edge_comm,
-            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
-        )  # need to do this here, since we currently only use 1 communication object.
-        log.debug("communication of prognostic.vn - end")
+                log.debug("communication of prognostic cell fields: theta and exner - done")
 
         if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
-            log.debug("communication of prognostic cell fields: theta and exner - start")
+            log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(
                 dims.CellDim,
-                prognostic_state.theta_v,
-                prognostic_state.exner,
+                prognostic_state.w,
                 stream=decomposition.DEFAULT_STREAM,
             )
-            log.debug("communication of prognostic cell fields: theta and exner - done")
+            log.debug("communication of prognostic cell field: w - done")
+
+
+
