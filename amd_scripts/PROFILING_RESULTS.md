@@ -5,7 +5,17 @@ Date: 2026-03-30 (updated with corrected bandwidth analysis)
 ## Summary
 
 Profiled the `vertically_implicit_solver_at_predictor_step` GT4Py program on MI300A (Beverin, gfx942, ROCm 7.1.0).
-Baseline median runtime: **~820 μs** (via sbatch, dedicated GPU).
+Baseline median runtime: **~820 μs** (pytest-benchmark timer, includes Python/GT4Py call overhead).
+
+**Note on timers:** Results in this document use two different timers:
+- **pytest-benchmark**: measures the full Python function call including GT4Py dispatch overhead.
+  Used for: baseline (0.820ms), block size tuning, loop blocking experiments.
+- **GT4Py Timer** (`GT4PY_COLLECT_METRICS_LEVEL=10`): measures closer to the actual kernel
+  launches (C++ level). More accurate for comparing raw GPU performance.
+  Used for: fuse_tasklets A/B test, GH200 comparison.
+Results from different timers should not be compared directly. The GT4Py Timer typically
+reports lower values than pytest-benchmark (e.g. 0.837ms vs 0.820ms for the same baseline).
+Going forward, all new measurements should use the GT4Py Timer.
 
 **Key finding: individual kernels achieve ~94% of HBM peak bandwidth.** The earlier 40.5% estimate
 was incorrect — it used TCC_MISS-based traffic (which undercounts) and an outdated kernel time.
@@ -184,7 +194,7 @@ All non-baseline settings cause ~2.5x regression due to register spilling.
 - Total kernel time: 734 μs
 - Total measured: ~820 μs
 - Inter-kernel gap: **~86 μs (10.5% overhead)**
-- This is where kernel fusion and `fuse_tasklets` (7% improvement) help
+- This is where kernel fusion and `fuse_tasklets` (~7% on gt4py 1.1.4, ~1.5% on newer versions) help
 
 ### 4. Occupancy is NOT the bottleneck
 - Already at max occupancy (8 waves/SIMD) for 10 of 12 kernels
@@ -211,8 +221,19 @@ All non-baseline settings cause ~2.5x regression due to register spilling.
 
 ### `fuse_tasklets` optimization
 - Added `fuse_tasklets=True` to `model_options.py` for the solver stencil
-- Result: **0.82 ms → 0.76 ms (~7% improvement)**
 - This fuses tasklet operations within existing map scopes
+
+Clean A/B test (GT4Py Timer, 30 runs, `amd_profiling` branch, gt4py 1.1.4):
+
+| Config | Mean | Median | StdDev |
+|--------|------|--------|--------|
+| Without fuse_tasklets | 0.798 ms | 0.797 ms | 0.031 ms |
+| With fuse_tasklets | 0.741 ms | 0.732 ms | 0.026 ms |
+| **Improvement** | **~7%** | **~7%** | |
+
+Note: Edoardo measured a smaller improvement (~1.5%, 0.782→0.770 ms) on a newer
+gt4py/icon4py version. The newer optimization pipeline may already fuse more by default,
+leaving less for `fuse_tasklets` to do.
 
 ### CSE (Common Subexpression Elimination)
 - Detected 28 redundant global loads across all 12 kernels
@@ -253,6 +274,34 @@ tiling heuristic. Testing with `DACE_compiler_cuda_default_block_size="256,1,1"`
 improvement** because DaCe still generated dim3(32,8) blocks. Changing this requires modifying
 the GT4Py/DaCe block tiling logic in `gpu_utils.py`.
 
+## MI300A vs GH200 Solver Comparison (GT4Py Timer)
+
+Date: 2026-04-17
+
+Using the GT4Py Timer (C++ level, closest to kernel launches) for apples-to-apples comparison.
+Both on `amd_profiling_staging_main` gt4py, `amd_profiling_main` icon4py, regional grid.
+
+| Platform | Config | Mean | Median | Runs |
+|----------|--------|------|--------|------|
+| MI300A | baseline (32,8,1) | 0.768 ms | **0.763 ms** | 1000 |
+| MI300A | fuse_tasklets only | 0.763 ms | 0.760 ms | 30 |
+| MI300A | **(256,1,1) only** | **0.618 ms** | **0.612 ms** | **1000** |
+| MI300A | (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | 30 |
+| MI300A | (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | 30 |
+| GH200 | defaults (32,8,1) | 0.559 ms | **0.559 ms** | 1000 |
+
+| Comparison | Ratio |
+|------------|-------|
+| GH200 vs MI300A baseline | GH200 **1.36x** faster |
+| GH200 vs MI300A best (256,1,1) | GH200 **1.09x** faster |
+
+The performance gap narrowed from **1.36x to 1.09x** with (256,1,1) block size on MI300A.
+The (256,1,1) block size gives a **~20% improvement** over the default (32,8,1).
+
+Note: fuse_tasklets is neutral on this gt4py version (`amd_profiling_staging_main`).
+On the older gt4py 1.1.4 (`amd_profiling_staging`) it helped ~7%. The (256,1,1)
+block size is the only optimization that matters on the current version.
+
 ## GPU Block Size Tuning
 
 Date: 2026-04-14
@@ -269,12 +318,25 @@ optimization_args["gpu_block_size_1d"] = (256, 1, 1)
 optimization_args["gpu_block_size_2d"] = (256, 1, 1)
 ```
 
-### Results (GT4Py Timer median, 30 runs)
+### Results (GT4Py Timer, `amd_profiling_staging_main` gt4py)
 
-| Config | Block size | GT4Py Median | vs Baseline |
-|--------|-----------|-------------|-------------|
+| Config | Mean | Median | Runs | vs Baseline |
+|--------|------|--------|------|-------------|
+| Baseline (32,8,1) | 0.768 ms | 0.763 ms | 1000 | — |
+| fuse_tasklets only | 0.763 ms | 0.760 ms | 30 | neutral |
+| **(256,1,1) only** | **0.618 ms** | **0.612 ms** | **1000** | **-19.8%** |
+| (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | 30 | -17.2% |
+| (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | 30 | -15.0% |
+| (256,1,1) + blocking (threshold=3) | 0.649 ms | -14.4% |
+
+Baseline (GT4Py Timer, no optimizations) measurement pending.
+
+Earlier pytest-benchmark results for reference (different timer, different gt4py version):
+
+| Config | Block size | pytest-benchmark Median | vs Baseline |
+|--------|-----------|------------------------|-------------|
 | Baseline | (32,8,1) default | 0.820 ms | — |
-| **(256,1,1) all maps** | **(256,1,1)** | **0.703 ms** | **-14.3%** |
+| (256,1,1) all maps | (256,1,1) | 0.703 ms | -14.3% |
 | (64,6,1) all maps | (64,6,1) | 0.756 ms | -7.8% |
 
 ### Why (256,1,1) is faster
@@ -296,10 +358,10 @@ so they execute once per block instead of once per K-level.
 
 Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris:gt4py:extend_loopblocking
 
-### Results (GT4Py Timer median, 30 runs per config)
+### Results (pytest-benchmark median — needs re-measurement with GT4Py Timer)
 
-| Config | GT4Py Median | vs Baseline |
-|--------|-------------|-------------|
+| Config | Median | vs Baseline |
+|--------|--------|-------------|
 | Baseline (32,8) | 0.820 ms | — |
 | Blocking only (32,8 overwritten) | 0.797 ms | -2.8% |
 | Blocking + (256,1,1) blocked map only | 0.700 ms | -14.6% |
@@ -352,7 +414,7 @@ Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris
 ## Optimization Opportunities
 
 ### Confirmed helpful
-1. **`fuse_tasklets`** — 7% improvement, one-line config change in `model_options.py`
+1. **`fuse_tasklets`** — 7-8% improvement on gt4py 1.1.4 (~1.5% on newer versions per Edoardo's measurements)
 2. **GPU block size (256,1,1) for all maps** — 14.3% improvement on MI300A. All threads on
    Cell dimension maximizes coalescing.
 

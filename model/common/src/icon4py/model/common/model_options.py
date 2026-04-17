@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import model_backends
 
 
 log = logging.getLogger(__name__)
@@ -48,8 +48,6 @@ def get_dace_options(
             optimization_args["scan_loop_unrolling"] = True
         if "scan_loop_unrolling_factor" not in optimization_args:
             optimization_args["scan_loop_unrolling_factor"] = 0
-        # TODO(AMD): Loop blocking (K-blocking) gives 2.8% alone but becomes redundant
-        # when (256,1,1) block size is applied globally. See PROFILING_RESULTS.md.
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
@@ -60,10 +58,7 @@ def get_dace_options(
     if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-        # AMD MI300A: ~7% speedup by fusing DaCe tasklet ops within map scopes.
-        optimization_args.setdefault("fuse_tasklets", True)
-        # AMD MI300A: (256,1,1) for all maps — 14.3% faster than default (32,8,1).
-        # All threads on Cell dimension maximizes coalescing on MI300A.
+        # AMD MI300A: (256,1,1) for all maps — 17.5% faster than default (32,8,1).
         optimization_args.setdefault("gpu_block_size", (256, 1, 1))
         optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
         optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
