@@ -148,7 +148,7 @@ def compute_diffusion_intcoef_and_vertoffset(
     n_active = len(active_cell_mask)
 
     # Compute max vertical z-range for all cells, this is used later to construct a one-to-one mapping when searching for neighboring cell's level index that lies within the vertical range of the current cell
-    max_vertical_zrange = array_ns.max(z_mc.max() - z_mc.min(), 0)  # (n_active)
+    max_vertical_zrange = array_ns.maximum(z_mc.max() - z_mc.min(), 0)  # (n_active)
 
     if n_active > 0:
         masked_z_mc = z_mc[active_cell_mask, :]  # (n_active, nlev)
