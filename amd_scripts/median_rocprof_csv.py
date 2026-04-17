@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import csv
-import sys
 import statistics
+import sys
+from pathlib import Path
+
 
 if len(sys.argv) < 2:
     print("Usage: python script.py <csv_file>", file=sys.stderr)
     sys.exit(1)
 
-path = sys.argv[1]
+path = Path(sys.argv[1])
 kernels = {}
 
-with open(path, newline="") as f:
+with path.open(newline="") as f:
     reader = csv.DictReader(f)
     for row in reader:
         name = row["Kernel_Name"]
