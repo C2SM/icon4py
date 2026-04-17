@@ -4,6 +4,8 @@
 #SBATCH --time=08:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --partition=mi300
+#SBATCH --uenv=prgenv-gnu/25.12:2333839235
+#SBATCH --view=default
 
 # Go to the root of the icon4py repository to run the script from there
 ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
