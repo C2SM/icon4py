@@ -55,7 +55,9 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_vn = True
     hdiff_temp = True
     hdiff_smag_w = False
-    ltkeshs = True
+    iforcing = diffusion.ForcingType.NWP
+    a_hshr = 1.0
+    loutshs = False
     type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
     type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
@@ -202,7 +204,9 @@ def test_diffusion_wrapper_granule_inputs(
             denom_diffu_v=denom_diffu_v,
             nudge_max_coeff=max_nudging_coefficient,
             itype_sher=itype_sher.value,
-            ltkeshs=ltkeshs,
+            iforcing=iforcing.value,
+            a_hshr=a_hshr,
+            loutshs=loutshs,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
@@ -306,7 +310,9 @@ def test_diffusion_wrapper_single_step(
     hdiff_vn = True
     hdiff_temp = True
     hdiff_smag_w = False
-    ltkeshs = True
+    iforcing = diffusion.ForcingType.NWP
+    a_hshr = 1.0
+    loutshs = False
     type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
     type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
@@ -420,7 +426,9 @@ def test_diffusion_wrapper_single_step(
         denom_diffu_v=denom_diffu_v,
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,
-        ltkeshs=ltkeshs,
+        iforcing=iforcing.value,
+        a_hshr=a_hshr,
+        loutshs=loutshs,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 

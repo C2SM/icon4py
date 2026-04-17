@@ -402,7 +402,9 @@ def diffusion_init_wrapper(
     denom_diffu_v,
     nudge_max_coeff,
     itype_sher,
-    ltkeshs,
+    iforcing,
+    a_hshr,
+    loutshs,
     backend,
     on_gpu,
 ):
@@ -584,7 +586,9 @@ def diffusion_init_wrapper(
                 denom_diffu_v=denom_diffu_v,
                 nudge_max_coeff=nudge_max_coeff,
                 itype_sher=itype_sher,
-                ltkeshs=ltkeshs,
+                iforcing=iforcing,
+                a_hshr=a_hshr,
+                loutshs=loutshs,
                 backend=backend,
             )
 

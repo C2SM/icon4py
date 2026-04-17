@@ -34,6 +34,7 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    ForcingType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -95,7 +96,9 @@ def diffusion_init(
     denom_diffu_v: float,
     nudge_max_coeff: float,  # note: this is the scaled ICON value, i.e. not the namelist value
     itype_sher: gtx.int32,
-    ltkeshs: bool,
+    iforcing: gtx.int32,
+    a_hshr: gtx.float64,
+    loutshs: bool,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -136,7 +139,9 @@ def diffusion_init(
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
-        ltkeshs=ltkeshs,
+        iforcing=ForcingType(iforcing),
+        a_hshr=a_hshr,
+        loutshs=loutshs,
     )
 
     diffusion_params = DiffusionParams(config)
@@ -295,13 +300,9 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    if linit:
-        granule.diffusion.initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
-        )
-    else:
-        granule.diffusion.run(
-            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
-        )
+    granule.diffusion.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
+        initial_run=linit,
+    )

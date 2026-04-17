@@ -163,7 +163,9 @@ module diffusion
                                       denom_diffu_v, &
                                       nudge_max_coeff, &
                                       itype_sher, &
-                                      ltkeshs, &
+                                      iforcing, &
+                                      a_hshr, &
+                                      loutshs, &
                                       backend, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
@@ -289,7 +291,11 @@ module diffusion
 
          integer(c_int), value, target :: itype_sher
 
-         logical(c_int), value, target :: ltkeshs
+         integer(c_int), value, target :: iforcing
+
+         real(c_double), value, target :: a_hshr
+
+         logical(c_int), value, target :: loutshs
 
          integer(c_int), value, target :: backend
 
@@ -525,7 +531,9 @@ contains
                              denom_diffu_v, &
                              nudge_max_coeff, &
                              itype_sher, &
-                             ltkeshs, &
+                             iforcing, &
+                             a_hshr, &
+                             loutshs, &
                              backend, &
                              rc)
       use, intrinsic :: iso_c_binding
@@ -600,7 +608,11 @@ contains
 
       integer(c_int), value, target :: itype_sher
 
-      logical(c_int), value, target :: ltkeshs
+      integer(c_int), value, target :: iforcing
+
+      real(c_double), value, target :: a_hshr
+
+      logical(c_int), value, target :: loutshs
 
       integer(c_int), value, target :: backend
 
@@ -805,7 +817,9 @@ contains
                                   denom_diffu_v=denom_diffu_v, &
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
-                                  ltkeshs=ltkeshs, &
+                                  iforcing=iforcing, &
+                                  a_hshr=a_hshr, &
+                                  loutshs=loutshs, &
                                   backend=backend, &
                                   on_gpu=on_gpu)
       !$acc end host_data

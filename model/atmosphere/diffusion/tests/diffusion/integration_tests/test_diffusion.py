@@ -626,10 +626,11 @@ def test_run_diffusion_initial_step(
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    diffusion_granule.initial_run(
+    diffusion_granule.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
+        initial_run=True,
     )
 
     verify_diffusion_fields(
