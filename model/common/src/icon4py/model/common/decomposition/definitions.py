@@ -429,6 +429,11 @@ class SingleNodeExchange(ExchangeRuntime):
 
     @classmethod
     def _warn_if_used(cls, *, stacklevel: int = 3) -> None:
+        """
+        Debugging helper: emit a single warning when SingleNodeExchange is used.
+        Not called in production code.  Enable manually during development to
+        spot unintended single-node exchange usage.
+        """
         if not cls._warning_emitted:
             warnings.warn(
                 "***** SingleNodeExchange is in use; HALO EXCHANGE IS RUNNING IN SINGLE-NODE *****",
@@ -443,7 +448,6 @@ class SingleNodeExchange(ExchangeRuntime):
         *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult:
-        self._warn_if_used()
         return SingleNodeResult()
 
     def my_rank(self) -> int:

@@ -6,9 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import sys
-import warnings
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -18,11 +15,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    SingleNodeExchange,
-    create_exchange,
-)
+from icon4py.model.common.decomposition.definitions import DecompositionInfo, create_exchange
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
@@ -98,57 +91,3 @@ def test_decomposition_info_is_distributed(flag, expected) -> None:
         np.ones((mesh.num_cells,)) * flag,
     )
     assert decomp.is_distributed() == expected
-
-
-def test_single_node_exchange_warns_on_first_use(monkeypatch):
-    monkeypatch.setattr(SingleNodeExchange, "_warning_emitted", False)
-
-    exchange = SingleNodeExchange()
-
-    with pytest.warns(RuntimeWarning, match="SingleNodeExchange"):
-        exchange.start(dims.CellDim)
-
-
-def test_single_node_exchange_does_not_warn_on_construction_or_repeat_use(monkeypatch):
-    monkeypatch.setattr(SingleNodeExchange, "_warning_emitted", False)
-
-    with warnings.catch_warnings(record=True) as recorded_warnings:
-        warnings.simplefilter("always")
-        exchange = SingleNodeExchange()
-
-    assert len(recorded_warnings) == 0
-
-    with pytest.warns(RuntimeWarning, match="SingleNodeExchange"):
-        exchange.exchange(dims.CellDim)
-
-    with warnings.catch_warnings(record=True) as repeated_warnings:
-        warnings.simplefilter("always")
-        exchange.start(dims.CellDim)
-
-    assert len(repeated_warnings) == 0
-
-
-def _assert_warning_points_to_call_site(monkeypatch, func, expected_line):
-    monkeypatch.setattr(SingleNodeExchange, "_warning_emitted", False)
-
-    with warnings.catch_warnings(record=True) as caught_warnings:
-        warnings.simplefilter("always")
-        func()
-
-    assert len(caught_warnings) == 1
-    assert caught_warnings[0].filename == __file__
-    assert caught_warnings[0].lineno == expected_line
-
-
-def test_single_node_exchange_warning_points_to_call_site(monkeypatch):
-    exchange = SingleNodeExchange()
-
-    exchange_line = sys._getframe().f_lineno + 2
-    _assert_warning_points_to_call_site(
-        monkeypatch, lambda: exchange.start(dims.CellDim), exchange_line
-    )
-
-    wait_line = sys._getframe().f_lineno + 2
-    _assert_warning_points_to_call_site(
-        monkeypatch, lambda: exchange.exchange(dims.CellDim), wait_line
-    )
