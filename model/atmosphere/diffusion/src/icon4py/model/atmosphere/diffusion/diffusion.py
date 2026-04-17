@@ -920,6 +920,3 @@ class Diffusion:
                 stream=decomposition.DEFAULT_STREAM,
             )
             log.debug("communication of prognostic cell field: w - done")
-
-
-
