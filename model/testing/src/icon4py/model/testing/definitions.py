@@ -283,6 +283,7 @@ def construct_diffusion_config(
             max_nudging_coefficient=0.375,
             n_substeps=ndyn_substeps,
             shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+            iforcing=diffusion.ForcingType.NWP,
         )
     elif experiment == Experiments.EXCLAIM_APE:
         return diffusion.DiffusionConfig(
