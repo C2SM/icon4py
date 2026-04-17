@@ -13,9 +13,9 @@ Collection of all Fortran bindings for ICON4Py.
 TODO(havogt): refactor py2fgen to generate a single module from functions in different files.
 """
 
-from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import diffusion_init, diffusion_run
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init, solve_nh_run
-from icon4py.tools.py2fgen.wrappers.grid_wrapper import grid_init
+from icon4py.bindings.diffusion_wrapper import diffusion_init, diffusion_run
+from icon4py.bindings.dycore_wrapper import solve_nh_init, solve_nh_run
+from icon4py.bindings.grid_wrapper import grid_init
 
 
 __all__ = [

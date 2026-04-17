@@ -24,6 +24,12 @@ import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.bindings import (
+    common as wrapper_common,
+    config as wrapper_config,
+    grid_wrapper,
+    icon4py_export,
+)
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -38,12 +44,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.tools.py2fgen.wrappers import (
-    common as wrapper_common,
-    config as wrapper_config,
-    grid_wrapper,
-    icon4py_export,
-)
 
 
 logger = logging.getLogger(__name__)
