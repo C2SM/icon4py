@@ -23,12 +23,6 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  # workspace members
-  'icon4py-atmosphere-advection~=0.1.0',
-  'icon4py-atmosphere-diffusion~=0.1.0',
-  'icon4py-atmosphere-dycore~=0.1.0',
-  'icon4py-standalone_driver~=0.1.0',
-  'icon4py-common~=0.1.0',
   # external dependencies
   'clang-format>=22.1.0',
   'cffi>=1.5',
@@ -87,7 +81,7 @@ filename = "src/icon4py/tools/__init__.py"
 # -- ruff --
 [tool.ruff]
 extend = "../pyproject.toml"
-extend-exclude = ["tests/tools/py2fgen/wrappers/references/*"]
+extend-exclude = []
 
 [tool.ruff.lint.isort]
 known-first-party = ['icon4py']

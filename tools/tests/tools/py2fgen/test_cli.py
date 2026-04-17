@@ -25,7 +25,7 @@ def cli_runner():
 
 @pytest.fixture
 def square_wrapper_module():
-    return "icon4py.tools.py2fgen.wrappers.simple"
+    return "icon4py.bindings.simple"
 
 
 def compile_fortran_code(
@@ -223,7 +223,7 @@ def test_py2fgen_compilation_and_profiling(
         test_temp_dir,
         extra_compiler_flags=extra_flags,
         env_vars={
-            "PY2FGEN_EXTRA_CALLABLES": "icon4py.tools.py2fgen.wrappers.viztracer_plugin:init",
+            "PY2FGEN_EXTRA_CALLABLES": "icon4py.bindings.viztracer_plugin:init",
             "ICON4PY_TRACING_RANGE": "0:50",
             "ICON4PY_TRACING_NAMES": "square_from_function",
             "ICON4PY_TRACING_OUTPUT_DIR": str(tmp_path),
