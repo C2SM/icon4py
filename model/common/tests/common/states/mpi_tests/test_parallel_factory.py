@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -89,8 +90,9 @@ def test_program_provider_exchange(
             dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
         )
     )
-    assert (field.ndarray[owned_points, :] == number).all()
-    assert not (field.ndarray[halo_points, :] == number).all()
+    field_np = data_alloc.as_numpy(field)
+    assert (field_np[owned_points, :] == number).all()
+    assert not np.all(field_np[halo_points, :] == number)
 
 
 @pytest.mark.datatest
@@ -138,5 +140,6 @@ def test_numpy_provider_exchange(
             dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
         )
     )
-    assert (field.ndarray[owned_points, :] == number).all()
-    assert not (field.ndarray[halo_points, :] == number).all()
+    field_np = data_alloc.as_numpy(field)
+    assert (field_np[owned_points, :] == number).all()
+    assert not np.all(field_np[halo_points, :] == number)
