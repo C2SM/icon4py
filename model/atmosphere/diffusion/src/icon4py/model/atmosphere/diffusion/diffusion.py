@@ -370,8 +370,8 @@ class DiffusionParams:
     K4: Final[float] = dataclasses.field(init=False)
     K6: Final[float] = dataclasses.field(init=False)
     K4W: Final[float] = dataclasses.field(init=False)
-    smagorinski_factor: Final[float] = dataclasses.field(init=False)
-    smagorinski_height: Final[float] = dataclasses.field(init=False)
+    smagorinski_factor: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
+    smagorinski_height: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
