@@ -63,20 +63,9 @@ Total traffic: 228 bytes × 3,143,252 threads = **717 MB**
 
 ### Synthetic bandwidth benchmark comparison
 
-Wrote hand-optimized HIP kernels matching the exact access pattern and grid dimensions.
-All run with dim3(1244,10) × dim3(32,8) on the same MI300A node.
-
-| Benchmark | Median (ms) | BW (GB/s) | % of peak |
-|-----------|-------------|-----------|-----------|
-| 1. Stream (1R + 1W) | 0.016 | 3113 | 84.9% |
-| 2. Many arrays flat (20R + 4W) | 0.207 | 2952 | 80.5% |
-| 3. Many arrays + k+1 offsets (25R + 4W) | 0.235 | 3105 | 84.7% |
-| 4. Full pattern + C2E indirection | 0.216 | 3388 | 92.4% |
-| 5. Same as #4 with DaCe grid dims | 0.214 | 3411 | 93.0% |
-| 6. DaCe-style (56 args, per-array indexing) | 0.185 | 3269 | 89.1% |
-| **DaCe map_100_1 (actual)** | **0.207** | **3462** | **94.4%** |
-
-**The DaCe kernel matches or exceeds the synthetic benchmarks.** There is no codegen inefficiency.
+Hand-optimized HIP kernels matching the solver's access pattern achieve 80-93% of HBM peak.
+The DaCe-generated kernel achieves **94.4%** — matching or exceeding hand-written code.
+**There is no codegen inefficiency on MI300A.** See appendix for detailed benchmark table.
 
 ### Memory access pattern
 
@@ -104,6 +93,49 @@ Measured C2E edge index spread for 32 consecutive cells (one warp):
 Despite edge indices spanning 30K-40K range, neighboring cells **share edges** on the
 icosahedral grid, so the 96 loads per warp (32 cells × 3 neighbors) hit only ~14 cache lines.
 Edge reordering saves ~3.6 MB — not worth pursuing.
+
+### LDS staging experiment for C2E gather
+
+Tested staging the C2E `mass_flux` gather through LDS (shared memory) in the hottest
+kernel (`map_100_fieldop_1`). Patched the generated HIP code with `amd_scripts/patch_lds_c2e_v2.py`.
+
+Result: **neutral** (0.614→0.614 ms mean, 0.607→0.609 ms median, 1000 runs).
+
+The C2E gather pattern in the generated code looks like this:
+
+```cpp
+for (i = 0; i < 3; i++) {
+    int edge_idx = gt_conn_C2E[stride*i + cell_idx];     // load edge index
+    double val = mass_flux[edge_idx, K];                  // load value at edge
+    __map_fusion_gtir_tmp_29[i] = val;                    // store in register
+}
+```
+
+Each thread (`cell_idx`) reads its own 3 edge values into a per-thread register array.
+The values loaded by thread N are completely different from thread N+1 — there is no
+inter-thread data sharing within the gather itself.
+
+Staging through LDS adds: HBM → register → LDS (write) → `__syncthreads()` → LDS (read) → register.
+Same HBM traffic, plus extra LDS round-trip. No benefit because there is no data reuse to exploit.
+
+**Where LDS would actually help (not implemented):**
+
+1. **Wavefront-level edge deduplication** — neighboring cells share edges (85.7% cache line
+   utilization confirms this). A custom kernel could:
+   - Compare edge indices across lanes via `__shfl`
+   - Have each unique edge loaded by exactly one thread
+   - Distribute the loaded values back via `__shfl` or LDS
+   This would reduce HBM traffic, not just stage it. Requires a hand-written HIP kernel,
+   not a simple patch.
+
+2. **Cell-broadcast values** — `geofac_div[cell]` is read 3 times per cell. Currently each
+   read goes to L1. Staging it once in LDS would save 2 L1 lookups per thread. Marginal.
+
+3. **Tridiagonal scan kernels** (`map_85`, `map_90`) — could benefit from LDS-based block-wide
+   scan implementations. Requires algorithmic restructuring, not a patch.
+
+**Conclusion:** LDS staging the existing access pattern doesn't help. Real gains require either
+algorithm changes (deduplication via shuffle) or memory layout changes. None are simple patches.
 
 ### L2 cache analysis
 
@@ -242,37 +274,17 @@ leaving less for `fuse_tasklets` to do.
 
 ## GH200 vs MI300A Synthetic Bandwidth Comparison
 
-Same synthetic kernels run on both platforms (dim3(32,8) blocks, 39788 cells × 80 K-levels):
-
-| Benchmark | MI300A (ms) | GH200 (ms) | GH200 speedup |
-|-----------|-------------|------------|----------------|
-| 1. Stream (1R+1W) | 0.016 | 0.017 | 0.94x (MI300A faster) |
-| 2. Many arrays flat (20R+4W) | 0.205 | 0.167 | **1.23x** |
-| 3. k+1 offsets (25R+4W) | 0.231 | 0.174 | **1.33x** |
-| 4. Full + C2E | 0.212 | 0.166 | **1.28x** |
-| 5. DaCe grid | 0.212 | 0.166 | **1.28x** |
-| 6. DaCe-style 56 args | 0.183 | 0.145 | **1.26x** |
-
-Key observations:
-- **Simple stream**: MI300A wins (0.016 vs 0.017 ms) — MI300A has competitive raw HBM BW
+Same synthetic kernels run on both platforms:
+- **Simple stream**: MI300A wins (0.016 vs 0.017 ms) — competitive raw HBM BW
 - **Multi-array patterns**: GH200 is consistently **1.23-1.33x** faster
-- The gap is hardware-level: GH200's memory controller handles many concurrent streams more efficiently
-- This 1.28x synthetic gap partially explains the 1.4-2.1x real stencil gap from AMD_INTRODUCTION.md
-- The remaining gap (1.28x vs 1.4-2.1x) likely comes from scan kernels and inter-kernel overhead
+- The gap is hardware-level: GH200's memory controller handles many concurrent streams
+  more efficiently
 
-### Block size experiment (MI300A synthetic benchmark)
+Block size sweep on MI300A synthetic benchmark confirmed that `256×1` is **19% faster**
+than the DaCe default `32×8`, which motivated the `gpu_block_size=(256,1,1)` change
+in icon4py.
 
-| Block size | Median (ms) | vs 32×8 |
-|-----------|-------------|---------|
-| 32×8 (DaCe default) | 0.212 | baseline |
-| 64×4 (wavefront-aligned) | 0.190 | 10% faster |
-| 128×2 | 0.192 | 9% faster |
-| 256×1 | 0.171 | **19% faster** |
-
-However, DaCe's `gpu_utils.py` overrides `default_block_size` config and always uses its own 2D
-tiling heuristic. Testing with `DACE_compiler_cuda_default_block_size="256,1,1"` showed **no
-improvement** because DaCe still generated dim3(32,8) blocks. Changing this requires modifying
-the GT4Py/DaCe block tiling logic in `gpu_utils.py`.
+See appendix for detailed benchmark tables.
 
 ## MI300A vs GH200 Solver Comparison (GT4Py Timer)
 
@@ -466,3 +478,45 @@ and multiply by their width × thread count.
 - `amd_scripts/patch_cse.py` — utility to patch redundant reads (confirmed unnecessary)
 - `workloads/rcu_amd_profiling_solver_regional_map_*/` — per-kernel profiling data and roofline PDFs
 - `pmc_perf.csv` — hardware counter data for all kernels
+
+## Appendix: Detailed Synthetic Benchmark Data
+
+### MI300A synthetic bandwidth benchmarks
+
+Hand-optimized HIP kernels matching the solver's access pattern and grid dimensions.
+All run with dim3(1244,10) × dim3(32,8):
+
+| Benchmark | Median (ms) | BW (GB/s) | % of peak |
+|-----------|-------------|-----------|-----------|
+| 1. Stream (1R + 1W) | 0.016 | 3113 | 84.9% |
+| 2. Many arrays flat (20R + 4W) | 0.207 | 2952 | 80.5% |
+| 3. Many arrays + k+1 offsets (25R + 4W) | 0.235 | 3105 | 84.7% |
+| 4. Full pattern + C2E indirection | 0.216 | 3388 | 92.4% |
+| 5. Same as #4 with DaCe grid dims | 0.214 | 3411 | 93.0% |
+| 6. DaCe-style (56 args, per-array indexing) | 0.185 | 3269 | 89.1% |
+| **DaCe map_100_1 (actual)** | **0.207** | **3462** | **94.4%** |
+
+### MI300A vs GH200 synthetic (dim3(32,8) blocks, 39788 cells × 80 K-levels)
+
+| Benchmark | MI300A (ms) | GH200 (ms) | GH200 speedup |
+|-----------|-------------|------------|----------------|
+| 1. Stream (1R+1W) | 0.016 | 0.017 | 0.94x (MI300A faster) |
+| 2. Many arrays flat (20R+4W) | 0.205 | 0.167 | **1.23x** |
+| 3. k+1 offsets (25R+4W) | 0.231 | 0.174 | **1.33x** |
+| 4. Full + C2E | 0.212 | 0.166 | **1.28x** |
+| 5. DaCe grid | 0.212 | 0.166 | **1.28x** |
+| 6. DaCe-style 56 args | 0.183 | 0.145 | **1.26x** |
+
+### Block size sweep on MI300A synthetic benchmark
+
+| Block size | Median (ms) | vs 32×8 |
+|-----------|-------------|---------|
+| 32×8 (DaCe default) | 0.212 | baseline |
+| 64×4 (wavefront-aligned) | 0.190 | 10% faster |
+| 128×2 | 0.192 | 9% faster |
+| 256×1 | 0.171 | **19% faster** |
+
+Note: DaCe's `gpu_utils.py` overrides `default_block_size` config and always uses its own 2D
+tiling heuristic. Setting `DACE_compiler_cuda_default_block_size="256,1,1"` alone shows
+**no improvement** because DaCe still generates dim3(32,8) blocks. The real fix is setting
+`gpu_block_size` per-dim in `model_options.py` as we did (see main section).
