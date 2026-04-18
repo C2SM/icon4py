@@ -8,6 +8,7 @@ ssh beverin.cscs.ch
 ```
 
 In Beverin:
+
 ```
 # Enter scratch directory
 cd $SCRATCH
@@ -81,7 +82,6 @@ Here is an example of a `GT4Py Program` from `icon4py`: [vertically_implicit_sol
 `DaCe` is a programming framework that can take Python code and transform it to an SDFG, which is a representation that is easy to apply dataflow optimizations and achieve good performance in modern CPUs and GPUs. To see more information regarding how the SDFGs look like see the following [link](https://spcldace.readthedocs.io/en/latest/sdfg/ir.html).
 `DaCe` includes also a code generator from SDFG to C++, HIP and CUDA code. The HIP generated code is CUDA code hipified basically so there are no big differences between the generated code for CUDA and HIP.
 
-
 ## Benchmarking
 
 For the benchmarking we have focused on the `dycore` component of `icon4py` . We have measured the runtimes for the different `GT4Py Programs` executed in it between an `MI300A` and a `GH200 GPU` below:
@@ -143,6 +143,7 @@ This is the `vertically_implicit_solver_at_predictor_step` `GT4Py program` and h
 The runtimes of the individual kernels are collected using `nsys` and `rocprofv3`.
 
 The benchmarks were run on `Santis` (`GH200 GPU`) and `Beverin` (`MI300A GPU`) using the following uenv images:
+
 - GH200: `icon/25.2:v3` (CUDA 12.6)
 - MI300A: `build::prgenv-gnu/25.12:2333839235` (ROCM 7.1.0)
 
@@ -169,12 +170,14 @@ sbatch benchmark_solver.sh
 The generated code for the results above can be found in `Beverin` in:
 
 `dycore`
+
 ```
 /capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/amd_profiling_solver_persistent_mem # GT4Py cache folder
 /capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/slurm-247696.out # Slurm output
 ```
 
 `solver`
+
 ```
 /capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/amd_profiling_solver_regional # GT4Py cache folder
 /capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/slurm-247518.out # Slurm output
@@ -190,6 +193,7 @@ The generated code for the results above can be found in `Beverin` in:
 ## Notes
 
 - To understand the code apart from the analysis the profilers there are the following sources:
+
   1. Look at the generated HIP code for the `GT4Py program` `vertically_implicit_solver_at_predictor_step` in `<icon4py_root_dir>/amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/src/cuda/vertically_implicit_solver_at_predictor_step.cpp`. The code is generated from DaCe automatically and it's a bit too verbose. It would be good to have some feedback on whether the generated code is in a good form for the HIP compiler to optimize.
   2. Look at the generated assembly and HIP kernel characteristics (outputs of `-save-temps -Rpass-analysis=kernel-resource-usage`) in `<icon4py_root_dir>/amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/build/vertically_implicit_solver_at_predictor_step_cuda-hip-amdgcn-amd-amdhsa-gfx942.s`.
   3. Look at the `icon4py` frontend code for the `vertically_implicit_solver_at_predictor_step` [here](https://github.com/C2SM/icon4py/blob/e88b14d8be6eed814faf14c5e8a96aca6dfa991e/model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/vertically_implicit_dycore_solver.py#L219)
