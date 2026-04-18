@@ -58,9 +58,8 @@ def get_dace_options(
     if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-        # AMD MI300A: (256,1,1) for all maps — 17.5% faster than default (32,8,1).
-        optimization_args.setdefault("gpu_block_size", (256, 1, 1))
-        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
+        # AMD MI300A: (256,1,1) for 2D maps gives ~21% speedup on the solver.
+        # All threads on Cell dimension maximizes coalescing on MI300A.
         optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True

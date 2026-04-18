@@ -7,6 +7,11 @@ Date: 2026-03-30 (updated with corrected bandwidth analysis)
 Profiled the `vertically_implicit_solver_at_predictor_step` GT4Py program on MI300A (Beverin, gfx942, ROCm 7.1.0).
 Baseline median runtime: **~820 μs** (pytest-benchmark timer, includes Python/GT4Py call overhead).
 
+**Note on methodology:** Performance comparisons here use A/B testing — measuring two
+configurations under identical conditions (same node, same gt4py version, same cache state,
+same number of runs) where only one variable changes between them. The difference isolates
+the effect of that single variable.
+
 **Note on timers:** Results in this document use two different timers:
 - **pytest-benchmark**: measures the full Python function call including GT4Py dispatch overhead.
   Used for: baseline (0.820ms), block size tuning, loop blocking experiments.
@@ -296,10 +301,7 @@ Both on `amd_profiling_staging_main` gt4py, `amd_profiling_main` icon4py, region
 | Platform | Config | Mean | Median | Runs |
 |----------|--------|------|--------|------|
 | MI300A | baseline (32,8,1) | 0.768 ms | **0.763 ms** | 1000 |
-| MI300A | fuse_tasklets only | 0.763 ms | 0.760 ms | 30 |
-| MI300A | **(256,1,1) only** | **0.618 ms** | **0.612 ms** | **1000** |
-| MI300A | (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | 30 |
-| MI300A | (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | 30 |
+| MI300A | **`gpu_block_size_2d=(256,1,1)`** | **0.611 ms** | **0.604 ms** | **1000** |
 | GH200 | defaults (32,8,1) | 0.559 ms | **0.559 ms** | 1000 |
 
 | Comparison | Ratio |
@@ -318,30 +320,35 @@ block size is the only optimization that matters on the current version.
 
 Date: 2026-04-14
 
-### (256,1,1) block size for all maps
+### (256,1,1) block size for 2D maps
 
-Setting `gpu_block_size=(256,1,1)` for all 1D and 2D maps on MI300A gives a significant
-improvement by putting all threads on the Cell (horizontal) dimension for maximum coalescing.
+Setting `gpu_block_size_2d=(256,1,1)` on MI300A gives a significant improvement by
+putting all threads on the Cell (horizontal) dimension for maximum coalescing.
+
+The heavy kernels (map_100_1, map_115_1, map_60) are 2D maps and account for >70% of
+the total kernel time. Setting `gpu_block_size_1d` has no effect (the 1D kernels —
+boundary, scan, Rayleigh damping — are too small to benefit).
 
 ```python
 # In model_options.py, ROCM device block:
-optimization_args["gpu_block_size"] = (256, 1, 1)
-optimization_args["gpu_block_size_1d"] = (256, 1, 1)
 optimization_args["gpu_block_size_2d"] = (256, 1, 1)
 ```
 
-### Results (GT4Py Timer, `amd_profiling_staging_main` gt4py)
+### Results (GT4Py Timer, `amd_profiling_staging_main` gt4py, warm cache, 1000 runs)
 
-| Config | Mean | Median | Runs | vs Baseline |
-|--------|------|--------|------|-------------|
-| Baseline (32,8,1) | 0.768 ms | 0.763 ms | 1000 | — |
-| fuse_tasklets only | 0.763 ms | 0.760 ms | 30 | neutral |
-| **(256,1,1) only** | **0.618 ms** | **0.612 ms** | **1000** | **-19.8%** |
-| (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | 30 | -17.2% |
-| (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | 30 | -15.0% |
-| (256,1,1) + blocking (threshold=3) | 0.649 ms | -14.4% |
+| Config | Mean | Median | vs Baseline |
+|--------|------|--------|-------------|
+| Baseline (32,8,1) | 0.768 ms | 0.763 ms | — |
+| `gpu_block_size_1d=(256,1,1)` only | 0.771 ms | 0.767 ms | neutral |
+| **`gpu_block_size_2d=(256,1,1)` only** | **0.611 ms** | **0.604 ms** | **-20.8%** |
+| All three set | 0.618 ms | 0.612 ms | -19.8% |
+| fuse_tasklets only | 0.763 ms | 0.760 ms | neutral (30 runs) |
+| (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | -17.2% (30 runs) |
+| (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | -15.0% (30 runs) |
 
-Baseline (GT4Py Timer, no optimizations) measurement pending.
+**Conclusion: `gpu_block_size_2d=(256,1,1)` is the only setting needed for ~21% improvement.**
+The other settings (`gpu_block_size`, `gpu_block_size_1d`) have no effect — keeping them
+in the config doesn't hurt but adds nothing.
 
 Earlier pytest-benchmark results for reference (different timer, different gt4py version):
 
