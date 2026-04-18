@@ -27,6 +27,230 @@ was incorrect — it used TCC_MISS-based traffic (which undercounts) and an outd
 The correct analysis shows the DaCe-generated code is performing well. The MI300A vs GH200 gap
 is due to hardware bandwidth differences, not software inefficiency.
 
+## MI300A vs GH200 Solver Comparison (GT4Py Timer)
+
+Date: 2026-04-17
+
+Using the GT4Py Timer (C++ level, closest to kernel launches) for apples-to-apples comparison.
+Both on `amd_profiling_staging_main` gt4py, `amd_profiling_main` icon4py, regional grid.
+
+| Platform | Config | Mean | Median | Runs |
+|----------|--------|------|--------|------|
+| MI300A | baseline (32,8,1) | 0.768 ms | **0.763 ms** | 1000 |
+| MI300A | **`gpu_block_size_2d=(256,1,1)`** | **0.611 ms** | **0.604 ms** | **1000** |
+| GH200 | defaults (32,8,1) | 0.559 ms | **0.559 ms** | 1000 |
+
+| Comparison | Ratio |
+|------------|-------|
+| GH200 vs MI300A baseline | GH200 **1.36x** faster |
+| GH200 vs MI300A best (256,1,1) | GH200 **1.09x** faster |
+
+The performance gap narrowed from **1.36x to 1.09x** with (256,1,1) block size on MI300A.
+The (256,1,1) block size gives a **~20% improvement** over the default (32,8,1).
+
+Note: fuse_tasklets is neutral on this gt4py version (`amd_profiling_staging_main`).
+On the older gt4py 1.1.4 (`amd_profiling_staging`) it helped ~7%. The (256,1,1)
+block size is the only optimization that matters on the current version.
+
+## Occupancy Experiment
+
+Tested the AMD equivalent of NVIDIA's `maxreg` trick by patching DaCe-generated HIP source
+with `__attribute__((amdgpu_waves_per_eu(1, N)))` to force higher occupancy.
+
+### What was tried
+- ROCm 7.1.0 / clang 20.0.0 does not expose VGPR-limit flags via `-mllvm`:
+  - `-mllvm -amdgpu-num-vgpr=N` → `Unknown command line argument`
+  - `-mllvm --amdgpu-waves-per-eu=N` → `Unknown command line argument`
+  - `HIPFLAGS` with these flags breaks CMake's HIP compiler test (host-side clang rejects GPU flags)
+- Source-level `__attribute__((amdgpu_waves_per_eu(min, max)))` compiles successfully
+- Created `amd_scripts/set_waves_per_eu.py` to patch the attribute into DaCe-generated .cpp files
+- Swept max_waves = 2, 3, 4, 5, 8 via `amd_scripts/benchmark_solver_occupancy.sh`
+
+### Results
+
+| Setting | Median runtime | vs Baseline |
+|---------|---------------|-------------|
+| Baseline (no attribute) | **0.82 ms** | — |
+| waves_per_eu(1, 2) | 2.1 ms | **2.5x slower** |
+| waves_per_eu(1, 4) | 2.1 ms | **2.5x slower** |
+| waves_per_eu(1, 8) | 2.1 ms | **2.5x slower** |
+
+All non-baseline settings cause ~2.5x regression due to register spilling.
+
+### Why maxreg worked on GH200 but not MI300A
+- **GH200 (NVIDIA SM90):** `nvcc` used 128-200+ registers per thread → low occupancy.
+  `maxreg` forced fewer registers → more blocks/SM → significant occupancy improvement.
+- **MI300A (gfx942):** `hipcc/clang` already uses few VGPRs (32-92) → 5-8 waves/SIMD
+  (hardware max is 8). 10 of 12 kernels already at max occupancy.
+
+## GPU Block Size Tuning
+
+Date: 2026-04-14
+
+### (256,1,1) block size for 2D maps
+
+Setting `gpu_block_size_2d=(256,1,1)` on MI300A gives a significant improvement by
+putting all threads on the Cell (horizontal) dimension for maximum coalescing.
+
+The heavy kernels (map_100_1, map_115_1, map_60) are 2D maps and account for >70% of
+the total kernel time. Setting `gpu_block_size_1d` has no effect (the 1D kernels —
+boundary, scan, Rayleigh damping — are too small to benefit).
+
+```python
+# In model_options.py, ROCM device block:
+optimization_args["gpu_block_size_2d"] = (256, 1, 1)
+```
+
+### Results (GT4Py Timer, `amd_profiling_staging_main` gt4py, warm cache, 1000 runs)
+
+| Config | Mean | Median | vs Baseline |
+|--------|------|--------|-------------|
+| Baseline (32,8,1) | 0.768 ms | 0.763 ms | — |
+| `gpu_block_size_1d=(256,1,1)` only | 0.771 ms | 0.767 ms | neutral |
+| **`gpu_block_size_2d=(256,1,1)` only** | **0.611 ms** | **0.604 ms** | **-20.8%** |
+| All three set | 0.618 ms | 0.612 ms | -19.8% |
+| fuse_tasklets only | 0.763 ms | 0.760 ms | neutral (30 runs) |
+| (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | -17.2% (30 runs) |
+| (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | -15.0% (30 runs) |
+
+**Conclusion: `gpu_block_size_2d=(256,1,1)` is the only setting needed for ~21% improvement.**
+The other settings (`gpu_block_size`, `gpu_block_size_1d`) have no effect — keeping them
+in the config doesn't hurt but adds nothing.
+
+Earlier pytest-benchmark results for reference (different timer, different gt4py version):
+
+| Config | Block size | pytest-benchmark Median | vs Baseline |
+|--------|-----------|------------------------|-------------|
+| Baseline | (32,8,1) default | 0.820 ms | — |
+| (256,1,1) all maps | (256,1,1) | 0.703 ms | -14.3% |
+| (64,6,1) all maps | (64,6,1) | 0.756 ms | -7.8% |
+
+### Why (256,1,1) is faster
+
+- All 256 threads in a block process consecutive cells → perfect coalescing for `array[cell, K]`
+- The default (32,8,1) spreads 8 threads across K levels, which wastes coalescing potential
+  since K is the non-unit-stride dimension
+- MI300A wavefronts are 64 wide, so 256 = 4 wavefronts per block — good occupancy
+
+## DaCe Fusion Analysis
+
+### What was tried
+- `MapFusion`: applied 9 times (inner tlet maps), but cannot fuse the main maps because
+  intermediates (`gtir_tmp_83`, `_96`, `_97`) have multiple consumers
+- `SubgraphFusion`: cannot apply — "nodes between maps with incoming edges from outside"
+- Root cause: `concat_where` + `broadcast` in GT4Py field operators creates K-domain splits
+  (`_0` for K=0, `_1` for K=1..79), producing multiple producers per intermediate
+
+### `fuse_tasklets` optimization
+- Added `fuse_tasklets=True` to `model_options.py` for the solver stencil
+- This fuses tasklet operations within existing map scopes
+
+Clean A/B test (GT4Py Timer, 30 runs, `amd_profiling` branch, gt4py 1.1.4):
+
+| Config | Mean | Median | StdDev |
+|--------|------|--------|--------|
+| Without fuse_tasklets | 0.798 ms | 0.797 ms | 0.031 ms |
+| With fuse_tasklets | 0.741 ms | 0.732 ms | 0.026 ms |
+| **Improvement** | **~7%** | **~7%** | |
+
+Note: Edoardo measured a smaller improvement (~1.5%, 0.782→0.770 ms) on a newer
+gt4py/icon4py version. The newer optimization pipeline may already fuse more by default,
+leaving less for `fuse_tasklets` to do.
+
+### CSE (Common Subexpression Elimination)
+- Detected 28 redundant global loads across all 12 kernels
+- Patched generated code to cache duplicate reads
+- Result: **no improvement** — compiler already optimizes these at -O3
+
+## Loop Blocking (K-Blocking) Experiment
+
+Date: 2026-04-14
+
+### What is loop blocking
+
+Tiles the K dimension into blocks of `blocking_size`. Computations that don't depend on K
+(e.g. connectivity reads, geofac_div, cell-only arrays) are moved outside the inner K-loop,
+so they execute once per block instead of once per K-level.
+
+Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris:gt4py:extend_loopblocking
+
+### Results (pytest-benchmark median — needs re-measurement with GT4Py Timer)
+
+| Config | Median | vs Baseline |
+|--------|--------|-------------|
+| Baseline (32,8) | 0.820 ms | — |
+| Blocking only (32,8 overwritten) | 0.797 ms | -2.8% |
+| Blocking + (256,1,1) blocked map only | 0.700 ms | -14.6% |
+| (256,1,1) all maps, no blocking | 0.703 ms | -14.3% |
+| (256,1,1) all maps + blocking threshold=3 | 0.716 ms | -12.7% |
+| (256,1,1) all maps + blocking threshold=1 | 0.730 ms | -11.0% |
+| (256,1,1) all maps + blocking threshold=0 | 0.723 ms | -11.8% |
+
+### Analysis
+
+- Loop blocking by itself gives a 2.8% speedup by reducing redundant K-independent work
+  in map_0 (the only kernel that met `independent_node_threshold=3`)
+- The block size change from (32,8) to (256,1,1) is responsible for most of the improvement
+  (~12% out of the 14.6% total)
+- When (256,1,1) is already set globally on all maps, enabling loop blocking on top actually
+  makes things slightly worse (0.703→0.716ms). The extra overhead from the coarse loop
+  (bounds checks, `min()` calls) outweighs the savings, since the coalescing improvement
+  — which was the main driver — is already captured by the global block size setting
+- We also tried lowering `independent_node_threshold` to 1 and 0 to block more kernels,
+  but this degraded performance further
+- **Bottom line: setting (256,1,1) on all maps is the best approach for MI300A (14.3%).
+  Loop blocking gives 2.8% on its own but becomes redundant once (256,1,1) is applied
+  globally**
+
+### Bugs found and fixed in GT4Py transformation pipeline
+
+1. **GPU transformation resets block size:** `sdfg.apply_gpu_transformations()` in
+   `_gt_auto_configure_maps_and_strides` creates new GPU-scheduled maps that don't inherit
+   `gpu_block_size` set by `LoopBlocking.apply()`. Fixed by adding a post-GPU override that
+   finds maps with `__gtx_coarse_` parameter and re-applies the configured block size.
+
+2. **`__maxnreg__` is CUDA-only, breaks HIP:** DaCe emits `__maxnreg__(N)` when `gpu_maxnreg>0`,
+   which is not valid in HIP/ROCm (causes compilation error). Changed `LoopBlocking` property
+   defaults to `None` so nothing is set unless explicitly requested.
+
+3. **Block size was (32,8,1) not (256,1,1):** After blocking, outer map has 2 dims
+   (Cell, __gtx_coarse_K). `GPUSetBlockSize` classified it as 2D and applied `(32,8,1)`.
+   Fixed by the post-GPU override described above.
+
+### Changes to GT4Py (on top of extend_loopblocking PR)
+
+**loop_blocking.py:**
+- Added `gpu_block_size` and `gpu_maxnreg` as configurable properties (default `None`)
+- Made `apply()` conditional — only sets when not `None`
+
+**auto_optimize.py:**
+- Added `blocking_gpu_block_size` and `blocking_gpu_maxnreg` parameters
+- Added post-GPU-transformation override in `_gt_auto_configure_maps_and_strides()`
+
+## Optimization Opportunities
+
+### Confirmed helpful
+1. **`fuse_tasklets`** — 7% improvement on gt4py 1.1.4 (~1.5% on newer versions per Edoardo's measurements)
+2. **GPU block size (256,1,1) for all maps** — 14.3% improvement on MI300A. All threads on
+   Cell dimension maximizes coalescing.
+
+### Worth investigating
+3. **Grid size divisible by 6** — preliminary data shows additional ~4% improvement (0.617→0.594ms
+   on a different gt4py branch). Possibly related to even work distribution across MI300A's
+   6 XCDs. Needs further investigation.
+4. **Kernel fusion** — reduces 12 kernel launches to fewer, eliminating ~86 μs inter-kernel
+   overhead (10%). Blocked by DaCe `SubgraphFusion` limitations.
+
+### Not helpful (confirmed)
+5. ~~Loop blocking on MI300A~~ — 2.8% alone, but redundant when (256,1,1) is applied globally; combining both is slower than (256,1,1) alone
+6. ~~C2E scatter / edge reordering~~ — C2E is well-localized (85.7% cache utilization)
+7. ~~Occupancy tuning~~ — already at max, causes spilling
+8. ~~Register limiting via compiler flags~~ — not available in ROCm 7.1.0
+9. ~~CSE~~ — compiler handles it
+10. ~~Many-array BW limitation~~ — synthetic benchmark proves MI300A handles 20+ arrays at 93% peak
+11. ~~Block size (64,6,1)~~ — worse than (256,1,1) by 7%
+12. ~~LDS staging for C2E gather~~ — neutral (no inter-thread data reuse in the gather)
+
 ## Per-Kernel Timing (rocprofv3 kernel-trace, median ns)
 
 | Kernel | Time (μs) | Stencil |
@@ -101,10 +325,10 @@ Edge reordering saves ~3.6 MB — not worth pursuing.
 
 ### LDS staging experiment for C2E gather
 
+**Result: neutral** (0.614→0.614 ms mean, 0.607→0.609 ms median, 1000 runs).
+
 Tested staging the C2E `mass_flux` gather through LDS (shared memory) in the hottest
 kernel (`map_100_fieldop_1`). Patched the generated HIP code with `amd_scripts/patch_lds_c2e_v2.py`.
-
-Result: **neutral** (0.614→0.614 ms mean, 0.607→0.609 ms median, 1000 runs).
 
 The C2E gather pattern in the generated code looks like this:
 
@@ -178,37 +402,6 @@ From `pmc_perf.csv` (rocprof-compute hardware counters):
 Waves/SIMD = min(8, floor(512 / Arch_VGPR)). Hardware max is 8 waves per SIMD on gfx942.
 10 of 12 kernels are already at max occupancy.
 
-## Occupancy Experiment
-
-Tested the AMD equivalent of NVIDIA's `maxreg` trick by patching DaCe-generated HIP source
-with `__attribute__((amdgpu_waves_per_eu(1, N)))` to force higher occupancy.
-
-### What was tried
-- ROCm 7.1.0 / clang 20.0.0 does not expose VGPR-limit flags via `-mllvm`:
-  - `-mllvm -amdgpu-num-vgpr=N` → `Unknown command line argument`
-  - `-mllvm --amdgpu-waves-per-eu=N` → `Unknown command line argument`
-  - `HIPFLAGS` with these flags breaks CMake's HIP compiler test (host-side clang rejects GPU flags)
-- Source-level `__attribute__((amdgpu_waves_per_eu(min, max)))` compiles successfully
-- Created `amd_scripts/set_waves_per_eu.py` to patch the attribute into DaCe-generated .cpp files
-- Swept max_waves = 2, 3, 4, 5, 8 via `amd_scripts/benchmark_solver_occupancy.sh`
-
-### Results
-
-| Setting | Median runtime | vs Baseline |
-|---------|---------------|-------------|
-| Baseline (no attribute) | **0.82 ms** | — |
-| waves_per_eu(1, 2) | 2.1 ms | **2.5x slower** |
-| waves_per_eu(1, 4) | 2.1 ms | **2.5x slower** |
-| waves_per_eu(1, 8) | 2.1 ms | **2.5x slower** |
-
-All non-baseline settings cause ~2.5x regression due to register spilling.
-
-### Why maxreg worked on GH200 but not MI300A
-- **GH200 (NVIDIA SM90):** `nvcc` used 128-200+ registers per thread → low occupancy.
-  `maxreg` forced fewer registers → more blocks/SM → significant occupancy improvement.
-- **MI300A (gfx942):** `hipcc/clang` already uses few VGPRs (32-92) → 5-8 waves/SIMD
-  (hardware max is 8). 10 of 12 kernels already at max occupancy.
-
 ## Key Findings
 
 ### 1. DaCe-generated kernels achieve ~94% of HBM peak bandwidth
@@ -247,36 +440,6 @@ All non-baseline settings cause ~2.5x regression due to register spilling.
 - This is expected for streaming workloads where each element is read once
 - L2 absorbs reuse from k+1 overlaps and cell-only broadcasts (0.78x amplification)
 
-## DaCe Fusion Analysis
-
-### What was tried
-- `MapFusion`: applied 9 times (inner tlet maps), but cannot fuse the main maps because
-  intermediates (`gtir_tmp_83`, `_96`, `_97`) have multiple consumers
-- `SubgraphFusion`: cannot apply — "nodes between maps with incoming edges from outside"
-- Root cause: `concat_where` + `broadcast` in GT4Py field operators creates K-domain splits
-  (`_0` for K=0, `_1` for K=1..79), producing multiple producers per intermediate
-
-### `fuse_tasklets` optimization
-- Added `fuse_tasklets=True` to `model_options.py` for the solver stencil
-- This fuses tasklet operations within existing map scopes
-
-Clean A/B test (GT4Py Timer, 30 runs, `amd_profiling` branch, gt4py 1.1.4):
-
-| Config | Mean | Median | StdDev |
-|--------|------|--------|--------|
-| Without fuse_tasklets | 0.798 ms | 0.797 ms | 0.031 ms |
-| With fuse_tasklets | 0.741 ms | 0.732 ms | 0.026 ms |
-| **Improvement** | **~7%** | **~7%** | |
-
-Note: Edoardo measured a smaller improvement (~1.5%, 0.782→0.770 ms) on a newer
-gt4py/icon4py version. The newer optimization pipeline may already fuse more by default,
-leaving less for `fuse_tasklets` to do.
-
-### CSE (Common Subexpression Elimination)
-- Detected 28 redundant global loads across all 12 kernels
-- Patched generated code to cache duplicate reads
-- Result: **no improvement** — compiler already optimizes these at -O3
-
 ## GH200 vs MI300A Synthetic Bandwidth Comparison
 
 Same synthetic kernels run on both platforms:
@@ -290,168 +453,6 @@ than the DaCe default `32×8`, which motivated the `gpu_block_size=(256,1,1)` ch
 in icon4py.
 
 See appendix for detailed benchmark tables.
-
-## MI300A vs GH200 Solver Comparison (GT4Py Timer)
-
-Date: 2026-04-17
-
-Using the GT4Py Timer (C++ level, closest to kernel launches) for apples-to-apples comparison.
-Both on `amd_profiling_staging_main` gt4py, `amd_profiling_main` icon4py, regional grid.
-
-| Platform | Config | Mean | Median | Runs |
-|----------|--------|------|--------|------|
-| MI300A | baseline (32,8,1) | 0.768 ms | **0.763 ms** | 1000 |
-| MI300A | **`gpu_block_size_2d=(256,1,1)`** | **0.611 ms** | **0.604 ms** | **1000** |
-| GH200 | defaults (32,8,1) | 0.559 ms | **0.559 ms** | 1000 |
-
-| Comparison | Ratio |
-|------------|-------|
-| GH200 vs MI300A baseline | GH200 **1.36x** faster |
-| GH200 vs MI300A best (256,1,1) | GH200 **1.09x** faster |
-
-The performance gap narrowed from **1.36x to 1.09x** with (256,1,1) block size on MI300A.
-The (256,1,1) block size gives a **~20% improvement** over the default (32,8,1).
-
-Note: fuse_tasklets is neutral on this gt4py version (`amd_profiling_staging_main`).
-On the older gt4py 1.1.4 (`amd_profiling_staging`) it helped ~7%. The (256,1,1)
-block size is the only optimization that matters on the current version.
-
-## GPU Block Size Tuning
-
-Date: 2026-04-14
-
-### (256,1,1) block size for 2D maps
-
-Setting `gpu_block_size_2d=(256,1,1)` on MI300A gives a significant improvement by
-putting all threads on the Cell (horizontal) dimension for maximum coalescing.
-
-The heavy kernels (map_100_1, map_115_1, map_60) are 2D maps and account for >70% of
-the total kernel time. Setting `gpu_block_size_1d` has no effect (the 1D kernels —
-boundary, scan, Rayleigh damping — are too small to benefit).
-
-```python
-# In model_options.py, ROCM device block:
-optimization_args["gpu_block_size_2d"] = (256, 1, 1)
-```
-
-### Results (GT4Py Timer, `amd_profiling_staging_main` gt4py, warm cache, 1000 runs)
-
-| Config | Mean | Median | vs Baseline |
-|--------|------|--------|-------------|
-| Baseline (32,8,1) | 0.768 ms | 0.763 ms | — |
-| `gpu_block_size_1d=(256,1,1)` only | 0.771 ms | 0.767 ms | neutral |
-| **`gpu_block_size_2d=(256,1,1)` only** | **0.611 ms** | **0.604 ms** | **-20.8%** |
-| All three set | 0.618 ms | 0.612 ms | -19.8% |
-| fuse_tasklets only | 0.763 ms | 0.760 ms | neutral (30 runs) |
-| (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | -17.2% (30 runs) |
-| (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | -15.0% (30 runs) |
-
-**Conclusion: `gpu_block_size_2d=(256,1,1)` is the only setting needed for ~21% improvement.**
-The other settings (`gpu_block_size`, `gpu_block_size_1d`) have no effect — keeping them
-in the config doesn't hurt but adds nothing.
-
-Earlier pytest-benchmark results for reference (different timer, different gt4py version):
-
-| Config | Block size | pytest-benchmark Median | vs Baseline |
-|--------|-----------|------------------------|-------------|
-| Baseline | (32,8,1) default | 0.820 ms | — |
-| (256,1,1) all maps | (256,1,1) | 0.703 ms | -14.3% |
-| (64,6,1) all maps | (64,6,1) | 0.756 ms | -7.8% |
-
-### Why (256,1,1) is faster
-
-- All 256 threads in a block process consecutive cells → perfect coalescing for `array[cell, K]`
-- The default (32,8,1) spreads 8 threads across K levels, which wastes coalescing potential
-  since K is the non-unit-stride dimension
-- MI300A wavefronts are 64 wide, so 256 = 4 wavefronts per block — good occupancy
-
-## Loop Blocking (K-Blocking) Experiment
-
-Date: 2026-04-14
-
-### What is loop blocking
-
-Tiles the K dimension into blocks of `blocking_size`. Computations that don't depend on K
-(e.g. connectivity reads, geofac_div, cell-only arrays) are moved outside the inner K-loop,
-so they execute once per block instead of once per K-level.
-
-Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris:gt4py:extend_loopblocking
-
-### Results (pytest-benchmark median — needs re-measurement with GT4Py Timer)
-
-| Config | Median | vs Baseline |
-|--------|--------|-------------|
-| Baseline (32,8) | 0.820 ms | — |
-| Blocking only (32,8 overwritten) | 0.797 ms | -2.8% |
-| Blocking + (256,1,1) blocked map only | 0.700 ms | -14.6% |
-| (256,1,1) all maps, no blocking | 0.703 ms | -14.3% |
-| (256,1,1) all maps + blocking threshold=3 | 0.716 ms | -12.7% |
-| (256,1,1) all maps + blocking threshold=1 | 0.730 ms | -11.0% |
-| (256,1,1) all maps + blocking threshold=0 | 0.723 ms | -11.8% |
-
-### Analysis
-
-- Loop blocking by itself gives a 2.8% speedup by reducing redundant K-independent work
-  in map_0 (the only kernel that met `independent_node_threshold=3`)
-- The block size change from (32,8) to (256,1,1) is responsible for most of the improvement
-  (~12% out of the 14.6% total)
-- When (256,1,1) is already set globally on all maps, enabling loop blocking on top actually
-  makes things slightly worse (0.703→0.716ms). The extra overhead from the coarse loop
-  (bounds checks, `min()` calls) outweighs the savings, since the coalescing improvement
-  — which was the main driver — is already captured by the global block size setting
-- We also tried lowering `independent_node_threshold` to 1 and 0 to block more kernels,
-  but this degraded performance further
-- **Bottom line: setting (256,1,1) on all maps is the best approach for MI300A (14.3%).
-  Loop blocking gives 2.8% on its own but becomes redundant once (256,1,1) is applied
-  globally**
-
-### Bugs found and fixed in GT4Py transformation pipeline
-
-1. **GPU transformation resets block size:** `sdfg.apply_gpu_transformations()` in
-   `_gt_auto_configure_maps_and_strides` creates new GPU-scheduled maps that don't inherit
-   `gpu_block_size` set by `LoopBlocking.apply()`. Fixed by adding a post-GPU override that
-   finds maps with `__gtx_coarse_` parameter and re-applies the configured block size.
-
-2. **`__maxnreg__` is CUDA-only, breaks HIP:** DaCe emits `__maxnreg__(N)` when `gpu_maxnreg>0`,
-   which is not valid in HIP/ROCm (causes compilation error). Changed `LoopBlocking` property
-   defaults to `None` so nothing is set unless explicitly requested.
-
-3. **Block size was (32,8,1) not (256,1,1):** After blocking, outer map has 2 dims
-   (Cell, __gtx_coarse_K). `GPUSetBlockSize` classified it as 2D and applied `(32,8,1)`.
-   Fixed by the post-GPU override described above.
-
-### Changes to GT4Py (on top of extend_loopblocking PR)
-
-**loop_blocking.py:**
-- Added `gpu_block_size` and `gpu_maxnreg` as configurable properties (default `None`)
-- Made `apply()` conditional — only sets when not `None`
-
-**auto_optimize.py:**
-- Added `blocking_gpu_block_size` and `blocking_gpu_maxnreg` parameters
-- Added post-GPU-transformation override in `_gt_auto_configure_maps_and_strides()`
-
-## Optimization Opportunities
-
-### Confirmed helpful
-1. **`fuse_tasklets`** — 7-8% improvement on gt4py 1.1.4 (~1.5% on newer versions per Edoardo's measurements)
-2. **GPU block size (256,1,1) for all maps** — 14.3% improvement on MI300A. All threads on
-   Cell dimension maximizes coalescing.
-
-### Worth investigating
-3. **Grid size divisible by 6** — preliminary data shows additional ~4% improvement (0.617→0.594ms
-   on a different gt4py branch). Possibly related to even work distribution across MI300A's
-   6 XCDs. Needs further investigation.
-4. **Kernel fusion** — reduces 12 kernel launches to fewer, eliminating ~86 μs inter-kernel
-   overhead (10%). Blocked by DaCe `SubgraphFusion` limitations.
-
-### Not helpful (confirmed)
-5. ~~Loop blocking on MI300A~~ — 2.8% alone, but redundant when (256,1,1) is applied globally; combining both is slower than (256,1,1) alone
-6. ~~C2E scatter / edge reordering~~ — C2E is well-localized (85.7% cache utilization)
-7. ~~Occupancy tuning~~ — already at max, causes spilling
-8. ~~Register limiting via compiler flags~~ — not available in ROCm 7.1.0
-9. ~~CSE~~ — compiler handles it
-10. ~~Many-array BW limitation~~ — synthetic benchmark proves MI300A handles 20+ arrays at 93% peak
-11. ~~Block size (64,6,1)~~ — worse than (256,1,1) by 7%
 
 ## Tooling Notes
 
@@ -483,6 +484,7 @@ and multiply by their width × thread count.
 - `amd_scripts/analyze_c2e_reorder.py` — C2E scatter analysis and edge reordering test
 - `amd_scripts/set_waves_per_eu.py` — utility to patch DaCe-generated HIP with waves_per_eu attribute
 - `amd_scripts/patch_cse.py` — utility to patch redundant reads (confirmed unnecessary)
+- `amd_scripts/patch_lds_c2e_v2.py` — utility to stage C2E gather through LDS (neutral)
 - `workloads/rcu_amd_profiling_solver_regional_map_*/` — per-kernel profiling data and roofline PDFs
 - `pmc_perf.csv` — hardware counter data for all kernels
 
