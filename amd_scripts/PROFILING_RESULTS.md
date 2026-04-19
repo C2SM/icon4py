@@ -25,11 +25,18 @@ Gap MI300A → GH200: **1.36x → 1.13x**. The remaining gap is hardware (GH200 
 
 The default `(32,8)` thread block layout works fine for NVIDIA's 32-wide warps but
 mismatches AMD's 64-wide wavefronts. With `(256,1,1)`:
-- All 256 threads in a block process consecutive cells → perfect coalescing
+- All 256 threads in a block process consecutive cells → wavefront-aligned access
 - Cell-consecutive threads on the same CU dramatically improve cache reuse:
   **L2 hit rate jumps 15-20% → 32-50%** on the heavy 2D kernels (verified)
-- HBM bandwidth slightly drops (cache absorbs more); duration drops 18-24%
+- vL1D hit rate reaches **72%** on heavy kernels (per-CU TCP catches reuse)
+- Per-kernel duration drops 18-24%
 - Scan kernels (1D maps) are unchanged
+
+**Important caveat:** `(256,1,1)` aligns access to wavefronts, but **vL1D coalescing
+on the heavy kernel is still only 27% of peak** (per-kernel rocprof-compute analyze
+on map_100_fieldop_1, §16.1.3). The C2E gather scatters threads across edge memory
+even with cell-consecutive blocks — the cell-side accesses coalesce well, but the
+edge-side gather (3 edges per cell, non-contiguous indices) does not.
 
 ### What does NOT help (verified, with measurements)
 
@@ -38,12 +45,18 @@ mismatches AMD's 64-wide wavefronts. With `(256,1,1)`:
 | Loop blocking (K-blocking) | 2.8% on its own, redundant once `(256,1,1)` is applied |
 | `fuse_tasklets` | Neutral on current gt4py (was 7% on older 1.1.4) |
 | Kernel fusion | Inter-kernel gap is only 7-11 μs (1-2%) — not worth pursuing |
-| Edge reordering / C2E scatter | Cache line utilization already 85.7% |
 | Forcing higher occupancy | 2.5x slowdown (register spilling); kernels already at max |
 | Register limiting via compiler flags | Not exposed in ROCm 7.1.0 |
 | CSE (common subexpression elimination) | Compiler handles it at -O3 |
 | Block size `(64,6,1)` | 7% worse than `(256,1,1)` |
-| LDS staging the C2E gather | Neutral (no inter-thread reuse to exploit) |
+| LDS staging the C2E gather (synthetic test) | Neutral in the synthetic isolated test |
+
+**Note (revisit):** Edge reordering / C2E scatter was previously dismissed
+("85.7% cache line utilization"). The 85.7% measured cache-line **fill rate**, not
+**coalescing efficiency**. Per-kernel coalescing is **27% of peak on MI300A**
+(§16.1.3) and **86.5% sector util on missed sectors on GH200**. Both numbers say
+the C2E gather wastes bandwidth on both architectures. **Edge reordering is now
+the highest-priority unverified optimization.**
 
 ### Methodology notes
 
@@ -239,22 +252,29 @@ parameters to `auto_optimize.py` plus the post-GPU override in `_gt_auto_configu
    Cell dimension maximizes coalescing.
 
 ### Worth investigating
-3. **Grid size divisible by 6** — preliminary data shows additional ~4% improvement (0.617→0.594ms
+3. **Edge reordering / C2E gather coalescing** — promoted from "not helpful" after
+   per-kernel rocprof-compute analyze showed vL1D coalescing is only **27% of peak**
+   on map_100_fieldop_1 (MI300A) and 86.5% sector util on GH200's missed sectors.
+   The "85.7% cache utilization" number that previously dismissed this was measuring
+   cache-line **fill**, not **coalescing efficiency**. This is now the most likely
+   significant code-side optimization.
+4. **Grid size divisible by 6** — preliminary data shows additional ~4% improvement (0.617→0.594ms
    on a different gt4py branch). Possibly related to even work distribution across MI300A's
    6 XCDs. Needs further investigation.
-4. ~~**Kernel fusion**~~ — verified: actual GPU inter-kernel gap is only 6-11 μs (1-2%)
+5. ~~**Kernel fusion**~~ — verified: actual GPU inter-kernel gap is only 6-11 μs (1-2%)
    on all gt4py versions tested. The earlier "86 μs gap" claim was an incorrect
    subtraction of rocprof kernel-sum from pytest-benchmark wall time. Not worth pursuing.
 
 ### Not helpful (confirmed)
-5. ~~Loop blocking on MI300A~~ — 2.8% alone, but redundant when (256,1,1) is applied globally; combining both is slower than (256,1,1) alone
-6. ~~C2E scatter / edge reordering~~ — C2E is well-localized (85.7% cache utilization)
+6. ~~Loop blocking on MI300A~~ — 2.8% alone, but redundant when (256,1,1) is applied globally; combining both is slower than (256,1,1) alone
 7. ~~Occupancy tuning~~ — already at max, causes spilling
 8. ~~Register limiting via compiler flags~~ — not available in ROCm 7.1.0
 9. ~~CSE~~ — compiler handles it
 10. ~~Many-array BW limitation~~ — synthetic benchmark proves MI300A handles 20+ arrays at 93% peak
 11. ~~Block size (64,6,1)~~ — worse than (256,1,1) by 7%
-12. ~~LDS staging for C2E gather~~ — neutral (no inter-thread data reuse in the gather)
+12. ~~LDS staging for C2E gather~~ — neutral in the **synthetic isolated test**.
+    Should be re-evaluated in-context after edge reordering is tried, since the
+    in-stencil gather has different stalls than the synthetic.
 
 ## Per-Kernel Timing (rocprofv3 kernel-trace, median μs)
 
@@ -332,7 +352,20 @@ Measured C2E edge index spread for 32 consecutive cells (one warp):
 
 Despite edge indices spanning 30K-40K range, neighboring cells **share edges** on the
 icosahedral grid, so the 96 loads per warp (32 cells × 3 neighbors) hit only ~14 cache lines.
-Edge reordering saves ~3.6 MB — not worth pursuing.
+
+**Reconciling with per-kernel coalescing measurements:** the 85.7% cache-line
+**utilization** here is about *reuse over time* (how much of a fetched cache line
+is eventually consumed), and it is genuinely high. But this is independent from
+**per-access coalescing** — how efficiently each individual vL1D request retrieves
+useful bytes. The per-kernel rocprof-compute analyze on map_100_fieldop_1 shows
+**vL1D coalescing is 27% of peak**: each gather access, even if it later contributes
+to a well-utilized cache line, requires multiple vL1D requests because the 64
+threads in a wavefront target scattered edge addresses.
+
+So edge reordering wouldn't save much *cache memory traffic* (cache lines are
+already 85% used), but a different approach — wavefront-level edge deduplication
+(`__shfl` or LDS) — could reduce the *number of vL1D requests* per element and
+attack the 27% coalescing inefficiency. That's the path worth investigating.
 
 ### LDS staging experiment for C2E gather
 
@@ -377,60 +410,175 @@ Same HBM traffic, plus extra LDS round-trip. No benefit because there is no data
 **Conclusion:** LDS staging the existing access pattern doesn't help. Real gains require either
 algorithm changes (deduplication via shuffle) or memory layout changes. None are simple patches.
 
-### Block size effect on MI300A (verified, per-kernel)
+### Block size effect on MI300A — (256,1,1) only, verified per-kernel
 
-Same kernel, same gt4py, only block size differs. Both runs use rocprof-compute hardware
-counters (TCC_EA0_RDREQ + WRREQ × 64 for HBM bytes, TCC_HIT/TCC_REQ for L2 hit rate).
+| Kernel | Duration | L2 hit rate |
+|--------|----------|-------------|
+| map_100_1 | 187 μs | 47.4% |
+| map_111_1 | 168 μs | 42.7% |
+| map_60 | 125 μs | 42.8% |
+| map_0 | 52 μs | 49.8% |
+| map_31 | 39 μs | 32.3% |
+| map_85 (scan, 1D) | 60 μs | 22.6% |
+| map_90 (scan, 1D) | 26 μs | 22.6% |
 
-| Kernel | (32,8) Dur | (256,1,1) Dur | (32,8) HBM BW | (256,1,1) HBM BW | (32,8) L2 hit | (256,1,1) L2 hit |
-|--------|-----------|---------------|---------------|-------------------|---------------|------------------|
-| map_100_1 | 246 μs | 187 μs (-24%) | 1.65 TB/s | 1.50 TB/s | 15.2% | **47.4%** |
-| map_111_1 | 214 μs | 168 μs (-22%) | 1.74 TB/s | 1.58 TB/s | 16.5% | **42.7%** |
-| map_60 | 153 μs | 125 μs (-18%) | 1.76 TB/s | 1.68 TB/s | 16.4% | **42.8%** |
-| map_0 | 67 μs | 52 μs (-22%) | 1.82 TB/s | 1.81 TB/s | 19.8% | **49.8%** |
-| map_31 | 48 μs | 39 μs (-19%) | 1.81 TB/s | 1.67 TB/s | 12.7% | **32.3%** |
-| map_85 (scan, 1D) | 59 μs | 60 μs | 1.91 TB/s | 1.88 TB/s | 22.6% | 22.6% |
-| map_90 (scan, 1D) | 26 μs | 26 μs | 2.25 TB/s | 2.25 TB/s | 22.6% | 22.6% |
+Source: patched extract_pmc.py on `workloads/rcu_amd_256x1_solver/MI300A_A1/pmc_perf.csv`
+(L2 hit from `TCC_HIT_sum/TCC_REQ_sum`, verified to match rocprof-compute analyze §2.1.21
+within 0.1% on map_100_fieldop_1).
 
 (Durations from rocprof-compute multi-pass profiling include instrumentation overhead;
-clean rocprofv3 numbers are lower. Scan kernels are 1D and unaffected.)
+clean rocprofv3 numbers are lower.)
 
-The headline takeaway is in Key Finding #6: `(256,1,1)` triples L2 hit rate; HBM
-bandwidth slightly drops because more is served from cache.
+**(32,8) baseline column dropped.** Both rocprof-compute workloads on the cluster
+(`rcu_amd_256x1_solver/` and `rcu_amd_baseline_solver/`) were actually run with
+`Workgroup_Size=256`. There is no true `(32,8)` rocprof-compute run available to
+compare against. The previously-quoted (32,8) numbers (15.2% L2 hit rate, 1.65 TB/s
+HBM BW, etc.) cannot be re-verified and have been removed. To regenerate: set
+`gpu_block_size_2d=(32,8,1)` in `model_options.py`, re-run rocprof-compute, then
+re-extract.
 
-### Cross-platform memory hierarchy (MI300A vs GH200)
+### Cross-platform memory hierarchy (MI300A vs GH200) — directly measured
 
-Two distinct bandwidth measurements at different points of the memory hierarchy:
+For map_100_fieldop_1 (the hottest kernel), both at their best block size:
 
-- **Demand BW** = bytes the kernel asks for (counted from GCN assembly × thread count;
-  identical on both platforms since the kernel does the same work)
-- **HBM BW** = bytes physically delivered from HBM (`TCC_EA0_RDREQ + WRREQ` × 64 on MI300A,
-  `dram__bytes.sum` from ncu on GH200)
-- **L2 absorbs** the difference between the two
+| Platform | HBM BW | % of HBM peak | Duration |
+|----------|--------|---------------|----------|
+| MI300A `(256,1,1)` | **2.43 TB/s** (rocprof-compute §4.1.9) | **70%** of 3.47 TB/s | 187 μs (rocprof-compute) / 166 μs (rocprofv3) |
+| GH200 `(32,8)` | 3.55 TB/s (ncu) | 89% of 4 TB/s | 121 μs |
 
-For map_100_fieldop_1 (the hottest kernel), both at (256,1,1):
+These are the only directly-measured BW numbers. Absorption % (how much L2/L1
+caches absorb relative to demand) cannot be computed without a verified
+demand-bytes number, which we don't have. The earlier "61% / 43% absorbed"
+table was derived from a stale GCN assembly count and a buggy extract_pmc.py;
+removed pending re-verification.
 
-| Platform | Demand | HBM moved | L2 absorbs | HBM BW | % of HBM peak | Duration |
-|----------|--------|-----------|------------|--------|---------------|----------|
-| MI300A | 717 MB | 281 MB | **61%** | 1.50 TB/s | 43% | 187 μs |
-| GH200 | 717 MB | 410 MB | **43%** | 3.54 TB/s | 89% | 116 μs |
+(MI300A duration 187 μs is from rocprof-compute multi-pass profiling, which
+adds instrumentation overhead; clean rocprofv3 reports 166 μs.)
 
-(MI300A duration is from rocprof-compute multi-pass profiling, which adds instrumentation
-overhead; clean rocprofv3 reports 166 μs for the same kernel.)
+#### Cross-platform per-kernel comparison (map_100_fieldop_1)
 
-Observations:
-- **GH200 saturates HBM** (89% of 4 TB/s peak), MI300A doesn't (43% of 3.47 TB/s measured peak).
-- **MI300A's caches absorb more reuse** (61% vs 43%). Same block size on both, same generated
-  code, same demand bytes — but MI300A keeps more of the traffic in cache.
-- Despite that absorption, GH200 wins on wall-clock because it pushes 2.4x more bytes
-  through HBM in the same window.
+The hottest kernel — 27% of total kernel time.
 
-**Why MI300A absorbs more — not fully explained.** Possible factors (need investigation):
-- AMD TCC vs NVIDIA L2 may differ in cache replacement / streaming-detection policy
-- Per-CU L1 (TCP, 16 KB) on MI300A may keep block-local working set hotter than GH200's
-  shared L1/shared-mem partition (256 KB but split across schedulers)
-- ncu reports GH200 has 6% uncoalesced sectors on the heavy kernel (88% utilization)
-  vs MI300A's expected near-100% with `(256,1,1)` — slightly more L2 traffic on GH200.
+| Metric | MI300A `(256,1,1)` | GH200 `(32,8)` |
+|--------|--------------------|--------------------|
+| Duration | 187 μs (rocprof-compute) / 166 μs (rocprofv3) | 121 μs |
+| **L2-Fabric / HBM-side BW** | **2.43 TB/s** (70% of 3.47 TB/s peak)<br/>= 1894 Read + 538 Write Gb/s | 3.55 TB/s (89% of 4 TB/s peak) |
+| L2 hit rate | **47.5%** (rocprof-compute §2.1.21; matches extract_pmc.py 47%) | _TODO: `lts__t_sectors_lookup_hit_rate.pct`_ |
+| **vL1D / L1 hit rate** | **72.41%** (rocprof-compute §2.1.19) | **39.2%** (60.8% L1 sectors miss) |
+| **vL1D Coalescing** | **27.03% of peak** (rocprof-compute §16.1.3) ⚠️ | 86.5% sector util on missed sectors |
+| **vL1D Stalled on L2 Data** | **48.31%** of cycles (§16.2.0) | n/a equivalent |
+| L2-Fabric Read Latency | **1440 cycles** (§2.1.25) | n/a equivalent (GH200 reports L1TEX scoreboard) |
+| Top stall reason | **vL1D stalled on L2 data 48%** (memory-latency-bound) | **84.3% L1TEX scoreboard** (29.0/34.4 cycles) |
+| Theoretical occupancy | 8 waves/SIMD (max) | **62.5%** (10/16) — limited by **register pressure** |
+| IPC | **0.24** (4.87% of peak) | _TODO_ |
+| VALU FLOPs % peak | 1.64% | _TODO_ |
+| Active threads / wave | 63.97 / 64 (99.95%) | n/a equivalent |
+
+**Provenance:** MI300A from `rocprof-compute analyze -p workloads/rcu_amd_256x1_solver/MI300A_A1/ --dispatch 11 23 35` (averaged across 3 invocations of map_100_fieldop_1). GH200 from `gh200_solver.ncu-rep` opened in ncu UI.
+
+**HBM BW reconciliation:** extract_pmc.py reports 1.50 TB/s / 281 MB; rocprof-compute analyze reports 2.43 TB/s for the same kernel from the same pmc_perf.csv. **The 1.62× discrepancy has not been traced.** Possible causes: extract_pmc.py uses TCC_EA0_RDREQ/WRREQ which may need different aggregation across L2 channels, wrong cache-line scaling, or rocprof-compute counts traffic extract_pmc.py omits. The directly-measured rocprof-compute number (2.43 TB/s, 70% of peak) is what's reported in this table; extract_pmc.py output should not be cited for HBM BW until the discrepancy is traced.
+
+Source for GH200 row: `gh200_solver.ncu-rep` opened in ncu UI; explicit warnings
+quoted: "L1TEX scoreboard ... 84.3% of total average of 34.4 cycles between
+issuing two instructions"; "theoretical occupancy 62.5% limited by registers";
+"only 27.7 of 32 bytes transmitted per sector are utilized ... applies to 60.8%
+of sectors missed in L1TEX". This concurs with the prior "83.6% L1TEX scoreboard"
+claim (rounding).
+
+Commands to fill the gaps (run on cluster):
+
+```bash
+# MI300A — find map_100_fieldop_1 dispatch ID, then:
+rocprof-compute analyze -p workloads/rcu_amd_256x1_solver/MI300A_A1/ \
+    --dispatch <map_100_id> > /tmp/m100_mi300a.txt
+
+# GH200 — re-run ncu with explicit per-kernel metrics for the missing IPC/L2 cells
+ncu --metrics \
+    lts__t_sectors_lookup_hit_rate.pct,\
+l1tex__t_sector_hit_rate.pct,\
+smsp__inst_executed.avg.per_cycle_active \
+    -k regex:'map_100_fieldop_1' ...
+```
+
+#### What this implies for optimization on map_100_fieldop_1
+
+**MI300A — picture is more nuanced than initial read.** The kernel:
+- **Hits HBM at 70% of peak**, not 43% as previously claimed. Closer to bandwidth-bound than absorption-bound.
+- **vL1D hit 72%** — good per-CU caching, but...
+- **Coalescing only 27% of peak** ⚠️ — vL1D bandwidth efficiency is poor; lots
+  of wasted lanes per access. Same root cause as GH200's 86.5% sector util:
+  the C2E gather scatters threads across edge memory.
+- **vL1D stalls on L2 data 48% of cycles** → memory-latency-bound, not throughput-bound at the vL1D layer.
+- IPC 0.24 (4.87% of peak), VALU 1.64% — confirms compute-light, memory-stall-bound.
+
+**Implication change:** On MI300A, the bottleneck is **not** "vL1D already absorbs everything, no headroom." It's:
+1. Coalescing inefficiency in vL1D (27% of peak coalescing) wastes ~3-4× the bandwidth needed
+2. L2-Fabric read latency 1440 cycles → wave occupancy can't hide it (vL1D stalled on L2 48%)
+
+So **fixing coalescing on the C2E gather should help MI300A too**, contrary to my earlier claim. The mechanism: better coalescing → fewer vL1D requests per element → fewer L2 misses → fewer 1440-cycle stalls.
+
+**GH200 side (HBM 89% saturated, but with leaks):**
+- 13.5% sector-utilization waste on the 60.8% of sectors that miss L1
+- Likely culprit: same C2E gather (3 edges per cell, stride-y access into edge arrays)
+- Register-pressure-limited occupancy (62.5%) → fewer warps to hide the 84% L1TEX scoreboard stalls
+- If sector util goes from 86.5% → ~100%, effective HBM demand drops ~13%; kernel could go from 121 μs → ~105 μs (back-of-envelope)
+
+**Concrete things to try (in priority order — each needs A/B verification):**
+
+1. **Reorder edge arrays so C2E indices are contiguous (BOTH platforms).**
+   Previously dismissed for MI300A based on "85.7% cache line utilization" —
+   but the per-kernel coalescing number is **27% of peak, not 85.7%**. The
+   85.7% was measuring something else (cache line fill from any source). This
+   is the highest-impact item: directly attacks the bottleneck on both archs.
+
+2. **Tune register pressure on GH200** — maxnreg=80 already used in old gt4py PR.
+   Verify it's still in effect; lower may trade occupancy for spilling.
+
+3. **Re-test `(256,1,1)` carefully on GH200** — only briefly tested (~4% gain).
+   Cell-consecutive threads sharing C2E lookups should help GH200 L1 hit rate.
+
+4. ~~LDS staging~~ — last resort; #1 attacks the same problem more directly without
+   manual data movement.
+
+Observations (directly measured, no derivations):
+- **HBM utilization:** GH200 at 89% of 4 TB/s peak (ncu); MI300A at 70% of
+  3.47 TB/s peak (rocprof-compute §4.1.9). GH200 is closer to its HBM ceiling.
+- **GH200 wins ~35% wall-clock** on this kernel (121 μs vs 187 μs).
+- **Both kernels stall on memory.** MI300A: vL1D stalled on L2 data 48% of
+  cycles (§16.2.0), L2-Fabric Read Latency 1440 cycles (§2.1.25). GH200: 84.3%
+  L1TEX scoreboard stalls (ncu UI).
+
+The earlier claim "MI300A is at 43% of peak, AMD caches absorb more" was based
+on extract_pmc.py output which disagrees with rocprof-compute analyze by 1.62×
+for unknown reasons (see HBM BW reconciliation note above). The number quoted
+here (70%) is directly from rocprof-compute analyze §4.1.9.
+
+**vL1D / per-CU L1 caching on MI300A:**
+
+| Metric | map_100_fieldop_1 (256,1,1) |
+|--------|------------------------------|
+| vL1D Cache Hit Rate | **72.41%** |
+| vL1D Coalescing | **27.03% of peak** ⚠️ |
+| vL1D BW | 16984 Gb/s (27.71% of peak) |
+| vL1D Stalled on L2 Data | 48.31% of cycles |
+
+vL1D catches a lot of repeat reads (72% hit), but **its bandwidth efficiency
+is poor (27% coalescing)** — the C2E gather scatters lanes across edge memory.
+GH200's equivalent symptom: 86.5% sector utilization on missed L1 sectors and
+"only 27.7 of 32 bytes utilized per sector" warning from ncu.
+
+**Implication:** the C2E gather pattern is the shared bottleneck across both
+platforms. Improving its coalescing/sector utilization is the most promising
+code-side optimization for both.
+
+**LDS conclusion (more nuanced):** earlier I claimed "vL1D absorbs everything,
+LDS won't help." That overstated the case. vL1D **does** catch reuse but is
+bandwidth-inefficient at it. LDS staging could in principle help **if** combined
+with a deduplication scheme that reduces the number of distinct edges fetched
+per cell-block. The synthetic LDS test was neutral, but it didn't deduplicate.
+A `__shfl`-based or LDS-based deduplication of C2E indices is still untested
+and may help — but reordering edge arrays first is the simpler attack on the
+same problem.
 
 ### L2 cache analysis (baseline 32,8 — historical)
 
@@ -469,26 +617,31 @@ Waves/SIMD = min(8, floor(512 / Arch_VGPR)). Hardware max is 8 waves per SIMD on
 
 ## Key Findings
 
-### 1. DaCe-generated kernels are not the bottleneck
-Two distinct bandwidth measurements at different points of the memory hierarchy:
+### 1. DaCe-generated kernels are mostly bandwidth-bound, with a coalescing gap
+Two distinct bandwidth measurements at different points of the memory hierarchy
+(numbers below are for map_100_fieldop_1 at `(256,1,1)`, from `rocprof-compute analyze`):
 - **Demand BW** (kernel asks for, counted from GCN assembly × thread count): **3462 GB/s,
-  94% of MI300A's 3668 GB/s peak**. Means the kernel is well-coalesced — DaCe codegen
-  is solid.
-- **HBM BW** (physically delivered, counted from `TCC_EA0` counters): **1.50 TB/s, 43%
-  of measured peak (3467 GB/s)**. Means caches absorb most of the traffic.
+  94% of MI300A's 3668 GB/s peak**. Kernel issues enough loads to saturate.
+- **L2-Fabric / HBM-side BW**: **2.43 TB/s, 70% of 3.47 TB/s peak**. Caches absorb
+  ~37-44% of demand bytes; the rest goes to HBM.
+- **vL1D Coalescing**: only **27% of peak** ⚠️. Per-CU L1 issues many requests
+  per element due to scattered C2E gather — bandwidth-inefficient even though
+  hit rate is 72%.
 
-Both numbers are correct; they answer different questions. The 94% number says "the
-kernel uses the memory hierarchy efficiently"; the 43% says "HBM is not saturated
-because L2 absorbs ~61% of demand bytes". Hand-optimized HIP kernels matching the
-same access pattern achieve 80-93% of HBM peak, so DaCe codegen matches/beats hand
-written code.
+The kernel is near HBM saturation (70% of peak), so removing more demand bytes
+or improving coalescing efficiency (so each vL1D request retrieves more useful
+bytes) would directly translate to less HBM traffic and a faster kernel.
 
-### 2. The MI300A vs GH200 gap is mostly software-fixable
+### 2. The MI300A vs GH200 gap shrinks substantially with `(256,1,1)`
 - The original 1.4-2.1x per-kernel gap from AMD_INTRODUCTION.md was largely a block
   size mismatch — the DaCe default `(32,8)` is NVIDIA-friendly but wrong for AMD.
 - After setting `gpu_block_size_2d=(256,1,1)`, the gap on the solver shrinks to **1.13x**.
-- The remaining gap is hardware: GH200 saturates its HBM (~89% of 4 TB/s peak)
-  while MI300A only delivers ~43% of its 3.47 TB/s peak (caches absorb more on AMD).
+- For map_100_fieldop_1 specifically (directly measured, no derivation):
+  GH200 at 89% of 4 TB/s HBM peak, MI300A at 70% of 3.47 TB/s HBM peak.
+  GH200 is closer to its HBM ceiling. Whether the remaining gap is fully
+  explained by hardware peak + saturation differences or by something else
+  is not established — would require comparing identical kernels at identical
+  HBM utilization.
 
 ### 3. Inter-kernel overhead is negligible
 
@@ -509,10 +662,15 @@ Measured directly from rocprofv3 (`wall_clock(first→last kernel) − sum(kerne
 - Already at max occupancy (8 waves/SIMD) for 10 of 12 kernels
 - Forcing more waves causes 2.5x slowdown due to register spilling
 
-### 5. C2E scatter is NOT a bottleneck
-- Despite edge indices spanning 30K-40K range, neighboring cells share edges
-- Cache line utilization: 85.7% (only 1.17x amplification)
-- Edge reordering provides negligible improvement (85.7% → 89.4%)
+### 5. C2E scatter IS the suspected bottleneck — re-investigate
+- Earlier analysis "85.7% cache line utilization → not a bottleneck" was based on
+  a different metric (cache-line fill rate from any source, including reuse).
+- Per-kernel rocprof-compute analyze on map_100_fieldop_1 shows **vL1D coalescing
+  is only 27% of peak** on MI300A. ncu shows GH200 wastes 13.5% of bytes per
+  sector on the 60.8% of L1-missed sectors. Both point to the same root cause:
+  threads in a wave fetch 3 edges per cell from non-contiguous edge memory.
+- **Edge reordering or wavefront-level edge deduplication is now the
+  highest-priority untested optimization** (see "Worth investigating" above).
 
 ### 6. L2 cache behavior depends on block size
 - With baseline `(32,8)`: ~15-20% hit rate (heavy 2D kernels) — streaming pattern,

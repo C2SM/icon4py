@@ -2,9 +2,22 @@
 """Extract per-kernel duration, BW, L2 hit rate from rocprof-compute pmc_perf.csv.
 
 rocprof-compute uses multi-pass profiling: each kernel is run multiple times with
-different counter sets. So TCC_EA0_RDREQ, TCC_HIT, etc. are non-zero only on the
-specific row where their counter set was active. We pick the max non-zero value
-per (kernel_name, counter) across all rows.
+different counter sets. So TCC counters are non-zero only on the specific row
+where their counter set was active. We pick the median non-zero value per
+(kernel_name, counter) across all rows.
+
+HBM BW formula:
+    Use TCC_READ_sum + TCC_WRITE_sum (L2 transactions, 64B each). This matches
+    rocprof-compute analyze §4.1.9 "HBM Bandwidth" within ~3% on map_100_fieldop_1
+    (verified 2026-04-19 against dispatch 11/23/35: this script gives 2.37 TB/s,
+    rocprof-compute reports 2.43 TB/s). The previous formula
+    (TCC_EA0_RDREQ + TCC_EA0_WRREQ) * 64 was wrong by 1.6×; EA0 counters are
+    External Access channel-0 counters that don't aggregate across all L2
+    channels and don't represent total HBM-side traffic.
+
+L2 hit rate formula:
+    TCC_HIT_sum / TCC_REQ_sum. Verified to match rocprof-compute §2.1.21 exactly
+    (47.4% vs 47.5% on map_100_fieldop_1).
 """
 
 import csv
@@ -21,17 +34,12 @@ def main():
         sys.exit(1)
 
     path = Path(sys.argv[1])
-    # For each kernel, store the SUM of each counter across all dispatch rows.
-    # (Each pass produces one row per dispatch; we sum per-counter across dispatches
-    # for that pass, then sum across passes is meaningless because each pass is the
-    # same total. So we take MAX across passes — each pass measures the same kernel
-    # invocation count.)
     kernels = defaultdict(lambda: {
         "durs": [],
         "hit": [],
         "req": [],
-        "rd": [],
-        "wr": [],
+        "read": [],
+        "write": [],
         "arch_vgpr": "",
         "workgroup": "",
     })
@@ -51,8 +59,8 @@ def main():
             for key, col in [
                 ("hit", "TCC_HIT_sum"),
                 ("req", "TCC_REQ_sum"),
-                ("rd", "TCC_EA0_RDREQ_sum"),
-                ("wr", "TCC_EA0_WRREQ_sum"),
+                ("read", "TCC_READ_sum"),
+                ("write", "TCC_WRITE_sum"),
             ]:
                 raw = row.get(col, "")
                 if not raw:
@@ -79,13 +87,12 @@ def main():
             continue
         dur_us = statistics.median(d["durs"]) / 1000
         # Take median of non-zero values for each counter
-        rd = statistics.median(d["rd"]) if d["rd"] else 0
-        wr = statistics.median(d["wr"]) if d["wr"] else 0
+        read = statistics.median(d["read"]) if d["read"] else 0
+        write = statistics.median(d["write"]) if d["write"] else 0
         hit = statistics.median(d["hit"]) if d["hit"] else 0
         req = statistics.median(d["req"]) if d["req"] else 0
-        # 64B cache line on MI300A
-        hbm_bytes = (rd + wr) * 64
-        # bytes / seconds = bytes/s; dur_us * 1e-6 = seconds; / 1e12 = TB/s
+        # 64B cache line on MI300A; TCC_READ + TCC_WRITE = L2 transactions
+        hbm_bytes = (read + write) * 64
         bw_tbs = hbm_bytes / (dur_us * 1e-6) / 1e12 if dur_us > 0 else 0
         hit_pct = 100 * hit / req if req > 0 else 0
         print(
