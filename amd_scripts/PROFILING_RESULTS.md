@@ -31,8 +31,9 @@ is due to hardware bandwidth differences, not software inefficiency.
 
 Date: 2026-04-17
 
-Using the GT4Py Timer (C++ level, closest to kernel launches) for apples-to-apples comparison.
-Both on `amd_profiling_staging_main` gt4py, `amd_profiling_main` icon4py, regional grid.
+Using the GT4Py Timer (C++ level, closest to kernel launches) so both platforms are
+measured the same way. Both runs use gt4py branch `amd_profiling_staging_main`,
+icon4py branch `amd_profiling_main`, on the regional grid.
 
 | Platform | Config | Mean | Median | Runs |
 |----------|--------|------|--------|------|
@@ -93,8 +94,10 @@ Setting `gpu_block_size_2d=(256,1,1)` on MI300A gives a significant improvement 
 putting all threads on the Cell (horizontal) dimension for maximum coalescing.
 
 The heavy kernels (map_100_1, map_115_1, map_60) are 2D maps and account for >70% of
-the total kernel time. Setting `gpu_block_size_1d` has no effect (the 1D kernels —
-boundary, scan, Rayleigh damping — are too small to benefit).
+the total kernel time. Setting `gpu_block_size_1d` has no effect because the 1D kernels
+(boundary kernels: map_13, map_35; scan kernels: map_85, map_90; K=0-only splits:
+map_100_0, map_115_0) either run a single wavefront or have data dependencies (scans)
+that don't benefit from larger thread blocks.
 
 ```python
 # In model_options.py, ROCM device block:
@@ -238,8 +241,9 @@ Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris
 3. **Grid size divisible by 6** — preliminary data shows additional ~4% improvement (0.617→0.594ms
    on a different gt4py branch). Possibly related to even work distribution across MI300A's
    6 XCDs. Needs further investigation.
-4. **Kernel fusion** — reduces 12 kernel launches to fewer, eliminating ~86 μs inter-kernel
-   overhead (10%). Blocked by DaCe `SubgraphFusion` limitations.
+4. ~~**Kernel fusion**~~ — verified: actual GPU inter-kernel gap is only 6-11 μs (1-2%)
+   on all gt4py versions tested. The earlier "86 μs gap" claim was an incorrect
+   subtraction of rocprof kernel-sum from pytest-benchmark wall time. Not worth pursuing.
 
 ### Not helpful (confirmed)
 5. ~~Loop blocking on MI300A~~ — 2.8% alone, but redundant when (256,1,1) is applied globally; combining both is slower than (256,1,1) alone
@@ -251,24 +255,30 @@ Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris
 11. ~~Block size (64,6,1)~~ — worse than (256,1,1) by 7%
 12. ~~LDS staging for C2E gather~~ — neutral (no inter-thread data reuse in the gather)
 
-## Per-Kernel Timing (rocprofv3 kernel-trace, median ns)
+## Per-Kernel Timing (rocprofv3 kernel-trace, median μs)
 
-| Kernel | Time (μs) | Stencil |
-|--------|-----------|---------|
-| map_100_1 | **207** | thermo results + dwdz (split 1) |
-| map_115_1 | **183** | explicit rho/exner + divergence (split 1) |
-| map_60 | **133** | solver coefficients + w explicit |
-| map_0 | 59 | contravariant correction (C2E gather) |
-| map_85 | 58 | tridiag forward sweep (scan) |
-| map_31 | 41 | w explicit term |
-| map_90 | 25 | tridiag back-sub (scan) |
-| map_91 | 9 | Rayleigh damping |
-| map_100_0 | 6 | thermo results + dwdz (split 0, K=0 only) |
-| map_115_0 | 5 | explicit rho/exner + divergence (split 0, K=0 only) |
-| map_13 | 6 | contravariant correction (lower boundary) |
-| map_35 | 4 | zeroing temporaries |
-| **Total kernels** | **734** | |
-| **Total measured** | **~820** | includes inter-kernel overhead (~86 μs, 10%) |
+Both columns measured with rocprofv3 kernel-trace, fresh runs on the current gt4py.
+
+| Kernel | Baseline (μs) | (256,1,1) (μs) | Improvement | Stencil |
+|--------|---------------|----------------|-------------|---------|
+| map_100_1 | 212 | **166** | -22% | thermo results + dwdz (split 1) |
+| map_111_1 | 186 | **146** | -22% | explicit rho/exner + divergence (split 1) |
+| map_60 | 138 | **112** | -19% | solver coefficients + w explicit |
+| map_0 | 60 | 50 | -16% | contravariant correction (C2E gather) |
+| map_85 | 58 | 57 | neutral | tridiag forward sweep (scan, 1D) |
+| map_31 | 42 | 33 | -21% | w explicit term |
+| map_90 | 27 | 27 | neutral | tridiag back-sub (scan, 1D) |
+| map_91 | 9 | 7 | -22% | Rayleigh damping |
+| map_100_0 | 6 | 6 | neutral | thermo results split 0 (1D) |
+| map_111_0 | 5 | 5 | neutral | rho/exner split 0 (1D) |
+| map_13 | 6 | 6 | neutral | contravariant correction lower boundary (1D) |
+| map_35 | 4 | 4 | neutral | zeroing temporaries (1D) |
+| **Total kernels** | **753** | **618** | **-18%** | sum of per-kernel medians |
+| **Wall clock (first→last)** | 774 | 660 | -15% | inter-kernel gap: 6-11 μs (1-2%) |
+| **GT4Py Timer median** | 760 | 604 | -21% | full SDFG call (1000 runs) |
+
+The 2D heavy kernels (map_100_1, map_111_1, map_60, map_31) all gained 16-20% from
+the (256,1,1) block size. 1D kernels and scans are unchanged as expected.
 
 ## Deep Analysis: map_100_fieldop_1 (hottest kernel, 207 μs)
 
@@ -286,7 +296,7 @@ Total traffic: 228 bytes × 3,143,252 threads = **717 MB**
 |--------|-------|
 | Kernel time (rocprofv3) | **207 μs** |
 | Total data moved per invocation | **717 MB** |
-| **Achieved HBM BW** | **3462 GB/s (94.4% of 3668 GB/s peak)** |
+| **Demand BW** (assembly-counted) | **3462 GB/s (94.4% of 3668 GB/s peak)** |
 | GCN assembly instructions (map_100_1) | 510 |
 | GCN assembly instructions (synthetic benchmark) | 430 |
 
@@ -366,7 +376,57 @@ Same HBM traffic, plus extra LDS round-trip. No benefit because there is no data
 **Conclusion:** LDS staging the existing access pattern doesn't help. Real gains require either
 algorithm changes (deduplication via shuffle) or memory layout changes. None are simple patches.
 
-### L2 cache analysis
+### Block size effect on MI300A (verified, baseline (32,8,1) vs (256,1,1))
+
+Same kernel, same gt4py, only block size differs. Both runs use rocprof-compute hardware
+counters (TCC_EA0_RDREQ + WRREQ × 64 for HBM bytes, TCC_HIT/TCC_REQ for L2 hit rate).
+
+| Kernel | (32,8) Dur | (256,1,1) Dur | (32,8) HBM BW | (256,1,1) HBM BW | (32,8) L2 hit | (256,1,1) L2 hit |
+|--------|-----------|---------------|---------------|-------------------|---------------|------------------|
+| map_100_1 | 246 μs | 187 μs (-24%) | 1.65 TB/s | 1.50 TB/s | 15.2% | **47.4%** |
+| map_111_1 | 214 μs | 168 μs (-22%) | 1.74 TB/s | 1.58 TB/s | 16.5% | **42.7%** |
+| map_60 | 153 μs | 125 μs (-18%) | 1.76 TB/s | 1.68 TB/s | 16.4% | **42.8%** |
+| map_0 | 67 μs | 52 μs (-22%) | 1.82 TB/s | 1.81 TB/s | 19.8% | **49.8%** |
+| map_31 | 48 μs | 39 μs (-19%) | 1.81 TB/s | 1.67 TB/s | 12.7% | **32.3%** |
+| map_85 (scan, 1D) | 59 μs | 60 μs | 1.91 TB/s | 1.88 TB/s | 22.6% | 22.6% |
+| map_90 (scan, 1D) | 26 μs | 26 μs | 2.25 TB/s | 2.25 TB/s | 22.6% | 22.6% |
+
+(Durations from rocprof-compute multi-pass profiling include instrumentation overhead;
+clean rocprofv3 numbers are lower. Scan kernels are 1D and unaffected by `gpu_block_size_2d`.)
+
+**Key finding: (256,1,1) speedup comes from cache, not raw bandwidth.**
+- L2 hit rate roughly **triples** (15-20% → 32-50%) on 2D heavy kernels
+- HBM bandwidth slightly *decreases* — fewer bytes need to come from HBM because more
+  hit in L2
+- Duration drops 18-24% because L2 hits are much faster than HBM trips
+- 1D scan kernels are unaffected (same block size in both runs)
+
+Two distinct bandwidth measurements at different points of the memory hierarchy:
+
+- **Demand BW** = bytes the kernel asks for (counted from GCN assembly × thread count;
+  identical on both platforms since the kernel does the same work)
+- **HBM BW** = bytes physically delivered from HBM (`TCC_EA0_RDREQ + WRREQ` × 64 on MI300A,
+  `dram__bytes.sum` from ncu on GH200)
+- **L2 absorbs** the difference between the two
+
+For map_100_fieldop_1 (the hottest kernel), both at (256,1,1):
+
+| Platform | Demand | HBM moved | L2 absorbs | HBM BW | % of HBM peak | Duration |
+|----------|--------|-----------|------------|--------|---------------|----------|
+| MI300A | 717 MB | 281 MB | **61%** | 1.50 TB/s | 43% | 187 μs |
+| GH200 | 717 MB | 410 MB | **43%** | 3.54 TB/s | 89% | 116 μs |
+
+(MI300A duration is from rocprof-compute multi-pass profiling, which adds instrumentation
+overhead; clean rocprofv3 reports 166 μs for the same kernel.)
+
+Observations:
+- **GH200 saturates HBM** (89% of 4 TB/s peak), MI300A doesn't (43% of 3.47 TB/s measured peak).
+- **MI300A's caches absorb more reuse** (61% vs 43%). This is hardware — same block size
+  on both platforms, but MI300A's TCC keeps more of the demand bytes in cache.
+- Despite that absorption, GH200 wins on wall-clock because it pushes 2.4x more bytes
+  through HBM in the same window.
+
+### L2 cache analysis (baseline 32,8 — historical)
 
 | Kernel | TCC_MISS | TCC_HIT | L2 Hit Rate |
 |--------|----------|---------|-------------|
@@ -376,9 +436,8 @@ algorithm changes (deduplication via shuffle) or memory layout changes. None are
 | map_31 (no C2E) | 12466 | 1837 | 12.7% |
 | map_0 (with C2E) | 17730 | 4326 | 19.8% |
 
-All kernels have similar ~16% L2 hit rate **regardless of C2E usage**. The low hit rate is
-due to the streaming access pattern (each element read once), not cache pollution.
-Per-L2-slice distribution is perfectly balanced across all 96 slices.
+These are baseline numbers. With (256,1,1), L2 hit rate jumps to ~47% on the heavy
+kernels (verified — see the bandwidth table above).
 
 ## Per-Kernel Register & Occupancy Profile
 
@@ -420,11 +479,20 @@ Waves/SIMD = min(8, floor(512 / Arch_VGPR)). Hardware max is 8 waves per SIMD on
   - Different kernel launch overhead characteristics
   - Different memory controller latency for first-access patterns
 
-### 3. Inter-kernel overhead is the main optimization target
-- Total kernel time: 734 μs
-- Total measured: ~820 μs
-- Inter-kernel gap: **~86 μs (10.5% overhead)**
-- This is where kernel fusion and `fuse_tasklets` (~7% on gt4py 1.1.4, ~1.5% on newer versions) help
+### 3. Inter-kernel overhead is negligible
+
+The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifact:
+it compared rocprofv3 GPU kernel time (734 μs) against pytest-benchmark wall time
+(820 μs), which also includes Python/GT4Py dispatch overhead. The 86 μs reflects
+that host overhead, not GPU idle time between kernels.
+
+Measured directly from rocprofv3 (`wall_clock(first→last kernel) − sum(kernel times)`):
+
+- Kernel sum: 648 μs
+- Wall clock first→last: 660 μs
+- **Inter-kernel gap: 10.8 μs (1.6%)**
+
+**Kernel fusion would save at most ~10 μs (~1%). Not worth pursuing.**
 
 ### 4. Occupancy is NOT the bottleneck
 - Already at max occupancy (8 waves/SIMD) for 10 of 12 kernels
