@@ -67,12 +67,12 @@ all working data is in HBM.
 | Infinity Cache / memory-side | 256 MB | none equivalent | MI300A has a large memory-side cache, but it doesn't show as a major effect on this kernel (HBM still saturates first) |
 | Warp/wavefront | 64-wide | 32-wide | (256,1,1) wavefront-aligns on AMD; (32,8) is warp-aligned on NVIDIA |
 
-**Why GH200 has more HBM bandwidth:** it's not a generation gap (both are HBM3),
-it's *provisioning* — NVIDIA wires up more aggressive HBM stacks at higher data
-rates on the GH200 product. AMD's MI300A trades some HBM-only BW for the unified
-CPU+GPU memory architecture and the giant 256 MB Infinity Cache. The 5.3 TB/s
-chip-wide peak on MI300A is real but split across the 6 XCDs and shared with the
-CPU complex; per-GPU achievable is lower.
+**Why GH200 has more HBM bandwidth:** it's not a generation gap (both are HBM3).
+It's how the HBM is wired up — NVIDIA dedicates more aggressive HBM stacks at
+higher data rates on the GH200 product. AMD's MI300A trades some HBM-only BW
+for the unified CPU+GPU memory architecture and the giant 256 MB Infinity Cache.
+The 5.3 TB/s chip-wide peak on MI300A is real but split across the 6 XCDs and
+shared with the CPU complex; per-GPU achievable is lower.
 
 ## Sources
 

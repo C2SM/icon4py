@@ -29,22 +29,30 @@ Block-size tuning helps MI300A much more than GH200 — see
 [Cross-platform table](docs/DEEP_ANALYSIS.md#cross-platform-memory-hierarchy-mi300a-vs-gh200--fully-verified-ab)
 for per-kernel detail.
 
-### Cross-platform story (in plain language)
+### Cross-platform story: AMD MI300A vs NVIDIA GH200 (in plain language)
 
 **The big picture (all numbers verified):**
 
-1. **GH200 wins by ~30% per kernel today** (116 μs vs 166 μs on map_100_fieldop_1
-   at each platform's best block size).
-2. **The win is mostly hardware**: GH200 has a higher HBM peak (4.0 vs 3.47 TB/s)
-   AND saturates more of it (89% vs 70% on this kernel).
-3. **Block size matters more on AMD**: switching (32,8)→(256,1,1) gives MI300A
-   −24% on this kernel and ~−20% on the full solver. Same change on GH200 only
-   gives −5%, because GH200 was already nearly bandwidth-saturated.
-4. **Both architectures are bandwidth-bound, not compute-bound**: IPC ~0.2-0.3,
-   VALU usage ~1-2%. The kernel waits on memory, not on math.
+1. **MI300A is ~30% slower than GH200 per kernel today** (MI300A 166 μs vs
+   GH200 116 μs on map_100_fieldop_1, each platform's best block size).
+2. **The gap is mostly hardware**: GH200 has a higher HBM peak (4.0 vs 3.47 TB/s)
+   AND saturates more of it (89% on GH200 vs 70% on MI300A on this kernel).
+3. **Block size matters more on MI300A than on GH200**: switching (32,8)→(256,1,1)
+   gives MI300A −24% on this kernel and ~−20% on the full solver. Same change on
+   GH200 only gives −5%, because GH200 was already nearly bandwidth-saturated.
+4. **Both architectures are bandwidth-bound, not compute-bound** on this kernel:
+   IPC ~0.24 on MI300A, ~0.28 on GH200 (small fractions of each platform's peak);
+   VALU usage 1-2% on both. The kernel waits on memory, not on math.
+   *(IPC = Instructions Per Cycle. Low IPC means the scheduler issues an
+   instruction only every 4-5 cycles → idle ~80% of the time. VALU = % cycles
+   the vector ALUs compute. 1-2% means math units are idle 98% of the time
+   waiting on memory. Implication: optimize memory traffic / cache hits /
+   coalescing — not FLOPs.)*
 5. **Both architectures' caches absorb a similar fraction (37-43%)** of demand bytes.
-   AMD's per-CU vL1D catches more reuse than GH200's L1 (72% vs 39% hit rate),
+   MI300A's per-CU vL1D catches more reuse than GH200's L1 (72% vs 39% hit rate),
    but GH200 wins overall because its HBM is faster anyway.
+   *(CU = Compute Unit, AMD's equivalent of NVIDIA's SM. vL1D is AMD's name for
+   the per-CU L1 data cache — same role as NVIDIA's L1, just different name.)*
 
 ### Can MI300A catch GH200?
 
@@ -53,7 +61,7 @@ already at 89% of its 4.0 TB/s HBM peak; MI300A is at 70% of its 3.47 TB/s peak.
 Even if MI300A reached 100% of its HBM peak, the HBM-peak ratio alone (3.47 vs
 4.0 = 0.87) would leave a residual gap.
 
-**Where MI300A still has headroom:**
+**Where MI300A can still improve:**
 - **HBM utilization at 70% vs GH200's 89%** — room to push more data per second.
 - **vL1D coalescing only 27% of peak** — improving it means fewer vL1D requests
   per element → fewer L2 misses → less HBM traffic → faster. Same root cause
@@ -170,22 +178,17 @@ Detailed cache-hierarchy breakdown and provenance in [Deep Analysis](docs/DEEP_A
 - For map_100_fieldop_1 specifically: GH200 at 89% of 4 TB/s HBM peak, MI300A at 70%
   of 3.47 TB/s HBM peak. GH200 is closer to its HBM ceiling.
 
-### 3. Inter-kernel overhead is negligible (verified A/B)
-| Block size | Wall first→last | Σ kernel times | Gap | Gap % |
-|---|---|---|---|---|
-| (32,8) baseline | 1316 μs | 1314 μs | **6.3 μs** | **0.47%** |
-| (256,1,1) | 847 μs | 840 μs | **9.1 μs** | **1.08%** |
+### 3. Inter-kernel overhead is small (verified A/B)
+| Platform | Block size | Wall first→last | Σ kernel times | Gap | Gap % |
+|---|---|---|---|---|---|
+| MI300A | (32,8) baseline | 1316 μs | 1314 μs | **6.3 μs** | **0.47%** |
+| MI300A | (256,1,1) | 847 μs | 840 μs | **9.1 μs** | **1.08%** |
+| GH200 | (256,1,1) | 491 μs | 474 μs | 17.2 μs | 3.49% |
 
 The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifact
 (rocprofv3 GPU kernel time vs pytest-benchmark wall time, mixing GPU and host overhead).
 
-**Kernel fusion would save at most ~10 μs (~1% of solver time). Not worth pursuing.**
-
-> **TODO (cross-platform):** A first GH200 nsys trace produced an unexpectedly
-> large gap (~19 μs / ~4%). Before that's reported, needs cross-checking under
-> matched conditions (same iteration count; same instrumentation overhead profile).
-> nsys is heavier than rocprofv3 and may itself inject inter-kernel time. Held
-> back from the doc pending verification.
+**Kernel fusion would save at most ~10-20 μs per solver call. Not pursued.**
 
 ### 4. Occupancy is NOT the bottleneck
 - Already at max occupancy (8 waves/SIMD) for 10 of 12 kernels

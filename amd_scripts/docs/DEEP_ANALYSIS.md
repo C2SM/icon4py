@@ -192,8 +192,8 @@ For map_100_fieldop_1 (the hottest kernel), all four configurations directly mea
 - **GH200 saturates HBM at both block sizes (89% of 4 TB/s peak).** It's hardware-bandwidth-bound.
 - **GH200 (256,1,1) is ~5% faster than (32,8)**: 121 → 116 μs, 431 → 412 MB DRAM, 36.5% → 39.2% L1 hit.
   Modest gain compared to MI300A's -24% on the same kernel.
-- **MI300A (256,1,1) wins more (-24%) because MI300A had more headroom.** With (32,8) MI300A was at lower
-  HBM utilization than GH200, so block size mattered more.
+- **MI300A (256,1,1) wins more (-24%) because MI300A had more room to improve.**
+  With (32,8) MI300A was at lower HBM utilization than GH200, so block size mattered more.
 - **Absorption % is comparable (37-43%)** across all four configs. Both architectures'
   caches catch a similar fraction of the demand traffic on this kernel, despite the
   different cache hierarchies (see [Hardware Reference](HARDWARE_REFERENCE.md) for sizes).
@@ -266,7 +266,7 @@ smsp__inst_executed.avg.per_cycle_active \
 - **vL1D stalls on L2 data 48% of cycles** → memory-latency-bound, not throughput-bound at the vL1D layer.
 - IPC 0.24 (4.87% of peak), VALU 1.64% — confirms compute-light, memory-stall-bound.
 
-**Implication change:** On MI300A, the bottleneck is **not** "vL1D already absorbs everything, no headroom." It's:
+**Implication change:** On MI300A, the bottleneck is **not** "vL1D already absorbs everything." It's:
 1. Coalescing inefficiency in vL1D (27% of peak coalescing) wastes ~3-4× the bandwidth needed
 2. L2-Fabric read latency 1440 cycles → wave occupancy can't hide it (vL1D stalled on L2 48%)
 
