@@ -19,6 +19,9 @@ from icon4py.model.testing import config
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        single_moment_six_class_gscp_graupel as graupel,
+    )
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
@@ -260,6 +263,25 @@ class Experiments:
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
     )
+
+
+def construct_graupel_config(
+    experiment: Experiment,
+) -> graupel.SingleMomentSixClassIconGraupelConfig:
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        microphysics_options as mphy_options,
+        single_moment_six_class_gscp_graupel as graupel,
+    )
+
+    if experiment == Experiments.WEISMAN_KLEMP_TORUS:
+        return graupel.SingleMomentSixClassIconGraupelConfig(
+            liquid_autoconversion_option=mphy_options.LiquidAutoConversionType.SEIFERT_BEHENG,
+            ice_stickeff_min=0.075,
+        )
+    else:
+        raise NotImplementedError(
+            f"SingleMomentSixClassIconGraupelConfig for experiment {experiment.name} not implemented."
+        )
 
 
 # TODO(havogt): the following configs should be part of the serialized experiment

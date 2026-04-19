@@ -462,8 +462,6 @@ def compute_rho_theta_pgrad_and_update_vn(
         - is_iau_active: option for iau increment analysis
         - iau_wgt_dyn: a scaling factor for iau increment
         - limited_area: option indicating the grid is limited area or not
-        - iadv_rhotheta: advection type for air density and virtual potential temperature (see RhoThetaAdvectionType)
-        - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
         - nflatlev: starting vertical index of flat levels
         - nflat_gradp: starting vertical index when neighboring cell centers lie within the thickness of the layer
         - start_edge_halo_level_2: start index of second halo level zone for edges
