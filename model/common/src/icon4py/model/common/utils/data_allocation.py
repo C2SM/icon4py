@@ -61,7 +61,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
     elif isinstance(array, gtx.Field):
         return array.asnumpy()
     else:
-        import cupy as cp
+        import cupy as cp  # noqa: PLC0415
 
         return cp.asnumpy(array)
 
@@ -69,12 +69,12 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
 def array_ns(try_cupy: bool) -> ModuleType:
     if try_cupy:
         try:
-            import cupy as cp
+            import cupy as cp  # noqa: PLC0415
 
             return cp
         except ImportError:
             log.warning("No cupy installed, falling back to numpy for array_ns")
-    import numpy as np
+    import numpy as np  # noqa: PLC0415
 
     return np
 

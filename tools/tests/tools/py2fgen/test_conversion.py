@@ -23,7 +23,7 @@ except ImportError:
 
 @pytest.fixture
 def ffi():
-    import cffi
+    import cffi  # noqa: PLC0415
 
     return cffi.FFI()
 

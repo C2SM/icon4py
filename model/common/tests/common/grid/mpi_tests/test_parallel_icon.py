@@ -53,7 +53,7 @@ _log = logging.getLogger(__name__)
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: decomposition.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
-    import ghex.context as ghex  # type: ignore[import-not-found]
+    import ghex.context as ghex  # type: ignore[import-not-found]  # noqa: PLC0415
 
     assert processor_props.comm
 

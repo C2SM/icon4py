@@ -80,7 +80,7 @@ def test_generate_name(name, expected):
 
 
 def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
-    import uxarray as ux
+    import uxarray as ux  # noqa: PLC0415
 
     grid = ux.open_grid(file)
     try:

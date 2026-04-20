@@ -53,7 +53,7 @@ def download_and_extract(
 
 def _perform_download(uri: str, dst: pathlib.Path) -> None:
     try:
-        import wget  # type: ignore[import-untyped]
+        import wget  # type: ignore[import-untyped]  # noqa: PLC0415
     except ImportError as err:
         raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
 
