@@ -8,7 +8,10 @@
 import gt4py.next as gtx
 from gt4py.next import maximum, where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import (
+    GraupelConstants,
+    ThermodynamicConstants,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
     _newton_raphson,
@@ -40,10 +43,14 @@ def _saturation_adjustment(
     """
     qti = q_in.s + q_in.i + q_in.g
     qt = q_in.v + q_in.c + q_in.r + qti
-    cvc = t_d.cvd * (1.0 - qt) + t_d.clw * q_in.r + g_ct.ci * qti
-    cv = cvc + t_d.cvv * q_in.v + t_d.clw * q_in.c
-    ue = cv * te - q_in.c * g_ct.lvc
-    Tx_hold = ue / (cv + q_in.c * (t_d.cvv - t_d.clw))
+    cvc = (
+        ThermodynamicConstants.cvd * (1.0 - qt)
+        + ThermodynamicConstants.clw * q_in.r
+        + GraupelConstants.ci * qti
+    )
+    cv = cvc + ThermodynamicConstants.cvv * q_in.v + ThermodynamicConstants.clw * q_in.c
+    ue = cv * te - q_in.c * GraupelConstants.lvc
+    Tx_hold = ue / (cv + q_in.c * (ThermodynamicConstants.cvv - ThermodynamicConstants.clw))
     qx_hold = _qsat_rho(Tx_hold, rho)
 
     Tx = te
