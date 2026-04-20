@@ -630,7 +630,6 @@ def initialize_driver(
     cell_topography = topography.jablonowski_williamson(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
         u0=35.0,
-        array_ns=data_alloc.import_array_ns(allocator=allocator),
     )
 
     log.info("initializing the static-field factories")
