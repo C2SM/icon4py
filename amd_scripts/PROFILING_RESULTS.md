@@ -63,9 +63,10 @@ Even if MI300A reached 100% of its HBM peak, the HBM-peak ratio alone (3.47 vs
 
 **Where MI300A can still improve:**
 - **HBM utilization at 70% vs GH200's 89%** — room to push more data per second.
-- **vL1D coalescing only 27% of peak** — improving it means fewer vL1D requests
-  per element → fewer L2 misses → less HBM traffic → faster. Same root cause
-  ncu flags on GH200.
+- **Reduce HBM traffic** by avoiding kernel-to-kernel HBM round-trips on
+  intermediate arrays (`gtir_tmp_83/96/97` etc.). The kernel is HBM-bound,
+  so anything that cuts demand bytes pays off. Blocked by gt4py's
+  `concat_where` pipeline (see Optimization Opportunities #2 below).
 
 **Hardware floor (HBM-peak ratio):** MI300A 3.47 TB/s vs GH200 4.0 TB/s → **0.87**.
 Even at perfect saturation, MI300A would still be ~13% behind from hardware
@@ -73,10 +74,12 @@ alone on bandwidth-bound kernels. Beating GH200 across the full model would
 require per-kernel tuning (block size, registers, occupancy) since each kernel
 has its own bottleneck profile.
 
-**The biggest unfinished optimization** is C2E edge reordering or wavefront-level
-edge deduplication. Same root cause hurts both architectures: MI300A wastes
-~3-4× the memory bandwidth it actually needs (vL1D coalescing 27% of peak), and
-GH200 throws away ~13.5% of the bytes it fetches from L2 on L1 misses. Untested.
+**Note on C2E coalescing (commonly suspected, investigated 2026-04-20):** vL1D
+coalescing on the heavy kernel is only 27% of peak. This sounds bad, but vL1D
+itself is only 27.79% utilized (huge headroom in cache bandwidth) and the
+kernel is HBM-bound, not vL1D-bound. Fixing C2E coalescing is predicted to
+give <2% wall-clock improvement. Details in
+[Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
 
 ### Why (256,1,1) helps
 
@@ -97,10 +100,12 @@ mismatches AMD's 64-wide wavefronts.
 - Per-kernel duration drops 18-24%.
 - Scan kernels (1D maps) are unchanged.
 
-**Important caveat:** `(256,1,1)` aligns access to wavefronts, but **vL1D coalescing
-on the heavy kernel is still only 27% of peak** (per-kernel rocprof-compute analyze).
-The C2E gather scatters threads across edge memory even with cell-consecutive
-blocks — see [Deep Analysis](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
+**Note:** even with `(256,1,1)`, **vL1D coalescing is still only 27% of peak**
+on the heavy kernel — the C2E gather scatters threads across edge memory.
+But this turns out NOT to be a wall-clock bottleneck (vL1D has plenty of
+bandwidth headroom; the kernel is HBM-bound, not vL1D-bound). See
+[Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis) for
+why fixing this would give <2%.
 
 ## Optimization Opportunities
 
@@ -109,17 +114,19 @@ blocks — see [Deep Analysis](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
    −5% per-kernel on GH200 (see [block size tuning detail](docs/ATTEMPTED_OPTIMIZATIONS.md#gpu-block-size-tuning))
 
 ### Worth investigating
-2. **Edge reordering / C2E gather coalescing** — promoted from "not helpful"
-   after per-kernel rocprof-compute analyze showed vL1D coalescing is only
-   **27% of peak** on map_100_fieldop_1 (MI300A) and on GH200 the warp uses only
-   ~28 of every 32 bytes the GPU fetches from L2 on L1 misses (~13.5% of fetched
-   bytes thrown away). Highest-impact untested optimization.
+2. **Fuse `gtir_tmp_83/96/97` and similar intermediates** — these arrays are
+   written to HBM by one kernel and read back by the next. The kernel is
+   bandwidth-bound (70% of HBM peak), so removing this round-trip would
+   directly reduce HBM traffic. **This is the largest remaining opportunity
+   on map_100_fieldop_1.** Blocked by `concat_where` K-domain splits in DaCe
+   (a GT4Py pipeline concern, not a tuning knob). See
+   [docs/ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating](docs/ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating).
 3. **Grid size divisible by 6** — preliminary single-data-point shows ~4%
    additional improvement (0.617→0.594 ms on a different gt4py branch). Possibly
    related to even work distribution across MI300A's 6 XCDs. Needs A/B verification.
-4. **DaCe `MapFusion`/`SubgraphFusion` for HBM-traffic reduction** (not launch
-   overhead) — see GT4Py engineer notes in
-   [docs/ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating](docs/ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating).
+4. **XCD-aware block placement** — orthogonal to block size; on MI300A the
+   block-to-XCD assignment affects load balance and per-XCD L2 reuse. Could
+   stack on top of (256,1,1).
 
 ### Not helpful (verified, with measurements)
 | Optimization | Result |
@@ -131,10 +138,92 @@ blocks — see [Deep Analysis](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
 | Register limiting via compiler flags | Not exposed in ROCm 7.1.0 |
 | CSE (common subexpression elimination) | Compiler handles it at -O3 |
 | Block size `(64,6,1)` | 7% worse than `(256,1,1)` |
-| LDS staging the C2E gather (synthetic) | Neutral; `__shfl`-based dedup is a separate untested idea |
+| LDS / shared-memory staging of the C2E gather | Neutral in synthetic test (no inter-thread reuse to exploit). `__shfl`-based deduplication is untested but targets the same vL1D-only metric — same caveat as C2E reordering applies (kernel is HBM-bound, predicted <2% wall-clock impact). |
 | Many-array BW limitation | Synthetic benchmark proves MI300A handles 20+ arrays at 93% peak |
+| **C2E edge reordering** (downgraded from "worth investigating") | Predicted <2% wall-clock impact. The "27% vL1D coalescing" number wastes vL1D bandwidth, but vL1D is only at 27.79% utilization (huge headroom). The kernel is HBM-bound, not vL1D-bound. Reordering improves a metric that isn't the bottleneck. See "How to verify yourself" below. |
 
 Full A/B sweeps and methodology in [docs/ATTEMPTED_OPTIMIZATIONS.md](docs/ATTEMPTED_OPTIMIZATIONS.md).
+
+### How to verify yourself
+
+These are the commands behind the key claims above. Run on the relevant cluster
+after the standard env setup (`source amd_scripts/setup_env.sh; source .venv_rocm/bin/activate`
+on MI300A; `source .venv_cuda/bin/activate` on GH200).
+
+**Block-size A/B (MI300A, GT4Py Timer):**
+```bash
+# Edit model_options.py to set the block size you want (or comment line for DaCe default)
+# Use a fresh GT4PY_BUILD_CACHE_DIR per variant — gt4py caches by SDFG hash, not by block size
+export GT4PY_BUILD_CACHE_DIR=amd_blocksize_<variant>_solver_regional
+export GT4PY_COLLECT_METRICS_LEVEL=10
+export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
+export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=3
+export ICON4PY_STENCIL_TEST_ITERATIONS=10
+export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=100
+
+srun --partition=mi300 --gres=gpu:1 --ntasks=1 --time=00:15:00 \
+    .venv_rocm/bin/python -m pytest -sv -m continuous_benchmarking -p no:tach \
+    --backend=dace_gpu --grid=icon_benchmark_regional \
+    model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
+    -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
+
+# Verify the actually-compiled block size:
+LAST=$(ls -td $GT4PY_BUILD_CACHE_DIR/.gt4py_cache/*/ | head -1)
+grep -oE "dim3\([^)]*\), dim3\([^)]*\)" $LAST/src/cuda/hip/*.cpp | sort -u | head -3
+```
+
+**Per-kernel coalescing / cache metrics (MI300A, rocprof-compute analyze):**
+```bash
+# Find the dispatch IDs of the kernel of interest
+P=workloads/rcu_amd_256x1_solver/MI300A_A1
+awk -F',' 'NR>1 && /map_100_fieldop_1/ {print $1}' $P/pmc_perf.csv | sort -u
+
+# Run the analyze (replace 11 with one of the dispatch IDs)
+rocprof-compute analyze -p $P --dispatch 11 > /tmp/m100.txt 2>&1
+
+# Coalescing, hit rates, L1-L2 traffic:
+sed -n '/^16\. Vector L1/,/^17\./p' /tmp/m100.txt   # vL1D section: coalescing, hit rate, L1-L2 BW
+sed -n '/^2\.1 System/,/^2\.2/p' /tmp/m100.txt      # SOL: HBM BW, IPC, VALU
+sed -n '/^17\. L2 Cache/,/^18\./p' /tmp/m100.txt    # L2 section: hit rate, fabric BW
+```
+
+**Per-kernel HBM BW + L2 hit rate (MI300A, lighter-weight):**
+```bash
+python3 amd_scripts/extract_pmc.py workloads/<your-workload>/MI300A_A1/pmc_perf.csv
+```
+
+**Inter-kernel gap (MI300A, rocprofv3 kernel-trace):**
+```bash
+srun --partition=mi300 --gres=gpu:1 --ntasks=1 --time=00:15:00 \
+    rocprofv3 --kernel-trace --output-format csv -o rocprofv3_<variant> -- \
+    .venv_rocm/bin/python -m pytest -sv -m continuous_benchmarking -p no:tach \
+    --backend=dace_gpu --grid=icon_benchmark_regional \
+    model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
+    -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
+# Then post-process: wall_clock(first→last kernel) − Σ kernel_durations per iteration
+```
+
+**Cross-platform DRAM bytes (GH200, ncu):**
+```bash
+# Re-query existing .ncu-rep without re-running the kernel:
+ncu --import gh200_solver.ncu-rep --csv \
+    --metrics dram__bytes.sum,dram__bytes_read.sum,dram__bytes_write.sum,gpu__time_duration.sum \
+    -k regex:'map_100_fieldop_1' 2>&1 | grep -E "dram__bytes|gpu__time"
+
+# To re-run on a different cache (sbatch on santis):
+sbatch <wrapper>  # see amd_scripts/profile_solver_gh200_ncu.sh for template
+```
+
+**C2E scatter analysis (grid-only first-order estimate, NOT a measurement):**
+```bash
+python3 amd_scripts/analyze_c2e_reorder.py testdata/grids/mch_opr_r19b08/domain1_DOM01.nc \
+    --wave-size 64 --cells-per-block 256
+```
+⚠️ The script's model is approximate. The cache-line-utilization numbers
+(>100% in some configs) prove the model is misformulated — useful only as a
+rough estimate of edge-index spread, not as a coalescing measurement. The
+authoritative numbers come from `rocprof-compute analyze` (above).
+
 
 ## Per-Kernel Timing (rocprofv3 kernel-trace, median μs, MI300A)
 
@@ -196,15 +285,20 @@ The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifa
 - Already at max occupancy (8 waves/SIMD) for 10 of 12 kernels
 - Forcing more waves causes 2.5x slowdown due to register spilling
 
-### 5. C2E scatter IS the suspected bottleneck — re-investigate
-- Earlier analysis "85.7% cache line utilization → not a bottleneck" measured
-  cache-line **fill** from any source, not **coalescing efficiency**.
-- Per-kernel rocprof-compute analyze on map_100_fieldop_1 shows **vL1D coalescing
-  is only 27% of peak** on MI300A. On GH200, of every 32-byte block the GPU
-  fetches from L2 (when L1 misses), the warp uses only ~28 bytes — 13.5% of
-  fetched bytes are thrown away.
-- **Edge reordering or wavefront-level edge deduplication is the highest-priority
-  untested optimization**. See full analysis in [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
+### 5. C2E scatter — investigated, NOT the wall-clock bottleneck (verified 2026-04-20)
+- vL1D coalescing is **27% of peak** on map_100_fieldop_1 (MI300A). This means each
+  vL1D request fetches more sectors than ideal — 3-4× wasteful at the cache layer.
+- **BUT vL1D Bandwidth Utilization is only 27.79%** — the cache has tons of spare
+  capacity. The 27% inefficiency wastes a metric we have plenty of.
+- **The kernel is HBM-bound (70% of HBM peak)**, not vL1D-bound. Improving vL1D
+  coalescing doesn't help wall-clock unless it reduces L2/HBM traffic.
+- **L1 hit rate is 72%** — only 28% of vL1D requests actually go to L2. Even fixing
+  C2E gather coalescing perfectly (27% → 100%) would reduce L2 traffic by a small
+  fraction of that 28%.
+- **Predicted wall-clock impact of edge reordering: <2%, possibly less.** Real
+  bottleneck is HBM traffic — see opportunity #2 (intermediate fusion) instead.
+- See [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis)
+  for measurement detail and reproduction commands.
 
 ### 6. L2 cache behavior depends on block size
 - With baseline `(32,8)`: ~15-20% hit rate (heavy 2D kernels) — streaming pattern.

@@ -76,9 +76,28 @@ to a well-utilized cache line, requires multiple vL1D requests because the 64
 threads in a wavefront target scattered edge addresses.
 
 So edge reordering wouldn't save much *cache memory traffic* (cache lines are
-already 85% used), but a different approach — wavefront-level edge deduplication
-(`__shfl` or LDS) — could reduce the *number of vL1D requests* per element and
-attack the 27% coalescing inefficiency. That's the path worth investigating.
+already 85% used). The 27% vL1D coalescing inefficiency wastes vL1D bandwidth,
+not HBM bandwidth.
+
+**Updated verdict (2026-04-20):** Even attacking the 27% vL1D coalescing
+(via reordering or `__shfl`-based dedup) is unlikely to give meaningful
+wall-clock speedup on this kernel:
+
+- **vL1D Bandwidth Utilization is 27.79%** — there's huge headroom in vL1D
+  capacity. We're only using ~28% of what vL1D can deliver.
+- **L1 hit rate is 72%** — only 28% of vL1D requests reach L2. Even fixing
+  C2E coalescing perfectly would only affect a small slice of L1-miss traffic.
+- **The kernel is HBM-bound** (70% of HBM peak), and **vL1D coalescing fixes
+  don't directly reduce HBM traffic**.
+
+The remaining wall-clock opportunity on map_100_fieldop_1 is **reducing HBM
+traffic itself**, not improving cache-internal efficiency. The biggest
+candidate for that is fusing `gtir_tmp_83/96/97` (currently written to HBM
+by one kernel and read back by the next). See the GT4Py engineer note in
+[ATTEMPTED_OPTIMIZATIONS.md](ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating).
+
+Reproduction commands for the rocprof-compute analyze numbers cited above
+are in the main [PROFILING_RESULTS.md "How to verify yourself"](../PROFILING_RESULTS.md#how-to-verify-yourself) section.
 
 ## LDS staging experiment for C2E gather
 
@@ -104,24 +123,26 @@ inter-thread data sharing within the gather itself.
 Staging through LDS adds: HBM → register → LDS (write) → `__syncthreads()` → LDS (read) → register.
 Same HBM traffic, plus extra LDS round-trip. No benefit because there is no data reuse to exploit.
 
-**Where LDS would actually help (not implemented):**
+**Where LDS could in principle help (verdicts updated 2026-04-20):**
 
 1. **Wavefront-level edge deduplication** — neighboring cells share edges (85.7% cache line
-   utilization confirms this). A custom kernel could:
-   - Compare edge indices across lanes via `__shfl`
-   - Have each unique edge loaded by exactly one thread
-   - Distribute the loaded values back via `__shfl` or LDS
-   This would reduce HBM traffic, not just stage it. Requires a hand-written HIP kernel,
-   not a simple patch.
+   fill confirms reuse exists). A custom kernel could `__shfl` indices across lanes, have
+   each unique edge loaded once, then distribute values back. **This would reduce vL1D
+   request count, not HBM traffic** — the L1 already catches most of the reuse (72% L1 hit).
+   Predicted impact: <2% wall-clock, same caveat as C2E reordering. Requires a hand-written
+   HIP kernel, not a simple patch.
 
 2. **Cell-broadcast values** — `geofac_div[cell]` is read 3 times per cell. Currently each
    read goes to L1. Staging it once in LDS would save 2 L1 lookups per thread. Marginal.
 
 3. **Tridiagonal scan kernels** (`map_85`, `map_90`) — could benefit from LDS-based block-wide
-   scan implementations. Requires algorithmic restructuring, not a patch.
+   scan implementations. Requires algorithmic restructuring, not a patch. These are 1D
+   scan kernels — small contribution to total solver time, low priority.
 
-**Conclusion:** LDS staging the existing access pattern doesn't help. Real gains require either
-algorithm changes (deduplication via shuffle) or memory layout changes. None are simple patches.
+**Conclusion:** LDS staging the C2E gather (or wavefront-level dedup of it) targets vL1D
+inefficiency, but vL1D bandwidth utilization is only 27.79% — there's nothing to win from
+making the cache faster when the cache isn't the bottleneck. The kernel is HBM-bound; only
+optimizations that reduce HBM traffic (e.g., fusing intermediates) will move wall-clock.
 
 ## Block size effect on MI300A — verified A/B (32,8) vs (256,1,1)
 
@@ -279,18 +300,22 @@ So **fixing coalescing on the C2E gather should help MI300A too**, contrary to m
 
 **Concrete things to try (each needs A/B verification):**
 
-1. **Reorder edge arrays so C2E indices are contiguous (both platforms).**
-   The 85.7% cache-line utilization that previously dismissed this measured
-   cache-line **fill**, not **coalescing efficiency** (which is 27% of peak on
-   MI300A; on GH200 the warp uses only ~28 of every 32 bytes the GPU fetches
-   from L2 on L1 misses). Highest-impact untested optimization.
+1. **Fuse intermediates `gtir_tmp_83/96/97`** — currently written to HBM by
+   one kernel and read back by the next. Removing the round-trip would directly
+   reduce HBM traffic, which IS the bottleneck. Blocked by `concat_where`
+   K-domain splits in DaCe — see GT4Py engineer note in
+   [ATTEMPTED_OPTIMIZATIONS.md](ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating).
+   **Largest remaining opportunity.**
 2. **(256,1,1) on GH200**: -5% verified per-kernel (121 → 116 μs). Already
    confirmed; the open question is whether to gate the option per-platform or apply globally.
 3. **Tune register pressure on GH200** — maxnreg=80 was used in the old gt4py PR;
    verify it's still in effect.
-4. ~~LDS staging the existing access pattern~~ — neutral in the synthetic test.
-   `__shfl`-based or LDS-based deduplication of C2E indices is a separate idea
-   that hasn't been tried.
+4. ~~Reorder edge arrays so C2E indices are contiguous~~ — predicted <2% wall-clock
+   impact. The 27% vL1D coalescing wastes vL1D bandwidth (which we have plenty of),
+   not HBM bandwidth (which is the actual bottleneck).
+5. ~~LDS staging the existing access pattern~~ — neutral in the synthetic test.
+   `__shfl`-based or LDS-based deduplication is a separate untested idea but would
+   target the same vL1D-only metric and is likely also <2%.
 
 Observations (directly measured, no derivations):
 - **HBM utilization:** GH200 at 89% of 4 TB/s peak (ncu); MI300A at 70% of
