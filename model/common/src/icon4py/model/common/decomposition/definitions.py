@@ -669,5 +669,5 @@ class DecompositionFlag(int, Enum):
     """
 
 
-single_node_default = SingleNodeExchange()
+single_node_exchange = SingleNodeExchange()
 single_node_reductions = SingleNodeReductions()
