@@ -45,7 +45,7 @@ def test_standalone_driver(
     tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
-    timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
     backend_name = next(
         (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
@@ -59,10 +59,10 @@ def test_standalone_driver(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit_standalone.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit_standalone.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()
-    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()
+    exner_sp = savepoint_diffusion_exit.exner()
+    theta_sp = savepoint_diffusion_exit.theta_v()
+    vn_sp = savepoint_diffusion_exit.vn()
+    w_sp = savepoint_diffusion_exit.w()
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),

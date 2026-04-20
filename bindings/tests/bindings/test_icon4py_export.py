@@ -16,8 +16,8 @@ import pytest
 from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
+from icon4py.bindings import icon4py_export
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
 export_with_mapping_hook = py2fgen.export(
