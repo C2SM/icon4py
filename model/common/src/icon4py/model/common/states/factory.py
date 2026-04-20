@@ -112,9 +112,9 @@ class NeedsExchange(Protocol):
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
-                assert (
-                    first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-                ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                assert first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+                    f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                )
                 with as_exchangeable_field(field) as buffer:
                     exchange.exchange(first_dim, buffer, stream=stream)
                 log.debug(f"exchanged buffer for {name}")
@@ -608,7 +608,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid_provider: GridProvider,
     ) -> None:
         try:
-            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
+            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}  # noqa: PERF102
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}

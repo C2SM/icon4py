@@ -197,9 +197,9 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
     if not icon._has_skip_values(offset, grid.config.limited_area):
         assert connectivity.skip_value is None, f"skip value for offset {offset} should be None"
     else:
-        assert (
-            connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
-        ), f"skip for offset {offset} value should be {gridfile.GridFile.INVALID_INDEX}"
+        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX, (
+            f"skip for offset {offset} value should be {gridfile.GridFile.INVALID_INDEX}"
+        )
 
 
 @pytest.mark.parametrize(
@@ -219,14 +219,14 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
-        assert np.any(
-            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
-        ).item(), f"Connectivity {dim.value} for {grid_descriptor.name} should have skip values."
+        assert np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
+            f"Connectivity {dim.value} for {grid_descriptor.name} should have skip values."
+        )
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
     else:
-        assert not np.any(
-            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
-        ).item(), f"Connectivity {dim.value} for {grid_descriptor.name} contains skip values, but none are expected."
+        assert not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
+            f"Connectivity {dim.value} for {grid_descriptor.name} contains skip values, but none are expected."
+        )
         assert connectivity.skip_value is None
 
 

@@ -204,9 +204,9 @@ def compute_domain_bounds(
         array_ns: numpy or cupy
 
     """
-    assert (
-        dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-    ), f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
+    assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+        f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
+    )
     refinement_ctrl = convert_to_non_nested_refinement_values(
         refinement_fields[dim].ndarray, dim, array_ns
     )
