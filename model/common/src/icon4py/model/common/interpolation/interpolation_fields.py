@@ -38,7 +38,6 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -50,7 +49,6 @@ def compute_c_lin_e(
         edge_owner_mask: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index from the field is computed: c_lin_e is not calculated for the first boundary layer
         array_ns: ModuleType to use for the computation, numpy or cupy, defaults to cupy
-        exchange: Callback to the halo exchange function
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
@@ -59,7 +57,6 @@ def compute_c_lin_e(
     c_lin_e[0:horizontal_start, :] = 0.0
     mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
     res = array_ns.where(mask, c_lin_e, 0.0)
-    exchange(res)
     return res
 
 
@@ -112,7 +109,6 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -159,7 +155,6 @@ def compute_geofac_n2s(
         geofac_n2s[horizontal_start:, 1:]
         + mask[horizontal_start:, :] * (geofac_div / dual_edge_length[c2e])[horizontal_start:, :]
     )
-    exchange(geofac_n2s)
     return geofac_n2s
 
 
@@ -220,7 +215,6 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -273,7 +267,6 @@ def compute_geofac_grdiv(
                 geofac_div[e2c[horizontal_start:, 1], k] * inv_dual_edge_length[horizontal_start:],
                 geofac_grdiv[horizontal_start:, 2 * e2c.shape[1] - 1 + j],
             )
-    exchange(geofac_grdiv)
     return geofac_grdiv
 
 
@@ -888,7 +881,6 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -938,7 +930,6 @@ def compute_cells_aw_verts(
                         * edge_vert_length[ile, idx_ve]
                         * edge_cell_length[ile, 1]
                     )
-    exchange(cells_aw_verts)
     return cells_aw_verts
 
 
@@ -1021,7 +1012,6 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
@@ -1045,7 +1035,6 @@ def compute_pos_on_tplane_e_x_y(
         edges_lat: //
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        exchange: halo exchange callback
         horizontal_start:
 
     Returns:
@@ -1101,14 +1090,12 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_y[llb:, 1],
     )
 
-    exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
     return pos_on_tplane_e_x, pos_on_tplane_e_y
 
 
 def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1123,7 +1110,6 @@ def compute_pos_on_tplane_e_x_y_torus(
     Args:
         dual_edge_length
         e2c
-        exchange: halo exchange callback
 
     Returns:
         pos_on_tplane_e_x
@@ -1149,7 +1135,6 @@ def compute_pos_on_tplane_e_x_y_torus(
 
     pos_on_tplane_e_y = array_ns.zeros((num_edges, 2), dtype=dual_edge_length.dtype)
 
-    exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
     return pos_on_tplane_e_x, pos_on_tplane_e_y
 
 

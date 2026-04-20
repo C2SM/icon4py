@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -25,6 +25,7 @@ from ..fixtures import (
     data_provider,
     decomposition_info,
     download_ser_data,
+    experiment,
     grid_savepoint,
     processor_props,
 )
@@ -41,10 +42,6 @@ if mpi_decomposition.mpi4py is None:
     pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
-cell_domain = h_grid.domain(dims.CellDim)
-k_domain = v_grid.domain(dims.KDim)
-
-
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -59,40 +56,38 @@ def test_program_provider_exchange(
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = processor_props.rank + 10
-    input_field = data_alloc.constant_field(
-        grid, number, dims.CellDim, dims.KDim, allocator=backend
-    )
+    input_field = data_alloc.constant_field(grid, float(number), dims.EdgeDim, allocator=backend)
     source = SimpleFieldSource(
-        data_={"in": (input_field, {"standard_name": "in", "units": ""})},
+        data_={"f": (input_field, {"standard_name": "f", "units": ""})},
         backend=backend,
         grid=grid,
     )
     source._exchange = exchange
+    edge_domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(
-        func=math_helpers.average_two_vertical_levels_downwards_on_cells,
+        func=math_helpers.compute_inverse_on_edges,
         domain={
-            # Use full local horizontal range so the field is computed before implicit exchange.
-            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-            dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+            dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
         },
-        fields={"average": "out"},
-        deps={"input_field": "in"},
+        fields={"f_inverse": "out"},
+        deps={"f": "f"},
         do_exchange=True,
     )
     source.register_provider(provider)
     field = source.get("out")
 
     halo_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO)
+        decomposition_info.local_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.HALO)
     )
     owned_points = data_alloc.as_numpy(
         decomposition_info.local_index(
-            dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
+            dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
         )
     )
     field_np = data_alloc.as_numpy(field)
-    assert (field_np[owned_points, :] == number).all()
-    assert not np.all(field_np[halo_points, :] == number)
+    expected = 1.0 / number
+    assert np.allclose(field_np[owned_points], expected)
+    assert not np.allclose(field_np[halo_points], expected)
 
 
 @pytest.mark.datatest

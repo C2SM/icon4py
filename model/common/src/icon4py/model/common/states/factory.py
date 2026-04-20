@@ -116,6 +116,9 @@ class NeedsExchange(Protocol):
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
+                    # TODO(msimberg): Should exchanges in factories default to
+                    # BLOCK? These will be called only once and blocking
+                    # behaviour is a safer default here.
                     exchange.exchange(first_dim, buffer, stream=stream)
                 log.debug(f"exchanged buffer for {name}")
 
