@@ -865,3 +865,77 @@ def test_limited_area_raises(
             decomposer=decomp.MetisDecomposer(),
             allocator=model_backends.get_allocator(backend),
         )
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    ("field_name", "reduction"),
+    [
+        ("cell_area", "min"),
+        ("cell_area", "max"),
+        ("cell_area", "sum"),
+        ("cell_area", "mean"),
+        ("edge_length", "min"),
+        ("edge_length", "max"),
+        ("edge_length", "sum"),
+        ("edge_length", "mean"),
+        ("dual_area", "min"),
+        ("dual_area", "max"),
+        ("dual_area", "sum"),
+        ("dual_area", "mean"),
+    ],
+)
+def test_global_reductions_single_vs_multi_rank(
+    processor_props: decomp_defs.ProcessProperties,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+    field_name: str,
+    reduction: str,
+) -> None:
+    """Compare global reductions from multi-rank (with halos) against single-rank (no halos).
+
+    Uses real geometry fields from the grid file (cell_area on CellDim,
+    edge_length on EdgeDim, dual_area on VertexDim) so that all three
+    horizontal dimensions are exercised.
+    """
+    if experiment.grid.params.limited_area:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    allocator = model_backends.get_allocator(backend)
+    grid_file = grid_utils._download_grid_file(experiment.grid)
+
+    single_rank_gm = utils.run_grid_manager_for_single_rank(grid_file, allocator=allocator)
+    single_rank_reductions = decomp_defs.create_reduction(
+        decomp_defs.SingleNodeProcessProperties(), single_rank_gm.decomposition_info
+    )
+    single_rank_field = single_rank_gm.geometry_fields[field_name].asnumpy()
+
+    multi_rank_gm = utils.run_grid_manager_for_multi_rank(
+        file=grid_file,
+        run_properties=processor_props,
+        decomposer=decomp.MetisDecomposer(),
+        allocator=allocator,
+    )
+    multi_rank_reductions = decomp_defs.create_reduction(
+        processor_props, multi_rank_gm.decomposition_info
+    )
+    multi_rank_field = multi_rank_gm.geometry_fields[field_name].asnumpy()
+
+    reduce_fn_single = getattr(single_rank_reductions, reduction)
+    reduce_fn_multi = getattr(multi_rank_reductions, reduction)
+
+    expected = reduce_fn_single(single_rank_field)
+    result = reduce_fn_multi(multi_rank_field)
+
+    # Also verify against plain numpy as a sanity check
+    np_reference = getattr(np, reduction)(single_rank_field)
+
+    assert result == pytest.approx(expected, abs=0.0), (
+        f"rank={processor_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
+        f"single-rank = {expected}"
+    )
+    assert result == pytest.approx(np_reference, abs=0.0), (
+        f"rank={processor_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
+        f"numpy reference = {np_reference}"
+    )
