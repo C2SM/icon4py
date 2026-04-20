@@ -14,6 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -23,7 +24,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, dycore_wrapper
 
 from . import utils
 from .test_grid_init import grid_init

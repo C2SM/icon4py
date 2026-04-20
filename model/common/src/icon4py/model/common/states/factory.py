@@ -173,7 +173,7 @@ class FieldSource(GridProvider, Protocol):
     """
 
     _providers: MutableMapping[str, FieldProvider] = {}  # noqa:  RUF012 instance variable
-    _exchange: decomposition.ExchangeRuntime = decomposition.single_node_default
+    _exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
 
     @property
     def _sources(self) -> FieldSource:
