@@ -11,10 +11,10 @@ import gt4py.next as gtx
 from gt4py.next import broadcast, maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import (
-    GraupelConstants,
-    IndexConstants,
-    ThermodynamicConstants,
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    GraupelCt,
+    IndexCt,
+    ThermodynamicCt,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q, Q_scalar
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
@@ -138,13 +138,9 @@ def _temperature_update(
 ) -> TempState:
     current_level_activated = previous_level.activated | mask
     if current_level_activated:
-        eflx = pr * (
-            ThermodynamicConstants.clw * t
-            - ThermodynamicConstants.cvd * t_kp1
-            - GraupelConstants.lvc
-        ) + (pflx_tot) * (
-            GraupelConstants.ci * t - ThermodynamicConstants.cvd * t_kp1 - GraupelConstants.lsc
-        )
+        eflx = pr * (ThermodynamicCt.clw * t - ThermodynamicCt.cvd * t_kp1 - GraupelCt.lvc) + (
+            pflx_tot
+        ) * (GraupelCt.ci * t - ThermodynamicCt.cvd * t_kp1 - GraupelCt.lsc)
 
         e_int = (
             _internal_energy_scalar(
@@ -159,15 +155,15 @@ def _temperature_update(
         qtot = qliq + qice + q.v  # total water specific mass
         cv = (
             (
-                ThermodynamicConstants.cvd * (wpfloat(1.0) - qtot)
-                + ThermodynamicConstants.cvv * q.v
-                + ThermodynamicConstants.clw * qliq
-                + GraupelConstants.ci * qice
+                ThermodynamicCt.cvd * (wpfloat(1.0) - qtot)
+                + ThermodynamicCt.cvv * q.v
+                + ThermodynamicCt.clw * qliq
+                + GraupelCt.ci * qice
             )
             * rho
             * dz
         )  # Moist isometric specific heat
-        t = (e_int + rho * dz * (qliq * GraupelConstants.lvc + qice * GraupelConstants.lsc)) / cv
+        t = (e_int + rho * dz * (qliq * GraupelCt.lvc + qice * GraupelCt.lsc)) / cv
     else:
         eflx = previous_level.eflx
 
@@ -201,7 +197,7 @@ def _precip_and_t(
     dz: ta.wpfloat,
 ) -> IntegrationState:
     zeta = dt / (wpfloat(2.0) * dz)
-    xrho = sqrt(GraupelConstants.rho_00 / rho)
+    xrho = sqrt(GraupelCt.rho_00 / rho)
 
     vc_r = _vel_scale_factor_default_scalar(xrho)
     vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)
@@ -221,9 +217,9 @@ def _precip_and_t(
         r_update = precip_qx_level_update(
             previous_level.r,
             previous_level.rho,
-            IndexConstants.prefactor_r,
-            IndexConstants.exponent_r,
-            IndexConstants.offset_r,
+            IndexCt.prefactor_r,
+            IndexCt.exponent_r,
+            IndexCt.offset_r,
             zeta,
             vc_r,
             q.r,
@@ -233,9 +229,9 @@ def _precip_and_t(
         s_update = precip_qx_level_update(
             previous_level.s,
             previous_level.rho,
-            IndexConstants.prefactor_s,
-            IndexConstants.exponent_s,
-            IndexConstants.offset_s,
+            IndexCt.prefactor_s,
+            IndexCt.exponent_s,
+            IndexCt.offset_s,
             zeta,
             vc_s,
             q.s,
@@ -245,9 +241,9 @@ def _precip_and_t(
         i_update = precip_qx_level_update(
             previous_level.i,
             previous_level.rho,
-            IndexConstants.prefactor_i,
-            IndexConstants.exponent_i,
-            IndexConstants.offset_i,
+            IndexCt.prefactor_i,
+            IndexCt.exponent_i,
+            IndexCt.offset_i,
             zeta,
             vc_i,
             q.i,
@@ -257,9 +253,9 @@ def _precip_and_t(
         g_update = precip_qx_level_update(
             previous_level.g,
             previous_level.rho,
-            IndexConstants.prefactor_g,
-            IndexConstants.exponent_g,
-            IndexConstants.offset_g,
+            IndexCt.prefactor_g,
+            IndexCt.exponent_g,
+            IndexCt.offset_g,
             zeta,
             vc_g,
             q.g,
@@ -331,7 +327,7 @@ def sink_saturation(
 ):
     sink = where(where_, t[0] + t[1] + t[2] + t[3], wpfloat(0.0))
     stot = x / dt
-    sink_saturated = (sink > stot) & (x > GraupelConstants.qmin)
+    sink_saturated = (sink > stot) & (x > GraupelCt.qmin)
     t0 = where(sink_saturated, t[0] * stot / sink, t[0])
     t1 = where(sink_saturated, t[1] * stot / sink, t[1])
     t2 = where(sink_saturated, t[2] * stot / sink, t[2])
@@ -354,7 +350,7 @@ def _q_t_update(
     fa.CellKField[ta.wpfloat],
 ]:
     if enable_masking:
-        is_sig_present = maximum(q.g, maximum(q.i, q.s)) > GraupelConstants.qmin
+        is_sig_present = maximum(q.g, maximum(q.i, q.s)) > GraupelCt.qmin
     else:
         is_sig_present = broadcast(True, (dims.CellDim, dims.KDim))
 
@@ -365,7 +361,7 @@ def _q_t_update(
 
     l_snow = _snow_lambda(rho, q.s, n_snow)
 
-    t_below_tmelt = t < ThermodynamicConstants.tmelt
+    t_below_tmelt = t < ThermodynamicCt.tmelt
     t_at_least_tmelt = ~t_below_tmelt
 
     # Define conversion 'matrix'
@@ -466,19 +462,18 @@ def _q_t_update(
     qtot = qv + qice + qliq
 
     cv = (
-        ThermodynamicConstants.cvd
-        + (ThermodynamicConstants.cvv - ThermodynamicConstants.cvd) * qtot
-        + (ThermodynamicConstants.clw - ThermodynamicConstants.cvv) * qliq
-        + (GraupelConstants.ci - ThermodynamicConstants.cvv) * qice
+        ThermodynamicCt.cvd
+        + (ThermodynamicCt.cvv - ThermodynamicCt.cvd) * qtot
+        + (ThermodynamicCt.clw - ThermodynamicCt.cvv) * qliq
+        + (GraupelCt.ci - ThermodynamicCt.cvv) * qice
     )
     t = (
         t
         + dt
         * (
-            (dqdt_c + dqdt_r)
-            * (GraupelConstants.lvc - (ThermodynamicConstants.clw - ThermodynamicConstants.cvv) * t)
+            (dqdt_c + dqdt_r) * (GraupelCt.lvc - (ThermodynamicCt.clw - ThermodynamicCt.cvv) * t)
             + (dqdt_i + dqdt_s + dqdt_g)
-            * (GraupelConstants.lsc - (GraupelConstants.ci - ThermodynamicConstants.cvv) * t)
+            * (GraupelCt.lsc - (GraupelCt.ci - ThermodynamicCt.cvv) * t)
         )
         / cv
     )
@@ -562,13 +557,13 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    kmin_r = q.r > GraupelConstants.qmin
-    kmin_i = q.i > GraupelConstants.qmin
-    kmin_s = q.s > GraupelConstants.qmin
-    kmin_g = q.g > GraupelConstants.qmin
+    kmin_r = q.r > GraupelCt.qmin
+    kmin_i = q.i > GraupelCt.qmin
+    kmin_s = q.s > GraupelCt.qmin
+    kmin_g = q.g > GraupelCt.qmin
     mask = (
-        (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > GraupelConstants.qmin)
-        | ((te < GraupelConstants.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho)))
+        (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > GraupelCt.qmin)
+        | ((te < GraupelCt.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho)))
         | ~enable_masking
     )
     q, t = where(mask, _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking), (q, te))

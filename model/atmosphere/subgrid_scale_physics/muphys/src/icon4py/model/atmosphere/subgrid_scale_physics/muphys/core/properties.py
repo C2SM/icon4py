@@ -8,9 +8,9 @@
 import gt4py.next as gtx
 from gt4py.next import exp, maximum, minimum, power, where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import (
-    GraupelConstants,
-    ThermodynamicConstants,
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    GraupelCt,
+    ThermodynamicCt,
 )
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
@@ -37,7 +37,7 @@ def _deposition_auto_conversion(
     XCRIT = wpfloat(1.0)  # Critical threshold parameter
 
     return where(
-        qi > GraupelConstants.qmin,
+        qi > GraupelCt.qmin,
         maximum(wpfloat(0.0), ice_dep) * B_DEP / (power((M0_S / m_ice), B_DEP) - XCRIT),
         wpfloat(0.0),
     )
@@ -70,15 +70,11 @@ def _deposition_factor(
 
     KAPPA = wpfloat(2.40e-2)  # Thermal conductivity of dry air
     B = wpfloat(1.94)  # Exponent
-    A = (
-        ThermodynamicConstants.als
-        * ThermodynamicConstants.als
-        / (KAPPA * ThermodynamicConstants.rv)
-    )  # TBD
-    CX = wpfloat(2.22e-5) * power(ThermodynamicConstants.tmelt, (-B)) * wpfloat(101325.0)  # TBD
+    A = ThermodynamicCt.als * ThermodynamicCt.als / (KAPPA * ThermodynamicCt.rv)  # TBD
+    CX = wpfloat(2.22e-5) * power(ThermodynamicCt.tmelt, (-B)) * wpfloat(101325.0)  # TBD
 
-    x = CX / ThermodynamicConstants.rd * power(t, B - wpfloat(1.0))
-    return (CX / ThermodynamicConstants.rd * power(t, B - wpfloat(1.0))) / (
+    x = CX / ThermodynamicCt.rd * power(t, B - wpfloat(1.0))
+    return (CX / ThermodynamicCt.rd * power(t, B - wpfloat(1.0))) / (
         wpfloat(1.0) + A * x * qvsi / (t * t)
     )
 
@@ -178,12 +174,12 @@ def _ice_deposition_nucleation(
     Result:           Rate of vapor deposition for new ice
     """
     return where(
-        (qi <= GraupelConstants.qmin)
+        (qi <= GraupelCt.qmin)
         & (
-            ((t < GraupelConstants.tfrz_het2) & (dvsi > wpfloat(0.0)))
-            | ((t <= GraupelConstants.tfrz_het1) & (qc > GraupelConstants.qmin))
+            ((t < GraupelCt.tfrz_het2) & (dvsi > wpfloat(0.0)))
+            | ((t <= GraupelCt.tfrz_het1) & (qc > GraupelCt.qmin))
         ),
-        minimum(GraupelConstants.m0_ice * ni, maximum(wpfloat(0.0), dvsi)) / dt,
+        minimum(GraupelCt.m0_ice * ni, maximum(wpfloat(0.0), dvsi)) / dt,
         wpfloat(0.0),
     )
 
@@ -216,7 +212,7 @@ def _ice_mass(
     Result:         Ice mass
     """
     MI_MAX = wpfloat(1.0e-9)
-    return maximum(GraupelConstants.m0_ice, minimum(qi / ni, MI_MAX))
+    return maximum(GraupelCt.m0_ice, minimum(qi / ni, MI_MAX))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -245,7 +241,7 @@ def _ice_number(
     A_COOP = wpfloat(5.000)  # Parameter in cooper fit
     B_COOP = wpfloat(0.304)  # Parameter in cooper fit
     NIMAX = wpfloat(250.0e3)  # Maximal number of ice crystals
-    return minimum(NIMAX, A_COOP * exp(B_COOP * (ThermodynamicConstants.tmelt - t))) / rho
+    return minimum(NIMAX, A_COOP * exp(B_COOP * (ThermodynamicCt.tmelt - t))) / rho
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -273,12 +269,12 @@ def _ice_sticking(
     B_MAX_EXP = wpfloat(1.00)  # Maximum for exponential temperature factor
     EFF_MIN = wpfloat(0.075)  # Minimum sticking efficiency
     EFF_FAC = wpfloat(3.5e-3)  # Scaling factor [1/K] for cloud ice sticking efficiency
-    TCRIT = ThermodynamicConstants.tmelt - wpfloat(
+    TCRIT = ThermodynamicCt.tmelt - wpfloat(
         85.0
     )  # Temperature at which cloud ice autoconversion starts
 
     return maximum(
-        maximum(minimum(exp(A_FREEZ * (t - ThermodynamicConstants.tmelt)), B_MAX_EXP), EFF_MIN),
+        maximum(minimum(exp(A_FREEZ * (t - ThermodynamicCt.tmelt)), B_MAX_EXP), EFF_MIN),
         EFF_FAC * (t - TCRIT),
     )
 
@@ -307,12 +303,12 @@ def _snow_lambda(
 
     Result:           Riming snow rate
     """
-    A2 = GraupelConstants.ams * wpfloat(2.0)  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
+    A2 = GraupelCt.ams * wpfloat(2.0)  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
     LMD_0 = wpfloat(1.0e10)  # no snow value of lambda
-    BX = wpfloat(1.0) / (GraupelConstants.bms + wpfloat(1.0))  # Exponent
+    BX = wpfloat(1.0) / (GraupelCt.bms + wpfloat(1.0))  # Exponent
     QSMIN = wpfloat(0.0e-6)  # TODO(): Check with Georgiana that this value is correct
 
-    return where(qs > GraupelConstants.qmin, power((A2 * ns / ((qs + QSMIN) * rho)), BX), LMD_0)
+    return where(qs > GraupelCt.qmin, power((A2 * ns / ((qs + QSMIN) * rho)), BX), LMD_0)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -341,8 +337,8 @@ def _snow_number(
 
     Result:           Snow number
     """
-    TMIN = ThermodynamicConstants.tmelt - wpfloat(40.0)
-    TMAX = ThermodynamicConstants.tmelt
+    TMIN = ThermodynamicCt.tmelt - wpfloat(40.0)
+    TMAX = ThermodynamicCt.tmelt
     QSMIN = wpfloat(2.0e-6)
     XA1 = wpfloat(-1.65e0)
     XA2 = wpfloat(5.45e-2)
@@ -360,18 +356,18 @@ def _snow_number(
     N0S7 = wpfloat(1.0e9)
 
     # TODO(): see if these can be incorporated into WHERE statement
-    tc = maximum(minimum(t, TMAX), TMIN) - ThermodynamicConstants.tmelt
+    tc = maximum(minimum(t, TMAX), TMIN) - ThermodynamicCt.tmelt
     alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
     n0s = (
         N0S3
-        * power(((qs + QSMIN) * rho / GraupelConstants.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        * power(((qs + QSMIN) * rho / GraupelCt.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
         / (alf * alf * alf)
     )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return where(qs > GraupelConstants.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
+    return where(qs > GraupelCt.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
 
 
 @gtx.field_operator
@@ -390,8 +386,8 @@ def _snow_number_scalar(
 
     Result:           Snow number
     """
-    TMIN = ThermodynamicConstants.tmelt - wpfloat(40.0)
-    TMAX = ThermodynamicConstants.tmelt
+    TMIN = ThermodynamicCt.tmelt - wpfloat(40.0)
+    TMAX = ThermodynamicCt.tmelt
     QSMIN = wpfloat(2.0e-6)
     XA1 = wpfloat(-1.65e0)
     XA2 = wpfloat(5.45e-2)
@@ -409,18 +405,18 @@ def _snow_number_scalar(
     N0S7 = wpfloat(1.0e9)
 
     # TODO(): see if these can be incorporated into WHERE statement
-    tc = maximum(minimum(t, TMAX), TMIN) - ThermodynamicConstants.tmelt
+    tc = maximum(minimum(t, TMAX), TMIN) - ThermodynamicCt.tmelt
     alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
     n0s = (
         N0S3
-        * power(((qs + QSMIN) * rho / GraupelConstants.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        * power(((qs + QSMIN) * rho / GraupelCt.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
         / (alf * alf * alf)
     )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return minimum(n0smx, maximum(n0smn, n0s)) if qs > GraupelConstants.qmin else N0S0
+    return minimum(n0smx, maximum(n0smn, n0s)) if qs > GraupelCt.qmin else N0S0
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

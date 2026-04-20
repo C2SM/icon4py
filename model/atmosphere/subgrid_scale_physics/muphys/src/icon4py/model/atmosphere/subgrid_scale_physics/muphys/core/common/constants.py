@@ -11,7 +11,7 @@ import enum
 from icon4py.model.common import type_alias as ta
 
 
-class GraupelConstants(ta.wpfloat, enum.Enum):
+class GraupelCt(ta.wpfloat, enum.Enum):
     rho_00 = 1.225  # reference air density
     q1 = 8.0e-6
     qmin = 1.0e-15  # threshold for computation
@@ -29,7 +29,7 @@ class GraupelConstants(ta.wpfloat, enum.Enum):
     lsc = 2899657.201  # invariant part of vaporization enthalpy => als - (cpv - ci) * tmelt
 
 
-class ThermodynamicConstants(ta.wpfloat, enum.Enum):
+class ThermodynamicCt(ta.wpfloat, enum.Enum):
     # Thermodynamic constants for the dry and moist atmosphere
     # Dry air
     rd = 287.04  # [J/K/kg] gas constant
@@ -70,7 +70,7 @@ class ThermodynamicConstants(ta.wpfloat, enum.Enum):
     cv_v = 78.37934216297742  # (rcpv + 1.0) * cpd - rv
 
 
-class IndexConstants(ta.wpfloat, enum.Enum):
+class IndexCt(ta.wpfloat, enum.Enum):
     prefactor_r = 14.58
     exponent_r = 0.111
     offset_r = 1.0e-12
