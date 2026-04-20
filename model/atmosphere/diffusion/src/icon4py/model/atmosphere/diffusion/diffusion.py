@@ -155,7 +155,6 @@ class DiffusionConfig:
         temperature_boundary_diffusion_denom: float = 135.0,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
         max_nudging_coefficient: float | None = None,  # default is set in __init__
-        nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
     ):
@@ -252,10 +251,6 @@ class DiffusionConfig:
             self.max_nudging_coefficient: float = (
                 constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
             )
-
-        #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
-        #: Called 'nudge_efold_width' in mo_interpol_nml.f90
-        self.nudge_efold_width: float = nudging_decay_rate
 
         #: Type of shear forcing used in turbulence
         #: Called 'itype_shear' in mo_turbdiff_nml.f90
@@ -401,7 +396,7 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         orchestration: bool = False,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
     ):
         self._allocator = model_backends.get_allocator(backend)
         self._orchestration = orchestration

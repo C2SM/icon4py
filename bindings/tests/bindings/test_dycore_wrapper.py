@@ -14,6 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -23,7 +24,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, dycore_wrapper
 
 from . import utils
 from .test_grid_init import grid_init
@@ -42,11 +42,8 @@ def solve_nh_init(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
     l_vert_nested = False
     ldeepatmo = False
     iau_init = False
@@ -218,11 +215,8 @@ def solve_nh_init(
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
         rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
         divdamp_type=divdamp_type,
-        divdamp_trans_start=divdamp_trans_start,
-        divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
         ldeepatmo=ldeepatmo,
         iau_init=iau_init,
@@ -289,11 +283,8 @@ def test_dycore_wrapper_granule_inputs(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
     l_vert_nested = False
     ldeepatmo = False
     iau_init = False
@@ -649,11 +640,8 @@ def test_dycore_wrapper_granule_inputs(
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
             rayleigh_type=rayleigh_type,
-            rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,
             divdamp_type=divdamp_type,
-            divdamp_trans_start=divdamp_trans_start,
-            divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
             ldeepatmo=ldeepatmo,
             iau_init=iau_init,

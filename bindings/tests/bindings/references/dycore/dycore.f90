@@ -504,11 +504,8 @@ module dycore
                                      iadv_rhotheta, &
                                      igradp_method, &
                                      rayleigh_type, &
-                                     rayleigh_coeff, &
                                      divdamp_order, &
                                      divdamp_type, &
-                                     divdamp_trans_start, &
-                                     divdamp_trans_end, &
                                      l_vert_nested, &
                                      ldeepatmo, &
                                      iau_init, &
@@ -815,15 +812,9 @@ module dycore
 
          integer(c_int), value, target :: rayleigh_type
 
-         real(c_double), value, target :: rayleigh_coeff
-
          integer(c_int), value, target :: divdamp_order
 
          integer(c_int), value, target :: divdamp_type
-
-         real(c_double), value, target :: divdamp_trans_start
-
-         real(c_double), value, target :: divdamp_trans_end
 
          logical(c_int), value, target :: l_vert_nested
 
@@ -1523,11 +1514,8 @@ contains
                             iadv_rhotheta, &
                             igradp_method, &
                             rayleigh_type, &
-                            rayleigh_coeff, &
                             divdamp_order, &
                             divdamp_type, &
-                            divdamp_trans_start, &
-                            divdamp_trans_end, &
                             l_vert_nested, &
                             ldeepatmo, &
                             iau_init, &
@@ -1653,15 +1641,9 @@ contains
 
       integer(c_int), value, target :: rayleigh_type
 
-      real(c_double), value, target :: rayleigh_coeff
-
       integer(c_int), value, target :: divdamp_order
 
       integer(c_int), value, target :: divdamp_type
-
-      real(c_double), value, target :: divdamp_trans_start
-
-      real(c_double), value, target :: divdamp_trans_end
 
       logical(c_int), value, target :: l_vert_nested
 
@@ -2239,11 +2221,8 @@ contains
                                  iadv_rhotheta=iadv_rhotheta, &
                                  igradp_method=igradp_method, &
                                  rayleigh_type=rayleigh_type, &
-                                 rayleigh_coeff=rayleigh_coeff, &
                                  divdamp_order=divdamp_order, &
                                  divdamp_type=divdamp_type, &
-                                 divdamp_trans_start=divdamp_trans_start, &
-                                 divdamp_trans_end=divdamp_trans_end, &
                                  l_vert_nested=l_vert_nested, &
                                  ldeepatmo=ldeepatmo, &
                                  iau_init=iau_init, &
