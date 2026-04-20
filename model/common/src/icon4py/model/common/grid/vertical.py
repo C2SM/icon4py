@@ -58,9 +58,9 @@ class Domain:
     def _validate(self):
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
-            assert (
-                self.offset >= 0
-            ), f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            assert self.offset >= 0, (
+                f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            )
 
 
 def domain(dim: gtx.Dimension):
@@ -216,9 +216,9 @@ class VerticalGrid:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
 
         index += domain.offset
-        assert (
-            0 <= index <= self._bottom_level(domain)
-        ), f"vertical index {index} outside of grid levels for {domain.dim}"
+        assert 0 <= index <= self._bottom_level(domain), (
+            f"vertical index {index} outside of grid levels for {domain.dim}"
+        )
         return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> int:
@@ -729,9 +729,7 @@ def _check_flatness_of_flat_level(
     nflatlev: int,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not (
-        vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]
-    ).all():
+    if not (vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]).all():
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 

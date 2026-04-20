@@ -14,12 +14,10 @@ import functools
 import logging
 from collections.abc import Sequence
 from enum import Enum
-from types import ModuleType
 from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base

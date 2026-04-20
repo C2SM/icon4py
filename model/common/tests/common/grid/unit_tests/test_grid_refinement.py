@@ -162,15 +162,15 @@ def test_compute_domain_bounds_for_limited_area_grid(
 
     for d, v in start_index.items():
         expected_value = expected.get(d.zone, _FALLBACK_FAIL)[0]
-        assert (
-            v == expected_value
-        ), f"Expected start index {expected_value} for domain = {d} , but got {v}"
+        assert v == expected_value, (
+            f"Expected start index {expected_value} for domain = {d} , but got {v}"
+        )
 
     for d, v in end_index.items():
         expected_value = expected.get(d.zone, _FALLBACK_FAIL)[1]
-        assert (
-            v == expected_value
-        ), f"Expected end index {expected_value} for domain = {d} , but got {v}"
+        assert v == expected_value, (
+            f"Expected end index {expected_value} for domain = {d} , but got {v}"
+        )
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
@@ -194,9 +194,9 @@ def test_compute_domain_bounds_for_global_grid(
     for k, v in start_index.items():
         assert isinstance(v, gtx.int32)
         if k.zone.is_halo() or k.zone is h_grid.Zone.END:
-            assert (
-                v == grid.size[dim]
-            ), f"Expected start index '{grid.size[dim]}' for '{dim}' in zone '{k.zone}', but got '{v}'"
+            assert v == grid.size[dim], (
+                f"Expected start index '{grid.size[dim]}' for '{dim}' in zone '{k.zone}', but got '{v}'"
+            )
         else:
             assert v == 0, f"Expected start index '0' for {dim} in {k.zone}, but got '{v}'"
 
@@ -205,6 +205,6 @@ def test_compute_domain_bounds_for_global_grid(
         if k.zone.is_lateral_boundary() or k.zone.is_nudging():
             assert v == 0, f"Expected end index '0' for '{dim}' in zone '{k.zone}', but got '{v}'"
         else:
-            assert (
-                v == grid.size[k.dim]
-            ), f"Expected end index '{grid.size[k.dim]}' for {dim} in {k.zone}, but got '{v}'"
+            assert v == grid.size[k.dim], (
+                f"Expected end index '{grid.size[k.dim]}' for {dim} in {k.zone}, but got '{v}'"
+            )

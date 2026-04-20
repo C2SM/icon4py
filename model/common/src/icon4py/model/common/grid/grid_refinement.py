@@ -201,12 +201,10 @@ def compute_domain_bounds(
         decomposition_info: DecompositionInfo needed to determine the HALO `Zone`s
 
     """
-    assert (
-        dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-    ), f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
-    refinement_ctrl = convert_to_non_nested_refinement_values(
-        refinement_fields[dim].ndarray, dim
+    assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+        f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
     )
+    refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
     array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)
     halo_level_1 = decomposition_info.halo_level_mask(
@@ -288,9 +286,7 @@ def get_nudging_refinement_value(dim: gtx.Dimension) -> int:
     return _LAST_BOUNDARY[dim].level + _LAST_NUDGING[dim].level
 
 
-def is_unordered_field(
-    field: data_alloc.NDArray, dim: gtx.Dimension
-) -> data_alloc.NDArray:
+def is_unordered_field(field: data_alloc.NDArray, dim: gtx.Dimension) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
     array_ns = data_alloc.array_namespace(field)
     return array_ns.isin(field, _UNORDERED[dim])
