@@ -18,8 +18,8 @@ logging.basicConfig(
 
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_run
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
+from icon4py.bindings.dycore_wrapper import solve_nh_run
+from icon4py.bindings.dycore_wrapper import solve_nh_init
 
 
 @ffi.def_extern()
@@ -1317,11 +1317,8 @@ def solve_nh_init_wrapper(
     iadv_rhotheta,
     igradp_method,
     rayleigh_type,
-    rayleigh_coeff,
     divdamp_order,
     divdamp_type,
-    divdamp_trans_start,
-    divdamp_trans_end,
     l_vert_nested,
     ldeepatmo,
     iau_init,
@@ -1826,11 +1823,8 @@ def solve_nh_init_wrapper(
                 iadv_rhotheta=iadv_rhotheta,
                 igradp_method=igradp_method,
                 rayleigh_type=rayleigh_type,
-                rayleigh_coeff=rayleigh_coeff,
                 divdamp_order=divdamp_order,
                 divdamp_type=divdamp_type,
-                divdamp_trans_start=divdamp_trans_start,
-                divdamp_trans_end=divdamp_trans_end,
                 l_vert_nested=l_vert_nested,
                 ldeepatmo=ldeepatmo,
                 iau_init=iau_init,

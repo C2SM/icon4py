@@ -10,10 +10,10 @@ import numpy as np
 from gt4py import next as gtx
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
+from icon4py.bindings import icon4py_export
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
-from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
 graupel_program = None
@@ -44,6 +44,7 @@ def graupel_run(
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     enable_masking: bool,
+    enable_dace_hooks: bool,
     wait_for_completion: bool,
 ) -> None:
     global graupel_program  # noqa: PLW0603 [global-statement]
@@ -62,6 +63,7 @@ def graupel_run(
             vertical_start=kstart,
             vertical_end=ke,
             enable_masking=enable_masking,
+            enable_dace_hooks=enable_dace_hooks,
         )
 
     q = graupel.Q(qv, qc, qr, qs, qi, qg)

@@ -171,7 +171,7 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
         cell_coordinate_source,
         cell_coordinate_source.backend,
         cell_coordinate_source,
-        exchange=decomposition.single_node_default,
+        exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["x"]
     assert isinstance(x, gtx.Field)
@@ -195,7 +195,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         height_coordinate_source,
         height_coordinate_source.backend,
         height_coordinate_source,
-        exchange=decomposition.single_node_default,
+        exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["output_f"]
     assert isinstance(x, gtx.Field)
