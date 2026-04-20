@@ -19,7 +19,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast, maximum
