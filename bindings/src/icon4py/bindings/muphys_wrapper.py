@@ -66,7 +66,7 @@ def graupel_run(
             enable_dace_hooks=enable_dace_hooks,
         )
 
-    q = graupel.Q(qv, qc, qr, qs, qi, qg)  # type: ignore[arg-type]  # gt4py Dims generic invariant, specific dims don't match _AnyDim
+    q = graupel.Q(qv, qc, qr, qs, qi, qg)
 
     # The precipitation fields (pr, ps, pi, pg, pre) are defined as 1D-fields with
     # horizontal domain, in the driver, because they represent precipitation at the
