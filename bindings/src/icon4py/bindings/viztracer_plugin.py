@@ -11,7 +11,7 @@ VizTracer plugin for PY2FGEN generated bindings.
 
 To enable this plugin
 - install `viztracer` ('pip install viztracer') or `icon4py-tools[profiling]`
-- set the environment variable `PY2FGEN_EXTRA_CALLABLES=icon4py.tools.py2fgen.wrappers.viztracer_plugin:init`
+- set the environment variable `PY2FGEN_EXTRA_CALLABLES=icon4py.bindings.viztracer_plugin:init`
 - set the environment variable
    - `ICON4PY_TRACING_RANGE` in the format 'start:stop' to define the range of calls to be traced, and
    - `ICON4PY_TRACING_NAMES` to specify the names of the functions to be traced (comma-separated)
@@ -27,8 +27,8 @@ from types import TracebackType
 
 import viztracer  # type: ignore[import-not-found]
 
+from icon4py.bindings import grid_wrapper
 from icon4py.tools.py2fgen import runtime_config
-from icon4py.tools.py2fgen.wrappers import grid_wrapper
 
 
 @dataclasses.dataclass
