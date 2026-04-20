@@ -63,7 +63,9 @@ class SingleMomentSixClassIconGraupelConfig:
     #: liquid auto conversion mode. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
     liquid_autoconversion_option: gtx.int32 = mphys_options.LiquidAutoConversionType.KESSLER
     #: snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    snow_intercept_option: gtx.int32 = mphys_options.SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
+    snow_intercept_option: gtx.int32 = (
+        mphys_options.SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
+    )
     #: Do latent heat nudging. Originally defined as dass_lhn in mo_run_config.f90 in ICON.
     do_latent_heat_nudging = False
     #: Whether a fixed latent heat capacities are used for water. Originally defined as ithermo_water in mo_nwp_tuning_config.f90 in ICON (0 means True).
@@ -145,7 +147,7 @@ class SingleMomentSixClassIconGraupel:
         _n0r: ta.wpfloat = (
             8.0e6 * math.exp(3.2 * self.config.rain_mu) * 0.01 ** (-self.config.rain_mu)
         )  # empirical relation adapted from Ulbrich (1983)
-        _n0r: ta.wpfloat = _n0r * self.config.rain_n0  # apply tuning factor to rain_n0 variable
+        _n0r *= self.config.rain_n0  # apply tuning factor to rain_n0 variable
         _ar: ta.wpfloat = (
             math.pi * _phy_const.water_density / 6.0 * _n0r * math.gamma(self.config.rain_mu + 4.0)
         )  # pre-factor

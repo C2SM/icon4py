@@ -57,7 +57,7 @@ def test_graupel(
     icon_grid: icon_module.IconGrid,
     lowest_layer_thickness: ta.wpfloat,
     backend: gtx_typing.Backend,
-):
+) -> None:
     pytest.xfail("Tolerances have increased with new ser_data, need to check with @ongchia")
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
