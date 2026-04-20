@@ -49,8 +49,10 @@ for per-kernel detail.
    waiting on memory. Implication: optimize memory traffic / cache hits /
    coalescing — not FLOPs.)*
 5. **Both architectures' caches absorb a similar fraction (37-43%)** of demand bytes.
-   MI300A's per-CU vL1D catches more reuse than GH200's L1 (72% vs 39% hit rate),
-   but GH200 wins overall because its HBM is faster anyway.
+   At MI300A's optimal `(256,1,1)`, vL1D hit rate is **72%**; at GH200's optimal
+   `(256,1,1)`, L1 hit rate is **only 13%**. So MI300A's per-CU L1 catches ~5×
+   more cache hits than GH200's per-SM L1. GH200 wins overall because its HBM
+   is faster anyway and absorption shifts to L2 / fabric instead.
    *(CU = Compute Unit, AMD's equivalent of NVIDIA's SM. vL1D is AMD's name for
    the per-CU L1 data cache — same role as NVIDIA's L1, just different name.)*
 
@@ -64,9 +66,11 @@ Even if MI300A reached 100% of its HBM peak, the HBM-peak ratio alone (3.47 vs
 **Where MI300A can still improve:**
 - **HBM utilization at 70% vs GH200's 89%** — room to push more data per second.
 - **Reduce HBM traffic** by avoiding kernel-to-kernel HBM round-trips on
-  intermediate arrays (`gtir_tmp_83/96/97` etc.). The kernel is HBM-bound,
-  so anything that cuts demand bytes pays off. Blocked by gt4py's
-  `concat_where` pipeline (see Optimization Opportunities #2 below).
+  intermediate arrays (`gtir_tmp_83/96/97` etc.). Both platforms are HBM-bound,
+  so cutting demand bytes pays off on both — though the *visible* speedup
+  would be larger on MI300A (lower HBM utilization to start with) than on
+  GH200 (already near saturation). Blocked by gt4py's `concat_where` pipeline
+  (see Optimization Opportunities #2 below).
 
 **Hardware floor (HBM-peak ratio):** MI300A 3.47 TB/s vs GH200 4.0 TB/s → **0.87**.
 Even at perfect saturation, MI300A would still be ~13% behind from hardware
@@ -115,11 +119,13 @@ why fixing this would give <2%.
 
 ### Worth investigating
 2. **Fuse `gtir_tmp_83/96/97` and similar intermediates** — these arrays are
-   written to HBM by one kernel and read back by the next. The kernel is
-   bandwidth-bound (70% of HBM peak), so removing this round-trip would
-   directly reduce HBM traffic. **This is the largest remaining opportunity
-   on map_100_fieldop_1.** Blocked by `concat_where` K-domain splits in DaCe
-   (a GT4Py pipeline concern, not a tuning knob). See
+   written to HBM by one kernel and read back by the next. Both platforms are
+   bandwidth-bound (MI300A 70% of peak, GH200 89%), so removing this round-trip
+   directly reduces HBM traffic on both. **Largest remaining opportunity on
+   map_100_fieldop_1.** Likely larger visible speedup on MI300A (more HBM
+   headroom) than on GH200 (already near saturation), but helps both. Blocked
+   by `concat_where` K-domain splits in DaCe (GT4Py pipeline concern, not a
+   tuning knob). See
    [docs/ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating](docs/ATTEMPTED_OPTIMIZATIONS.md#note-for-gt4py--dace-engineers-worth-investigating).
 3. **Grid size divisible by 6** — preliminary single-data-point shows ~4%
    additional improvement (0.617→0.594 ms on a different gt4py branch). Possibly
@@ -250,6 +256,36 @@ Both columns measured with rocprofv3 kernel-trace, fresh runs on the current gt4
 The 2D heavy kernels (map_100_1, map_111_1, map_60, map_31) all gained 16-22% from
 the (256,1,1) block size. 1D kernels and scans are unchanged as expected.
 
+### Per-Kernel Cross-Platform (MI300A vs GH200 at each platform's best block size)
+
+MI300A at `(256,1,1)`, GH200 cache compiled with (32,8) for 1D/scan kernels and
+(256,1,1) for 2D kernels (DaCe's automatic per-kernel choice on GH200).
+
+| Kernel | MI300A (μs) | GH200 (μs) | Winner | Note |
+|---|---|---|---|---|
+| map_100_1 | 166 | 117 | GH200 (-30%) | hottest 2D kernel |
+| map_111_1 | 146 | 107 | GH200 (-27%) | 2D |
+| map_60 | 112 | 84 | GH200 (-25%) | 2D |
+| map_0 | 50 | 34 | GH200 (-32%) | 2D, C2E gather |
+| map_31 | 33 | 27 | GH200 (-18%) | 2D |
+| **map_85** (forward scan, 1D) | **57** | **63** | **MI300A (-10%)** | wavefront-aligned win |
+| map_90 (back-sub scan, 1D) | 27 | 24 | GH200 (-11%) | |
+| map_91 (Rayleigh damping) | 7 | 4 | GH200 | small |
+| map_13 (boundary) | 6 | 5 | GH200 | small |
+| map_100_0 (1D split) | 6 | 6 | tie | |
+| map_111_0 (1D split) | 5 | 6 | MI300A | small |
+| map_35 (zeroing) | 4 | 2.5 | GH200 | small |
+
+**MI300A wins on:** the forward scan (map_85, -10%) and one trivial 1D split (map_111_0).
+GH200 wins on every other kernel — most by 18-32%, consistent with its higher
+HBM peak and saturation. The forward-scan win confirms our hypothesis that
+64-thread blocks fit AMD's 64-wide wavefronts perfectly (1 wave = 1 block,
+no scheduling overhead between waves), while NVIDIA has to manage 2 warps per
+block on the same kernel.
+
+Sources: MI300A from rocprofv3 kernel-trace; GH200 from `gh200_all_kernels.ncu-rep`
+(`gpu__time_duration.sum`, single-iteration ncu run).
+
 ## Key Findings
 
 ### 1. DaCe-generated kernels are bandwidth-bound, with a coalescing gap
@@ -300,11 +336,71 @@ The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifa
 - See [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis)
   for measurement detail and reproduction commands.
 
-### 6. L2 cache behavior depends on block size
+### 6. L2 cache behavior depends on block size (MI300A)
 - With baseline `(32,8)`: ~15-20% hit rate (heavy 2D kernels) — streaming pattern.
 - With `(256,1,1)`: **L2 hit rate jumps to 32-50%** on heavy 2D kernels because
   cell-consecutive threads on the same CU share cache lines. Main driver of the 20% speedup.
 - 1D / scan kernels are unaffected.
+
+### 7. AMD per-CU L1 dramatically out-caches NVIDIA per-SM L1 on this kernel
+For map_100_fieldop_1 at each platform's matching `(256,1,1)`:
+
+| Cache layer | MI300A (vL1D) | GH200 (L1) | Ratio |
+|---|---|---|---|
+| Per-cache size | 32 KB per CU | 256 KB per SM | NVIDIA has 8× per-cache |
+| Total L1 across chip | 228 × 32 KB = 7.3 MB | 132 × 256 KB = 33.8 MB | NVIDIA has 4.6× total |
+| **L1 hit rate** | **72.4%** | **13.1%** | **MI300A wins 5.5×** |
+| **L2 hit rate** | 47.5% | 48.6% | tie |
+
+NVIDIA has more total L1 storage AND a bigger per-cache size, but on this kernel
+**MI300A's smaller, more-numerous caches catch dramatically more reuse at L1**.
+Interestingly, **L2 hit rates are nearly identical (~48% on both)** — so the
+overall cache hierarchy ends up catching similar fractions of demand traffic
+on both architectures, but MI300A absorbs more at L1, GH200 absorbs more at L2.
+
+**Why MI300A's L1 hits 5× more (plausible hypotheses — not pinned down):**
+
+Both architectures run multiple blocks concurrently per CU/SM, so "per-CU isolation"
+is too simple. Possible contributing factors:
+1. AMD's wavefront is 64 wide vs NVIDIA's 32-wide warp, so `(256,1,1)` = 4 waves
+   on AMD vs 8 warps on NVIDIA on the same block. Less scheduling overhead and
+   potentially fewer concurrent working sets competing per cache slice.
+2. NVIDIA's 256 KB L1 is shared with shared memory + texture cache; effective
+   L1-data portion is smaller than the 256 KB headline.
+3. AMD's vL1D may have different replacement policy / faster refill latency
+   that suits this access pattern better.
+4. GH200 (32,8) has **higher** L1 hit rate (36.5%) than (256,1,1) (13.1%) — smaller
+   blocks → fewer concurrent threads per SM → less cache pressure. This at least
+   confirms cache contention is a factor on NVIDIA.
+
+**We haven't isolated which factor dominates** — pinning it down would require
+microbenchmarks (different cache replacement policies, refill latencies, working
+set fits) outside what these profilers expose. The profile tools tell us *what*
+(72% vs 13%), not *why*.
+
+**Counter-intuitive but verified (mechanism now proven 2026-04-20):** GH200
+(256,1,1) is faster overall (-5%) despite WORSE L1 hit rate. **L2 picks up
+the slack**:
+
+| Block | L1 hit | L2 read hit | L2 overall hit | DRAM bytes | Duration |
+|---|---|---|---|---|---|
+| (32,8) | 36.5% | 14.7% | 34.9% | 432 MB | 123 μs |
+| (256,1,1) | 13.1% | **36.5%** | **48.6%** | 413 MB | 117 μs |
+
+When L1 thrashes at the larger block size, GH200's 50 MB L2 catches the
+displaced working set. Net DRAM traffic drops 4%, duration drops 5%. L2 read
+hit jumps 2.5× (14.7% → 36.5%) — the cache hierarchy works exactly as designed:
+data the L1 can't hold falls into the much larger L2.
+
+Source: `gh200_m100_l2_256x1.ncu-rep` and `gh200_m100_l2_32x8.ncu-rep`,
+metrics `lts__t_sectors_op_read_lookup_hit.sum` and `_miss.sum`. The aggregate
+`lts__t_sectors_lookup_hit_rate.pct` returned `n/a` (NVIDIA metric quirk),
+so we computed hit/(hit+miss) from the raw counters.
+
+**Implication:** AMD's many-small-caches design is not just different from
+NVIDIA's; it's actively better-suited for kernels with localized cell-block
+working sets. This is a structural advantage that block-size tuning can't
+replicate on NVIDIA.
 
 ## Methodology notes
 

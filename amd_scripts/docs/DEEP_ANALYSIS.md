@@ -192,7 +192,7 @@ For map_100_fieldop_1 (the hottest kernel), all four configurations directly mea
 | **MI300A** | `(32,8)` | **247.6 μs** | **428 MB** (= 1.73 × 247.6) | **1.73 TB/s** | **50%** of 3.47 TB/s | TBD (rocprof-compute analyze run not done for this dispatch) | **41%** |
 | **MI300A** | `(256,1,1)` | 187 μs (mp) / 166 μs (rocprofv3) | **454 MB** | **2.43 TB/s** | **70%** of 3.47 TB/s | vL1D **72%** | 37% |
 | **GH200** | `(32,8)` | **121.0 μs** | **431 MB** | **3.56 TB/s** | **89%** of 4 TB/s | **36.5%** | 40% |
-| **GH200** | `(256,1,1)` | **115.6 μs** (-4.5%) | **412 MB** (-4.4%) | **3.57 TB/s** | **89%** of 4 TB/s | **39.2%** | 43% |
+| **GH200** | `(256,1,1)` | **115.6 μs** (-4.5%) | **412 MB** (-4.4%) | **3.57 TB/s** | **89%** of 4 TB/s | **13.1%** ⚠️ | 43% |
 
 **Provenance:**
 - Demand bytes (720 MB): re-counted from GCN assembly
@@ -211,8 +211,11 @@ For map_100_fieldop_1 (the hottest kernel), all four configurations directly mea
 
 **Verified cross-platform findings:**
 - **GH200 saturates HBM at both block sizes (89% of 4 TB/s peak).** It's hardware-bandwidth-bound.
-- **GH200 (256,1,1) is ~5% faster than (32,8)**: 121 → 116 μs, 431 → 412 MB DRAM, 36.5% → 39.2% L1 hit.
-  Modest gain compared to MI300A's -24% on the same kernel.
+- **GH200 (256,1,1) is ~5% faster than (32,8)**: 121 → 116 μs, 431 → 412 MB DRAM.
+  L1 hit drops 36.5% → 13.1%, but **L2 hit jumps 34.9% → 48.6%** (verified
+  2026-04-20 from `lts__t_sectors_op_read_lookup_hit/miss` counters). L2 catches
+  what L1 can't hold, so net DRAM traffic still drops slightly. Modest gain
+  compared to MI300A's -24% on the same kernel.
 - **MI300A (256,1,1) wins more (-24%) because MI300A had more room to improve.**
   With (32,8) MI300A was at lower HBM utilization than GH200, so block size mattered more.
 - **Absorption % is comparable (37-43%)** across all four configs. Both architectures'
@@ -226,21 +229,33 @@ adds instrumentation overhead; clean rocprofv3 reports 166 μs.)
 
 ### Cross-platform per-kernel comparison (map_100_fieldop_1)
 
-The hottest kernel — 27% of total kernel time.
+The hottest kernel — 27% of total kernel time. All three platform/block combos
+verified 2026-04-20.
 
-| Metric | MI300A `(256,1,1)` | GH200 `(32,8)` |
-|--------|--------------------|--------------------|
-| Duration | 187 μs (rocprof-compute) / 166 μs (rocprofv3) | 121 μs |
-| **L2-Fabric / HBM-side BW** | **2.43 TB/s** (70% of 3.47 TB/s peak)<br/>= 1894 Read + 538 Write Gb/s | 3.55 TB/s (89% of 4 TB/s peak) |
-| L2 hit rate | **47.5%** (rocprof-compute §2.1.21; matches extract_pmc.py 47%) | not collected (`lts__t_sectors_lookup_hit_rate.pct` returned `n/a` in ncu run) |
-| **vL1D / L1 hit rate** | **72.41%** (rocprof-compute §2.1.19) | **39.2%** (so 60.8% of L1 lookups miss and go to L2) |
-| **vL1D Coalescing** | **27.03% of peak** (rocprof-compute §16.1.3) ⚠️ | warp uses ~28 of every 32 bytes fetched on L1 misses (~13.5% wasted) |
-| **vL1D Stalled on L2 Data** | **48.31%** of cycles (§16.2.0) | n/a equivalent |
-| L2-Fabric Read Latency | **1440 cycles** (§2.1.25) | n/a equivalent (GH200 reports L1TEX scoreboard) |
-| Top stall reason | **vL1D stalled on L2 data 48%** (memory-latency-bound) | **84.3% L1TEX scoreboard** (29.0/34.4 cycles) |
-| Theoretical occupancy | 8 waves/SIMD (max) | **62.5%** (10/16) — limited by **register pressure** |
-| IPC | **0.24** (4.87% of peak) | not in existing `.ncu-rep` files; would need ncu re-run |
-| VALU FLOPs % peak | 1.64% | not in existing `.ncu-rep` files; would need ncu re-run |
+| Metric | MI300A `(256,1,1)` | GH200 `(32,8)` | GH200 `(256,1,1)` |
+|--------|--------------------|--------------------|--------------------|
+| Duration | 187 μs (rocprof-compute) / 166 μs (rocprofv3) | 121 μs | 116 μs |
+| **HBM-side BW** | **2.43 TB/s** (70% of 3.47 TB/s peak) | 3.56 TB/s (89% of 4 TB/s peak) | 3.57 TB/s (89% of 4 TB/s peak) |
+| **DRAM bytes** | 454 MB (= 2.43 × 187) | 432 MB | 413 MB (-4%) |
+| L2 hit rate | **47.5%** (rocprof-compute §2.1.21) | **34.9%** (computed from `lts` hit/miss counters) | **48.6%** (same — jumps with (256,1,1) to compensate for L1 drop) |
+| **L1 hit rate** | **vL1D 72.4%** (rocprof-compute §2.1.19) | 36.5% (`l1tex__t_sector_hit_rate.pct`) | **13.1%** ⚠️ (drops with (256,1,1)) |
+| Coalescing / sector util | vL1D coalescing **27% of peak** (§16.1.3) | 88.5% bytes/sector util on global loads | 88.5% (unchanged) |
+| **IPC** | **0.24** (4.87% of peak) | 0.28 inst/cycle | 0.29 inst/cycle |
+| **FP64 utilization** | 1.64% of peak (§2.1.0 VALU) | 8.69% of peak | 9.44% of peak |
+| Theoretical occupancy | 8 waves/SIMD (max) | 62.5% (10/16) — register-limited | (same) |
+| Top stall reason | vL1D stalled on L2 data 48% (§16.2.0) | 84.3% L1TEX scoreboard | (same) |
+| L2-Fabric Read Latency | **1440 cycles** (§2.1.25) | n/a equivalent | n/a equivalent |
+
+**Key observations from the new GH200 data:**
+- **L1 hit rate is ~3× lower at (256,1,1) than (32,8) on GH200** (13.1% vs 36.5%).
+  But duration is still slightly better at (256,1,1) (-4%) — so the win comes from
+  somewhere other than L1 (likely L2/fabric efficiency or wavefront alignment).
+- **MI300A vs GH200 L1 hit gap is HUGE**: at matching `(256,1,1)`, MI300A vL1D
+  is 72.4% vs GH200 L1 13.1% — **5.5× advantage**. The per-CU 32 KB AMD cache
+  beats the per-SM 256 KB shared NVIDIA cache on this access pattern.
+- **Bytes-per-sector utilization on GH200 is high (88.5%)** at both block sizes —
+  i.e., when GH200 fetches a 32-byte sector, it uses ~28.3 bytes. Coalescing is
+  fine; the issue is just that it has to fetch many more sectors because L1 hit is low.
 | Active threads / wave | 63.97 / 64 (99.95%) | n/a equivalent |
 
 **Provenance:** MI300A from `rocprof-compute analyze -p workloads/rcu_amd_256x1_solver/MI300A_A1/ --dispatch 11 23 35` (averaged across 3 invocations of map_100_fieldop_1). GH200 from `gh200_solver.ncu-rep` opened in ncu UI.
@@ -254,12 +269,16 @@ Patched formula: `(TCC_READ + TCC_WRITE) × 64`, verified to match rocprof-compu
 within 3% (2.35 TB/s vs 2.43 TB/s on map_100_fieldop_1). The 2.43 TB/s number
 in this table is from rocprof-compute analyze §4.1.9.
 
-Source for GH200 row: `gh200_solver.ncu-rep` opened in ncu UI; explicit warnings
-quoted: "L1TEX scoreboard ... 84.3% of total average of 34.4 cycles between
-issuing two instructions"; "theoretical occupancy 62.5% limited by registers";
-"only 27.7 of 32 bytes transmitted per sector are utilized ... applies to 60.8%
-of sectors missed in L1TEX". This concurs with the prior "83.6% L1TEX scoreboard"
-claim (rounding).
+Sources for GH200 rows: `gh200_solver.ncu-rep` (the original (32,8) baseline)
+gave the ncu UI warnings "L1TEX scoreboard ... 84.3%", "theoretical occupancy
+62.5% limited by registers", "only 27.7 of 32 bytes transmitted per sector are
+utilized ... applies to 60.8% of sectors missed in L1TEX". The (256,1,1) row
+metrics are from `gh200_m100_full_256x1.ncu-rep` (collected 2026-04-20 with
+`l1tex__t_sector_hit_rate.pct`, `dram__bytes.sum`, IPC, FP64% directly).
+
+⚠️ **Earlier doc text claimed GH200 (256,1,1) L1 hit was 39.2%** — that was a
+mis-attribution: 39.2% came from the (32,8) ncu UI text "60.8% sectors miss".
+The actual measured (256,1,1) L1 hit is 13.1%. Now corrected.
 
 Commands to fill the gaps (run on cluster):
 
@@ -294,7 +313,10 @@ smsp__inst_executed.avg.per_cycle_active \
 So **fixing coalescing on the C2E gather should help MI300A too**, contrary to my earlier claim. The mechanism: better coalescing → fewer vL1D requests per element → fewer L2 misses → fewer 1440-cycle stalls.
 
 **GH200 side (HBM 89% saturated):**
-- 13.5% sector-utilization waste on the 60.8% of sectors that miss L1 (ncu warning).
+- L1 hit rate **drops to 13.1%** with `(256,1,1)` (from 36.5% at (32,8)).
+  But duration improves slightly because L2/fabric absorbs the loss.
+- Bytes-per-sector utilization is high (88.5%) at both block sizes — coalescing
+  is fine, GH200 just has to fetch many sectors because L1 misses dominate.
 - Register-pressure-limited occupancy at 62.5% (10/16 warps).
 - Top stall: 84.3% L1TEX scoreboard.
 
