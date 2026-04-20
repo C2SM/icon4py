@@ -616,23 +616,19 @@ def _construct_diamond_vertices(
     """
     dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
     expanded = dummy_c2v[e2c, :]
-    sh = expanded.shape
-    # flat includes double counting of v1 and v3 of the diamond stencil, hence the shape is (n_edges, 2 * 3)
-    flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    # find which vertices in flat are not v1 or v3, this will result in an array of shape (n_edges, 2, 6), because it loops over 6 vertices and check which one is not in e2v[0] and then which one not in e2v[1]
-    far_indices = ~array_ns.equal(flat[:, array_ns.newaxis, :], e2v[:, :, array_ns.newaxis])
-    # make it into an ascending array in order to pick the first two True values which correspond to v0 and v2 of the diamond stencil.
-    ascending_far_indices = array_ns.cumsum((far_indices[:, 0, :] & far_indices[:, 1, :]), axis=1)
-    e2v_far = array_ns.empty(e2v.shape, dtype=e2v.dtype)
-    # find the first and second neighboring index of e2c2v that belongs to far indices (v0 and v2)
-    far_index_1 = array_ns.argmax(ascending_far_indices == 1, axis=1)
-    far_index_2 = array_ns.argmax(ascending_far_indices == 2, axis=1)
-    e2v_far[:, 0] = array_ns.squeeze(
-        array_ns.take_along_axis(flat, far_index_1[:, array_ns.newaxis], axis=1)
-    )
-    e2v_far[:, 1] = array_ns.squeeze(
-        array_ns.take_along_axis(flat, far_index_2[:, array_ns.newaxis], axis=1)
-    )
+    # `flat` includes duplicated e2v vertices (v1, v3), shape (n_edges, 6).
+    flat = expanded.reshape(expanded.shape[0], -1)
+
+    # create a mask to find which vertices in flat are not v1 or v3, this will result in a mask of shape (n_edges, 6)
+    far_indices_mask = (flat != e2v[:, 0, array_ns.newaxis]) & (flat != e2v[:, 1, array_ns.newaxis])
+
+    # create a 1d ascending array of length 6
+    col_idx = array_ns.arange(flat.shape[1], dtype=gtx.int32)
+    # using the mask that identifies v0 and v2 vertices to get the correct position of far vertices in the `flat` array (c2e2v), and the position of v1 and v3 vertices are replaced with 6, which is larger than any possible indices.
+    far_indices_pos = array_ns.where(far_indices_mask, col_idx, col_idx.shape[0])  # (n_edges, 6)
+    # sort the far_indices_pos along the second axis and take the first two numbers, this will give us the correct positions of v0 and v2 vertices in the `flat` array because positions of v1 and v3 are larger than any possible indices.
+    far_indices_pos = array_ns.sort(far_indices_pos, axis=1)[:, :2]  # (n_edges, 2)
+    e2v_far = array_ns.take_along_axis(flat, far_indices_pos, axis=1)
     return array_ns.hstack((e2v, e2v_far))
 
 

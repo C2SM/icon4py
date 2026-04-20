@@ -689,27 +689,28 @@ def _create_inverse_neighbor_index(
     The inverse neighbor index tells what position that is. It essentially says
     "I am neighbor number x \\in (0,1) of my neighboring edges"
 
-    algorithm:
+    implementation:
+        given a and a2b, find b2a such that [b, b2a] == a for all a, a2b where a2b[a, b] != MISSING
         assume a and b are dimensions
         source_offset = [a, a2b]
         inverse_offset = [b, b2a]
-        loop x:
+        let x be a neighbor of the inverse_offset (a is an element in the dimension of a),
+        loop over x (all neighbors of inverse_offset):
             inv_neighbor = inverse_offset[:, x] # shape (b,)
             src_neighbor = source_offset[inv_neighbor, :] # shape (a, a2b)
-            src_neighbor == inv_neighbor[:, None] # shape bool(a, a2b), a2b == b
-
-
-    inv_neighbor =
+            inv_mask = (src_neighbor == inv_neighbor[:, None]) # shape bool(a, a2b), such that a2b == b
+            inv_neighbor_idx[inv_mask, x] = inv_neighbor[inv_mask] 
+        inv_neighbor_idx is the result we seek
 
     Args:
-        source_offset:
-        inverse_offset:
+        source_offset: [a, a2b]
+        inverse_offset: [b, b2a]
 
     Returns:
-        ndarray of the same shape as target_offset
+        ndarray of the same shape as target_offset: [a, b2a]
 
     """
-    inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
+    inv_neighbor_idx = array_ns.full(MISSING, inverse_offset.shape, dtype=gtx.int32)
     n_inv_elem, n_inv_neighbors = inverse_offset.shape
     # loop over all neighbors of the inverse_offset array, and for each neighbor find which neighbor of the source_offset is the neighbor under consideration.
     for i in range(n_inv_neighbors):
@@ -1216,7 +1217,7 @@ def compute_lsq_pseudoinv(
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
-    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c))
+    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
     # let lsq_dim_c = c, lsq_dim_unk = k
     # lsq_pseudoinv has dimensions (k, c)
     # u_matrix has dimensions (c, k), s_matrix has (k), v_t_matrix has (k, k), lsq_weights_c has (c)
@@ -1245,7 +1246,7 @@ def compute_lsq_weights_c(
 ) -> data_alloc.NDArray:
     z_norm = array_ns.sqrt(array_ns.sum(z_dist_g[:, :lsq_dim_stencil, :] ** 2, axis=2))
     lsq_weights_c = 1.0 / (z_norm**lsq_wgt_exp)
-    return lsq_weights_c / array_ns.max(lsq_weights_c)
+    return lsq_weights_c / array_ns.max(lsq_weights_c, axis=1)[:, array_ns.newaxis]
 
 
 def compute_z_lsq_mat_c(
@@ -1263,14 +1264,15 @@ def compute_z_lsq_mat_c(
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
+    valid_cell_mask_with_halo = (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c))
+    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
     z_lsq_mat_c[valid_cell_mask, :min_lsq_bound, :min_lsq_bound] = 1.0
 
     for c_idx in range(lsq_dim_c):
-        z_lsq_mat_c[cell_owner_mask, c_idx, :lsq_dim_unk] = (
-            lsq_weights_c[cell_owner_mask, c_idx, array_ns.newaxis]
-            * z_dist_g[cell_owner_mask, c_idx, :]
+        z_lsq_mat_c[valid_cell_mask_with_halo, c_idx, :lsq_dim_unk] = (
+            lsq_weights_c[valid_cell_mask_with_halo, c_idx, array_ns.newaxis]
+            * z_dist_g[valid_cell_mask_with_halo, c_idx, :]
         )
     return z_lsq_mat_c
 
@@ -1296,7 +1298,7 @@ def compute_lsq_coeffs(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     cell_size = cell_owner_mask.shape[0]
-    z_dist_g = array_ns.zeros((cell_size, lsq_dim_c, 2))
+    z_dist_g = array_ns.zeros((cell_size, lsq_dim_c, 2), dtype=ta.wpfloat)
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
