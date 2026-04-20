@@ -63,7 +63,6 @@ def create_grid_manager(
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
     parallel_props: decomposition_defs.ProcessProperties,
-    global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
     decomposer = (
         decomp.MetisDecomposer()
@@ -74,7 +73,6 @@ def create_grid_manager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
         offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
-        global_reductions=global_reductions,
     )
     grid_manager(
         allocator=allocator,

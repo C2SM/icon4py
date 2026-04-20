@@ -410,7 +410,52 @@ def create_multinode_node_exchange(
 
 @dataclasses.dataclass
 class GlobalReductions(Reductions):
+    """MPI-aware global reductions.
+
+    Owner masks from the decomposition info are stored internally, keyed by the
+    horizontal dimension size (num_cells, num_edges, num_vertices). When sum()
+    or mean() is called, the correct mask is resolved from buffer.shape[0],
+    ensuring only owned (non-halo) elements participate in the reduction.
+    """
+
     props: definitions.ProcessProperties
+    _owner_masks: dict[int, data_alloc.NDArray] = dataclasses.field(default_factory=dict)
+
+    def __init__(
+        self,
+        props: definitions.ProcessProperties,
+        decomposition_info: definitions.DecompositionInfo,
+    ) -> None:
+        self.props = props
+        self._owner_masks = {}
+        for dim in (dims.CellDim, dims.EdgeDim, dims.VertexDim):
+            mask = decomposition_info.owner_mask(dim)
+            size = mask.shape[0]
+            if size in self._owner_masks:
+                raise ValueError(
+                    f"Ambiguous horizontal dimension size {size}: multiple dimensions "
+                    f"have the same local size. Cannot auto-resolve owner mask."
+                )
+            self._owner_masks[size] = mask
+
+    def _resolve_owner_mask(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
+        """Resolve the 1D owner mask for the buffer's first dimension.
+
+        The returned mask is always 1D (num_horizontal,). When used for
+        indexing, NumPy's boolean indexing with a 1D mask on a
+        multi-dimensional array selects along the first axis, so
+        ``buffer[mask]`` works correctly for both 1D buffers of shape
+        ``(num_horizontal,)`` and 2D buffers of shape
+        ``(num_horizontal, K)``.
+        """
+        first_dim_size = buffer.shape[0]
+        if first_dim_size not in self._owner_masks:
+            raise ValueError(
+                f"Cannot resolve owner mask: buffer's first dimension size "
+                f"({first_dim_size}) does not match any known horizontal "
+                f"dimension (known sizes: {list(self._owner_masks.keys())})."
+            )
+        return self._owner_masks[first_dim_size]
 
     @staticmethod
     def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
@@ -480,12 +525,10 @@ class GlobalReductions(Reductions):
     def sum(
         self,
         buffer: data_alloc.NDArray,
-        lower_bound: gtx.int32,
-        upper_bound: gtx.int32,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        # TODO (nfarabullini): use owned mask instead of upper lower bound, and move as "internal argument"
-        buffer = buffer[lower_bound:upper_bound]
+        owner_mask = self._resolve_owner_mask(buffer)
+        buffer = buffer[owner_mask]
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -498,12 +541,10 @@ class GlobalReductions(Reductions):
     def mean(
         self,
         buffer: data_alloc.NDArray,
-        lower_bound: gtx.int32,
-        upper_bound: gtx.int32,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        # TODO (nfarabullini): use owned mask instead of upper lower bound, and move as "internal argument"
-        buffer = buffer[lower_bound:upper_bound]
+        owner_mask = self._resolve_owner_mask(buffer)
+        buffer = buffer[owner_mask]
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
@@ -520,5 +561,7 @@ class GlobalReductions(Reductions):
 
 
 @definitions.create_reduction.register(MPICommProcessProperties)
-def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
-    return GlobalReductions(props)
+def create_global_reduction(
+    props: MPICommProcessProperties, decomposition_info: definitions.DecompositionInfo
+) -> Reductions:
+    return GlobalReductions(props, decomposition_info)

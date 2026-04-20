@@ -159,7 +159,7 @@ def _compare_geometry_fields_single_multi_rank(
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
-        global_reductions=decomp_defs.create_reduction(processor_props),
+        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
     )
 
     field_ref = single_rank_geometry.get(attrs_name)
@@ -326,7 +326,7 @@ def _compare_interpolation_fields_single_multi_rank(
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
-        global_reductions=decomp_defs.create_reduction(processor_props),
+        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=multi_rank_grid_manager.grid,
@@ -539,7 +539,7 @@ def _compare_metrics_fields_single_multi_rank(
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
-        global_reductions=decomp_defs.create_reduction(processor_props),
+        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=multi_rank_grid_manager.grid,
@@ -756,7 +756,7 @@ def test_metrics_mask_prog_halo_c(
         exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
-        global_reductions=decomp_defs.create_reduction(processor_props),
+        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=multi_rank_grid_manager.grid,

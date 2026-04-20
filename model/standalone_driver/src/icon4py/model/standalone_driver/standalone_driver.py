@@ -472,10 +472,7 @@ class Icon4pyDriver:
             local_mass = (
                 rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
             )
-            # TODO (Chia Rui): remove lower and upper bound when global reduction is implemented, currently set to avoid including halo cells in the reduction
-            global_total_mass = self.global_reductions.sum(
-                local_mass, lower_bound=gtx.int32(0), upper_bound=gtx.int32(self.grid.num_cells)
-            )
+            global_total_mass = self.global_reductions.sum(local_mass, array_ns=self._xp)
             # TODO (Chia Rui): compute total energy
             log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
@@ -488,19 +485,17 @@ class Icon4pyDriver:
             w_ndarray = prognostic_states.w.ndarray
             theta_v_ndarray = prognostic_states.theta_v.ndarray
             exner_ndarray = prognostic_states.exner.ndarray
-            interface_physical_height_ndarray = self.static_field_factories.metrics_field_source._vertical_grid.interface_physical_height.ndarray
             log.info("")
             log.info(
-                "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
+                "Global mean of    rho         vn           w          theta_v     exner:"
             )
-            for k in range(rho_ndarray.shape[1]):
-                log.info(
-                    f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(w_ndarray[:, k + 1]):.5e} "
-                    f"{self._xp.mean(theta_v_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
-                )
+            log.info(
+                f"{self.global_reductions.mean(rho_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(vn_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(w_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(theta_v_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(exner_ndarray, array_ns=self._xp):.5e} "
+            )
 
 
 # TODO (Chia Rui): this should be replaced by real configuration reader when the configuration PR is merged
@@ -614,7 +609,6 @@ def initialize_driver(
         processor_procs=parallel_props,
     )
 
-    global_reductions = decomposition_defs.create_reduction(parallel_props)
     if parallel_props.rank == 0:
         if output_path.exists():
             current_time = datetime.datetime.now()
@@ -644,12 +638,12 @@ def initialize_driver(
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
         parallel_props=parallel_props,
-        global_reductions=global_reductions,
     )
 
     log.info("creating the decomposition info")
     decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
+    global_reductions = decomposition_defs.create_reduction(parallel_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(

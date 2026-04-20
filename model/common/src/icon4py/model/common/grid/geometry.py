@@ -325,10 +325,6 @@ class GridGeometry(factory.FieldSource):
             deps={
                 "buffer": attrs.EDGE_LENGTH,
             },
-            params={
-                "lower_bound": self._grid.start_index(self._edge_domain(h_grid.Zone.LOCAL)),
-                "upper_bound": self._grid.end_index(self._edge_domain(h_grid.Zone.LOCAL)),
-            },
             fields=(attrs.MEAN_EDGE_LENGTH,),
         )
         self.register_provider(mean_edge_length_np)
@@ -341,10 +337,6 @@ class GridGeometry(factory.FieldSource):
             domain=(),
             deps={
                 "buffer": attrs.DUAL_EDGE_LENGTH,
-            },
-            params={
-                "lower_bound": self._grid.start_index(self._edge_domain(h_grid.Zone.LOCAL)),
-                "upper_bound": self._grid.end_index(self._edge_domain(h_grid.Zone.LOCAL)),
             },
             fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
         )
@@ -359,10 +351,6 @@ class GridGeometry(factory.FieldSource):
             deps={
                 "buffer": attrs.CELL_AREA,
             },
-            params={
-                "lower_bound": self._grid.start_index(self._cell_domain(h_grid.Zone.LOCAL)),
-                "upper_bound": self._grid.end_index(self._cell_domain(h_grid.Zone.LOCAL)),
-            },
             fields=(attrs.MEAN_CELL_AREA,),
         )
         self.register_provider(mean_cell_area_np)
@@ -375,10 +363,6 @@ class GridGeometry(factory.FieldSource):
             domain=(),
             deps={
                 "buffer": attrs.DUAL_AREA,
-            },
-            params={
-                "lower_bound": self._grid.start_index(self._vertex_domain(h_grid.Zone.LOCAL)),
-                "upper_bound": self._grid.end_index(self._vertex_domain(h_grid.Zone.LOCAL)),
             },
             fields=(attrs.MEAN_DUAL_AREA,),
         )

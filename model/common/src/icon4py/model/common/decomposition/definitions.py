@@ -588,6 +588,14 @@ class SingleNodeRun(RunType):
 
 
 class Reductions(Protocol):
+    """Protocol for global reduction operations across distributed ranks.
+
+    For sum() and mean(), owned elements are determined automatically based on
+    the buffer's first dimension size, which is matched against stored owner
+    masks for Cell, Edge, and Vertex dimensions. This ensures halo elements are
+    excluded from the reduction without the caller needing to pass masks.
+    """
+
     def min(
         self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
     ) -> state_utils.ScalarType: ...
@@ -599,21 +607,37 @@ class Reductions(Protocol):
     def sum(
         self,
         buffer: data_alloc.NDArray,
-        lower_bound: gtx.int32,
-        upper_bound: gtx.int32,
         array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType: ...
+    ) -> state_utils.ScalarType:
+        """Sum all owned elements of buffer.
+
+        The owner mask is resolved internally from the buffer's first dimension
+        size. For multi-dimensional buffers (e.g. CellDim x KDim), owned rows
+        are selected and all their elements are summed.
+        """
+        ...
 
     def mean(
         self,
         buffer: data_alloc.NDArray,
-        lower_bound: gtx.int32,
-        upper_bound: gtx.int32,
         array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType: ...
+    ) -> state_utils.ScalarType:
+        """Compute the mean of all owned elements of buffer.
+
+        The owner mask is resolved internally from the buffer's first dimension
+        size. For multi-dimensional buffers (e.g. CellDim x KDim), owned rows
+        are selected and the mean is computed over all their elements.
+        """
+        ...
 
 
 class SingleNodeReductions(Reductions):
+    """Reductions for single-rank (non-distributed) runs.
+
+    Single-rank runs have no halos, so all elements are owned and no masking
+    is needed. The entire buffer is reduced directly.
+    """
+
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.min(buffer).item()
 
@@ -623,8 +647,6 @@ class SingleNodeReductions(Reductions):
     def sum(
         self,
         buffer: data_alloc.NDArray,
-        lower_bound: gtx.int32,
-        upper_bound: gtx.int32,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item()
@@ -632,8 +654,6 @@ class SingleNodeReductions(Reductions):
     def mean(
         self,
         buffer: data_alloc.NDArray,
-        lower_bound: gtx.int32,
-        upper_bound: gtx.int32,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item() / buffer.size
@@ -674,7 +694,7 @@ def create_single_node_exchange(
 
 
 @functools.singledispatch
-def create_reduction(props: ProcessProperties) -> Reductions:
+def create_reduction(props: ProcessProperties, decomposition_info: DecompositionInfo) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
@@ -684,7 +704,9 @@ def create_reduction(props: ProcessProperties) -> Reductions:
 
 
 @create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+def create_single_reduction_exchange(
+    props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     return SingleNodeReductions()
 
 
