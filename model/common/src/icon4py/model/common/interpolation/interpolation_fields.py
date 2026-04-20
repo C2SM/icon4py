@@ -699,7 +699,7 @@ def _create_inverse_neighbor_index(
             inv_neighbor = inverse_offset[:, x] # shape (b,)
             src_neighbor = source_offset[inv_neighbor, :] # shape (a, a2b)
             inv_mask = (src_neighbor == inv_neighbor[:, None]) # shape bool(a, a2b), such that a2b == b
-            inv_neighbor_idx[inv_mask, x] = inv_neighbor[inv_mask] 
+            inv_neighbor_idx[inv_mask, x] = inv_neighbor[inv_mask]
         inv_neighbor_idx is the result we seek
 
     Args:
