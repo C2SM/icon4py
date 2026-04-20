@@ -74,8 +74,9 @@ require per-kernel tuning (block size, registers, occupancy) since each kernel
 has its own bottleneck profile.
 
 **The biggest unfinished optimization** is C2E edge reordering or wavefront-level
-edge deduplication. Same root cause hurts both architectures (MI300A: 27% vL1D
-coalescing; GH200: 13.5% wasted bytes per L1-missed sector). Untested.
+edge deduplication. Same root cause hurts both architectures: MI300A wastes
+~3-4× the memory bandwidth it actually needs (vL1D coalescing 27% of peak), and
+GH200 throws away ~13.5% of the bytes it fetches from L2 on L1 misses. Untested.
 
 ### Why (256,1,1) helps
 
@@ -110,8 +111,9 @@ blocks — see [Deep Analysis](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
 ### Worth investigating
 2. **Edge reordering / C2E gather coalescing** — promoted from "not helpful"
    after per-kernel rocprof-compute analyze showed vL1D coalescing is only
-   **27% of peak** on map_100_fieldop_1 (MI300A) and 86.5% sector util on GH200's
-   missed sectors. Highest-impact untested optimization.
+   **27% of peak** on map_100_fieldop_1 (MI300A) and on GH200 the warp uses only
+   ~28 of every 32 bytes the GPU fetches from L2 on L1 misses (~13.5% of fetched
+   bytes thrown away). Highest-impact untested optimization.
 3. **Grid size divisible by 6** — preliminary single-data-point shows ~4%
    additional improvement (0.617→0.594 ms on a different gt4py branch). Possibly
    related to even work distribution across MI300A's 6 XCDs. Needs A/B verification.
@@ -198,8 +200,9 @@ The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifa
 - Earlier analysis "85.7% cache line utilization → not a bottleneck" measured
   cache-line **fill** from any source, not **coalescing efficiency**.
 - Per-kernel rocprof-compute analyze on map_100_fieldop_1 shows **vL1D coalescing
-  is only 27% of peak** on MI300A. ncu shows GH200 wastes 13.5% of bytes per
-  sector on the 60.8% of L1-missed sectors.
+  is only 27% of peak** on MI300A. On GH200, of every 32-byte block the GPU
+  fetches from L2 (when L1 misses), the warp uses only ~28 bytes — 13.5% of
+  fetched bytes are thrown away.
 - **Edge reordering or wavefront-level edge deduplication is the highest-priority
   untested optimization**. See full analysis in [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
 

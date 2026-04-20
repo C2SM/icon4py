@@ -46,6 +46,32 @@ Earlier pytest-benchmark results for reference (different timer, different gt4py
 | (256,1,1) all maps | (256,1,1) | 0.703 ms | -14.3% |
 | (64,6,1) all maps | (64,6,1) | 0.756 ms | -7.8% |
 
+### Block size sweep on the actual solver (MI300A, GT4Py Timer, 1000 runs)
+
+Verified A/B (2026-04-20). Each variant uses a fresh `GT4PY_BUILD_CACHE_DIR` to
+force recompile; block size verified by inspecting `dim3` in the compiled HIP
+launch.
+
+| Block size | Median (μs) | vs (256,1,1) best | Notes |
+|---|---|---|---|
+| (32, 8, 1) | 753 | +25% | DaCe default |
+| (128, 1, 1) | 719 | +19% | only 2 wavefronts/block — too few to hide latency |
+| (128, 2, 1) | 642 | +6.3% | Y=2 helps when Cell axis is small |
+| **(256, 1, 1)** | **604** | — | **production setting** |
+| (256, 2, 1) | 598-615 | within ~3% (run-to-run noise) | 512 threads/block, no measurable benefit over (256,1,1) |
+
+**Findings:**
+- **Cell-axis size dominates**: 256 on Cell axis is necessary for best performance;
+  128 is 5-20% slower depending on Y dim.
+- **Y dim is largely irrelevant at Cell=256**: (256,1,1) and (256,2,1) are tied
+  within run-to-run noise. Going to 512 threads/block buys nothing.
+- **Y dim helps small-Cell configs only**: (128,2,1) is 11% faster than (128,1,1)
+  but still slower than (256,*,1).
+- (256,1,1) → (256,2,1) confirmed as not worth changing; (256,1,1) is the sweet spot.
+
+Run-to-run variability is ~3% on the same config (e.g. (256,2,1) measured at
+598 and 615 μs in two consecutive runs). Differences smaller than ~3% are noise.
+
 ## Occupancy Experiment
 
 Tested the AMD equivalent of NVIDIA's `maxreg` trick by patching DaCe-generated HIP source

@@ -212,8 +212,8 @@ The hottest kernel — 27% of total kernel time.
 | Duration | 187 μs (rocprof-compute) / 166 μs (rocprofv3) | 121 μs |
 | **L2-Fabric / HBM-side BW** | **2.43 TB/s** (70% of 3.47 TB/s peak)<br/>= 1894 Read + 538 Write Gb/s | 3.55 TB/s (89% of 4 TB/s peak) |
 | L2 hit rate | **47.5%** (rocprof-compute §2.1.21; matches extract_pmc.py 47%) | not collected (`lts__t_sectors_lookup_hit_rate.pct` returned `n/a` in ncu run) |
-| **vL1D / L1 hit rate** | **72.41%** (rocprof-compute §2.1.19) | **39.2%** (60.8% L1 sectors miss) |
-| **vL1D Coalescing** | **27.03% of peak** (rocprof-compute §16.1.3) ⚠️ | 86.5% sector util on missed sectors |
+| **vL1D / L1 hit rate** | **72.41%** (rocprof-compute §2.1.19) | **39.2%** (so 60.8% of L1 lookups miss and go to L2) |
+| **vL1D Coalescing** | **27.03% of peak** (rocprof-compute §16.1.3) ⚠️ | warp uses ~28 of every 32 bytes fetched on L1 misses (~13.5% wasted) |
 | **vL1D Stalled on L2 Data** | **48.31%** of cycles (§16.2.0) | n/a equivalent |
 | L2-Fabric Read Latency | **1440 cycles** (§2.1.25) | n/a equivalent (GH200 reports L1TEX scoreboard) |
 | Top stall reason | **vL1D stalled on L2 data 48%** (memory-latency-bound) | **84.3% L1TEX scoreboard** (29.0/34.4 cycles) |
@@ -261,8 +261,8 @@ smsp__inst_executed.avg.per_cycle_active \
 - **Hits HBM at 70% of peak**, not 43% as previously claimed. Closer to bandwidth-bound than absorption-bound.
 - **vL1D hit 72%** — good per-CU caching, but...
 - **Coalescing only 27% of peak** ⚠️ — vL1D bandwidth efficiency is poor; lots
-  of wasted lanes per access. Same root cause as GH200's 86.5% sector util:
-  the C2E gather scatters threads across edge memory.
+  of wasted lanes per access. Same root cause as GH200 throwing away ~13.5%
+  of bytes fetched on L1 misses: the C2E gather scatters threads across edge memory.
 - **vL1D stalls on L2 data 48% of cycles** → memory-latency-bound, not throughput-bound at the vL1D layer.
 - IPC 0.24 (4.87% of peak), VALU 1.64% — confirms compute-light, memory-stall-bound.
 
@@ -281,8 +281,9 @@ So **fixing coalescing on the C2E gather should help MI300A too**, contrary to m
 
 1. **Reorder edge arrays so C2E indices are contiguous (both platforms).**
    The 85.7% cache-line utilization that previously dismissed this measured
-   cache-line **fill**, not **coalescing efficiency** (which is 27% on MI300A,
-   86.5% sector util on GH200). Highest-impact untested optimization.
+   cache-line **fill**, not **coalescing efficiency** (which is 27% of peak on
+   MI300A; on GH200 the warp uses only ~28 of every 32 bytes the GPU fetches
+   from L2 on L1 misses). Highest-impact untested optimization.
 2. **(256,1,1) on GH200**: -5% verified per-kernel (121 → 116 μs). Already
    confirmed; the open question is whether to gate the option per-platform or apply globally.
 3. **Tune register pressure on GH200** — maxnreg=80 was used in the old gt4py PR;
@@ -315,12 +316,13 @@ here (70%) is directly from rocprof-compute analyze §4.1.9.
 
 vL1D catches a lot of repeat reads (72% hit), but **its bandwidth efficiency
 is poor (27% coalescing)** — the C2E gather scatters lanes across edge memory.
-GH200's equivalent symptom: 86.5% sector utilization on missed L1 sectors and
-"only 27.7 of 32 bytes utilized per sector" warning from ncu.
+GH200's equivalent symptom: when a warp misses L1 and fetches a 32-byte block
+from L2, it uses only ~28 bytes (ncu warning: "only 27.7 of 32 bytes utilized
+per sector").
 
 **Implication:** the C2E gather pattern is the shared bottleneck across both
-platforms. Improving its coalescing/sector utilization is the most promising
-code-side optimization for both.
+platforms. Improving its coalescing efficiency (each request retrieves more
+useful bytes) is the most promising code-side optimization for both.
 
 **LDS conclusion (more nuanced):** earlier I claimed "vL1D absorbs everything,
 LDS won't help." That overstated the case. vL1D **does** catch reuse but is
