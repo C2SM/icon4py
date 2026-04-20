@@ -385,12 +385,12 @@ def test_global_reductions_min(
     global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
-        min_val = global_reduc.min(local_data, array_ns=xp)
+        min_val = global_reduc.min(local_data)
         expected_val = np.min(global_list)
         assert expected_val == min_val
     else:
         with pytest.raises(ValueError, match="global_min requires a non-empty buffer"):
-            global_reduc.min(local_data, array_ns=xp)
+            global_reduc.min(local_data)
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -410,12 +410,12 @@ def test_global_reductions_max(
     global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
-        max_val = global_reduc.max(local_data, array_ns=xp)
+        max_val = global_reduc.max(local_data)
         expected_val = np.max(global_list)
         assert expected_val == max_val
     else:
         with pytest.raises(ValueError, match="global_max requires a non-empty buffer"):
-            global_reduc.max(local_data, array_ns=xp)
+            global_reduc.max(local_data)
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -435,12 +435,12 @@ def test_global_reductions_sum(
     global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
-        sum_val = global_reduc.sum(local_data, array_ns=xp)
+        sum_val = global_reduc.sum(local_data)
         expected_val = np.sum(global_list)
         assert expected_val == sum_val
     else:
         with pytest.raises(ValueError, match="global_sum requires a non-empty buffer"):
-            global_reduc.sum(local_data, array_ns=xp)
+            global_reduc.sum(local_data)
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -459,9 +459,9 @@ def test_global_reductions_mean(
     global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
-        mean_val = global_reduc.mean(local_data, array_ns=xp)
+        mean_val = global_reduc.mean(local_data)
         expected_val = np.mean(global_list)
         assert expected_val == mean_val
     else:
         with pytest.raises(ValueError, match="global_mean requires a non-empty buffer"):
-            global_reduc.mean(local_data, array_ns=xp)
+            global_reduc.mean(local_data)
