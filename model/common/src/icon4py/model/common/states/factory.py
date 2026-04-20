@@ -608,7 +608,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid_provider: GridProvider,
     ) -> None:
         try:
-            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}  # noqa: PERF102
+            metadata = {v: factory.get(v, RetrievalType.METADATA) for v in self._output.values()}
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
