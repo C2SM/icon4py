@@ -486,9 +486,7 @@ class Icon4pyDriver:
             theta_v_ndarray = prognostic_states.theta_v.ndarray
             exner_ndarray = prognostic_states.exner.ndarray
             log.info("")
-            log.info(
-                "Global mean of    rho         vn           w          theta_v     exner:"
-            )
+            log.info("Global mean of    rho         vn           w          theta_v     exner:")
             log.info(
                 f"{self.global_reductions.mean(rho_ndarray, array_ns=self._xp):.5e} "
                 f"{self.global_reductions.mean(vn_ndarray, array_ns=self._xp):.5e} "

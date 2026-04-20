@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
+import pathlib
 
 import numpy as np
 import pytest
@@ -102,6 +103,56 @@ embedded_broken_fields = {
 }
 
 
+# TODO (jcanton,msimberg): merge these two helpers and the run_grid_managers
+def _make_single_rank_geometry(
+    grid_file: pathlib.Path,
+    backend: gtx_typing.Backend | None,
+    allocator: gtx.typing.Allocator,
+    num_levels: int = utils.NUM_LEVELS,
+) -> tuple[gm.GridManager, geometry.GridGeometry]:
+    grid_manager = utils.run_grid_manager_for_single_rank(
+        grid_file, allocator=allocator, num_levels=num_levels
+    )
+    grid_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=grid_manager.grid,
+        coordinates=grid_manager.coordinates,
+        decomposition_info=grid_manager.decomposition_info,
+        extra_fields=grid_manager.geometry_fields,
+        metadata=geometry_attributes.attrs,
+    )
+    return grid_manager, grid_geometry
+
+
+def _make_multi_rank_geometry(
+    grid_file: pathlib.Path,
+    processor_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    allocator: gtx.typing.Allocator,
+    num_levels: int = utils.NUM_LEVELS,
+) -> tuple[gm.GridManager, geometry.GridGeometry]:
+    grid_manager = utils.run_grid_manager_for_multi_rank(
+        file=grid_file,
+        run_properties=processor_props,
+        decomposer=decomp.MetisDecomposer(),
+        allocator=allocator,
+        num_levels=num_levels,
+    )
+    grid_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=grid_manager.grid,
+        coordinates=grid_manager.coordinates,
+        decomposition_info=grid_manager.decomposition_info,
+        extra_fields=grid_manager.geometry_fields,
+        metadata=geometry_attributes.attrs,
+        exchange=decomp_defs.create_exchange(processor_props, grid_manager.decomposition_info),
+        global_reductions=decomp_defs.create_reduction(
+            processor_props, grid_manager.decomposition_info
+        ),
+    )
+    return grid_manager, grid_geometry
+
+
 def _compare_geometry_fields_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
@@ -116,50 +167,24 @@ def _compare_geometry_fields_single_multi_rank(
 
     allocator = model_backends.get_allocator(backend)
 
-    # TODO(msimberg): Add fixtures for single/multi-rank
-    # grid/geometry/interpolation/metrics factories.
     grid_file = grid_utils._download_grid_file(grid_description)
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(
-        grid_file, allocator=allocator
-    )
-    single_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=single_rank_grid_manager.grid,
-        coordinates=single_rank_grid_manager.coordinates,
-        decomposition_info=single_rank_grid_manager.decomposition_info,
-        extra_fields=single_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
-    )
+    single_rank_gm, single_rank_geometry = _make_single_rank_geometry(grid_file, backend, allocator)
     _log.info(
-        f"rank = {processor_props.rank} : single node grid has size {single_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : single node grid has size "
+        f"{single_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
 
-    multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
-        file=grid_file,
-        run_properties=processor_props,
-        decomposer=decomp.MetisDecomposer(),
-        allocator=allocator,
+    multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
+        grid_file, processor_props, backend, allocator
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
-        f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-        f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
-    )
-    multi_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=multi_rank_grid_manager.grid,
-        coordinates=multi_rank_grid_manager.coordinates,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
-        extra_fields=multi_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
-        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
+        f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
 
     field_ref = single_rank_geometry.get(attrs_name)
@@ -167,7 +192,7 @@ def _compare_geometry_fields_single_multi_rank(
     dim = field_ref.domain.dims[0]
 
     parallel_helpers.check_local_global_field(
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        decomposition_info=multi_rank_gm.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
@@ -279,64 +304,40 @@ def _compare_interpolation_fields_single_multi_rank(
 
     allocator = model_backends.get_allocator(backend)
 
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    grid_file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, allocator=allocator)
-    single_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=single_rank_grid_manager.grid,
-        coordinates=single_rank_grid_manager.coordinates,
-        decomposition_info=single_rank_grid_manager.decomposition_info,
-        extra_fields=single_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
-    )
+    single_rank_gm, single_rank_geometry = _make_single_rank_geometry(grid_file, backend, allocator)
     single_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
-        grid=single_rank_grid_manager.grid,
-        decomposition_info=single_rank_grid_manager.decomposition_info,
+        grid=single_rank_gm.grid,
+        decomposition_info=single_rank_gm.decomposition_info,
         geometry_source=single_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
-        f"rank = {processor_props.rank} : single node grid has size {single_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : single node grid has size "
+        f"{single_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
 
-    multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
-        file=file,
-        run_properties=processor_props,
-        decomposer=decomp.MetisDecomposer(),
-        allocator=allocator,
+    multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
+        grid_file, processor_props, backend, allocator
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
-        f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-        f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
-    )
-    multi_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=multi_rank_grid_manager.grid,
-        coordinates=multi_rank_grid_manager.coordinates,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
-        extra_fields=multi_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
-        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
+        f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
-        grid=multi_rank_grid_manager.grid,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        grid=multi_rank_gm.grid,
+        decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
+        exchange=decomp_defs.create_exchange(processor_props, multi_rank_gm.decomposition_info),
     )
 
     field_ref = single_rank_interpolation.get(attrs_name)
@@ -344,7 +345,7 @@ def _compare_interpolation_fields_single_multi_rank(
     dim = field_ref.domain.dims[0]
 
     parallel_helpers.check_local_global_field(
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        decomposition_info=multi_rank_gm.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
@@ -468,20 +469,12 @@ def _compare_metrics_fields_single_multi_rank(
     )
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(
-        file, allocator=allocator, num_levels=experiment.num_levels
-    )
-    single_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=single_rank_grid_manager.grid,
-        coordinates=single_rank_grid_manager.coordinates,
-        decomposition_info=single_rank_grid_manager.decomposition_info,
-        extra_fields=single_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
+    single_rank_gm, single_rank_geometry = _make_single_rank_geometry(
+        file, backend, allocator, num_levels=experiment.num_levels
     )
     single_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
-        grid=single_rank_grid_manager.grid,
-        decomposition_info=single_rank_grid_manager.decomposition_info,
+        grid=single_rank_gm.grid,
+        decomposition_info=single_rank_gm.decomposition_info,
         geometry_source=single_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
@@ -490,7 +483,7 @@ def _compare_metrics_fields_single_multi_rank(
     single_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=single_rank_geometry.grid,
         vertical_grid=vertical_grid,
-        decomposition_info=single_rank_grid_manager.decomposition_info,
+        decomposition_info=single_rank_gm.decomposition_info,
         geometry_source=single_rank_geometry,
         topography=(
             gtx.as_field(
@@ -511,50 +504,33 @@ def _compare_metrics_fields_single_multi_rank(
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
-        f"rank = {processor_props.rank} : single node grid has size {single_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : single node grid has size "
+        f"{single_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
 
-    multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
-        file=file,
-        run_properties=processor_props,
-        decomposer=decomp.MetisDecomposer(),
-        allocator=allocator,
-        num_levels=experiment.num_levels,
+    multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
+        file, processor_props, backend, allocator, num_levels=experiment.num_levels
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
-        f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-        f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
-    )
-    multi_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=multi_rank_grid_manager.grid,
-        coordinates=multi_rank_grid_manager.coordinates,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
-        extra_fields=multi_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
-        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
+        f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
-        grid=multi_rank_grid_manager.grid,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        grid=multi_rank_gm.grid,
+        decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
+        exchange=decomp_defs.create_exchange(processor_props, multi_rank_gm.decomposition_info),
     )
     multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=multi_rank_geometry.grid,
         vertical_grid=vertical_grid,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
         topography=(
             gtx.as_field(
@@ -573,7 +549,7 @@ def _compare_metrics_fields_single_multi_rank(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
+            processor_props, multi_rank_gm.decomposition_info
         ),
     )
 
@@ -585,7 +561,7 @@ def _compare_metrics_fields_single_multi_rank(
         assert pytest.approx(field) == field_ref
     else:
         parallel_helpers.check_local_global_field(
-            decomposition_info=multi_rank_grid_manager.decomposition_info,
+            decomposition_info=multi_rank_gm.decomposition_info,
             processor_props=processor_props,
             dim=field_ref.domain.dims[0],
             global_reference_field=field_ref.asnumpy(),
@@ -731,47 +707,29 @@ def test_metrics_mask_prog_halo_c(
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
 
-    multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
-        file=file,
-        run_properties=processor_props,
-        decomposer=decomp.MetisDecomposer(),
-        num_levels=experiment.num_levels,
-        allocator=model_backends.get_allocator(backend),
+    multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
+        file, processor_props, backend, allocator, num_levels=experiment.num_levels
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
-        f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-        f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
-    )
-    multi_rank_geometry = geometry.GridGeometry(
-        backend=backend,
-        grid=multi_rank_grid_manager.grid,
-        coordinates=multi_rank_grid_manager.coordinates,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
-        extra_fields=multi_rank_grid_manager.geometry_fields,
-        metadata=geometry_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
-        global_reductions=decomp_defs.create_reduction(processor_props, multi_rank_grid_manager.decomposition_info),
+        f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
-        grid=multi_rank_grid_manager.grid,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        grid=multi_rank_gm.grid,
+        decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
-        ),
+        exchange=decomp_defs.create_exchange(processor_props, multi_rank_gm.decomposition_info),
     )
     multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=multi_rank_geometry.grid,
         vertical_grid=vertical_grid,
-        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
         topography=(
             gtx.as_field(
@@ -790,7 +748,7 @@ def test_metrics_mask_prog_halo_c(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
-            processor_props, multi_rank_grid_manager.decomposition_info
+            processor_props, multi_rank_gm.decomposition_info
         ),
     )
 
@@ -799,12 +757,12 @@ def test_metrics_mask_prog_halo_c(
     c_refin_ctrl = multi_rank_metrics.get("c_refin_ctrl").ndarray
     assert not (
         field[
-            multi_rank_grid_manager.decomposition_info.local_index(
+            multi_rank_gm.decomposition_info.local_index(
                 dims.CellDim, decomp_defs.DecompositionInfo.EntryType.OWNED
             )
         ]
     ).any(), f"rank={processor_props.rank} - found nonzero in owned entries of {attrs_name}"
-    halo_indices = multi_rank_grid_manager.decomposition_info.local_index(
+    halo_indices = multi_rank_gm.decomposition_info.local_index(
         dims.CellDim, decomp_defs.DecompositionInfo.EntryType.HALO
     )
     assert (
@@ -872,18 +830,18 @@ def test_limited_area_raises(
 @pytest.mark.parametrize(
     ("field_name", "reduction"),
     [
-        ("cell_area", "min"),
-        ("cell_area", "max"),
-        ("cell_area", "sum"),
-        ("cell_area", "mean"),
-        ("edge_length", "min"),
-        ("edge_length", "max"),
-        ("edge_length", "sum"),
-        ("edge_length", "mean"),
-        ("dual_area", "min"),
-        ("dual_area", "max"),
-        ("dual_area", "sum"),
-        ("dual_area", "mean"),
+        (geometry_attributes.CELL_AREA, "min"),
+        (geometry_attributes.CELL_AREA, "max"),
+        (geometry_attributes.CELL_AREA, "sum"),
+        (geometry_attributes.CELL_AREA, "mean"),
+        (geometry_attributes.EDGE_LENGTH, "min"),
+        (geometry_attributes.EDGE_LENGTH, "max"),
+        (geometry_attributes.EDGE_LENGTH, "sum"),
+        (geometry_attributes.EDGE_LENGTH, "mean"),
+        (geometry_attributes.DUAL_AREA, "min"),
+        (geometry_attributes.DUAL_AREA, "max"),
+        (geometry_attributes.DUAL_AREA, "sum"),
+        (geometry_attributes.DUAL_AREA, "mean"),
     ],
 )
 def test_global_reductions_single_vs_multi_rank(
@@ -905,22 +863,19 @@ def test_global_reductions_single_vs_multi_rank(
     allocator = model_backends.get_allocator(backend)
     grid_file = grid_utils._download_grid_file(experiment.grid)
 
-    single_rank_gm = utils.run_grid_manager_for_single_rank(grid_file, allocator=allocator)
+    single_rank_gm, single_rank_geometry = _make_single_rank_geometry(grid_file, backend, allocator)
     single_rank_reductions = decomp_defs.create_reduction(
         decomp_defs.SingleNodeProcessProperties(), single_rank_gm.decomposition_info
     )
-    single_rank_field = single_rank_gm.geometry_fields[field_name].asnumpy()
+    single_rank_field = single_rank_geometry.get(field_name).asnumpy()
 
-    multi_rank_gm = utils.run_grid_manager_for_multi_rank(
-        file=grid_file,
-        run_properties=processor_props,
-        decomposer=decomp.MetisDecomposer(),
-        allocator=allocator,
+    multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
+        grid_file, processor_props, backend, allocator
     )
     multi_rank_reductions = decomp_defs.create_reduction(
         processor_props, multi_rank_gm.decomposition_info
     )
-    multi_rank_field = multi_rank_gm.geometry_fields[field_name].asnumpy()
+    multi_rank_field = multi_rank_geometry.get(field_name).asnumpy()
 
     reduce_fn_single = getattr(single_rank_reductions, reduction)
     reduce_fn_multi = getattr(multi_rank_reductions, reduction)
