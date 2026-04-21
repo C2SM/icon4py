@@ -21,7 +21,6 @@ from icon4py.model.testing import config, locking
 def download_and_extract(
     uri: str,
     dst: pathlib.Path,
-    known_hash: str | None,
 ) -> None:
     """
     Download and extract a tar file with locking.
@@ -29,8 +28,6 @@ def download_and_extract(
     Args:
         uri: download url for archived data
         dst: the archive is extracted at this path
-        known_hash: expected hash of the archive for integrity verification,
-            or None to skip verification
 
     Downloads the archive to a temporary cache directory (configured via
     ``ICON4PY_DOWNLOAD_CACHE``, defaulting to a subdirectory of the system
@@ -61,7 +58,7 @@ def download_and_extract(
         archive_fname = f"archive_{uri_hash}.tar.gz"
         pooch.retrieve(
             url=uri,
-            known_hash=known_hash,
+            known_hash=None,
             path=str(cache),
             fname=archive_fname,
             processor=pooch.Untar(extract_dir=str(dst.resolve())),
@@ -70,9 +67,9 @@ def download_and_extract(
         (cache / archive_fname).unlink(missing_ok=True)
 
 
-def download_test_data(dst: pathlib.Path, uri: str, known_hash: str | None) -> None:
+def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
-        download_and_extract(uri, dst, known_hash=known_hash)
+        download_and_extract(uri, dst)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user

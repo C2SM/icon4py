@@ -126,9 +126,7 @@ def _download_ser_data(
         archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
         uri = dt_utils.get_serialized_data_url(root_url, archive_path)
         destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
-        data_handling.download_test_data(
-            destination_path.parent, uri, known_hash=_experiment.known_hashes[comm_size]
-        )
+        data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"

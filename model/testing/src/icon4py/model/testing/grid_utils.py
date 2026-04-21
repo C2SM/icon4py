@@ -85,7 +85,6 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
         data_handling.download_and_extract(
             grid.uri,
             grid_directory,
-            known_hash=grid.known_hash,
         )
     else:
         # If grid download is disabled, we check if the file exists

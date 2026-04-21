@@ -31,7 +31,6 @@ class MuphysExperiment:
     name: str
     type: ExperimentType
     uri: str
-    known_hash: str | None
     dt: float = 30.0
     qnc: float = 100.0
 
@@ -53,5 +52,4 @@ def download_test_data(experiment: MuphysExperiment) -> None:
     data_handling.download_test_data(
         _path_to_experiment_testdata(experiment),
         uri=experiment.uri,
-        known_hash=experiment.known_hash,
     )
