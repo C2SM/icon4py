@@ -24,3 +24,4 @@ def _project_root() -> pathlib.Path:
 ENABLE_GRID_DOWNLOAD: bool = env.flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = env.flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
 TEST_DATA_PATH: pathlib.Path = env.path("ICON4PY_TEST_DATA_PATH", _project_root() / "testdata")
+DALLCLOSE_PRINT_INSTEAD_OF_FAIL: bool = env.flag_to_bool("ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL", False)
