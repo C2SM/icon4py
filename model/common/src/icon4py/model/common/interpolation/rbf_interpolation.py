@@ -457,6 +457,7 @@ def _compute_rbf_interpolation_coeffs(
         mat_batch = z_rbfmat_np[np.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
             rhs_batch = rhs_np[j][np.ix_(group_idx, valid_cols)]
+            # TODO (Chia Rui): checking tolerance to decide whether to use scipy sol = scipy.linalg.solve(mat_batch, rhs_batch, assume_a="pos")
             sol = np.linalg.solve(mat_batch, rhs_batch[:, :, np.newaxis])[:, :, 0]
             rbf_vec_coeff_np[j][group_idx + horizontal_start, :nv] = sol
     rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])

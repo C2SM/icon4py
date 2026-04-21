@@ -71,6 +71,17 @@ def compute_diffusion_mask_and_coef(
     nlev: int,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """
+    Compute the diffusion coefficient.
+
+    let x = diffusion coefficient
+    x = max(0,
+            max(
+                sqrt( max( 0, maxslp_avg - thslp_zdiffu ) ) / 250,
+                2e-4 * sqrt( max( 0, maxhgtd_avg - thhgtd_zdiffu ) )
+                )
+            )
+    """
     n_cells = c2e2c.shape[0]
     zd_diffcoef = array_ns.zeros(shape=(n_cells, nlev))
     k_start, k_end, cell_index_mask = _compute_k_start_end(
@@ -89,10 +100,10 @@ def compute_diffusion_mask_and_coef(
     valid_cell_mask = cell_index_mask & (cell_sequence >= cell_nudging)
     masked_kend = k_end[valid_cell_mask]
     masked_kstart = k_start[valid_cell_mask]
-    default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]  # (1, nlev)
+    default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]
     krange_mask = (default_level_idx >= masked_kstart[:, array_ns.newaxis]) & (
         default_level_idx < masked_kend[:, array_ns.newaxis]
-    )  # (None, nlev)
+    )  # (n_valid_cells, nlev)
 
     zd_diffcoef_var = array_ns.maximum(
         0.0,
@@ -141,62 +152,68 @@ def compute_diffusion_intcoef_and_vertoffset(
         array_ns=array_ns,
     )
 
-    # Identify active cells (those with non-empty k_range above nudging boundary)
-    active_cell_mask = array_ns.where(cell_index_mask & (array_ns.arange(n_cells) >= cell_nudging))[
+    # Identify valid cells (those with non-empty k_range above nudging boundary)
+    valid_cell_mask = array_ns.where(cell_index_mask & (array_ns.arange(n_cells) >= cell_nudging))[
         0
-    ]  # (n_active)
-    n_active = len(active_cell_mask)
+    ]
+    n_valid_cells = len(valid_cell_mask)
 
     # Compute max vertical z-range for all cells, this is used later to construct a one-to-one mapping when searching for neighboring cell's level index that lies within the vertical range of the current cell
-    max_vertical_zrange = array_ns.maximum(z_mc.max() - z_mc.min(), 0)  # (n_active)
+    max_vertical_zrange = array_ns.maximum(z_mc.max() - z_mc.min(), 0)  # (n_valid_cells)
 
-    if n_active > 0:
-        masked_z_mc = z_mc[active_cell_mask, :]  # (n_active, nlev)
-        masked_kstart = k_start[active_cell_mask]  # (n_active)
-        masked_kend = k_end[active_cell_mask]  # (n_active)
-        # Level mask: True where level is in [kstart, kend) for each active cell
-        default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]  # (1, nlev)
+    if n_valid_cells > 0:
+        masked_z_mc = z_mc[valid_cell_mask, :]  # (n_valid_cells, nlev)
+        masked_kstart = k_start[valid_cell_mask]  # (n_valid_cells)
+        masked_kend = k_end[valid_cell_mask]  # (n_valid_cells)
+        # Level mask: True where level is in [kstart, kend) for each valid cell
+        default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]
         krange_mask = (default_level_idx >= masked_kstart[:, array_ns.newaxis]) & (
             default_level_idx < masked_kend[:, array_ns.newaxis]
-        )  # (None, nlev)
+        )  # (n_valid_cells, nlev)
 
+        # loop over neighboring cells, c2e2c_idx, of cells to obtain the k level index of the neighboring cell at the same altitude and the corresponding vertical interpolation coefficient
         for c2e2c_idx in range(n_c2e2c):
-            # get the neighboring cell
-            masked_z_mc_off = z_mc_off[active_cell_mask, c2e2c_idx, :]  # (n_active, nlev)
+            masked_z_mc_off = z_mc_off[valid_cell_mask, c2e2c_idx, :]
 
             # prepare the cell offsets to construct the one-to-one mapping for searching the neighboring cell's level index that lies within the vertical range of the current cell
-            cell_offsets = array_ns.arange(n_active, dtype=array_ns.float64) * max_vertical_zrange
-            # create a 1-d array for searching the neighboring cell's level index that lies within the vertical range of the current cell, a negative sign is added to make the array strictly ascending
+            cell_offsets = (
+                array_ns.arange(n_valid_cells, dtype=array_ns.float64) * max_vertical_zrange
+            )
+            # create a 1-D array for searching the neighboring cell's level index that lies within the vertical range of the current cell, a negative sign is added to make the array strictly ascending
             flattened_neighbor_z_mc = array_ns.ravel(
                 -masked_z_mc_off + cell_offsets[:, array_ns.newaxis]
-            )  # (n_active * nlev)
+            )  # (n_valid_cells * nlev)
             flattened_current_z_mc = array_ns.ravel(
                 -masked_z_mc + cell_offsets[:, array_ns.newaxis]
-            )  # (n_active * nlev)
+            )  # (n_valid_cells * nlev)
             # search for the neighboring cell's level index that lies within the vertical range of the current cell using the flattened arrays, this gives us a flat index in the flattened_neighbor_z_mc array
             flat_neighbor_k_idx = array_ns.searchsorted(
                 flattened_neighbor_z_mc, flattened_current_z_mc, side="right"
             )
-            # unravel the flat_neighbor_k_idx back to (n_active, nlev) and adjust the indices to get the correct neighboring cell's level index
+            # unravel the flat_neighbor_k_idx back to (n_valid_cells, nlev) and adjust the indices to get the correct neighboring cell's level index
             neighbor_k_idx = (
-                flat_neighbor_k_idx.reshape(n_active, nlev)
-                - array_ns.arange(n_active)[:, array_ns.newaxis] * nlev
+                flat_neighbor_k_idx.reshape(n_valid_cells, nlev)
+                - array_ns.arange(n_valid_cells)[:, array_ns.newaxis] * nlev
                 - 1
-            )  # -1 is added because of the searchsorted with side=right starts with 1 when the value is >= minimum (nactive, nlev)
-            vertoffset = array_ns.clip(neighbor_k_idx, 0, nlev - 2)  # (nactive, nlev)
+            )  # -1 is added because of searchsorted with side=right starts with 1 when the value is >= minimum (n_valid_cells, nlev)
+            vertoffset = array_ns.clip(neighbor_k_idx, 0, nlev - 2)  # (n_valid_cells, nlev)
 
             # Vertical interpolation coefficients
             neighboring_cell_upper_height = array_ns.take_along_axis(
                 masked_z_mc_off, vertoffset, axis=1
-            )  # (nactive, nlev)
+            )
             neighboring_cell_lower_height = array_ns.take_along_axis(
                 masked_z_mc_off, vertoffset + 1, axis=1
-            )  # (nactive, nlev)
-            denom = neighboring_cell_upper_height - neighboring_cell_lower_height  # (nactive, nlev)
-            intcoeff = (masked_z_mc - neighboring_cell_lower_height) / denom  # (nactive, nlev)
+            )
+            denom = (
+                neighboring_cell_upper_height - neighboring_cell_lower_height
+            )  # (n_valid_cells, nlev)
+            intcoeff = (
+                masked_z_mc - neighboring_cell_lower_height
+            ) / denom  # (n_valid_cells, nlev)
 
-            zd_intcoef[active_cell_mask, c2e2c_idx, :] = array_ns.where(krange_mask, intcoeff, 0.0)
-            zd_vertoffset[active_cell_mask, c2e2c_idx, :] = array_ns.where(
+            zd_intcoef[valid_cell_mask, c2e2c_idx, :] = array_ns.where(krange_mask, intcoeff, 0.0)
+            zd_vertoffset[valid_cell_mask, c2e2c_idx, :] = array_ns.where(
                 krange_mask, (vertoffset - default_level_idx).astype(gtx.int32), gtx.int32(0)
             )
 
