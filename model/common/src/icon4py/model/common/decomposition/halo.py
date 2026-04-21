@@ -60,19 +60,19 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def __init__(
         self,
-        run_properties: defs.ProcessProperties,
+        process_props: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
     ):
         """
 
         Args:
-            run_properties: contains information on the communicator and local compute node.
+            process_props: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
             allocator: GT4Py buffer allocator
         """
         self._xp = data_alloc.import_array_ns(allocator)
-        self._props = run_properties
+        self._process_props = process_props
         self._connectivities = {self._value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
@@ -91,10 +91,10 @@ class IconLikeHaloConstructor(HaloConstructor):
             )
 
         # the decomposition should match the communicator size
-        if self._xp.max(cell_to_rank_mapping) > self._props.comm_size - 1:
+        if self._xp.max(cell_to_rank_mapping) > self._process_props.comm_size - 1:
             raise exceptions.ValidationError(
                 "rank_mapping",
-                f"The distribution assumes more nodes than the current run is scheduled on  {self._props} ",
+                f"The distribution assumes more nodes than the current run is scheduled on  {self._process_props} ",
             )
 
     def _assert_all_neighbor_tables(self) -> None:
@@ -165,7 +165,7 @@ class IconLikeHaloConstructor(HaloConstructor):
     def owned_cells(self, cell_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the cells owned by this rank"""
         assert cell_to_rank.ndim == 1
-        return self._xp.where(cell_to_rank == self._props.rank)[0]
+        return self._xp.where(cell_to_rank == self._process_props.rank)[0]
 
     def _update_owner_mask_by_max_rank_convention(
         self,
@@ -198,13 +198,13 @@ class IconLikeHaloConstructor(HaloConstructor):
             neighbors = neighbors[neighbors >= 0]
             owning_ranks = cell_to_rank[neighbors]
             assert self._xp.unique(owning_ranks).size > 1, (
-                f"rank {self._props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
+                f"rank {self._process_props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
             )
-            assert self._props.rank in owning_ranks, (
-                f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
+            assert self._process_props.rank in owning_ranks, (
+                f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
             )
             # assign the index to the rank with the higher rank
-            updated_owner_mask[local_index] = max(owning_ranks) <= self._props.rank
+            updated_owner_mask[local_index] = max(owning_ranks) <= self._process_props.rank
         return updated_owner_mask
 
     def _set_decomposition_info_dimension(
@@ -465,7 +465,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
 
 def get_halo_constructor(
-    run_properties: defs.ProcessProperties,
+    process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
     allocator: gtx_typing.Allocator | None,
@@ -477,22 +477,22 @@ def get_halo_constructor(
     If in the future we want to experiment with different halo types we should add an extra selection
     parameter
     Args:
-        processor_props:
+        process_props:
         full_grid_size
         allocator:
         connectivities:
 
-    Returns: a HaloConstructor suitable for the run_properties
+    Returns: a HaloConstructor suitable for the process_props
 
     """
-    if run_properties.is_single_rank():
+    if process_props.is_single_rank():
         return NoHalos(
             horizontal_size=full_grid_size,
             allocator=allocator,
         )
 
     return IconLikeHaloConstructor(
-        run_properties=run_properties,
+        process_props=process_props,
         connectivities=connectivities,
         allocator=allocator,
     )

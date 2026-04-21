@@ -51,7 +51,7 @@ from icon4py.model.testing.fixtures import (
     download_ser_data,
     experiment,
     grid_savepoint,
-    processor_props,
+    process_props,
 )
 
 from ...decomposition import utils as decomp_utils
@@ -607,7 +607,7 @@ def test_local_connectivity(
     field_offset: gtx.FieldOffset,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    processor_props = decomp_utils.DummyProps(rank=rank)
+    process_props = decomp_utils.DummyProps(rank=rank)
     caplog.set_level(logging.INFO)
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
@@ -617,7 +617,7 @@ def test_local_connectivity(
         decomposer=partitioner,
         allocator=allocator,
         keep_skip_values=True,
-        run_properties=processor_props,
+        process_props=process_props,
     )
     grid = manager.grid
 

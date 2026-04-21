@@ -528,7 +528,7 @@ def make_handler(
 
 def configure_logging(
     logging_level: str,
-    processor_procs: decomposition_defs.ProcessProperties | None = None,
+    process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
@@ -539,7 +539,7 @@ def configure_logging(
 
     Args:
         logging_level: log level
-        processor_procs: ProcessProperties
+        process_props: ProcessProperties
 
     """
     if logging_level.lower() not in _LOGGING_LEVELS:
@@ -550,7 +550,7 @@ def configure_logging(
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
 
     # TODO(OngChia): modify here when single_dispatch is ready
-    log_filter = mpi_decomp.ParallelLogger(processor_procs)
+    log_filter = mpi_decomp.ParallelLogger(process_props)
     formatter = _InfoFormatter(
         style="{",
         default_fmt="{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",

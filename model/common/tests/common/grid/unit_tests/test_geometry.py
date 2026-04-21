@@ -31,7 +31,7 @@ from icon4py.model.testing.fixtures import (
     download_ser_data,
     experiment,
     grid_savepoint,
-    processor_props,
+    process_props,
 )
 
 from .. import utils

@@ -1,0 +1,35 @@
+# Ruff 0.15 upgrade follow-ups
+
+These issues were suppressed with noqa comments during the Python 3.14
+compatibility work. They should be fixed properly in a dedicated PR.
+
+## F811 - EARTH_RADIUS redefinition in constants.py
+
+model/common/src/icon4py/model/common/constants.py:122
+
+Two definitions of EARTH_RADIUS: Final[float] (line 96) and Final[ta.wpfloat]
+(line 122). The second overrides the first with a gt4py-compatible type.
+Needs a design decision about whether both are needed or if the float version
+can be removed.
+
+## PLW1641 - Pair class missing __hash__
+
+model/common/src/icon4py/model/common/utils/_common.py:103
+
+Pair defines __eq__ but not __hash__, making instances unhashable. Should either
+implement __hash__ or explicitly set __hash__ = None to make the intent clear.
+
+## PLC0415 - Deferred imports (12 occurrences)
+
+Some are legitimate (optional deps, circular imports), others could be moved
+to module level:
+
+- decomposer.py:57 - pymetis (optional dep, needs try/except)
+- mpi_decomposition.py:57,65 - mpi4py (could be module-level)
+- data_allocation.py:64,72 - cupy (optional dep)
+- data_allocation.py:77 - numpy fallback (conditional)
+- test_parallel_icon.py:56 - ghex (optional dep)
+- test_io.py:83 - uxarray (optional dep)
+- data_handling.py:56 - wget (optional dep)
+- definitions.py:269,311 - atmosphere modules (circular import avoidance)
+- test_conversion.py:26 - cffi (could be module-level)
