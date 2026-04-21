@@ -104,7 +104,7 @@ class GridManager:
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        process_props: decomposition.ProcessProperties =_single_process_props,
+        process_props: decomposition.ProcessProperties = _single_process_props,
     ) -> None:
         if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer

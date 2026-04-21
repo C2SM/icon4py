@@ -696,7 +696,9 @@ def create_single_node_exchange(
 
 
 @functools.singledispatch
-def create_reduction(process_props: ProcessProperties, decomposition_info: DecompositionInfo) -> Reductions:
+def create_reduction(
+    process_props: ProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 

@@ -21,7 +21,7 @@ from icon4py.model.testing import (
     grid_utils,
     parallel_helpers,
 )
-from icon4py.model.testing.fixtures.datatest import backend_like, experiment, processor_props
+from icon4py.model.testing.fixtures.datatest import backend_like, experiment, process_props
 
 
 if mpi_decomposition.mpi4py is None:
@@ -39,11 +39,11 @@ _log = logging.getLogger(__file__)
     ],
 )
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_standalone_driver_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
     if experiment.grid.params.limited_area:
@@ -52,7 +52,7 @@ def test_standalone_driver_compare_single_multi_rank(
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
 
     _log.info(
-        f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}"
+        f"running on {process_props.comm} with {process_props.comm_size} ranks and tolerance = {atol}"
     )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
@@ -67,7 +67,7 @@ def test_standalone_driver_compare_single_multi_rank(
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{processor_props.rank}",
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
@@ -78,7 +78,7 @@ def test_standalone_driver_compare_single_multi_rank(
 
     for field_name in fields:
         print(f"\nverifying field {field_name}")
-        global_reference_field = processor_props.comm.bcast(
+        global_reference_field = process_props.comm.bcast(
             serial_reference_fields.get(field_name),
             root=0,
         )
@@ -86,7 +86,7 @@ def test_standalone_driver_compare_single_multi_rank(
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
             decomposition_info=decomposition_info,
-            processor_props=processor_props,
+            process_props=process_props,
             dim=dim,
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),

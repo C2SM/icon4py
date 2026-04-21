@@ -16,7 +16,7 @@ from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_d
 from icon4py.model.standalone_driver import driver_states, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
-from icon4py.model.testing.fixtures.datatest import backend_like, experiment, processor_props
+from icon4py.model.testing.fixtures.datatest import backend_like, experiment, process_props
 
 
 if mpi_decomposition.mpi4py is None:
@@ -34,11 +34,11 @@ _log = logging.getLogger(__file__)
     ],
 )
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
     if experiment.grid.params.limited_area:
@@ -47,7 +47,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
 
     _log.info(
-        f"running on {processor_props.comm} with {processor_props.comm_size} ranks and tolerance = {atol}"
+        f"running on {process_props.comm} with {process_props.comm_size} ranks and tolerance = {atol}"
     )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
@@ -77,7 +77,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_mpi_rank_{processor_props.rank}",
+            output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
             grid_file_path=grid_file_path,
             log_level="info",
             backend_like=backend_like,
@@ -104,14 +104,14 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     for field_name, serial_source, local_source in fields_to_check:
         print(f"verifying field {field_name}")
-        global_reference_field = processor_props.comm.bcast(
+        global_reference_field = process_props.comm.bcast(
             getattr(serial_source, field_name).asnumpy(),
             root=0,
         )
         local_field = getattr(local_source, field_name)
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_icon4py_driver.decomposition_info,
-            processor_props=processor_props,
+            process_props=process_props,
             dim=local_field.domain.dims[0],
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
