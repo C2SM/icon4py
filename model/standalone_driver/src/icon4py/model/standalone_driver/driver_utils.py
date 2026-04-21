@@ -474,9 +474,8 @@ def display_driver_setup_in_log_file(
 
     log.info("==== Vertical Grid Parameters ====")
     log.info(vertical_params)
-    consts = constants.PhysicsConstants()
     log.info("==== Physical Constants ====")
-    for name, value in consts.__class__.__dict__.items():
+    for name, value in constants.PhysicsConstants.__class__.__dict__.items():
         if name.startswith("_") or callable(value):
             continue
         log.info(f"{name:30s}: {value}")
