@@ -266,7 +266,7 @@ class Experiments:
 def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
 ) -> diffusion.DiffusionConfig:
-    from icon4py.model.atmosphere.diffusion import diffusion
+    from icon4py.model.atmosphere.diffusion import diffusion  # noqa: PLC0415
 
     if experiment == Experiments.MCH_CH_R04B09:
         return diffusion.DiffusionConfig(
@@ -308,7 +308,10 @@ def construct_diffusion_config(
 
 
 def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
-    from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+    from icon4py.model.atmosphere.dycore import (  # noqa: PLC0415
+        dycore_states,
+        solve_nonhydro as solve_nh,
+    )
 
     if experiment == Experiments.MCH_CH_R04B09:
         return solve_nh.NonHydrostaticConfig(
