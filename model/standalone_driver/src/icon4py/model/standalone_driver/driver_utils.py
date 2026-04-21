@@ -65,9 +65,9 @@ def create_grid_manager(
     parallel_props: decomposition_defs.ProcessProperties,
 ) -> gm.GridManager:
     decomposer = (
-        decomp.MetisDecomposer()
-        if not parallel_props.is_single_rank()
-        else decomp.SingleNodeDecomposer()
+        decomp.SingleNodeDecomposer()
+        if parallel_props.is_single_rank()
+        else decomp.MetisDecomposer()
     )
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
