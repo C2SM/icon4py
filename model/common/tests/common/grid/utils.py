@@ -23,9 +23,7 @@ managers: dict[str, gm.GridManager] = {}
 
 
 def horizontal_dims() -> Iterator[gtx.Dimension]:
-    for d in vars(dims).values():
-        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL:
-            yield d
+    yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
 
 
 def main_horizontal_dims() -> Iterator[gtx.Dimension]:
@@ -33,9 +31,7 @@ def main_horizontal_dims() -> Iterator[gtx.Dimension]:
 
 
 def vertical_dims() -> Iterator[gtx.Dimension]:
-    for d in vars(dims).values():
-        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL:
-            yield d
+    yield from dims.MAIN_VERTICAL_DIMENSIONS.values()
 
 
 def non_horizontal_dims() -> Iterator[gtx.Dimension]:

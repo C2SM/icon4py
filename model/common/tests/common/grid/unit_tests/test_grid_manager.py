@@ -94,7 +94,7 @@ def test_grid_manager_eval_v2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
+@pytest.mark.parametrize("dim", dims.MAIN_HORIZONTAL_DIMENSIONS.values())
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -449,7 +449,7 @@ def test_read_geometry_fields(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
+@pytest.mark.parametrize("dim", dims.MAIN_HORIZONTAL_DIMENSIONS.values())
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,

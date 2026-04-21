@@ -16,6 +16,7 @@ EdgeDim = gtx.Dimension("Edge")
 CellDim = gtx.Dimension("Cell")
 VertexDim = gtx.Dimension("Vertex")
 MAIN_HORIZONTAL_DIMENSIONS = {"CellDim": CellDim, "EdgeDim": EdgeDim, "VertexDim": VertexDim}
+MAIN_VERTICAL_DIMENSIONS = {"KDim": KDim, "KHalfDim": KHalfDim}
 LsqCDim = gtx.Dimension("LsqC", gtx.DimensionKind.LOCAL)
 LsqUnkDim = gtx.Dimension("LsqUnk", gtx.DimensionKind.LOCAL)
 E2CDim = gtx.Dimension("E2C", gtx.DimensionKind.LOCAL)

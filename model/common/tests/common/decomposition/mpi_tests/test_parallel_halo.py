@@ -40,7 +40,7 @@ def global_indices(dim: gtx.Dimension) -> np.ndarray:
     return np.arange(mesh.size[dim], dtype=gtx.int32)
 
 
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
+@pytest.mark.parametrize("dim", dims.MAIN_HORIZONTAL_DIMENSIONS.values())
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_element_ownership_is_unique(
