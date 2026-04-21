@@ -606,6 +606,9 @@ def _construct_diamond_vertices(
 
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
+    
+    Implementation:
+
 
     Args:
         e2v: ndarray containing the connectivity table for edge-to-vertex
@@ -624,9 +627,9 @@ def _construct_diamond_vertices(
 
     # create a 1d ascending array of length 6
     col_idx = array_ns.arange(flat.shape[1], dtype=gtx.int32)
-    # using the mask that identifies v0 and v2 vertices to get the correct position of far vertices in the `flat` array (c2e2v), and the position of v1 and v3 vertices are replaced with 6, which is larger than any possible indices.
+    # identify the position of v0 and v2 vertices with the mask, and the position of v1 and v3 vertices is replaced with 6
     far_indices_pos = array_ns.where(far_indices_mask, col_idx, col_idx.shape[0])  # (n_edges, 6)
-    # sort the far_indices_pos along the second axis and take the first two numbers, this will give us the correct positions of v0 and v2 vertices in the `flat` array because positions of v1 and v3 are larger than any possible indices.
+    # sort the far_indices_pos along the second axis and take the first two numbers
     far_indices_pos = array_ns.sort(far_indices_pos, axis=1)[:, :2]  # (n_edges, 2)
     e2v_far = array_ns.take_along_axis(flat, far_indices_pos, axis=1)
     return array_ns.hstack((e2v, e2v_far))

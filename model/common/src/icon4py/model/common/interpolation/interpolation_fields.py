@@ -710,7 +710,7 @@ def _create_inverse_neighbor_index(
         ndarray of the same shape as target_offset: [a, b2a]
 
     """
-    inv_neighbor_idx = array_ns.full(MISSING, inverse_offset.shape, dtype=gtx.int32)
+    inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
     n_inv_elem, n_inv_neighbors = inverse_offset.shape
     # loop over all neighbors of the inverse_offset array, and for each neighbor find which neighbor of the source_offset is the neighbor under consideration.
     for i in range(n_inv_neighbors):
