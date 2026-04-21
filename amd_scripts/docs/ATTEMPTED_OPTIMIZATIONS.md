@@ -72,6 +72,58 @@ launch.
 Run-to-run variability is ~3% on the same config (e.g. (256,2,1) measured at
 598 and 615 μs in two consecutive runs). Differences smaller than ~3% are noise.
 
+### Block size sweep on the actual solver (GH200, GT4Py Timer, 1000 runs)
+
+Sweep done 2026-04-20. Sequential `srun` per variant (each variant clears its
+own cache and forces fresh compile; model_options.py edited per variant). Block
+size verified by inspecting `dim3` in the compiled CUDA launch. Variants whose
+dim3 didn't match (DaCe silently rejects some shapes — e.g. Y>12 on Cell=32,
+X>=512 with Y=1, 64x2, 64x4) are marked MISMATCH and excluded from conclusions.
+
+| Block size | Median (μs) | vs (256,1,1) best | Note |
+|---|---|---|---|
+| (32, 1, 1) | 601.8 | +14% | 1 warp/block — too small |
+| (32, 2, 1) | 544.5 | +3% | |
+| (32, 4, 1) | 536.6 | +2% | |
+| (32, 8, 1) | 545.8 | +4% | DaCe default |
+| (32, 16, 1) | — | — | MISMATCH: DaCe rounded Y=16 → Y=12 |
+| (64, 1, 1) | 536.6 | +2% | |
+| (64, 2, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
+| (64, 4, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
+| (64, 8, 1) | 545.3 | +4% | |
+| (128, 1, 1) | 528.9 | +0.4% | within noise of best |
+| (128, 2, 1) | 532.0 | +1% | |
+| (128, 4, 1) | 533.7 | +1% | |
+| (192, 1, 1) | 534.0 | +1% | non-power-of-2, unremarkable |
+| **(256, 1, 1)** | **526.9** | **best** | production candidate for GH200 |
+| (256, 2, 1) | 533.5 | +1% | |
+| (384, 1, 1) | 533.7 | +1% | |
+| (512, 1, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
+| (512, 2, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
+| (768, 1, 1) | 558.1 | +6% | |
+| (1024, 1, 1) | 555.3 | +5% | max threads/block |
+
+**Findings (GH200):**
+- **(256,1,1) is the winner on GH200 too** (526.9 μs), same as MI300A.
+- **Broad plateau**: Cell ∈ {128, 192, 256, 384} with Y=1 are all within ~1.5%
+  of the best — effectively a flat plateau covering ~3× range of Cell sizes.
+  Run-to-run noise (~3%) eats these differences.
+- **Y dim doesn't help on GH200**: at every Cell axis, Y=1 is best or tied.
+  Y=2/4/8 never improves over Y=1 by more than noise.
+- **Drop-offs:**
+  - (32, 1, 1) is much worse (+14%) — only 1 warp/block, way too small.
+  - (768, 1, 1) and (1024, 1, 1) are worse (+5-6%) — likely register pressure
+    or fewer concurrent blocks per SM.
+- **DaCe silently overrides some shapes** — Y>12 on Cell=32, X>=512 with Y=1,
+  and the 64x{2,4} variants all got rounded/rejected. Worth noting when
+  specifying block size via `gpu_block_size_2d`.
+
+**Cross-platform conclusion:** (256,1,1) is the sweet spot for BOTH MI300A and
+GH200 on this kernel. Gating `(256,1,1)` only inside the ROCM branch would
+actually leave ~1-2% on the table on GH200 too (GH200 default (32,8) is +4%
+slower than (256,1,1)). A cross-platform `setdefault("gpu_block_size_2d", (256,1,1))`
+outside the if-block would work on both platforms.
+
 ## Occupancy Experiment
 
 Tested the AMD equivalent of NVIDIA's `maxreg` trick by patching DaCe-generated HIP source

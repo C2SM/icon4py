@@ -21,10 +21,16 @@ A one-line config change — `gpu_block_size_2d=(256,1,1)` for ROCm in `model_op
 |----------|--------|-------------------------------|
 | MI300A | DaCe default `(32,8,1)` | 0.753 ms |
 | MI300A | **`gpu_block_size_2d=(256,1,1)`** | **0.604 ms (-19.8%)** |
-| GH200 | defaults `(32,8,1)` | 0.559 ms |
-| GH200 | `gpu_block_size_2d=(256,1,1)` | per-kernel: -5% on map_100_fieldop_1; full-solver GT4Py Timer not yet measured |
+| GH200 | DaCe default `(32,8,1)` | 0.546 ms |
+| GH200 | **`gpu_block_size_2d=(256,1,1)`** | **0.527 ms (-3.5%)** |
 
-Gap MI300A → GH200: **1.35x → 1.08x** (at MI300A's best vs GH200's default).
+GH200 numbers above are from the 2026-04-20 full sweep of 20 block sizes
+(see [docs/ATTEMPTED_OPTIMIZATIONS.md#block-size-sweep-on-the-actual-solver-gh200-gt4py-timer-1000-runs](docs/ATTEMPTED_OPTIMIZATIONS.md#block-size-sweep-on-the-actual-solver-gh200-gt4py-timer-1000-runs)).
+Earlier ~0.559 ms number was from an uncached default run; 0.546 ms here is the
+clean A/B measurement.
+
+Gap MI300A → GH200: **1.38x → 1.15x** (at each platform's best — MI300A 604 μs vs GH200 527 μs).
+Previously reported 1.08x was MI300A-best vs GH200-default; with both at (256,1,1), the hardware-floor gap is ~15%.
 Block-size tuning helps MI300A much more than GH200 — see
 [Cross-platform table](docs/DEEP_ANALYSIS.md#cross-platform-memory-hierarchy-mi300a-vs-gh200--fully-verified-ab)
 for per-kernel detail.
@@ -39,7 +45,10 @@ for per-kernel detail.
    AND saturates more of it (89% on GH200 vs 70% on MI300A on this kernel).
 3. **Block size matters more on MI300A than on GH200**: switching (32,8)→(256,1,1)
    gives MI300A −24% on this kernel and ~−20% on the full solver. Same change on
-   GH200 only gives −5%, because GH200 was already nearly bandwidth-saturated.
+   GH200 only gives −5% per-kernel / **−3.5% full solver** (measured 2026-04-20
+   across a 20-variant sweep), because GH200 was already nearly bandwidth-saturated.
+   Notable: **(256,1,1) is the sweet spot on BOTH platforms** — gating it inside the
+   ROCM block only leaves ~3.5% on the table for GH200 users.
 4. **Both architectures are bandwidth-bound, not compute-bound** on this kernel:
    IPC ~0.24 on MI300A, ~0.28 on GH200 (small fractions of each platform's peak);
    VALU usage 1-2% on both. The kernel waits on memory, not on math.
@@ -301,7 +310,8 @@ Detailed cache-hierarchy breakdown and provenance in [Deep Analysis](docs/DEEP_A
 ### 2. The MI300A vs GH200 gap shrinks substantially with `(256,1,1)`
 - The original 1.4-2.1x per-kernel gap from AMD_INTRODUCTION.md was largely a block
   size mismatch — the DaCe default `(32,8)` is NVIDIA-friendly but wrong for AMD.
-- After setting `gpu_block_size_2d=(256,1,1)`, the gap on the solver shrinks to **1.13x**.
+- After setting `gpu_block_size_2d=(256,1,1)` **on MI300A**, the gap vs GH200-default shrinks from 1.38x → 1.08x.
+- With `(256,1,1)` **on both platforms** (now verified optimal for both), the gap is **1.15x** — closer to the HBM-peak hardware ratio (0.87 → 1.15 reciprocal).
 - For map_100_fieldop_1 specifically: GH200 at 89% of 4 TB/s HBM peak, MI300A at 70%
   of 3.47 TB/s HBM peak. GH200 is closer to its HBM ceiling.
 
