@@ -1,1 +1,0 @@
-/home/mjs/src/icon4py/AGENTS.md
