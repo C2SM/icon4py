@@ -27,7 +27,7 @@ from ..fixtures import (
     download_ser_data,
     experiment,
     grid_savepoint,
-    processor_props,
+    process_props,
 )
 from ..unit_tests.test_factory import SimpleFieldSource
 
@@ -59,20 +59,20 @@ def _fill_edges(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("do_exchange", [True, False])
 def test_program_provider_exchange(
     do_exchange: bool,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props, sizes=(2, 4))
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    parallel_helpers.check_comm_size(process_props, sizes=(2, 4))
+    exchange = decomposition.create_exchange(process_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
-    number = processor_props.rank + 10
+    number = process_props.rank + 10
     source = SimpleFieldSource(
         data_={},
         backend=backend,
@@ -99,7 +99,7 @@ def test_program_provider_exchange(
     owned_points = decomposition_info.local_index(
         dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
     )
-    valid_values = {r + 10 for r in range(processor_props.comm_size)}
+    valid_values = {r + 10 for r in range(process_props.comm_size)}
     arr = field.ndarray
 
     assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
@@ -112,20 +112,20 @@ def test_program_provider_exchange(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("do_exchange", [True, False])
 def test_numpy_provider_exchange(
     do_exchange: bool,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props, sizes=(2, 4))
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    parallel_helpers.check_comm_size(process_props, sizes=(2, 4))
+    exchange = decomposition.create_exchange(process_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
-    number = processor_props.rank + 10
+    number = process_props.rank + 10
     source = SimpleFieldSource(
         data_={},
         backend=backend,
@@ -155,7 +155,7 @@ def test_numpy_provider_exchange(
     owned_points = decomposition_info.local_index(
         dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
     )
-    valid_values = {r + 10 for r in range(processor_props.comm_size)}
+    valid_values = {r + 10 for r in range(process_props.comm_size)}
     arr = field.ndarray
 
     assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
