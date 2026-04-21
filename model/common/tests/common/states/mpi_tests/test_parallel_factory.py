@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
+from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import parallel_helpers
@@ -42,10 +42,31 @@ if mpi_decomposition.mpi4py is None:
     pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
+@gtx.field_operator
+def _fill_op(f: fa.EdgeField[gtx.int32], value: gtx.int32) -> fa.EdgeField[gtx.int32]:
+    return f + value
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def _fill_edges(
+    f: fa.EdgeField[gtx.int32],
+    value: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+) -> None:
+    _fill_op(f, value, out=f, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
+
+
+def _make_constant(size: int, value: int) -> data_alloc.NDArray:
+    return np.full(size, value)
+
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("do_exchange", [True, False])
 def test_program_provider_exchange(
+    do_exchange: bool,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     grid_savepoint: sb.IconGridSavepoint,
@@ -56,22 +77,22 @@ def test_program_provider_exchange(
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = processor_props.rank + 10
-    input_field = data_alloc.constant_field(grid, float(number), dims.EdgeDim, allocator=backend)
     source = SimpleFieldSource(
-        data_={"f": (input_field, {"standard_name": "f", "units": ""})},
+        data_={},
         backend=backend,
         grid=grid,
-    )
+    ).with_metadata({"out": {"dtype": np.int32, "standard_name": "out", "units": ""}})
     source._exchange = exchange
     edge_domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(
-        func=math_helpers.compute_inverse_on_edges,
+        func=_fill_edges,
         domain={
             dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
         },
-        fields={"f_inverse": "out"},
-        deps={"f": "f"},
-        do_exchange=True,
+        fields={"f": "out"},
+        deps={},
+        params={"value": number},
+        do_exchange=do_exchange,
     )
     source.register_provider(provider)
     field = source.get("out")
@@ -85,15 +106,22 @@ def test_program_provider_exchange(
         )
     )
     field_np = data_alloc.as_numpy(field)
-    expected = 1.0 / number
-    assert np.allclose(field_np[owned_points], expected)
-    assert not np.allclose(field_np[halo_points], expected)
+    valid_values = {r + 10 for r in range(processor_props.comm_size)}
+
+    assert (field_np[owned_points] == number).all()
+    if do_exchange:
+        assert not (field_np[halo_points] == number).all()
+        assert set(field_np[halo_points].flatten()).issubset(valid_values)
+    else:
+        assert (field_np[halo_points] == number).all()
 
 
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("do_exchange", [True, False])
 def test_numpy_provider_exchange(
+    do_exchange: bool,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     grid_savepoint: sb.IconGridSavepoint,
@@ -104,25 +132,20 @@ def test_numpy_provider_exchange(
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = processor_props.rank + 10
-    input_field = data_alloc.constant_field(
-        grid, number, dims.CellDim, dims.KDim, allocator=backend
-    )
     source = SimpleFieldSource(
-        data_={"in": (input_field, {"standard_name": "in", "units": ""})},
+        data_={},
         backend=backend,
         grid=grid,
     )
     source._exchange = exchange
 
-    def identity(ar: data_alloc.NDArray) -> data_alloc.NDArray:
-        return ar
-
     provider = factory.NumpyDataProvider(
-        func=identity,
-        domain=(dims.CellDim, dims.KDim),
+        func=_make_constant,
+        domain=(dims.CellDim,),
         fields=("out",),
-        deps={"ar": "in"},
-        do_exchange=True,
+        deps={},
+        params={"size": grid.size[dims.CellDim], "value": number},
+        do_exchange=do_exchange,
     )
     source.register_provider(provider)
     field = source.get("out")
@@ -136,5 +159,11 @@ def test_numpy_provider_exchange(
         )
     )
     field_np = data_alloc.as_numpy(field)
-    assert (field_np[owned_points, :] == number).all()
-    assert not np.all(field_np[halo_points, :] == number)
+    valid_values = {r + 10 for r in range(processor_props.comm_size)}
+
+    assert (field_np[owned_points] == number).all()
+    if do_exchange:
+        assert not (field_np[halo_points] == number).all()
+        assert set(field_np[halo_points].flatten()).issubset(valid_values)
+    else:
+        assert (field_np[halo_points] == number).all()
