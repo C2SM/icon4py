@@ -62,11 +62,11 @@ def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
-    parallel_props: decomposition_defs.ProcessProperties,
+    process_props: decomposition_defs.ProcessProperties,
 ) -> gm.GridManager:
     decomposer = (
         decomp.SingleNodeDecomposer()
-        if parallel_props.is_single_rank()
+        if process_props.is_single_rank()
         else decomp.MetisDecomposer()
     )
     grid_manager = gm.GridManager(
@@ -77,7 +77,7 @@ def create_grid_manager(
     grid_manager(
         allocator=allocator,
         keep_skip_values=True,
-        run_properties=parallel_props,
+        process_props=process_props,
         decomposer=decomposer,
     )
 

@@ -418,7 +418,7 @@ class GlobalReductions(Reductions):
     ensuring only owned (non-halo) elements participate in the reduction.
     """
 
-    process_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties
     _owner_masks: dict[int, data_alloc.NDArray] = dataclasses.field(default_factory=dict)
 
     def __init__(

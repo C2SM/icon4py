@@ -133,7 +133,7 @@ def _make_multi_rank_geometry(
 ) -> tuple[gm.GridManager, geometry.GridGeometry]:
     grid_manager = utils.run_grid_manager_for_multi_rank(
         file=grid_file,
-        run_properties=process_props,
+        process_props=process_props,
         decomposer=decomp.MetisDecomposer(),
         allocator=allocator,
         num_levels=num_levels,

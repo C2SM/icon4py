@@ -568,7 +568,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    console_handler.addFilter(decomposition.ParallelLogger(process_procs))
+    console_handler.addFilter(decomposition.ParallelLogger(process_props))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
