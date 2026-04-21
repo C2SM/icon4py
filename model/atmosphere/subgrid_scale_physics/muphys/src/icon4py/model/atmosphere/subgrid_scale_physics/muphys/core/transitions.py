@@ -9,8 +9,8 @@ import gt4py.next as gtx
 from gt4py.next import exp, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
-    GraupelCt,
-    ThermodynamicCt,
+    GraupelConsts,
+    ThermodynamicConsts,
 )
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
@@ -38,7 +38,7 @@ def _cloud_to_graupel(
     B_RIM = wpfloat(0.94878)
     ZERO = wpfloat(0.0)
     return where(
-        (minimum(qc, qg) > GraupelCt.qmin) & (t > GraupelCt.tfrz_hom),
+        (minimum(qc, qg) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         A_RIM * qc * power(qg * rho, B_RIM),
         ZERO,
     )
@@ -96,7 +96,7 @@ def _cloud_to_rain(
     phi = A_PHI * phi * power(ONE - phi, THREE)
     xau = AU_KERNEL * power(qc * qc / nc, TWO) * (ONE + phi / power(ONE - tau, TWO))
     xac = AC_KERNEL * qc * qr * power(tau / (tau + C_PHI), FOUR)
-    return where((qc > QMIN_AC) & (t > GraupelCt.tfrz_hom), xau + xac, ZERO)
+    return where((qc > QMIN_AC) & (t > GraupelConsts.tfrz_hom), xau + xac, ZERO)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -131,11 +131,11 @@ def _cloud_to_snow(
     Return:                 Conversion rate
     """
     ECS = wpfloat(0.9)
-    B_RIM = -(wpfloat(GraupelCt.v1s) + wpfloat(3.0))
-    C_RIM = wpfloat(2.61) * ECS * GraupelCt.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
+    B_RIM = -(wpfloat(GraupelConsts.v1s) + wpfloat(3.0))
+    C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
     ZERO = wpfloat(0.0)
     return where(
-        (minimum(qc, qs) > GraupelCt.qmin) & (t > GraupelCt.tfrz_hom),
+        (minimum(qc, qs) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         C_RIM * ns * qc * power(lam, B_RIM),
         ZERO,
     )
@@ -172,8 +172,8 @@ def _cloud_x_ice(
     Return:                 Freezing rate
     """
     ZERO = wpfloat(0.0)
-    result = where((qc > GraupelCt.qmin) & (t < GraupelCt.tfrz_hom), qc / dt, ZERO)
-    result = where((qi > GraupelCt.qmin) & (t > ThermodynamicCt.tmelt), -qi / dt, result)
+    result = where((qc > GraupelConsts.qmin) & (t < GraupelConsts.tfrz_hom), qc / dt, ZERO)
+    result = where((qi > GraupelConsts.qmin) & (t > ThermodynamicConsts.tmelt), -qi / dt, result)
     return result
 
 
@@ -208,7 +208,7 @@ def _graupel_to_rain(
 
     Return:                 Conversion rate
     """
-    A_MELT = wpfloat(GraupelCt.tx) - wpfloat(389.5)  # melting prefactor
+    A_MELT = wpfloat(GraupelConsts.tx) - wpfloat(389.5)  # melting prefactor
     B_MELT = wpfloat(0.6)  # melting exponent
     C1_MELT = wpfloat(12.31698)  # Constants in melting formula
     C2_MELT = wpfloat(7.39441e-05)  # Constants in melting formula
@@ -217,13 +217,13 @@ def _graupel_to_rain(
         (
             t
             > maximum(
-                ThermodynamicCt.tmelt,
-                ThermodynamicCt.tmelt - GraupelCt.tx * dvsw0,
+                ThermodynamicConsts.tmelt,
+                ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0,
             )
         )
-        & (qg > GraupelCt.qmin),
+        & (qg > GraupelConsts.qmin),
         (C1_MELT / p + C2_MELT)
-        * (t - ThermodynamicCt.tmelt + A_MELT * dvsw0)
+        * (t - ThermodynamicConsts.tmelt + A_MELT * dvsw0)
         * power(qg * rho, B_MELT),
         ZERO,
     )
@@ -267,12 +267,12 @@ def _ice_to_graupel(
     B_AGG_CT = wpfloat(0.94878)  # Exponent
     ZERO = wpfloat(0.0)
     result = where(
-        (qi > GraupelCt.qmin) & (qg > GraupelCt.qmin),
+        (qi > GraupelConsts.qmin) & (qg > GraupelConsts.qmin),
         sticking_eff * qi * C_AGG_CT * power(rho * qg, B_AGG_CT),
         ZERO,
     )
     result = where(
-        (qi > GraupelCt.qmin) & (qr > GraupelCt.qmin),
+        (qi > GraupelConsts.qmin) & (qr > GraupelConsts.qmin),
         result + A_CT * qi * power(rho * qr, B_CT),
         result,
     )
@@ -311,12 +311,12 @@ def _ice_to_snow(
     """
     QI0 = wpfloat(0.0)  # Critical ice required for autoconversion
     C_IAU = wpfloat(1.0e-3)  # Coefficient of auto conversion
-    C_AGG = wpfloat(2.61) * GraupelCt.v0s  # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
-    B_AGG = -(GraupelCt.v1s + wpfloat(3.0))  # Aggregation exponent
+    C_AGG = wpfloat(2.61) * GraupelConsts.v0s  # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
+    B_AGG = -(GraupelConsts.v1s + wpfloat(3.0))  # Aggregation exponent
     ZERO = wpfloat(0.0)
 
     return where(
-        (qi > GraupelCt.qmin),
+        (qi > GraupelConsts.qmin),
         sticking_eff * (C_IAU * maximum(ZERO, (qi - QI0)) + qi * (C_AGG * ns) * power(lam, B_AGG)),
         ZERO,
     )
@@ -361,7 +361,7 @@ def _rain_to_graupel(
 
     Return:                 Conversion rate
     """
-    TFRZ_RAIN = ThermodynamicCt.tmelt - wpfloat(2.0)
+    TFRZ_RAIN = ThermodynamicConsts.tmelt - wpfloat(2.0)
     A1 = wpfloat(9.95e-5)  # coefficient for immersion raindrop freezing: alpha_if
     B1 = wpfloat(1.75)  # coefficient for immersion raindrop freezing: a_if
     #  C1 assigned to 1.68 in original but not used there; coefficient for raindrop freezing
@@ -374,16 +374,16 @@ def _rain_to_graupel(
     ZERO = wpfloat(0.0)
 
     maskinner = (dvsw + qc <= ZERO) | (qr > C4 * qc)
-    mask = (qr > GraupelCt.qmin) & (t < TFRZ_RAIN)
+    mask = (qr > GraupelConsts.qmin) & (t < TFRZ_RAIN)
     result = where(
-        mask & (t > GraupelCt.tfrz_hom) & maskinner,
+        mask & (t > GraupelConsts.tfrz_hom) & maskinner,
         (exp(C2 * (TFRZ_RAIN - t)) - C3) * (A1 * power((qr * rho), B1)),
         ZERO,
     )
-    result = where(mask & (t <= GraupelCt.tfrz_hom), qr / dt, result)
+    result = where(mask & (t <= GraupelConsts.tfrz_hom), qr / dt, result)
 
     return where(
-        (minimum(qi, qr) > GraupelCt.qmin) & (qs > QS_CRIT),
+        (minimum(qi, qr) > GraupelConsts.qmin) & (qs > QS_CRIT),
         result + A2 * (qi / mi) * power((rho * qr), B2),
         result,
     )
@@ -438,10 +438,10 @@ def _rain_to_vapor(
     ZERO = wpfloat(0.0)
 
     # TO-DO: move as much as possible into WHERE statement
-    tc = t - ThermodynamicCt.tmelt
+    tc = t - ThermodynamicConsts.tmelt
     evap_max = (C1_RV + tc * (C2_RV + C3_RV * tc)) * (-dvsw) / dt
     return where(
-        (qr > GraupelCt.qmin) & (dvsw + qc <= ZERO),
+        (qr > GraupelConsts.qmin) & (dvsw + qc <= ZERO),
         minimum(
             A1_RV * (A2_RV + A3_RV * power(qr * rho, B1_RV)) * (-dvsw) * power(qr * rho, B2_RV),
             evap_max,
@@ -485,7 +485,7 @@ def _snow_to_graupel(
     B_RIM_CT = wpfloat(0.75)
     ZERO = wpfloat(0.0)
     return where(
-        (minimum(qc, qs) > GraupelCt.qmin) & (t > GraupelCt.tfrz_hom),
+        (minimum(qc, qs) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         A_RIM_CT * qc * power(qs * rho, B_RIM_CT),
         ZERO,
     )
@@ -524,19 +524,21 @@ def _snow_to_rain(
     """
     C1_SR = wpfloat(79.6863)  # Constants in melting formula
     C2_SR = wpfloat(0.612654e-3)  # Constants in melting formula
-    A_SR = GraupelCt.tx - wpfloat(389.5)  # Melting prefactor
+    A_SR = GraupelConsts.tx - wpfloat(389.5)  # Melting prefactor
     B_SR = wpfloat(0.8)  # Melting exponent
     ZERO = wpfloat(0.0)
     return where(
         (
             t
             > maximum(
-                ThermodynamicCt.tmelt,
-                ThermodynamicCt.tmelt - GraupelCt.tx * dvsw0,
+                ThermodynamicConsts.tmelt,
+                ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0,
             )
         )
-        & (qs > GraupelCt.qmin),
-        (C1_SR / p + C2_SR) * (t - ThermodynamicCt.tmelt + A_SR * dvsw0) * power(qs * rho, B_SR),
+        & (qs > GraupelConsts.qmin),
+        (C1_SR / p + C2_SR)
+        * (t - ThermodynamicConsts.tmelt + A_SR * dvsw0)
+        * power(qs * rho, B_SR),
         ZERO,
     )
 
@@ -590,15 +592,15 @@ def _vapor_x_graupel(
     B_VG = wpfloat(0.6)
     ZERO = wpfloat(0.0)
     result = where(
-        (t < ThermodynamicCt.tmelt),
+        (t < ThermodynamicConsts.tmelt),
         (A1_VG + A2_VG * t + A3 / p + A4 * p) * dvsi * power(qg * rho, B_VG),
         where(
-            (t > (ThermodynamicCt.tmelt - GraupelCt.tx * dvsw0)),
+            (t > (ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0)),
             (A5 + A6 * p) * minimum(ZERO, dvsw0) * power(qg * rho, B_VG),
             (A7 + A8 * p) * dvsw * power(qg * rho, B_VG),
         ),
     )
-    return where(qg > GraupelCt.qmin, maximum(result, -qg / dt), ZERO)
+    return where(qg > GraupelConsts.qmin, maximum(result, -qg / dt), ZERO)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -651,7 +653,7 @@ def _vapor_x_ice(
         minimum(result, dvsi / dt),
         maximum(maximum(result, dvsi / dt), -qi / dt),
     )
-    return where(qi > GraupelCt.qmin, result, ZERO)
+    return where(qi > GraupelConsts.qmin, result, ZERO)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -703,8 +705,8 @@ def _vapor_x_snow(
     """
     NU = wpfloat(1.75e-5)  # kinematic viscosity of air
     A0_VS = wpfloat(1.0)
-    A1_VS = wpfloat(0.4182) * sqrt(GraupelCt.v0s / NU)
-    A2_VS = -(GraupelCt.v1s + wpfloat(1.0)) / wpfloat(2.0)
+    A1_VS = wpfloat(0.4182) * sqrt(GraupelConsts.v0s / NU)
+    A2_VS = -(GraupelConsts.v1s + wpfloat(1.0)) / wpfloat(2.0)
     EPS = wpfloat(1.0e-15)
     QS_LIM = wpfloat(1.0e-7)
     CNX = wpfloat(4.0)
@@ -717,7 +719,7 @@ def _vapor_x_snow(
 
     # See if this can be incorporated into WHERE statement
     result = where(
-        (t < ThermodynamicCt.tmelt),
+        (t < ThermodynamicConsts.tmelt),
         (CNX * ns * eta / rho) * (A0_VS + A1_VS * power(lam, A2_VS)) * dvsi / (lam * lam + EPS),
         ZERO,
     )
@@ -726,23 +728,25 @@ def _vapor_x_snow(
     # is crucial for numerical stability in the tropics!
     # a meaningful distinction between cloud ice and snow
     result = where(
-        (t < ThermodynamicCt.tmelt) & (result > ZERO),
+        (t < ThermodynamicConsts.tmelt) & (result > ZERO),
         minimum(result, dvsi / dt - ice_dep),
         result,
     )
-    result = where((t < ThermodynamicCt.tmelt) & (qs <= QS_LIM), minimum(result, ZERO), result)
+    result = where((t < ThermodynamicConsts.tmelt) & (qs <= QS_LIM), minimum(result, ZERO), result)
     # ELSE section
     result = where(
-        (t >= ThermodynamicCt.tmelt) & (t > (ThermodynamicCt.tmelt - GraupelCt.tx * dvsw0)),
+        (t >= ThermodynamicConsts.tmelt)
+        & (t > (ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0)),
         (C1_VS / p + C2_VS) * minimum(ZERO, dvsw0) * power(qs * rho, B_VS),
         result,
     )
     result = where(
-        (t >= ThermodynamicCt.tmelt) & (t <= (ThermodynamicCt.tmelt - GraupelCt.tx * dvsw0)),
+        (t >= ThermodynamicConsts.tmelt)
+        & (t <= (ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0)),
         (C3_VS + C4_VS * p) * dvsw * power(qs * rho, B_VS),
         result,
     )
-    return where((qs > GraupelCt.qmin), maximum(result, -qs / dt), ZERO)
+    return where((qs > GraupelConsts.qmin), maximum(result, -qs / dt), ZERO)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
