@@ -760,7 +760,10 @@ class ParallelLogger(logging.Filter):
         return (
             True
             if self._rank_id == 0
-            else (self._print_distributed_debug_msg and record.levelno == logging.DEBUG)
+            else (
+                record.levelno >= logging.WARNING
+                or (self._print_distributed_debug_msg and record.levelno == logging.DEBUG)
+            )
         )
 
 

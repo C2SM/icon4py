@@ -616,6 +616,13 @@ def initialize_driver(
                 / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
             )
         output_path.mkdir(parents=True, exist_ok=False)
+    if with_mpi:
+        # broadcast (possibly changed) output_path
+        comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
+        output_path = pathlib.Path(
+            comm.bcast(str(output_path) if parallel_props.rank == 0 else None, root=0)
+        )
+        comm.Barrier()
 
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_like)
