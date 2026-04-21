@@ -608,7 +608,7 @@ def test_local_connectivity(
     backend_like: model_backends.BackendLike,
 ) -> None:
     processor_props = decomp_utils.DummyProps(rank=rank)
-    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    caplog.set_level(logging.INFO)
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)

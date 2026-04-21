@@ -234,8 +234,8 @@ class PredictorCorrectorPair(Pair[T]):
 
 
 class TimeStepPair(Pair[T]):
-    current = Pair.frozen_first
-    next = Pair.frozen_second
+    current: named_property = Pair.frozen_first
+    next: named_property = Pair.frozen_second
 
 
 P = ParamSpec("P")

@@ -54,7 +54,7 @@ class MetisDecomposer(Decomposer):
         Returns: data_alloc.NDArray: array with partition label (int, rank number) for each cell
         """
 
-        import pymetis  # type: ignore [import-untyped]  # noqa: PLC0415
+        import pymetis  # noqa: PLC0415
 
         # Invalid indices are not allowed here. Metis will segfault or fail if
         # there are any invalid indices in the adjacency matrix.
@@ -62,7 +62,10 @@ class MetisDecomposer(Decomposer):
 
         # The partitioning is done on all ranks, and this assumes that the
         # partitioning is deterministic.
-        _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
+        # mypy does not consider bare np.ndarray a Sequence[Sequence[int] | ndarray[...]]
+        _, partition_index = pymetis.part_graph(  # type: ignore[call-overload]
+            nparts=num_partitions, adjacency=data_alloc.as_numpy(adjacency_matrix)
+        )
         return data_alloc.array_namespace(adjacency_matrix).array(partition_index)
 
 
