@@ -44,14 +44,14 @@ EXPERIMENTS = [
 # Slurm settings
 SBATCH_PARTITION = "normal"
 SBATCH_TIME = "00:15:00"
-SBATCH_ACCOUNT = "cwp03"
+SBATCH_ACCOUNT = "cwd01"
 SBATCH_UENV = "icon/25.2:v3"
 SBATCH_UENV_VIEW = "default"
 JOB_POLL_SECONDS = 10
 
 # Base directories (adjust if needed)
 PROJECTS_DIR = Path(os.environ.get("SCRATCH", str(Path.home() / "projects")))
-ICONF90_DIR = PROJECTS_DIR / "workdir/icon-exclaim"
+ICONF90_DIR = PROJECTS_DIR / "icon-exclaim.serialize"
 ICONF90_BUILD_FOLDER = "build_serialize"
 
 # Derived paths
