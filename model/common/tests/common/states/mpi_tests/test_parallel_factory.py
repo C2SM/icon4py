@@ -140,20 +140,20 @@ def test_numpy_provider_exchange(
 
     provider = factory.NumpyDataProvider(
         func=make_constant,
-        domain=(dims.CellDim,),
+        domain=(dims.EdgeDim,),
         fields=("out",),
         deps={},
-        params={"size": grid.size[dims.CellDim], "value": number},
+        params={"size": grid.size[dims.EdgeDim], "value": number},
         do_exchange=do_exchange,
     )
     source.register_provider(provider)
     field = source.get("out")
 
     halo_points = decomposition_info.local_index(
-        dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO
+        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.HALO
     )
     owned_points = decomposition_info.local_index(
-        dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
+        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
     )
     valid_values = {r + 10 for r in range(processor_props.comm_size)}
     arr = field.ndarray
