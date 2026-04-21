@@ -598,16 +598,16 @@ def initialize_driver(
         mpi_decomp.init_mpi()
         with_mpi = mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1
 
-    parallel_props = decomposition_defs.get_processor_properties(
+    process_props = decomposition_defs.get_process_properties(
         decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
-        processor_procs=parallel_props,
+        process_procs=process_props,
     )
 
-    if parallel_props.rank == 0:
+    if process_props.rank == 0:
         if output_path.exists():
             current_time = datetime.datetime.now()
             log.warning(f"output path {output_path} already exists, a time stamp will be added")
@@ -620,7 +620,7 @@ def initialize_driver(
         # broadcast (possibly changed) output_path
         comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
         output_path = pathlib.Path(
-            comm.bcast(str(output_path) if parallel_props.rank == 0 else None, root=0)
+            comm.bcast(str(output_path) if process_props.rank == 0 else None, root=0)
         )
         comm.Barrier()
 
@@ -642,13 +642,13 @@ def initialize_driver(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
-        parallel_props=parallel_props,
+        process_props=process_props,
     )
 
     log.info("creating the decomposition info")
     decomposition_info = grid_manager.decomposition_info
-    exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
-    global_reductions = decomposition_defs.create_reduction(parallel_props, decomposition_info)
+    exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+    global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(

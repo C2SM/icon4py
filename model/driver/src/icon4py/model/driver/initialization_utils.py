@@ -396,7 +396,7 @@ def _grid_savepoint(
 def read_decomp_info(
     path: pathlib.Path,
     grid_file: pathlib.Path,
-    procs_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     ser_type=SerializationType.SB,
 ) -> decomposition.DecompositionInfo:
@@ -405,7 +405,7 @@ def read_decomp_info(
             backend,
             path,
             grid_file,
-            procs_props.rank,
+            process_props.rank,
         ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -538,7 +538,7 @@ def configure_logging(
     run_path: str,
     experiment_name: str,
     enable_output: bool = True,
-    processor_procs: decomposition.ProcessProperties = None,
+    process_props: decomposition.ProcessProperties = None,
 ) -> None:
     """
     Configure logging.
@@ -549,7 +549,7 @@ def configure_logging(
         run_path: path to the output folder where the logfile should be stored
         experiment_name: name of the simulation
         enable_output: enable output logging messages above debug level
-        processor_procs: ProcessProperties
+        process_props: ProcessProperties
 
     """
     if not enable_output:
@@ -568,7 +568,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    console_handler.addFilter(decomposition.ParallelLogger(processor_procs))
+    console_handler.addFilter(decomposition.ParallelLogger(process_procs))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})

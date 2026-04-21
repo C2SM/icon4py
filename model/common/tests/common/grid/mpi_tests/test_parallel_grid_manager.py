@@ -37,7 +37,7 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     experiment,
     grid_description,
-    processor_props,
+    process_props,
     topography_savepoint,
 )
 
@@ -50,10 +50,10 @@ if mpi_decomposition.mpi4py is None:
 _log = logging.getLogger(__file__)
 
 
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
     if experiment.grid.params.limited_area:
@@ -69,7 +69,7 @@ def test_grid_manager_validate_decomposer(
         manager(
             keep_skip_values=True,
             allocator=None,
-            run_properties=processor_props,
+            process_props=process_props,
             decomposer=decomp.SingleNodeDecomposer(),
         )
 
@@ -126,14 +126,14 @@ def _make_single_rank_geometry(
 
 def _make_multi_rank_geometry(
     grid_file: pathlib.Path,
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     allocator: gtx.typing.Allocator,
     num_levels: int = utils.NUM_LEVELS,
 ) -> tuple[gm.GridManager, geometry.GridGeometry]:
     grid_manager = utils.run_grid_manager_for_multi_rank(
         file=grid_file,
-        run_properties=processor_props,
+        run_properties=process_props,
         decomposer=decomp.MetisDecomposer(),
         allocator=allocator,
         num_levels=num_levels,
@@ -145,16 +145,16 @@ def _make_multi_rank_geometry(
         decomposition_info=grid_manager.decomposition_info,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
-        exchange=decomp_defs.create_exchange(processor_props, grid_manager.decomposition_info),
+        exchange=decomp_defs.create_exchange(process_props, grid_manager.decomposition_info),
         global_reductions=decomp_defs.create_reduction(
-            processor_props, grid_manager.decomposition_info
+            process_props, grid_manager.decomposition_info
         ),
     )
     return grid_manager, grid_geometry
 
 
 def _compare_geometry_fields_single_multi_rank(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     grid_description: test_defs.GridDescription,
     attrs_name: str,
@@ -168,21 +168,21 @@ def _compare_geometry_fields_single_multi_rank(
     allocator = model_backends.get_allocator(backend)
 
     grid_file = grid_utils._download_grid_file(grid_description)
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
     single_rank_gm, single_rank_geometry = _make_single_rank_geometry(grid_file, backend, allocator)
     _log.info(
-        f"rank = {processor_props.rank} : single node grid has size "
+        f"rank = {process_props.rank} : single node grid has size "
         f"{single_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        grid_file, processor_props, backend, allocator
+        grid_file, process_props, backend, allocator
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {process_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"rank = {process_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
@@ -193,7 +193,7 @@ def _compare_geometry_fields_single_multi_rank(
 
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
-        processor_props=processor_props,
+        process_props=process_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
@@ -201,12 +201,12 @@ def _compare_geometry_fields_single_multi_rank(
         atol=1e-15,
     )
 
-    _log.info(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {process_props.rank} - DONE")
 
 
 @pytest.mark.level("unit")
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name",
     [
@@ -235,19 +235,17 @@ def _compare_geometry_fields_single_multi_rank(
     ],
 )
 def test_geometry_fields_compare_single_multi_rank_unit(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    _compare_geometry_fields_single_multi_rank(
-        processor_props, backend, grid_description, attrs_name
-    )
+    _compare_geometry_fields_single_multi_rank(process_props, backend, grid_description, attrs_name)
 
 
 @pytest.mark.level("integration")
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name",
     [
@@ -280,18 +278,16 @@ def test_geometry_fields_compare_single_multi_rank_unit(
     ],
 )
 def test_geometry_fields_compare_single_multi_rank_integration(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    _compare_geometry_fields_single_multi_rank(
-        processor_props, backend, grid_description, attrs_name
-    )
+    _compare_geometry_fields_single_multi_rank(process_props, backend, grid_description, attrs_name)
 
 
 def _compare_interpolation_fields_single_multi_rank(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
@@ -305,7 +301,7 @@ def _compare_interpolation_fields_single_multi_rank(
     allocator = model_backends.get_allocator(backend)
 
     grid_file = grid_utils.resolve_full_grid_file_name(experiment.grid)
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
     single_rank_gm, single_rank_geometry = _make_single_rank_geometry(grid_file, backend, allocator)
     single_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=single_rank_gm.grid,
@@ -316,18 +312,18 @@ def _compare_interpolation_fields_single_multi_rank(
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
-        f"rank = {processor_props.rank} : single node grid has size "
+        f"rank = {process_props.rank} : single node grid has size "
         f"{single_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        grid_file, processor_props, backend, allocator
+        grid_file, process_props, backend, allocator
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {process_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"rank = {process_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
@@ -337,7 +333,7 @@ def _compare_interpolation_fields_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(processor_props, multi_rank_gm.decomposition_info),
+        exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
     )
 
     field_ref = single_rank_interpolation.get(attrs_name)
@@ -346,7 +342,7 @@ def _compare_interpolation_fields_single_multi_rank(
 
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
-        processor_props=processor_props,
+        process_props=process_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
@@ -358,12 +354,12 @@ def _compare_interpolation_fields_single_multi_rank(
         else 1e-15,
     )
 
-    _log.info(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {process_props.rank} - DONE")
 
 
 @pytest.mark.level("unit")
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name",
     [
@@ -383,19 +379,17 @@ def _compare_interpolation_fields_single_multi_rank(
     ],
 )
 def test_interpolation_fields_compare_single_multi_rank_unit(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    _compare_interpolation_fields_single_multi_rank(
-        processor_props, backend, experiment, attrs_name
-    )
+    _compare_interpolation_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
 @pytest.mark.level("integration")
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name",
     [
@@ -409,18 +403,16 @@ def test_interpolation_fields_compare_single_multi_rank_unit(
     ],
 )
 def test_interpolation_fields_compare_single_multi_rank_integration(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    _compare_interpolation_fields_single_multi_rank(
-        processor_props, backend, experiment, attrs_name
-    )
+    _compare_interpolation_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
 def _compare_metrics_fields_single_multi_rank(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
@@ -468,7 +460,7 @@ def _compare_metrics_fields_single_multi_rank(
         ),
     )
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
     single_rank_gm, single_rank_geometry = _make_single_rank_geometry(
         file, backend, allocator, num_levels=experiment.num_levels
     )
@@ -504,18 +496,18 @@ def _compare_metrics_fields_single_multi_rank(
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
-        f"rank = {processor_props.rank} : single node grid has size "
+        f"rank = {process_props.rank} : single node grid has size "
         f"{single_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        file, processor_props, backend, allocator, num_levels=experiment.num_levels
+        file, process_props, backend, allocator, num_levels=experiment.num_levels
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {process_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"rank = {process_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
@@ -525,7 +517,7 @@ def _compare_metrics_fields_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(processor_props, multi_rank_gm.decomposition_info),
+        exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
     )
     multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=multi_rank_geometry.grid,
@@ -549,7 +541,7 @@ def _compare_metrics_fields_single_multi_rank(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
-            processor_props, multi_rank_gm.decomposition_info
+            process_props, multi_rank_gm.decomposition_info
         ),
     )
 
@@ -562,7 +554,7 @@ def _compare_metrics_fields_single_multi_rank(
     else:
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_gm.decomposition_info,
-            processor_props=processor_props,
+            process_props=process_props,
             dim=field_ref.domain.dims[0],
             global_reference_field=field_ref.asnumpy(),
             local_field=field.asnumpy(),
@@ -570,12 +562,12 @@ def _compare_metrics_fields_single_multi_rank(
             atol=0.0,
         )
 
-    _log.info(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {process_props.rank} - DONE")
 
 
 @pytest.mark.level("unit")
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name",
     [
@@ -618,17 +610,17 @@ def _compare_metrics_fields_single_multi_rank(
     ],
 )
 def test_metrics_fields_compare_single_multi_rank_unit(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    _compare_metrics_fields_single_multi_rank(processor_props, backend, experiment, attrs_name)
+    _compare_metrics_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
 @pytest.mark.level("integration")
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name",
     [
@@ -647,21 +639,21 @@ def test_metrics_fields_compare_single_multi_rank_unit(
     ],
 )
 def test_metrics_fields_compare_single_multi_rank_integration(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    _compare_metrics_fields_single_multi_rank(processor_props, backend, experiment, attrs_name)
+    _compare_metrics_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
 # MASK_PROG_HALO_C is defined specially only on halos, so we have a separate
 # test for it. It doesn't make sense to compare to a single-rank reference since
 # it has no halos.
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_metrics_mask_prog_halo_c(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -705,16 +697,16 @@ def test_metrics_mask_prog_halo_c(
         ),
     )
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        file, processor_props, backend, allocator, num_levels=experiment.num_levels
+        file, process_props, backend, allocator, num_levels=experiment.num_levels
     )
     _log.info(
-        f"rank = {processor_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {process_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"rank = {process_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
@@ -724,7 +716,7 @@ def test_metrics_mask_prog_halo_c(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(processor_props, multi_rank_gm.decomposition_info),
+        exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
     )
     multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=multi_rank_geometry.grid,
@@ -748,7 +740,7 @@ def test_metrics_mask_prog_halo_c(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
-            processor_props, multi_rank_gm.decomposition_info
+            process_props, multi_rank_gm.decomposition_info
         ),
     )
 
@@ -761,22 +753,22 @@ def test_metrics_mask_prog_halo_c(
                 dims.CellDim, decomp_defs.DecompositionInfo.EntryType.OWNED
             )
         ]
-    ).any(), f"rank={processor_props.rank} - found nonzero in owned entries of {attrs_name}"
+    ).any(), f"rank={process_props.rank} - found nonzero in owned entries of {attrs_name}"
     halo_indices = multi_rank_gm.decomposition_info.local_index(
         dims.CellDim, decomp_defs.DecompositionInfo.EntryType.HALO
     )
     assert (
         field[halo_indices]
         == xp.invert((c_refin_ctrl[halo_indices] >= 1) & (c_refin_ctrl[halo_indices] <= 4))
-    ).all(), f"rank={processor_props.rank} - halo for MASK_PROG_HALO_C is incorrect"
+    ).all(), f"rank={process_props.rank} - halo for MASK_PROG_HALO_C is incorrect"
 
-    _log.info(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {process_props.rank} - DONE")
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_validate_skip_values_in_distributed_connectivities(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -786,7 +778,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
         file=file,
-        run_properties=processor_props,
+        process_props=process_props,
         decomposer=decomp.MetisDecomposer(),
         allocator=model_backends.get_allocator(backend),
     )
@@ -797,20 +789,20 @@ def test_validate_skip_values_in_distributed_connectivities(
             found_skips = skip_values_in_table > 0
             assert (
                 found_skips == (c.skip_value is not None)
-            ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
+            ), f"rank={process_props.rank} / {process_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
             if skip_values_in_table > 0:
                 dim = gtx.Dimension(k, gtx.DimensionKind.LOCAL)
                 assert (
                     dim in icon.CONNECTIVITIES_ON_BOUNDARIES
                     or dim in icon.CONNECTIVITIES_ON_PENTAGONS
-                ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} has skip found in table, expected none"
+                ), f"rank={process_props.rank} / {process_props.comm_size}: {k} has skip found in table, expected none"
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", [test_defs.Grids.MCH_CH_R04B09_DSL])
 def test_limited_area_raises(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     grid: test_defs.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -819,14 +811,14 @@ def test_limited_area_raises(
     ):
         _ = utils.run_grid_manager_for_multi_rank(
             file=grid_utils.resolve_full_grid_file_name(grid),
-            run_properties=processor_props,
+            process_props=process_props,
             decomposer=decomp.MetisDecomposer(),
             allocator=model_backends.get_allocator(backend),
         )
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     ("field_name", "reduction"),
     [
@@ -845,7 +837,7 @@ def test_limited_area_raises(
     ],
 )
 def test_global_reductions_single_vs_multi_rank(
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
     field_name: str,
@@ -870,10 +862,10 @@ def test_global_reductions_single_vs_multi_rank(
     single_rank_field = single_rank_geometry.get(field_name).asnumpy()
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        grid_file, processor_props, backend, allocator
+        grid_file, process_props, backend, allocator
     )
     multi_rank_reductions = decomp_defs.create_reduction(
-        processor_props, multi_rank_gm.decomposition_info
+        process_props, multi_rank_gm.decomposition_info
     )
     multi_rank_field = multi_rank_geometry.get(field_name).asnumpy()
 
@@ -887,10 +879,10 @@ def test_global_reductions_single_vs_multi_rank(
     np_reference = getattr(np, reduction)(single_rank_field)
 
     assert result == pytest.approx(expected, abs=0.0), (
-        f"rank={processor_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
+        f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"single-rank = {expected}"
     )
     assert result == pytest.approx(np_reference, abs=0.0), (
-        f"rank={processor_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
+        f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"numpy reference = {np_reference}"
     )

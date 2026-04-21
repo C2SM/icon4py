@@ -104,9 +104,9 @@ class GridManager:
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        run_properties: decomposition.ProcessProperties = _single_process_props,
+        process_props: decomposition.ProcessProperties =_single_process_props,
     ) -> None:
-        if not run_properties.is_single_rank() and isinstance(
+        if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer
         ):
             raise InvalidConfigError("Need a Decomposer for multi node run")
@@ -124,7 +124,7 @@ class GridManager:
             keep_skip_values=keep_skip_values,
             geometry_type=geometry_type,
             decomposer=decomposer,
-            run_properties=run_properties,
+            process_props=process_props,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self._geometry = self._read_geometry_fields(allocator)
@@ -391,14 +391,14 @@ class GridManager:
         keep_skip_values: bool,
         geometry_type: base.GeometryType,
         decomposer: decomp.Decomposer,
-        run_properties: decomposition.ProcessProperties,
+        process_props: decomposition.ProcessProperties,
     ) -> None:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived
         connectivities needed in Icon4py from them. Adds constructed start/end
         index information to the grid. The grid will be distributed or not based
-        on run_properties.
+        on process_props.
 
         """
         xp = data_alloc.import_array_ns(allocator)
@@ -410,7 +410,7 @@ class GridManager:
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
-        if limited_area and not run_properties.is_single_rank():
+        if limited_area and not process_props.is_single_rank():
             raise NotImplementedError("Limited-area grids are not supported in distributed runs")
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
@@ -425,12 +425,12 @@ class GridManager:
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V, array_ns=xp),
         }
 
-        cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, run_properties.comm_size)
+        cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, process_props.comm_size)
         # HALO CONSTRUCTION
         # TODO(halungge): reduce the set of neighbor tables used in the halo construction
         # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
         halo_constructor = halo.get_halo_constructor(
-            run_properties=run_properties,
+            process_props=process_props,
             full_grid_size=global_size,
             connectivities=global_neighbor_tables,
             allocator=allocator,
@@ -458,7 +458,7 @@ class GridManager:
             horizontal_config=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
-            distributed=not run_properties.is_single_rank(),
+            distributed=not process_props.is_single_rank(),
             keep_skip_values=keep_skip_values,
         )
 

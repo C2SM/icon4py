@@ -38,7 +38,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
+    process_props,
     stretch_factor,
     topography_savepoint,
 )
@@ -71,7 +71,7 @@ def geometry_from_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
 ) -> Generator[geometry.GridGeometry]:
     grid = grid_savepoint.construct_icon_grid(backend, with_repeated_index=False)
     coordinates = grid_savepoint.coordinates()
@@ -87,8 +87,8 @@ def geometry_from_savepoint(
         gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX: grid_savepoint.vertex_edge_orientation(),
     }
 
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(processor_props, decomposition_info)
+    exchange = decomposition.create_exchange(process_props, decomposition_info)
+    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     grid_geometry = geometry.GridGeometry(
         grid=grid,
         decomposition_info=decomposition_info,
@@ -107,11 +107,11 @@ def interpolation_factory_from_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory]:
     geometry_source = geometry_from_savepoint
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    exchange = decomposition.create_exchange(process_props, decomposition_info)
     intp_factory = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry_source.grid,
         decomposition_info=decomposition_info,
@@ -130,12 +130,12 @@ def metrics_factory_from_savepoint(
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     decomposition_info: decomposition.DecompositionInfo,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory]:
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(processor_props, decomposition_info)
+    exchange = decomposition.create_exchange(process_props, decomposition_info)
+    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()
