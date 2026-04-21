@@ -103,7 +103,6 @@ class NeedsExchange(Protocol):
         self,
         fields: Mapping[str, state_utils.FieldType],
         exchange: decomposition.ExchangeRuntime,
-        stream: decomposition.StreamLike | decomposition.Block = decomposition.DEFAULT_STREAM,
     ) -> None:
         log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
         if self.needs_exchange():
@@ -112,14 +111,11 @@ class NeedsExchange(Protocol):
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
-                assert (
-                    first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-                ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                assert first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+                    f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                )
                 with as_exchangeable_field(field) as buffer:
-                    # TODO(msimberg): Should exchanges in factories default to
-                    # BLOCK? These will be called only once and blocking
-                    # behaviour is a safer default here.
-                    exchange.exchange(first_dim, buffer, stream=stream)
+                    exchange.exchange(first_dim, buffer, stream=decomposition.BLOCK)
                 log.debug(f"exchanged buffer for {name}")
 
 
