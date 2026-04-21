@@ -220,7 +220,7 @@ def _replace_skip_values(
 
     Args:
         domain: the domain of the Connectivity
-        connectivity: NDArray object to be manipulated
+        neighbor_table: NDArray object to be manipulated
         array_ns: numpy or cupy module to use for array operations
     Returns:
         NDArray without skip values

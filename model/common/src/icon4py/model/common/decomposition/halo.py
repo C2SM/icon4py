@@ -61,19 +61,19 @@ class IconLikeHaloConstructor(HaloConstructor):
     def __init__(
         self,
         run_properties: defs.ProcessProperties,
-        connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+        neighbor_tables: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
     ):
         """
 
         Args:
             run_properties: contains information on the communicator and local compute node.
-            connectivities: connectivity arrays needed to construct the halos
+            neighbor_tables: neighbor table arrays needed to construct the halos
             allocator: GT4Py buffer allocator
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._props = run_properties
-        self._connectivities = {self._value(k): v for k, v in connectivities.items()}
+        self._neighbor_tables = {self._value(k): v for k, v in neighbor_tables.items()}
         self._assert_all_neighbor_tables()
 
     @staticmethod
@@ -82,7 +82,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _validate_mapping(self, cell_to_rank_mapping: data_alloc.NDArray) -> None:
         # validate the distribution mapping:
-        num_cells = self._connectivity(dims.C2E2C).shape[0]
+        num_cells = self._neighbor_table(dims.C2E2C).shape[0]
         expected_shape = (num_cells,)
         if cell_to_rank_mapping.shape != expected_shape:
             raise exceptions.ValidationError(
@@ -109,12 +109,12 @@ class IconLikeHaloConstructor(HaloConstructor):
         ]
         for d in relevant_dimension:
             assert (
-                d.value in self._connectivities
+                d.value in self._neighbor_tables
             ), f"Table for {d} is missing from the neighbor table array."
 
-    def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
+    def _neighbor_table(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
-            return self._connectivities[self._value(offset)]
+            return self._neighbor_tables[self._value(offset)]
         except KeyError as err:
             raise exceptions.MissingConnectivityError(
                 f"Connectivity for offset {offset} is not available"
@@ -137,7 +137,7 @@ class IconLikeHaloConstructor(HaloConstructor):
     ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
         assert source_indices.ndim == 1
-        neighbors = self._xp.unique(self._connectivity(offset)[source_indices, :].flatten())
+        neighbors = self._xp.unique(self._neighbor_table(offset)[source_indices, :].flatten())
         # Connectivities may have invalid neighbors, filter them out to avoid
         # indexing with negative indices later.
         return neighbors[neighbors >= 0]
@@ -378,7 +378,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             vertex_owner_mask,
             all_vertices,
             vertex_on_cutting_line,
-            self._connectivity(dims.V2C),
+            self._neighbor_table(dims.V2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -430,7 +430,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             edge_owner_mask,
             all_edges,
             edge_on_cutting_line,
-            self._connectivity(dims.E2C),
+            self._neighbor_table(dims.E2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -467,7 +467,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 def get_halo_constructor(
     run_properties: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
-    connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+    neighbor_tables: dict[gtx.FieldOffset | str, data_alloc.NDArray],
     allocator: gtx_typing.Allocator | None,
 ) -> HaloConstructor:
     """
@@ -480,7 +480,7 @@ def get_halo_constructor(
         processor_props:
         full_grid_size
         allocator:
-        connectivities:
+        neighbor_tables:
 
     Returns: a HaloConstructor suitable for the run_properties
 
@@ -493,7 +493,7 @@ def get_halo_constructor(
 
     return IconLikeHaloConstructor(
         run_properties=run_properties,
-        connectivities=connectivities,
+        neighbor_tables=neighbor_tables,
         allocator=allocator,
     )
 
