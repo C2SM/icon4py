@@ -226,7 +226,7 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    version: int = 3
+    version: int = 4
 
 
 class Experiments:
