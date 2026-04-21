@@ -57,10 +57,6 @@ def _fill_edges(
     _fill_op(f, value, out=f, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
 
 
-def _make_constant(size: int, value: int) -> data_alloc.NDArray:
-    return np.full(size, value)
-
-
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -97,23 +93,21 @@ def test_program_provider_exchange(
     source.register_provider(provider)
     field = source.get("out")
 
-    halo_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.HALO)
+    halo_points = decomposition_info.local_index(
+        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.HALO
     )
-    owned_points = data_alloc.as_numpy(
-        decomposition_info.local_index(
-            dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
-        )
+    owned_points = decomposition_info.local_index(
+        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
     )
-    field_np = data_alloc.as_numpy(field)
     valid_values = {r + 10 for r in range(processor_props.comm_size)}
+    arr = field.ndarray
 
-    assert (field_np[owned_points] == number).all()
+    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
     if do_exchange:
-        assert not (field_np[halo_points] == number).all()
-        assert set(field_np[halo_points].flatten()).issubset(valid_values)
+        assert (arr[halo_points] != number).all()  # type: ignore[attr-defined]
+        assert set(arr[halo_points].flatten()).issubset(valid_values)  # type: ignore[attr-defined]
     else:
-        assert (field_np[halo_points] == number).all()
+        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
 
 
 @pytest.mark.datatest
@@ -139,8 +133,13 @@ def test_numpy_provider_exchange(
     )
     source._exchange = exchange
 
+    xp = data_alloc.import_array_ns(backend)
+
+    def make_constant(size: int, value: int) -> data_alloc.NDArray:
+        return xp.full(size, value)
+
     provider = factory.NumpyDataProvider(
-        func=_make_constant,
+        func=make_constant,
         domain=(dims.CellDim,),
         fields=("out",),
         deps={},
@@ -150,20 +149,18 @@ def test_numpy_provider_exchange(
     source.register_provider(provider)
     field = source.get("out")
 
-    halo_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO)
+    halo_points = decomposition_info.local_index(
+        dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO
     )
-    owned_points = data_alloc.as_numpy(
-        decomposition_info.local_index(
-            dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
-        )
+    owned_points = decomposition_info.local_index(
+        dims.CellDim, decomposition.DecompositionInfo.EntryType.OWNED
     )
-    field_np = data_alloc.as_numpy(field)
     valid_values = {r + 10 for r in range(processor_props.comm_size)}
+    arr = field.ndarray
 
-    assert (field_np[owned_points] == number).all()
+    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
     if do_exchange:
-        assert not (field_np[halo_points] == number).all()
-        assert set(field_np[halo_points].flatten()).issubset(valid_values)
+        assert (arr[halo_points] != number).all()  # type: ignore[attr-defined]
+        assert set(arr[halo_points].flatten()).issubset(valid_values)  # type: ignore[attr-defined]
     else:
-        assert (field_np[halo_points] == number).all()
+        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
