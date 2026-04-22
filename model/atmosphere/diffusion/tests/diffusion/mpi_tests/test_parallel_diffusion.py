@@ -144,10 +144,8 @@ def test_parallel_diffusion(
             dtime=dtime,
         )
         if experiment == definitions.Experiments.JW:
-            # TODO (jcanton,ongchia): move this exchange inside
-            # diffusion.run with the proper DiffusionConfig equivalent to
-            # the fortran
-            # IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
+            # TODO (jcanton,ongchia,muellch): remove this exchange when
+            # https://github.com/C2SM/icon4py/pull/1192 is merged
             exchange.exchange(dims.CellDim, prognostic_state.w)
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion run ")
 

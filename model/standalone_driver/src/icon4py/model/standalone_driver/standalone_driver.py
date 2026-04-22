@@ -191,10 +191,8 @@ class Icon4pyDriver:
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
-                # TODO (jcanton,ongchia): move this exchange inside
-                # diffusion.run with the proper DiffusionConfig equivalent to
-                # the fortran
-                # IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
+                # TODO (jcanton,ongchia,muellch): remove this exchange when
+                # https://github.com/C2SM/icon4py/pull/1192 is merged
                 self.exchange.exchange(
                     dims.CellDim,
                     prognostic_states.next.w,
