@@ -821,6 +821,7 @@ def test_limited_area_raises(
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     ("field_name", "reduction"),
+    # NOTE: these fields are selected as examples for cell, edge, vertex fields
     [
         (geometry_attributes.CELL_AREA, "min"),
         (geometry_attributes.CELL_AREA, "max"),
@@ -859,7 +860,7 @@ def test_global_reductions_single_vs_multi_rank(
     single_rank_reductions = decomp_defs.create_reduction(
         decomp_defs.SingleNodeProcessProperties(), single_rank_gm.decomposition_info
     )
-    single_rank_field = single_rank_geometry.get(field_name)
+    single_rank_field = single_rank_geometry.get(field_name).ndarray
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
         grid_file, process_props, backend, allocator
@@ -867,7 +868,7 @@ def test_global_reductions_single_vs_multi_rank(
     multi_rank_reductions = decomp_defs.create_reduction(
         process_props, multi_rank_gm.decomposition_info
     )
-    multi_rank_field = multi_rank_geometry.get(field_name)
+    multi_rank_field = multi_rank_geometry.get(field_name).ndarray
 
     reduce_fn_single = getattr(single_rank_reductions, reduction)
     reduce_fn_multi = getattr(multi_rank_reductions, reduction)
@@ -876,13 +877,13 @@ def test_global_reductions_single_vs_multi_rank(
     result = reduce_fn_multi(multi_rank_field)
 
     # Also verify against plain numpy as a sanity check
-    np_reference = getattr(np, reduction)(single_rank_field.asnumpy())
+    np_reference = getattr(np, reduction)(single_rank_field)
 
-    assert result == expected, (
+    assert result == pytest.approx(expected, rel=1e-15), (
         f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"single-rank = {expected}"
     )
-    assert result == np_reference, (
+    assert result == pytest.approx(np_reference, rel=1e-15), (
         f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"numpy reference = {np_reference}"
     )

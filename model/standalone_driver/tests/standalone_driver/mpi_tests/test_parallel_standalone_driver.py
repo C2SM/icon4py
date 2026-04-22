@@ -52,12 +52,17 @@ def test_standalone_driver_compare_single_multi_rank(
         # dace_cpu should also be deterministic, but it results in 1.8e-14
         # delta on vn and 4.3e-19 on w on the initial condition, which then
         # propagates here. We haven't investigated this yet.
+        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
+        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
+        # 0.0 is too strict.
         atol = 0.0
+        rtol = 1e-15
     else:
         atol = 2e-12
+        rtol = 0.0
 
     _log.info(
-        f"running on {process_props.comm} with {process_props.comm_size} ranks and tolerance = {atol}"
+        f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
@@ -97,4 +102,5 @@ def test_standalone_driver_compare_single_multi_rank(
             local_field=local_field.asnumpy(),
             check_halos=True,
             atol=atol,
+            rtol=rtol,
         )

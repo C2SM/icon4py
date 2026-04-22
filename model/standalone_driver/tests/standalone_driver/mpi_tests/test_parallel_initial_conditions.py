@@ -57,12 +57,17 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         # dace_cpu should also be deterministic, but it results in 1.8e-14
         # delta on vn and 4.3e-19 on w on the initial condition. We haven't
         # investigated this yet.
+        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
+        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
+        # 0.0 is too strict.
+        rtol = 1e-15
         atol = 0.0
     else:
+        rtol = 0.0
         atol = 2e-11
 
     _log.info(
-        f"running on {process_props.comm} with {process_props.comm_size} ranks and tolerance = {atol}"
+        f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
@@ -132,4 +137,5 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             local_field=local_field.asnumpy(),
             check_halos=True,
             atol=atol,
+            rtol=rtol,
         )

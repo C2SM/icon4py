@@ -82,6 +82,7 @@ def check_local_global_field(
     local_field: np.ndarray,
     check_halos: bool,
     atol: float,
+    rtol: float = 0.0,
 ) -> None:
     if dim == dims.KDim:
         test_utils.assert_dallclose(global_reference_field, local_field)
@@ -112,7 +113,9 @@ def check_local_global_field(
                 data_alloc.as_numpy(decomposition_info.local_index(dim, entry_type))
             ]
             if actual.shape[0] > 0 and desired.shape[0] > 0:
-                test_utils.assert_dallclose(actual, desired, atol=atol, err_msg=entry_type.name)
+                test_utils.assert_dallclose(
+                    actual, desired, atol=atol, rtol=rtol, err_msg=entry_type.name
+                )
 
     # Compare owned local field, excluding halos, against global reference
     # field, by gathering owned entries to the first rank. This ensures that in
@@ -134,9 +137,9 @@ def check_local_global_field(
     if process_props.rank == 0:
         _log.info(f"rank = {process_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        assert np.all(gathered_sizes == global_index_sizes), (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
         _log.info(
             f"rank = {process_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
@@ -150,5 +153,5 @@ def check_local_global_field(
         )
 
         test_utils.assert_dallclose(
-            actual=sorted_, desired=global_reference_field, atol=atol, err_msg="internal"
+            actual=sorted_, desired=global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
         )
