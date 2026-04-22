@@ -36,7 +36,7 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    processor_props,
+    process_props,
 )
 
 from ..fixtures import *  # noqa: F403
@@ -123,7 +123,7 @@ def test_advection_run_single_step(
     advection_init_savepoint,
     advection_exit_savepoint,
     experiment: test_defs.Experiment,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
     advection_lsq_state,
 ):
@@ -139,8 +139,8 @@ def test_advection_run_single_step(
             "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
 
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     config = construct_config(
         horizontal_advection_type=horizontal_advection_type,
@@ -154,7 +154,7 @@ def test_advection_run_single_step(
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
-    exchange_runtime = definitions.create_exchange(processor_props, decomposition_info)
+    exchange_runtime = definitions.create_exchange(process_props, decomposition_info)
 
     advection_granule = advection.convert_config_to_advection(
         config=config,
