@@ -15,7 +15,7 @@ from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import driver_states, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
-from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like, experiment, process_props
 
 
@@ -44,7 +44,22 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 1e-6
+    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
+    # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
+    # distributed GPU, u,v do not because they are computed with RBF
+
+    if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
+        model_backends.get_allocator(backend_like)
+    ):
+        # NOTE: we use gtfn_cpu to check that single and multirank give bitwise
+        # identical results, as gtfn_cpu is deterministic. In this case we can
+        # set atol = 0.0 and check for bitwise identical results. In theory
+        # dace_cpu should also be deterministic, but it results in 1.8e-14
+        # delta on vn and 4.3e-19 on w on the initial condition. We haven't
+        # investigated this yet.
+        atol = 0.0
+    else:
+        atol = 2e-11
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and tolerance = {atol}"
