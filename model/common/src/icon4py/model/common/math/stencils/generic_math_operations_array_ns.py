@@ -48,7 +48,7 @@ def interpolate_edges_to_cell(
     e_inn_c = array_ns.zeros((num_cells, 3))
     jc_indices = array_ns.arange(ub_c)[:, array_ns.newaxis]
     c2e_local = c2e[:ub_c]
-    idx_ce = (e2c[c2e_local][:, :, 0] != jc_indices).astype(int)
+    idx_ce = (e2c[c2e_local][:, :, 0] != jc_indices)
     e_inn_c[:ub_c] = (
         edge_cell_length[c2e_local, idx_ce]
         * primal_edge_length[c2e_local]
