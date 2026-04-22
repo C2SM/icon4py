@@ -859,7 +859,7 @@ def test_global_reductions_single_vs_multi_rank(
     single_rank_reductions = decomp_defs.create_reduction(
         decomp_defs.SingleNodeProcessProperties(), single_rank_gm.decomposition_info
     )
-    single_rank_field = single_rank_geometry.get(field_name).asnumpy()
+    single_rank_field = single_rank_geometry.get(field_name)
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
         grid_file, process_props, backend, allocator
@@ -867,7 +867,7 @@ def test_global_reductions_single_vs_multi_rank(
     multi_rank_reductions = decomp_defs.create_reduction(
         process_props, multi_rank_gm.decomposition_info
     )
-    multi_rank_field = multi_rank_geometry.get(field_name).asnumpy()
+    multi_rank_field = multi_rank_geometry.get(field_name)
 
     reduce_fn_single = getattr(single_rank_reductions, reduction)
     reduce_fn_multi = getattr(multi_rank_reductions, reduction)
@@ -876,13 +876,13 @@ def test_global_reductions_single_vs_multi_rank(
     result = reduce_fn_multi(multi_rank_field)
 
     # Also verify against plain numpy as a sanity check
-    np_reference = getattr(np, reduction)(single_rank_field)
+    np_reference = getattr(np, reduction)(single_rank_field.asnumpy())
 
-    assert result == pytest.approx(expected, abs=0.0), (
+    assert result == expected, (
         f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"single-rank = {expected}"
     )
-    assert result == pytest.approx(np_reference, abs=0.0), (
+    assert result == np_reference, (
         f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"numpy reference = {np_reference}"
     )
