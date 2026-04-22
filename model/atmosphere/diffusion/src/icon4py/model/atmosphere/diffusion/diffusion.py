@@ -104,7 +104,7 @@ class TemperatureDiscretizationType(int, enum.Enum):
 
 class TurbulenceShearForcingType(int, enum.Enum):
     """
-    Type of shear forcing used in turbulance.
+    Type of shear forcing used in turbulence.
 
     Note: called `itype_sher` in `mo_turbdiff_nml.f90`
     """
@@ -218,6 +218,7 @@ class DiffusionConfig:
         #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
+        # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
         #: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value)
         #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
@@ -901,6 +902,9 @@ class Diffusion:
                 theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
             )
+            # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+            # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+            # is another halo exchange after the physics are applied.
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
             if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
@@ -912,6 +916,9 @@ class Diffusion:
                 )
                 log.debug("communication of prognostic cell fields: theta and exner - done")
 
+        # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+        # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+        # is another halo exchange after the physics are applied.
         if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(

@@ -197,6 +197,7 @@ class NonHydrostaticConfig:
         #: off-centering of velocity advection in corrector step
         self.veladv_offctr: float = veladv_offctr
 
+        # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
         #: scaling factor for divergence damping
         self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
         """
