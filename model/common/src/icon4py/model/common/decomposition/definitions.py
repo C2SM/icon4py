@@ -588,12 +588,8 @@ class SingleNodeRun(RunType):
 
 
 class Reductions(Protocol):
-    """Protocol for global reduction operations across distributed ranks.
-
-    For sum() and mean(), owned elements are determined automatically based on
-    the buffer's first dimension size, which is matched against stored owner
-    masks for Cell, Edge, and Vertex dimensions. This ensures halo elements are
-    excluded from the reduction without the caller needing to pass masks.
+    """
+    Protocol for global reduction operations across distributed ranks.
     """
 
     def min(
@@ -608,27 +604,13 @@ class Reductions(Protocol):
         self,
         buffer: data_alloc.NDArray,
         array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
-        """Sum all owned elements of buffer.
-
-        The owner mask is resolved internally from the buffer's first dimension
-        size. For multi-dimensional buffers (e.g. CellDim x KDim), owned rows
-        are selected and all their elements are summed.
-        """
-        ...
+    ) -> state_utils.ScalarType: ...
 
     def mean(
         self,
         buffer: data_alloc.NDArray,
         array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
-        """Compute the mean of all owned elements of buffer.
-
-        The owner mask is resolved internally from the buffer's first dimension
-        size. For multi-dimensional buffers (e.g. CellDim x KDim), owned rows
-        are selected and the mean is computed over all their elements.
-        """
-        ...
+    ) -> state_utils.ScalarType: ...
 
 
 class SingleNodeReductions(Reductions):
