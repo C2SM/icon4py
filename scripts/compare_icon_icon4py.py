@@ -30,7 +30,7 @@ output_filename = "bench_blueline_stencil_compute"
 file_prefix = pathlib.Path(__file__).parent
 openacc_input = file_prefix / "bencher=mch_icon-ch1_medium_stencils=0.604598=ACC.json"
 gt4py_input = {
-    "gt4py_v1.1.4": file_prefix / "gt4py_timers_gt4py114.json",
+    "gt4py_v1.1.9": file_prefix / "gt4py_timers_v1.1.9.json",
 }
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 gt4py_unmatched_ncalls_threshold = (
@@ -254,11 +254,10 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
     # Merge some stencils into 'boundary_halo_cleanup'
     assert "boundary_halo_cleanup" not in data
     data["boundary_halo_cleanup"] = [
-        a + b + c
-        for a, b, c in zip(
+        a + b
+        for a, b in zip(
             unmatched_data.pop("compute_exner_from_rhotheta"),
-            unmatched_data.pop("compute_theta_and_exner"),
-            unmatched_data.pop("update_theta_v"),
+            unmatched_data.pop("update_theta_and_exner_in_halo"),
             strict=True,
         )
     ]
