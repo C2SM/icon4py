@@ -734,15 +734,15 @@ class ParallelLogger(logging.Filter):
         print_distributed_debug_msg: bool = False,
     ) -> None:
         super().__init__()
-        self._rank_info = ""
+        self._rank_info_str = ""
         self._print_distributed_debug_msg = print_distributed_debug_msg
         self._rank_id = 0
         if process_properties and process_properties.comm_size > 1:
-            self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
+            self._rank_info_str = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
             self._rank_id = process_properties.rank
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.rank = self._rank_info
+        record.rank_info_str = self._rank_info_str
         return (
             True
             if self._rank_id == 0

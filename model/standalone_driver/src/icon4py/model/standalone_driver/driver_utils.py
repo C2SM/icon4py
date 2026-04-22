@@ -551,9 +551,9 @@ def configure_logging(
     )
     formatter = _InfoFormatter(
         style="{",
-        default_fmt="{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
+        default_fmt="{rank_info_str} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
         info_fmt="{message}",
-        defaults={"rank": None},
+        defaults={"rank_info_str": ""},
     )
     handler = make_handler(
         logging_level=logging.DEBUG,
