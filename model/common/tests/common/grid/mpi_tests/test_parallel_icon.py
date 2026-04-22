@@ -29,7 +29,7 @@ from ...fixtures import (
     experiment,
     grid_savepoint,
     icon_grid,
-    processor_props,
+    process_props,
 )
 from .. import utils
 from . import utils as parallel_utils
@@ -50,15 +50,15 @@ _log = logging.getLogger(__name__)
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props: decomposition.ProcessProperties) -> None:
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_props(process_props: decomposition.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex  # type: ignore[import-not-found]
 
-    assert processor_props.comm
+    assert process_props.comm
 
-    assert isinstance(processor_props.comm, MPI.Comm), "comm needs to be an instance of MPI.Comm"
-    ghex.make_context(processor_props.comm)
+    assert isinstance(process_props.comm, MPI.Comm), "comm needs to be an instance of MPI.Comm"
+    ghex.make_context(process_props.comm)
 
 
 LOCAL_IDX_2 = {
@@ -78,7 +78,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "experiment",
     [
@@ -87,24 +87,23 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_start_index_end_index_local_zone_on_distributed_lam_grid(
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(process_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     _log.info(
-        f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim} : {icon_grid.size[dim]}"
+        f"rank {process_props.rank}/{process_props.comm_size} dim = {dim} : {icon_grid.size[dim]}"
     )
     # local still runs entire field:
     assert icon_grid.start_index(domain) == 0
     _log.info(
-        f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim}  LOCAL : ({icon_grid.start_index(domain)}, {icon_grid.end_index(domain)})"
+        f"rank {process_props.rank}/{process_props.comm_size} dim = {dim}  LOCAL : ({icon_grid.start_index(domain)}, {icon_grid.end_index(domain)})"
     )
     assert (
-        icon_grid.end_index(domain)
-        == LOCAL_IDX[processor_props.comm_size][dim][processor_props.rank]
+        icon_grid.end_index(domain) == LOCAL_IDX[process_props.comm_size][dim][process_props.rank]
     )
 
 
@@ -147,7 +146,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
@@ -158,22 +157,22 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
 def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
     level: int,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(process_props)
     domain = h_grid.domain(dim)(zone)
     start_index = icon_grid.start_index(domain)
     end_index = icon_grid.end_index(domain)
-    rank = processor_props.rank
+    rank = process_props.rank
     _log.info(
-        f"rank {rank}/{processor_props.comm_size} dim = {dim}  {zone} : ({start_index}, {end_index})"
+        f"rank {rank}/{process_props.comm_size} dim = {dim}  {zone} : ({start_index}, {end_index})"
     )
-    expected = HALO_IDX[processor_props.comm_size][dim][rank][level - 1]
+    expected = HALO_IDX[process_props.comm_size][dim][rank][level - 1]
     assert start_index == expected, f"expected start index {expected}, but was {start_index}"
-    expected = HALO_IDX[processor_props.comm_size][dim][rank][level]
+    expected = HALO_IDX[process_props.comm_size][dim][rank][level]
     assert end_index == expected, f"expected start index {1}, but was {start_index}"

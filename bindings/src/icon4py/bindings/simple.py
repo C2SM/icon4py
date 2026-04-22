@@ -9,9 +9,9 @@
 # mypy: ignore-errors
 import gt4py.next as gtx
 
+from icon4py.bindings.icon4py_export import export
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import simple_grid
-from icon4py.tools.py2fgen.wrappers.icon4py_export import export
 
 
 grid = simple_grid()

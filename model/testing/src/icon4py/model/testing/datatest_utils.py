@@ -17,10 +17,10 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, serialbox
 
 
-def get_processor_properties_for_run(
+def get_process_properties_for_run(
     run_instance: decomposition.RunType,
 ) -> decomposition.ProcessProperties:
-    return decomposition.get_processor_properties(run_instance)
+    return decomposition.get_process_properties(run_instance)
 
 
 def get_experiment_name_with_version(experiment: definitions.Experiment) -> str:
@@ -47,13 +47,13 @@ def get_serialized_data_url(root_url: str, filepath: str) -> str:
 
 def get_datapath_for_experiment(
     experiment: definitions.Experiment,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment."""
 
     experiment_dir = get_ranked_experiment_name_with_version(
         experiment,
-        processor_props.comm_size,
+        process_props.comm_size,
     )
     return definitions.serialized_data_path().joinpath(
         experiment_dir, definitions.SERIALIZED_DATA_SUBDIR

@@ -15,16 +15,16 @@ from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 import icon4py.model.common.grid.states as grid_states
+from icon4py.bindings import (
+    common as wrapper_common,
+    debug_utils as wrapper_debug_utils,
+    icon4py_export,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen.wrappers import (
-    common as wrapper_common,
-    debug_utils as wrapper_debug_utils,
-    icon4py_export,
-)
 
 
 logger = logging.getLogger(__name__)
@@ -128,12 +128,12 @@ def grid_init(
     allocator = model_backends.get_allocator(actual_backend)
 
     if comm_id is None:
-        processor_props = decomposition_defs.SingleNodeProcessProperties()
+        process_props = decomposition_defs.SingleNodeProcessProperties()
         exchange_runtime = decomposition_defs.SingleNodeExchange()
     else:
         # Set MultiNodeExchange as exchange runtime
         (
-            processor_props,
+            process_props,
             decomposition_info,
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
@@ -171,14 +171,14 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        distributed=not processor_props.is_single_rank(),
+        distributed=not process_props.is_single_rank(),
         allocator=allocator,
     )
 
     if comm_id is not None:
         wrapper_debug_utils.print_grid_decomp_info(
             grid,
-            processor_props,
+            process_props,
             decomposition_info,
             num_cells,
             num_edges,

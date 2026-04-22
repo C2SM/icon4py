@@ -12,13 +12,13 @@ import cffi
 import numpy as np
 import pytest
 
+from icon4py.bindings import common as wrapper_common, diffusion_wrapper
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, diffusion_wrapper
 
 from . import utils
 from .test_grid_init import grid_init

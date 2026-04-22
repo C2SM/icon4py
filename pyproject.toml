@@ -97,12 +97,13 @@ version = "0.1.0"
 
 [project.optional-dependencies]
 all = ["icon4py[distributed,fortran,io,testing,profiling]"]
-cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
+cuda13 = ["icon4py-common[cuda13]"]
 distributed = ["icon4py-common[distributed]"]
-fortran = ["icon4py-tools~=0.1.0"]
+fortran = ["icon4py-bindings~=0.1.0"]
 io = ["icon4py-common[io]"]
 profiling = ['viztracer>=1.1.0']
+rocm7 = ["icon4py-common[rocm7]"]
 testing = ["icon4py-testing"]
 
 [project.urls]
@@ -165,6 +166,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
   '$MYPY_CONFIG_FILE_DIR/tools/src/',
+  '$MYPY_CONFIG_FILE_DIR/bindings/src/',
   '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src',
   '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests'
 ]
@@ -182,6 +184,7 @@ $MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
+$MYPY_CONFIG_FILE_DIR/bindings/src:
 '''
 namespace_packages = true
 plugins = ["gt4py.next.type_system.mypy_plugin"]
@@ -202,9 +205,9 @@ ignore_errors = true
 module = [
   'icon4py.model.testing.pytest_hooks',
   'icon4py.model.testing.serialbox',
-  'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.tools.py2fgen.wrappers.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.tools.py2fgen.wrappers.grid_wrapper'
+  'icon4py.bindings.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
+  'icon4py.bindings.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
+  'icon4py.bindings.grid_wrapper'
 ]
 
 [[tool.mypy.overrides]]
@@ -242,6 +245,7 @@ markers = [
 ]
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
+  "bindings",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
@@ -364,7 +368,7 @@ packages = []
 
 # -- uv: packages & workspace --
 [tool.uv]
-conflicts = [[{extra = "cuda11"}, {extra = "cuda12"}]]
+conflicts = [[{extra = "cuda12"}, {extra = "cuda13"}, {extra = "rocm7"}]]
 
 [[tool.uv.index]]
 explicit = true
@@ -385,6 +389,7 @@ icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
+icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
 icon4py-driver = {workspace = true}
 icon4py-standalone_driver = {workspace = true}
@@ -394,6 +399,7 @@ serialbox4py = {index = "test.pypi"}
 
 [tool.uv.workspace]
 members = [
+  "bindings",
   "model/atmosphere/advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",

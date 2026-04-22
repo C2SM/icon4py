@@ -339,7 +339,7 @@ class DriverParams(NamedTuple):
 
 def initialize(
     file_path: pathlib.Path,
-    props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
     grid_file: pathlib.Path,
@@ -357,7 +357,7 @@ def initialize(
 
     Parameters:
         file_path: Path to the serialized data.
-        props: Processor properties.
+        process_props: Process properties.
         serialization_type: Serialization type.
         experiment_type: Experiment type.
         grid_file: Path of the grid.
@@ -378,7 +378,7 @@ def initialize(
     decomp_info = driver_init.read_decomp_info(
         path=file_path,
         grid_file=grid_file,
-        procs_props=props,
+        process_props=process_props,
         backend=generic_concrete_backend,
         ser_type=serialization_type,
     )
@@ -388,7 +388,7 @@ def initialize(
         path=file_path,
         grid_file=grid_file,
         backend=generic_concrete_backend,
-        rank=props.rank,
+        rank=process_props.rank,
         ser_type=serialization_type,
     )
     log.info(f"reading input fields from '{file_path}'")
@@ -402,7 +402,7 @@ def initialize(
         grid_file=grid_file,
         vertical_grid_config=config.vertical_grid_config,
         backend=generic_concrete_backend,
-        rank=props.rank,
+        rank=process_props.rank,
         ser_type=serialization_type,
     )
     (
@@ -415,13 +415,13 @@ def initialize(
         path=file_path,
         grid_file=grid_file,
         backend=generic_concrete_backend,
-        rank=props.rank,
+        rank=process_props.rank,
         ser_type=serialization_type,
     )
 
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
-    exchange = decomposition.create_exchange(props, decomp_info)
+    exchange = decomposition.create_exchange(process_props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
         grid,
         config.diffusion_config,
@@ -464,7 +464,7 @@ def initialize(
         edge_param=edge_geometry,
         path=file_path,
         backend=generic_concrete_backend,
-        rank=props.rank,
+        rank=process_props.rank,
         experiment_type=experiment_type,
     )
     prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
@@ -577,15 +577,15 @@ def icon4py_driver(
         )
     backend_like = model_backends.BACKENDS[icon4py_driver_backend]
 
-    parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
-    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
+    process_props = decomposition.get_process_properties(decomposition.get_runtype(with_mpi=mpi))
+    driver_init.configure_logging(run_path, experiment_type, enable_output, process_props)
 
     time_loop: TimeLoop
     ds: DriverStates
     dp: DriverParams
     time_loop, ds, dp = initialize(
         pathlib.Path(input_path),
-        parallel_props,
+        process_props,
         serialization_type,
         experiment_type,
         pathlib.Path(grid_file),
