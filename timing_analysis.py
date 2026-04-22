@@ -27,11 +27,15 @@ def read_log_and_extract_timing(file_name: str) -> list[float | None]:
                 print(f"{keyword}: not found in log file")
     return timing_list
 
-ref_timing = read_log_and_extract_timing("log_file_ref.txt")
+ref_timing = read_log_and_extract_timing("log_file_ref2.txt")
 vec_timing = read_log_and_extract_timing("log_file3.txt")
 
 for keyword, ref, vec in zip(keywords, ref_timing, vec_timing):
-    if ref is not None and vec is not None:
-        print(f"{keyword}: reference timing = {ref:.3f} s, vectorized timing = {vec:.3f} s, speedup = {ref/vec:.2f}x")
+    if ref is not None:
+        if vec is not None:
+            print(f"{keyword}: reference timing = \x1b[31m{ref:.3f} s\x1b[39m, vectorized timing = \x1b[32m{vec:.3f} s\x1b[39m, speedup = \x1b[36m{ref/vec:.2f}x \x1b[39m")
+        else:
+            minimum = 0.01
+            print(f"{keyword}: reference timing = \x1b[31m{ref:.3f} s\x1b[39m, vectorized timing <= \x1b[32m{minimum:.3f} s\x1b[39m, speedup >= \x1b[36m{ref/minimum:.2f}x \x1b[39m")
     else:
         print(f"{keyword}: timing information missing for comparison")
