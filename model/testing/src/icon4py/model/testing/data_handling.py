@@ -8,11 +8,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import pathlib
 import shutil
-import tarfile
-import tempfile
+
+import pooch  # type: ignore[import-untyped]
 
 from icon4py.model.testing import config, locking
 
@@ -28,10 +29,15 @@ def download_and_extract(
         uri: download url for archived data
         dst: the archive is extracted at this path
 
-    Downloads to a temporary directory in the destination directory
-    (not /tmp to avoid space constraints).
+    Downloads the archive to a temporary cache directory (configured via
+    ``ICON4PY_DOWNLOAD_CACHE``, defaulting to a subdirectory of the system
+    temp directory), extracts to ``dst``, and deletes the archive. If
+    extraction fails the archive is left in the cache so that a subsequent
+    run can reuse it without re-downloading.
     """
     dst.mkdir(parents=True, exist_ok=True)
+    cache = config.DOWNLOAD_CACHE_PATH
+    cache.mkdir(parents=True, exist_ok=True)
 
     completion_marker = dst / ".extraction_complete"
     lockfile = "filelock.lock"
@@ -47,23 +53,18 @@ def download_and_extract(
                     item.unlink()
                 elif item.is_dir():
                     shutil.rmtree(item)
-        _perform_download(uri, dst)
+        # Use a URI-derived filename to avoid collisions between different downloads
+        uri_hash = hashlib.sha256(uri.encode()).hexdigest()[:16]
+        archive_fname = f"archive_{uri_hash}.tar.gz"
+        pooch.retrieve(
+            url=uri,
+            known_hash=None,
+            path=str(cache),
+            fname=archive_fname,
+            processor=pooch.Untar(extract_dir=str(dst.resolve())),
+        )
         completion_marker.touch()
-
-
-def _perform_download(uri: str, dst: pathlib.Path) -> None:
-    try:
-        import wget  # type: ignore[import-untyped]  # noqa: PLC0415
-    except ImportError as err:
-        raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
-
-    with tempfile.TemporaryDirectory(dir=dst) as temp_dir:
-        temp_path = pathlib.Path(temp_dir) / "download.tar.gz"
-        wget.download(uri, out=str(temp_path))
-        if not tarfile.is_tarfile(temp_path):
-            raise OSError(f"{temp_path} needs to be a valid tar file")
-        with tarfile.open(temp_path, mode="r:*") as tf:
-            tf.extractall(path=dst)
+        (cache / archive_fname).unlink(missing_ok=True)
 
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
