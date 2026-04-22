@@ -36,7 +36,7 @@ from ...fixtures import (
     geometry_from_savepoint,
     grid_savepoint,
     icon_grid,
-    processor_props,
+    process_props,
 )
 from .. import utils
 
@@ -55,7 +55,7 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, grid_name",
     [
@@ -73,14 +73,14 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 )
 def test_distributed_geometry_attrs(
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = geometry_from_savepoint.get(attrs_name).asnumpy()
@@ -89,7 +89,7 @@ def test_distributed_geometry_attrs(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, grid_name, lb_domain",
     (
@@ -100,15 +100,15 @@ def test_distributed_geometry_attrs(
 )
 def test_distributed_geometry_attrs_for_inverse(
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
     lb_domain: h_grid.Domain,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
@@ -129,7 +129,7 @@ def test_distributed_geometry_attrs_for_inverse(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, grid_name",
     [
@@ -144,14 +144,14 @@ def test_distributed_geometry_attrs_for_inverse(
 )
 def test_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
@@ -161,7 +161,7 @@ def test_geometry_attr_no_halos(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "x, y, z, dimension",
     [
@@ -173,7 +173,7 @@ def test_geometry_attr_no_halos(
 def test_cartesian_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     x: str,
@@ -181,8 +181,8 @@ def test_cartesian_geometry_attr_no_halos(
     z: str,
     dimension: gtx.Dimension,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
     x_field = grid_geometry.get(x)
@@ -207,23 +207,23 @@ def test_cartesian_geometry_attr_no_halos(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attr_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
 )
 def test_distributed_geometry_mean_fields(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attr_name: str,
 ) -> None:
-    if processor_props.comm_size > 1:
+    if process_props.comm_size > 1:
         pytest.skip("Values not serialized for multiple processors")
 
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     assert hasattr(experiment, "name")
     value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
@@ -233,16 +233,16 @@ def test_distributed_geometry_mean_fields(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_mean_cell_area(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     value_ref = grid_savepoint.mean_cell_area()
     value = geometry_from_savepoint.get("mean_cell_area")
@@ -251,16 +251,16 @@ def test_distributed_mean_cell_area(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_mean_dual_edge_length(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
 
     value_ref = np.mean(grid_savepoint.dual_edge_length().asnumpy())
