@@ -236,9 +236,9 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
-        assert (
-            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+            f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        )
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:
@@ -410,12 +410,13 @@ def create_multinode_node_exchange(
 
 @dataclasses.dataclass
 class GlobalReductions(Reductions):
-    """MPI-aware global reductions.
+    """
+    MPI-aware global reductions.
 
     Owner masks from the decomposition info are stored internally, keyed by the
-    horizontal dimension size (num_cells, num_edges, num_vertices). When sum()
-    or mean() is called, the correct mask is resolved from buffer.shape[0],
-    ensuring only owned (non-halo) elements participate in the reduction.
+    horizontal dimension size (num_cells, num_edges, num_vertices). The correct
+    mask is resolved from buffer.shape[0], ensuring only owned (non-halo)
+    elements participate in the reduction.
     """
 
     process_props: definitions.ProcessProperties
@@ -503,6 +504,8 @@ class GlobalReductions(Reductions):
         return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        owner_mask = self._resolve_owner_mask(buffer)
+        buffer = buffer[owner_mask]
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
@@ -513,6 +516,8 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        owner_mask = self._resolve_owner_mask(buffer)
+        buffer = buffer[owner_mask]
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
