@@ -113,6 +113,7 @@ def check_local_global_field(
                 data_alloc.as_numpy(decomposition_info.local_index(dim, entry_type))
             ]
             if actual.shape[0] > 0 and desired.shape[0] > 0:
+                # abuse err_msg to print the domain region
                 test_utils.assert_dallclose(
                     actual, desired, atol=atol, rtol=rtol, err_msg=entry_type.name
                 )
@@ -152,6 +153,7 @@ def check_local_global_field(
             f" rank = {process_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
+        # abuse err_msg to print the domain region
         test_utils.assert_dallclose(
             actual=sorted_, desired=global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
         )
