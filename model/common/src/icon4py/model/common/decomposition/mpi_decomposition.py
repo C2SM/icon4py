@@ -236,9 +236,9 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
-        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
-            f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
-        )
+        assert (
+            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:
