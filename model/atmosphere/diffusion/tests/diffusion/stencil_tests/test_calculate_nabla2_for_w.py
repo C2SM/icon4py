@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,14 +17,13 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils.data_allocation import constant_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_for_w_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], w: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], w: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     z_nabla2_c = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1
@@ -30,25 +32,26 @@ def calculate_nabla2_for_w_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestCalculateNabla2ForW(StencilTest):
+class TestCalculateNabla2ForW(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_for_w
     OUTPUTS = ("z_nabla2_c",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         w: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        w = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
-        geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-        z_nabla2_c = zero_field(grid, dims.CellDim, dims.KDim)
+        w = self.data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
+        geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
+        z_nabla2_c = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         return dict(
             w=w,

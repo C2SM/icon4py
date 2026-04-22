@@ -10,18 +10,18 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import cloud_to_snow
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestCloudToSnow(StencilTest):
+class TestCloudToSnow(stencil_tests.StencilTest):
     PROGRAM = cloud_to_snow
     OUTPUTS = ("riming_snow_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         t: np.ndarray,
         qc: np.ndarray,
         qs: np.ndarray,
@@ -31,13 +31,13 @@ class TestCloudToSnow(StencilTest):
     ) -> dict:
         return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            t=data_alloc.constant_field(grid, 256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=data_alloc.constant_field(grid, 3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns=data_alloc.constant_field(grid, 3.37707e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            lam=data_alloc.constant_field(grid, 8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=self.data_alloc.constant_field(256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=self.data_alloc.constant_field(3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=self.data_alloc.constant_field(7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=self.data_alloc.constant_field(3.37707e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            lam=self.data_alloc.constant_field(8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

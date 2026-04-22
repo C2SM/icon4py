@@ -17,8 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temp
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
@@ -75,13 +74,13 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
 
 
-class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
+class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(stencil_tests.StencilTest):
     PROGRAM = compute_rho_virtual_potential_temperatures_and_pressure_gradient
     OUTPUTS = ("rho_ic", "z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         w: np.ndarray,
         w_concorr_c: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -128,27 +127,27 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
             z_th_ddz_exner_c=z_th_ddz_exner_c,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
         wgt_nnow_rth = ta.wpfloat("2.0")
         wgt_nnew_rth = ta.wpfloat("3.0")
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        theta_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        d_exner_dz_ref_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_pr_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        theta_v_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_th_ddz_exner_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_concorr_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_var = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_var = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        theta_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        vwind_expl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        exner_pr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        d_exner_dz_ref_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_theta_v_pr_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        theta_v_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_th_ddz_exner_c = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         return dict(
             w=w,
             w_concorr_c=w_concorr_c,

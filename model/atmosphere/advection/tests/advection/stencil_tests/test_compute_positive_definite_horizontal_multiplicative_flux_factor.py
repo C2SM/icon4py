@@ -6,15 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -22,9 +25,9 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
     PROGRAM = compute_positive_definite_horizontal_multiplicative_flux_factor
     OUTPUTS = ("r_m",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         geofac_div: np.ndarray,
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
@@ -33,7 +36,8 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         dbl_eps,
         **kwargs,
     ) -> dict:
-        c2e = connectivities[dims.C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
             0.0,
@@ -53,13 +57,13 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
 
         return dict(r_m=r_m)
 
-    @pytest.fixture
-    def input_data(self, grid) -> dict:
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        r_m = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid) -> dict:
+        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_mflx_tracer_h = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        r_m = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(

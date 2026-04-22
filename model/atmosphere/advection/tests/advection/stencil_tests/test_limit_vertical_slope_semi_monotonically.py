@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_slope_semi_monot
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_slope_semi_monotonically
     OUTPUTS = (stencil_tests.Output("z_slope", gtslice=(slice(None), slice(1, -1))),)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cc: np.ndarray,
         z_slope: np.ndarray,
         k: np.ndarray,
@@ -39,11 +38,11 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         slope = np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
         return dict(z_slope=slope)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_slope = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.index_field(grid, dims.KDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_slope = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        k = self.data_alloc.index_field(dims.KDim)
 
         elev = k[-2].as_scalar()
         return dict(

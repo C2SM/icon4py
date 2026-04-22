@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import collections.abc
 import dataclasses
 import enum
 import functools
@@ -102,6 +106,8 @@ class Grid:
 
     def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
+        assert isinstance(self.connectivities, collections.abc.MutableMapping)
+        assert isinstance(dims.Koff.value, str)
         self.connectivities[dims.Koff.value] = dims.KDim
 
     @functools.cached_property
@@ -155,7 +161,9 @@ class Grid:
     def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""
         if isinstance(offset, gtx.FieldOffset):
-            offset = offset.value
+            offset_value = offset.value
+            assert isinstance(offset_value, str)
+            offset = offset_value
         if offset not in self.connectivities:
             raise exceptions.MissingConnectivityError(
                 f"Missing connectivity for offset {offset} in grid {self.id}."

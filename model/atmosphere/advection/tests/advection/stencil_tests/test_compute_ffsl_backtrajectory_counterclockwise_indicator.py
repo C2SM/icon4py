@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_cou
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
     PROGRAM = compute_ffsl_backtrajectory_counterclockwise_indicator
     OUTPUTS = ("lvn_sys_pos",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_vn: np.ndarray,
         tangent_orientation: np.ndarray,
         lcounterclock: bool,
@@ -44,11 +43,11 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
 
         return dict(lvn_sys_pos=lvn_sys_pos)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
-        lvn_sys_pos = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)
+        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        tangent_orientation = self.data_alloc.random_field(dims.EdgeDim)
+        lvn_sys_pos = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=bool)
         lcounterclock = True
         return dict(
             p_vn=p_vn,

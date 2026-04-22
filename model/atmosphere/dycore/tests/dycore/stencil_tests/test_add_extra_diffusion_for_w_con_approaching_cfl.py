@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -19,12 +20,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, random_mask
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     z_w_con_c: np.ndarray,
@@ -51,7 +51,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
         0,
     )
 
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     ddt_w_adv = np.where(
         (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv
@@ -71,13 +71,13 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
+class TestAddExtraDiffusionForWConApproachingCfl(stencil_tests.StencilTest):
     PROGRAM = add_extra_diffusion_for_w_con_approaching_cfl
     OUTPUTS = ("ddt_w_adv",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         z_w_con_c: np.ndarray,
@@ -91,6 +91,7 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
             connectivities,
             cfl_clipping,
@@ -107,16 +108,16 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         )
         return dict(ddt_w_adv=ddt_w_adv)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
-        owner_mask = random_mask(grid, dims.CellDim)
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        cfl_clipping = self.data_alloc.random_mask(dims.CellDim, dims.KDim)
+        owner_mask = self.data_alloc.random_mask(dims.CellDim)
+        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         scalfac_exdiff = wpfloat("10.0")
         cfl_w_limit = vpfloat("3.0")
         dtime = wpfloat("2.0")

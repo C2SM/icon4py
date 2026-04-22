@@ -18,8 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def copy_cell_kdim_field_to_vp_numpy(field: np.ndarray) -> np.ndarray:
@@ -27,21 +26,19 @@ def copy_cell_kdim_field_to_vp_numpy(field: np.ndarray) -> np.ndarray:
     return field_copy
 
 
-class TestCopyCellKdimFieldToVp(StencilTest):
+class TestCopyCellKdimFieldToVp(stencil_tests.StencilTest):
     PROGRAM = copy_cell_kdim_field_to_vp
     OUTPUTS = ("field_copy",)
 
-    @staticmethod
-    def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray], field: np.ndarray, **kwargs: Any
-    ) -> dict:
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, field: np.ndarray, **kwargs: Any) -> dict:
         field_copy = copy_cell_kdim_field_to_vp_numpy(field)
         return dict(field_copy=field_copy)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        field = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        field_copy = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        field = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        field_copy = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(
             field=field,
             field_copy=field_copy,

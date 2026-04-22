@@ -19,8 +19,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def accumulate_prep_adv_fields_numpy(
@@ -36,13 +35,13 @@ def accumulate_prep_adv_fields_numpy(
     return vn_traj, mass_flx_me
 
 
-class TestAccumulatePrepAdvFields(StencilTest):
+class TestAccumulatePrepAdvFields(stencil_tests.StencilTest):
     PROGRAM = accumulate_prep_adv_fields
     OUTPUTS = ("vn_traj", "mass_flx_me")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_vn_avg: np.ndarray,
         mass_fl_e: np.ndarray,
         vn_traj: np.ndarray,
@@ -60,12 +59,12 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_traj = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        mass_fl_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        mass_flx_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vn_traj = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         r_nsubsteps = wpfloat("9.0")
 
         return dict(

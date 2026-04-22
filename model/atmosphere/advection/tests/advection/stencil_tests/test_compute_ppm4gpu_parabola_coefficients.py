@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coeffi
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
     PROGRAM = compute_ppm4gpu_parabola_coefficients
     OUTPUTS = ("z_delta_q", "z_a1")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_face_up: np.ndarray,
         z_face_low: np.ndarray,
         p_cc: np.ndarray,
@@ -36,13 +35,13 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
         z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
         return dict(z_delta_q=z_delta_q, z_a1=z_a1)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_face_up = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_face_low = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_delta_q = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_a1 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_face_up = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_face_low = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_delta_q = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_a1 = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             z_face_up=z_face_up,
             z_face_low=z_face_low,

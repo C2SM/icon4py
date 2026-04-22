@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -17,12 +18,11 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def add_analysis_increments_from_data_assimilation_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_rho_expl: np.ndarray,
     rho_incr: np.ndarray,
     z_exner_expl: np.ndarray,
@@ -34,13 +34,13 @@ def add_analysis_increments_from_data_assimilation_numpy(
     return (z_rho_expl, z_exner_expl)
 
 
-class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
+class TestAddAnalysisIncrementsFromDataAssimilation(stencil_tests.StencilTest):
     PROGRAM = add_analysis_increments_from_data_assimilation
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_rho_expl: np.ndarray,
         rho_incr: np.ndarray,
         z_exner_expl: np.ndarray,
@@ -48,6 +48,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         iau_wgt_dyn: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_rho_expl, z_exner_expl = add_analysis_increments_from_data_assimilation_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,
@@ -58,12 +59,12 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_exner_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_incr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_rho_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_incr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         iau_wgt_dyn = ta.wpfloat("8.0")
 
         return dict(

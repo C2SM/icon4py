@@ -10,25 +10,23 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import deposition_factor
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestDepositionFactor(StencilTest):
+class TestDepositionFactor(stencil_tests.StencilTest):
     PROGRAM = deposition_factor
     OUTPUTS = ("deposition_rate",)
 
-    @staticmethod
-    def reference(grid, t: np.ndarray, qvsi: np.ndarray, **kwargs) -> dict:
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, t: np.ndarray, qvsi: np.ndarray, **kwargs) -> dict:
         return dict(deposition_rate=np.full(t.shape, 1.3234329478493952e-05))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            t=data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qvsi=data_alloc.constant_field(
-                grid, 0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            deposition_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qvsi=self.data_alloc.constant_field(0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat),
+            deposition_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

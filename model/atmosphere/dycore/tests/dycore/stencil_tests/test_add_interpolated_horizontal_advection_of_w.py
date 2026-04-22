@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w,
 )
@@ -22,14 +22,14 @@ from icon4py.model.testing import stencil_tests
 
 
 def add_interpolated_horizontal_advection_of_w_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     e_bln_c_s: np.ndarray,
     z_v_grad_w: np.ndarray,
     ddt_w_adv: np.ndarray,
     **kwargs: Any,
 ) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2e = connectivities[dims.C2EDim]
+    c2e = connectivities[dims.C2E]
 
     ddt_w_adv = ddt_w_adv + np.sum(
         z_v_grad_w[c2e] * e_bln_c_s,
@@ -42,24 +42,25 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
     PROGRAM = add_interpolated_horizontal_advection_of_w
     OUTPUTS = ("ddt_w_adv",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         e_bln_c_s: np.ndarray,
         z_v_grad_w: np.ndarray,
         ddt_w_adv: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         ddt_w_adv = add_interpolated_horizontal_advection_of_w_numpy(
             connectivities, e_bln_c_s, z_v_grad_w, ddt_w_adv
         )
         return dict(ddt_w_adv=ddt_w_adv)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        ddt_w_adv = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_v_grad_w = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        e_bln_c_s = self.data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
+        ddt_w_adv = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

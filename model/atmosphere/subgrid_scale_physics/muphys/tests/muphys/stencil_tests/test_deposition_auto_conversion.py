@@ -13,28 +13,30 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     deposition_auto_conversion,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestDepositionAutoConversion(StencilTest):
+class TestDepositionAutoConversion(stencil_tests.StencilTest):
     PROGRAM = deposition_auto_conversion
     OUTPUTS = ("conversion_rate",)
 
-    @staticmethod
-    def reference(grid, qi: np.ndarray, m_ice: np.ndarray, ice_dep: np.ndarray, **kwargs) -> dict:
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid, qi: np.ndarray, m_ice: np.ndarray, ice_dep: np.ndarray, **kwargs
+    ) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 6.6430804299795412e-08))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            qi=data_alloc.constant_field(
-                grid, 2.02422e-2 + GraupelCt.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
+            qi=self.data_alloc.constant_field(
+                2.02422e-2 + GraupelCt.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            m_ice=data_alloc.constant_field(grid, 1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ice_dep=data_alloc.constant_field(
-                grid, 2.06276e-05, dims.CellDim, dims.KDim, dtype=wpfloat
+            m_ice=self.data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ice_dep=self.data_alloc.constant_field(
+                2.06276e-05, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

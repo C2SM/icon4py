@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -18,12 +19,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def update_dynamical_exner_time_increment_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     exner: np.ndarray,
     ddt_exner_phy: np.ndarray,
     exner_dyn_incr: np.ndarray,
@@ -34,13 +34,13 @@ def update_dynamical_exner_time_increment_numpy(
     return exner_dyn_incr
 
 
-class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
+class TestUpdateDynamicalExnerTimeIncrement(stencil_tests.StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
     OUTPUTS = ("exner_dyn_incr",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         exner: np.ndarray,
         ddt_exner_phy: np.ndarray,
         exner_dyn_incr: np.ndarray,
@@ -48,6 +48,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         exner_dyn_incr = update_dynamical_exner_time_increment_numpy(
             connectivities,
             exner,
@@ -58,12 +59,12 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         )
         return dict(exner_dyn_incr=exner_dyn_incr)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
-        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_exner_phy = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_dyn_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_exner_phy = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_dyn_incr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

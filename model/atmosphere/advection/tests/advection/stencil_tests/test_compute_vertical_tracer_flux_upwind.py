@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_vertical_tracer_flux_up
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -27,9 +26,9 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_tracer_flux_upwind
     OUTPUTS = (stencil_tests.Output("p_upflux", refslice=outslice, gtslice=outslice),)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cc: np.ndarray,
         p_mflx_contra_v: np.ndarray,
         **kwargs: Any,
@@ -41,14 +40,14 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
         )
         return dict(p_upflux=p_upflux)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_contra_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_mflx_contra_v = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim
         )  # TODO(dastrm): should be KHalfDim
-        p_upflux = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
+        p_upflux = self.data_alloc.zero_field(
+            dims.CellDim, dims.KDim
         )  # TODO(dastrm): should be KHalfDim
         return dict(
             p_cc=p_cc,

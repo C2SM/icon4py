@@ -18,40 +18,39 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import zero_field
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 @pytest.mark.continuous_benchmarking
-class TestInitCellKdimFieldWithZeroWp(StencilTest):
+class TestInitCellKdimFieldWithZeroWp(stencil_tests.StencilTest):
     PROGRAM = init_cell_kdim_field_with_zero_wp
     OUTPUTS = ("field_with_zero_wp",)
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
             "vertical_end",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         field_with_zero_wp: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         field_with_zero_wp = np.zeros_like(field_with_zero_wp)
         return dict(field_with_zero_wp=field_with_zero_wp)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        field_with_zero_wp = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        field_with_zero_wp = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             field_with_zero_wp=field_with_zero_wp,

@@ -11,26 +11,28 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import GraupelCt
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_lambda
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestSnowLambda(StencilTest):
+class TestSnowLambda(stencil_tests.StencilTest):
     PROGRAM = snow_lambda
     OUTPUTS = ("riming_snow_rate",)
 
-    @staticmethod
-    def reference(grid, rho: np.ndarray, qs: np.ndarray, ns: np.ndarray, **kwargs) -> dict:
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid, rho: np.ndarray, qs: np.ndarray, ns: np.ndarray, **kwargs
+    ) -> dict:
         return dict(riming_snow_rate=np.full(rho.shape, 1.0e10))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            rho=data_alloc.constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(
-                grid, GraupelCt.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
+            rho=self.data_alloc.constant_field(1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=self.data_alloc.constant_field(
+                GraupelCt.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            ns=data_alloc.constant_field(grid, 1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=self.data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

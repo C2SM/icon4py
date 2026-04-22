@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
 )
@@ -24,9 +24,9 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
     PROGRAM = integrate_tracer_horizontally
     OUTPUTS = ("tracer_new_hor",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_mflx_tracer_h: np.ndarray,
         deepatmo_divh: np.ndarray,
         tracer_now: np.ndarray,
@@ -36,25 +36,26 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now
             - p_dtime
             * deepatmo_divh
-            * np.sum(p_mflx_tracer_h[connectivities[dims.C2EDim]] * geofac_div, axis=1)
+            * np.sum(p_mflx_tracer_h[connectivities[dims.C2E]] * geofac_div, axis=1)
         ) / rhodz_new
         return dict(tracer_new_hor=tracer_new_hor)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        deepatmo_divh = data_alloc.random_field(grid, dims.KDim)
-        tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        p_mflx_tracer_h = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        deepatmo_divh = self.data_alloc.random_field(dims.KDim)
+        tracer_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        rhodz_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
         p_dtime = np.float64(5.0)
-        tracer_new_hor = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        tracer_new_hor = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
             deepatmo_divh=deepatmo_divh,

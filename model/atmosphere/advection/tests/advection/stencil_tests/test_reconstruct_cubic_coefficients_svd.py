@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_svd import (
     reconstruct_cubic_coefficients_svd,
 )
@@ -36,9 +36,9 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         "p_coeff_10_dsl",
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cc: np.ndarray,
         lsq_pseudoinv_1: np.ndarray,
         lsq_pseudoinv_2: np.ndarray,
@@ -70,6 +70,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         p_coeff_10_dsl: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
         p_coeff_2_dsl_cp = p_coeff_2_dsl.copy()
         p_coeff_3_dsl_cp = p_coeff_3_dsl.copy()
@@ -81,7 +82,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         p_coeff_9_dsl_cp = p_coeff_9_dsl.copy()
         p_coeff_10_dsl_cp = p_coeff_10_dsl.copy()
 
-        c2e2c2e2c = connectivities[dims.C2E2C2E2CDim]
+        c2e2c2e2c = connectivities[dims.C2E2C2E2C]
         lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
         lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
         lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
@@ -304,38 +305,38 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
             p_coeff_10_dsl=p_coeff_10_dsl,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        lsq_pseudoinv_1_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_2_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_3_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_4_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_5_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_6_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_7_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_8_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        lsq_pseudoinv_9_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        lsq_pseudoinv_1_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_2_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_3_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_4_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_5_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_6_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_7_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_8_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_9_field = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2E2CDim)
 
-        lsq_moments_1 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_2 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_3 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_4 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_5 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_6 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_7 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_8 = data_alloc.random_field(grid, dims.CellDim)
-        lsq_moments_9 = data_alloc.random_field(grid, dims.CellDim)
-        p_coeff_1_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_2_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_3_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_4_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_5_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_6_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_7_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_8_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_9_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_10_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        lsq_moments_1 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_2 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_3 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_4 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_5 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_6 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_7 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_8 = self.data_alloc.random_field(dims.CellDim)
+        lsq_moments_9 = self.data_alloc.random_field(dims.CellDim)
+        p_coeff_1_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_2_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_3_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_4_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_5_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_6_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_7_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_8_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_9_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_coeff_10_dsl = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))

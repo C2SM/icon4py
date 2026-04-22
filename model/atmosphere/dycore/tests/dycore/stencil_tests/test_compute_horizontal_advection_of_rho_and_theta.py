@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
     _compute_horizontal_advection_of_rho_and_theta,
 )
@@ -23,13 +23,13 @@ from icon4py.model.testing import stencil_tests
 
 # TODO(): copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_ccpr1: np.ndarray,
     p_ccpr2: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     p_grad_1_u = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1
@@ -95,7 +95,7 @@ def compute_btraj_numpy(
 
 
 def sten_16_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_vn: np.ndarray,
     rho_ref_me: np.ndarray,
     theta_ref_me: np.ndarray,
@@ -109,7 +109,7 @@ def sten_16_numpy(
     z_rth_pr_2: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
     z_rth_pr_2_e2c = z_rth_pr_2[e2c]
     z_grad_rth_1_e2c = z_grad_rth_1[e2c]
@@ -145,7 +145,7 @@ def sten_16_numpy(
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
@@ -211,9 +211,9 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = _compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("out",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
@@ -231,6 +231,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
             connectivities,
             p_vn,
@@ -251,44 +252,44 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         )
         return dict(out=(z_rho_e, z_theta_v_e))
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(
         self, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        pos_on_tplane_e_1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        pos_on_tplane_e_1 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        pos_on_tplane_e_2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        pos_on_tplane_e_2 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        primal_normal_cell_1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        primal_normal_cell_1 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        dual_normal_cell_1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        dual_normal_cell_1 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        primal_normal_cell_2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        primal_normal_cell_2 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
-        dual_normal_cell_2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        dual_normal_cell_2 = self.data_alloc.random_field(
+            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
         p_dthalf = 2.0
 
-        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        rho_ref_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        theta_ref_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        perturbed_rho_at_cells_on_model_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        perturbed_theta_v_at_cells_on_model_levels = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        z_rho_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_theta_v_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_vn=p_vn,

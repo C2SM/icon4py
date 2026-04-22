@@ -15,8 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def update_theta_and_exner_numpy(
@@ -33,13 +32,13 @@ def update_theta_and_exner_numpy(
     return theta_v, exner
 
 
-class TestUpdateThetaAndExner(StencilTest):
+class TestUpdateThetaAndExner(stencil_tests.StencilTest):
     PROGRAM = update_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_temp: np.ndarray,
         area: np.ndarray,
         theta_v: np.ndarray,
@@ -50,12 +49,12 @@ class TestUpdateThetaAndExner(StencilTest):
         theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_temp = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         rd_o_cvd = vpfloat("5.0")
 
         return dict(

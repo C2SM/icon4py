@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any, Final
+from collections.abc import Mapping
+from typing import Any, Final, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -17,15 +18,14 @@ from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 dycore_consts: Final = constants.PhysicsConstants()
 
 
 def compute_results_for_thermodynamic_variables_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
@@ -62,13 +62,13 @@ def compute_results_for_thermodynamic_variables_numpy(
     return rho_new, exner_new, theta_v_new
 
 
-class TestComputeResultsForThermodynamicVariables(StencilTest):
+class TestComputeResultsForThermodynamicVariables(stencil_tests.StencilTest):
     PROGRAM = compute_results_for_thermodynamic_variables
     OUTPUTS = ("rho_new", "exner_new", "theta_v_new")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_rho_expl: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
@@ -84,6 +84,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
             connectivities,
             z_rho_expl=z_rho_expl,
@@ -102,29 +103,29 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_ic = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+        z_rho_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        vwind_impl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_ic = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        w = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+        w = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_alpha = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
+        z_exner_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_alpha = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_beta = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
 
         return dict(

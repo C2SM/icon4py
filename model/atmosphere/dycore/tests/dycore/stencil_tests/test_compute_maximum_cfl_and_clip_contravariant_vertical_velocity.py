@@ -17,8 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contr
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils.data_allocation import random_field, random_mask, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
@@ -43,13 +42,13 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
     return cfl_clipping, vcfl, z_w_con_c
 
 
-class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
+class TestComputeMaximumCflAndClipContravariantVerticalVelocity(stencil_tests.StencilTest):
     PROGRAM = compute_maximum_cfl_and_clip_contravariant_vertical_velocity
     OUTPUTS = ("cfl_clipping", "vcfl", "z_w_con_c")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         ddqz_z_half: np.ndarray,
         z_w_con_c: np.ndarray,
         cfl_w_limit: ta.wpfloat,
@@ -70,12 +69,12 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
             z_w_con_c=z_w_con_c,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim, dtype=bool)
-        vcfl = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        cfl_clipping = self.data_alloc.random_mask(dims.CellDim, dims.KDim, dtype=bool)
+        vcfl = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         cfl_w_limit = ta.vpfloat("5.0")
         dtime = ta.wpfloat("9.0")
 

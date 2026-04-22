@@ -14,7 +14,6 @@ import pytest
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import compute_ppm_slope
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -27,9 +26,9 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         ),
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
         elev: gtx.int32,
@@ -64,12 +63,12 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
         return dict(z_slope=z_slope)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_slope = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_cellhgt_mc_now = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        z_slope = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_cellhgt_mc_now = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 
         elev = grid.num_levels - 2

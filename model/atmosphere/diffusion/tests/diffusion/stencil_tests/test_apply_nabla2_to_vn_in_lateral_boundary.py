@@ -17,8 +17,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_to_vn_in_lateral_boundary_numpy(
@@ -29,16 +28,16 @@ def apply_nabla2_to_vn_in_lateral_boundary_numpy(
     return vn
 
 
-class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
+class TestApplyNabla2ToVnInLateralBoundary(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         fac_bdydiff_v = wpfloat("5.0")
-        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        area_edge = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         return dict(
             fac_bdydiff_v=fac_bdydiff_v,
             z_nabla2_e=z_nabla2_e,
@@ -50,9 +49,9 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             vertical_end=gtx.int32(grid.num_levels),
         )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_nabla2_e: np.ndarray,
         area_edge: np.ndarray,
         vn: np.ndarray,

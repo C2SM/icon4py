@@ -10,18 +10,18 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import rain_to_graupel
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestRainToGraupelDefault(StencilTest):
+class TestRainToGraupelDefault(stencil_tests.StencilTest):
     PROGRAM = rain_to_graupel
     OUTPUTS = ("conversion_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         t: np.ndarray,
         rho: np.ndarray,
         qc: np.ndarray,
@@ -35,19 +35,19 @@ class TestRainToGraupelDefault(StencilTest):
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            t=data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr=data_alloc.constant_field(grid, 1.34006e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 1.02627e-19, dims.CellDim, dims.KDim, dtype=wpfloat),
-            mi=data_alloc.constant_field(grid, 1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw=data_alloc.constant_field(
-                grid, -0.000635669, dims.CellDim, dims.KDim, dtype=wpfloat
+            t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=self.data_alloc.constant_field(1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=self.data_alloc.constant_field(1.34006e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=self.data_alloc.constant_field(1.02627e-19, dims.CellDim, dims.KDim, dtype=wpfloat),
+            mi=self.data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=self.data_alloc.constant_field(
+                -0.000635669, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             dt=30.0,
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

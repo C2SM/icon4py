@@ -17,8 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_vt_to_interface_edges_numpy(
@@ -30,13 +29,13 @@ def interpolate_vt_to_interface_edges_numpy(
     return z_vt_ie
 
 
-class TestInterpolateVtToInterfaceEdges(StencilTest):
+class TestInterpolateVtToInterfaceEdges(stencil_tests.StencilTest):
     PROGRAM = interpolate_vt_to_interface_edges
     OUTPUTS = ("z_vt_ie",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         wgtfac_e: np.ndarray,
         vt: np.ndarray,
         z_vt_ie: np.ndarray,
@@ -50,12 +49,12 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
         z_vt_ie[subset] = interpolate_vt_to_interface_edges_numpy(wgtfac_e, vt)[subset]
         return dict(z_vt_ie=z_vt_ie)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_vt_ie = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

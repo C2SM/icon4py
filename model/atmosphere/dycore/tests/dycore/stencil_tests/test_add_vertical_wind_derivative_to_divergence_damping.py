@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -17,12 +18,11 @@ from icon4py.model.atmosphere.dycore.stencils.add_vertical_wind_derivative_to_di
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     hmask_dd3d: np.ndarray,
     scalfac_dd3d: np.ndarray,
     inv_dual_edge_length: np.ndarray,
@@ -33,7 +33,7 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     z_dwdz_dd_e2c = z_dwdz_dd[e2c]
     z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
@@ -48,9 +48,9 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         hmask_dd3d: np.ndarray,
         scalfac_dd3d: np.ndarray,
         inv_dual_edge_length: np.ndarray,
@@ -58,6 +58,7 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
             connectivities,
             hmask_dd3d,
@@ -68,13 +69,13 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         )
         return dict(z_graddiv_vn=z_graddiv_vn)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        scalfac_dd3d = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        z_dwdz_dd = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_graddiv_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        hmask_dd3d = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        scalfac_dd3d = self.data_alloc.random_field(dims.KDim, dtype=ta.wpfloat)
+        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        z_dwdz_dd = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_graddiv_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             hmask_dd3d=hmask_dd3d,

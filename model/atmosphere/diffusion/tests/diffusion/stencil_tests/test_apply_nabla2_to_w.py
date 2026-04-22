@@ -5,26 +5,29 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_to_w_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     area: np.ndarray,
     z_nabla2_c: np.ndarray,
     geofac_n2s: np.ndarray,
     w: np.ndarray,
     diff_multfac_w: float,
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * np.sum(
@@ -34,13 +37,13 @@ def apply_nabla2_to_w_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestMoApplyNabla2ToW(StencilTest):
+class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_to_w
     OUTPUTS = ("w",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         area: np.ndarray,
         z_nabla2_c: np.ndarray,
         geofac_n2s: np.ndarray,
@@ -48,15 +51,16 @@ class TestMoApplyNabla2ToW(StencilTest):
         diff_multfac_w: float,
         **kwargs,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         w = apply_nabla2_to_w_numpy(connectivities, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
         return dict(w=w)
 
-    @pytest.fixture
-    def input_data(self, grid):
-        area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
+        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        z_nabla2_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,

@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.postprocess_antidiffusive_cell_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
     PROGRAM = postprocess_antidiffusive_cell_fluxes_and_min_max
     OUTPUTS = ("z_tracer_new_low", "z_tracer_max", "z_tracer_min")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         refin_ctrl: np.ndarray,
         p_cc: np.ndarray,
         z_tracer_new_low: np.ndarray,
@@ -54,18 +53,18 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
             z_tracer_min=z_tracer_min_out,
         )
 
-    @pytest.fixture()
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
-        refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_new_low_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_max_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_min_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        refin_ctrl = self.data_alloc.constant_field(2, dims.CellDim, dtype=gtx.int32)
+        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_new_low_in = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_max_in = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_min_in = self.data_alloc.random_field(dims.CellDim, dims.KDim)
 
-        z_tracer_new_low_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_max_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_min_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_low_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_max_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_min_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         return dict(
             refin_ctrl=refin_ctrl,

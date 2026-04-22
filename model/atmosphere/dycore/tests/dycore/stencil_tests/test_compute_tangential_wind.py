@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -16,39 +17,41 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_tangential_wind_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], vn: np.ndarray, rbf_vec_coeff_e: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    vn: np.ndarray,
+    rbf_vec_coeff_e: np.ndarray,
 ) -> np.ndarray:
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    e2c2e = connectivities[dims.E2C2EDim]
+    e2c2e = connectivities[dims.E2C2E]
     vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
     return vt
 
 
 @pytest.mark.embedded_remap_error
-class TestComputeTangentialWind(StencilTest):
+class TestComputeTangentialWind(stencil_tests.StencilTest):
     PROGRAM = compute_tangential_wind
     OUTPUTS = ("vt",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vn: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         vt = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
         return dict(vt=vt)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
-        vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        rbf_vec_coeff_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
+        vt = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

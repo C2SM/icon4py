@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
+from typing import cast
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -15,7 +18,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
@@ -37,7 +39,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def compute_diagnostics_from_normal_wind_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -178,10 +180,9 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         ),
     }
 
-    @classmethod
+    @stencil_tests.static_reference
     def reference(
-        cls,
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         tangential_wind: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,
@@ -206,6 +207,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         initial_tangential_wind = tangential_wind.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
         initial_horizontal_kinetic_energy_at_edges_on_model_levels = (
@@ -290,7 +292,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing
@@ -301,31 +303,31 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+        horizontal_advection_of_w_at_edges_on_half_levels = self.data_alloc.zero_field(
+            dims.EdgeDim, dims.KDim
         )
-        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        tangential_wind = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        tangential_wind_on_half_levels = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = self.data_alloc.zero_field(
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
-        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+        horizontal_kinetic_energy_at_edges_on_model_levels = self.data_alloc.random_field(
+            dims.EdgeDim, dims.KDim
         )
-        contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+        contravariant_correction_at_edges_on_model_levels = self.data_alloc.random_field(
+            dims.EdgeDim, dims.KDim
         )
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
-        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        w = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        rbf_vec_coeff_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim)
+        wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddxn_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddxt_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim)
+        inv_primal_edge_length = self.data_alloc.random_field(dims.EdgeDim)
+        tangent_orientation = self.data_alloc.random_field(dims.EdgeDim)
+        wgtfacq_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        c_intp = self.data_alloc.random_field(dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
         nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime

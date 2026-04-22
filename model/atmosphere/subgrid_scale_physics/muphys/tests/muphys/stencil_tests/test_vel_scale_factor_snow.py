@@ -12,27 +12,27 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     vel_scale_factor_snow,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestVelScaleFactorSnow(StencilTest):
+class TestVelScaleFactorSnow(stencil_tests.StencilTest):
     PROGRAM = vel_scale_factor_snow
     OUTPUTS = ("scale_factor",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        grid, xrho: np.ndarray, rho: np.ndarray, t: np.ndarray, qs: np.ndarray, **kwargs
+        grid: base.Grid, xrho: np.ndarray, rho: np.ndarray, t: np.ndarray, qs: np.ndarray, **kwargs
     ) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            xrho=data_alloc.constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
-            t=data_alloc.constant_field(grid, 257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            scale_factor=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            xrho=self.data_alloc.constant_field(1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=self.data_alloc.constant_field(0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=self.data_alloc.constant_field(257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=self.data_alloc.constant_field(5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scale_factor=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

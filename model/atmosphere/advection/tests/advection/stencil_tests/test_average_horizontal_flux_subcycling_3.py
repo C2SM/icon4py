@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycl
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestAverageHorizontalFluxSubcycling3(stencil_tests.StencilTest):
     PROGRAM = average_horizontal_flux_subcycling_3
     OUTPUTS = ("p_out_e",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         z_tracer_mflx_1_dsl: np.ndarray,
         z_tracer_mflx_2_dsl: np.ndarray,
         z_tracer_mflx_3_dsl: np.ndarray,
@@ -35,12 +34,12 @@ class TestAverageHorizontalFluxSubcycling3(stencil_tests.StencilTest):
         p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(3)
         return dict(p_out_e=p_out_e)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_tracer_mflx_3_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_1_dsl = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_2_dsl = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_3_dsl = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_out_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         return dict(
             z_tracer_mflx_1_dsl=z_tracer_mflx_1_dsl,
             z_tracer_mflx_2_dsl=z_tracer_mflx_2_dsl,

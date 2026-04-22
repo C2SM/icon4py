@@ -18,8 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_perturbation_of_rho_and_theta_numpy(
@@ -33,13 +32,13 @@ def compute_perturbation_of_rho_and_theta_numpy(
     return (z_rth_pr_1, z_rth_pr_2)
 
 
-class TestComputePerturbationOfRhoAndTheta(StencilTest):
+class TestComputePerturbationOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta
     OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         rho: np.ndarray,
         rho_ref_mc: np.ndarray,
         theta_v: np.ndarray,
@@ -51,14 +50,14 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
         )
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        rho = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_1 = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             rho=rho,

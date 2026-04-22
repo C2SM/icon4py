@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
     PROGRAM = apply_interpolated_tracer_time_tendency
     OUTPUTS = ("p_tracer_new",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         p_tracer_now: np.ndarray,
         p_grf_tend_tracer: np.ndarray,
         p_dtime: float,
@@ -37,11 +36,11 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
 
         return dict(p_tracer_new=p_tracer_new)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_tracer_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_grf_tend_tracer = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_tracer_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)
         p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,

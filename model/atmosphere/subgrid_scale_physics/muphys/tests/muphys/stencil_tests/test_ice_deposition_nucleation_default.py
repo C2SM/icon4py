@@ -12,18 +12,18 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     ice_deposition_nucleation,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestIceDepositionNucleationDefault(StencilTest):
+class TestIceDepositionNucleationDefault(stencil_tests.StencilTest):
     PROGRAM = ice_deposition_nucleation
     OUTPUTS = ("vapor_deposition_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        grid,
+        grid: base.Grid,
         t: np.ndarray,
         qc: np.ndarray,
         qi: np.ndarray,
@@ -34,18 +34,18 @@ class TestIceDepositionNucleationDefault(StencilTest):
     ) -> dict:
         return dict(vapor_deposition_rate=np.full(t.shape, 0.0))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            t=data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ni=data_alloc.constant_field(grid, 5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsi=data_alloc.constant_field(
-                grid, -0.000618828, dims.CellDim, dims.KDim, dtype=wpfloat
+            t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ni=self.data_alloc.constant_field(5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsi=self.data_alloc.constant_field(
+                -0.000618828, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             dt=30.0,
-            vapor_deposition_rate=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, dtype=wpfloat
+            vapor_deposition_rate=self.data_alloc.zero_field(
+                dims.CellDim, dims.KDim, dtype=wpfloat
             ),
         )

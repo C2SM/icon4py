@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically imp
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
     PROGRAM = integrate_tracer_vertically
     OUTPUTS = ("tracer_new",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         tracer_now: np.ndarray,
         rhodz_now: np.ndarray,
         p_mflx_tracer_v: np.ndarray,
@@ -58,18 +57,18 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
 
         return dict(tracer_new=tracer_new)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
-        tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        tracer_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_mflx_tracer_v = self.data_alloc.random_field(
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
-        deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
-        rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        tracer_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.index_field(grid, dims.KDim)
+        deepatmo_divzl = self.data_alloc.random_field(dims.KDim)
+        deepatmo_divzu = self.data_alloc.random_field(dims.KDim)
+        rhodz_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        tracer_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        k = self.data_alloc.index_field(dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4

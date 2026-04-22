@@ -17,8 +17,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_and_nabla4_global_to_vn_numpy(
@@ -30,18 +29,18 @@ def apply_nabla2_and_nabla4_global_to_vn_numpy(
     return vn
 
 
-class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
+class TestApplyNabla2AndNabla4GlobalToVn(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_and_nabla4_global_to_vn
     OUTPUTS = ("vn",)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
-        area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_nabla4_e2 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        diff_multfac_vn = random_field(grid, dims.KDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        area_edge = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla4_e2 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        diff_multfac_vn = self.data_alloc.random_field(dims.KDim, dtype=wpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             area_edge=area_edge,
@@ -56,9 +55,9 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
             vertical_end=gtx.int32(grid.num_levels),
         )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         area_edge: np.ndarray,
         kh_smag_e: np.ndarray,
         z_nabla2_e: np.ndarray,

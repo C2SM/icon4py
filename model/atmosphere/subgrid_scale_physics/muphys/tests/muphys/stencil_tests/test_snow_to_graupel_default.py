@@ -10,27 +10,27 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import snow_to_graupel
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestSnowToGraupelDefault(StencilTest):
+class TestSnowToGraupelDefault(stencil_tests.StencilTest):
     PROGRAM = snow_to_graupel
     OUTPUTS = ("conversion_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qs: np.ndarray, **kwargs
+        grid: base.Grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qs: np.ndarray, **kwargs
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(self, grid: base.Grid):
         return dict(
-            t=data_alloc.constant_field(grid, 281.157, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 0.93171, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 4.34854e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=self.data_alloc.constant_field(281.157, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=self.data_alloc.constant_field(0.93171, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=self.data_alloc.constant_field(4.34854e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -18,8 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_contravariant_correction_numpy(
@@ -29,13 +28,13 @@ def compute_contravariant_correction_numpy(
     return z_w_concorr_me
 
 
-class TestComputeContravariantCorrection(StencilTest):
+class TestComputeContravariantCorrection(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction
     OUTPUTS = ("z_w_concorr_me",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         vn: np.ndarray,
         ddxn_z_full: np.ndarray,
         ddxt_z_full: np.ndarray,
@@ -45,13 +44,13 @@ class TestComputeContravariantCorrection(StencilTest):
         z_w_concorr_me = compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddxt_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_w_concorr_me = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ddxn_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        ddxt_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
+        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_concorr_me = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,
