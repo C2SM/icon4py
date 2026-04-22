@@ -252,7 +252,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.vn.ndarray = testcases_utils.zonalwind_2_normalwind_ndarray(
+    prognostic_state_now.vn.ndarray[:,:] = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
         jw_u0=jw_u0,
         jw_baroclinic_amplitude=jw_baroclinic_amplitude,
@@ -276,7 +276,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
 
-    prognostic_state_now.w.ndarray = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:,:] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
