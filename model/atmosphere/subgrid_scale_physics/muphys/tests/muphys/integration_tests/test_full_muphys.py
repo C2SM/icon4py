@@ -16,7 +16,7 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.testing import test_utils
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from . import utils
@@ -26,9 +26,9 @@ from .utils import download_test_data
 class Experiments:
     # TODO(havogt): the following references need to be checked (and moved to the shared directory),
     # currently they are not verifying
-    # https://polybox.ethz.ch/index.php/s/5oNtcQFDcCaNxHH/download/r2b04.tar.gz
-    # https://polybox.ethz.ch/index.php/s/mBeAWAQQHSKTkF7/download/r2b04_maxfrac.tar.gz
-    # https://polybox.ethz.ch/index.php/s/mBrpE3iBoeek5wc/download/r2b05.tar.gz
+    # muphys/full_muphys/r2b04.tar.gz
+    # muphys/full_muphys/r2b04_maxfrac.tar.gz
+    # muphys/full_muphys/r2b05.tar.gz
     # Note: don't use the 'tiny' experiment from graupel_only,
     # as it is not sensitive to saturation adjustment
     # TODO(havogt): double-check that all other experiments actually are sensitive,
@@ -36,7 +36,7 @@ class Experiments:
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.FULL_MUPHYS,
-        uri="https://polybox.ethz.ch/index.php/s/F8bK2C8tkpf8Xy2/download?files=mini.tar.gz",
+        uri=f"{definitions.DATA_ROOT_URL}/muphys/full_muphys/mini.tar.gz",
     )
 
 

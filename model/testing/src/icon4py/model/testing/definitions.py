@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+DATA_ROOT_URL: Final = "https://rgw.cscs.ch/c2sm:testdata"
 
 
 def serialized_data_path() -> pathlib.Path:
@@ -57,7 +58,7 @@ class Grids:
             num_edges=120,
         ),
         file_name="icon_grid_R01B01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/9M5JX4LJr3LGPqz/download",
+        uri=f"{DATA_ROOT_URL}/grids/r01b01_global/icon_grid_R01B01.nc.tar.gz",
     )
     R02B04_GLOBAL: Final = GridDescription(
         name="r02b04_global",
@@ -72,7 +73,7 @@ class Grids:
             num_edges=30720,
         ),
         file_name="icon_grid_0013_R02B04_R.nc",
-        uri="https://polybox.ethz.ch/index.php/s/BRiF7XrCCpGqpEF/download",
+        uri=f"{DATA_ROOT_URL}/grids/r02b04_global/icon_grid_0013_R02B04_R.nc.tar.gz",
     )
     R02B06_GLOBAL: Final = GridDescription(
         name="r02b06_global",
@@ -87,7 +88,7 @@ class Grids:
             num_edges=491520,
         ),
         file_name="icon_grid_0021_R02B06_G.nc",
-        uri="https://polybox.ethz.ch/index.php/s/WsHr5e2MKpHkkmp/download",
+        uri=f"{DATA_ROOT_URL}/grids/r02b06_global/icon_grid_0021_R02B06_G.nc.tar.gz",
     )
     R02B07_GLOBAL: Final = GridDescription(
         name="r02b07_global",
@@ -102,7 +103,7 @@ class Grids:
             num_edges=1966080,
         ),
         file_name="icon_grid_0023_R02B07_G.nc",
-        uri="https://polybox.ethz.ch/index.php/s/RMqNbaeHLD5tDd6/download",
+        uri=f"{DATA_ROOT_URL}/grids/r02b07_global/icon_grid_0023_R02B07_G.nc.tar.gz",
     )
     R19_B07_MCH_LOCAL: Final = GridDescription(
         name="mch_opr_r19b07_icon_ch2",
@@ -118,7 +119,7 @@ class Grids:
             num_edges=426599,
         ),
         file_name="icon_grid_0002_R19B07_mch.nc",
-        uri="https://polybox.ethz.ch/index.php/s/tFQian4aDzTES6c/download",
+        uri=f"{DATA_ROOT_URL}/grids/mch/icon_grid_0002_R19B07_mch.nc.tar.gz",
     )
     MCH_OPR_R04B07_DOMAIN01: Final = GridDescription(
         name="mch_opr_r4b7",
@@ -134,7 +135,7 @@ class Grids:
             num_edges=16209,
         ),
         file_name="mch_opr_r4b7_DOM01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/ZL7LeEDijGCSJGz/download",
+        uri=f"{DATA_ROOT_URL}/grids/mch/mch_opr_r4b7_DOM01.nc.tar.gz",
     )
     MCH_OPR_R19B08_DOMAIN01: Final = GridDescription(
         name="mch_opr_r19b08",
@@ -150,7 +151,7 @@ class Grids:
             num_edges=67096,
         ),
         file_name="domain1_DOM01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/P6XfWcYjnrsNmeX/download",
+        uri=f"{DATA_ROOT_URL}/grids/mch/domain1_DOM01.nc.tar.gz",
     )
     MCH_CH_R04B09_DSL: Final = GridDescription(
         name="mch_ch_r04b09_dsl",
@@ -166,7 +167,7 @@ class Grids:
             num_edges=31558,
         ),
         file_name="grid.nc",
-        uri="https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download",
+        uri=f"{DATA_ROOT_URL}/grids/mch_ch_r04b09_dsl/mch_ch_r04b09_dsl_grids_v1.tar.gz",
     )
     TORUS_100X116_1000M: Final = GridDescription(
         name="torus_100x116_res1000",
@@ -180,7 +181,7 @@ class Grids:
             num_edges=34800,
         ),
         file_name="Torus_Triangles_100x116_1000m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download",
+        uri=f"{DATA_ROOT_URL}/grids/torus/Torus_Triangles_100x116_1000m.nc.tar.gz",
     )
     TORUS_50000x5000: Final = GridDescription(
         name="torus_50000x5000_res500",
@@ -194,7 +195,7 @@ class Grids:
             num_edges=1584,
         ),
         file_name="Torus_Triangles_50000m_x_5000m_res500m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download",
+        uri=f"{DATA_ROOT_URL}/grids/torus/Torus_Triangles_50000m_x_5000m_res500m.nc.tar.gz",
     )
     TORUS_1000X1000_250M: Final = GridDescription(
         name="torus_1000x1000_res250",
@@ -208,12 +209,8 @@ class Grids:
             num_edges=36,
         ),
         file_name="Torus_Triangles_1000m_x_1000m_res250m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/eMDbDbdmKLkDiwp/download",
+        uri=f"{DATA_ROOT_URL}/grids/torus/Torus_Triangles_1000m_x_1000m_res250m.nc.tar.gz",
     )
-
-
-# TODO(msimberg): This is a test bucket. Change to final URL.
-SERIALIZED_DATA_ROOT_URL: Final = "https://rgw.cscs.ch/c2sm:my-test-bucket"
 
 
 @dataclasses.dataclass
