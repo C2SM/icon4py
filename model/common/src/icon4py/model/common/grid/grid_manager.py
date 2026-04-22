@@ -8,6 +8,7 @@
 import functools
 import logging
 import pathlib
+import time
 from types import ModuleType
 from typing import Literal, TypeAlias
 
@@ -614,6 +615,7 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
+    _t0 = time.perf_counter()
     e2c_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)[e2c, :]
     # `flat` includes duplicated e2v vertices (v1, v3), shape (n_edges, 6).
     flat = e2c_c2v.reshape(e2c_c2v.shape[0], -1)
@@ -627,7 +629,9 @@ def _construct_diamond_vertices(
     )  # (n_edges, 6)
     far_indices_pos = array_ns.sort(far_indices_pos, axis=1)[:, :2]
     e2v_far = array_ns.take_along_axis(flat, far_indices_pos, axis=1)
-    return array_ns.hstack((e2v, e2v_far))
+    e2c2v = array_ns.hstack((e2v, e2v_far))
+    _log.warning(f"TIMING: e2c2v took {time.perf_counter() - _t0:.3f}s")
+    return e2c2v
 
 
 def _determine_center_position(

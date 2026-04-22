@@ -289,7 +289,7 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
         # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
+        global_max_vertical_cfl = ta.wpfloat(solve_nonhydro_diagnostic_state.max_vertical_cfl[()])
 
         if (
             global_max_vertical_cfl
@@ -485,6 +485,7 @@ class Icon4pyDriver:
 
 # TODO (Chia Rui): this should be replaced by real configuration reader when the configuration PR is merged
 def _read_config(
+    time_step: float,
     output_path: pathlib.Path,
     enable_profiling: bool,
 ) -> tuple[
@@ -530,7 +531,7 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=300.0),
+        dtime=datetime.timedelta(seconds=time_step),
         end_date=datetime.datetime(1, 1, 1, 12, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
@@ -549,6 +550,7 @@ def _read_config(
 
 
 def initialize_driver(
+    time_step: float,
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
@@ -601,6 +603,7 @@ def initialize_driver(
     _t0 = time.perf_counter()
     driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
         _read_config(
+            time_step=time_step,
             output_path=output_path,
             enable_profiling=False,
         )

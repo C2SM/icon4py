@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 
 def main(
+    time_step: Annotated[float, typer.Option(help="Time step for the model integration in seconds.")],
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
@@ -51,6 +52,7 @@ def main(
     """
 
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+        time_step=time_step,
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,
