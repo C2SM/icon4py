@@ -297,6 +297,7 @@ def construct_diffusion_config(
             smagorinski_scaling_factor=0.025,
             hdiff_temp=True,
             n_substeps=ndyn_substeps,
+            iforcing=diffusion.ForcingType.AES,
         )
     elif experiment == Experiments.GAUSS3D:
         return diffusion.DiffusionConfig(
