@@ -602,7 +602,7 @@ def initialize_driver(
     driver_utils.configure_logging(
         logging_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
-        process_procs=process_props,
+        process_props=process_props,
     )
 
     if process_props.rank == 0:
