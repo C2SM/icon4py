@@ -1,4 +1,5 @@
 import re
+import sys
 
 keywords = (
     "zd_intcoef",
@@ -27,8 +28,11 @@ def read_log_and_extract_timing(file_name: str) -> list[float | None]:
                 print(f"{keyword}: not found in log file")
     return timing_list
 
-ref_timing = read_log_and_extract_timing("log_file_ref2.txt")
-vec_timing = read_log_and_extract_timing("log_file3.txt")
+file_name1 = sys.argv[1]
+file_name2 = sys.argv[2]
+
+ref_timing = read_log_and_extract_timing(file_name1)
+vec_timing = read_log_and_extract_timing(file_name2)
 
 for keyword, ref, vec in zip(keywords, ref_timing, vec_timing):
     if ref is not None:
