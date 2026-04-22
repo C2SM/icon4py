@@ -110,9 +110,7 @@ class GridGeometry(factory.FieldSource):
         self._decomposition_info = decomposition_info
         self._attrs = metadata
         self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
-        self._cell_domain = h_grid.domain(dims.CellDim)
         self._edge_domain = h_grid.domain(dims.EdgeDim)
-        self._vertex_domain = h_grid.domain(dims.VertexDim)
         self._exchange = exchange
         self._global_reductions = global_reductions
         log.info(
