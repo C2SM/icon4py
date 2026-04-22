@@ -46,6 +46,7 @@ import contextlib
 import enum
 import functools
 import logging
+import time
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
@@ -239,7 +240,13 @@ class FieldSource(GridProvider, Protocol):
                         f"Field {field_name} not provided by f{provider.func.__name__}."
                     )
 
+                t0 = time.perf_counter()
                 buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
+                elapsed = time.perf_counter() - t0
+                if elapsed > 0.01:
+                    log.warning(
+                        f"TIMING: {field_name} took {elapsed:.3f}s (provider: {provider.__class__.__name__})"
+                    )
                 return (
                     buffer
                     if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)

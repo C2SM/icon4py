@@ -10,6 +10,7 @@ import datetime
 import functools
 import logging
 import pathlib
+import time
 import types
 from collections.abc import Callable
 
@@ -530,7 +531,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        end_date=datetime.datetime(1, 1, 1, 12, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
@@ -597,43 +598,54 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
+    _t0 = time.perf_counter()
     driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
         _read_config(
             output_path=output_path,
             enable_profiling=False,
         )
     )
+    log.warning(f"TIMER: reading config completed in {time.perf_counter() - _t0:.3f}s")
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
+    _t0 = time.perf_counter()
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
         global_reductions=global_reductions,
     )
+    log.warning(f"TIMER: initializing grid manager completed in {time.perf_counter() - _t0:.3f}s")
 
     log.info("creating the decomposition info")
 
+    _t0 = time.perf_counter()
     decomposition_info = driver_utils.create_decomposition_info(
         grid_manager=grid_manager,
         allocator=allocator,
     )
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+    log.warning(f"TIMER: creating decomposition info completed in {time.perf_counter() - _t0:.3f}s")
 
     log.info("initializing the vertical grid")
+    _t0 = time.perf_counter()
     vertical_grid = driver_utils.create_vertical_grid(
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
     )
+    log.warning(f"TIMER: initializing vertical grid completed in {time.perf_counter() - _t0:.3f}s")
 
     log.info("initializing the JW topography")
+    _t0 = time.perf_counter()
     cell_topography = topography.jablonowski_williamson(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
         u0=35.0,
         array_ns=data_alloc.import_array_ns(allocator=allocator),
     )
+    log.warning(f"TIMER: initializing JW topography completed in {time.perf_counter() - _t0:.3f}s")
 
     log.info("initializing the static-field factories")
+    _t0 = time.perf_counter()
     static_field_factories = driver_utils.create_static_field_factories(
         grid_manager=grid_manager,
         decomposition_info=decomposition_info,
@@ -641,8 +653,12 @@ def initialize_driver(
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
     )
+    log.warning(
+        f"TIMER: initializing static-field factories completed in {time.perf_counter() - _t0:.3f}s"
+    )
 
     log.info("initializing granules")
+    _t0 = time.perf_counter()
     (
         diffusion_granule,
         solve_nonhydro_granule,
@@ -662,6 +678,9 @@ def initialize_driver(
         ),
         backend=backend,
     )
+    log.warning(f"TIMER: initializing granules completed in {time.perf_counter() - _t0:.3f}s")
+
+    _t0 = time.perf_counter()
     icon4py_driver = Icon4pyDriver(
         config=driver_config,
         backend=backend,
@@ -672,5 +691,6 @@ def initialize_driver(
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
     )
+    log.warning(f"TIMER: constructing Icon4pyDriver completed in {time.perf_counter() - _t0:.3f}s")
 
     return icon4py_driver
