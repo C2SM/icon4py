@@ -24,11 +24,11 @@ def compute_directional_derivative_on_cells(
     Compute directional derivative of a cell centered variable with respect to
     direction normal to triangle edge.
     """
-    result = array_ns.zeros((num_edges,))
-    result[lb_e:ub_e] = (
+    directional_derivative_on_cells = array_ns.zeros((num_edges,))
+    directional_derivative_on_cells[lb_e:ub_e] = (
         cell_field[e2c[lb_e:ub_e, 1]] - cell_field[e2c[lb_e:ub_e, 0]]
     ) * inv_dual_edge_length[lb_e:ub_e]
-    return result
+    return directional_derivative_on_cells
 
 
 def interpolate_edges_to_cell(
