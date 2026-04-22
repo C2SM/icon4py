@@ -9,6 +9,7 @@
 from typing import Protocol, runtime_checkable
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -31,11 +32,6 @@ class Decomposer(Protocol):
 class MetisDecomposer(Decomposer):
     """
     A simple decomposer using METIS for partitioning a grid topology.
-
-    We use the simple pythonic interface to pymetis: just passing the adjacency matrix, which for ICON is
-    the full grid C2E2C neigbhor table.
-    if more control is needed (for example by using weights we need to switch to the C like interface)
-    https://documen.tician.de/pymetis/functionality.html
     """
 
     def __call__(
@@ -56,13 +52,27 @@ class MetisDecomposer(Decomposer):
 
         import pymetis  # type: ignore [import-untyped]
 
+        adjacency_matrix = data_alloc.as_numpy(adjacency_matrix)
+
         # Invalid indices are not allowed here. Metis will segfault or fail if
         # there are any invalid indices in the adjacency matrix.
         assert (adjacency_matrix >= 0).all()
 
         # The partitioning is done on all ranks, and this assumes that the
         # partitioning is deterministic.
-        _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
+        #
+        # Passes the adjacency matrix in CSR format (xadj/adjncy) to pymetis,
+        # which avoids Python-side iteration and copies in pymetis._prepare_graph.
+        #
+        # xadj is an array [0, 3, 6, 9, ...] where xadj[i] is the start index of
+        # vertex i's neighbors, xadj[i+1] is the end index. Each cell always has
+        # 3 neighbor cells (in global/torus grids).
+        _, partition_index = pymetis.part_graph(
+            nparts=num_partitions,
+            xadj=np.arange(adjacency_matrix.shape[0] + 1, dtype=np.int32)
+            * adjacency_matrix.shape[1],
+            adjncy=adjacency_matrix.ravel(),
+        )
         return data_alloc.array_namespace(adjacency_matrix).array(partition_index)
 
 
