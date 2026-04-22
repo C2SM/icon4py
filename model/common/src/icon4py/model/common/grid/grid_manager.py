@@ -8,6 +8,7 @@
 import functools
 import logging
 import pathlib
+import time
 from types import ModuleType
 from typing import Literal, TypeAlias
 
@@ -614,6 +615,7 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
+    _t0 = time.perf_counter()
     dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
@@ -622,6 +624,7 @@ def _construct_diamond_vertices(
     # TODO(halungge): vectorize speed this up?
     for i in range(sh[0]):
         far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
+    _log.warning(f"TIMING: e2c2v took {time.perf_counter() - _t0:.3f}s")
     return array_ns.hstack((e2v, far_indices))
 
 
