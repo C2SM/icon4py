@@ -578,7 +578,7 @@ def configure_logging(
 
 
 def get_backend_from_name(
-    backend_name: str | model_backends.BackendLike | None,
+    backend_name: str | model_backends.BackendLike,
 ) -> model_backends.BackendLike:
     if not isinstance(backend_name, str):
         return backend_name
