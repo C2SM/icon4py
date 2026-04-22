@@ -525,7 +525,7 @@ def make_handler(
 def configure_logging(
     logging_level: str,
     print_distributed_debug_msg: bool,
-    process_procs: decomposition_defs.ProcessProperties | None = None,
+    process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
@@ -547,7 +547,7 @@ def configure_logging(
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
 
     log_filter = decomposition_defs.ParallelLogger(
-        process_procs, print_distributed_debug_msg=print_distributed_debug_msg
+        process_props, print_distributed_debug_msg=print_distributed_debug_msg
     )
     formatter = _InfoFormatter(
         style="{",
