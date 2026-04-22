@@ -103,7 +103,6 @@ embedded_broken_fields = {
 }
 
 
-# TODO (jcanton,msimberg): merge these two helpers and the run_grid_managers
 def _make_single_rank_geometry(
     grid_file: pathlib.Path,
     backend: gtx_typing.Backend | None,
