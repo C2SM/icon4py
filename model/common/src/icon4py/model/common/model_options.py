@@ -61,6 +61,9 @@ def get_dace_options(
         # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
         # All threads on Cell dimension maximizes coalescing on MI300A.
         optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        # Setting a block size of (256,1,1) for 1D maps doesn't give a significant
+        # speedup on MI300A but it doesn't hurt either
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if not is_rocm_device:
