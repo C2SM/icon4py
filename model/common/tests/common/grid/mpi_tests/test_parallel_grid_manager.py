@@ -108,7 +108,7 @@ def _compare_geometry_fields_single_multi_rank(
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    if grid_description.params.limited_area:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):

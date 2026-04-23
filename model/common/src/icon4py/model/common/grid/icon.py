@@ -8,7 +8,6 @@
 import dataclasses
 import logging
 from collections.abc import Callable
-from typing import Final, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -39,71 +38,69 @@ class GridSubdivision:
     level: int
 
 
-@dataclasses.dataclass(kw_only=True)
-class GridShape:
-    geometry_type: base.GeometryType
-    subdivision: GridSubdivision | None
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class IcosahedronParams:
+    subdivision: GridSubdivision
+    radius: float = constants.EARTH_RADIUS
 
-    def __init__(
-        self,
-        geometry_type: base.GeometryType | None = None,
-        subdivision: GridSubdivision | None = None,
-    ) -> None:
-        if geometry_type is None and subdivision is None:
-            raise ValueError("Either geometry_type or subdivision must be provided")
-        match geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                if subdivision is None:
-                    raise ValueError("Subdivision must be provided for icosahedron geometry type")
-                if subdivision.root < 1 or subdivision.level < 0:
-                    raise ValueError(
-                        f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
-                    )
-            case base.GeometryType.TORUS:
-                subdivision = None
+    def __post_init__(self) -> None:
+        if self.subdivision is None:
+            raise ValueError("subdivision must be provided")
+        if self.subdivision.root < 1 or self.subdivision.level < 0:
+            raise ValueError(
+                f"root must be >= 1 and level must be >= 0, got {self.subdivision.root=} and {self.subdivision.level=}"
+            )
 
-        self.geometry_type = geometry_type
-        self.subdivision = subdivision
+    @property
+    def geometry_type(self) -> base.GeometryType:
+        return base.GeometryType.ICOSAHEDRON
 
 
-_T = TypeVar("_T")
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class TorusParams:
+    domain_length: float
+    domain_height: float
+
+    @property
+    def geometry_type(self) -> base.GeometryType:
+        return base.GeometryType.TORUS
+
+
+GridParams = IcosahedronParams | TorusParams
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
-    grid_shape: Final[GridShape | None] = None
-    radius: float | None = constants.EARTH_RADIUS
-    domain_length: float | None = None
-    domain_height: float | None = None
-    num_cells: int | None = None
-
-    def __post_init__(self) -> None:
-        if self.geometry_type is not None:
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    object.__setattr__(self, "domain_length", None)
-                    object.__setattr__(self, "domain_height", None)
-                    if self.radius is None:
-                        object.__setattr__(self, "radius", constants.EARTH_RADIUS)
-                case base.GeometryType.TORUS:
-                    object.__setattr__(self, "radius", None)
+    grid_params: GridParams
 
     @property
-    def geometry_type(self) -> base.GeometryType | None:
-        return self.grid_shape.geometry_type if self.grid_shape else None
+    def geometry_type(self) -> base.GeometryType:
+        return self.grid_params.geometry_type
+
+    @property
+    def radius(self) -> float | None:
+        return self.grid_params.radius if isinstance(self.grid_params, IcosahedronParams) else None
+
+    @property
+    def domain_length(self) -> float | None:
+        return self.grid_params.domain_length if isinstance(self.grid_params, TorusParams) else None
+
+    @property
+    def domain_height(self) -> float | None:
+        return self.grid_params.domain_height if isinstance(self.grid_params, TorusParams) else None
 
     @property
     def subdivision(self) -> GridSubdivision | None:
-        return self.grid_shape.subdivision if self.grid_shape else None
-
-
-def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
-    return 20 * subdivision.root**2 * 4**subdivision.level
+        return (
+            self.grid_params.subdivision
+            if isinstance(self.grid_params, IcosahedronParams)
+            else None
+        )
 
 
 @dataclasses.dataclass(frozen=True)
 class IconGrid(base.Grid):
-    global_properties: GlobalGridParams = dataclasses.field(default=None, kw_only=True)
+    global_properties: GlobalGridParams | None = dataclasses.field(default=None, kw_only=True)
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
@@ -160,7 +157,7 @@ def icon_grid(
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],
     end_index: Callable[[h_grid.Domain], gtx.int32],
-    global_properties: GlobalGridParams,
+    global_properties: GlobalGridParams | None = None,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed

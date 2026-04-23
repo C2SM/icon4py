@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition,
@@ -409,7 +409,7 @@ class GridManager:
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
         global_size = self._read_full_grid_size()
-        global_params = self._construct_global_params(allocator, global_size, geometry_type)
+        global_params = self._construct_global_params(allocator, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         if limited_area and not run_properties.is_single_rank():
@@ -495,7 +495,6 @@ class GridManager:
     def _construct_global_params(
         self,
         allocator: gtx_typing.Allocator,
-        global_size: base.HorizontalGridSize,
         geometry_type: base.GeometryType,
     ):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
@@ -504,16 +503,19 @@ class GridManager:
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-        return icon.GlobalGridParams(
-            grid_shape=icon.GridShape(
-                geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            ),
-            radius=sphere_radius,
-            domain_length=domain_length,
-            domain_height=domain_height,
-            num_cells=global_size.num_cells,
-        )
+        match geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                grid_params = icon.IcosahedronParams(
+                    subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+                    radius=sphere_radius if sphere_radius is not None else constants.EARTH_RADIUS,
+                )
+            case base.GeometryType.TORUS:
+                grid_params = icon.TorusParams(
+                    domain_length=domain_length,
+                    domain_height=domain_height,
+                )
+
+        return icon.GlobalGridParams(grid_params=grid_params)
 
     def _read_full_grid_size(self) -> base.HorizontalGridSize:
         """

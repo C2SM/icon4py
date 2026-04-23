@@ -610,19 +610,16 @@ def _create_grid_global_params(
     match grid_geometry_type:
         case base.GeometryType.ICOSAHEDRON:
             global_grid_params = icon_grid.GlobalGridParams(
-                grid_shape=icon_grid.GridShape(
-                    geometry_type=grid_geometry_type,
+                grid_params=icon_grid.IcosahedronParams(
                     subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
                 ),
             )
-    match grid_geometry_type:
         case base.GeometryType.TORUS:
             global_grid_params = icon_grid.GlobalGridParams(
-                grid_shape=icon_grid.GridShape(
-                    geometry_type=grid_geometry_type,
+                grid_params=icon_grid.TorusParams(
+                    domain_length=grid.getncattr("domain_length"),
+                    domain_height=grid.getncattr("domain_height"),
                 ),
-                domain_length=grid.getncattr("domain_length"),
-                domain_height=grid.getncattr("domain_height"),
             )
 
     grid.close()
