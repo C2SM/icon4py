@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Analyze C2E scatter and test edge reordering impact.
 
 Usage:
@@ -49,12 +57,12 @@ def measure_scatter(c2e, label, warp_size=32, start_cell=4740):
     wasted_bytes = cls.mean() * 64 - useful_bytes
 
     print(f"\n=== {label} ===")
-    print(f"Edge index spread per warp (32 cells):")
+    print("Edge index spread per warp (32 cells):")
     print(f"  min:    {spreads.min():>8,}")
     print(f"  median: {int(np.median(spreads)):>8,}")
     print(f"  mean:   {int(spreads.mean()):>8,}")
     print(f"  max:    {spreads.max():>8,}")
-    print(f"Cache lines per warp (3 neighbors, 96 loads):")
+    print("Cache lines per warp (3 neighbors, 96 loads):")
     print(f"  min:    {cls.min():>6}")
     print(f"  median: {int(np.median(cls)):>6}")
     print(f"  mean:   {cls.mean():>6.1f}")
@@ -134,7 +142,9 @@ def reorder_edges_by_cell_block(c2e, e2c, num_edges, block_size=32):
 
 
 def main():
-    grid_file = sys.argv[1] if len(sys.argv) > 1 else "testdata/grids/mch_opr_r19b08/domain1_DOM01.nc"
+    grid_file = (
+        sys.argv[1] if len(sys.argv) > 1 else "testdata/grids/mch_opr_r19b08/domain1_DOM01.nc"
+    )
     print(f"Grid: {grid_file}")
 
     c2e, e2c, num_cells, num_edges = load_grid(grid_file)
@@ -156,19 +166,25 @@ def main():
     print("\n" + "=" * 70)
     print("SUMMARY: Potential bandwidth savings from edge reordering")
     print("=" * 70)
-    _, cls_orig = measure_scatter.__wrapped__(c2e, "orig") if hasattr(measure_scatter, "__wrapped__") else (None, None)
+    _, cls_orig = (
+        measure_scatter.__wrapped__(c2e, "orig")
+        if hasattr(measure_scatter, "__wrapped__")
+        else (None, None)
+    )
     # Re-measure to get numbers
     s1, c1 = measure_scatter(c2e, "Original (recap)")
     s2, c2 = measure_scatter(c2e_reordered1, "Min-cell reorder (recap)")
     s3, c3 = measure_scatter(c2e_reordered2, "Block-32 reorder (recap)")
 
-    print(f"\nFor the hottest kernel (map_100_1, 240 μs):")
+    print("\nFor the hottest kernel (map_100_1, 240 μs):")
     print(f"C2E loads: 3 per cell, 39788 cells x 79 K-levels = {39788 * 79 * 3:,} total")
     for label, cls in [("Original", c1), ("Min-cell", c2), ("Block-32", c3)]:
         total_cls = cls.sum() * 79  # scale by K-levels (each warp does 1 K-level in the 32x8 block)
         total_bytes = total_cls * 64
         useful = 39788 * 79 * 3 * 8
-        print(f"  {label:12s}: {total_bytes / 1e6:>7.1f} MB HBM for C2E ({useful / total_bytes * 100:.1f}% useful)")
+        print(
+            f"  {label:12s}: {total_bytes / 1e6:>7.1f} MB HBM for C2E ({useful / total_bytes * 100:.1f}% useful)"
+        )
 
 
 if __name__ == "__main__":

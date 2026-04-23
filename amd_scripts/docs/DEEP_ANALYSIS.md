@@ -10,6 +10,7 @@ verified 2026-04-19.
 Re-counted from the compiled GCN assembly
 (`vertically_implicit_solver_at_predictor_step_cuda-hip-amdgcn-amd-amdhsa-gfx942.s`,
 lines 6810-7101 of the current `(256,1,1)` cache):
+
 - 23 × `global_load_dwordx2` (8 bytes each) = 184 bytes/thread
 - 3 × `global_load_dword` (4 bytes, C2E int32 indices) = 12 bytes/thread
 - 4 × `global_store_dwordx2` (8 bytes each) = 32 bytes/thread
@@ -20,14 +21,14 @@ via the kernel's `hipLaunchKernel` call in the compiled HIP source).
 
 Total demand traffic: 228 bytes × 3,156,224 threads = **720 MB**
 
-| Metric | Value |
-|--------|-------|
-| Kernel time (rocprof-compute multi-pass) | 187 μs |
-| Kernel time (clean rocprofv3) | 166 μs |
-| Total demand bytes per invocation | **720 MB** |
-| **Demand BW** (assembly-counted, on 187 μs) | **3850 GB/s (105% of 3668 GB/s memory peak)** |
-| **HBM moved** (rocprof-compute analyze §4.1.9) | **454 MB** (= 2.43 TB/s × 187 μs) |
-| **L2+L1 absorbs** | (720 − 454) / 720 = **37%** |
+| Metric                                         | Value                                         |
+| ---------------------------------------------- | --------------------------------------------- |
+| Kernel time (rocprof-compute multi-pass)       | 187 μs                                        |
+| Kernel time (clean rocprofv3)                  | 166 μs                                        |
+| Total demand bytes per invocation              | **720 MB**                                    |
+| **Demand BW** (assembly-counted, on 187 μs)    | **3850 GB/s (105% of 3668 GB/s memory peak)** |
+| **HBM moved** (rocprof-compute analyze §4.1.9) | **454 MB** (= 2.43 TB/s × 187 μs)             |
+| **L2+L1 absorbs**                              | (720 − 454) / 720 = **37%**                   |
 
 The demand BW exceeds the raw HBM peak (3.85 TB/s vs 3.47 TB/s) — but this is
 **demand**, not HBM-side bytes. The 37% absorption by the cache hierarchy is what
@@ -45,7 +46,7 @@ kernel its head room: pushing 720 MB of demand through 454 MB of HBM traffic.
 Per thread: 23 double reads (184 bytes) + 3 int32 C2E indices (12 bytes) +
 4 double writes (32 bytes) = 228 bytes total.
 
-- 5 arrays read at both [cell,k] and [cell,k+1]: vertical stencil pattern
+- 5 arrays read at both [cell,k] and \[cell,k+1\]: vertical stencil pattern
 - 6 arrays at [cell,k] only: coalesced
 - 1 array at [cell] only: broadcast across K
 - 3 C2E indirect reads of mass_flux via connectivity table
@@ -56,12 +57,12 @@ Per thread: 23 double reads (184 bytes) + 3 int32 C2E indices (12 bytes) +
 
 Measured C2E edge index spread for 32 consecutive cells (one warp):
 
-| Metric | Original ordering | Reordered (min-cell) |
-|--------|-------------------|----------------------|
-| Median spread | 39,881 | 3,612 |
-| Cache lines per warp | 14 (mean) | 13.4 (mean) |
-| Cache line utilization | **85.7%** | 89.4% |
-| Bandwidth amplification | 1.17x | 1.12x |
+| Metric                  | Original ordering | Reordered (min-cell) |
+| ----------------------- | ----------------- | -------------------- |
+| Median spread           | 39,881            | 3,612                |
+| Cache lines per warp    | 14 (mean)         | 13.4 (mean)          |
+| Cache line utilization  | **85.7%**         | 89.4%                |
+| Bandwidth amplification | 1.17x             | 1.12x                |
 
 Despite edge indices spanning 30K-40K range, neighboring cells **share edges** on the
 icosahedral grid, so the 96 loads per warp (32 cells × 3 neighbors) hit only ~14 cache lines.
@@ -129,7 +130,7 @@ Same HBM traffic, plus extra LDS round-trip. No benefit because there is no data
    fill confirms reuse exists). A custom kernel could `__shfl` indices across lanes, have
    each unique edge loaded once, then distribute values back. **This would reduce vL1D
    request count, not HBM traffic** — the L1 already catches most of the reuse (72% L1 hit).
-   Predicted impact: <2% wall-clock, same caveat as C2E reordering. Requires a hand-written
+   Predicted impact: \<2% wall-clock, same caveat as C2E reordering. Requires a hand-written
    HIP kernel, not a simple patch.
 
 2. **Cell-broadcast values** — `geofac_div[cell]` is read 3 times per cell. Currently each
@@ -147,19 +148,18 @@ optimizations that reduce HBM traffic (e.g., fusing intermediates) will move wal
 ## Block size effect on MI300A — verified A/B (32,8) vs (256,1,1)
 
 Same gt4py, same build cache (separate dirs to force recompile), only block size
-differs. Both runs use the patched `extract_pmc.py` (which uses `(TCC_READ +
-TCC_WRITE) × 64` for HBM BW and `TCC_HIT/TCC_REQ` for L2 hit, verified to match
+differs. Both runs use the patched `extract_pmc.py` (which uses `(TCC_READ + TCC_WRITE) × 64` for HBM BW and `TCC_HIT/TCC_REQ` for L2 hit, verified to match
 rocprof-compute analyze §4.1.9 and §2.1.21 within 3% on map_100_fieldop_1).
 
-| Kernel | (32,8) Dur | (32,8) HBM BW | (32,8) L2 hit | (256,1,1) Dur | (256,1,1) HBM BW | (256,1,1) L2 hit |
-|--------|-----------|---------------|---------------|---------------|-------------------|------------------|
-| map_100_1 | 247.6 μs | 1.73 TB/s | **16.8%** | 187.2 μs (-24%) | 2.35 TB/s | **47.4%** |
-| map_111_1 | 214.2 μs | 1.83 TB/s | 16.4% | 167.6 μs (-22%) | 2.25 TB/s | 42.7% |
-| map_60 | 148.0 μs | 1.82 TB/s | 16.5% | 124.9 μs (-16%) | 2.24 TB/s | 42.8% |
-| map_0 | 62.9 μs | 2.15 TB/s | 19.7% | 51.9 μs (-17%) | 3.12 TB/s | 49.8% |
-| map_31 | 50.0 μs | 1.75 TB/s | 12.7% | 39.3 μs (-21%) | 2.01 TB/s | 32.3% |
-| map_85 (scan, 1D) | 58.6 μs | 1.98 TB/s | 22.6% | 60.4 μs | 1.92 TB/s | 22.6% |
-| map_90 (scan, 1D) | 26.5 μs | 2.25 TB/s | 22.6% | 26.2 μs | 2.28 TB/s | 22.6% |
+| Kernel            | (32,8) Dur | (32,8) HBM BW | (32,8) L2 hit | (256,1,1) Dur   | (256,1,1) HBM BW | (256,1,1) L2 hit |
+| ----------------- | ---------- | ------------- | ------------- | --------------- | ---------------- | ---------------- |
+| map_100_1         | 247.6 μs   | 1.73 TB/s     | **16.8%**     | 187.2 μs (-24%) | 2.35 TB/s        | **47.4%**        |
+| map_111_1         | 214.2 μs   | 1.83 TB/s     | 16.4%         | 167.6 μs (-22%) | 2.25 TB/s        | 42.7%            |
+| map_60            | 148.0 μs   | 1.82 TB/s     | 16.5%         | 124.9 μs (-16%) | 2.24 TB/s        | 42.8%            |
+| map_0             | 62.9 μs    | 2.15 TB/s     | 19.7%         | 51.9 μs (-17%)  | 3.12 TB/s        | 49.8%            |
+| map_31            | 50.0 μs    | 1.75 TB/s     | 12.7%         | 39.3 μs (-21%)  | 2.01 TB/s        | 32.3%            |
+| map_85 (scan, 1D) | 58.6 μs    | 1.98 TB/s     | 22.6%         | 60.4 μs         | 1.92 TB/s        | 22.6%            |
+| map_90 (scan, 1D) | 26.5 μs    | 2.25 TB/s     | 22.6%         | 26.2 μs         | 2.28 TB/s        | 22.6%            |
 
 Sources: `workloads/rcu_amd_baseline_32x8_solver/MI300A_A1/pmc_perf.csv` and
 `workloads/rcu_amd_256x1_solver/MI300A_A1/pmc_perf.csv`. Block size verified by
@@ -169,6 +169,7 @@ rocprof-compute multi-pass profiling include instrumentation overhead; clean
 rocprofv3 numbers are lower.
 
 **Verified findings:**
+
 - Heavy 2D kernels (map_100_1, map_111_1, map_60, map_0, map_31): **L2 hit rate
   triples** (15-20% → 32-50%) with `(256,1,1)`. Cell-consecutive threads on the
   same CU share cache lines.
@@ -179,22 +180,24 @@ rocprofv3 numbers are lower.
 - 1D / scan kernels (map_85, map_90, map_91 etc.): unchanged as expected.
 
 GT4Py Timer A/B at the full-solver level (1000 runs each, same MI300A, current gt4py):
+
 - (32,8) baseline: median **753 μs**
-- (256,1,1):       median **604 μs**
+- (256,1,1): median **604 μs**
 - Speedup: **−19.8% (~20%)** ✓ matches the doc's headline claim.
 
 ## Cross-platform memory hierarchy (MI300A vs GH200) — fully verified A/B
 
 For map_100_fieldop_1 (the hottest kernel), all four configurations directly measured.
 
-| Platform | Block | Duration | DRAM/HBM moved | DRAM/HBM BW | % of HBM peak | L1 / vL1D hit | Absorbed |
-|---|---|---|---|---|---|---|---|
-| **MI300A** | `(32,8)` | **247.6 μs** | **428 MB** (= 1.73 × 247.6) | **1.73 TB/s** | **50%** of 3.47 TB/s | TBD (rocprof-compute analyze run not done for this dispatch) | **41%** |
-| **MI300A** | `(256,1,1)` | 187 μs (mp) / 166 μs (rocprofv3) | **454 MB** | **2.43 TB/s** | **70%** of 3.47 TB/s | vL1D **72%** | 37% |
-| **GH200** | `(32,8)` | **121.0 μs** | **431 MB** | **3.56 TB/s** | **89%** of 4 TB/s | **36.5%** | 40% |
-| **GH200** | `(256,1,1)` | **115.6 μs** (-4.5%) | **412 MB** (-4.4%) | **3.57 TB/s** | **89%** of 4 TB/s | **13.1%** ⚠️ | 43% |
+| Platform   | Block       | Duration                         | DRAM/HBM moved              | DRAM/HBM BW   | % of HBM peak        | L1 / vL1D hit                                                | Absorbed |
+| ---------- | ----------- | -------------------------------- | --------------------------- | ------------- | -------------------- | ------------------------------------------------------------ | -------- |
+| **MI300A** | `(32,8)`    | **247.6 μs**                     | **428 MB** (= 1.73 × 247.6) | **1.73 TB/s** | **50%** of 3.47 TB/s | TBD (rocprof-compute analyze run not done for this dispatch) | **41%**  |
+| **MI300A** | `(256,1,1)` | 187 μs (mp) / 166 μs (rocprofv3) | **454 MB**                  | **2.43 TB/s** | **70%** of 3.47 TB/s | vL1D **72%**                                                 | 37%      |
+| **GH200**  | `(32,8)`    | **121.0 μs**                     | **431 MB**                  | **3.56 TB/s** | **89%** of 4 TB/s    | **36.5%**                                                    | 40%      |
+| **GH200**  | `(256,1,1)` | **115.6 μs** (-4.5%)             | **412 MB** (-4.4%)          | **3.57 TB/s** | **89%** of 4 TB/s    | **13.1%** ⚠️                                                 | 43%      |
 
 **Provenance:**
+
 - Demand bytes (720 MB): re-counted from GCN assembly
   (`vertically_implicit_solver_at_predictor_step_cuda-hip-amdgcn-amd-amdhsa-gfx942.s`,
   lines 6810-7101): 23 × `global_load_dwordx2` + 3 × `global_load_dword` + 4 ×
@@ -210,6 +213,7 @@ For map_100_fieldop_1 (the hottest kernel), all four configurations directly mea
 - GH200 L1 hit rates from `l1tex__t_sector_hit_rate.pct`.
 
 **Verified cross-platform findings:**
+
 - **GH200 saturates HBM at both block sizes (89% of 4 TB/s peak).** It's hardware-bandwidth-bound.
 - **GH200 (256,1,1) is ~5% faster than (32,8)**: 121 → 116 μs, 431 → 412 MB DRAM.
   L1 hit drops 36.5% → 13.1%, but **L2 hit jumps 34.9% → 48.6%** (verified
@@ -232,21 +236,22 @@ adds instrumentation overhead; clean rocprofv3 reports 166 μs.)
 The hottest kernel — 27% of total kernel time. All three platform/block combos
 verified 2026-04-20.
 
-| Metric | MI300A `(256,1,1)` | GH200 `(32,8)` | GH200 `(256,1,1)` |
-|--------|--------------------|--------------------|--------------------|
-| Duration | 187 μs (rocprof-compute) / 166 μs (rocprofv3) | 121 μs | 116 μs |
-| **HBM-side BW** | **2.43 TB/s** (70% of 3.47 TB/s peak) | 3.56 TB/s (89% of 4 TB/s peak) | 3.57 TB/s (89% of 4 TB/s peak) |
-| **DRAM bytes** | 454 MB (= 2.43 × 187) | 432 MB | 413 MB (-4%) |
-| L2 hit rate | **47.5%** (rocprof-compute §2.1.21) | **34.9%** (computed from `lts` hit/miss counters) | **48.6%** (same — jumps with (256,1,1) to compensate for L1 drop) |
-| **L1 hit rate** | **vL1D 72.4%** (rocprof-compute §2.1.19) | 36.5% (`l1tex__t_sector_hit_rate.pct`) | **13.1%** ⚠️ (drops with (256,1,1)) |
-| Coalescing / sector util | vL1D coalescing **27% of peak** (§16.1.3) | 88.5% bytes/sector util on global loads | 88.5% (unchanged) |
-| **IPC** | **0.24** (4.87% of peak) | 0.28 inst/cycle | 0.29 inst/cycle |
-| **FP64 utilization** | 1.64% of peak (§2.1.0 VALU) | 8.69% of peak | 9.44% of peak |
-| Theoretical occupancy | 8 waves/SIMD (max) | 62.5% (10/16) — register-limited | (same) |
-| Top stall reason | vL1D stalled on L2 data 48% (§16.2.0) | 84.3% L1TEX scoreboard | (same) |
-| L2-Fabric Read Latency | **1440 cycles** (§2.1.25) | n/a equivalent | n/a equivalent |
+| Metric                   | MI300A `(256,1,1)`                            | GH200 `(32,8)`                                    | GH200 `(256,1,1)`                                                 |
+| ------------------------ | --------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------- |
+| Duration                 | 187 μs (rocprof-compute) / 166 μs (rocprofv3) | 121 μs                                            | 116 μs                                                            |
+| **HBM-side BW**          | **2.43 TB/s** (70% of 3.47 TB/s peak)         | 3.56 TB/s (89% of 4 TB/s peak)                    | 3.57 TB/s (89% of 4 TB/s peak)                                    |
+| **DRAM bytes**           | 454 MB (= 2.43 × 187)                         | 432 MB                                            | 413 MB (-4%)                                                      |
+| L2 hit rate              | **47.5%** (rocprof-compute §2.1.21)           | **34.9%** (computed from `lts` hit/miss counters) | **48.6%** (same — jumps with (256,1,1) to compensate for L1 drop) |
+| **L1 hit rate**          | **vL1D 72.4%** (rocprof-compute §2.1.19)      | 36.5% (`l1tex__t_sector_hit_rate.pct`)            | **13.1%** ⚠️ (drops with (256,1,1))                               |
+| Coalescing / sector util | vL1D coalescing **27% of peak** (§16.1.3)     | 88.5% bytes/sector util on global loads           | 88.5% (unchanged)                                                 |
+| **IPC**                  | **0.24** (4.87% of peak)                      | 0.28 inst/cycle                                   | 0.29 inst/cycle                                                   |
+| **FP64 utilization**     | 1.64% of peak (§2.1.0 VALU)                   | 8.69% of peak                                     | 9.44% of peak                                                     |
+| Theoretical occupancy    | 8 waves/SIMD (max)                            | 62.5% (10/16) — register-limited                  | (same)                                                            |
+| Top stall reason         | vL1D stalled on L2 data 48% (§16.2.0)         | 84.3% L1TEX scoreboard                            | (same)                                                            |
+| L2-Fabric Read Latency   | **1440 cycles** (§2.1.25)                     | n/a equivalent                                    | n/a equivalent                                                    |
 
 **Key observations from the new GH200 data:**
+
 - **L1 hit rate is ~3× lower at (256,1,1) than (32,8) on GH200** (13.1% vs 36.5%).
   But duration is still slightly better at (256,1,1) (-4%) — so the win comes from
   somewhere other than L1 (likely L2/fabric efficiency or wavefront alignment).
@@ -256,7 +261,7 @@ verified 2026-04-20.
 - **Bytes-per-sector utilization on GH200 is high (88.5%)** at both block sizes —
   i.e., when GH200 fetches a 32-byte sector, it uses ~28.3 bytes. Coalescing is
   fine; the issue is just that it has to fetch many more sectors because L1 hit is low.
-| Active threads / wave | 63.97 / 64 (99.95%) | n/a equivalent |
+  | Active threads / wave | 63.97 / 64 (99.95%) | n/a equivalent |
 
 **Provenance:** MI300A from `rocprof-compute analyze -p workloads/rcu_amd_256x1_solver/MI300A_A1/ --dispatch 11 23 35` (averaged across 3 invocations of map_100_fieldop_1). GH200 from `gh200_solver.ncu-rep` opened in ncu UI.
 
@@ -298,6 +303,7 @@ smsp__inst_executed.avg.per_cycle_active \
 ### What this implies for optimization on map_100_fieldop_1
 
 **MI300A — picture is more nuanced than initial read.** The kernel:
+
 - **Hits HBM at 70% of peak**, not 43% as previously claimed. Closer to bandwidth-bound than absorption-bound.
 - **vL1D hit 72%** — good per-CU caching, but...
 - **Coalescing only 27% of peak** ⚠️ — vL1D bandwidth efficiency is poor; lots
@@ -307,12 +313,14 @@ smsp__inst_executed.avg.per_cycle_active \
 - IPC 0.24 (4.87% of peak), VALU 1.64% — confirms compute-light, memory-stall-bound.
 
 **Implication change:** On MI300A, the bottleneck is **not** "vL1D already absorbs everything." It's:
+
 1. Coalescing inefficiency in vL1D (27% of peak coalescing) wastes ~3-4× the bandwidth needed
 2. L2-Fabric read latency 1440 cycles → wave occupancy can't hide it (vL1D stalled on L2 48%)
 
 So **fixing coalescing on the C2E gather should help MI300A too**, contrary to my earlier claim. The mechanism: better coalescing → fewer vL1D requests per element → fewer L2 misses → fewer 1440-cycle stalls.
 
 **GH200 side (HBM 89% saturated):**
+
 - L1 hit rate **drops to 13.1%** with `(256,1,1)` (from 36.5% at (32,8)).
   But duration improves slightly because L2/fabric absorbs the loss.
 - Bytes-per-sector utilization is high (88.5%) at both block sizes — coalescing
@@ -332,14 +340,15 @@ So **fixing coalescing on the C2E gather should help MI300A too**, contrary to m
    confirmed; the open question is whether to gate the option per-platform or apply globally.
 3. **Tune register pressure on GH200** — maxnreg=80 was used in the old gt4py PR;
    verify it's still in effect.
-4. ~~Reorder edge arrays so C2E indices are contiguous~~ — predicted <2% wall-clock
+4. ~~Reorder edge arrays so C2E indices are contiguous~~ — predicted \<2% wall-clock
    impact. The 27% vL1D coalescing wastes vL1D bandwidth (which we have plenty of),
    not HBM bandwidth (which is the actual bottleneck).
 5. ~~LDS staging the existing access pattern~~ — neutral in the synthetic test.
    `__shfl`-based or LDS-based deduplication is a separate untested idea but would
-   target the same vL1D-only metric and is likely also <2%.
+   target the same vL1D-only metric and is likely also \<2%.
 
 Observations (directly measured, no derivations):
+
 - **HBM utilization:** GH200 at 89% of 4 TB/s peak (ncu); MI300A at 70% of
   3.47 TB/s peak (rocprof-compute §4.1.9). GH200 is closer to its HBM ceiling.
 - **GH200 wins ~35% wall-clock** on this kernel (121 μs vs 187 μs).
@@ -354,12 +363,12 @@ here (70%) is directly from rocprof-compute analyze §4.1.9.
 
 **vL1D / per-CU L1 caching on MI300A:**
 
-| Metric | map_100_fieldop_1 (256,1,1) |
-|--------|------------------------------|
-| vL1D Cache Hit Rate | **72.41%** |
-| vL1D Coalescing | **27.03% of peak** ⚠️ |
-| vL1D BW | 16984 Gb/s (27.71% of peak) |
-| vL1D Stalled on L2 Data | 48.31% of cycles |
+| Metric                  | map_100_fieldop_1 (256,1,1) |
+| ----------------------- | --------------------------- |
+| vL1D Cache Hit Rate     | **72.41%**                  |
+| vL1D Coalescing         | **27.03% of peak** ⚠️       |
+| vL1D BW                 | 16984 Gb/s (27.71% of peak) |
+| vL1D Stalled on L2 Data | 48.31% of cycles            |
 
 vL1D catches a lot of repeat reads (72% hit), but **its bandwidth efficiency
 is poor (27% coalescing)** — the C2E gather scatters lanes across edge memory.
@@ -382,13 +391,13 @@ same problem.
 
 ## L2 cache analysis — historical baseline (32,8)
 
-| Kernel | TCC_MISS | TCC_HIT | L2 Hit Rate |
-|--------|----------|---------|-------------|
-| map_100_1 | 58334 | 11402 | 16.4% |
-| map_115_1 | 54419 | 10625 | 16.3% |
-| map_60 | 36256 | 7122 | 16.4% |
-| map_31 (no C2E) | 12466 | 1837 | 12.7% |
-| map_0 (with C2E) | 17730 | 4326 | 19.8% |
+| Kernel           | TCC_MISS | TCC_HIT | L2 Hit Rate |
+| ---------------- | -------- | ------- | ----------- |
+| map_100_1        | 58334    | 11402   | 16.4%       |
+| map_115_1        | 54419    | 10625   | 16.3%       |
+| map_60           | 36256    | 7122    | 16.4%       |
+| map_31 (no C2E)  | 12466    | 1837    | 12.7%       |
+| map_0 (with C2E) | 17730    | 4326    | 19.8%       |
 
 Cross-checked against the fresh (32,8) baseline measured 2026-04-19 (see
 "Block size effect on MI300A" table above): 16.8% / 16.5% / 12.7% / 19.7% — all
@@ -400,20 +409,20 @@ With (256,1,1), L2 hit rate jumps to ~47% on the heavy kernels.
 
 From `pmc_perf.csv` (rocprof-compute hardware counters):
 
-| Kernel | Arch VGPR | Accum VGPR | SGPR | LDS | Scratch | Waves/SIMD |
-|--------|-----------|------------|------|-----|---------|------------|
-| map_100_1 (207 μs) | 56 | 0 | 96 | 0 | 0 | 8 (max) |
-| map_115_1 (183 μs) | 48 | 0 | 96 | 0 | 0 | 8 (max) |
-| map_60 (133 μs) | 36 | 4 | 64 | 0 | 0 | 8 (max) |
-| map_0 (59 μs) | 32 | 0 | 32 | 0 | 0 | 8 (max) |
-| map_31 (41 μs) | 12 | 4 | 32 | 0 | 0 | 8 (max) |
-| map_85 (58 μs) | 68 | 4 | 32 | 0 | 0 | 7 |
-| map_90 (25 μs) | 92 | 4 | 16 | 0 | 0 | 5 |
-| map_91 (9 μs) | 8 | 0 | 32 | 0 | 0 | 8 (max) |
-| map_100_0 (6 μs) | 56 | 0 | 96 | 0 | 0 | 8 (max) |
-| map_115_0 (5 μs) | 48 | 0 | 96 | 0 | 0 | 8 (max) |
-| map_13 (6 μs) | 44 | 4 | 32 | 0 | 0 | 8 (max) |
-| map_35 (4 μs) | 8 | 0 | 32 | 0 | 0 | 8 (max) |
+| Kernel             | Arch VGPR | Accum VGPR | SGPR | LDS | Scratch | Waves/SIMD |
+| ------------------ | --------- | ---------- | ---- | --- | ------- | ---------- |
+| map_100_1 (207 μs) | 56        | 0          | 96   | 0   | 0       | 8 (max)    |
+| map_115_1 (183 μs) | 48        | 0          | 96   | 0   | 0       | 8 (max)    |
+| map_60 (133 μs)    | 36        | 4          | 64   | 0   | 0       | 8 (max)    |
+| map_0 (59 μs)      | 32        | 0          | 32   | 0   | 0       | 8 (max)    |
+| map_31 (41 μs)     | 12        | 4          | 32   | 0   | 0       | 8 (max)    |
+| map_85 (58 μs)     | 68        | 4          | 32   | 0   | 0       | 7          |
+| map_90 (25 μs)     | 92        | 4          | 16   | 0   | 0       | 5          |
+| map_91 (9 μs)      | 8         | 0          | 32   | 0   | 0       | 8 (max)    |
+| map_100_0 (6 μs)   | 56        | 0          | 96   | 0   | 0       | 8 (max)    |
+| map_115_0 (5 μs)   | 48        | 0          | 96   | 0   | 0       | 8 (max)    |
+| map_13 (6 μs)      | 44        | 4          | 32   | 0   | 0       | 8 (max)    |
+| map_35 (4 μs)      | 8         | 0          | 32   | 0   | 0       | 8 (max)    |
 
 Waves/SIMD = min(8, floor(512 / Arch_VGPR)). Hardware max is 8 waves per SIMD on gfx942.
 10 of 12 kernels are already at max occupancy.
