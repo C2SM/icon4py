@@ -43,7 +43,7 @@ from ...fixtures import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    processor_props,
+    process_props,
 )
 
 
@@ -51,11 +51,11 @@ _log = logging.getLogger(__name__)
 
 
 @pytest.mark.mpi(min_size=2)
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props: definitions.ProcessProperties) -> None:
-    assert processor_props.comm
-    assert processor_props.comm_size > 1
-    assert 0 <= processor_props.rank < processor_props.comm_size
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_props(process_props: definitions.ProcessProperties) -> None:
+    assert process_props.comm
+    assert process_props.comm_size > 1
+    assert 0 <= process_props.rank < process_props.comm_size
 
 
 @pytest.mark.mpi(min_size=2)
@@ -65,7 +65,7 @@ def test_props(processor_props: definitions.ProcessProperties) -> None:
         test_defs.Experiments.MCH_CH_R04B09,
     ],
 )
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     ("dim, owned, total"),
     (
@@ -82,11 +82,11 @@ def test_decomposition_info_masked(
     caplog: Any,
     download_ser_data: Any,
     decomposition_info: definitions.DecompositionInfo,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props, sizes=(2,))
-    my_rank = processor_props.rank
+    parallel_helpers.check_comm_size(process_props, sizes=(2,))
+    my_rank = process_props.rank
     all_indices = decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -114,7 +114,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
     assert set(halos_list) | set(owned_list) == set(all_list)
 
 
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "experiment",
     [
@@ -137,12 +137,12 @@ def test_decomposition_info_local_index(
     total: int,
     caplog: Any,
     decomposition_info: definitions.DecompositionInfo,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     experiment: test_defs.Experiment,
 ):
     caplog.set_level(logging.INFO)
-    parallel_helpers.check_comm_size(processor_props, sizes=(2,))
-    my_rank = processor_props.rank
+    parallel_helpers.check_comm_size(process_props, sizes=(2,))
+    my_rank = process_props.rank
     all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -203,26 +203,25 @@ def test_decomposition_info_third_level_is_empty(
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5, 6, 7, 8])
 def test_domain_descriptor_id_are_globally_unique(
     num: int,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
 ) -> None:
-    props = processor_props
-    size = props.comm_size
-    id_gen = definitions.DomainDescriptorIdGenerator(parallel_props=props)
+    size = process_props.comm_size
+    id_gen = definitions.DomainDescriptorIdGenerator(process_props=process_props)
     id1 = id_gen()
-    assert id1 == props.comm_size * props.rank
-    assert id1 < props.comm_size * (props.rank + 2)
+    assert id1 == process_props.comm_size * process_props.rank
+    assert id1 < process_props.comm_size * (process_props.rank + 2)
     ids = []
     ids.append(id1)
     for _ in range(1, num * size):
         next_id = id_gen()
         assert next_id > id1
         ids.append(next_id)
-    all_ids = props.comm.gather(ids, root=0)
-    if props.rank == 0:
+    all_ids = process_props.comm.gather(ids, root=0)
+    if process_props.rank == 0:
         all_ids = np.asarray(all_ids).flatten()
         assert len(all_ids) == size * size * num
         assert len(all_ids) == len(set(all_ids))
@@ -230,14 +229,14 @@ def test_domain_descriptor_id_are_globally_unique(
 
 @pytest.mark.mpi
 @pytest.mark.datatest
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog: Any,
     decomposition_info: definitions.DecompositionInfo,
     icon_grid: icon.IconGrid,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(process_props)
     assert (
         decomposition_info.global_index(
             dim=dims.CellDim, entry_type=definitions.DecompositionInfo.EntryType.ALL
@@ -259,43 +258,42 @@ def test_decomposition_info_matches_gridsize(
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_create_multi_rank_runtime_with_mpi(
     decomposition_info: definitions.DecompositionInfo,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
 ) -> None:
-    props = processor_props
-    exchange = definitions.create_exchange(props, decomposition_info)
-    if props.comm_size > 1:
+    exchange = definitions.create_exchange(process_props, decomposition_info)
+    if process_props.comm_size > 1:
         assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
         assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
-@pytest.mark.parametrize("processor_props", [False], indirect=True)
+@pytest.mark.parametrize("process_props", [False], indirect=True)
 @pytest.mark.mpi_skip()
 def test_create_single_node_runtime_without_mpi(
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
 ) -> None:
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
     assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_exchange_on_dummy_data(
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
     grid_savepoint: serialbox.IconGridSavepoint,
     dimension: gtx.Dimension,
     backend: gtx.typing.Backend | None,
 ) -> None:
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
-    number = processor_props.rank + 10
+    number = process_props.rank + 10
     input_field = data_alloc.constant_field(
         grid,
         number,
@@ -313,13 +311,13 @@ def test_exchange_on_dummy_data(
     assert (input_field.ndarray == number).all()
     exchange.exchange(dimension, input_field, stream=definitions.BLOCK)
     result = input_field.asnumpy()
-    _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
+    _log.info(f"rank={process_props.rank} - num of halo points ={halo_points.shape}")
     _log.info(
-        f" rank={processor_props.rank} - exchanged points: {np.sum(result != number) / grid.num_levels}"
+        f" rank={process_props.rank} - exchanged points: {np.sum(result != number) / grid.num_levels}"
     )
-    _log.info(f"rank={processor_props.rank} - halo points: {halo_points}")
+    _log.info(f"rank={process_props.rank} - halo points: {halo_points}")
     changed_points = np.argwhere(result[:, 2] != number)
-    _log.info(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
+    _log.info(f"rank={process_props.rank} - num changed points {changed_points.shape} ")
 
     assert (result[local_points, :] == number).all()
     assert (result[halo_points, :] != number).all()
@@ -328,11 +326,11 @@ def test_exchange_on_dummy_data(
 @pytest.mark.mpi
 @pytest.mark.datatest
 @pytest.mark.embedded_only
-@pytest.mark.parametrize("processor_props", [False], indirect=True)
+@pytest.mark.parametrize("process_props", [False], indirect=True)
 def test_halo_exchange_for_sparse_field(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     decomposition_info: definitions.DecompositionInfo,
@@ -342,12 +340,12 @@ def test_halo_exchange_for_sparse_field(
     area = grid_savepoint.cell_areas()
     field_ref = interpolation_savepoint.geofac_div()
     _log.info(
-        f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {field_ref.asnumpy().shape}"
+        f"{process_props.rank}/{process_props.comm_size}: size of reference field {field_ref.asnumpy().shape}"
     )
     result = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.C2EDim, dtype=gtx.float64, allocator=None
     )
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
 
     # mandatory computation on embedded because the result is sparse
     interpolation_fields.compute_geofac_div.with_backend(None)(
@@ -358,7 +356,7 @@ def test_halo_exchange_for_sparse_field(
         offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
     _log.info(
-        f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
+        f"{process_props.rank}/{process_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
     exchange.exchange(dims.CellDim, result, stream=definitions.BLOCK)
 
@@ -370,19 +368,19 @@ inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], [], [-10, 20, 4]]
 
 @pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_global_reductions_min(
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
     global_list: list[data_alloc.ScalarT],
 ) -> None:
-    my_rank = processor_props.rank
+    my_rank = process_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = processor_props.comm_size
+    comm_size = process_props.comm_size
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_reduction(processor_props)
+    global_reduc = definitions.create_reduction(process_props)
 
     if len(global_list) > 0:
         min_val = global_reduc.min(local_data, array_ns=xp)
@@ -395,19 +393,19 @@ def test_global_reductions_min(
 
 @pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_global_reductions_max(
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
     global_list: list[data_alloc.ScalarT],
 ) -> None:
-    my_rank = processor_props.rank
+    my_rank = process_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = processor_props.comm_size
+    comm_size = process_props.comm_size
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_reduction(processor_props)
+    global_reduc = definitions.create_reduction(process_props)
 
     if len(global_list) > 0:
         max_val = global_reduc.max(local_data, array_ns=xp)
@@ -420,19 +418,19 @@ def test_global_reductions_max(
 
 @pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_global_reductions_sum(
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
     global_list: list[data_alloc.ScalarT],
 ) -> None:
-    my_rank = processor_props.rank
+    my_rank = process_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = processor_props.comm_size
+    comm_size = process_props.comm_size
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_reduction(processor_props)
+    global_reduc = definitions.create_reduction(process_props)
 
     if len(global_list) > 0:
         sum_val = global_reduc.sum(local_data, array_ns=xp)
@@ -445,18 +443,18 @@ def test_global_reductions_sum(
 
 @pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_global_reductions_mean(
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
     global_list: list[data_alloc.ScalarT],
 ) -> None:
-    my_rank = processor_props.rank
+    my_rank = process_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = processor_props.comm_size
+    comm_size = process_props.comm_size
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
-    global_reduc = definitions.create_reduction(processor_props)
+    global_reduc = definitions.create_reduction(process_props)
 
     if len(global_list) > 0:
         mean_val = global_reduc.mean(local_data, array_ns=xp)
