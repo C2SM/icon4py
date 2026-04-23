@@ -93,5 +93,6 @@ RUN pyenv update && \
     pyenv global ${PYVERSION}
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
+ENV PYENV_VERSION=${PYVERSION}
 
 RUN pip install --upgrade pip setuptools wheel uv nox clang-format
