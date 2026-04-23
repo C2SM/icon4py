@@ -29,7 +29,8 @@ from icon4py.model.testing.fixtures import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
+    process_props,
+    savepoint_diffusion_exit,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
@@ -108,21 +109,8 @@ def timeloop_diffusion_savepoint_init(
 
 
 @pytest.fixture
-def timeloop_diffusion_savepoint_exit(
-    data_provider,  # imported fixtures data_provider`
-    step_date_exit,  # imported fixtures step_date_exit`
-    timeloop_diffusion_linit_exit,
-):
-    """
-    Load data from ICON savepoint at exist of diffusion module.
-
-    date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
-    fixture, passing 'step_data=<iso_string>'
-    """
-    sp = data_provider.from_savepoint_diffusion_exit(
-        linit=timeloop_diffusion_linit_exit, date=step_date_exit
-    )
-    return sp
+def linit(timeloop_diffusion_linit_exit: bool) -> bool:
+    return timeloop_diffusion_linit_exit
 
 
 @pytest.fixture

@@ -20,7 +20,7 @@ from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,
-    processor_props,
+    process_props,
 )
 
 

@@ -30,7 +30,7 @@ from ...fixtures import (
     interpolation_factory_from_savepoint,
     metrics_factory_from_savepoint,
     metrics_savepoint,
-    processor_props,
+    process_props,
     topography_savepoint,
 )
 
@@ -67,7 +67,7 @@ def _get_slice_tuple_from_horizontal_range(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, metrics_name, horizontal_range",
     [
@@ -94,7 +94,7 @@ def test_distributed_metrics_attrs(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
@@ -105,8 +105,8 @@ def test_distributed_metrics_attrs(
     if test_utils.is_embedded(backend) and metrics_name == "ddqz_z_half":
         pytest.xfail("Embedded backend does not support concat_where")
 
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
@@ -126,7 +126,7 @@ def test_distributed_metrics_attrs(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.uses_concat_where
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
@@ -155,15 +155,15 @@ def test_distributed_metrics_attrs_no_halo(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
     experiment: test_defs.Experiment,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
@@ -174,7 +174,7 @@ def test_distributed_metrics_attrs_no_halo(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
@@ -187,7 +187,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
@@ -199,8 +199,8 @@ def test_distributed_metrics_attrs_no_halo_regional(
         pytest.xfail("ValueError: axes don't match array")
     if experiment == test_defs.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
@@ -211,18 +211,18 @@ def test_distributed_metrics_attrs_no_halo_regional(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_metrics_wgtfacq_e(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
@@ -233,17 +233,17 @@ def test_distributed_metrics_wgtfacq_e(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_metrics_nflat_gradp(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 

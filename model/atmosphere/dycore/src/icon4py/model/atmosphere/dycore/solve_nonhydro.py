@@ -152,11 +152,8 @@ class NonHydrostaticConfig:
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
-        rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
-        divdamp_trans_start: float = 12500.0,
-        divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
         deepatmos_mode: bool = False,
         iau_init: bool = False,
@@ -184,17 +181,12 @@ class NonHydrostaticConfig:
 
         #: type of Rayleigh damping
         self.rayleigh_type: constants.RayleighType = rayleigh_type
-        # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
-        self.rayleigh_coeff: float = rayleigh_coeff
 
         #: order of divergence damping
         self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
 
         #: type of divergence damping
         self.divdamp_type: dycore_states.DivergenceDampingType = divdamp_type
-        #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
-        self.divdamp_trans_start: float = divdamp_trans_start
-        self.divdamp_trans_end: float = divdamp_trans_end
 
         #: off-centering for density and potential temperature at interface levels.
         #: Specifying a negative value here reduces the amount of vertical

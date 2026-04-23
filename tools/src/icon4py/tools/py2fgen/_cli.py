@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
 import pathlib
 import sysconfig
 
@@ -14,7 +15,7 @@ import click
 from icon4py.tools.py2fgen import _codegen, _generator, _utils
 
 
-logger = _utils.setup_logger("py2fgen")
+logger = _utils.setup_logger("py2fgen", log_level=logging.INFO)
 
 
 @click.command("py2fgen")
