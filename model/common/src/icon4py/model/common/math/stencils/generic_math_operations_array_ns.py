@@ -11,7 +11,7 @@ from types import ModuleType
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_directional_derivative_on_cells(
+def compute_directional_derivative_on_edges(
     cell_field: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
@@ -24,11 +24,11 @@ def compute_directional_derivative_on_cells(
     Compute directional derivative of a cell centered variable with respect to
     direction normal to triangle edge.
     """
-    directional_derivative_on_cells = array_ns.zeros((num_edges,))
-    directional_derivative_on_cells[lb_e:ub_e] = (
+    directional_derivative_on_edges = array_ns.zeros((num_edges,))
+    directional_derivative_on_edges[lb_e:ub_e] = (
         cell_field[e2c[lb_e:ub_e, 1]] - cell_field[e2c[lb_e:ub_e, 0]]
     ) * inv_dual_edge_length[lb_e:ub_e]
-    return directional_derivative_on_cells
+    return directional_derivative_on_edges
 
 
 def interpolate_edges_to_cell(
