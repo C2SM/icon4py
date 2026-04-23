@@ -67,7 +67,7 @@ class MetisDecomposer(Decomposer):
         # which avoids Python-side iteration and copies in pymetis._prepare_graph.
         #
         # xadj is an array [0, 3, 6, 9, ...] where xadj[i] is the start index of
-        # vertex i's neighbors, xadj[i+1] is the end index. Each cell always has
+        # cell i's neighbors, xadj[i+1] is the end index. Each cell always has
         # 3 neighbor cells (in global/torus grids).
         _, partition_index = pymetis.part_graph(
             nparts=num_partitions,
