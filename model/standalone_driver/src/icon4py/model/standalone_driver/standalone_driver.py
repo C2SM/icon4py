@@ -303,7 +303,7 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
         global_max_vertical_cfl = self.global_reductions.max(
-            solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
+            ta.wpfloat(solve_nonhydro_diagnostic_state.max_vertical_cfl[()])
         )
         if (
             global_max_vertical_cfl
