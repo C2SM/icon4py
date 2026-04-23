@@ -718,10 +718,10 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)
 
     def lsq_pseudoinv_1(self):
-        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.LsqCDim)
+        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
 
     def lsq_pseudoinv_2(self):
-        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.LsqCDim)
+        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
 
 
 class MetricSavepoint(IconSavepoint):

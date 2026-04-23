@@ -1255,7 +1255,6 @@ def compute_lsq_coeffs(
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
                 cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
-
                 cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
                 for js in range(lsq_dim_stencil):
                     cc_cell[js, :] = array_ns.asarray(

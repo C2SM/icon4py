@@ -91,7 +91,7 @@ build_distributed:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common]
         # TODO(msimberg): Enable dace_gpu when compilation doesn't take as long
         # or when we can cache across CI jobs.
         BACKEND: [embedded, gtfn_cpu, dace_cpu, gtfn_gpu]
@@ -111,6 +111,9 @@ build_distributed:
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
     - if: $COMPONENT == 'atmosphere/dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - if: $COMPONENT == 'atmosphere/advection'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
