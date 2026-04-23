@@ -135,12 +135,6 @@ tests/<component>/
   fixtures.py
 ```
 
-### Fast test paths
-
-No serialized data required, complete in seconds:
-
-- `model/common/tests/common/decomposition/unit_tests/` — ~74 tests, ~6s
-
 ### Benchmarking
 
 `pytest-benchmark` is active by default. Use `--benchmark-disable` to skip benchmarks during regular test runs.
