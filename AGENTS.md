@@ -1,4 +1,6 @@
-# ICON4Py — Agent Instructions
+# ICON4Py Agent Instructions
+
+ICON4Py is a Python implementation of the Fortran [ICON climate and weather model](https://www.icon-model.org/). The upstream open source release is available at https://gitlab.dkrz.de/icon/icon-model.
 
 ## Monorepo structure
 
