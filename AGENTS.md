@@ -28,35 +28,40 @@ Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages
 
 ## Environment setup
 
-A `shell.nix` provides system dependencies (MPI, Boost >= 1.85, GCC, cmake, etc.). Python is managed by uv (see `.python-version`), not nix. The venv must be created inside the nix shell so that native packages (mpi4py, ghex) can find the system libraries.
-
-`shell.nix` sets `UV_MANAGED_PYTHON=1` to prevent uv from falling back to system Python interpreters. uv reads `.python-version` to determine the Python version. For a clean rebuild from scratch:
+Python is managed by uv (see `.python-version` for the required version). Install system dependencies first, then sync the workspace:
 
 ```bash
-nix-shell shell.nix --run "rm -rf .venv && uv sync --extra all --no-cache"
+uv sync --extra all
 ```
 
-At the start of every session:
+### System dependencies
 
-```bash
-nix-shell shell.nix --run "uv sync --extra all"
-```
+- C/C++/Fortran compilers (gcc/g++, gfortran)
+- CMake, pkg-config
+- git
 
-Nix shell sets key environment variables:
+The `distributed` extra (mpi4py, ghex) additionally requires Boost (headers) and an MPI implementation (e.g. OpenMPI).
 
-- `UV_MANAGED_PYTHON`: forces uv to use managed Python only
+If a `shell.nix` exists in the repo root, you can use it to provide these dependencies via nix.
+
+### Relevant environment variables
+
 - `ICON4PY_TEST_DATA_PATH`: where serialized test data is stored
-- `PYTEST_ADDOPTS`: default pytest options (xdist workers, verbosity)
-- `LD_LIBRARY_PATH`: MPI library path
-- `SSL_CERT_FILE`: certificates for data download
 - `GT4PY_BUILD_CACHE_DIR`: GT4Py stencil compilation cache location
-- `GT4PY_BUILD_JOBS`: not set by default; set it to limit parallel stencil compilation jobs
+- `GT4PY_BUILD_JOBS`: limit parallel stencil compilation jobs (unset by default)
+- `PYTEST_ADDOPTS`: default pytest options (xdist workers, verbosity)
+
+### Clean rebuild
+
+```bash
+rm -rf .venv && uv sync --extra all --no-cache
+```
 
 uv caches built wheels by package hash, not just Python version. If native extensions fail to load (e.g. `ModuleNotFoundError` for a `.so`), the cache may contain a build for a different Python version. Fix: re-run the clean rebuild command above.
 
 ## Pre-commit checks
 
-All checks (ruff lint, ruff format, tach, mypy, license headers, toml/yaml formatting) run through pre-commit. Must run inside nix-shell:
+All checks (ruff lint, ruff format, tach, mypy, license headers, toml/yaml formatting) run through pre-commit:
 
 ```bash
 uv run --group dev --frozen --isolated pre-commit run --all-files
@@ -70,8 +75,6 @@ Notes:
 - ruff excludes `docs/` and `examples/` directories.
 
 ## Tests
-
-All test commands must run inside `nix-shell shell.nix`.
 
 ### Test categories
 
@@ -148,7 +151,7 @@ Fixtures re-exported through a component's `fixtures.py` must be explicitly impo
 
 ## GT4Py stencil compilation
 
-GT4Py compiles stencils to C++ on first use. This is slow. Compiled code is cached in `GT4PY_BUILD_CACHE_DIR` (set by shell.nix to `~/.cache/gt4py`). To limit parallel compilation jobs:
+GT4Py compiles stencils to C++ on first use. This is slow. To limit parallel compilation jobs:
 
 ```bash
 export GT4PY_BUILD_JOBS=4
