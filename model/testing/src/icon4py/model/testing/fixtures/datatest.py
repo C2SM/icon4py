@@ -108,24 +108,24 @@ def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
 
 
 @pytest.fixture(scope="session", params=[False])
-def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
+def process_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
     with_mpi = request.param
     runtype = decomposition.get_runtype(with_mpi=with_mpi)
-    return decomposition.get_processor_properties(runtype)
+    return decomposition.get_process_properties(runtype)
 
 
 def _download_ser_data(
     _experiment: definitions.Experiment,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
-    comm_size = processor_props.comm_size
+    comm_size = process_props.comm_size
     try:
         root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
         archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
         archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
         uri = dt_utils.get_serialized_data_url(root_url, archive_path)
-        destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
+        destination_path = dt_utils.get_datapath_for_experiment(_experiment, process_props)
         data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
@@ -136,7 +136,7 @@ def _download_ser_data(
 @pytest.fixture
 def download_ser_data(
     request: pytest.FixtureRequest,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     experiment: definitions.Experiment,
     pytestconfig: pytest.Config,
 ) -> None:
@@ -149,18 +149,18 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    _download_ser_data(experiment, processor_props)
+    _download_ser_data(experiment, process_props)
 
 
 @pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
     experiment: definitions.Experiment,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    data_path = dt_utils.get_datapath_for_experiment(experiment, processor_props)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
+    data_path = dt_utils.get_datapath_for_experiment(experiment, process_props)
+    return dt_utils.create_icon_serial_data_provider(data_path, process_props.rank, backend)
 
 
 @pytest.fixture
