@@ -418,6 +418,7 @@ class GlobalReductions(Reductions):
     mask is resolved from buffer.shape[0], ensuring only owned (non-halo)
     elements participate in the reduction.
     """
+
     # TODO (jcanton,msimberg,nfarabullini): the reductions may be better if
     # receiving Fields as arguments instead of NDArray, such that they get
     # domain info that can be used for masks
