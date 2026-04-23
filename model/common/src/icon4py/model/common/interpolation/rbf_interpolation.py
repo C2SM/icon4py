@@ -13,7 +13,6 @@ from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
-import scipy.linalg as sla
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -435,18 +434,16 @@ def _compute_rbf_interpolation_coeffs(
         rbf_offset.shape[1],
     )
 
-    # Solve linear system for coefficients
-    #
-    # Currently always on CPU. At the time of writing cupy does not have
-    # cho_solve with the same interface as scipy, but one has been proposed:
-    # https://github.com/cupy/cupy/pull/9116.
-    rbf_vec_coeff_np = [
-        np.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
+    # Solve linear system for coefficients.
+    # group_idx / valid_cols / n_valid stay as numpy arrays (CPU) because they
+    # are only used for Python control flow and fancy indexing; both numpy and
+    # cupy accept numpy integer index arrays.  The heavy data (z_rbfmat, rhs,
+    # rbf_vec_coeff) remain on the device selected by array_ns.
+    rbf_vec_coeff = [
+        array_ns.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
         for _ in range(num_zonal_meridional_components)
     ]
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
-    z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
-    rhs_np = [data_alloc.as_numpy(x) for x in rhs]
     # Batch solve by grouping elements with the same number of valid neighbors.
     # In ICON grids, valid entries in connectivity tables are contiguous from the start.
     n_valid = (rbf_offset_np >= 0).sum(axis=1)
@@ -455,24 +452,17 @@ def _compute_rbf_interpolation_coeffs(
             continue
         group_idx = np.where(n_valid == nv)[0]
         valid_cols = np.arange(nv)
-        mat_batch = z_rbfmat_np[np.ix_(group_idx, valid_cols, valid_cols)]
+        mat_batch = z_rbfmat[np.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
-            rhs_batch = rhs_np[j][np.ix_(group_idx, valid_cols)]
-            # TODO (Chia Rui): checking tolerance to decide whether to use scipy sol = scipy.linalg.solve(mat_batch, rhs_batch, assume_a="pos")
-            sol = np.linalg.solve(mat_batch, rhs_batch[:, :, np.newaxis])[:, :, 0]
-            rbf_vec_coeff_np[j][group_idx + horizontal_start, :nv] = sol
-    
-    # num_elements = rbf_offset.shape[0]
-    # for i in range(num_elements):
-    #     valid_neighbors = np.where(rbf_offset_np[i, :] >= 0)[0]
-    #     rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])
-    #     z_diag_np = sla.cho_factor(rbfmat_np)
-    #     for j in range(num_zonal_meridional_components):
-    #         rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
-    #             z_diag_np, rhs_np[j][i, valid_neighbors]
-    #         )
+            rhs_batch = rhs[j][np.ix_(group_idx, valid_cols)]
+            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
+            # rhs_batch (B, nv) -> sol (B, nv).  Works for both numpy and cupy.
+            # The RBF matrix is symmetric but NOT necessarily positive definite
+            # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
+            sol = array_ns.linalg.solve(mat_batch, rhs_batch)
+            rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
-    rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])
+    rbf_vec_coeff = tuple(rbf_vec_coeff)
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
