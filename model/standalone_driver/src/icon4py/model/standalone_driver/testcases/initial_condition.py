@@ -31,13 +31,14 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
-    edge_2_cell_vector_rbf_interpolation,
+    compute_edge_2_cell_vector_interpolation,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
+    tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
@@ -148,7 +149,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     eta_v_ndarray = eta_v.ndarray
 
     # set surface pressure
-    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
+    diagnostic_state.pressure_at_half_levels.ndarray[:, -1] = p_sfc
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
@@ -305,7 +306,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+    compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(
+        backend
+    )(
         p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,
@@ -350,6 +353,19 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
     )
+    tracer_state_now = tracers.TracerState.zero_field(
+        grid=grid,
+        allocator=allocator,
+    )
+    tracer_state_next = tracers.TracerState(
+        qv=data_alloc.as_field(tracer_state_now.qv, allocator=allocator),
+        qc=data_alloc.as_field(tracer_state_now.qc, allocator=allocator),
+        qr=data_alloc.as_field(tracer_state_now.qr, allocator=allocator),
+        qi=data_alloc.as_field(tracer_state_now.qi, allocator=allocator),
+        qs=data_alloc.as_field(tracer_state_now.qs, allocator=allocator),
+        qg=data_alloc.as_field(tracer_state_now.qg, allocator=allocator),
+    )
+    tracer_states = common_utils.TimeStepPair(tracer_state_now, tracer_state_next)
     log.info("Initialization completed.")
 
     ds = driver_states.DriverStates(
@@ -360,6 +376,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
         diagnostic=diagnostic_state,
+        tracers=tracer_states,
     )
 
     return ds

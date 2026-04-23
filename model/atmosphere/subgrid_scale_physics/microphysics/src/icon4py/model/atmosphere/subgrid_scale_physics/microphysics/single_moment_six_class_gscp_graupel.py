@@ -22,6 +22,7 @@ from icon4py.model.common import (
     constants as physics_constants,
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
     model_options,
     type_alias as ta,
 )
@@ -30,8 +31,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 
 
@@ -86,6 +85,8 @@ class SingleMomentSixClassIconGraupelConfig:
     rain_n0: ta.wpfloat = 1.0
     #: coefficient for snow-graupel conversion by riming. Originally defined as csg in mo_nwp_tuning_config.f90 in ICON.
     snow2graupel_riming_coeff: ta.wpfloat = 0.5
+    #: cloud number concentration [1/m3]
+    cloud_number_concentration: ta.wpfloat = 100.0e6
 
 
 @dataclasses.dataclass
@@ -96,18 +97,19 @@ class MetricStateIconGraupel:
 class SingleMomentSixClassIconGraupel:
     def __init__(
         self,
-        graupel_config: SingleMomentSixClassIconGraupelConfig,
+        config: SingleMomentSixClassIconGraupelConfig,
         grid: icon_grid.IconGrid,
         metric_state: MetricStateIconGraupel,
         vertical_params: v_grid.VerticalGrid,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
     ):
-        self.config = graupel_config
+        self.config = config
         self._initialize_configurable_parameters()
         self._grid = grid
         self._metric_state = metric_state
         self.vertical_params = vertical_params
         self._backend = backend
+        self._allocator = model_backends.get_allocator(backend)
 
         self._initialize_local_fields()
         self._determine_horizontal_domains()
@@ -218,50 +220,53 @@ class SingleMomentSixClassIconGraupel:
         )
 
     def _initialize_local_fields(self):
+        self.qnc = data_alloc.zero_field(
+            self._grid, dims.CellDim, dtype=ta.wpfloat, allocator=self._allocator
+        )
         self.rhoqrv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.rhoqsv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.rhoqgv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.rhoqiv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.vnew_r = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.vnew_s = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.vnew_g = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.vnew_i = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.rain_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.snow_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.graupel_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.ice_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.total_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
 
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.END))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     def _initialize_gt4py_programs(self):
         self._icon_graupel = model_options.setup_program(
@@ -346,7 +351,6 @@ class SingleMomentSixClassIconGraupel:
         qi: fa.CellKField[ta.wpfloat],
         qs: fa.CellKField[ta.wpfloat],
         qg: fa.CellKField[ta.wpfloat],
-        qnc: fa.CellField[ta.wpfloat],
         temperature_tendency: fa.CellKField[ta.wpfloat],
         qv_tendency: fa.CellKField[ta.wpfloat],
         qc_tendency: fa.CellKField[ta.wpfloat],
@@ -389,7 +393,7 @@ class SingleMomentSixClassIconGraupel:
             qr=qr,
             qs=qs,
             qg=qg,
-            qnc=qnc,
+            qnc=self.qnc,
             temperature_tendency=temperature_tendency,
             qv_tendency=qv_tendency,
             qc_tendency=qc_tendency,

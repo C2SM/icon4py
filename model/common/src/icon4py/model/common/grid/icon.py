@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+import functools
 import logging
 import math
 from collections.abc import Callable
@@ -138,6 +139,42 @@ class IconGrid(base.Grid):
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
+
+    @functools.cached_property
+    def cell_start_index(self) -> dict[h_grid.Zone, gtx.int32]:
+        domain = h_grid.domain(dims.CellDim)
+        cell_start_index_dict = {zone: self.start_index(domain(zone)) for zone in h_grid.Zone}
+        return cell_start_index_dict
+
+    @functools.cached_property
+    def cell_end_index(self) -> dict[h_grid.Zone, gtx.int32]:
+        domain = h_grid.domain(dims.CellDim)
+        cell_end_index_dict = {zone: self.end_index(domain(zone)) for zone in h_grid.Zone}
+        return cell_end_index_dict
+
+    @functools.cached_property
+    def edge_start_index(self) -> dict[h_grid.Zone, gtx.int32]:
+        domain = h_grid.domain(dims.EdgeDim)
+        edge_start_index_dict = {zone: self.start_index(domain(zone)) for zone in h_grid.Zone}
+        return edge_start_index_dict
+
+    @functools.cached_property
+    def edge_end_index(self) -> dict[h_grid.Zone, gtx.int32]:
+        domain = h_grid.domain(dims.EdgeDim)
+        edge_end_index_dict = {zone: self.end_index(domain(zone)) for zone in h_grid.Zone}
+        return edge_end_index_dict
+
+    @functools.cached_property
+    def vertex_start_index(self) -> dict[h_grid.Zone, gtx.int32]:
+        domain = h_grid.domain(dims.VertexDim)
+        vertex_start_index_dict = {zone: self.start_index(domain(zone)) for zone in h_grid.Zone}
+        return vertex_start_index_dict
+
+    @functools.cached_property
+    def vertex_end_index(self) -> dict[h_grid.Zone, gtx.int32]:
+        domain = h_grid.domain(dims.VertexDim)
+        vertex_end_index_dict = {zone: self.end_index(domain(zone)) for zone in h_grid.Zone}
+        return vertex_end_index_dict
 
 
 def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:

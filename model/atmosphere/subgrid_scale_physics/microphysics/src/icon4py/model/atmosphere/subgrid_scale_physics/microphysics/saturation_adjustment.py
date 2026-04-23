@@ -15,14 +15,17 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils import (
     saturation_adjustment_stencils as satad_stencils,
 )
-from icon4py.model.common import field_type_aliases as fa, model_options, type_alias as ta
+from icon4py.model.common import (
+    field_type_aliases as fa,
+    model_backends,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
     from icon4py.model.common.states import model
 
@@ -100,14 +103,15 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
     ):
         self._backend = backend
+        self._allocator = model_backends.get_allocator(backend)
         self.config = config
         self._grid = grid
         self._vertical_params: v_grid.VerticalGrid = vertical_params
         self._metric_state: MetricStateSaturationAdjustment = metric_state
-        self._xp = data_alloc.import_array_ns(self._backend)
+        self._xp = data_alloc.import_array_ns(self._allocator)
 
         self._allocate_local_variables()
         self._determine_horizontal_domains()
@@ -123,23 +127,23 @@ class SaturationAdjustment:
     def _allocate_local_variables(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
         self._temperature2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
         self._subsaturated_mask = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=self._allocator
         )
         #: A mask that indicates whether next Newton iteration is required.
         self._newton_iteration_mask = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=self._allocator
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
         self._lwdocvd = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
 
     def _initialize_gt4py_programs(self):
@@ -203,7 +207,7 @@ class SaturationAdjustment:
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.END))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     def _not_converged(self) -> bool:
         return self._xp.any(
@@ -215,14 +219,14 @@ class SaturationAdjustment:
 
     def run(
         self,
-        dtime: ta.wpfloat,
+        temperature_tendency: fa.CellKField[ta.wpfloat],
+        qv_tendency: fa.CellKField[ta.wpfloat],
+        qc_tendency: fa.CellKField[ta.wpfloat],
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],
         qv: fa.CellKField[ta.wpfloat],
         qc: fa.CellKField[ta.wpfloat],
-        temperature_tendency: fa.CellKField[ta.wpfloat],
-        qv_tendency: fa.CellKField[ta.wpfloat],
-        qc_tendency: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
     ):
         """
         Adjust saturation at each grid point.
@@ -238,14 +242,14 @@ class SaturationAdjustment:
         Originally inspired from satad_v_3D of ICON.
 
         Args:
-            dtime: time step [s]
+            temperature_tendency: air temperature tendency [K s-1]
+            qv_tendency: specific humidity tendency [s-1]
+            qc_tendency: specific cloud water content tendency [s-1]
             rho: air density [kg m-3]
             temperature: air temperature [K]
             qv: specific humidity [kg kg-1]
             qc: specific cloud water content [kg kg-1]
-            temperature_tendency: air temperature tendency [K s-1]
-            qv_tendency: specific humidity tendency [s-1]
-            qc_tendency: specific cloud water content tendency [s-1]
+            dtime: time step [s]
         """
 
         temperature_pair = common_utils.TimeStepPair(self._temperature1, self._temperature2)

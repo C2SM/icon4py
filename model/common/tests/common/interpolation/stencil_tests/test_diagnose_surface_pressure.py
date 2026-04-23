@@ -12,16 +12,14 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
-    diagnose_surface_pressure,
-)
+from icon4py.model.common.diagnostic_calculations import stencils as diagnostic_stencils
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
 class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
-    PROGRAM = diagnose_surface_pressure
+    PROGRAM = diagnostic_stencils.diagnose_surface_pressure
     OUTPUTS = ("surface_pressure",)
 
     @staticmethod
