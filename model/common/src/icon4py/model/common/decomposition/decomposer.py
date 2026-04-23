@@ -52,11 +52,13 @@ class MetisDecomposer(Decomposer):
 
         import pymetis  # type: ignore [import-untyped]
 
-        adjacency_matrix = data_alloc.as_numpy(adjacency_matrix)
-
         # Invalid indices are not allowed here. Metis will segfault or fail if
         # there are any invalid indices in the adjacency matrix.
         assert (adjacency_matrix >= 0).all()
+
+        # Explicitly move to CPU before passing to Metis, Metis only runs on
+        # CPU.
+        adjacency_matrix_np = data_alloc.as_numpy(adjacency_matrix)
 
         # The partitioning is done on all ranks, and this assumes that the
         # partitioning is deterministic.
@@ -69,9 +71,9 @@ class MetisDecomposer(Decomposer):
         # 3 neighbor cells (in global/torus grids).
         _, partition_index = pymetis.part_graph(
             nparts=num_partitions,
-            xadj=np.arange(adjacency_matrix.shape[0] + 1, dtype=np.int32)
-            * adjacency_matrix.shape[1],
-            adjncy=adjacency_matrix.ravel(),
+            xadj=np.arange(adjacency_matrix_np.shape[0] + 1, dtype=np.int32)
+            * adjacency_matrix_np.shape[1],
+            adjncy=adjacency_matrix_np.ravel(),
         )
         return data_alloc.array_namespace(adjacency_matrix).array(partition_index)
 
