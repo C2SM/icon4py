@@ -38,6 +38,7 @@ RUN apt-get update && \
 ENV CC=/usr/bin/cuda-gcc
 ENV CXX=/usr/bin/cuda-g++
 ENV CUDAHOSTCXX=/usr/bin/cuda-g++
+ENV CUDA_PATH=/usr
 
 # Install OpenMPI configured with libfabric, libcxi, and gdrcopy support for use
 # on Alps. This is based on examples in
