@@ -717,13 +717,10 @@ class NumpyDataProvider(FieldProvider):
         # TODO(egparedes): dealing with type annotations at run-time is error prone
         #   and requires robust utility functions. This snippet should use a better
         #   solution in the future.
-        try:
-            annotations = typing.get_type_hints(self._func)
-        except TypeError:
-            obj = self._func
-            while hasattr(obj, "__wrapped__") or isinstance(obj, functools.partial):
-                obj = getattr(obj, "__wrapped__", None) or obj.func
-            annotations = typing.get_type_hints(obj)
+        obj = self._func
+        while hasattr(obj, "__wrapped__") or isinstance(obj, functools.partial):
+            obj = getattr(obj, "__wrapped__", None) or obj.func
+        annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
             parameter_annotation = annotations.get(dep_key)
             checked = _is_compatible_union(
