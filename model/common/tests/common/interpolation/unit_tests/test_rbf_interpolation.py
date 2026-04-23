@@ -60,6 +60,43 @@ RBF_TOLERANCES = {
 }
 
 
+def print_error(input_var, reference_var, var_name: str, icon_grid, var_dim):
+    import numpy as np
+    cell_domain = h_grid.domain(dims.CellDim)
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertex_domain = h_grid.domain(dims.VertexDim)
+    cell_local_start = 0
+    cell_local_end = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+    cell_halo_start = icon_grid.start_index(cell_domain(h_grid.Zone.HALO))
+    cell_halo_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
+    edge_local_start = 0
+    edge_local_end = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+    edge_halo_start = icon_grid.start_index(edge_domain(h_grid.Zone.HALO))
+    edge_halo_end = icon_grid.end_index(edge_domain(h_grid.Zone.END))
+    vertex_local_start = 0
+    vertex_local_end = icon_grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
+    vertex_halo_start = icon_grid.start_index(vertex_domain(h_grid.Zone.HALO))
+    vertex_halo_end = icon_grid.end_index(vertex_domain(h_grid.Zone.END))
+    # print(f"Error for {var_name}: {cell_local_start} {cell_local_end} {cell_halo_start} {cell_halo_end} {edge_local_start} {edge_local_end} {edge_halo_start} {edge_halo_end}")
+    def _print(start_idx, end_idx, label):
+        if end_idx - start_idx > 0:
+            r_error = np.where(
+                np.abs(reference_var[start_idx:end_idx]) > 1.e-15, 
+                np.abs((input_var[start_idx:end_idx] - reference_var[start_idx:end_idx])/reference_var[start_idx:end_idx]),
+                0.0,
+            )
+            print(var_name, label, np.abs(input_var[start_idx:end_idx] - reference_var[start_idx:end_idx]).max(), r_error.max())
+    if var_dim == dims.CellDim:
+        _print(cell_local_start, cell_local_end, "cell local")
+        _print(cell_halo_start, cell_halo_end, "cell halo")
+    elif var_dim == dims.EdgeDim:
+        _print(edge_local_start, edge_local_end, "edge local")
+        _print(edge_halo_start, edge_halo_end, "edge halo")
+    elif var_dim == dims.VertexDim:
+        _print(vertex_local_start, vertex_local_end, "vertex local")
+        _print(vertex_halo_start, vertex_halo_end, "vertex halo")
+
+
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_cells(
@@ -221,6 +258,8 @@ def test_rbf_interpolation_coeffs_cell(
         grid.num_cells,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
+    print_error(rbf_vec_coeff_c1, rbf_vec_coeff_c1_ref, "rbf_vec_coeff_c1", grid, dims.CellDim)
+    print_error(rbf_vec_coeff_c2, rbf_vec_coeff_c2_ref, "rbf_vec_coeff_c2", grid, dims.CellDim)
     assert test_helpers.dallclose(
         rbf_vec_coeff_c1[horizontal_start:],
         rbf_vec_coeff_c1_ref[horizontal_start:],
@@ -298,6 +337,8 @@ def test_rbf_interpolation_coeffs_vertex(
         grid.num_vertices,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
+    print_error(rbf_vec_coeff_v1, rbf_vec_coeff_v1_ref.asnumpy(), "rbf_vec_coeff_v1", grid, dims.VertexDim)
+    print_error(rbf_vec_coeff_v2, rbf_vec_coeff_v2_ref.asnumpy(), "rbf_vec_coeff_v2", grid, dims.VertexDim)
     assert test_helpers.dallclose(
         rbf_vec_coeff_v1[horizontal_start:],
         rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
@@ -371,8 +412,10 @@ def test_rbf_interpolation_coeffs_edge(
         grid.num_edges,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
+    print_error(rbf_vec_coeff_e, rbf_vec_coeff_e_ref.asnumpy(), "rbf_vec_coeff_e", grid, dims.EdgeDim)
     assert test_helpers.dallclose(
         rbf_vec_coeff_e[horizontal_start:],
         rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
         atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
     )
+    
