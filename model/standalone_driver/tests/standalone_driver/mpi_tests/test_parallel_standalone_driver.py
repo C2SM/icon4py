@@ -11,7 +11,7 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
@@ -44,7 +44,7 @@ def test_standalone_driver_compare_single_multi_rank(
         pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
-        model_backends.get_allocator(backend_like)
+        model_options.customize_backend(program=None, backend=backend_like)
     ):
         # NOTE: we use gtfn_cpu to check that single and multirank give bitwise
         # identical results, as gtfn_cpu is deterministic. In this case we can

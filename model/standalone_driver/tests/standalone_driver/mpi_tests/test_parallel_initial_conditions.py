@@ -11,7 +11,7 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import driver_states, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
@@ -49,7 +49,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     # distributed GPU, u,v do not because they are computed with RBF
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
-        model_backends.get_allocator(backend_like)
+        model_options.customize_backend(program=None, backend=backend_like)
     ):
         # NOTE: we use gtfn_cpu to check that single and multirank give bitwise
         # identical results, as gtfn_cpu is deterministic. In this case we can
