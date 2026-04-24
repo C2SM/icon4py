@@ -32,3 +32,8 @@ def flag_to_bool(name: str, default: bool) -> bool:
 def path(name: str, default: pathlib.Path) -> pathlib.Path:
     value = os.environ.get(name)
     return pathlib.Path(value) if value is not None else default
+
+
+def string(name: str, default: str) -> str:
+    value = os.environ.get(name)
+    return str(value) if value is not None else default

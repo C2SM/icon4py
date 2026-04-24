@@ -44,6 +44,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.testing import config as testing_config
 
 
 log = logging.getLogger(__name__)
@@ -569,7 +570,8 @@ def configure_logging(
     )
     driver_module_name = __name__[: __name__.rindex(".")]
     logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
-    logging.getLogger(driver_module_name).setLevel(logging.DEBUG)
+    # TODO (ongchia): not ideal to import testing_config.DRIVER_LOGGING_LEVEL, waiting for proper logging config
+    logging.getLogger(driver_module_name).setLevel(_LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL])
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
     logging.getLogger("blib2to3").setLevel(logging.WARNING)
