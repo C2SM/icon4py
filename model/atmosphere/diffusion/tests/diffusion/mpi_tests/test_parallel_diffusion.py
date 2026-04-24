@@ -131,22 +131,12 @@ def test_parallel_diffusion(
     )
 
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    if linit:
-        diffusion.initial_run(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        )
-    else:
-        diffusion.run(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        )
-        if experiment == definitions.Experiments.JW:
-            # TODO (jcanton,ongchia,muellch): remove this exchange when
-            # https://github.com/C2SM/icon4py/pull/1192 is merged
-            exchange.exchange(dims.CellDim, prognostic_state.w)
+    diffusion.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
+        initial_run=linit,
+    )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion run ")
 
     utils.verify_diffusion_fields(
@@ -267,20 +257,13 @@ def test_parallel_diffusion_multiple_steps(
     )
 
     prognostic_state_dace_non_orch = savepoint_diffusion_init.construct_prognostics()
-    if linit:
-        for _ in range(3):
-            diffusion.initial_run(
-                diagnostic_state=diagnostic_state_dace_non_orch,
-                prognostic_state=prognostic_state_dace_non_orch,
-                dtime=dtime,
-            )
-    else:
-        for _ in range(3):
-            diffusion.run(
-                diagnostic_state=diagnostic_state_dace_non_orch,
-                prognostic_state=prognostic_state_dace_non_orch,
-                dtime=dtime,
-            )
+    for _ in range(3):
+        diffusion.run(
+            diagnostic_state=diagnostic_state_dace_non_orch,
+            prognostic_state=prognostic_state_dace_non_orch,
+            dtime=dtime,
+            initial_run=linit,
+        )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion run ")
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}:  running diffusion step - using {process_props.comm_name} with {process_props.comm_size} nodes - DONE"
@@ -318,20 +301,13 @@ def test_parallel_diffusion_multiple_steps(
     )
 
     prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
-    if linit:
-        for _ in range(3):
-            diffusion.initial_run(
-                diagnostic_state=diagnostic_state_dace_orch,
-                prognostic_state=prognostic_state_dace_orch,
-                dtime=dtime,
-            )
-    else:
-        for _ in range(3):
-            diffusion.run(
-                diagnostic_state=diagnostic_state_dace_orch,
-                prognostic_state=prognostic_state_dace_orch,
-                dtime=dtime,
-            )
+    for _ in range(3):
+        diffusion.run(
+            diagnostic_state=diagnostic_state_dace_orch,
+            prognostic_state=prognostic_state_dace_orch,
+            dtime=dtime,
+            initial_run=linit,
+        )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion run ")
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}:  running diffusion step - using {process_props.comm_name} with {process_props.comm_size} nodes - DONE"
