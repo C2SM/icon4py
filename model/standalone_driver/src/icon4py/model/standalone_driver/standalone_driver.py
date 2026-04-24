@@ -191,14 +191,6 @@ class Icon4pyDriver:
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
-                # TODO (jcanton,ongchia,muellch): remove this exchange when
-                # https://github.com/C2SM/icon4py/pull/1192 is merged
-                self.exchange.exchange(
-                    dims.CellDim,
-                    prognostic_states.next.w,
-                    prognostic_states.next.theta_v,
-                    prognostic_states.next.exner,
-                )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
