@@ -1533,8 +1533,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.9.post13+6d675f71"
-source = { git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20#6d675f7132bd7b5c1bac1a17295e92e9dad39a81" }
+version = "1.1.9.post13+1db387c5"
+source = { git = "https://github.com/GridTools/gt4py?branch=main#1db387c5d24203435bc456cef54a8b01b54dfcd4" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1709,7 +1709,7 @@ build = [
     { name = "bump-my-version" },
     { name = "pip" },
     { name = "setuptools" },
-    { name = "wget" },
+    { name = "pooch" },
     { name = "wheel" },
 ]
 dev = [
@@ -1721,6 +1721,7 @@ dev = [
     { name = "myst-parser" },
     { name = "nox" },
     { name = "pip" },
+    { name = "pooch" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -1742,7 +1743,6 @@ dev = [
     { name = "types-cffi" },
     { name = "typing-extensions" },
     { name = "validate-pyproject-schema-store", extra = ["all"] },
-    { name = "wget" },
     { name = "wheel" },
 ]
 docs = [
@@ -1815,7 +1815,7 @@ build = [
     { name = "bump-my-version", specifier = ">=0.16.0" },
     { name = "pip", specifier = ">=22.1.1" },
     { name = "setuptools", specifier = ">=70.1.1" },
-    { name = "wget", specifier = ">=3.2" },
+    { name = "pooch", specifier = ">=1.7.0" },
     { name = "wheel", specifier = ">=0.45.0" },
 ]
 dev = [
@@ -1827,6 +1827,7 @@ dev = [
     { name = "myst-parser", specifier = ">=4.0.0" },
     { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
     { name = "pip", specifier = ">=22.1.1" },
+    { name = "pooch", specifier = ">=1.7.0" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.0.1" },
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
@@ -1848,7 +1849,6 @@ dev = [
     { name = "types-cffi", specifier = ">=1.16.0" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
-    { name = "wget", specifier = ">=3.2" },
     { name = "wheel", specifier = ">=0.45.0" },
 ]
 docs = [
@@ -1906,7 +1906,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1923,7 +1923,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1940,7 +1940,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1957,7 +1957,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1976,7 +1976,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2018,9 +2018,9 @@ requires-dist = [
     { name = "cffi", specifier = ">=1.5" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
@@ -2102,10 +2102,10 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.4.20", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
-    { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
-    { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2143,7 +2143,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2172,7 +2172,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2196,20 +2196,20 @@ dependencies = [
     { name = "pytest" },
     { name = "serialbox4py" },
     { name = "typing-extensions" },
-    { name = "wget" },
+    { name = "pooch" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pooch", specifier = ">=1.7.0" },
     { name = "pytest", specifier = ">=8.0.1" },
     { name = "serialbox4py", specifier = ">=2.6.2", index = "https://test.pypi.org/simple/" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
-    { name = "wget", specifier = ">=3.2" },
 ]
 
 [[package]]
@@ -2249,7 +2249,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "configargparse", specifier = ">=1.7.1" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=update_dace_2026_04_20" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
     { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
@@ -5249,12 +5249,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/0b/02/ae6ceac1baeda5308
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f4/24/2a3e3df732393fed8b3ebf2ec078f05546de641fe1b667ee316ec1dcf3b7/webencodings-0.5.1-py2.py3-none-any.whl", hash = "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78", size = 11774, upload-time = "2017-04-05T20:21:32.581Z" },
 ]
-
-[[package]]
-name = "wget"
-version = "3.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/47/6a/62e288da7bcda82b935ff0c6cfe542970f04e29c756b0e147251b2fb251f/wget-3.2.zip", hash = "sha256:35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061", size = 10857, upload-time = "2015-10-22T15:26:37.51Z" }
 
 [[package]]
 name = "wheel"
