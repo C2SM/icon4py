@@ -69,7 +69,7 @@ build_distributed:
     GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PYTEST_ADDOPTS: "--durations=0"
-    CSCS_ADDITIONAL_MOUNTS: "[\"/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH\",\"/iopsstor/scratch/cscs/icontest:$GT4PY_BUILD_CACHE_BASE_DIR\"]"
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext/icon4py_ci_gt4py_cache:$GT4PY_BUILD_CACHE_BASE_DIR"]'
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
     USE_MPI: NO
