@@ -37,18 +37,11 @@ def test_grid_file_dimension() -> None:
     parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
         parser.open()
+        assert parser.dimension(gridfile.DynamicDimension.CELL_NAME) == grid_descriptor.num_cells
         assert (
-            parser.dimension(gridfile.DynamicDimension.CELL_NAME)
-            == grid_descriptor.params.num_cells
+            parser.dimension(gridfile.DynamicDimension.VERTEX_NAME) == grid_descriptor.num_vertices
         )
-        assert (
-            parser.dimension(gridfile.DynamicDimension.VERTEX_NAME)
-            == grid_descriptor.params.num_vertices
-        )
-        assert (
-            parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
-            == grid_descriptor.params.num_edges
-        )
+        assert parser.dimension(gridfile.DynamicDimension.EDGE_NAME) == grid_descriptor.num_edges
     except Exception:
         pytest.fail()
     finally:

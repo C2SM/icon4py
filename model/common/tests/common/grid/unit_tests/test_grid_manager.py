@@ -82,7 +82,7 @@ def test_grid_manager_eval_v2e(
     assert experiment.grid.params.grid_params is not None
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.params.grid_params.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.grid_params.geometry_type == icon.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -129,7 +129,7 @@ def test_grid_manager_eval_v2c(
     assert experiment.grid.params.grid_params is not None
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.params.grid_params.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.grid_params.geometry_type == icon.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
@@ -382,12 +382,8 @@ def test_grid_manager_grid_level_and_root(
     expected_subdivision: icon.GridSubdivision,
     backend: gtx_typing.Backend,
 ) -> None:
-    assert (
-        expected_subdivision
-        == utils.run_grid_manager(
-            grid_descriptor, keep_skip_values=True, backend=backend
-        ).grid.global_properties.subdivision
-    )
+    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    assert expected_subdivision == grid.global_properties.subdivision
 
 
 @pytest.mark.datatest

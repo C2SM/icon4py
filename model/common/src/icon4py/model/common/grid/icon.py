@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+import enum
 import logging
 from collections.abc import Callable
 
@@ -18,6 +19,17 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+
+class GeometryType(enum.Enum):
+    """Define geometries of the horizontal domain supported by the ICON grid.
+
+    Values are the same as mo_grid_geometry_info.f90.
+    """
+
+    ICOSAHEDRON = 1
+    TORUS = 2
+
 
 CONNECTIVITIES_ON_BOUNDARIES = (
     dims.C2E2C2EDim,
@@ -52,8 +64,8 @@ class IcosahedronParams:
             )
 
     @property
-    def geometry_type(self) -> base.GeometryType:
-        return base.GeometryType.ICOSAHEDRON
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.ICOSAHEDRON
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -62,8 +74,8 @@ class TorusParams:
     domain_height: float
 
     @property
-    def geometry_type(self) -> base.GeometryType:
-        return base.GeometryType.TORUS
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.TORUS
 
 
 GridParams = IcosahedronParams | TorusParams
@@ -71,11 +83,11 @@ GridParams = IcosahedronParams | TorusParams
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
-    grid_params: GridParams
+    grid_params: GridParams | None = None
 
     @property
-    def geometry_type(self) -> base.GeometryType:
-        return self.grid_params.geometry_type
+    def geometry_type(self) -> GeometryType | None:
+        return self.grid_params.geometry_type if self.grid_params is not None else None
 
     @property
     def radius(self) -> float | None:
@@ -100,10 +112,14 @@ class GlobalGridParams:
 
 @dataclasses.dataclass(frozen=True)
 class IconGrid(base.Grid):
-    global_properties: GlobalGridParams | None = dataclasses.field(default=None, kw_only=True)
+    global_properties: GlobalGridParams = dataclasses.field(kw_only=True)
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
+
+    @property
+    def geometry_type(self) -> GeometryType | None:
+        return self.global_properties.geometry_type
 
 
 def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
@@ -157,7 +173,7 @@ def icon_grid(
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],
     end_index: Callable[[h_grid.Domain], gtx.int32],
-    global_properties: GlobalGridParams | None = None,
+    global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed
@@ -177,7 +193,6 @@ def icon_grid(
         id=id_,
         config=config,
         connectivities=connectivities,
-        geometry_type=global_properties.geometry_type,
         start_index=start_index,
         end_index=end_index,
         global_properties=global_properties,

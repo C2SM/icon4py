@@ -15,7 +15,6 @@ import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgec
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
-    base,
     geometry,
     geometry_attributes as geometry_attrs,
     grid_refinement as refinement,
@@ -276,7 +275,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(lsq_pseudoinv)
 
         match self.grid.global_properties.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
+            case icon.GeometryType.ICOSAHEDRON:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
@@ -361,7 +360,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
 
-            case base.GeometryType.TORUS:
+            case icon.GeometryType.TORUS:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight_torus,

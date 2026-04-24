@@ -117,9 +117,9 @@ class GridManager:
             self.open()
 
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
+            geometry_type = icon.GeometryType(geometry_type)
         else:
-            geometry_type = base.GeometryType.ICOSAHEDRON
+            geometry_type = icon.GeometryType.ICOSAHEDRON
 
         self._construct_decomposed_grid(
             allocator=allocator,
@@ -136,7 +136,7 @@ class GridManager:
     def _read_coordinates(
         self,
         allocator: gtx_typing.Allocator,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
@@ -198,7 +198,7 @@ class GridManager:
             },
         }
 
-        if geometry_type == base.GeometryType.TORUS:
+        if geometry_type == icon.GeometryType.TORUS:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),
@@ -391,7 +391,7 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
         decomposer: decomp.Decomposer,
         run_properties: decomposition.ProcessProperties,
     ) -> None:
@@ -495,7 +495,7 @@ class GridManager:
     def _construct_global_params(
         self,
         allocator: gtx_typing.Allocator,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
     ):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
@@ -504,12 +504,12 @@ class GridManager:
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
         match geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
+            case icon.GeometryType.ICOSAHEDRON:
                 grid_params = icon.IcosahedronParams(
                     subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
                     radius=sphere_radius if sphere_radius is not None else constants.EARTH_RADIUS,
                 )
-            case base.GeometryType.TORUS:
+            case icon.GeometryType.TORUS:
                 grid_params = icon.TorusParams(
                     domain_length=domain_length,
                     domain_height=domain_height,

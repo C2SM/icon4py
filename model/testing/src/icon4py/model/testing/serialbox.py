@@ -324,7 +324,7 @@ class IconGridSavepoint(IconSavepoint):
             dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
         }
 
-        if self.global_grid_params.geometry_type == base.GeometryType.TORUS:
+        if self.global_grid_params.geometry_type == icon.GeometryType.TORUS:
             coords[dims.CellDim]["x"] = self.cell_center_cart_x()
             coords[dims.CellDim]["y"] = self.cell_center_cart_y()
             coords[dims.CellDim]["z"] = self.cell_center_cart_z()

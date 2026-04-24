@@ -230,76 +230,63 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
 
 
 @pytest.mark.parametrize(
-    "geometry_type,grid_root,grid_level,num_cells,expected_num_cells",
+    "geometry_type,grid_root,grid_level",
     [
-        (base.GeometryType.ICOSAHEDRON, 1, 0, None, None),
-        (base.GeometryType.ICOSAHEDRON, 1, 1, None, None),
-        (base.GeometryType.ICOSAHEDRON, 1, 2, None, None),
-        (base.GeometryType.ICOSAHEDRON, 2, 4, None, None),
-        (base.GeometryType.ICOSAHEDRON, 2, 4, 42, 42),
-        (base.GeometryType.ICOSAHEDRON, 4, 9, 42, 42),
-        (base.GeometryType.TORUS, 2, 0, 42, 42),
-        (base.GeometryType.TORUS, None, None, 42, 42),
+        (icon.GeometryType.ICOSAHEDRON, 1, 0),
+        (icon.GeometryType.ICOSAHEDRON, 1, 1),
+        (icon.GeometryType.ICOSAHEDRON, 1, 2),
+        (icon.GeometryType.ICOSAHEDRON, 2, 4),
+        (icon.GeometryType.ICOSAHEDRON, 4, 9),
+        (icon.GeometryType.TORUS, None, None),
     ],
 )
 def test_global_grid_params(
-    geometry_type: base.GeometryType,
+    geometry_type: icon.GeometryType,
     grid_root: int | None,
     grid_level: int | None,
-    num_cells: int | None,
-    expected_num_cells: int | None,
 ) -> None:
-    if grid_root is None:
-        assert grid_level is None
-    params = icon.GlobalGridParams(
-        grid_shape=icon.GridShape(
-            geometry_type=geometry_type,
-            subdivision=(
-                icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
-                if grid_root is not None
-                else None
-            ),
-        ),
-        domain_length=42.0,
-        domain_height=100.5,
-        num_cells=num_cells,
-    )
+    match geometry_type:
+        case icon.GeometryType.ICOSAHEDRON:
+            params = icon.GlobalGridParams(
+                grid_params=icon.IcosahedronParams(
+                    subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),  # type: ignore[arg-type]
+                ),
+            )
+        case icon.GeometryType.TORUS:
+            params = icon.GlobalGridParams(
+                grid_params=icon.TorusParams(
+                    domain_length=42.0,
+                    domain_height=100.5,
+                ),
+            )
+
     assert geometry_type == params.geometry_type
-    if geometry_type == base.GeometryType.TORUS:
-        assert params.grid_shape is not None
-        assert params.grid_shape.subdivision is None
-    else:
-        assert (
-            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision  # type: ignore[arg-type, union-attr]
-        )
-    if geometry_type == base.GeometryType.TORUS:
-        assert params.radius is None
-        assert params.domain_length == 42.0
-        assert params.domain_height == 100.5
-    else:
-        assert pytest.approx(params.radius) == constants.EARTH_RADIUS
-        assert params.domain_length is None
-        assert params.domain_height is None
-    assert params.num_cells == expected_num_cells
+    match geometry_type:
+        case icon.GeometryType.ICOSAHEDRON:
+            assert params.subdivision == icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
+            assert pytest.approx(params.radius) == constants.EARTH_RADIUS
+            assert params.domain_length is None
+            assert params.domain_height is None
+        case icon.GeometryType.TORUS:
+            assert params.subdivision is None
+            assert params.radius is None
+            assert params.domain_length == 42.0
+            assert params.domain_height == 100.5
 
 
 @pytest.mark.parametrize(
-    "geometry_type,grid_root,grid_level",
+    "grid_root,grid_level",
     [
-        (base.GeometryType.ICOSAHEDRON, None, None),
-        (base.GeometryType.ICOSAHEDRON, 0, 0),
-        (None, None, None),
+        (None, None),
+        (0, 0),
     ],
 )
-def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_level: int) -> None:
-    with pytest.raises(ValueError):
-        _ = icon.GridShape(
-            geometry_type=geometry_type,
-            subdivision=(
-                icon.GridSubdivision(root=grid_root, level=grid_level)
-                if grid_root is not None
-                else None
-            ),
+def test_icosahedron_params_fail(grid_root: int | None, grid_level: int | None) -> None:
+    with pytest.raises((ValueError, TypeError)):
+        _ = icon.IcosahedronParams(
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
+            if grid_root is not None
+            else None,
         )
 
 
@@ -309,7 +296,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
     [
         (
             definitions.Grids.R02B04_GLOBAL,
-            base.GeometryType.ICOSAHEDRON,
+            icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=2, level=4),
             constants.EARTH_RADIUS,
             None,
@@ -318,7 +305,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         ),
         (
             definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
-            base.GeometryType.ICOSAHEDRON,
+            icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=7),
             constants.EARTH_RADIUS,
             None,
@@ -327,7 +314,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         ),
         (
             definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
-            base.GeometryType.ICOSAHEDRON,
+            icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=19, level=8),
             constants.EARTH_RADIUS,
             None,
@@ -336,7 +323,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         ),
         (
             definitions.Grids.MCH_CH_R04B09_DSL,
-            base.GeometryType.ICOSAHEDRON,
+            icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=9),
             constants.EARTH_RADIUS,
             None,
@@ -345,7 +332,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         ),
         (
             definitions.Grids.TORUS_100X116_1000M,
-            base.GeometryType.TORUS,
+            icon.GeometryType.TORUS,
             None,
             None,
             100000.0,
@@ -354,7 +341,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         ),
         (
             definitions.Grids.TORUS_50000x5000,
-            base.GeometryType.TORUS,
+            icon.GeometryType.TORUS,
             None,
             None,
             50000.0,
@@ -366,7 +353,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
 def test_global_grid_params_from_grid_manager(
     grid_descriptor: definitions.GridDescription,
     backend: gtx_typing.Backend,
-    geometry_type: base.GeometryType,
+    geometry_type: icon.GeometryType,
     subdivision: icon.GridSubdivision,
     radius: float,
     domain_length: float,
@@ -378,13 +365,11 @@ def test_global_grid_params_from_grid_manager(
     assert params is not None
     assert params.geometry_type == geometry_type
     match geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon.GeometryType.ICOSAHEDRON:
             assert params.subdivision == subdivision
-        case base.GeometryType.TORUS:
-            # get the value for torus' subdivision without hardcoding it here
-            # (it's actually not relevant to check this)
-            assert params.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
+        case icon.GeometryType.TORUS:
+            assert params.subdivision is None
     assert pytest.approx(params.radius) == radius
     assert pytest.approx(params.domain_length) == domain_length
     assert pytest.approx(params.domain_height) == domain_height
-    assert params.num_cells == num_cells
+    assert grid.config.num_cells == num_cells
