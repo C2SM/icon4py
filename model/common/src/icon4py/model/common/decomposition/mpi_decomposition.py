@@ -443,6 +443,13 @@ class GlobalReductions(Reductions):
                 )
             self._owner_masks[size] = mask
 
+    def _prepare_buffer(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
+        if len(buffer.shape) > 0:
+            owner_mask = self._resolve_owner_mask(buffer)
+            return buffer[owner_mask]
+        else:
+            return buffer
+
     def _resolve_owner_mask(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
         """Resolve the 1D owner mask for the buffer's first dimension.
 
@@ -508,8 +515,7 @@ class GlobalReductions(Reductions):
         return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        owner_mask = self._resolve_owner_mask(buffer)
-        buffer = buffer[owner_mask]
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
@@ -520,8 +526,7 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        owner_mask = self._resolve_owner_mask(buffer)
-        buffer = buffer[owner_mask]
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
@@ -536,8 +541,7 @@ class GlobalReductions(Reductions):
         buffer: data_alloc.NDArray,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        owner_mask = self._resolve_owner_mask(buffer)
-        buffer = buffer[owner_mask]
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -552,8 +556,7 @@ class GlobalReductions(Reductions):
         buffer: data_alloc.NDArray,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        owner_mask = self._resolve_owner_mask(buffer)
-        buffer = buffer[owner_mask]
+        buffer = self._prepare_buffer(buffer)
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
