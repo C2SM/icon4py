@@ -73,7 +73,7 @@ item_marker_filters: dict[str, ItemFilter] = {
         condition=lambda item: (
             (grid := test_utils.get_fixture_value("grid", item)).limited_area
             or (
-                hasattr(grid, "global_properties")
+                isinstance(grid, icon_grid.IconGrid)
                 and grid.global_properties.geometry_type == icon_grid.GeometryType.ICOSAHEDRON
             )
         ),
