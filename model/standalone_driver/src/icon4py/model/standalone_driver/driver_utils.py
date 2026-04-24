@@ -571,7 +571,9 @@ def configure_logging(
     driver_module_name = __name__[: __name__.rindex(".")]
     logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
     # TODO (ongchia): not ideal to import testing_config.DRIVER_LOGGING_LEVEL, waiting for proper logging config
-    logging.getLogger(driver_module_name).setLevel(_LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL])
+    logging.getLogger(driver_module_name).setLevel(
+        _LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL]
+    )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
     logging.getLogger("blib2to3").setLevel(logging.WARNING)
