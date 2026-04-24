@@ -24,7 +24,7 @@ import sys
 
 import typer
 
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils
 
 
 VALIDATION_GRIDS = (
@@ -41,8 +41,7 @@ app = typer.Typer()
 def cache_key() -> None:
     """Generate a cache key for the Github action cache based on grid file name and download URI."""
     d = "_".join(
-        grid.name
-        + f"{definitions.TESTDATA_ROOT_URL}/{definitions.GRID_DATA_DIR}/{grid.name}.tar.gz"
+        grid.name + dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid.name)
         for grid in VALIDATION_GRIDS
     )
     hexdigest = hashlib.md5(d.encode()).hexdigest()

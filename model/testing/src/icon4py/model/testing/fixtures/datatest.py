@@ -124,7 +124,7 @@ def _download_ser_data(
         root_url = definitions.TESTDATA_ROOT_URL
         archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
         archive_path = definitions.EXPERIMENT_DATA_DIR + "/" + archive_filename
-        uri = dt_utils.get_serialized_data_url(root_url, archive_path)
+        uri = dt_utils.get_experiment_archive_url(root_url, archive_path)
         destination_path = dt_utils.get_datapath_for_experiment(_experiment, process_props)
         data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:

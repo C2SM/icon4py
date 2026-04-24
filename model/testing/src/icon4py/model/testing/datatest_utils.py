@@ -40,8 +40,20 @@ def get_experiment_archive_filename(experiment: definitions.Experiment, comm_siz
     return f"{get_ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
 
 
-def get_serialized_data_url(root_url: str, filepath: str) -> str:
-    """Build a download URL for serialized data file from root URL."""
+def get_experiment_archive_url(root_url: str, filepath: str) -> str:
+    """Build a download URL for experiment archive from root URL."""
+    return f"{root_url}/{urllib.parse.quote(filepath)}"
+
+
+def get_grid_archive_url(root_url: str, grid_name: str) -> str:
+    """Build a download URL for a grid archive from root URL."""
+    filepath = f"{definitions.GRID_DATA_DIR}/{grid_name}.tar.gz"
+    return f"{root_url}/{urllib.parse.quote(filepath)}"
+
+
+def get_muphys_archive_url(root_url: str, experiment_type: str, experiment_name: str) -> str:
+    """Build a download URL for a muphys archive from root URL."""
+    filepath = f"{definitions.MUPHYS_DATA_DIR}/{experiment_type}/{experiment_name}.tar.gz"
     return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 

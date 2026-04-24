@@ -14,7 +14,7 @@ import pathlib
 
 import pytest
 
-from icon4py.model.testing import config, data_handling, definitions
+from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
 def _path_to_experiment_testdata(experiment: MuphysExperiment) -> pathlib.Path:
@@ -51,7 +51,11 @@ class MuphysExperiment:
 
 
 def _get_muphys_archive_uri(experiment: MuphysExperiment) -> str:
-    return f"{definitions.TESTDATA_ROOT_URL}/{definitions.MUPHYS_DATA_DIR}/{experiment.type.name.lower()}/{experiment.name}.tar.gz"
+    return dt_utils.get_muphys_archive_url(
+        definitions.TESTDATA_ROOT_URL,
+        experiment.type.name.lower(),
+        experiment.name,
+    )
 
 
 @pytest.fixture(autouse=True)
