@@ -296,8 +296,9 @@ class Icon4pyDriver:
     ) -> None:
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(
-                solve_nonhydro_diagnostic_state.max_vertical_cfl[()].astype(ta.wpfloat)
-            )
+                solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
+            ),
+            array_ns=self._xp,
         )
         if (
             global_max_vertical_cfl
