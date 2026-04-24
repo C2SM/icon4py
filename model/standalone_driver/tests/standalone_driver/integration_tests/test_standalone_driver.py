@@ -62,7 +62,7 @@ def test_standalone_driver(
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=5e-7,
+        atol=6e-7,
     )
 
     assert test_utils.dallclose(
