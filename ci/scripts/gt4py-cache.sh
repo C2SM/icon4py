@@ -16,3 +16,5 @@ find "${GT4PY_BUILD_CACHE_BASE_DIR}" -mindepth 2 -maxdepth 2 -type d -mtime +7 -
 DATE=$(date +%Y-%W)
 export GT4PY_BUILD_CACHE_DIR="${GT4PY_BUILD_CACHE_BASE_DIR}/${BACKEND}/${DATE}"
 mkdir -p "${GT4PY_BUILD_CACHE_DIR}"
+
+echo "Using GT4PY_BUILD_CACHE_DIR=${GT4PY_BUILD_CACHE_DIR}"
