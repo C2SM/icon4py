@@ -14,11 +14,16 @@ import pathlib
 
 import pytest
 
-from icon4py.model.testing import config, data_handling
+from icon4py.model.testing import config, data_handling, definitions
 
 
 def _path_to_experiment_testdata(experiment: MuphysExperiment) -> pathlib.Path:
-    return config.TEST_DATA_PATH / "muphys" / experiment.type.name.lower() / experiment.name
+    return (
+        config.TEST_DATA_PATH
+        / definitions.MUPHYS_DATA_DIR
+        / experiment.type.name.lower()
+        / experiment.name
+    )
 
 
 class ExperimentType(int, enum.Enum):
@@ -30,7 +35,6 @@ class ExperimentType(int, enum.Enum):
 class MuphysExperiment:
     name: str
     type: ExperimentType
-    uri: str
     dt: float = 30.0
     qnc: float = 100.0
 
@@ -46,10 +50,14 @@ class MuphysExperiment:
         return self.name
 
 
+def _get_muphys_archive_uri(experiment: MuphysExperiment) -> str:
+    return f"{definitions.TESTDATA_ROOT_URL}/{definitions.MUPHYS_DATA_DIR}/{experiment.type.name.lower()}/{experiment.name}.tar.gz"
+
+
 @pytest.fixture(autouse=True)
 def download_test_data(experiment: MuphysExperiment) -> None:
     """Downloads test data for an experiment (implicit fixture)."""
     data_handling.download_test_data(
         _path_to_experiment_testdata(experiment),
-        uri=experiment.uri,
+        uri=_get_muphys_archive_uri(experiment),
     )

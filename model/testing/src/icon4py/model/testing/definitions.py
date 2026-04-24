@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+EXPERIMENT_DATA_DIR: Final = "experiments"
+MUPHYS_DATA_DIR: Final = "muphys"
 TESTDATA_ROOT_URL: Final = "https://rgw.cscs.ch/c2sm:testdata"
 
 
@@ -40,8 +42,6 @@ class GridDescription:
     name: str
     description: str
     params: icon_grid.GlobalGridParams
-    file_name: str
-    uri: str
 
 
 class Grids:
@@ -57,8 +57,6 @@ class Grids:
             num_vertices=42,
             num_edges=120,
         ),
-        file_name="icon_grid_R01B01.nc",
-        uri=f"{DATA_ROOT_URL}/grids/r01b01_global/icon_grid_R01B01.nc.tar.gz",
     )
     R02B04_GLOBAL: Final = GridDescription(
         name="icon_grid_0013_R02B04_R",
@@ -72,8 +70,6 @@ class Grids:
             num_vertices=10242,
             num_edges=30720,
         ),
-        file_name="icon_grid_0013_R02B04_R.nc",
-        uri=f"{DATA_ROOT_URL}/grids/r02b04_global/icon_grid_0013_R02B04_R.nc.tar.gz",
     )
     R02B06_GLOBAL: Final = GridDescription(
         name="icon_grid_0021_R02B06_G",
@@ -87,8 +83,6 @@ class Grids:
             num_vertices=163842,
             num_edges=491520,
         ),
-        file_name="icon_grid_0021_R02B06_G.nc",
-        uri=f"{DATA_ROOT_URL}/grids/r02b06_global/icon_grid_0021_R02B06_G.nc.tar.gz",
     )
     R02B07_GLOBAL: Final = GridDescription(
         name="icon_grid_0023_R02B07_G",
@@ -102,8 +96,6 @@ class Grids:
             num_vertices=655362,
             num_edges=1966080,
         ),
-        file_name="icon_grid_0023_R02B07_G.nc",
-        uri=f"{DATA_ROOT_URL}/grids/r02b07_global/icon_grid_0023_R02B07_G.nc.tar.gz",
     )
     R19_B07_MCH_LOCAL: Final = GridDescription(
         name="icon_grid_0002_R19B07_mch",
@@ -118,8 +110,6 @@ class Grids:
             num_vertices=142724,
             num_edges=426599,
         ),
-        file_name="icon_grid_0002_R19B07_mch.nc",
-        uri=f"{DATA_ROOT_URL}/grids/mch/icon_grid_0002_R19B07_mch.nc.tar.gz",
     )
     MCH_OPR_R04B07_DOMAIN01: Final = GridDescription(
         name="mch_opr_R04B07_DOM01",
@@ -134,8 +124,6 @@ class Grids:
             num_vertices=5510,
             num_edges=16209,
         ),
-        file_name="mch_opr_r4b7_DOM01.nc",
-        uri=f"{DATA_ROOT_URL}/grids/mch/mch_opr_r4b7_DOM01.nc.tar.gz",
     )
     MCH_OPR_R19B08_DOMAIN01: Final = GridDescription(
         name="mch_opr_R19B08_DOM01",
@@ -150,8 +138,6 @@ class Grids:
             num_vertices=22569,
             num_edges=67096,
         ),
-        file_name="domain1_DOM01.nc",
-        uri=f"{DATA_ROOT_URL}/grids/mch/domain1_DOM01.nc.tar.gz",
     )
     MCH_CH_R04B09_DSL: Final = GridDescription(
         name="mch_ch_R04R09_DOM01",
@@ -166,8 +152,6 @@ class Grids:
             num_vertices=10663,
             num_edges=31558,
         ),
-        file_name="grid.nc",
-        uri=f"{DATA_ROOT_URL}/grids/mch_ch_r04b09_dsl/mch_ch_r04b09_dsl_grids_v1.tar.gz",
     )
     TORUS_100X116_1000M: Final = GridDescription(
         name="torus_100000mx100000m_res1000m",
@@ -180,8 +164,6 @@ class Grids:
             num_vertices=11600,
             num_edges=34800,
         ),
-        file_name="Torus_Triangles_100x116_1000m.nc",
-        uri=f"{DATA_ROOT_URL}/grids/torus/Torus_Triangles_100x116_1000m.nc.tar.gz",
     )
     TORUS_50000x5000: Final = GridDescription(
         name="torus_50000mx5000m_res500m",
@@ -194,8 +176,6 @@ class Grids:
             num_vertices=52,
             num_edges=1584,
         ),
-        file_name="Torus_Triangles_50000m_x_5000m_res500m.nc",
-        uri=f"{DATA_ROOT_URL}/grids/torus/Torus_Triangles_50000m_x_5000m_res500m.nc.tar.gz",
     )
     TORUS_1000X1000_250M: Final = GridDescription(
         name="torus_1000mx1000m_res250m",
@@ -208,8 +188,6 @@ class Grids:
             num_vertices=12,
             num_edges=36,
         ),
-        file_name="Torus_Triangles_1000m_x_1000m_res250m.nc",
-        uri=f"{DATA_ROOT_URL}/grids/torus/Torus_Triangles_1000m_x_1000m_res250m.nc.tar.gz",
     )
 
 

@@ -23,7 +23,7 @@ UNLIMITED = None
 simple_grid = simple.simple_grid()
 
 grid_file = definitions.grids_path().joinpath(
-    definitions.Grids.R02B04_GLOBAL.name, definitions.Grids.R02B04_GLOBAL.file_name
+    definitions.Grids.R02B04_GLOBAL.name, f"{definitions.Grids.R02B04_GLOBAL.name}.nc"
 )
 global_grid = grid_utils.get_grid_manager_from_experiment(
     definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, allocator=backend
