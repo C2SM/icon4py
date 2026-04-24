@@ -3,6 +3,7 @@
 Date: 2026-03-30 (initial), 2026-04-19 (latest update)
 
 > **This is the executive summary.** Detailed evidence lives in:
+>
 > - [docs/HARDWARE_REFERENCE.md](docs/HARDWARE_REFERENCE.md) — vendor specs + on-node sysinfo for MI300A and GH200
 > - [docs/DEEP_ANALYSIS.md](docs/DEEP_ANALYSIS.md) — per-kernel deep dive on map_100_fieldop_1, cross-platform A/B tables, demand-byte derivation
 > - [docs/ATTEMPTED_OPTIMIZATIONS.md](docs/ATTEMPTED_OPTIMIZATIONS.md) — every optimization tried (block size, fusion, occupancy, loop blocking, LDS, CSE) with full A/B sweeps
@@ -17,12 +18,12 @@ MI300A (Beverin, gfx942, ROCm 7.1.0) and GH200 (Santis, sm_90).
 A one-line config change — `gpu_block_size_2d=(256,1,1)` for ROCm in `model_options.py`
 — gives **20% solver speedup** on MI300A and closes most of the MI300A vs GH200 gap.
 
-| Platform | Config | GT4Py Timer median (1000 runs) |
-|----------|--------|-------------------------------|
-| MI300A | DaCe default `(32,8,1)` | 0.753 ms |
-| MI300A | **`gpu_block_size_2d=(256,1,1)`** | **0.604 ms (-19.8%)** |
-| GH200 | DaCe default `(32,8,1)` | 0.546 ms |
-| GH200 | **`gpu_block_size_2d=(256,1,1)`** | **0.527 ms (-3.5%)** |
+| Platform | Config                            | GT4Py Timer median (1000 runs) |
+| -------- | --------------------------------- | ------------------------------ |
+| MI300A   | DaCe default `(32,8,1)`           | 0.753 ms                       |
+| MI300A   | **`gpu_block_size_2d=(256,1,1)`** | **0.604 ms (-19.8%)**          |
+| GH200    | DaCe default `(32,8,1)`           | 0.546 ms                       |
+| GH200    | **`gpu_block_size_2d=(256,1,1)`** | **0.527 ms (-3.5%)**           |
 
 GH200 numbers above are from the 2026-04-20 full sweep of 20 block sizes
 (see [docs/ATTEMPTED_OPTIMIZATIONS.md#block-size-sweep-on-the-actual-solver-gh200-gt4py-timer-1000-runs](docs/ATTEMPTED_OPTIMIZATIONS.md#block-size-sweep-on-the-actual-solver-gh200-gt4py-timer-1000-runs)).
@@ -73,6 +74,7 @@ Even if MI300A reached 100% of its HBM peak, the HBM-peak ratio alone (3.47 vs
 4.0 = 0.87) would leave a residual gap.
 
 **Where MI300A can still improve:**
+
 - **HBM utilization at 70% vs GH200's 89%** — room to push more data per second.
 - **Reduce HBM traffic** by avoiding kernel-to-kernel HBM round-trips on
   intermediate arrays (`gtir_tmp_83/96/97` etc.). Both platforms are HBM-bound,
@@ -91,7 +93,7 @@ has its own bottleneck profile.
 coalescing on the heavy kernel is only 27% of peak. This sounds bad, but vL1D
 itself is only 27.79% utilized (huge headroom in cache bandwidth) and the
 kernel is HBM-bound, not vL1D-bound. Fixing C2E coalescing is predicted to
-give <2% wall-clock improvement. Details in
+give \<2% wall-clock improvement. Details in
 [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis).
 
 ### Why (256,1,1) helps
@@ -100,6 +102,7 @@ The default `(32,8)` thread block layout works fine for NVIDIA's 32-wide warps b
 mismatches AMD's 64-wide wavefronts.
 
 **Block layout reasoning:**
+
 - All 256 threads in a block process consecutive cells → wavefront-aligned access,
   perfect coalescing for `array[cell, K]`.
 - The default `(32,8,1)` spreads 8 threads across K levels, which wastes coalescing
@@ -107,6 +110,7 @@ mismatches AMD's 64-wide wavefronts.
 - MI300A wavefronts are 64 wide, so 256 = 4 wavefronts per block — good occupancy.
 
 **Verified performance impact:**
+
 - Cell-consecutive threads on the same CU dramatically improve cache reuse:
   **L2 hit rate jumps 15-20% → 32-50%** on the heavy 2D kernels.
 - vL1D hit rate reaches **72%** on heavy kernels (per-CU TCP catches reuse).
@@ -118,15 +122,17 @@ on the heavy kernel — the C2E gather scatters threads across edge memory.
 But this turns out NOT to be a wall-clock bottleneck (vL1D has plenty of
 bandwidth headroom; the kernel is HBM-bound, not vL1D-bound). See
 [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis) for
-why fixing this would give <2%.
+why fixing this would give \<2%.
 
 ## Optimization Opportunities
 
 ### Confirmed helpful
+
 1. **`gpu_block_size_2d=(256,1,1)` for ROCm** — −20% solver speedup on MI300A,
    −5% per-kernel on GH200 (see [block size tuning detail](docs/ATTEMPTED_OPTIMIZATIONS.md#gpu-block-size-tuning))
 
 ### Worth investigating
+
 2. **Fuse `gtir_tmp_83/96/97` and similar intermediates** — these arrays are
    written to HBM by one kernel and read back by the next. Both platforms are
    bandwidth-bound (MI300A 70% of peak, GH200 89%), so removing this round-trip
@@ -144,18 +150,19 @@ why fixing this would give <2%.
    stack on top of (256,1,1).
 
 ### Not helpful (verified, with measurements)
-| Optimization | Result |
-|--------------|--------|
-| Loop blocking (K-blocking) | 2.8% on its own, redundant once `(256,1,1)` is applied |
-| `fuse_tasklets` | Neutral on current gt4py (was 7% on older 1.1.4) |
-| Kernel fusion (for launch overhead) | Inter-kernel gap is only 0.5-1.1% — not worth pursuing |
-| Forcing higher occupancy | 2.5x slowdown (register spilling); 10/12 kernels already at max |
-| Register limiting via compiler flags | Not exposed in ROCm 7.1.0 |
-| CSE (common subexpression elimination) | Compiler handles it at -O3 |
-| Block size `(64,6,1)` | 7% worse than `(256,1,1)` |
-| LDS / shared-memory staging of the C2E gather | Neutral in synthetic test (no inter-thread reuse to exploit). `__shfl`-based deduplication is untested but targets the same vL1D-only metric — same caveat as C2E reordering applies (kernel is HBM-bound, predicted <2% wall-clock impact). |
-| Many-array BW limitation | Synthetic benchmark proves MI300A handles 20+ arrays at 93% peak |
-| **C2E edge reordering** (downgraded from "worth investigating") | Predicted <2% wall-clock impact. The "27% vL1D coalescing" number wastes vL1D bandwidth, but vL1D is only at 27.79% utilization (huge headroom). The kernel is HBM-bound, not vL1D-bound. Reordering improves a metric that isn't the bottleneck. See "How to verify yourself" below. |
+
+| Optimization                                                    | Result                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Loop blocking (K-blocking)                                      | 2.8% on its own, redundant once `(256,1,1)` is applied                                                                                                                                                                                                                                 |
+| `fuse_tasklets`                                                 | Neutral on current gt4py (was 7% on older 1.1.4)                                                                                                                                                                                                                                       |
+| Kernel fusion (for launch overhead)                             | Inter-kernel gap is only 0.5-1.1% — not worth pursuing                                                                                                                                                                                                                                 |
+| Forcing higher occupancy                                        | 2.5x slowdown (register spilling); 10/12 kernels already at max                                                                                                                                                                                                                        |
+| Register limiting via compiler flags                            | Not exposed in ROCm 7.1.0                                                                                                                                                                                                                                                              |
+| CSE (common subexpression elimination)                          | Compiler handles it at -O3                                                                                                                                                                                                                                                             |
+| Block size `(64,6,1)`                                           | 7% worse than `(256,1,1)`                                                                                                                                                                                                                                                              |
+| LDS / shared-memory staging of the C2E gather                   | Neutral in synthetic test (no inter-thread reuse to exploit). `__shfl`-based deduplication is untested but targets the same vL1D-only metric — same caveat as C2E reordering applies (kernel is HBM-bound, predicted \<2% wall-clock impact).                                          |
+| Many-array BW limitation                                        | Synthetic benchmark proves MI300A handles 20+ arrays at 93% peak                                                                                                                                                                                                                       |
+| **C2E edge reordering** (downgraded from "worth investigating") | Predicted \<2% wall-clock impact. The "27% vL1D coalescing" number wastes vL1D bandwidth, but vL1D is only at 27.79% utilization (huge headroom). The kernel is HBM-bound, not vL1D-bound. Reordering improves a metric that isn't the bottleneck. See "How to verify yourself" below. |
 
 Full A/B sweeps and methodology in [docs/ATTEMPTED_OPTIMIZATIONS.md](docs/ATTEMPTED_OPTIMIZATIONS.md).
 
@@ -166,6 +173,7 @@ after the standard env setup (`source amd_scripts/setup_env.sh; source .venv_roc
 on MI300A; `source .venv_cuda/bin/activate` on GH200).
 
 **Block-size A/B (MI300A, GT4Py Timer):**
+
 ```bash
 # Edit model_options.py to set the block size you want (or comment line for DaCe default)
 # Use a fresh GT4PY_BUILD_CACHE_DIR per variant — gt4py caches by SDFG hash, not by block size
@@ -188,6 +196,7 @@ grep -oE "dim3\([^)]*\), dim3\([^)]*\)" $LAST/src/cuda/hip/*.cpp | sort -u | hea
 ```
 
 **Per-kernel coalescing / cache metrics (MI300A, rocprof-compute analyze):**
+
 ```bash
 # Find the dispatch IDs of the kernel of interest
 P=workloads/rcu_amd_256x1_solver/MI300A_A1
@@ -203,11 +212,13 @@ sed -n '/^17\. L2 Cache/,/^18\./p' /tmp/m100.txt    # L2 section: hit rate, fabr
 ```
 
 **Per-kernel HBM BW + L2 hit rate (MI300A, lighter-weight):**
+
 ```bash
 python3 amd_scripts/extract_pmc.py workloads/<your-workload>/MI300A_A1/pmc_perf.csv
 ```
 
 **Inter-kernel gap (MI300A, rocprofv3 kernel-trace):**
+
 ```bash
 srun --partition=mi300 --gres=gpu:1 --ntasks=1 --time=00:15:00 \
     rocprofv3 --kernel-trace --output-format csv -o rocprofv3_<variant> -- \
@@ -219,6 +230,7 @@ srun --partition=mi300 --gres=gpu:1 --ntasks=1 --time=00:15:00 \
 ```
 
 **Cross-platform DRAM bytes (GH200, ncu):**
+
 ```bash
 # Re-query existing .ncu-rep without re-running the kernel:
 ncu --import gh200_solver.ncu-rep --csv \
@@ -230,37 +242,38 @@ sbatch <wrapper>  # see amd_scripts/profile_solver_gh200_ncu.sh for template
 ```
 
 **C2E scatter analysis (grid-only first-order estimate, NOT a measurement):**
+
 ```bash
 python3 amd_scripts/analyze_c2e_reorder.py testdata/grids/mch_opr_r19b08/domain1_DOM01.nc \
     --wave-size 64 --cells-per-block 256
 ```
+
 ⚠️ The script's model is approximate. The cache-line-utilization numbers
 (>100% in some configs) prove the model is misformulated — useful only as a
 rough estimate of edge-index spread, not as a coalescing measurement. The
 authoritative numbers come from `rocprof-compute analyze` (above).
 
-
 ## Per-Kernel Timing (rocprofv3 kernel-trace, median μs, MI300A)
 
 Both columns measured with rocprofv3 kernel-trace, fresh runs on the current gt4py.
 
-| Kernel | Baseline (μs) | (256,1,1) (μs) | Improvement | Stencil |
-|--------|---------------|----------------|-------------|---------|
-| map_100_1 | 212 | **166** | -22% | thermo results + dwdz (split 1) |
-| map_111_1 | 186 | **146** | -22% | explicit rho/exner + divergence (split 1) |
-| map_60 | 138 | **112** | -19% | solver coefficients + w explicit |
-| map_0 | 60 | 50 | -16% | contravariant correction (C2E gather) |
-| map_85 | 58 | 57 | neutral | tridiag forward sweep (scan, 1D) |
-| map_31 | 42 | 33 | -21% | w explicit term |
-| map_90 | 27 | 27 | neutral | tridiag back-sub (scan, 1D) |
-| map_91 | 9 | 7 | -22% | Rayleigh damping |
-| map_100_0 | 6 | 6 | neutral | thermo results split 0 (1D) |
-| map_111_0 | 5 | 5 | neutral | rho/exner split 0 (1D) |
-| map_13 | 6 | 6 | neutral | contravariant correction lower boundary (1D) |
-| map_35 | 4 | 4 | neutral | zeroing temporaries (1D) |
-| **Total kernels** | **753** | **618** | **-18%** | sum of per-kernel medians |
-| **Wall clock (first→last)** | 774 | 660 | -15% | inter-kernel gap: 0.5-1.1% |
-| **GT4Py Timer median** | 760 | 604 | -21% | full SDFG call (1000 runs) |
+| Kernel                      | Baseline (μs) | (256,1,1) (μs) | Improvement | Stencil                                      |
+| --------------------------- | ------------- | -------------- | ----------- | -------------------------------------------- |
+| map_100_1                   | 212           | **166**        | -22%        | thermo results + dwdz (split 1)              |
+| map_111_1                   | 186           | **146**        | -22%        | explicit rho/exner + divergence (split 1)    |
+| map_60                      | 138           | **112**        | -19%        | solver coefficients + w explicit             |
+| map_0                       | 60            | 50             | -16%        | contravariant correction (C2E gather)        |
+| map_85                      | 58            | 57             | neutral     | tridiag forward sweep (scan, 1D)             |
+| map_31                      | 42            | 33             | -21%        | w explicit term                              |
+| map_90                      | 27            | 27             | neutral     | tridiag back-sub (scan, 1D)                  |
+| map_91                      | 9             | 7              | -22%        | Rayleigh damping                             |
+| map_100_0                   | 6             | 6              | neutral     | thermo results split 0 (1D)                  |
+| map_111_0                   | 5             | 5              | neutral     | rho/exner split 0 (1D)                       |
+| map_13                      | 6             | 6              | neutral     | contravariant correction lower boundary (1D) |
+| map_35                      | 4             | 4              | neutral     | zeroing temporaries (1D)                     |
+| **Total kernels**           | **753**       | **618**        | **-18%**    | sum of per-kernel medians                    |
+| **Wall clock (first→last)** | 774           | 660            | -15%        | inter-kernel gap: 0.5-1.1%                   |
+| **GT4Py Timer median**      | 760           | 604            | -21%        | full SDFG call (1000 runs)                   |
 
 The 2D heavy kernels (map_100_1, map_111_1, map_60, map_31) all gained 16-22% from
 the (256,1,1) block size. 1D kernels and scans are unchanged as expected.
@@ -270,20 +283,20 @@ the (256,1,1) block size. 1D kernels and scans are unchanged as expected.
 MI300A at `(256,1,1)`, GH200 cache compiled with (32,8) for 1D/scan kernels and
 (256,1,1) for 2D kernels (DaCe's automatic per-kernel choice on GH200).
 
-| Kernel | MI300A (μs) | GH200 (μs) | Winner | Note |
-|---|---|---|---|---|
-| map_100_1 | 166 | 117 | GH200 (-30%) | hottest 2D kernel |
-| map_111_1 | 146 | 107 | GH200 (-27%) | 2D |
-| map_60 | 112 | 84 | GH200 (-25%) | 2D |
-| map_0 | 50 | 34 | GH200 (-32%) | 2D, C2E gather |
-| map_31 | 33 | 27 | GH200 (-18%) | 2D |
-| **map_85** (forward scan, 1D) | **57** | **63** | **MI300A (-10%)** | wavefront-aligned win |
-| map_90 (back-sub scan, 1D) | 27 | 24 | GH200 (-11%) | |
-| map_91 (Rayleigh damping) | 7 | 4 | GH200 | small |
-| map_13 (boundary) | 6 | 5 | GH200 | small |
-| map_100_0 (1D split) | 6 | 6 | tie | |
-| map_111_0 (1D split) | 5 | 6 | MI300A | small |
-| map_35 (zeroing) | 4 | 2.5 | GH200 | small |
+| Kernel                        | MI300A (μs) | GH200 (μs) | Winner            | Note                  |
+| ----------------------------- | ----------- | ---------- | ----------------- | --------------------- |
+| map_100_1                     | 166         | 117        | GH200 (-30%)      | hottest 2D kernel     |
+| map_111_1                     | 146         | 107        | GH200 (-27%)      | 2D                    |
+| map_60                        | 112         | 84         | GH200 (-25%)      | 2D                    |
+| map_0                         | 50          | 34         | GH200 (-32%)      | 2D, C2E gather        |
+| map_31                        | 33          | 27         | GH200 (-18%)      | 2D                    |
+| **map_85** (forward scan, 1D) | **57**      | **63**     | **MI300A (-10%)** | wavefront-aligned win |
+| map_90 (back-sub scan, 1D)    | 27          | 24         | GH200 (-11%)      |                       |
+| map_91 (Rayleigh damping)     | 7           | 4          | GH200             | small                 |
+| map_13 (boundary)             | 6           | 5          | GH200             | small                 |
+| map_100_0 (1D split)          | 6           | 6          | tie               |                       |
+| map_111_0 (1D split)          | 5           | 6          | MI300A            | small                 |
+| map_35 (zeroing)              | 4           | 2.5        | GH200             | small                 |
 
 **MI300A wins on:** the forward scan (map_85, -10%) and one trivial 1D split (map_111_0).
 GH200 wins on every other kernel — most by 18-32%, consistent with its higher
@@ -298,7 +311,9 @@ Sources: MI300A from rocprofv3 kernel-trace; GH200 from `gh200_all_kernels.ncu-r
 ## Key Findings
 
 ### 1. DaCe-generated kernels are bandwidth-bound, with a coalescing gap
+
 Numbers for map_100_fieldop_1 at `(256,1,1)`:
+
 - **Demand bytes**: 720 MB per invocation (228 B/thread × 3,156,224 threads, re-counted from GCN assembly).
 - **HBM moved**: 454 MB (rocprof-compute analyze §4.1.9: 2.43 TB/s × 187 μs).
 - **Cache absorption (vL1D + L2 + Infinity Cache combined)**: 37% of demand.
@@ -308,6 +323,7 @@ Numbers for map_100_fieldop_1 at `(256,1,1)`:
 Detailed cache-hierarchy breakdown and provenance in [Deep Analysis](docs/DEEP_ANALYSIS.md).
 
 ### 2. The MI300A vs GH200 gap shrinks substantially with `(256,1,1)`
+
 - The original 1.4-2.1x per-kernel gap from AMD_INTRODUCTION.md was largely a block
   size mismatch — the DaCe default `(32,8)` is NVIDIA-friendly but wrong for AMD.
 - After setting `gpu_block_size_2d=(256,1,1)` **on MI300A**, the gap vs GH200-default shrinks from 1.38x → 1.08x.
@@ -316,11 +332,12 @@ Detailed cache-hierarchy breakdown and provenance in [Deep Analysis](docs/DEEP_A
   of 3.47 TB/s HBM peak. GH200 is closer to its HBM ceiling.
 
 ### 3. Inter-kernel overhead is small (verified A/B)
-| Platform | Block size | Wall first→last | Σ kernel times | Gap | Gap % |
-|---|---|---|---|---|---|
-| MI300A | (32,8) baseline | 1316 μs | 1314 μs | **6.3 μs** | **0.47%** |
-| MI300A | (256,1,1) | 847 μs | 840 μs | **9.1 μs** | **1.08%** |
-| GH200 | (256,1,1) | 491 μs | 474 μs | 17.2 μs | 3.49% |
+
+| Platform | Block size      | Wall first→last | Σ kernel times | Gap        | Gap %     |
+| -------- | --------------- | --------------- | -------------- | ---------- | --------- |
+| MI300A   | (32,8) baseline | 1316 μs         | 1314 μs        | **6.3 μs** | **0.47%** |
+| MI300A   | (256,1,1)       | 847 μs          | 840 μs         | **9.1 μs** | **1.08%** |
+| GH200    | (256,1,1)       | 491 μs          | 474 μs         | 17.2 μs    | 3.49%     |
 
 The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifact
 (rocprofv3 GPU kernel time vs pytest-benchmark wall time, mixing GPU and host overhead).
@@ -328,10 +345,12 @@ The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifa
 **Kernel fusion would save at most ~10-20 μs per solver call. Not pursued.**
 
 ### 4. Occupancy is NOT the bottleneck
+
 - Already at max occupancy (8 waves/SIMD) for 10 of 12 kernels
 - Forcing more waves causes 2.5x slowdown due to register spilling
 
 ### 5. C2E scatter — investigated, NOT the wall-clock bottleneck (verified 2026-04-20)
+
 - vL1D coalescing is **27% of peak** on map_100_fieldop_1 (MI300A). This means each
   vL1D request fetches more sectors than ideal — 3-4× wasteful at the cache layer.
 - **BUT vL1D Bandwidth Utilization is only 27.79%** — the cache has tons of spare
@@ -341,26 +360,28 @@ The previously reported "86 μs (10%) inter-kernel gap" was a calculation artifa
 - **L1 hit rate is 72%** — only 28% of vL1D requests actually go to L2. Even fixing
   C2E gather coalescing perfectly (27% → 100%) would reduce L2 traffic by a small
   fraction of that 28%.
-- **Predicted wall-clock impact of edge reordering: <2%, possibly less.** Real
+- **Predicted wall-clock impact of edge reordering: \<2%, possibly less.** Real
   bottleneck is HBM traffic — see opportunity #2 (intermediate fusion) instead.
 - See [Deep Analysis: C2E scatter](docs/DEEP_ANALYSIS.md#c2e-scatter-analysis)
   for measurement detail and reproduction commands.
 
 ### 6. L2 cache behavior depends on block size (MI300A)
+
 - With baseline `(32,8)`: ~15-20% hit rate (heavy 2D kernels) — streaming pattern.
 - With `(256,1,1)`: **L2 hit rate jumps to 32-50%** on heavy 2D kernels because
   cell-consecutive threads on the same CU share cache lines. Main driver of the 20% speedup.
 - 1D / scan kernels are unaffected.
 
 ### 7. AMD per-CU L1 dramatically out-caches NVIDIA per-SM L1 on this kernel
+
 For map_100_fieldop_1 at each platform's matching `(256,1,1)`:
 
-| Cache layer | MI300A (vL1D) | GH200 (L1) | Ratio |
-|---|---|---|---|
-| Per-cache size | 32 KB per CU | 256 KB per SM | NVIDIA has 8× per-cache |
-| Total L1 across chip | 228 × 32 KB = 7.3 MB | 132 × 256 KB = 33.8 MB | NVIDIA has 4.6× total |
-| **L1 hit rate** | **72.4%** | **13.1%** | **MI300A wins 5.5×** |
-| **L2 hit rate** | 47.5% | 48.6% | tie |
+| Cache layer          | MI300A (vL1D)        | GH200 (L1)             | Ratio                   |
+| -------------------- | -------------------- | ---------------------- | ----------------------- |
+| Per-cache size       | 32 KB per CU         | 256 KB per SM          | NVIDIA has 8× per-cache |
+| Total L1 across chip | 228 × 32 KB = 7.3 MB | 132 × 256 KB = 33.8 MB | NVIDIA has 4.6× total   |
+| **L1 hit rate**      | **72.4%**            | **13.1%**              | **MI300A wins 5.5×**    |
+| **L2 hit rate**      | 47.5%                | 48.6%                  | tie                     |
 
 NVIDIA has more total L1 storage AND a bigger per-cache size, but on this kernel
 **MI300A's smaller, more-numerous caches catch dramatically more reuse at L1**.
@@ -372,6 +393,7 @@ on both architectures, but MI300A absorbs more at L1, GH200 absorbs more at L2.
 
 Both architectures run multiple blocks concurrently per CU/SM, so "per-CU isolation"
 is too simple. Possible contributing factors:
+
 1. AMD's wavefront is 64 wide vs NVIDIA's 32-wide warp, so `(256,1,1)` = 4 waves
    on AMD vs 8 warps on NVIDIA on the same block. Less scheduling overhead and
    potentially fewer concurrent working sets competing per cache slice.
@@ -392,10 +414,10 @@ set fits) outside what these profilers expose. The profile tools tell us *what*
 (256,1,1) is faster overall (-5%) despite WORSE L1 hit rate. **L2 picks up
 the slack**:
 
-| Block | L1 hit | L2 read hit | L2 overall hit | DRAM bytes | Duration |
-|---|---|---|---|---|---|
-| (32,8) | 36.5% | 14.7% | 34.9% | 432 MB | 123 μs |
-| (256,1,1) | 13.1% | **36.5%** | **48.6%** | 413 MB | 117 μs |
+| Block     | L1 hit | L2 read hit | L2 overall hit | DRAM bytes | Duration |
+| --------- | ------ | ----------- | -------------- | ---------- | -------- |
+| (32,8)    | 36.5%  | 14.7%       | 34.9%          | 432 MB     | 123 μs   |
+| (256,1,1) | 13.1%  | **36.5%**   | **48.6%**      | 413 MB     | 117 μs   |
 
 When L1 thrashes at the larger block size, GH200's 50 MB L2 catches the
 displaced working set. Net DRAM traffic drops 4%, duration drops 5%. L2 read
@@ -421,20 +443,23 @@ replicate on NVIDIA.
     Used in early experiments; absolute values run higher.
   - **GT4Py Timer** (`GT4PY_COLLECT_METRICS_LEVEL=10`): C++ level, closer to the
     actual kernel launches. More accurate. **Use this for all new measurements.**
-  Results from different timers are not directly comparable.
+    Results from different timers are not directly comparable.
 
 ## Tooling Notes
 
 ### Roofline generation
+
 The original `benchmark_solver.sh` could not generate roofline plots — `rocprof-compute`
 concatenates all kernel names into the PDF filename, exceeding the 255-char filesystem limit.
 Fixed in `benchmark_solver_roofline.sh` by profiling one kernel at a time in a loop.
 
 ### rocpd segfault
+
 `--format-rocprof-output rocpd` causes segfaults (noted in original benchmark_solver.sh TODO).
 Workaround: omit this flag, use default CSV format.
 
 ### Bandwidth measurement methodology
+
 **Important:** Do not use `TCC_MISS × cache_line_size` to estimate bandwidth. This
 counts L2-to-HBM traffic at cache line granularity, which undercounts total data
 moved (misses L2 hits) and overcounts (each miss loads a full 64B line even if only
@@ -461,9 +486,10 @@ verified to match rocprof-compute within 3%.
 - `workloads/rcu_amd_*/` — per-kernel profiling data (rocprof-compute output)
 - `pmc_perf.csv` — hardware counter data for all kernels
 
----
+______________________________________________________________________
 
 **For full evidence and detailed measurements:**
+
 - [docs/HARDWARE_REFERENCE.md](docs/HARDWARE_REFERENCE.md)
 - [docs/DEEP_ANALYSIS.md](docs/DEEP_ANALYSIS.md)
 - [docs/ATTEMPTED_OPTIMIZATIONS.md](docs/ATTEMPTED_OPTIMIZATIONS.md)

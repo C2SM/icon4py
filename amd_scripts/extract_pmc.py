@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Extract per-kernel duration, BW, L2 hit rate from rocprof-compute pmc_perf.csv.
 
 rocprof-compute uses multi-pass profiling: each kernel is run multiple times with
@@ -11,7 +19,7 @@ HBM BW formula:
     rocprof-compute analyze §4.1.9 "HBM Bandwidth" within ~3% on map_100_fieldop_1
     (verified 2026-04-19 against dispatch 11/23/35: this script gives 2.37 TB/s,
     rocprof-compute reports 2.43 TB/s). The previous formula
-    (TCC_EA0_RDREQ + TCC_EA0_WRREQ) * 64 was wrong by 1.6×; EA0 counters are
+    (TCC_EA0_RDREQ + TCC_EA0_WRREQ) * 64 was wrong by 1.6x; EA0 counters are
     External Access channel-0 counters that don't aggregate across all L2
     channels and don't represent total HBM-side traffic.
 
@@ -20,12 +28,13 @@ L2 hit rate formula:
     (47.4% vs 47.5% on map_100_fieldop_1).
 """
 
+import contextlib
 import csv
 import re
 import statistics
 import sys
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 
 def main():
@@ -34,15 +43,17 @@ def main():
         sys.exit(1)
 
     path = Path(sys.argv[1])
-    kernels = defaultdict(lambda: {
-        "durs": [],
-        "hit": [],
-        "req": [],
-        "read": [],
-        "write": [],
-        "arch_vgpr": "",
-        "workgroup": "",
-    })
+    kernels = defaultdict(
+        lambda: {
+            "durs": [],
+            "hit": [],
+            "req": [],
+            "read": [],
+            "write": [],
+            "arch_vgpr": "",
+            "workgroup": "",
+        }
+    )
 
     with path.open() as f:
         reader = csv.DictReader(f)
@@ -52,10 +63,8 @@ def main():
                 continue
             short = re.sub(r"_\d+$", "", name.split("(")[0])
             d = kernels[short]
-            try:
+            with contextlib.suppress(KeyError, ValueError):
                 d["durs"].append(float(row["End_Timestamp"]) - float(row["Start_Timestamp"]))
-            except (KeyError, ValueError):
-                pass
             for key, col in [
                 ("hit", "TCC_HIT_sum"),
                 ("req", "TCC_REQ_sum"),
@@ -75,7 +84,9 @@ def main():
                 d["arch_vgpr"] = row.get("Arch_VGPR", "")
                 d["workgroup"] = row.get("Workgroup_Size", "")
 
-    print(f"{'Kernel':<28} {'Dur(us)':>8} {'HBM(TB/s)':>10} {'L2 Hit%':>8} {'VGPR':>5} {'Block':>10}")
+    print(
+        f"{'Kernel':<28} {'Dur(us)':>8} {'HBM(TB/s)':>10} {'L2 Hit%':>8} {'VGPR':>5} {'Block':>10}"
+    )
     print("-" * 80)
     sorted_keys = sorted(
         kernels.keys(),

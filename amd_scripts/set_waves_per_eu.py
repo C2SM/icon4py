@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """
 DaCe post-compilation patch: add __attribute__((amdgpu_waves_per_eu(min, max)))
 to all __global__ kernels in a GT4Py DaCe cache directory.
@@ -18,7 +26,6 @@ Then re-run the benchmark.
 """
 
 import argparse
-import glob
 import re
 import shutil
 import sys
@@ -55,11 +62,19 @@ def patch_kernels(cpp_file: Path, min_waves: int, max_waves: int, dry_run: bool 
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Patch DaCe-generated HIP kernels with amdgpu_waves_per_eu")
+    parser = argparse.ArgumentParser(
+        description="Patch DaCe-generated HIP kernels with amdgpu_waves_per_eu"
+    )
     parser.add_argument("cache_dir", help="GT4Py build cache directory")
-    parser.add_argument("--min-waves", type=int, default=1, help="Minimum waves per EU (default: 1)")
-    parser.add_argument("--max-waves", type=int, default=4, help="Maximum waves per EU (default: 4)")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be changed without modifying files")
+    parser.add_argument(
+        "--min-waves", type=int, default=1, help="Minimum waves per EU (default: 1)"
+    )
+    parser.add_argument(
+        "--max-waves", type=int, default=4, help="Maximum waves per EU (default: 4)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be changed without modifying files"
+    )
     args = parser.parse_args()
 
     cache_dir = Path(args.cache_dir)
@@ -91,9 +106,9 @@ def main():
         action = "Would patch" if args.dry_run else "Patched"
         print(f"\n{action} {total_patched} kernels total.")
         if not args.dry_run:
-            print(f"\nNow delete build dirs to force recompilation:")
+            print("\nNow delete build dirs to force recompilation:")
             print(f"  rm -rf {cache_dir}/.gt4py_cache/*/build/")
-            print(f"Then re-run the benchmark.")
+            print("Then re-run the benchmark.")
 
 
 if __name__ == "__main__":

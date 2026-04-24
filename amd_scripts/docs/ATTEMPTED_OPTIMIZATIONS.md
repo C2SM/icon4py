@@ -25,26 +25,26 @@ optimization_args["gpu_block_size_2d"] = (256, 1, 1)
 
 ### A/B sweep (GT4Py Timer, `amd_profiling_staging_main` gt4py, warm cache, 1000 runs)
 
-| Config | Mean | Median | vs Baseline |
-|--------|------|--------|-------------|
-| Baseline (32,8,1) | 0.768 ms | 0.763 ms | — |
-| `gpu_block_size_1d=(256,1,1)` only | 0.771 ms | 0.767 ms | neutral |
-| **`gpu_block_size_2d=(256,1,1)` only** | **0.611 ms** | **0.604 ms** | **-20.8%** |
-| All three set | 0.618 ms | 0.612 ms | -19.8% |
-| fuse_tasklets only | 0.763 ms | 0.760 ms | neutral (30 runs) |
-| (256,1,1) + fuse_tasklets | 0.640 ms | 0.632 ms | -17.2% (30 runs) |
-| (256,1,1) + blocking (threshold=3) | 0.650 ms | 0.649 ms | -15.0% (30 runs) |
+| Config                                 | Mean         | Median       | vs Baseline       |
+| -------------------------------------- | ------------ | ------------ | ----------------- |
+| Baseline (32,8,1)                      | 0.768 ms     | 0.763 ms     | —                 |
+| `gpu_block_size_1d=(256,1,1)` only     | 0.771 ms     | 0.767 ms     | neutral           |
+| **`gpu_block_size_2d=(256,1,1)` only** | **0.611 ms** | **0.604 ms** | **-20.8%**        |
+| All three set                          | 0.618 ms     | 0.612 ms     | -19.8%            |
+| fuse_tasklets only                     | 0.763 ms     | 0.760 ms     | neutral (30 runs) |
+| (256,1,1) + fuse_tasklets              | 0.640 ms     | 0.632 ms     | -17.2% (30 runs)  |
+| (256,1,1) + blocking (threshold=3)     | 0.650 ms     | 0.649 ms     | -15.0% (30 runs)  |
 
 `gpu_block_size_2d=(256,1,1)` is the only setting needed. The others have no effect
 (harmless to set, just adds nothing).
 
 Earlier pytest-benchmark results for reference (different timer, different gt4py version):
 
-| Config | Block size | pytest-benchmark Median | vs Baseline |
-|--------|-----------|------------------------|-------------|
-| Baseline | (32,8,1) default | 0.820 ms | — |
-| (256,1,1) all maps | (256,1,1) | 0.703 ms | -14.3% |
-| (64,6,1) all maps | (64,6,1) | 0.756 ms | -7.8% |
+| Config             | Block size       | pytest-benchmark Median | vs Baseline |
+| ------------------ | ---------------- | ----------------------- | ----------- |
+| Baseline           | (32,8,1) default | 0.820 ms                | —           |
+| (256,1,1) all maps | (256,1,1)        | 0.703 ms                | -14.3%      |
+| (64,6,1) all maps  | (64,6,1)         | 0.756 ms                | -7.8%       |
 
 ### Block size sweep on the actual solver (MI300A, GT4Py Timer, 1000 runs)
 
@@ -52,21 +52,22 @@ Verified A/B (2026-04-20). Each variant uses a fresh `GT4PY_BUILD_CACHE_DIR` to
 force recompile; block size verified by inspecting `dim3` in the compiled HIP
 launch.
 
-| Block size | Median (μs) | vs (256,1,1) best | Notes |
-|---|---|---|---|
-| (32, 8, 1) | 753 | +25% | DaCe default |
-| (128, 1, 1) | 719 | +19% | only 2 wavefronts/block — too few to hide latency |
-| (128, 2, 1) | 642 | +6.3% | Y=2 helps when Cell axis is small |
-| **(256, 1, 1)** | **604** | — | **production setting** |
-| (256, 2, 1) | 598-615 | within ~3% (run-to-run noise) | 512 threads/block, no measurable benefit over (256,1,1) |
+| Block size      | Median (μs) | vs (256,1,1) best             | Notes                                                   |
+| --------------- | ----------- | ----------------------------- | ------------------------------------------------------- |
+| (32, 8, 1)      | 753         | +25%                          | DaCe default                                            |
+| (128, 1, 1)     | 719         | +19%                          | only 2 wavefronts/block — too few to hide latency       |
+| (128, 2, 1)     | 642         | +6.3%                         | Y=2 helps when Cell axis is small                       |
+| **(256, 1, 1)** | **604**     | —                             | **production setting**                                  |
+| (256, 2, 1)     | 598-615     | within ~3% (run-to-run noise) | 512 threads/block, no measurable benefit over (256,1,1) |
 
 **Findings:**
+
 - **Cell-axis size dominates**: 256 on Cell axis is necessary for best performance;
   128 is 5-20% slower depending on Y dim.
 - **Y dim is largely irrelevant at Cell=256**: (256,1,1) and (256,2,1) are tied
   within run-to-run noise. Going to 512 threads/block buys nothing.
 - **Y dim helps small-Cell configs only**: (128,2,1) is 11% faster than (128,1,1)
-  but still slower than (256,*,1).
+  but still slower than (256,\*,1).
 - (256,1,1) → (256,2,1) confirmed as not worth changing; (256,1,1) is the sweet spot.
 
 Run-to-run variability is ~3% on the same config (e.g. (256,2,1) measured at
@@ -80,30 +81,31 @@ size verified by inspecting `dim3` in the compiled CUDA launch. Variants whose
 dim3 didn't match (DaCe silently rejects some shapes — e.g. Y>12 on Cell=32,
 X>=512 with Y=1, 64x2, 64x4) are marked MISMATCH and excluded from conclusions.
 
-| Block size | Median (μs) | vs (256,1,1) best | Note |
-|---|---|---|---|
-| (32, 1, 1) | 601.8 | +14% | 1 warp/block — too small |
-| (32, 2, 1) | 544.5 | +3% | |
-| (32, 4, 1) | 536.6 | +2% | |
-| (32, 8, 1) | 545.8 | +4% | DaCe default |
-| (32, 16, 1) | — | — | MISMATCH: DaCe rounded Y=16 → Y=12 |
-| (64, 1, 1) | 536.6 | +2% | |
-| (64, 2, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
-| (64, 4, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
-| (64, 8, 1) | 545.3 | +4% | |
-| (128, 1, 1) | 528.9 | +0.4% | within noise of best |
-| (128, 2, 1) | 532.0 | +1% | |
-| (128, 4, 1) | 533.7 | +1% | |
-| (192, 1, 1) | 534.0 | +1% | non-power-of-2, unremarkable |
-| **(256, 1, 1)** | **526.9** | **best** | production candidate for GH200 |
-| (256, 2, 1) | 533.5 | +1% | |
-| (384, 1, 1) | 533.7 | +1% | |
-| (512, 1, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
-| (512, 2, 1) | — | — | MISMATCH: compiled as (64, 1, 1) |
-| (768, 1, 1) | 558.1 | +6% | |
-| (1024, 1, 1) | 555.3 | +5% | max threads/block |
+| Block size      | Median (μs) | vs (256,1,1) best | Note                               |
+| --------------- | ----------- | ----------------- | ---------------------------------- |
+| (32, 1, 1)      | 601.8       | +14%              | 1 warp/block — too small           |
+| (32, 2, 1)      | 544.5       | +3%               |                                    |
+| (32, 4, 1)      | 536.6       | +2%               |                                    |
+| (32, 8, 1)      | 545.8       | +4%               | DaCe default                       |
+| (32, 16, 1)     | —           | —                 | MISMATCH: DaCe rounded Y=16 → Y=12 |
+| (64, 1, 1)      | 536.6       | +2%               |                                    |
+| (64, 2, 1)      | —           | —                 | MISMATCH: compiled as (64, 1, 1)   |
+| (64, 4, 1)      | —           | —                 | MISMATCH: compiled as (64, 1, 1)   |
+| (64, 8, 1)      | 545.3       | +4%               |                                    |
+| (128, 1, 1)     | 528.9       | +0.4%             | within noise of best               |
+| (128, 2, 1)     | 532.0       | +1%               |                                    |
+| (128, 4, 1)     | 533.7       | +1%               |                                    |
+| (192, 1, 1)     | 534.0       | +1%               | non-power-of-2, unremarkable       |
+| **(256, 1, 1)** | **526.9**   | **best**          | production candidate for GH200     |
+| (256, 2, 1)     | 533.5       | +1%               |                                    |
+| (384, 1, 1)     | 533.7       | +1%               |                                    |
+| (512, 1, 1)     | —           | —                 | MISMATCH: compiled as (64, 1, 1)   |
+| (512, 2, 1)     | —           | —                 | MISMATCH: compiled as (64, 1, 1)   |
+| (768, 1, 1)     | 558.1       | +6%               |                                    |
+| (1024, 1, 1)    | 555.3       | +5%               | max threads/block                  |
 
 **Findings (GH200):**
+
 - **(256,1,1) is the winner on GH200 too** (526.9 μs), same as MI300A.
 - **Broad plateau**: Cell ∈ {128, 192, 256, 384} with Y=1 are all within ~1.5%
   of the best — effectively a flat plateau covering ~3× range of Cell sizes.
@@ -130,6 +132,7 @@ Tested the AMD equivalent of NVIDIA's `maxreg` trick by patching DaCe-generated 
 with `__attribute__((amdgpu_waves_per_eu(1, N)))` to force higher occupancy.
 
 ### What was tried
+
 - ROCm 7.1.0 / clang 20.0.0 does not expose VGPR-limit flags via `-mllvm`:
   - `-mllvm -amdgpu-num-vgpr=N` → `Unknown command line argument`
   - `-mllvm --amdgpu-waves-per-eu=N` → `Unknown command line argument`
@@ -140,16 +143,17 @@ with `__attribute__((amdgpu_waves_per_eu(1, N)))` to force higher occupancy.
 
 ### Results
 
-| Setting | Median runtime | vs Baseline |
-|---------|---------------|-------------|
-| Baseline (no attribute) | **0.82 ms** | — |
-| waves_per_eu(1, 2) | 2.1 ms | **2.5x slower** |
-| waves_per_eu(1, 4) | 2.1 ms | **2.5x slower** |
-| waves_per_eu(1, 8) | 2.1 ms | **2.5x slower** |
+| Setting                 | Median runtime | vs Baseline     |
+| ----------------------- | -------------- | --------------- |
+| Baseline (no attribute) | **0.82 ms**    | —               |
+| waves_per_eu(1, 2)      | 2.1 ms         | **2.5x slower** |
+| waves_per_eu(1, 4)      | 2.1 ms         | **2.5x slower** |
+| waves_per_eu(1, 8)      | 2.1 ms         | **2.5x slower** |
 
 All non-baseline settings cause ~2.5x regression due to register spilling.
 
 ### Why maxreg worked on GH200 but not MI300A
+
 - **GH200 (NVIDIA SM90):** `nvcc` used 128-200+ registers per thread → low occupancy.
   `maxreg` forced fewer registers → more blocks/SM → significant occupancy improvement.
 - **MI300A (gfx942):** `hipcc/clang` already uses few VGPRs (32-92) → 5-8 waves/SIMD
@@ -158,6 +162,7 @@ All non-baseline settings cause ~2.5x regression due to register spilling.
 ## DaCe Fusion Analysis
 
 ### What was tried
+
 - `MapFusion`: applied 9 times (inner tlet maps), but cannot fuse the main maps because
   intermediates (`gtir_tmp_83`, `_96`, `_97`) have multiple consumers
 - `SubgraphFusion`: cannot apply — "nodes between maps with incoming edges from outside"
@@ -174,6 +179,7 @@ The unfused intermediates (`gtir_tmp_83`, `_96`, `_97`) are **written to HBM by 
 kernel and read back by the next**. On this kernel HBM is the bottleneck (70% of
 peak), so any reduction in HBM traffic translates directly to wall-clock savings.
 If `MapFusion`/`SubgraphFusion` could be unblocked — by either:
+
 - restructuring `concat_where` so it doesn't produce multiple-producer intermediates, or
 - relaxing the "incoming edges from outside" check in `SubgraphFusion` for the
   K-domain-split pattern,
@@ -182,6 +188,7 @@ then the fused region could keep these intermediates in registers/scratch instea
 round-tripping through HBM. The expected savings depend on the size of those
 intermediates relative to the 720 MB demand bytes per invocation, which we
 haven't measured. Worth flagging because:
+
 1. The structural blocker (`concat_where` K-splits) is the same across many
    GT4Py stencils, not just this one.
 2. The HBM-bandwidth-bound nature of the kernel makes any demand-byte reduction
@@ -192,21 +199,23 @@ the current solver tuning effort, but flagged here so the gt4py team has the
 context if they revisit fusion.
 
 ### `fuse_tasklets` optimization
+
 - Added `fuse_tasklets=True` to `model_options.py` for the solver stencil
 - Fuses tasklet operations within existing map scopes
 
 **Status: neutral on current gt4py.** Historical context:
 
-| gt4py version | A/B improvement | Notes |
-|---|---|---|
-| 1.1.4 (`amd_profiling` branch, 30 runs) | ~7% (0.797 → 0.732 ms) | When first tested |
-| Newer gt4py (Edoardo's measurement) | ~1.5% (0.782 → 0.770 ms) | Newer optimization pipeline absorbed most of the benefit |
-| Current gt4py (this study, 1000 runs) | **neutral** (within noise) | See "What does NOT help" table in main report |
+| gt4py version                           | A/B improvement            | Notes                                                    |
+| --------------------------------------- | -------------------------- | -------------------------------------------------------- |
+| 1.1.4 (`amd_profiling` branch, 30 runs) | ~7% (0.797 → 0.732 ms)     | When first tested                                        |
+| Newer gt4py (Edoardo's measurement)     | ~1.5% (0.782 → 0.770 ms)   | Newer optimization pipeline absorbed most of the benefit |
+| Current gt4py (this study, 1000 runs)   | **neutral** (within noise) | See "What does NOT help" table in main report            |
 
 The newer DaCe pipeline already fuses tasklets that previously needed
 `fuse_tasklets=True` to be explicitly requested.
 
 ### CSE (Common Subexpression Elimination)
+
 - Detected 28 redundant global loads across all 12 kernels
 - Patched generated code to cache duplicate reads
 - Result: **no improvement** — compiler already optimizes these at -O3
@@ -223,15 +232,15 @@ Based on GT4Py PR: https://github.com/GridTools/gt4py/compare/main...iomaganaris
 
 ### Results (pytest-benchmark median — needs re-measurement with GT4Py Timer)
 
-| Config | Median | vs Baseline |
-|--------|--------|-------------|
-| Baseline (32,8) | 0.820 ms | — |
-| Blocking only (32,8 block) | 0.797 ms | -2.8% |
-| Blocking + (256,1,1) on blocked map | 0.700 ms | -14.6% |
-| (256,1,1) all maps, no blocking | 0.703 ms | -14.3% |
-| (256,1,1) + blocking threshold=3 | 0.716 ms | -12.7% (worse) |
-| (256,1,1) + blocking threshold=1 | 0.730 ms | -11.0% (worse) |
-| (256,1,1) + blocking threshold=0 | 0.723 ms | -11.8% (worse) |
+| Config                              | Median   | vs Baseline    |
+| ----------------------------------- | -------- | -------------- |
+| Baseline (32,8)                     | 0.820 ms | —              |
+| Blocking only (32,8 block)          | 0.797 ms | -2.8%          |
+| Blocking + (256,1,1) on blocked map | 0.700 ms | -14.6%         |
+| (256,1,1) all maps, no blocking     | 0.703 ms | -14.3%         |
+| (256,1,1) + blocking threshold=3    | 0.716 ms | -12.7% (worse) |
+| (256,1,1) + blocking threshold=1    | 0.730 ms | -11.0% (worse) |
+| (256,1,1) + blocking threshold=0    | 0.723 ms | -11.8% (worse) |
 
 **Bottom line:** Loop blocking gives 2.8% on its own (only `map_0` met
 `independent_node_threshold=3`) but becomes redundant once `(256,1,1)` is applied
@@ -264,6 +273,7 @@ parameters to `auto_optimize.py` plus the post-GPU override in `_gt_auto_configu
 ## GH200 vs MI300A Synthetic Bandwidth Comparison
 
 Same synthetic kernels run on both platforms:
+
 - **Simple stream**: MI300A wins (0.016 vs 0.017 ms) — competitive raw HBM BW
 - **Multi-array patterns**: GH200 is consistently **1.23-1.33x** faster
 - The gap is hardware-level: GH200's memory controller handles many concurrent streams
@@ -282,35 +292,35 @@ See appendix below for detailed benchmark tables.
 Hand-optimized HIP kernels matching the solver's access pattern and grid dimensions.
 All run with dim3(1244,10) × dim3(32,8):
 
-| Benchmark | Median (ms) | BW (GB/s) | % of peak |
-|-----------|-------------|-----------|-----------|
-| 1. Stream (1R + 1W) | 0.016 | 3113 | 84.9% |
-| 2. Many arrays flat (20R + 4W) | 0.207 | 2952 | 80.5% |
-| 3. Many arrays + k+1 offsets (25R + 4W) | 0.235 | 3105 | 84.7% |
-| 4. Full pattern + C2E indirection | 0.216 | 3388 | 92.4% |
-| 5. Same as #4 with DaCe grid dims | 0.214 | 3411 | 93.0% |
-| 6. DaCe-style (56 args, per-array indexing) | 0.185 | 3269 | 89.1% |
-| **DaCe map_100_1 (actual)** | **0.207** | **3462** | **94.4%** |
+| Benchmark                                   | Median (ms) | BW (GB/s) | % of peak |
+| ------------------------------------------- | ----------- | --------- | --------- |
+| 1. Stream (1R + 1W)                         | 0.016       | 3113      | 84.9%     |
+| 2. Many arrays flat (20R + 4W)              | 0.207       | 2952      | 80.5%     |
+| 3. Many arrays + k+1 offsets (25R + 4W)     | 0.235       | 3105      | 84.7%     |
+| 4. Full pattern + C2E indirection           | 0.216       | 3388      | 92.4%     |
+| 5. Same as #4 with DaCe grid dims           | 0.214       | 3411      | 93.0%     |
+| 6. DaCe-style (56 args, per-array indexing) | 0.185       | 3269      | 89.1%     |
+| **DaCe map_100_1 (actual)**                 | **0.207**   | **3462**  | **94.4%** |
 
 ### MI300A vs GH200 synthetic (dim3(32,8) blocks, 39788 cells × 80 K-levels)
 
-| Benchmark | MI300A (ms) | GH200 (ms) | GH200 speedup |
-|-----------|-------------|------------|----------------|
-| 1. Stream (1R+1W) | 0.016 | 0.017 | 0.94x (MI300A faster) |
-| 2. Many arrays flat (20R+4W) | 0.205 | 0.167 | **1.23x** |
-| 3. k+1 offsets (25R+4W) | 0.231 | 0.174 | **1.33x** |
-| 4. Full + C2E | 0.212 | 0.166 | **1.28x** |
-| 5. DaCe grid | 0.212 | 0.166 | **1.28x** |
-| 6. DaCe-style 56 args | 0.183 | 0.145 | **1.26x** |
+| Benchmark                    | MI300A (ms) | GH200 (ms) | GH200 speedup         |
+| ---------------------------- | ----------- | ---------- | --------------------- |
+| 1. Stream (1R+1W)            | 0.016       | 0.017      | 0.94x (MI300A faster) |
+| 2. Many arrays flat (20R+4W) | 0.205       | 0.167      | **1.23x**             |
+| 3. k+1 offsets (25R+4W)      | 0.231       | 0.174      | **1.33x**             |
+| 4. Full + C2E                | 0.212       | 0.166      | **1.28x**             |
+| 5. DaCe grid                 | 0.212       | 0.166      | **1.28x**             |
+| 6. DaCe-style 56 args        | 0.183       | 0.145      | **1.26x**             |
 
 ### Block size sweep on MI300A synthetic benchmark
 
-| Block size | Median (ms) | vs 32×8 |
-|-----------|-------------|---------|
-| 32×8 (DaCe default) | 0.212 | baseline |
-| 64×4 (wavefront-aligned) | 0.190 | 10% faster |
-| 128×2 | 0.192 | 9% faster |
-| 256×1 | 0.171 | **19% faster** |
+| Block size               | Median (ms) | vs 32×8        |
+| ------------------------ | ----------- | -------------- |
+| 32×8 (DaCe default)      | 0.212       | baseline       |
+| 64×4 (wavefront-aligned) | 0.190       | 10% faster     |
+| 128×2                    | 0.192       | 9% faster      |
+| 256×1                    | 0.171       | **19% faster** |
 
 Note: DaCe's `gpu_utils.py` overrides `default_block_size` config and always uses its own 2D
 tiling heuristic. Setting `DACE_compiler_cuda_default_block_size="256,1,1"` alone shows
