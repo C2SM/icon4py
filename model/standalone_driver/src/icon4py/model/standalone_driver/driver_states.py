@@ -24,10 +24,7 @@ from icon4py.model.common import type_alias as ta
 from icon4py.model.common.grid import geometry as grid_geometry
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import diagnostic_state, prognostic_state, tracer_state
 from icon4py.model.standalone_driver import config as driver_config
 
 
@@ -66,8 +63,9 @@ class DriverStates(NamedTuple):
     tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState
     prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
-    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
-    diagnostic: diagnostics.DiagnosticState
+    prognostics: common_utils.TimeStepPair[prognostic_state.PrognosticState]
+    diagnostic: diagnostic_state.DiagnosticState
+    tracers: common_utils.TimeStepPair[tracer_state.TracerState]
 
 
 @dataclasses.dataclass

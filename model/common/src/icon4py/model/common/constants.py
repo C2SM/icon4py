@@ -34,6 +34,7 @@ RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR
+RD_O_RV: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR
 
 #: Specific heat capacity of water vapor at constant pressure [J/K/kg]
 SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR: Final[ta.wpfloat] = 1869.46
@@ -73,9 +74,10 @@ LATENT_HEAT_FOR_FUSION: Final[ta.wpfloat] = (
 #: Triple point of water at 611hPa [K]
 WATER_TRIPLE_POINT_TEMPERATURE: Final[ta.wpfloat] = 273.16
 
-#: RV/RD - 1, tvmpc1 in ICON.
+#: RV/RD - 1, vtmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
-TVMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
+RD_O_RV_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR - 1.0
+VTMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
 
 #: Av. gravitational acceleration [m/s^2]
 GRAVITATIONAL_ACCELERATION: Final[ta.wpfloat] = 9.80665
@@ -120,6 +122,15 @@ DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
 
 #: average earth radius in [m]
 EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
+
+#: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
+TETENS_P0 = 610.78
+#: aw in Tetens formula for saturation water pressure. Originally expressed as c3les in ICON.
+TETENS_AW = 17.269
+#: bw in Tetens formula for saturation water pressure. Originally expressed as c4les in ICON.
+TETENS_BW = 35.86
+#: numerator in temperature partial derivative of Tetens formula for saturation water pressure (psat tetens_der / (t - tetens_bw)^2). Originally expressed as c5les in ICON.
+TETENS_DER = TETENS_AW * (MELTING_TEMPERATURE - TETENS_BW)
 
 
 class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):

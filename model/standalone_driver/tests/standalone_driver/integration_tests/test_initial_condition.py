@@ -20,7 +20,11 @@ from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,
+    istep_init,
     process_props,
+    savepoint_nonhydro_init,
+    step_date_init,
+    substep_init,
 )
 
 
@@ -49,10 +53,10 @@ def test_standalone_driver_initial_condition(
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
-        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        lowest_layer_thickness=icon4py_driver.vertical_grid.config.lowest_layer_thickness,
+        model_top_height=icon4py_driver.vertical_grid.config.model_top_height,
+        stretch_factor=icon4py_driver.vertical_grid.config.stretch_factor,
+        damping_height=icon4py_driver.vertical_grid.config.rayleigh_damping_height,
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 
@@ -82,3 +86,68 @@ def test_standalone_driver_initial_condition(
         jabw_exit_savepoint.theta_v().asnumpy(),
         atol=1e-11,
     )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize("experiment", [(definitions.Experiments.WEISMAN_KLEMP_TORUS)])
+@pytest.mark.parametrize(
+    "istep_init, substep_init, step_date_init", [(1, 1, "2008-09-01T01:59:48.000")]
+)
+@pytest.mark.datatest
+def test_weisman_klemp_initial_condition(
+    backend_like: model_backends.BackendLike,
+    tmp_path: pathlib.Path,
+    experiment: definitions.Experiment,
+    savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
+) -> None:
+    backend_name = next(
+        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
+    )
+    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
+        grid_file_path=grid_utils._download_grid_file(experiment.grid),
+        log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
+        backend_name=backend_name,
+    )
+
+    ds = initial_condition.weisman_klemp(
+        grid=icon4py_driver.grid,
+        vertical_grid=icon4py_driver.vertical_grid,
+        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
+        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+        backend=icon4py_driver.backend,
+    )
+
+    # TODO (Yilu)
+    assert test_utils.dallclose(
+        ds.prognostics.current.rho.asnumpy(),
+        savepoint_nonhydro_init.rho_now().asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.exner.asnumpy(),
+        savepoint_nonhydro_init.exner_now().asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.theta_v.asnumpy(),
+        savepoint_nonhydro_init.theta_v_now().asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.vn.asnumpy(),
+        savepoint_nonhydro_init.vn_now().asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.w.asnumpy(),
+        savepoint_nonhydro_init.w_now().asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        ds.solve_nonhydro_diagnostic.perturbed_exner_at_cells_on_model_levels.asnumpy(),
+        savepoint_nonhydro_init.exner_pr().asnumpy(),
+    )
+
+    # TODO (Yilu): Add tracer field comparisons when they are available in the savepoint
+
