@@ -53,7 +53,21 @@ class GridSubdivision:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class IcosahedronParams:
     subdivision: GridSubdivision
-    radius: float = constants.EARTH_RADIUS
+    radius: float
+
+    def __init__(
+        self,
+        *,
+        subdivision: GridSubdivision,
+        radius: float | None = None,
+    ) -> None:
+        object.__setattr__(self, "subdivision", subdivision)
+        object.__setattr__(
+            self,
+            "radius",
+            radius if radius is not None else constants.EARTH_RADIUS,
+        )
+        self.__post_init__()
 
     def __post_init__(self) -> None:
         if self.subdivision is None:

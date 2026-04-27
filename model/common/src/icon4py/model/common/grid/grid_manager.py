@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import constants, dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition,
@@ -507,7 +507,7 @@ class GridManager:
             case icon.GeometryType.ICOSAHEDRON:
                 grid_params = icon.IcosahedronParams(
                     subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-                    radius=sphere_radius if sphere_radius is not None else constants.EARTH_RADIUS,
+                    radius=sphere_radius,
                 )
             case icon.GeometryType.TORUS:
                 grid_params = icon.TorusParams(
