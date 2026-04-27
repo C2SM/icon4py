@@ -743,14 +743,9 @@ class ParallelLogger(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         record.rank_info_str = self._rank_info_str
-        return (
-            True
-            if self._rank_id == 0
-            else (
-                record.levelno >= logging.WARNING
-                or (self._print_distributed_debug_msg and record.levelno == logging.DEBUG)
-            )
-        )
+        if self._rank_id == 0:
+            return True
+        return record.levelno >= logging.WARNING or (self._print_distributed_debug_msg and record.levelno == logging.DEBUG)  
 
 
 single_node_exchange = SingleNodeExchange()
