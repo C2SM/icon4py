@@ -19,7 +19,7 @@ HBM BW formula:
     rocprof-compute analyze §4.1.9 "HBM Bandwidth" within ~3% on map_100_fieldop_1
     (verified 2026-04-19 against dispatch 11/23/35: this script gives 2.37 TB/s,
     rocprof-compute reports 2.43 TB/s). The previous formula
-    (TCC_EA0_RDREQ + TCC_EA0_WRREQ) * 64 was wrong by 1.6×; EA0 counters are
+    (TCC_EA0_RDREQ + TCC_EA0_WRREQ) * 64 was wrong by 1.6x; EA0 counters are
     External Access channel-0 counters that don't aggregate across all L2
     channels and don't represent total HBM-side traffic.
 
@@ -28,6 +28,7 @@ L2 hit rate formula:
     (47.4% vs 47.5% on map_100_fieldop_1).
 """
 
+import contextlib
 import csv
 import re
 import statistics
@@ -62,10 +63,8 @@ def main():
                 continue
             short = re.sub(r"_\d+$", "", name.split("(")[0])
             d = kernels[short]
-            try:
+            with contextlib.suppress(KeyError, ValueError):
                 d["durs"].append(float(row["End_Timestamp"]) - float(row["Start_Timestamp"]))
-            except (KeyError, ValueError):
-                pass
             for key, col in [
                 ("hit", "TCC_HIT_sum"),
                 ("req", "TCC_REQ_sum"),
