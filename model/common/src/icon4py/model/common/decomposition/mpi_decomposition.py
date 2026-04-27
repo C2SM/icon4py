@@ -447,8 +447,7 @@ class GlobalReductions(Reductions):
         if len(buffer.shape) > 0:
             owner_mask = self._resolve_owner_mask(buffer)
             return buffer[owner_mask]
-        else:
-            return buffer
+        return buffer
 
     def _resolve_owner_mask(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
         """Resolve the 1D owner mask for the buffer's first dimension.
