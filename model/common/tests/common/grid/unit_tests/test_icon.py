@@ -277,16 +277,13 @@ def test_global_grid_params(
 @pytest.mark.parametrize(
     "grid_root,grid_level",
     [
-        (None, None),
         (0, 0),
     ],
 )
-def test_icosahedron_params_fail(grid_root: int | None, grid_level: int | None) -> None:
-    with pytest.raises((ValueError, TypeError)):
+def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
+    with pytest.raises(ValueError):
         _ = icon.IcosahedronParams(
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
-            if grid_root is not None
-            else None,
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         )
 
 

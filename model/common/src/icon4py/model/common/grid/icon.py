@@ -70,8 +70,6 @@ class IcosahedronParams:
         self.__post_init__()
 
     def __post_init__(self) -> None:
-        if self.subdivision is None:
-            raise ValueError("subdivision must be provided")
         if self.subdivision.root < 1 or self.subdivision.level < 0:
             raise ValueError(
                 f"root must be >= 1 and level must be >= 0, got {self.subdivision.root=} and {self.subdivision.level=}"
