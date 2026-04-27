@@ -28,16 +28,16 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures form te
     experiment,
     grid_savepoint,
     icon_grid,
-    processor_props,
+    process_props,
 )
 
 from ...grid import utils as grid_utils
 
 
-@pytest.mark.parametrize("processor_props", [False], indirect=True)
-def test_create_single_node_runtime_without_mpi(processor_props):  # fixture
+@pytest.mark.parametrize("process_props", [False], indirect=True)
+def test_create_single_node_runtime_without_mpi(process_props):  # fixture
     decomposition_info = definitions.DecompositionInfo()
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)
 
