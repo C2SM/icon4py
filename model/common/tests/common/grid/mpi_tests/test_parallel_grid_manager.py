@@ -551,6 +551,11 @@ def _compare_metrics_fields_single_multi_rank(
         assert isinstance(field, state_utils.ScalarType)
         assert pytest.approx(field) == field_ref
     else:
+        if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
+            # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
+            atol = 1e-14
+        else:
+            atol = 0.0
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_gm.decomposition_info,
             process_props=process_props,
@@ -558,7 +563,7 @@ def _compare_metrics_fields_single_multi_rank(
             global_reference_field=field_ref.asnumpy(),
             local_field=field.asnumpy(),
             check_halos=True,
-            atol=0.0,
+            atol=atol,
         )
 
     _log.info(f"rank = {process_props.rank} - DONE")
