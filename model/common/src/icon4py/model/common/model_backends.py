@@ -36,12 +36,16 @@ def is_backend_descriptor(
 def is_cpu_backend(
     backend: BackendLike,
 ) -> bool:
+    if isinstance(backend, gtx_backend.Backend):
+        return backend.allocator.device_type == CPU
     return get_allocator(backend).device_type == CPU
 
 
 def is_gpu_backend(
     backend: BackendLike,
 ) -> bool:
+    if isinstance(backend, gtx_backend.Backend):
+        return backend.allocator.device_type == GPU
     return get_allocator(backend).device_type == GPU
 
 
