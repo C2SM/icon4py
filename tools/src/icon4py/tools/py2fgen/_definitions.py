@@ -18,7 +18,7 @@ from gt4py.next.type_system import type_specifications as gtx_ts
 # As long as we use gt4py.eve, we can also just use the gt4py.next types.
 # Note that the user-facing type should be py2fgen.ScalarKind, so we can
 # copy over the gt4py.next types if we want to.
-ScalarKind: TypeAlias = gtx_ts.ScalarKind
+ScalarKind: TypeAlias = gtx_ts.ScalarKind  # noqa: UP040
 
 BOOL = gtx_ts.ScalarKind.BOOL
 INT32 = gtx_ts.ScalarKind.INT32
@@ -60,7 +60,7 @@ class ScalarParamDescriptor(eve.Node):
     dtype: ScalarKind
 
 
-ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor
+ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor  # noqa: UP040
 """
 Describes the parameter type of a function, which is used to generate the
 Fortran signature and semantics.

@@ -33,12 +33,12 @@ except ImportError:
     import numpy as xp
 
 ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
-NDArray: TypeAlias = (
+NDArray: TypeAlias = (  # noqa: UP040
     np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
 )
 type NDArrayInterface = np.ndarray | xp.ndarray | gtx.Field
 
-ScalarLikeArray: TypeAlias = (
+ScalarLikeArray: TypeAlias = (  # noqa: UP040
     np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
 )
 

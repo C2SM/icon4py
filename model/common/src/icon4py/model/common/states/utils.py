@@ -16,14 +16,14 @@ from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-FloatType: TypeAlias = ta.wpfloat | ta.vpfloat | float
-IntegerType: TypeAlias = gtx.int32 | gtx.int64 | int
-ScalarType: TypeAlias = FloatType | bool | IntegerType
+FloatType: TypeAlias = ta.wpfloat | ta.vpfloat | float  # noqa: UP040
+IntegerType: TypeAlias = gtx.int32 | gtx.int64 | int  # noqa: UP040
+ScalarType: TypeAlias = FloatType | bool | IntegerType  # noqa: UP040
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 
-GTXFieldType: TypeAlias = gtx.Field[DimsT, T]
-FieldType: TypeAlias = gtx.Field[DimsT, T] | data_alloc.NDArray
+GTXFieldType: TypeAlias = gtx.Field[DimsT, T]  # noqa: UP040
+FieldType: TypeAlias = gtx.Field[DimsT, T] | data_alloc.NDArray  # noqa: UP040
 
 
 def to_data_array(field: FieldType, attrs: MutableMapping[str, ...]):
