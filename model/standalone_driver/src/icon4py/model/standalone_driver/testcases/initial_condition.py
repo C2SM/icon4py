@@ -434,9 +434,10 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
                 vertical_grid.interface_physical_height.ndarray[1:]
                 + vertical_grid.interface_physical_height.ndarray[:-1]
             ),
-            axis=-1,
+            axis=0,
         ),
-        axis=1,
+        repeats=num_cells,
+        axis=0,
     )
     above_tropopause_levels = xp.flatnonzero(model_level_height > H_TROPOPAUSE)
     assert (

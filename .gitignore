@@ -10,7 +10,10 @@ _reports
 tmp
 testdata
 log.txt
-log_*/
+log_*
+output.txt
+output_*/
+pytest_benchmark_results_*.json
 simple_mesh*.nc
 /prof
 .profile
