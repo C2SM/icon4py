@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import os
 import pathlib
 import tempfile
 
@@ -33,4 +34,4 @@ DALLCLOSE_PRINT_INSTEAD_OF_FAIL: bool = env.flag_to_bool(
     "ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL", False
 )
 DOWNLOAD_CACHE_PATH: pathlib.Path = env.path("ICON4PY_DOWNLOAD_CACHE", _default_download_cache())
-DRIVER_LOGGING_LEVEL: str = env.string("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
+DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
