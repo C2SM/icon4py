@@ -118,6 +118,47 @@ To avoid all ranks writing their test output to stdout, use the helper script `c
 mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
 ```
 
+#### Distributed runs on Alps
+
+On Alps with Cray MPICH and GH200 or A100 GPUs, install mpi4py and GHEX as follows:
+
+```bash
+export GHEX_USE_GPU=ON
+export GHEX_GPU_TYPE=NVIDIA
+export GHEX_GPU_ARCH="80;90"
+export GHEX_TRANSPORT_BACKEND=MPI
+export MPICH_CXX=$(which g++)
+export MPICH_CC=$(which gcc)
+uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --no-cache .
+```
+
+`-no-binary-package mpi4py` is required because Cray MPICH is not ABI compatible with the MPI used to build mpi4py binary wheels. If you don't do this you may get an error like:
+
+```
+ImportError: libmpi.so.12: cannot open shared object file: No such file or directory
+```
+
+when importing mpi4py. The `GHEX_*` options tell GHEX to build with GPU support. If you don't, you may see errors like:
+
+```
+AttributeError: module 'ghex.pyghex' has no attribute 'unstructured__data_descriptor_gpu_int_int_double_'
+```
+
+when GHEX tries to perform halo exchanges. The `MPICH_**` options make sure mpi4py gets built with GCC instead of nvc. mpi4py assumes that it can set certain compiler flags that GCC supports, but nvc does not support. The error message will typically look like:
+
+```
+      [stderr]
+      nvc-Error-Unknown switch: -fwrapv
+      error: Cannot compile MPI programs. Check your configuration!!!
+      Installing mpi4py requires a working MPI implementation.
+      If you are running on a supercomputer or cluster, check with
+      the system administrator or refer to the system user guide.
+      Otherwise, if you are running on a laptop or desktop computer,
+      your may be missing the MPICH or Open MPI development package:
+```
+
+Finally, when running tests, make sure to export `MPICH_GPU_SUPPORT_ENABLED=1`. Cray MPICH will otherwise segfault when communicating GPU buffers. Also see the [CSCS Cray MPICH documentation](https://docs.cscs.ch/software/communication/cray-mpich/) for more details.
+
 ### Benchmarking
 
 We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.
