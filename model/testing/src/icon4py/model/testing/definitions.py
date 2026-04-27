@@ -41,9 +41,9 @@ class GridDescription:
     params: icon_grid.GlobalGridParams
     file_name: str
     uri: str
-    num_cells: int | None = None
-    num_edges: int | None = None
-    num_vertices: int | None = None
+    num_cells: int
+    num_edges: int
+    num_vertices: int
     limited_area: bool = False
 
 
