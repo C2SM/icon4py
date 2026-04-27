@@ -50,6 +50,13 @@ def pytest_configure(config):
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
 
+    if config.getoption("--with-mpi", default=False) or config.getoption(
+        "--only-mpi", default=False
+    ):
+        from icon4py.model.common.decomposition.mpi_decomposition import init_mpi
+
+        init_mpi()
+
 
 def pytest_addoption(parser: pytest.Parser):
     """Add custom commandline options for pytest."""
