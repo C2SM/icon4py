@@ -9,26 +9,16 @@ import functools
 import logging
 from typing import Any
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-from icon4py.model.common.grid import horizontal as h_grid, icon
-from icon4py.model.common.interpolation import interpolation_fields
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-try:
-    import mpi4py  # import mpi4py to check for optional mpi dependency
-    from mpi4py import MPI
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
-import gt4py.next as gtx
-
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.grid import horizontal as h_grid, icon
+from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 

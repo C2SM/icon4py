@@ -17,7 +17,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.decomposition.decomposer import MetisDecomposer
 from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
@@ -40,12 +40,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
-from mpi4py import MPI
-
-
 _log = logging.getLogger(__name__)
 
 
@@ -54,6 +48,7 @@ _log = logging.getLogger(__name__)
 def test_props(process_props: decomposition.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex  # type: ignore[import-not-found]
+    from mpi4py import MPI
 
     assert process_props.comm
 

@@ -44,10 +44,13 @@ try:
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
 
-except ImportError:
+    import_error: ImportError | None = None
+
+except ImportError as e:
     mpi4py = None  # type: ignore   [assignment]
     ghex = None
     unstructured = None
+    import_error = e
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)

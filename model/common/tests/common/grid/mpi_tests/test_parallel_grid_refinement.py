@@ -12,11 +12,7 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.decomposition import (
-    decomposer as decomp,
-    definitions as decomposition,
-    mpi_decomposition,
-)
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomposition
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, serialbox, test_utils
@@ -32,9 +28,6 @@ from icon4py.model.testing.fixtures.datatest import (
 from .. import utils
 from . import utils as mpi_test_utils
 
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__name__)
 

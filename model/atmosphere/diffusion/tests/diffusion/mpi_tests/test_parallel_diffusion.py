@@ -14,16 +14,13 @@ from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon, vertical as v_grid
 from icon4py.model.testing import definitions, parallel_helpers, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__file__)
 

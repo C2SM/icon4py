@@ -50,9 +50,16 @@ def pytest_configure(config):
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
 
-    if config.getoption("--with-mpi", default=False) or config.getoption(
-        "--only-mpi", default=False
-    ):
+    with_mpi = config.getoption("--with-mpi", default=False)
+    only_mpi = config.getoption("--only-mpi", default=False)
+    if with_mpi or only_mpi:
+        from icon4py.model.common.decomposition.mpi_decomposition import import_error, mpi4py
+
+        if mpi4py is None:
+            raise pytest.UsageError(
+                f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
+            )
+
         from icon4py.model.common.decomposition.mpi_decomposition import init_mpi
 
         init_mpi()
