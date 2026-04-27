@@ -45,7 +45,7 @@ try:
     mpi4py.rc.finalize = True
 
 except ImportError:
-    mpi4py = None  # type: ignore   [assignment]
+    mpi4py = None  # type: ignore[assignment]
     ghex = None
     unstructured = None
 

@@ -11,7 +11,7 @@ import functools
 import logging
 from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import TYPE_CHECKING, Annotated, Final, TypeAlias
+from typing import TYPE_CHECKING, Annotated, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -40,14 +40,14 @@ else:
         xp = np
 
 
-NDArray: TypeAlias = np.ndarray | xp.ndarray
+type NDArray = np.ndarray | xp.ndarray
 
 # TODO(havogt): import needed to register MultNodeRun in get_process_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 log = logging.getLogger(__name__)
 
-Int32Array1D: TypeAlias = Annotated[
+type Int32Array1D = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -57,7 +57,7 @@ Int32Array1D: TypeAlias = Annotated[
     ),
 ]
 
-OptionalInt32Array1D: TypeAlias = Annotated[
+type OptionalInt32Array1D = Annotated[
     data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -67,7 +67,7 @@ OptionalInt32Array1D: TypeAlias = Annotated[
     ),
 ]
 
-OptionalInt32Array2D: TypeAlias = Annotated[
+type OptionalInt32Array2D = Annotated[
     data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=2,
@@ -77,7 +77,7 @@ OptionalInt32Array2D: TypeAlias = Annotated[
     ),
 ]
 
-Float64Array1D: TypeAlias = Annotated[
+type Float64Array1D = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -87,7 +87,7 @@ Float64Array1D: TypeAlias = Annotated[
     ),
 ]
 
-Float64Array2D: TypeAlias = Annotated[
+type Float64Array2D = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=2,
@@ -97,7 +97,7 @@ Float64Array2D: TypeAlias = Annotated[
     ),
 ]
 
-Float64Array3D: TypeAlias = Annotated[
+type Float64Array3D = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=3,
@@ -107,7 +107,7 @@ Float64Array3D: TypeAlias = Annotated[
     ),
 ]
 
-OptionalFloat64Array1D: TypeAlias = Annotated[
+type OptionalFloat64Array1D = Annotated[
     data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -117,7 +117,7 @@ OptionalFloat64Array1D: TypeAlias = Annotated[
     ),
 ]
 
-OptionalFloat64Array2D: TypeAlias = Annotated[
+type OptionalFloat64Array2D = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=2,

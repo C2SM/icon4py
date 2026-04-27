@@ -15,7 +15,7 @@ import logging
 from collections.abc import Sequence
 from enum import Enum
 from types import ModuleType
-from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
+from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
@@ -61,7 +61,7 @@ class CudaStreamProtocol(Protocol):
     def __cuda_stream__(self) -> tuple[int, int]: ...
 
 
-StreamLike: TypeAlias = CupyLikeStream | CudaStreamProtocol
+type StreamLike = CupyLikeStream | CudaStreamProtocol
 
 
 @dataclasses.dataclass(frozen=True)

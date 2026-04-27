@@ -36,7 +36,7 @@ ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
 NDArray: TypeAlias = (
     np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
 )
-NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
+type NDArrayInterface = np.ndarray | xp.ndarray | gtx.Field
 
 ScalarLikeArray: TypeAlias = (
     np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]

@@ -66,7 +66,7 @@ Describes the parameter type of a function, which is used to generate the
 Fortran signature and semantics.
 """
 
-ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
+type ParamDescriptors = Mapping[str, ParamDescriptor]
 """
 Mapping of parameter names to their descriptors.
 """
@@ -75,7 +75,7 @@ Mapping of parameter names to their descriptors.
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
 # alias with type `Any` (as the `TypeAlias` will be runtime evaluated)
 if TYPE_CHECKING:
-    ArrayInfo: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+    type ArrayInfo = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
     """
     ArrayInfo describes the runtime information of a buffer:
 
@@ -92,16 +92,16 @@ if TYPE_CHECKING:
 else:
     from typing import Any
 
-    ArrayInfo: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
+    type ArrayInfo = tuple[Any, tuple[int, ...], bool, bool]
 
 if TYPE_CHECKING:
     import cupy as cp  # type: ignore[import-not-found]
 
-    NDArray: TypeAlias = cp.ndarray | np.ndarray
+    type NDArray = cp.ndarray | np.ndarray
 else:
-    NDArray: TypeAlias = np.ndarray
+    type NDArray = np.ndarray
 
-MapperType: TypeAlias = (
+type MapperType = (
     Callable[[ArrayInfo, cffi.FFI], Any]
     | Callable[[bool, cffi.FFI], Any]
     | Callable[[int, cffi.FFI], Any]

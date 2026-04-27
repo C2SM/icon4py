@@ -12,7 +12,7 @@ import os
 import re
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Final, Literal, TypeAlias
+from typing import Final, Literal
 
 import nox
 
@@ -23,7 +23,7 @@ nox.options.sessions = ["test_model", "test_bindings_and_tools"]
 
 
 # -- Parameter sets --
-ModelSubpackagePath: TypeAlias = Literal[
+type ModelSubpackagePath = Literal[
     "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
@@ -38,7 +38,7 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
 ]
 
-ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
+type ModelTestsSubset = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]

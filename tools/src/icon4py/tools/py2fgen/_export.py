@@ -11,7 +11,7 @@ import functools
 import types
 import typing
 from collections.abc import Callable, Mapping
-from typing import Any, TypeAlias
+from typing import Any
 
 import cffi
 
@@ -28,7 +28,7 @@ def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     return None
 
 
-AnnotationDescriptorHook: TypeAlias = Callable[[Any], _definitions.ParamDescriptor | None]
+type AnnotationDescriptorHook = Callable[[Any], _definitions.ParamDescriptor | None]
 
 
 def param_descriptor_from_annotation(
@@ -63,7 +63,7 @@ def get_param_descriptors(
     }
 
 
-AnnotationMappingHook: TypeAlias = Callable[
+type AnnotationMappingHook = Callable[
     [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
 ]
 

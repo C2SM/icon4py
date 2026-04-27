@@ -25,7 +25,7 @@ import os
 import pathlib
 from types import TracebackType
 
-import viztracer  # type: ignore[import-not-found]
+import viztracer
 
 from icon4py.bindings import grid_wrapper
 from icon4py.tools.py2fgen import runtime_config

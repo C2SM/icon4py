@@ -11,13 +11,13 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
-from typing import Any, TypeAlias
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-VariantDescriptor: TypeAlias = tuple[str, dict[str, Any]]
+type VariantDescriptor = tuple[str, dict[str, Any]]
 
 
 experiment = "mch_icon-ch1_medium"
