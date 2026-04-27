@@ -72,10 +72,10 @@ def compute_btraj_numpy(
     primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
-    z_ntdistv_bary_1 = -(
+    z_ntdistv_bary_1 = -(  # type: ignore[misc]
         p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
-    z_ntdistv_bary_2 = -(
+    z_ntdistv_bary_2 = -(  # type: ignore[misc]
         p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 

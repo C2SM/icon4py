@@ -67,10 +67,10 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     primal_normal_cell_y = np.expand_dims(primal_normal_cell_y, axis=-1)
     dual_normal_cell_y = np.expand_dims(dual_normal_cell_y, axis=-1)
 
-    z_ntdistv_bary_1 = -(
+    z_ntdistv_bary_1 = -(  # type: ignore[misc]
         vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_x[:, 0], pos_on_tplane_e_x[:, 1])
     )
-    z_ntdistv_bary_2 = -(
+    z_ntdistv_bary_2 = -(  # type: ignore[misc]
         tangential_wind * p_dthalf
         + np.where(lvn_pos, pos_on_tplane_e_y[:, 0], pos_on_tplane_e_y[:, 1])
     )
