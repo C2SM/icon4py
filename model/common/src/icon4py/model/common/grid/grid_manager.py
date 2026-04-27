@@ -505,17 +505,19 @@ class GridManager:
 
         match geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
-                grid_params = icon.IcosahedronParams(
-                    subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-                    radius=sphere_radius,
+                return icon.GlobalGridParams(
+                    grid_params=icon.IcosahedronParams(
+                        subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+                        radius=sphere_radius,
+                    ),
                 )
             case icon.GeometryType.TORUS:
-                grid_params = icon.TorusParams(
-                    domain_length=domain_length,
-                    domain_height=domain_height,
+                return icon.GlobalGridParams(
+                    grid_params=icon.TorusParams(
+                        domain_length=domain_length,
+                        domain_height=domain_height,
+                    ),
                 )
-
-        return icon.GlobalGridParams(grid_params=grid_params)
 
     def _read_full_grid_size(self) -> base.HorizontalGridSize:
         """
