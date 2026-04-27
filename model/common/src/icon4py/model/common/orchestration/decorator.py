@@ -57,7 +57,7 @@ R = TypeVar("R")
 
 
 @overload
-def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]: ...
+def orchestrate[**P, R](func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]: ...
 
 
 @overload
@@ -66,7 +66,7 @@ def orchestrate(
 ) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
-def orchestrate(
+def orchestrate[**P, R](
     func: Callable[P, R] | None = None, *, method: bool | None = None
 ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
     """Use DaCe to generate a fused SDFG from GT4Py programs called by the decorated function.

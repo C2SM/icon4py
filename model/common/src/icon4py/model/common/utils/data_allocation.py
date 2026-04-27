@@ -84,7 +84,7 @@ def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     return array_ns(device_utils.is_cupy_device(allocator))
 
 
-def scalar_like_array(
+def scalar_like_array[ScalarT: gtx_typing.Scalar](
     value: ScalarT,
     allocator: ModuleType | gtx_typing.Allocator | None = None,
 ) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types

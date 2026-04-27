@@ -48,15 +48,15 @@ _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
 
-def synchronized_function(
-    func: Callable[_P, _R], *, allocator: gtx_typing.Allocator | None
-) -> Callable[_P, _R]:
+def synchronized_function[**P, R](
+    func: Callable[P, R], *, allocator: gtx_typing.Allocator | None
+) -> Callable[P, R]:
     """
     Wraps a function and synchronizes after execution
     """
 
     @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> _R:
+    def wrapper(*args: Any, **kwargs: Any) -> R:
         result = func(*args, **kwargs)
         sync(allocator=allocator)
         return result
