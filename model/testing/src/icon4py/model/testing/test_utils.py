@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
+from collections.abc import Buffer
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -14,7 +15,6 @@ import numpy as np
 import numpy.testing as np_testing
 import numpy.typing as npt
 import pytest
-from typing_extensions import Buffer
 
 from icon4py.model.common import model_options
 
@@ -60,7 +60,7 @@ def is_sorted(array: np.ndarray) -> bool:
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
 def get_fixture_value(name: str, item: pytest.Item) -> Any:

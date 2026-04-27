@@ -32,8 +32,7 @@ dependencies = [
   'packaging>=20.0',
   "pooch>=1.7.0",
   "pytest>=8.0.1",
-  "serialbox4py>=2.6.2",
-  "typing-extensions>=4.11.0"
+  "serialbox4py>=2.6.2"
 ]
 description = "Testing utils for the icon4py model."
 license = {text = "BSD-3 License"}

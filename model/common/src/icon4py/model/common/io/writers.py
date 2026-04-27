@@ -12,12 +12,11 @@ import functools
 import logging
 import pathlib
 import uuid
-from typing import Final, TypedDict
+from typing import Final, Required, TypedDict
 
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
-from typing_extensions import Required
 
 import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition

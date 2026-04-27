@@ -26,7 +26,6 @@ dependencies = [
   'array-api-compat>=1.13.0',
   'gt4py==1.1.9',
   'packaging>=20.0',
-  'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
   'scipy>=1.14.1',
   'dace==43!2026.02.12'  # uses custom index at 'https://github.com/GridTools/pypi'
