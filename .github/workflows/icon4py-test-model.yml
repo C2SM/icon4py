@@ -60,11 +60,13 @@ jobs:
         run: |
           .github/validation_grid_utils.py download
 
-      - name: Set GT4Py cache directory
+      - name: set GT4Py cache directory
         run: echo "GT4PY_BUILD_CACHE_DIR=${{ runner.temp }}/gt4py-cache" >> $GITHUB_ENV
 
-      - name: Cache GT4Py compiled stencils
-        uses: actions/cache@v5
+      - name: restore GT4Py cache
+        id: gt4py-cache-restore
+        if: github.ref != 'refs/heads/main'
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
           key: gt4py-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
@@ -81,3 +83,10 @@ jobs:
         shell: bash
         run: |
           uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_regional
+
+      - name: save GT4Py cache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
+          key: gt4py-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
