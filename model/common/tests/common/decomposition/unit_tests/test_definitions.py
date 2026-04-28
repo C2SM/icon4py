@@ -91,6 +91,6 @@ def test_decomposition_info_is_distributed(flag, expected) -> None:
         dims.CellDim,
         np.arange(mesh.num_cells),
         np.arange(mesh.num_cells),
-        np.ones((mesh.num_cells,)) * flag,
+        np.full((mesh.num_cells,), flag),
     )
     assert decomp.is_distributed() == expected
