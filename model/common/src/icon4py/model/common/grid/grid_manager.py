@@ -770,7 +770,7 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
     """
     patched_ar = array_ns.append(
         ar,
-        gridfile.GridFile.INVALID_INDEX * array_ns.ones((1, ar.shape[1]), dtype=gtx.int32),
+        array_ns.full((1, ar.shape[1]), gridfile.GridFile.INVALID_INDEX, dtype=gtx.int32),
         axis=0,
     )
     return patched_ar
