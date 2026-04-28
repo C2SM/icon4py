@@ -254,6 +254,7 @@ def construct_diffusion_config(
             max_nudging_coefficient=0.375,
             n_substeps=ndyn_substeps,
             shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+            iforcing=diffusion.ForcingType.NWP,
         )
     elif experiment == Experiments.EXCLAIM_APE:
         return diffusion.DiffusionConfig(
@@ -267,10 +268,26 @@ def construct_diffusion_config(
             smagorinski_scaling_factor=0.025,
             hdiff_temp=True,
             n_substeps=ndyn_substeps,
+            iforcing=diffusion.ForcingType.AES,
         )
     elif experiment == Experiments.GAUSS3D:
         return diffusion.DiffusionConfig(
             n_substeps=ndyn_substeps,
+        )
+    elif experiment == Experiments.JW:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=5,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            zdiffu_t=False,
+            velocity_boundary_diffusion_denom=200.0,
         )
     else:
         raise NotImplementedError(

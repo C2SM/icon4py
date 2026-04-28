@@ -11,15 +11,10 @@ import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
 
-import icon4py.model.common.dimension as dims
-import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    SingleNodeExchange,
-    create_exchange,
-)
 from icon4py.model.common.grid import simple
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
     backend,
