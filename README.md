@@ -132,7 +132,7 @@ export MPICH_CC=$(which gcc)
 uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --no-cache .
 ```
 
-`-no-binary-package mpi4py` is required because Cray MPICH is not ABI compatible with the MPI used to build mpi4py binary wheels. If you don't do this you may get an error like:
+`--no-binary-package mpi4py` is required because Cray MPICH is not ABI compatible with the MPI used to build mpi4py binary wheels. If you don't do this you may get an error like:
 
 ```
 ImportError: libmpi.so.12: cannot open shared object file: No such file or directory
