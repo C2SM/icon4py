@@ -551,7 +551,7 @@ def _compare_metrics_fields_single_multi_rank(
         assert isinstance(field, state_utils.ScalarType)
         assert pytest.approx(field) == field_ref
     else:
-        if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
+        if model_backends.is_cpu_backend(backend) and test_utils.is_dace(backend):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
             atol = 1e-14
         else:
