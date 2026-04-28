@@ -187,7 +187,6 @@ def init_w(
     array_ns: ModuleType,
 ) -> data_alloc.NDArray:
     # The bounds need to include the first halo line because of the e2c -> c2e connectivity
-    array_ns = data_alloc.array_namespace(z_ifc)
     lb_e = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     ub_e = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.END))
     lb_c = grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
