@@ -129,8 +129,10 @@ export GHEX_GPU_ARCH="80;90"
 export GHEX_TRANSPORT_BACKEND=MPI
 export MPICH_CXX=$(which g++)
 export MPICH_CC=$(which gcc)
-uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --no-cache .
+uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --refresh-cache .
 ```
+
+If you already have a broken ghex, mpi4py, or other package in the uv cache, run the command with `--no-cache` after either uninstalling the broken package or wiping the virtualenv.
 
 `--no-binary-package mpi4py` is required because Cray MPICH is not ABI compatible with the MPI used to build mpi4py binary wheels. If you don't do this you may get an error like:
 
