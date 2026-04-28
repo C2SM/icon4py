@@ -61,7 +61,7 @@ class TracerState:
     @classmethod
     def from_tracer_state(cls: type[T], tracer_state: T, allocator: gtx_typing.Allocator) -> T:
         tracer_dict = {
-            f.name: data_alloc.as_field(f.value, allocator=allocator)
+            f.name: data_alloc.as_field(getattr(tracer_state, f.name), allocator=allocator)
             for f in dataclasses.fields(tracer_state)
         }
         return cls(**tracer_dict)

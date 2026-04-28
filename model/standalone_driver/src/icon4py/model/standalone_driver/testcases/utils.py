@@ -296,4 +296,5 @@ def calculate_distance_to_a_point_on_cartesian_plane(
     dx = array_ns.where(dx <= 0.5 * domain_length, dx, domain_length - dx)
     dy = array_ns.where(dy <= 0.5 * domain_length, dy, domain_height - dy)
     dz = array_ns.abs(cartesian_z - point_z)
+    # TODO (Yilu): ths computation can be cleaned
     return array_ns.sqrt(dx**2 + dy**2 + dz**2)

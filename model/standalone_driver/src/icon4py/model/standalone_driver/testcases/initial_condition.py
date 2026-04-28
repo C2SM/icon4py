@@ -407,7 +407,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     num_cells = grid.num_cells
     num_levels = grid.num_levels
 
-    # predefined constants used for Jablonowski-Williamson initial condition
+    # predefined constants used for Weisman-Klemp initial condition
     HMIN = ta.wpfloat("0.0")  # base height of the profile
     H_TROPOPAUSE = ta.wpfloat("12000.0")  # tropopause height [m]
     THETA_SURFACE = ta.wpfloat("300.0")  # potential temperature at z=0 [K]
@@ -439,7 +439,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         repeats=num_cells,
         axis=0,
     )
-    above_tropopause_levels = xp.flatnonzero(model_level_height > H_TROPOPAUSE)
+    # TODO (Yilu):
+    above_tropopause_levels = xp.flatnonzero(model_level_height[0,:] > H_TROPOPAUSE)
+
     assert (
         above_tropopause_levels.size > 0
     ), f"model top height ({model_level_height[0]}) must be higher than the tropopaus height ({H_TROPOPAUSE}) in weisman klemp experiment."
@@ -503,7 +505,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         + (THETA_TROPOPAUSE - THETA_SURFACE)
         * (model_level_height[:, k_tropopause + 1 :] / H_TROPOPAUSE) ** EXP_FACTOR_THETA
     )
-    rh_ndarray[:, k_tropopause + 1 :] = xp.min(
+    rh_ndarray[:, k_tropopause + 1 :] = xp.minimum(
         1.0 - 0.75 * (model_level_height[:, k_tropopause + 1 :] / H_TROPOPAUSE) ** EXP_FACTOR_RH,
         RH_MAX,
     )
@@ -551,7 +553,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     # remaining model layers
     for k in range(k_tropopause + 2, num_levels):
         # 1st step: preliminary estimate
-        qv_extrap = xp.min(
+        qv_extrap = xp.minimum(
             QV_MAX,
             qv_ndarray[:, k - 1]
             + (qv_ndarray[:, k - 2] - qv_ndarray[:, k - 1])
@@ -569,7 +571,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
             :, k
         ] * thermodynamic_functions.calculate_saturation_presssure_water(temperature_aux)
         pressure_aux = phy_const.P0REF * exner_aux**phy_const.CPD_O_RD
-        qv_aux = xp.min(
+        qv_aux = xp.minimum(
             QV_MAX,
             thermodynamic_functions.calculate_specific_humidity(
                 pressure=pressure_aux, vapor_pressure=vapor_pres_aux
@@ -588,7 +590,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
             :, k
         ] * thermodynamic_functions.calculate_saturation_presssure_water(temperature_ndarray[:, k])
         pressure_ndarray[:, k] = phy_const.P0REF * exner_ndarray[:, k] ** phy_const.CPD_O_RD
-        qv_ndarray[:, k] = xp.min(
+        qv_ndarray[:, k] = xp.minimum(
             QV_MAX,
             thermodynamic_functions.calculate_specific_humidity(
                 pressure=pressure_ndarray[:, k], vapor_pressure=vapor_pres_aux
@@ -605,7 +607,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         / theta_v_ndarray[:, :]
     )
     vn_ndarray[:, :] = (
-        U_INFTY * (xp.tanh((model_level_height - HMIN) / (HREF - HMIN)) - 0.45) * primal_normal_x
+        U_INFTY * (xp.tanh((model_level_height[0, :] - HMIN) / (HREF - HMIN)) - 0.45) * primal_normal_x[:, xp.newaxis]
     )
     log.info("Computations of Weisman-Klemp background fields completed.")
 
@@ -648,8 +650,8 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         rho_ndarray=rho_ndarray,
         qv_ndarray=qv_ndarray,
         exner_ndarray=exner_ndarray,
-        cell_cartesian_x=geometry_field_source.get(geometry_meta.CELL_CENTER_X).ndarray,
-        cell_cartesian_y=geometry_field_source.get(geometry_meta.CELL_CENTER_Y).ndarray,
+        cell_cartesian_x=geometry_field_source.get(geometry_meta.CELL_CENTER_X).ndarray[:, xp.newaxis],
+        cell_cartesian_y=geometry_field_source.get(geometry_meta.CELL_CENTER_Y).ndarray[:, xp.newaxis],
         z_mc=metrics_field_source.get(metrics_attributes.Z_MC).ndarray,
         bubble_center_x=bubble_center_x,
         bubble_center_y=bubble_center_y,
