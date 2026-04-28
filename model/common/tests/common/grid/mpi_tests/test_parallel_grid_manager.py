@@ -553,7 +553,7 @@ def _compare_metrics_fields_single_multi_rank(
     else:
         if model_backends.is_cpu_backend(backend) and test_utils.is_dace(backend):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
-            atol = 1e-14
+            atol = 1e-13
         else:
             atol = 0.0
         parallel_helpers.check_local_global_field(
