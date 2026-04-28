@@ -282,7 +282,7 @@ def initialize_granules(
             metrics_attributes.THETA_REF_IC
         ),
         d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC2_MC),
         reference_rho_at_edges_on_model_levels=metrics_field_source.get(
             metrics_attributes.RHO_REF_ME
         ),
