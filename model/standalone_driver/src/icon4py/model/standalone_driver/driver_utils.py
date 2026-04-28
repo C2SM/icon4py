@@ -23,14 +23,13 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import (
     constants,
-    dimension as dims,
     field_type_aliases as fa,
     model_backends,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
+    decomposer as decomp,
     definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -44,8 +43,8 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.testing import config as testing_config
 
 
 log = logging.getLogger(__name__)
@@ -64,36 +63,26 @@ def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
-    global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
+    process_props: decomposition_defs.ProcessProperties,
 ) -> gm.GridManager:
+    decomposer = (
+        decomp.SingleNodeDecomposer()
+        if process_props.is_single_rank()
+        else decomp.MetisDecomposer()
+    )
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
         offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
-        global_reductions=global_reductions,
     )
-    grid_manager(allocator=allocator, keep_skip_values=True)
+    grid_manager(
+        allocator=allocator,
+        keep_skip_values=True,
+        process_props=process_props,
+        decomposer=decomposer,
+    )
 
     return grid_manager
-
-
-def create_decomposition_info(
-    grid_manager: gm.GridManager,
-    allocator: gtx_typing.Allocator,
-) -> decomposition_defs.DecompositionInfo:
-    decomposition_info = decomposition_defs.DecompositionInfo()
-    xp = data_alloc.import_array_ns(allocator)
-
-    def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
-        owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
-        decomposition_info.set_dimension(dim, indices.ndarray, owner_mask, None)
-
-    _add_dimension(dims.EdgeDim)
-    _add_dimension(dims.VertexDim)
-    _add_dimension(dims.CellDim)
-
-    return decomposition_info
 
 
 def create_vertical_grid(
@@ -118,6 +107,8 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime,
+    global_reductions: decomposition_defs.Reductions,
 ) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
@@ -126,6 +117,8 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -134,6 +127,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
+        exchange=exchange,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
@@ -151,6 +145,8 @@ def create_static_field_factories(
         vwind_offctr=0.15,
         thslp_zdiffu=0.025,
         thhgtd_zdiffu=200.0,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     return driver_states.StaticFieldFactories(
@@ -344,6 +340,7 @@ def initialize_granules(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=owner_mask,
+        exchange=exchange,
     )
 
     advection_granule = advection.convert_config_to_advection(
@@ -528,7 +525,8 @@ def make_handler(
 
 def configure_logging(
     logging_level: str,
-    processor_procs: decomposition_defs.ProcessProperties | None = None,
+    print_distributed_debug_msg: bool,
+    process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
@@ -539,7 +537,7 @@ def configure_logging(
 
     Args:
         logging_level: log level
-        processor_procs: ProcessProperties
+        process_props: ProcessProperties
 
     """
     if logging_level.lower() not in _LOGGING_LEVELS:
@@ -549,13 +547,14 @@ def configure_logging(
 
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
 
-    # TODO(OngChia): modify here when single_dispatch is ready
-    log_filter = mpi_decomp.ParallelLogger(processor_procs)
+    log_filter = decomposition_defs.ParallelLogger(
+        process_props, print_distributed_debug_msg=print_distributed_debug_msg
+    )
     formatter = _InfoFormatter(
         style="{",
-        default_fmt="{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
+        default_fmt="{rank_info_str} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
         info_fmt="{message}",
-        defaults={"rank": None},
+        defaults={"rank_info_str": ""},
     )
     handler = make_handler(
         logging_level=logging.DEBUG,
@@ -571,7 +570,10 @@ def configure_logging(
     )
     driver_module_name = __name__[: __name__.rindex(".")]
     logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
-    logging.getLogger(driver_module_name).setLevel(logging.DEBUG)
+    # TODO (ongchia): not ideal to import testing_config.DRIVER_LOGGING_LEVEL, waiting for proper logging config
+    logging.getLogger(driver_module_name).setLevel(
+        _LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL]
+    )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
     logging.getLogger("blib2to3").setLevel(logging.WARNING)
@@ -579,7 +581,11 @@ def configure_logging(
     display_icon4py_logo_in_log_file()
 
 
-def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
+def get_backend_from_name(
+    backend_name: str | model_backends.BackendLike,
+) -> model_backends.BackendLike:
+    if not isinstance(backend_name, str):
+        return backend_name
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"

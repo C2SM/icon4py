@@ -641,7 +641,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"wgtfac_e": attrs.WGTFAC_E},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_wgtfac_e)
 

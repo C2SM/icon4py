@@ -25,7 +25,7 @@ from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     experiment,
     grid_savepoint,
-    processor_props,
+    process_props,
 )
 
 from .. import utils
@@ -57,18 +57,18 @@ def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
     return h_grid.domain(dim)(zone)
 
 
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_compute_domain_bounds(
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     domain: h_grid.Domain,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> None:
     if (
-        processor_props.is_single_rank()
+        process_props.is_single_rank()
         and experiment == definitions.Experiments.EXCLAIM_APE
         and dim == dims.EdgeDim
     ):
@@ -98,20 +98,20 @@ def test_compute_domain_bounds(
     computed_start = start_indices[domain]
     computed_end = end_indices[domain]
     _log.info(
-        f"rank = {processor_props.rank}/{processor_props.comm_size}: domain={domain} : start = {computed_start} end = {computed_end} "
+        f"rank = {process_props.rank}/{process_props.comm_size}: domain={domain} : start = {computed_start} end = {computed_end} "
     )
     assert (
         computed_start == ref_start_index
-    ), f"rank={processor_props.rank}/{processor_props.comm_size} - experiment = {experiment.name}: start_index for {domain} does not match: is {computed_start}, expected {ref_start_index}"
+    ), f"rank={process_props.rank}/{process_props.comm_size} - experiment = {experiment.name}: start_index for {domain} does not match: is {computed_start}, expected {ref_start_index}"
     assert (
         computed_end == ref_end_index
-    ), f"rank={processor_props.rank}/{processor_props.comm_size} - experiment = {experiment.name}: end_index for {domain} does not match: is {computed_end}, expected {ref_end_index}"
+    ), f"rank={process_props.rank}/{process_props.comm_size} - experiment = {experiment.name}: end_index for {domain} does not match: is {computed_end}, expected {ref_end_index}"
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_bounds_decomposition(
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     backend: gtx.typing.Backend | None,
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
@@ -120,19 +120,19 @@ def test_bounds_decomposition(
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
     grid_manager = mpi_test_utils.run_grid_manager_for_multi_rank(
         file=file,
-        run_properties=processor_props,
+        process_props=process_props,
         decomposer=decomp.MetisDecomposer(),
         allocator=model_backends.get_allocator(backend),
     )
     _log.info(
-        f"rank = {processor_props.rank} : {grid_manager.decomposition_info.get_horizontal_size()!r}"
+        f"rank = {process_props.rank} : {grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
     _log.info(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"rank = {process_props.rank}: halo size for 'CellDim' "
         f"(1: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )

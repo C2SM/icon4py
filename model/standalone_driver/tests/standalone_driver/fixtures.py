@@ -8,6 +8,7 @@
 import pytest
 
 from icon4py.model.testing.fixtures import (
+    backend,
     damping_height,
     data_provider,
     download_ser_data,
@@ -24,7 +25,7 @@ from icon4py.model.testing.fixtures import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
+    process_props,
     savepoint_diffusion_exit,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,

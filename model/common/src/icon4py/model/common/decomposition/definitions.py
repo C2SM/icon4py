@@ -12,9 +12,10 @@ import abc
 import dataclasses
 import functools
 import logging
+import warnings
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
+from typing import Any, ClassVar, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
@@ -130,9 +131,9 @@ class DomainDescriptorIdGenerator:
     _counter = 0
     _roundtrips = 0
 
-    def __init__(self, parallel_props: ProcessProperties):
-        self._comm_size = parallel_props.comm_size
-        self._roundtrips = parallel_props.rank
+    def __init__(self, process_props: ProcessProperties):
+        self._comm_size = process_props.comm_size
+        self._roundtrips = process_props.rank
         self._base = self._roundtrips * self._comm_size
 
     def __call__(self) -> int:
@@ -158,6 +159,8 @@ class DecompositionInfo:
         ALL = 0
         OWNED = 1
         HALO = 2
+        HALO_LEVEL_1 = 11
+        HALO_LEVEL_2 = 12
 
     @utils.chainable
     def set_dimension(
@@ -185,6 +188,14 @@ class DecompositionInfo:
                 index = self._to_local_index(dim)
                 mask = self._owner_mask[dim]
                 return index[~mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_1:
+                index = self._to_local_index(dim)
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.FIRST_HALO_LEVEL)
+                return index[mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_2:
+                index = self._to_local_index(dim)
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.SECOND_HALO_LEVEL)
+                return index[mask]
             case DecompositionInfo.EntryType.OWNED:
                 index = self._to_local_index(dim)
                 mask = self._owner_mask[dim]
@@ -210,6 +221,12 @@ class DecompositionInfo:
                 return self._global_index[dim][self._owner_mask[dim]]
             case DecompositionInfo.EntryType.HALO:
                 return self._global_index[dim][~self._owner_mask[dim]]
+            case DecompositionInfo.EntryType.HALO_LEVEL_1:
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.FIRST_HALO_LEVEL)
+                return self._global_index[dim][mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_2:
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.SECOND_HALO_LEVEL)
+                return self._global_index[dim][mask]
             case _:
                 raise NotImplementedError()
 
@@ -406,6 +423,23 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
+    _warning_emitted: ClassVar[bool] = False
+
+    @classmethod
+    def _warn_if_used(cls, *, stacklevel: int = 3) -> None:
+        """
+        Debugging helper: emit a single warning when SingleNodeExchange is used.
+        Not called in production code.  Enable manually during development to
+        spot unintended single-node exchange usage.
+        """
+        if not cls._warning_emitted:
+            warnings.warn(
+                "***** SingleNodeExchange is in use; HALO EXCHANGE IS RUNNING IN SINGLE-NODE *****",
+                RuntimeWarning,
+                stacklevel=stacklevel,
+            )
+            cls._warning_emitted = True
+
     def start(
         self,
         dim: gtx.Dimension,
@@ -552,6 +586,10 @@ class SingleNodeRun(RunType):
 
 
 class Reductions(Protocol):
+    """
+    Protocol for global reduction operations across distributed ranks.
+    """
+
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
     def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
@@ -562,6 +600,12 @@ class Reductions(Protocol):
 
 
 class SingleNodeReductions(Reductions):
+    """Reductions for single-rank (non-distributed) runs.
+
+    Single-rank runs have no halos, so all elements are owned and no masking
+    is needed. The entire buffer is reduced directly.
+    """
+
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         array_ns = data_alloc.array_namespace(buffer)
         return array_ns.min(buffer).item()
@@ -579,14 +623,6 @@ class SingleNodeReductions(Reductions):
         return array_ns.sum(buffer).item() / buffer.size
 
 
-@overload
-def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
-
-
-@overload
-def get_runtype(with_mpi: Literal[False]) -> SingleNodeRun: ...
-
-
 def get_runtype(with_mpi: bool = False) -> RunType:
     if with_mpi:
         return MultiNodeRun()
@@ -595,44 +631,50 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime: RunType, comm_id: int | None = None) -> ProcessProperties:
+def get_process_properties(runtime: RunType, comm_id: int | None = None) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
-@get_processor_properties.register(SingleNodeRun)
+@get_process_properties.register(SingleNodeRun)
 def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> ProcessProperties:
     return SingleNodeProcessProperties()
 
 
 @functools.singledispatch
-def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:
+def create_exchange(
+    process_props: ProcessProperties, decomp_info: DecompositionInfo
+) -> ExchangeRuntime:
     """
     Create an Exchange depending on the runtime size.
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
-    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+    raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
 
 @create_exchange.register(SingleNodeProcessProperties)
 def create_single_node_exchange(
-    props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
+    process_props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
     return SingleNodeExchange()
 
 
 @functools.singledispatch
-def create_reduction(props: ProcessProperties) -> Reductions:
+def create_reduction(
+    process_props: ProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
-    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+    raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
 
 @create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+def create_single_reduction_exchange(
+    process_props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     return SingleNodeReductions()
 
 
@@ -665,6 +707,29 @@ class DecompositionFlag(int, Enum):
     - vertices (NOT USED)
     - edges that are only on the cell(SECOND_HALO_LEVEL)
     """
+
+
+class ParallelLogger(logging.Filter):
+    def __init__(
+        self,
+        process_properties: ProcessProperties | None = None,
+        print_distributed_debug_msg: bool = False,
+    ) -> None:
+        super().__init__()
+        self._rank_info_str = ""
+        self._print_distributed_debug_msg = print_distributed_debug_msg
+        self._rank_id = 0
+        if process_properties and process_properties.comm_size > 1:
+            self._rank_info_str = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
+            self._rank_id = process_properties.rank
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.rank_info_str = self._rank_info_str
+        if self._rank_id == 0:
+            return True
+        return record.levelno >= logging.WARNING or (
+            self._print_distributed_debug_msg and record.levelno == logging.DEBUG
+        )
 
 
 single_node_exchange = SingleNodeExchange()
