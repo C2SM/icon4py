@@ -146,7 +146,7 @@ when importing mpi4py. The `GHEX_*` options tell GHEX to build with GPU support.
 AttributeError: module 'ghex.pyghex' has no attribute 'unstructured__data_descriptor_gpu_int_int_double_'
 ```
 
-when GHEX tries to perform halo exchanges. The `MPICH_*` options make sure mpi4py gets built with GCC instead of nvc. mpi4py assumes that it can set certain compiler flags that GCC supports, but nvc does not support. The error message will typically look like:
+when GHEX tries to perform halo exchanges. The `MPICH_*` options make sure mpi4py gets built with GCC instead of NVHPC. mpi4py assumes that it can set certain compiler flags that GCC supports, but NVHPC does not support. The error message will typically look like:
 
 ```
       [stderr]
