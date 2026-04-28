@@ -131,7 +131,7 @@ export GHEX_GPU_ARCH="80;90"
 export GHEX_TRANSPORT_BACKEND=MPI
 export MPICH_CXX=$(which g++)
 export MPICH_CC=$(which gcc)
-uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --refresh-cache .
+uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --refresh
 ```
 
 If you already have a broken GHEX, mpi4py, or other package in the uv cache, run the command with `--no-cache` after either uninstalling the broken package or wiping the virtualenv.
