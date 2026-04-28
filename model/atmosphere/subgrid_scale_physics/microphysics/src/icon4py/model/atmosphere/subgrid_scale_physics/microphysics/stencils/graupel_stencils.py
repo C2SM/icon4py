@@ -13,7 +13,7 @@ from gt4py.next import broadcast, exp, log, maximum, minimum, where
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_constants import (
     MicrophysicsConstants,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphyiscal_processes import (
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphysical_processes import (
     autoconversion_and_rain_accretion,
     collision_and_ice_deposition_in_cold_ice_clouds,
     compute_cooper_inp_concentration,

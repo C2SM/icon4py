@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphyiscal_processes import (
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphysical_processes import (
     dqsatdT_rho,
     latent_heat_vaporization,
     qsat_rho,
