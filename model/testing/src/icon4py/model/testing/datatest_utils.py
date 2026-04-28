@@ -45,9 +45,21 @@ def get_experiment_archive_url(root_url: str, filepath: str) -> str:
     return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 
-def get_grid_archive_url(root_url: str, grid_name: str) -> str:
+def get_grid_archive_filename(grid: definitions.GridDescription) -> str:
+    return f"{grid.name}.tar.gz"
+
+
+def get_grid_filename(grid: definitions.GridDescription) -> str:
+    return f"{grid.name}.nc"
+
+
+def get_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
+    return definitions.grids_path().joinpath(grid.name, get_grid_filename(grid))
+
+
+def get_grid_archive_url(root_url: str, grid: definitions.GridDescription) -> str:
     """Build a download URL for a grid archive from root URL."""
-    filepath = f"{definitions.GRID_DATA_DIR}/{grid_name}.tar.gz"
+    filepath = f"{definitions.GRID_DATA_DIR}/{get_grid_archive_filename(grid)}"
     return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 

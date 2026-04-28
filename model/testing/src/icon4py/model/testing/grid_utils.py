@@ -73,16 +73,12 @@ def get_grid_manager(
     return manager
 
 
-def resolve_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid.name, f"{grid.name}.nc")
-
-
 def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
-    full_name = resolve_full_grid_file_name(grid)
+    full_name = dt_utils.get_full_grid_file_name(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
-        uri = dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid.name)
+        uri = dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
         data_handling.download_and_extract(
             uri,
             grid_directory,

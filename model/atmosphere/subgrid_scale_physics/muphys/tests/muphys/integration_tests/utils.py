@@ -50,18 +50,14 @@ class MuphysExperiment:
         return self.name
 
 
-def _get_muphys_archive_uri(experiment: MuphysExperiment) -> str:
-    return dt_utils.get_muphys_archive_url(
-        definitions.TESTDATA_ROOT_URL,
-        experiment.type.name.lower(),
-        experiment.name,
-    )
-
-
 @pytest.fixture(autouse=True)
 def download_test_data(experiment: MuphysExperiment) -> None:
     """Downloads test data for an experiment (implicit fixture)."""
     data_handling.download_test_data(
         _path_to_experiment_testdata(experiment),
-        uri=_get_muphys_archive_uri(experiment),
+        uri=dt_utils.get_muphys_archive_url(
+            definitions.TESTDATA_ROOT_URL,
+            experiment.type.name.lower(),
+            experiment.name,
+        ),
     )

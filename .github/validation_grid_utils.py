@@ -41,7 +41,7 @@ app = typer.Typer()
 def cache_key() -> None:
     """Generate a cache key for the Github action cache based on grid file name and download URI."""
     d = "_".join(
-        grid.name + dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid.name)
+        grid.name + dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
         for grid in VALIDATION_GRIDS
     )
     hexdigest = hashlib.md5(d.encode()).hexdigest()

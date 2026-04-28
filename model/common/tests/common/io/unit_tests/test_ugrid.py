@@ -29,7 +29,7 @@ def grid_files():
     ]
 
     for grid in grids:
-        yield definitions.grids_path().joinpath(grid.name).joinpath(f"{grid.name}.nc")
+        yield datatest_utils.get_full_grid_file_name(grid)
 
 
 @pytest.mark.parametrize("file", grid_files())
