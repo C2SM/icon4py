@@ -88,7 +88,7 @@ def geometry_from_savepoint(
     }
 
     exchange = decomposition.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(process_props)
+    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     grid_geometry = geometry.GridGeometry(
         grid=grid,
         decomposition_info=decomposition_info,
@@ -135,7 +135,7 @@ def metrics_factory_from_savepoint(
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory]:
     exchange = decomposition.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(process_props)
+    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()

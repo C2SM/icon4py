@@ -42,12 +42,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    field_type_aliases as fa,
-    model_backends,
-)
+from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -109,7 +104,7 @@ class TemperatureDiscretizationType(int, enum.Enum):
 
 class TurbulenceShearForcingType(int, enum.Enum):
     """
-    Type of shear forcing used in turbulance.
+    Type of shear forcing used in turbulence.
 
     Note: called `itype_sher` in `mo_turbdiff_nml.f90`
     """
@@ -122,6 +117,18 @@ class TurbulenceShearForcingType(int, enum.Enum):
         2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
     )
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
+
+
+class ForcingType(int, enum.Enum):
+    """
+    Type of physics forcing applied to the model.
+
+    Note: called `iforcing` in `mo_run_nml.f90`
+    """
+
+    NO_FORCING = 0  #: no physics forcing (diagnostic / idealized runs)
+    AES = 2  #: Atmospheric Earth System / ECHAM forcing (iaes)
+    NWP = 3  #: Numerical Weather Prediction forcing (inwp)
 
 
 class DiffusionConfig:
@@ -149,6 +156,16 @@ class DiffusionConfig:
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
+        smagorinski_scaling_factor2: float = 2e-6
+        * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))),
+        smagorinski_scaling_factor3: float = 0.0,
+        smagorinski_scaling_factor4: float = 1.0,
+        smagorinski_scaling_height: float = 32500.0,
+        smagorinski_scaling_height2: float = 1600.0
+        + 50000.0
+        + math.sqrt(1600.0 * (1600 + 50000.0)),
+        smagorinski_scaling_height3: float = 50000.0,
+        smagorinski_scaling_height4: float = 90000.0,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
         velocity_boundary_diffusion_denom: float = 200.0,
@@ -156,7 +173,9 @@ class DiffusionConfig:
         _nudge_max_coeff: float | None = None,  # default is set in __init__
         max_nudging_coefficient: float | None = None,  # default is set in __init__
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-        ltkeshs: bool = True,
+        iforcing: ForcingType = ForcingType.NO_FORCING,
+        a_hshr: float = 1.0,
+        loutshs: bool = False,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -199,9 +218,41 @@ class DiffusionConfig:
         #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
-        #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
+        # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
+        #: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value)
         #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
+
+        #: Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and
+        #: start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1).
+        #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_factor2: float = smagorinski_scaling_factor2
+
+        #: Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the
+        #: quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients.
+        #: Called 'hdiff_smag_fac3' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_factor3: float = smagorinski_scaling_factor3
+
+        #: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value).
+        #: Also the third control point that defines the quadratic segment together with factor2 and factor3.
+        #: Called 'hdiff_smag_fac4' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_factor4: float = smagorinski_scaling_factor4
+
+        #: Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor below this height.
+        #: Called 'hdiff_smag_z' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height: float = smagorinski_scaling_height
+
+        #: Transition height between linear and quadratic segments.
+        #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height2: float = smagorinski_scaling_height2
+
+        #: Interior control point height within the quadratic segment (height2 <= height3 <= height4).
+        #: Called 'hdiff_smag_z3' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height3: float = smagorinski_scaling_height3
+
+        #: Upper boundary of the quadratic segment: factor is constant at smagorinski_scaling_factor4 above this height.
+        #: Called 'hdiff_smag_z4' in mo_diffusion_nml.f90
+        self.smagorinski_scaling_height4: float = smagorinski_scaling_height4
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
@@ -256,9 +307,17 @@ class DiffusionConfig:
         #: Called 'itype_shear' in mo_turbdiff_nml.f90
         self.shear_type = shear_type
 
-        #: Consider separate horizontal shear production in TKE-equation.
-        #: Called 'ltkeshs' in mo_turbdiff_nml.f90
-        self.ltkeshs = ltkeshs
+        #: Type of physics forcing
+        #: Called 'iforcing' in mo_run_nml.f90
+        self.iforcing: ForcingType = iforcing
+
+        #: Scaling factor for horizontal shear production term
+        #: Called 'a_hshr' in mo_turbdiff_nml.f90
+        self.a_hshr: float = a_hshr
+
+        #: Output flag for horizontal shear
+        #: Called 'loutshs' in mo_turbdiff_nml.f90
+        self.loutshs: bool = loutshs
 
         self._validate()
 
@@ -312,8 +371,8 @@ class DiffusionParams:
     K4: Final[float] = dataclasses.field(init=False)
     K6: Final[float] = dataclasses.field(init=False)
     K4W: Final[float] = dataclasses.field(init=False)
-    smagorinski_factor: Final[float] = dataclasses.field(init=False)
-    smagorinski_height: Final[float] = dataclasses.field(init=False)
+    smagorinski_factor: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
+    smagorinski_height: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
@@ -329,53 +388,26 @@ class DiffusionParams:
             (1.0 / (config.hdiff_w_efdt_ratio * 36.0) if config.hdiff_w_efdt_ratio > 0 else 0.0),
         )
 
-        (
-            smagorinski_factor,
-            smagorinski_height,
-        ) = self._determine_smagorinski_factor(config)
-        object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
-        object.__setattr__(self, "smagorinski_height", smagorinski_height)
-
-    def _determine_smagorinski_factor(self, config: DiffusionConfig):
-        """Enhanced Smagorinsky diffusion factor.
-
-        Smagorinsky diffusion factor is defined as a profile in height
-        above sea level with 4 height sections.
-
-        It is calculated/used only in the case of diffusion_type 3 or 5
-        """
-        match config.diffusion_type:
-            case 5:
-                (
-                    smagorinski_factor,
-                    smagorinski_height,
-                ) = diffusion_type_5_smagorinski_factor(config)
-            case 4:
-                # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
-                # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
-                smagorinski_factor = (
-                    config.smagorinski_scaling_factor
-                    if config.smagorinski_scaling_factor
-                    else 0.15,
-                )
-                smagorinski_height = None
-            case _:
-                raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-        return smagorinski_factor, smagorinski_height
-
-
-def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
-    """
-    Initialize Smagorinski factors used in diffusion type 5.
-
-    The calculation and magic numbers are taken from mo_diffusion_nml.f90
-    """
-    magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
-    magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
-    magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-    factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
-    heights = (32500.0, magic_z2, 50000.0, 90000.0)
-    return factor, heights
+        object.__setattr__(
+            self,
+            "smagorinski_factor",
+            (
+                config.smagorinski_scaling_factor,
+                config.smagorinski_scaling_factor2,
+                config.smagorinski_scaling_factor3,
+                config.smagorinski_scaling_factor4,
+            ),
+        )
+        object.__setattr__(
+            self,
+            "smagorinski_height",
+            (
+                config.smagorinski_scaling_height,
+                config.smagorinski_scaling_height2,
+                config.smagorinski_scaling_height3,
+                config.smagorinski_scaling_height4,
+            ),
+        )
 
 
 class Diffusion:
@@ -695,96 +727,40 @@ class Diffusion:
 
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
-    def initial_run(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: float,
-    ):
-        """
-        Calculate initial diffusion step.
-
-        In ICON at the start of the simulation diffusion is run with a parameter linit = True:
-
-        'For real-data runs, perform an extra diffusion call before the first time
-        step because no other filtering of the interpolated velocity field is done'
-
-        This run uses special values for diff_multfac_vn, smag_limit and smag_offset
-
-        """
-        diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
-        smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
-
-        self.setup_fields_for_initial_step(
-            self._params.K4,
-            self.config.hdiff_efdt_ratio,
-            diff_multfac_vn,
-            smag_limit,
-        )
-        self._do_diffusion_step(
-            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0
-        )
-        self._sync_cell_fields(prognostic_state)
-
     def run(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
+        initial_run: bool = False,
     ):
         """
-        Do one diffusion step within regular time loop.
+        Do one diffusion step.
 
-        runs a diffusion step for the parameter linit=False, within regular time loop.
+        In ICON at the start of the simulation diffusion is run with linit=True:
+
+        'For real-data runs, perform an extra diffusion call before the first time
+        step because no other filtering of the interpolated velocity field is done'
+
+        The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
+        if initial_run:
+            diff_multfac_vn = data_alloc.zero_field(
+                self._grid, dims.KDim, allocator=self._allocator
+            )
+            smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
+            self.setup_fields_for_initial_step(
+                self._params.K4,
+                self.config.hdiff_efdt_ratio,
+                diff_multfac_vn,
+                smag_limit,
+            )
+            smag_offset = 0.0
+        else:
+            diff_multfac_vn = self.diff_multfac_vn
+            smag_limit = self.smag_limit
+            smag_offset = self.smag_offset
 
-        self._do_diffusion_step(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-            diff_multfac_vn=self.diff_multfac_vn,
-            smag_limit=self.smag_limit,
-            smag_offset=self.smag_offset,
-        )
-
-    def _sync_cell_fields(self, prognostic_state):
-        """
-        Communicate theta_v, exner and w.
-
-        communication only done in original code if the following condition applies:
-        IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
-        """
-        log.debug("communication of prognostic cell fields: theta, w, exner - start")
-        self._exchange.exchange(
-            dims.CellDim,
-            prognostic_state.w,
-            prognostic_state.theta_v,
-            prognostic_state.exner,
-            stream=decomposition.DEFAULT_STREAM,
-        )
-        log.debug("communication of prognostic cell fields: theta, w, exner - done")
-
-    def _do_diffusion_step(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: float,
-        diff_multfac_vn: fa.KField[float],
-        smag_limit: fa.KField[float],
-        smag_offset: float,
-    ):
-        """
-        Run a diffusion step.
-
-        Args:
-            diagnostic_state: output argument, data class that contains diagnostic variables
-            prognostic_state: output argument, data class that contains prognostic variables
-            dtime: the time step,
-            diff_multfac_vn:
-            smag_limit:
-            smag_offset:
-
-        """
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
         log.debug("rbf interpolation 1: start")
@@ -823,10 +799,12 @@ class Diffusion:
             smag_offset=smag_offset,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
+
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-            or self.config.ltkeshs
+            or self.config.loutshs
+            or self.config.a_hshr > 0.0
         ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
@@ -871,7 +849,7 @@ class Diffusion:
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
-        log.debug("communication of prognistic.vn : start")
+        log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
             prognostic_state.vn,
             dim=dims.EdgeDim,
@@ -897,11 +875,16 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
+        self.halo_exchange_wait(
+            handle_edge_comm,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+        )  # need to do this here, since we currently only use 1 communication object.
+        log.debug("communication of prognostic.vn - end")
+
         if self.config.apply_to_temperature:
             log.debug(
                 "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
             )
-
             self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
                 theta_v=prognostic_state.theta_v,
                 kh_smag_e=self.kh_smag_e,
@@ -913,17 +896,34 @@ class Diffusion:
             self.copy_field(
                 prognostic_state.theta_v, self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
-
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 theta_v_in=self.theta_v_tmp,
                 theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
             )
+            # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+            # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+            # is another halo exchange after the physics are applied.
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
+            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+                log.debug("communication of prognostic cell fields: theta and exner - start")
+                self._exchange.exchange(
+                    dims.CellDim,
+                    prognostic_state.theta_v,
+                    prognostic_state.exner,
+                    stream=decomposition.DEFAULT_STREAM,
+                )
+                log.debug("communication of prognostic cell fields: theta and exner - done")
 
-        self.halo_exchange_wait(
-            handle_edge_comm,
-            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
-        )  # need to do this here, since we currently only use 1 communication object.
-        log.debug("communication of prognogistic.vn - end")
+        # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+        # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+        # is another halo exchange after the physics are applied.
+        if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+            log.debug("communication of prognostic cell field: w - start")
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_state.w,
+                stream=decomposition.DEFAULT_STREAM,
+            )
+            log.debug("communication of prognostic cell field: w - done")
