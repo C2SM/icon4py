@@ -66,7 +66,6 @@ class GridManager:
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(msimberg): remove to separate vertical and horizontal grid
         offset_transformation: gridfile.IndexTransformation = _fortran_to_python_transformer,
-        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._offset_transformation = offset_transformation
         self._file_name = str(grid_file)
@@ -77,7 +76,6 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
-        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -106,8 +104,8 @@ class GridManager:
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        process_props=_single_process_props,
-    ):
+        process_props: decomposition.ProcessProperties = _single_process_props,
+    ) -> None:
         if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer
         ):
