@@ -120,6 +120,8 @@ mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
 
 #### Distributed runs on Alps
 
+##### Compiling
+
 On Alps with Cray MPICH and GH200 or A100 GPUs, install mpi4py and GHEX as follows:
 
 ```bash
@@ -159,7 +161,26 @@ when GHEX tries to perform halo exchanges. The `MPICH_*` options make sure mpi4p
       your may be missing the MPICH or Open MPI development package:
 ```
 
-Finally, when running tests, make sure to export `MPICH_GPU_SUPPORT_ENABLED=1`. Cray MPICH will otherwise segfault when communicating GPU buffers. Also see the [CSCS Cray MPICH documentation](https://docs.cscs.ch/software/communication/cray-mpich/) for more details.
+##### Running
+
+When running make sure to
+
+```bash
+export MPICH_GPU_SUPPORT_ENABLED=1
+export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
+```
+
+Cray MPICH will otherwise segfault when communicating GPU buffers. Also see the [CSCS Cray MPICH documentation](https://docs.cscs.ch/software/communication/cray-mpich/) for more details.
+The `UNIT_STRIDE` variable is necessary when using the DaCe backend, which otherwise fails (see [PR1130](https://github.com/C2SM/icon4py/pull/1130)).
+
+When performance is important you may want to
+
+```bash
+export PYTHONOPTIMIZE=2
+```
+
+however, verification tests between icon4py and icon fortran fail with this set to `2`.
+
 
 ### Benchmarking
 
