@@ -26,6 +26,22 @@ Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages
 
 **Always run `uv sync` from the repo root.** Running it from a subpackage only installs that package's deps.
 
+## Key architecture
+
+icon4py implements the ICON atmospheric model using GT4Py stencil operators (`field_operator`, `scan_operator`).
+
+### Grid topology
+
+- ICON grids are built from a base shape (icosahedron or torus). Icosahedral grids are refined by recursive bisection; a grid with root R and bisection level B has R^2 * 4^B cells per original face.
+- Fields live on three topological entities: **cells** (triangle centers), **edges** (triangle sides), and **vertices** (triangle corners). Neighbor connectivities encode the mesh structure: C2E (cell-to-edge), E2C (edge-to-cell), V2E (vertex-to-edge), C2E2C, E2C2V, E2C2E, etc.
+
+### Distributed memory
+
+- Each MPI rank owns a subset of cells/edges/vertices plus halo regions (ghost cells from neighboring ranks). Owner masks distinguish owned from halo entries.
+- After stencil computations that write to halo-adjacent fields, halo values must be exchanged via GHEX before neighbor accesses are valid.
+- `GlobalReductions` wraps `MPI.Allreduce` for min/max/sum/mean.
+- `h_grid.Zone` defines domain regions ordered from most inclusive (`END` = all local including halos) to most restrictive (`INTERIOR`). Key zones: `END` > `HALO` > `LOCAL` > `INTERIOR`.
+
 ## Environment setup
 
 Python is managed by uv (see `.python-version` for the required version). Install system dependencies first, then sync the workspace:
