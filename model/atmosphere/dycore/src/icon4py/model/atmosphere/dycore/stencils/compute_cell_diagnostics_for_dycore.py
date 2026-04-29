@@ -344,7 +344,7 @@ def compute_perturbed_quantities_and_interpolation(
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (1, surface_level - 1),
+                dims.KDim: (model_top + 1, surface_level - 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
@@ -352,15 +352,15 @@ def compute_perturbed_quantities_and_interpolation(
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (1, surface_level),
+                dims.KDim: (model_top + 1, surface_level),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (1, surface_level),
+                dims.KDim: (model_top + 1, surface_level),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (1, surface_level - 1),
+                dims.KDim: (model_top + 1, surface_level - 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
