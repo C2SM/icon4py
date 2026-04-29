@@ -12,18 +12,15 @@ import abc
 import dataclasses
 import functools
 import logging
-from collections.abc import Sequence
 from enum import Enum
 from types import ModuleType
 from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
-import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
-from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -422,26 +419,6 @@ class SingleNodeExchange(ExchangeRuntime):
     def get_size(self) -> int:
         return 1
 
-    # Implementation of DaCe SDFGConvertible interface
-    # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-    # NOTE: Stream are not supported here.
-    def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
-    ) -> dace.sdfg.sdfg.SDFG:
-        sdfg = DummyNestedSDFG().__sdfg__()
-        sdfg.name = "_halo_exchange_"
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        return DummyNestedSDFG().__sdfg_closure__()
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return DummyNestedSDFG().__sdfg_signature__()
-
-    __sdfg__ = dace__sdfg__
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
-
 
 class HaloExchangeWaitRuntime(Protocol):
     """Protocol for halo exchange wait."""
@@ -460,40 +437,10 @@ class HaloExchangeWaitRuntime(Protocol):
         #   of this function or such that it is no longer needed.
         ...
 
-    def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
-        """DaCe related: SDFGConvertible interface."""
-        ...
-
-    def __sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        """DaCe related: SDFGConvertible interface."""
-        ...
-
-    def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        """DaCe related: SDFGConvertible interface."""
-        ...
-
 
 @dataclasses.dataclass
 class HaloExchangeWait(HaloExchangeWaitRuntime):
-    exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
-
-    # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(
-        self,
-        *args: Any,
-        dim: gtx.Dimension,
-        full_exchange: bool = True,
-        stream: StreamLike | BlockType = DEFAULT_STREAM,
-    ) -> dace.sdfg.sdfg.SDFG:
-        sdfg = DummyNestedSDFG().__sdfg__()
-        sdfg.name = "_halo_exchange_wait_"
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        return DummyNestedSDFG().__sdfg_closure__()
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return DummyNestedSDFG().__sdfg_signature__()
+    exchange_object: SingleNodeExchange
 
     def __call__(
         self,
@@ -501,10 +448,6 @@ class HaloExchangeWait(HaloExchangeWaitRuntime):
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
-
-    __sdfg__ = dace__sdfg__  # type: ignore[assignment]
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
 
 
 @functools.singledispatch
