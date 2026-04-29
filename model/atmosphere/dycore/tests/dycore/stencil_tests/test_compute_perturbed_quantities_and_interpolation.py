@@ -34,7 +34,7 @@ from .test_compute_virtual_potential_temperatures_and_pressure_gradient import (
 )
 from .test_extrapolate_quadratically_to_surface import extrapolate_quadratically_to_surface_numpy
 from .test_extrapolate_temporally_exner_pressure import extrapolate_temporally_exner_pressure_numpy
-from .test_interpolate_cell_field_to_half_levels_vp import (
+from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
 from .test_set_theta_v_prime_ic_at_lower_boundary import (

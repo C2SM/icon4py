@@ -10,7 +10,6 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, maximum
-from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
@@ -24,10 +23,9 @@ from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_press
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
-    _interpolate_cell_field_to_half_levels_vp,
-)
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_wp import (
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
+    _interpolate_cell_field_to_half_levels_with_surface_value_vp,
+    _interpolate_cell_field_to_half_levels_with_surface_value_wp,
     _interpolate_cell_field_to_half_levels_wp,
 )
 from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
@@ -102,19 +100,17 @@ def _compute_perturbed_quantities_and_interpolation(
         exner_pr=perturbed_exner_at_cells_on_model_levels,
     )
 
-    exner_at_cells_on_half_levels = (
-        concat_where(
-            dims.KDim < surface_level - 1,
-            _interpolate_cell_field_to_half_levels_vp(
-                wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
-            ),
-            _extrapolate_quadratically_to_surface(
-                wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
-            ),
+    if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+        exner_at_cells_on_half_levels = (
+            _interpolate_cell_field_to_half_levels_with_surface_value_vp(
+                wgtfac_c=wgtfac_c,
+                interpolant=temporal_extrapolation_of_perturbed_exner,
+                surface_value=_extrapolate_quadratically_to_surface(
+                    wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
+                ),
+                surface_level=surface_level,
+            )
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else exner_at_cells_on_half_levels
-    )
 
     (
         perturbed_rho_at_cells_on_model_levels,
@@ -128,50 +124,42 @@ def _compute_perturbed_quantities_and_interpolation(
 
     rho_at_cells_on_half_levels = _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho)
 
-    wgtfac_c_wp = astype(wgtfac_c, wpfloat)
-
-    perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim < surface_level - 1,
-        _interpolate_cell_field_to_half_levels_vp(
-            wgtfac_c=wgtfac_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
-        ),
-        _extrapolate_quadratically_to_surface(
-            wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
-        ),
+    perturbed_theta_v_at_cells_on_half_levels = (
+        _interpolate_cell_field_to_half_levels_with_surface_value_vp(
+            wgtfac_c=wgtfac_c,
+            interpolant=perturbed_theta_v_at_cells_on_model_levels,
+            surface_value=_extrapolate_quadratically_to_surface(
+                wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
+            ),
+            surface_level=surface_level,
+        )
     )
 
-    theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim < surface_level - 1,
-        _interpolate_cell_field_to_half_levels_wp(
-            wgtfac_c=wgtfac_c_wp, interpolant=current_theta_v
-        ),
-        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels,
+    theta_v_at_cells_on_half_levels = _interpolate_cell_field_to_half_levels_with_surface_value_wp(
+        wgtfac_c=astype(wgtfac_c, wpfloat),
+        interpolant=current_theta_v,
+        surface_value=reference_theta_at_cells_on_half_levels
+        + perturbed_theta_v_at_cells_on_half_levels,
+        surface_level=surface_level,
     )
-
-    ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
     nonhydro_buoy_at_cells_on_half_levels = _calculate_nonhydro_buoy_at_cells_on_half_levels(
         exner_w_explicit_weight_parameter,
         theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels,
-        ddqz_z_half_wp,
+        astype(ddqz_z_half, wpfloat),
         perturbed_theta_v_at_cells_on_half_levels,
         ddz_of_reference_exner_at_cells_on_half_levels,
     )
 
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        (
+    if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             _compute_first_vertical_derivative_at_cells(
                 exner_at_cells_on_half_levels, inv_ddqz_z_full
             )
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
-    )
 
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        -vpfloat("0.5")
-        * (
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = -vpfloat("0.5") * (
             (
                 perturbed_theta_v_at_cells_on_half_levels
                 - perturbed_theta_v_at_cells_on_half_levels(Koff[1])
@@ -179,9 +167,6 @@ def _compute_perturbed_quantities_and_interpolation(
             * d2dexdz2_fac1_mc
             + perturbed_theta_v_at_cells_on_model_levels * d2dexdz2_fac2_mc
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
-    )
 
     return (
         perturbed_rho_at_cells_on_model_levels,
