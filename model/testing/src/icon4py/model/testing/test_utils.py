@@ -17,6 +17,7 @@ import numpy.typing as npt
 import pytest
 
 from icon4py.model.common import model_options
+from icon4py.model.testing import config
 
 
 def dallclose(
@@ -44,15 +45,22 @@ def assert_dallclose(
     """
     'numpy.testing.assert_allclose', but with double precision default tolerances.
     """
-    np_testing.assert_allclose(
-        actual,  # type: ignore[arg-type]
-        desired,  # type: ignore[arg-type]
-        rtol=rtol,
-        atol=atol,
-        equal_nan=equal_nan,
-        err_msg=err_msg,
-        verbose=verbose,
-    )
+    if config.DALLCLOSE_PRINT_INSTEAD_OF_FAIL:
+        # Non-blocking version: prints max diff instead of raising errors.
+        # Prints red if delta > 0, green otherwise.
+        max_diff = np.max(np.abs(np.asarray(actual) - np.asarray(desired)))
+        color = "\033[1;31m" if max_diff > 0 else "\033[32m"
+        print(f"{color}{err_msg} max diff {max_diff}\033[0m")
+    else:
+        np_testing.assert_allclose(
+            actual,  # type: ignore[arg-type]
+            desired,  # type: ignore[arg-type]
+            rtol=rtol,
+            atol=atol,
+            equal_nan=equal_nan,
+            err_msg=err_msg,
+            verbose=verbose,
+        )
 
 
 def is_sorted(array: np.ndarray) -> bool:
