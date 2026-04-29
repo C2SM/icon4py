@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any, Final, TypeGuard
+from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -14,8 +14,8 @@ from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
-type DeviceType = gtx.DeviceType
-CPU = gtx.DeviceType.CPU
+DeviceType: TypeAlias = gtx.DeviceType  # noqa: UP040 used with isinstance()
+CPU = DeviceType.CPU
 GPU = gtx.CUPY_DEVICE_TYPE
 
 type BackendDescriptor = dict[str, Any]
