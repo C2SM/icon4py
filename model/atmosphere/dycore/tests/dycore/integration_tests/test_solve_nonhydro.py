@@ -211,7 +211,6 @@ def test_nonhydro_predictor_step(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
-    nlev = icon_grid.num_levels
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -262,21 +261,7 @@ def test_nonhydro_predictor_step(
         sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
 
-    # stencils 4,5
-    assert test_utils.dallclose(
-        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_3:, nlev - 1
-        ],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_3:, nlev - 1],
-    )
     nflatlev = vertical_params.nflatlev
-    assert test_utils.dallclose(
-        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_3:, nflatlev : nlev - 1
-        ],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_3:, nflatlev : nlev - 1],
-        rtol=1.0e-9,
-    )
     # stencil 6
     assert test_utils.dallclose(
         solve_nonhydro.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
@@ -1069,9 +1054,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
-    exner_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
@@ -1117,7 +1099,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
     exner_pr_ref = sp_exit.exner_pr()
     rho_ic_ref = sp_exit.rho_ic()
-    z_exner_ic_ref = sp_exit.z_exner_ic()
     z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_dexner_dz_c_1_ref = sp_ref.z_dexner_dz_c(0)
@@ -1130,7 +1111,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
-        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
@@ -1185,14 +1165,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     )
 
     assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
-    # `exner_at_cells_on_half_levels` is only computed in a subset of the whole domain, reference may contain garbage outside this range
-    assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:
-        ],
-        z_exner_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:],
-        rtol=1e-11,
-    )
 
     assert test_utils.dallclose(
         perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:, :],
