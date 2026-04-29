@@ -181,7 +181,6 @@ export PYTHONOPTIMIZE=2
 
 however, verification tests between icon4py and icon fortran fail with this set to `2`.
 
-
 ### Benchmarking
 
 We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.
