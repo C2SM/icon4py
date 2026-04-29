@@ -76,7 +76,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             "nflatlev",
             "nflat_gradp",
             "start_cell_lateral_boundary_level_3",
-            "start_cell_halo_level_2",
             "end_cell_halo",
             "end_cell_halo_level_2",
             "model_top",
@@ -125,7 +124,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
         start_cell_lateral_boundary_level_3: gtx.int32,
-        start_cell_halo_level_2: gtx.int32,
         end_cell_halo: gtx.int32,
         end_cell_halo_level_2: gtx.int32,
         **kwargs: Any,
@@ -305,7 +303,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
         ) = np.where(
-            (start_cell_halo_level_2 <= horz_idx) & (horz_idx < end_cell_halo_level_2),
+            (end_cell_halo <= horz_idx) & (horz_idx < end_cell_halo_level_2),
             compute_perturbation_of_rho_and_theta_numpy(
                 rho=current_rho,
                 rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -399,7 +397,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
         end_cell_halo = grid.end_index(cell_domain(h_grid.Zone.HALO))
-        start_cell_halo_level_2 = grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
         nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
@@ -437,7 +434,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
             start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
-            start_cell_halo_level_2=start_cell_halo_level_2,
             end_cell_halo=end_cell_halo,
             end_cell_halo_level_2=end_cell_halo_level_2,
             model_top=0,

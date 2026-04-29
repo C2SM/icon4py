@@ -700,7 +700,6 @@ class SolveNonhydro:
             },
             horizontal_sizes={
                 "start_cell_lateral_boundary_level_3": self._start_cell_lateral_boundary_level_3,
-                "start_cell_halo_level_2": self._start_cell_halo_level_2,
                 "end_cell_halo": self._end_cell_halo,
                 "end_cell_halo_level_2": self._end_cell_halo_level_2,
             },
@@ -942,9 +941,6 @@ class SolveNonhydro:
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._start_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.LOCAL))
         self._start_cell_halo = self._grid.start_index(cell_domain(h_grid.Zone.HALO))
-        self._start_cell_halo_level_2 = self._grid.start_index(
-            cell_domain(h_grid.Zone.HALO_LEVEL_2)
-        )
 
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)

@@ -79,8 +79,6 @@ def _compute_perturbed_quantities_and_interpolation(
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
     surface_level: gtx.int32,
-    start_cell_halo_level_2: gtx.int32,
-    end_cell_halo_level_2: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -185,23 +183,6 @@ def _compute_perturbed_quantities_and_interpolation(
         else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 
-    (
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
-    ) = concat_where(
-        (dims.CellDim >= start_cell_halo_level_2) & (dims.CellDim < end_cell_halo_level_2),
-        _compute_perturbation_of_rho_and_theta(
-            rho=current_rho,
-            rho_ref_mc=reference_rho_at_cells_on_model_levels,
-            theta_v=current_theta_v,
-            theta_ref_mc=reference_theta_at_cells_on_model_levels,
-        ),
-        (
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-        ),
-    )
-
     return (
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
@@ -250,7 +231,6 @@ def compute_perturbed_quantities_and_interpolation(
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
-    start_cell_halo_level_2: gtx.int32,
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
     model_top: gtx.int32,
@@ -294,7 +274,6 @@ def compute_perturbed_quantities_and_interpolation(
         - nflatlev: starting vertical index of flat levels
         - nflat_gradp: starting vertical index when neighboring cell centers lie within the thickness of the layer
         - start_cell_lateral_boundary_level_3: start index of the 3rd lateral boundary level zone for cells
-        - start_cell_halo_level_2: start index of the 2nd halo level zone for cells
         - end_cell_halo: end index of the last halo level zone for cells
         - end_cell_halo_level_2: end index of the second halo level zone for cells
         - model_top: start index of the vertical domain
@@ -337,8 +316,6 @@ def compute_perturbed_quantities_and_interpolation(
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         igradp_method=igradp_method,
         surface_level=surface_level,
-        start_cell_halo_level_2=start_cell_halo_level_2,
-        end_cell_halo_level_2=end_cell_halo_level_2,
         out=(
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,
@@ -354,11 +331,11 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain=(
             {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo_level_2),
                 dims.KDim: (model_top, surface_level - 1),
             },
             {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo_level_2),
                 dims.KDim: (model_top, surface_level - 1),
             },
             {
