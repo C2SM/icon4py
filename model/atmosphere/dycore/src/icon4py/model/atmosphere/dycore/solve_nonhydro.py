@@ -667,7 +667,7 @@ class SolveNonhydro:
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(0),
+                "vertical_start": gtx.int32(1),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
