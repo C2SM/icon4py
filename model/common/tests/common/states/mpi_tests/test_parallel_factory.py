@@ -43,18 +43,18 @@ if mpi_decomposition.mpi4py is None:
 
 
 @gtx.field_operator
-def _fill_op(f: fa.EdgeField[gtx.int32], value: gtx.int32) -> fa.EdgeField[gtx.int32]:
-    return f + value
+def _fill_op(field: fa.EdgeField[gtx.int32], value: gtx.int32) -> fa.EdgeField[gtx.int32]:
+    return field + value
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def _fill_edges(
-    f: fa.EdgeField[gtx.int32],
+    field: fa.EdgeField[gtx.int32],
     value: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ) -> None:
-    _fill_op(f, value, out=f, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
+    _fill_op(field, value, out=field, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
 
 
 @pytest.mark.datatest
@@ -85,7 +85,7 @@ def test_program_provider_exchange(
         domain={
             dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
         },
-        fields={"f": "out"},
+        fields={"field": "out"},
         deps={},
         params={"value": number},
         do_exchange=do_exchange,
