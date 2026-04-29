@@ -372,3 +372,74 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
 
     return ds
+
+
+def toy_problem(
+    grid: icon_grid.IconGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    backend: gtx.typing.Backend | None,
+    ampl_x: float = 1.0,
+    ampl_y: float = 1.0,
+    wavelength_x: float = 1.0,
+    wavelength_y: float = 1.0,
+) -> driver_states.DriverStates:
+    """
+    Minimal toy initial condition with a sinusoidal theta_v pattern.
+
+    All prognostic and diagnostic fields are zero except theta_v, which is set to:
+        theta_v(cell, k) = ampl_x * sin(wavelength_x * lon) + ampl_y * sin(wavelength_y * lat)
+    constant in the vertical.
+    """
+    allocator = model_backends.get_allocator(backend)
+    xp = data_alloc.import_array_ns(allocator)
+
+    cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
+    cell_lon = geometry_field_source.get(geometry_meta.CELL_LON).ndarray
+
+    prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
+
+    theta_v_profile = (
+        ampl_x * xp.sin(wavelength_x * cell_lon)
+        + ampl_y * xp.sin(wavelength_y * cell_lat)
+    )
+    prognostic_state_now.theta_v.ndarray[:, :] = theta_v_profile[:, xp.newaxis]
+
+    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
+
+    prognostic_state_next = prognostics.PrognosticState(
+        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
+        w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
+        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
+        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
+        theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+    )
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+        grid=grid,
+        allocator=allocator,
+    )
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+    tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    prep_tracer_adv = advection_states.AdvectionPrepAdvState(
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+    )
+
+    return driver_states.DriverStates(
+        prep_advection_prognostic=prep_adv,
+        solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
+        prep_tracer_advection_prognostic=prep_tracer_adv,
+        tracer_advection_diagnostic=tracer_advection_diagnostic_state,
+        diffusion_diagnostic=diffusion_diagnostic_state,
+        prognostics=prognostic_states,
+        diagnostic=diagnostic_state,
+    )
