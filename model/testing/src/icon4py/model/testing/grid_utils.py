@@ -18,7 +18,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import config, data_handling, definitions
+from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
@@ -73,17 +73,14 @@ def get_grid_manager(
     return manager
 
 
-def resolve_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid.name, grid.file_name)
-
-
 def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
-    full_name = resolve_full_grid_file_name(grid)
+    full_name = dt_utils.get_grid_filepath(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
+        uri = dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
         data_handling.download_and_extract(
-            grid.uri,
+            uri,
             grid_directory,
         )
     else:
