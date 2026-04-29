@@ -16,7 +16,7 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from . import utils
@@ -27,17 +27,14 @@ class Experiments:
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri=f"{definitions.DATA_ROOT_URL}/muphys/graupel_only/mini.tar.gz",
     )
     TINY: Final = utils.MuphysExperiment(
         name="tiny",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri=f"{definitions.DATA_ROOT_URL}/muphys/graupel_only/tiny.tar.gz",
     )
     R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri=f"{definitions.DATA_ROOT_URL}/muphys/graupel_only/R2B05.tar.gz",
     )
 
 

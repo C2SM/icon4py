@@ -22,7 +22,10 @@ from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
@@ -46,15 +49,19 @@ class Icon4pyDriver:
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
+        decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
         vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
+        exchange: decomposition_defs.ExchangeRuntime,
+        global_reductions: decomposition_defs.Reductions,
     ):
         self.config = config
         self.backend = backend
         self.grid = grid
+        self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
@@ -64,6 +71,8 @@ class Icon4pyDriver:
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
+        self.exchange = exchange
+        self.global_reductions = global_reductions
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
@@ -182,7 +191,6 @@ class Icon4pyDriver:
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
-            timer_diffusion.capture()
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
@@ -259,20 +267,19 @@ class Icon4pyDriver:
                 at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
             )
 
-            timer_solve_nh.start()
-            self.solve_nonhydro.time_step(
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
-                prep_adv=prep_adv,
-                second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
-                dtime=self.model_time_variables.substep_timestep,
-                ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
-                at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                lprep_adv=do_prep_adv,
-                at_first_substep=self._is_first_substep(dyn_substep),
-                at_last_substep=self._is_last_substep(dyn_substep),
-            )
-            timer_solve_nh.capture()
+            with timer_solve_nh:
+                self.solve_nonhydro.time_step(
+                    solve_nonhydro_diagnostic_state,
+                    prognostic_states,
+                    prep_adv=prep_adv,
+                    second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
+                    dtime=self.model_time_variables.substep_timestep,
+                    ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
+                    at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
+                    lprep_adv=do_prep_adv,
+                    at_first_substep=self._is_first_substep(dyn_substep),
+                    at_last_substep=self._is_last_substep(dyn_substep),
+                )
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
@@ -287,12 +294,15 @@ class Icon4pyDriver:
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
-        # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
-
+        global_max_vertical_cfl = self.global_reductions.max(
+            self._xp.asarray(
+                solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
+            ),
+            array_ns=self._xp,
+        )
         if (
             global_max_vertical_cfl
-            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator] # problem with ScalarLikeArray
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
@@ -306,7 +316,7 @@ class Icon4pyDriver:
             )
             if (
                 global_max_vertical_cfl * substep_fraction
-                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator] # problem with ScalarLikeArray
+                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             ):
                 log.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
@@ -317,12 +327,12 @@ class Icon4pyDriver:
                 driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             )
 
-            if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:  # type: ignore[operator] # problem with ScalarLikeArray
+            if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
                 if self._xp.isfinite(global_max_vertical_cfl):
                     ndyn_substeps_increment = max(
                         1,
                         round(
-                            self.model_time_variables.ndyn_substeps_var  # type: ignore[arg-type] # problem with ScalarLikeArray
+                            self.model_time_variables.ndyn_substeps_var
                             * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
                             / vertical_cfl_threshold_for_increment
                         ),
@@ -348,7 +358,7 @@ class Icon4pyDriver:
                     self.model_time_variables.ndyn_substeps_var
                     / (self.model_time_variables.ndyn_substeps_var - 1)
                 )
-                < vertical_cfl_threshold_for_decrement  # type: ignore[operator] # problem with ScalarLikeArray
+                < vertical_cfl_threshold_for_decrement
             ):
                 self.model_time_variables.update_ndyn_substeps(
                     self.model_time_variables.ndyn_substeps_var - 1
@@ -361,7 +371,7 @@ class Icon4pyDriver:
                 if (
                     self.model_time_variables.ndyn_substeps_var == self.config.ndyn_substeps
                     and global_max_vertical_cfl
-                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR  # type: ignore[operator] # problem with ScalarLikeArray
+                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR
                     * self.config.vertical_cfl_threshold
                 ):
                     log.warning(
@@ -452,11 +462,12 @@ class Icon4pyDriver:
             cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
-            total_mass = self._xp.sum(
+            local_mass = (
                 rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
             )
+            global_total_mass = self.global_reductions.sum(local_mass, array_ns=self._xp)
             # TODO (Chia Rui): compute total energy
-            log.info(f"TOTAL MASS: {total_mass:.15e} kg")
+            log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -467,19 +478,15 @@ class Icon4pyDriver:
             w_ndarray = prognostic_states.w.ndarray
             theta_v_ndarray = prognostic_states.theta_v.ndarray
             exner_ndarray = prognostic_states.exner.ndarray
-            interface_physical_height_ndarray = self.static_field_factories.metrics_field_source._vertical_grid.interface_physical_height.ndarray
             log.info("")
+            log.info("Global mean of    rho         vn           w          theta_v     exner:")
             log.info(
-                "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
+                f"{self.global_reductions.mean(rho_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(vn_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(w_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(theta_v_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(exner_ndarray, array_ns=self._xp):.5e} "
             )
-            for k in range(rho_ndarray.shape[1]):
-                log.info(
-                    f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(w_ndarray[:, k + 1]):.5e} "
-                    f"{self._xp.mean(theta_v_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
-                )
 
 
 # TODO (Chia Rui): this should be replaced by real configuration reader when the configuration PR is merged
@@ -551,7 +558,9 @@ def initialize_driver(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
-    backend_name: str,
+    backend_like: model_backends.BackendLike,
+    print_distributed_debug_msg: bool = False,
+    force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -566,33 +575,50 @@ def initialize_driver(
         output_path: path where to store the simulation output
         grid_file_path: path of the grid file
         log_level: logging level
-        backend: GT4Py backend-like
+        backend_like: backend-like
     Returns:
         Driver: driver object
     """
 
+    # Detect if we're running under MPI (not just if mpi4py is installed).
+    # - mpi4py not installed → serial
+    # - mpi4py installed but COMM_WORLD.Get_size() == 1 → serial
+    # - mpi4py installed and COMM_WORLD.Get_size() > 1 → MPI mode
+    # - force_serial_run=True → always serial (reserved for single vs distributed tests)
+    if force_serial_run or mpi_decomp.mpi4py is None:
+        with_mpi = False
+    else:
+        mpi_decomp.init_mpi()
+        with_mpi = mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1
+
     process_props = decomposition_defs.get_process_properties(
-        decomposition_defs.get_runtype(with_mpi=False)
+        decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
+        print_distributed_debug_msg=print_distributed_debug_msg,
         process_props=process_props,
     )
 
-    global_reductions = decomposition_defs.create_reduction(process_props)
-    if output_path.exists():
-        current_time = datetime.datetime.now()
-        log.warning(f"output path {output_path} already exists, a time stamp will be added")
-        output_path = (
-            output_path.parent
-            / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
-        )
-
-    else:
+    if process_props.rank == 0:
+        if output_path.exists():
+            current_time = datetime.datetime.now()
+            log.warning(f"output path {output_path} already exists, a time stamp will be added")
+            output_path = (
+                output_path.parent
+                / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+            )
         output_path.mkdir(parents=True, exist_ok=False)
+    if with_mpi:
+        # broadcast (possibly changed) output_path
+        comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
+        output_path = pathlib.Path(
+            comm.bcast(str(output_path) if process_props.rank == 0 else None, root=0)
+        )
+        comm.Barrier()
 
     backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+        program=None, backend=driver_utils.get_backend_from_name(backend_like)
     )
     allocator = model_backends.get_allocator(backend)
 
@@ -609,16 +635,13 @@ def initialize_driver(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
-        global_reductions=global_reductions,
+        process_props=process_props,
     )
 
     log.info("creating the decomposition info")
-
-    decomposition_info = driver_utils.create_decomposition_info(
-        grid_manager=grid_manager,
-        allocator=allocator,
-    )
+    decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+    global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
@@ -640,6 +663,8 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     log.info("initializing granules")
@@ -666,11 +691,14 @@ def initialize_driver(
         config=driver_config,
         backend=backend,
         grid=grid_manager.grid,
+        decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     return icon4py_driver
