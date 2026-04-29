@@ -69,7 +69,7 @@ def finalize_mpi() -> None:
         MPI.Finalize()
 
 
-def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
+def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
@@ -85,23 +85,11 @@ def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) ->
         return MPICommProcessProperties(current_comm)
 
 
-class ParallelLogger(logging.Filter):
-    def __init__(self, process_properties: definitions.ProcessProperties | None = None) -> None:
-        super().__init__()
-        self._rank_info = ""
-        if process_properties and process_properties.comm_size > 1:
-            self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        record.rank = self._rank_info
-        return True
-
-
-@definitions.get_processor_properties.register(definitions.MultiNodeRun)
+@definitions.get_process_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
     s: definitions.MultiNodeRun, comm_id: CommId = None
 ) -> definitions.ProcessProperties:
-    return _get_processor_properties(with_mpi=True, comm_id=comm_id)
+    return _get_process_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)
@@ -128,11 +116,11 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
 
     def __init__(
         self,
-        props: definitions.ProcessProperties,
+        process_props: definitions.ProcessProperties,
         domain_decomposition: definitions.DecompositionInfo,
     ):
-        self._context = make_context(props.comm, False)
-        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
+        self._context = make_context(process_props.comm, False)
+        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(process_props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
@@ -412,17 +400,73 @@ class MultiNodeResult(definitions.ExchangeResult):
 
 @definitions.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
-    props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
+    process_props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
 ) -> definitions.ExchangeRuntime:
-    if props.comm_size > 1:
-        return GHexMultiNodeExchange(props, decomp_info)
+    if process_props.comm_size > 1:
+        return GHexMultiNodeExchange(process_props, decomp_info)
     else:
         return SingleNodeExchange()
 
 
 @dataclasses.dataclass
 class GlobalReductions(Reductions):
-    props: definitions.ProcessProperties
+    """
+    MPI-aware global reductions.
+
+    Owner masks from the decomposition info are stored internally, keyed by the
+    horizontal dimension size (num_cells, num_edges, num_vertices). The correct
+    mask is resolved from buffer.shape[0], ensuring only owned (non-halo)
+    elements participate in the reduction.
+    """
+
+    # TODO (jcanton,msimberg,nfarabullini): the reductions may be better if
+    # receiving Fields as arguments instead of NDArray, such that they get
+    # domain info that can be used for masks
+
+    process_props: definitions.ProcessProperties
+    _owner_masks: dict[int, data_alloc.NDArray] = dataclasses.field(default_factory=dict)
+
+    def __init__(
+        self,
+        process_props: definitions.ProcessProperties,
+        decomposition_info: definitions.DecompositionInfo,
+    ) -> None:
+        self.process_props = process_props
+        self._owner_masks = {}
+        for dim in (dims.CellDim, dims.EdgeDim, dims.VertexDim):
+            mask = decomposition_info.owner_mask(dim)
+            size = mask.shape[0]
+            if size in self._owner_masks:
+                raise ValueError(
+                    f"Ambiguous horizontal dimension size {size}: multiple dimensions "
+                    f"have the same local size. Cannot auto-resolve owner mask."
+                )
+            self._owner_masks[size] = mask
+
+    def _prepare_buffer(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
+        if len(buffer.shape) > 0:
+            owner_mask = self._resolve_owner_mask(buffer)
+            return buffer[owner_mask]
+        return buffer
+
+    def _resolve_owner_mask(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
+        """Resolve the 1D owner mask for the buffer's first dimension.
+
+        The returned mask is always 1D (num_horizontal,). When used for
+        indexing, NumPy's boolean indexing with a 1D mask on a
+        multi-dimensional array selects along the first axis, so
+        ``buffer[mask]`` works correctly for both 1D buffers of shape
+        ``(num_horizontal,)`` and 2D buffers of shape
+        ``(num_horizontal, K)``.
+        """
+        first_dim_size = buffer.shape[0]
+        if first_dim_size not in self._owner_masks:
+            raise ValueError(
+                f"Cannot resolve owner mask: buffer's first dimension size "
+                f"({first_dim_size}) does not match any known horizontal "
+                f"dimension (known sizes: {list(self._owner_masks.keys())})."
+            )
+        return self._owner_masks[first_dim_size]
 
     @staticmethod
     def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
@@ -459,7 +503,7 @@ class GlobalReductions(Reductions):
             array_ns, "cuda"
         ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
             array_ns.cuda.runtime.deviceSynchronize()
-        self.props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
+        self.process_props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
         return recv_buffer.item()
 
     def _calc_buffer_size(
@@ -470,6 +514,7 @@ class GlobalReductions(Reductions):
         return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
@@ -480,6 +525,7 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
@@ -489,7 +535,12 @@ class GlobalReductions(Reductions):
             array_ns,
         )
 
-    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def sum(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -499,7 +550,12 @@ class GlobalReductions(Reductions):
             array_ns,
         )
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def mean(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
@@ -516,5 +572,7 @@ class GlobalReductions(Reductions):
 
 
 @definitions.create_reduction.register(MPICommProcessProperties)
-def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
-    return GlobalReductions(props)
+def create_global_reduction(
+    process_props: MPICommProcessProperties, decomposition_info: definitions.DecompositionInfo
+) -> Reductions:
+    return GlobalReductions(process_props, decomposition_info)
