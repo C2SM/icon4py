@@ -453,10 +453,16 @@ def _compute_rbf_interpolation_coeffs(
         for j in range(num_zonal_meridional_components):
             rhs_batch = rhs[j][array_ns.ix_(group_idx, valid_cols)]
             # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
-            # rhs_batch (B, nv) -> sol (B, nv).
+            # rhs_batch (B, nv, 1). The solution of mat_batch x = rhs_batch is sol.
+            # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
+            # batched column vector (core dims (nv,1)) rather than a matrix
+            # (core dims (B, nv)), which would mismatch m=nv from the LHS.
+            # This problem is well explained in https://github.com/numpy/numpy/issues/26598
             # The RBF matrix is symmetric but NOT necessarily positive definite
             # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
-            sol = array_ns.linalg.solve(mat_batch, rhs_batch)
+            sol = array_ns.linalg.solve(
+                mat_batch, rhs_batch[..., array_ns.newaxis]
+            ).squeeze(-1)
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
     rbf_vec_coeff = tuple(rbf_vec_coeff)
