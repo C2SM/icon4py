@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -19,6 +19,13 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import icon as icon_grid
+
+QV: Final[int] = 0
+QC: Final[int] = 1
+QI: Final[int] = 2
+QR: Final[int] = 3
+QS: Final[int] = 4
+QG: Final[int] = 5
 
 
 @dataclasses.dataclass

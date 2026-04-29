@@ -398,13 +398,14 @@ def toy_problem(
 
     prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
 
-    theta_v_profile = (
-        ampl_x * xp.sin(wavelength_x * cell_lon)
-        + ampl_y * xp.sin(wavelength_y * cell_lat)
+    temperature_profile = ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(
+        wavelength_y * cell_lat
     )
-    prognostic_state_now.theta_v.ndarray[:, :] = theta_v_profile[:, xp.newaxis]
+    qv_profile = ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(wavelength_y * cell_lat)
 
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
+    diagnostic_state.temperature.ndarray[:, :] = temperature_profile
+    prognostic_state_now.tracer[prognostics.QV].ndarray[:, :] = qv_profile
 
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
