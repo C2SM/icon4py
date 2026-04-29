@@ -12,7 +12,7 @@ import os
 import re
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Final, Literal
+from typing import Final, Literal, get_args
 
 import nox
 
@@ -35,12 +35,12 @@ type ModelSubpackagePath = Literal[
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
-    nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
+    nox.param(arg, id=arg.split("/")[-1]) for arg in get_args(ModelSubpackagePath.__value__)
 ]
 
 type ModelTestsSubset = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
-    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+    nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ModelTestsSubset.__value__)
 ]
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`

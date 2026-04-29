@@ -15,7 +15,7 @@ from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
 type DeviceType = gtx.DeviceType
-CPU = DeviceType.CPU
+CPU = gtx.DeviceType.CPU
 GPU = gtx.CUPY_DEVICE_TYPE
 
 type BackendDescriptor = dict[str, Any]
@@ -62,7 +62,7 @@ def get_allocator(
 
     if is_backend_descriptor(backend):
         backend = backend["device"]
-    if isinstance(backend, DeviceType):
+    if isinstance(backend, gtx.DeviceType):
         return gtx_allocators.device_allocators[backend]
     raise ValueError(f"Cannot get allocator from {backend}")
 
