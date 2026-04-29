@@ -12,6 +12,7 @@ from icon4py.model.testing.fixtures.datatest import (
     decomposition_info,
     download_ser_data,
     experiment,
+    grid_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,

@@ -13,29 +13,24 @@ import numpy as np
 import pytest
 from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
+from icon4py.model.common.decomposition import (
+    decomposer as decomp,
+    definitions as decomp_defs,
+    mpi_decomposition,
+)
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import parallel_helpers
+from icon4py.model.testing import definitions, grid_utils, parallel_helpers
 
-from ..fixtures import (
-    backend,
-    data_provider,
-    decomposition_info,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    process_props,
-)
+from ...grid.mpi_tests import utils as mpi_tests_utils
+from ..fixtures import backend, grid_description, process_props
 from ..unit_tests.test_factory import SimpleFieldSource
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.testing import serialbox as sb
 
 
 if mpi_decomposition.mpi4py is None:
@@ -63,14 +58,26 @@ def _fill_edges(
 @pytest.mark.parametrize("do_exchange", [True, False])
 def test_program_provider_exchange(
     do_exchange: bool,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
-    grid_savepoint: sb.IconGridSavepoint,
+    process_props: decomp_defs.ProcessProperties,
+    grid_description: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if grid_description.params.limited_area:
+        pytest.xfail("Limited-area grids not yet supported")
+
     parallel_helpers.check_comm_size(process_props, sizes=(2, 4))
-    exchange = decomposition.create_exchange(process_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid(backend=backend)
+    grid_file = grid_utils._download_grid_file(grid_description)
+    allocator = model_backends.get_allocator(backend)
+    grid_manager = mpi_tests_utils.run_grid_manager_for_multi_rank(
+        file=grid_file,
+        process_props=process_props,
+        decomposer=decomp.MetisDecomposer(),
+        allocator=allocator,
+        num_levels=1,
+    )
+    grid = grid_manager.grid
+    decomposition_info = grid_manager.decomposition_info
+    exchange = decomp_defs.create_exchange(process_props, decomposition_info)
 
     number = process_props.rank + 10
     source = SimpleFieldSource(
@@ -81,7 +88,7 @@ def test_program_provider_exchange(
     source._exchange = exchange
     edge_domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(
-        func=_fill_edges,
+        func=_fill_edges.with_backend(backend),
         domain={
             dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
         },
@@ -94,10 +101,10 @@ def test_program_provider_exchange(
     field = source.get("out")
 
     halo_points = decomposition_info.local_index(
-        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.HALO
+        dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.HALO
     )
     owned_points = decomposition_info.local_index(
-        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
+        dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.OWNED
     )
     valid_values = {r + 10 for r in range(process_props.comm_size)}
     arr = field.ndarray
@@ -116,14 +123,26 @@ def test_program_provider_exchange(
 @pytest.mark.parametrize("do_exchange", [True, False])
 def test_numpy_provider_exchange(
     do_exchange: bool,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
-    grid_savepoint: sb.IconGridSavepoint,
+    process_props: decomp_defs.ProcessProperties,
+    grid_description: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if grid_description.params.limited_area:
+        pytest.xfail("Limited-area grids not yet supported")
+
     parallel_helpers.check_comm_size(process_props, sizes=(2, 4))
-    exchange = decomposition.create_exchange(process_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid(backend=backend)
+    grid_file = grid_utils._download_grid_file(grid_description)
+    allocator = model_backends.get_allocator(backend)
+    grid_manager = mpi_tests_utils.run_grid_manager_for_multi_rank(
+        file=grid_file,
+        process_props=process_props,
+        decomposer=decomp.MetisDecomposer(),
+        allocator=allocator,
+        num_levels=1,
+    )
+    grid = grid_manager.grid
+    decomposition_info = grid_manager.decomposition_info
+    exchange = decomp_defs.create_exchange(process_props, decomposition_info)
 
     number = process_props.rank + 10
     source = SimpleFieldSource(
@@ -150,10 +169,10 @@ def test_numpy_provider_exchange(
     field = source.get("out")
 
     halo_points = decomposition_info.local_index(
-        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.HALO
+        dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.HALO
     )
     owned_points = decomposition_info.local_index(
-        dims.EdgeDim, decomposition.DecompositionInfo.EntryType.OWNED
+        dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.OWNED
     )
     valid_values = {r + 10 for r in range(process_props.comm_size)}
     arr = field.ndarray
