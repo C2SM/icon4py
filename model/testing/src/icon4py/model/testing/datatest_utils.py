@@ -53,7 +53,7 @@ def get_grid_filename(grid: definitions.GridDescription) -> str:
     return f"{grid.name}.nc"
 
 
-def get_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
+def get_grid_filepath(grid: definitions.GridDescription) -> pathlib.Path:
     return definitions.grids_path().joinpath(grid.name, get_grid_filename(grid))
 
 

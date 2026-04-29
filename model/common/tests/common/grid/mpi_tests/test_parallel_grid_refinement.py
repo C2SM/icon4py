@@ -127,7 +127,7 @@ def test_bounds_decomposition(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
     grid_manager = mpi_test_utils.run_grid_manager_for_multi_rank(

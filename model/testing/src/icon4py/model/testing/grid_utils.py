@@ -74,7 +74,7 @@ def get_grid_manager(
 
 
 def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
-    full_name = dt_utils.get_full_grid_file_name(grid)
+    full_name = dt_utils.get_grid_filepath(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:

@@ -65,7 +65,7 @@ def test_grid_manager_validate_decomposer(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     manager = gm.GridManager(
         grid_file=file,
         config=v_grid.VerticalGridConfig(num_levels=utils.NUM_LEVELS),
@@ -305,7 +305,7 @@ def _compare_interpolation_fields_single_multi_rank(
 
     allocator = model_backends.get_allocator(backend)
 
-    grid_file = dt_utils.get_full_grid_file_name(experiment.grid)
+    grid_file = dt_utils.get_grid_filepath(experiment.grid)
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
     single_rank_gm, single_rank_geometry = _make_single_rank_geometry(grid_file, backend, allocator)
     single_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
@@ -428,7 +428,7 @@ def _compare_metrics_fields_single_multi_rank(
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
         pytest.xfail(f"Field {attrs_name} can't be computed with the embedded backend")
 
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
 
     (
         lowest_layer_thickness,
@@ -670,7 +670,7 @@ def test_metrics_mask_prog_halo_c(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
 
     (
         lowest_layer_thickness,
@@ -785,7 +785,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
         file=file,
         process_props=process_props,
@@ -820,7 +820,7 @@ def test_limited_area_raises(
         NotImplementedError, match="Limited-area grids are not supported in distributed runs"
     ):
         _ = utils.run_grid_manager_for_multi_rank(
-            file=dt_utils.get_full_grid_file_name(grid),
+            file=dt_utils.get_grid_filepath(grid),
             process_props=process_props,
             decomposer=decomp.MetisDecomposer(),
             allocator=model_backends.get_allocator(backend),

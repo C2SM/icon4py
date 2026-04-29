@@ -617,7 +617,7 @@ def test_local_connectivity(
     caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
-    file = dt_utils.get_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
     manager(
         decomposer=partitioner,
@@ -679,7 +679,7 @@ def test_decomposition_size(
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]

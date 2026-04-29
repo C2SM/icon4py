@@ -22,7 +22,7 @@ backend = None
 UNLIMITED = None
 simple_grid = simple.simple_grid()
 
-grid_file = dt_utils.get_full_grid_file_name(definitions.Grids.R02B04_GLOBAL)
+grid_file = dt_utils.get_grid_filepath(definitions.Grids.R02B04_GLOBAL)
 global_grid = grid_utils.get_grid_manager_from_experiment(
     definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, allocator=backend
 ).grid

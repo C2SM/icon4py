@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 @pytest.mark.with_netcdf
 def test_grid_file_dimension() -> None:
     grid_descriptor = definitions.Grids.R02B04_GLOBAL
-    global_grid_file = str(dt_utils.get_full_grid_file_name(grid_descriptor))
+    global_grid_file = str(dt_utils.get_grid_filepath(grid_descriptor))
     parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
         parser.open()
@@ -64,7 +64,7 @@ def test_grid_file_dimension() -> None:
 def test_grid_file_vertex_cell_edge_dimensions(
     experiment: definitions.Experiment, grid_savepoint: serialbox.IconGridSavepoint
 ) -> None:
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     parser = gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation())
     try:
         parser.open()
@@ -85,7 +85,7 @@ def test_grid_file_vertex_cell_edge_dimensions(
 
 @pytest.mark.parametrize("apply_offset", (True, False))
 def test_int_variable(experiment: definitions.Experiment, apply_offset: bool) -> None:
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
@@ -109,7 +109,7 @@ _index_selection: Iterable[list[int]] = [
     _index_selection,
 )
 def test_index_read_for_1d_fields(experiment: definitions.Experiment, selection: list[int]) -> None:
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.variable(gridfile.CoordinateName.CELL_LATITUDE)
@@ -138,7 +138,7 @@ def test_index_read_for_2d_connectivity(
     field: gridfile.FieldName,
     apply_offset: bool,
 ) -> None:
-    file = dt_utils.get_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.int_variable(field, transpose=True, apply_offset=apply_offset)
