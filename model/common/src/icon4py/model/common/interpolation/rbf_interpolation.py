@@ -460,9 +460,7 @@ def _compute_rbf_interpolation_coeffs(
             # This problem is well explained in https://github.com/numpy/numpy/issues/26598
             # The RBF matrix is symmetric but NOT necessarily positive definite
             # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
-            sol = array_ns.linalg.solve(
-                mat_batch, rhs_batch[..., array_ns.newaxis]
-            ).squeeze(-1)
+            sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
     rbf_vec_coeff = tuple(rbf_vec_coeff)
