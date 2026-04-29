@@ -107,7 +107,7 @@ def apply_diffusion_to_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_diffusion_to_vn(
         u_vert,
         v_vert,

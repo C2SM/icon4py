@@ -5,12 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from types import ModuleType
 
 import numpy as np
 
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -168,3 +170,48 @@ def zonalwind_2_normalwind_ndarray(
     vn = u * primal_normal_x
 
     return vn
+
+
+def init_w(
+    grid: icon_grid.IconGrid,
+    z_ifc: data_alloc.NDArray,
+    inv_dual_edge_length: data_alloc.NDArray,
+    edge_cell_distance: data_alloc.NDArray,
+    primal_edge_length: data_alloc.NDArray,
+    cell_area: data_alloc.NDArray,
+    vn: data_alloc.NDArray,
+    vct_b: data_alloc.NDArray,
+    nlev: int,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    # The bounds need to include the first halo line because of the e2c -> c2e connectivity
+    lb_e = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    ub_e = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.END))
+    lb_c = grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    ub_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END))
+
+    c2e = grid.get_connectivity(dims.C2E).ndarray
+    e2c = grid.get_connectivity(dims.E2C).ndarray
+
+    z_grad_e = generic_math_operations_array_ns.compute_directional_derivative_on_edges(
+        z_ifc[:, nlev], e2c, inv_dual_edge_length, lb_e, ub_e, grid.num_edges, array_ns
+    )
+    z_wsfc_e = vn[:, nlev - 1] * z_grad_e
+
+    z_wsfc_c = generic_math_operations_array_ns.interpolate_edges_to_cell(
+        z_wsfc_e,
+        c2e,
+        e2c,
+        edge_cell_distance,
+        primal_edge_length,
+        cell_area,
+        ub_c,
+        grid.num_cells,
+        array_ns,
+    )
+
+    w = array_ns.zeros((grid.num_cells, nlev + 1))
+    w[lb_c:ub_c, nlev] = z_wsfc_c[lb_c:ub_c]
+    w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
+
+    return w

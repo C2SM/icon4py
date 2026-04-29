@@ -797,7 +797,7 @@ def coriolis_parameter_on_edges_torus(
     xp = data_alloc.import_array_ns(backend)
     coriolis_parameter = gtx.as_field(
         (dims.EdgeDim,),
-        coriolis_coefficient * xp.ones(num_edges),
+        xp.full(num_edges, coriolis_coefficient),
         dtype=ta.wpfloat,
         allocator=backend,
     )
@@ -811,7 +811,7 @@ def compute_coriolis_parameter_on_edges(
     coriolis_parameter: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     coriolis_parameter_on_edges(
         edge_center_lat,
         angular_velocity,

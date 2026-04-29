@@ -13,7 +13,6 @@ from typing import Any
 import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
 
-import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -30,6 +29,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
+from icon4py.model.common.math import helpers as math_helpers, xp_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
@@ -48,7 +48,12 @@ class GridGeometry(factory.FieldSource):
 
     Examples:
         >>> geometry = GridGeometry(
-        ...     grid, decomposition_info, backend, coordinates, extra_fields, geometry_attributes.attrs
+        ...     grid,
+        ...     decomposition_info,
+        ...     backend,
+        ...     coordinates,
+        ...     extra_fields,
+        ...     geometry_attributes.attrs,
         ... )
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
@@ -83,7 +88,8 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
         """
         Args:
@@ -106,6 +112,7 @@ class GridGeometry(factory.FieldSource):
         self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._exchange = exchange
+        self._global_reductions = global_reductions
         log.info(
             f"initializing geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -146,18 +153,18 @@ class GridGeometry(factory.FieldSource):
                 attrs.CELL_AREA: extra_fields[gridfile.GeometryName.CELL_AREA],
                 attrs.DUAL_AREA: extra_fields[gridfile.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gridfile.GeometryName.TANGENT_ORIENTATION],
-                "edge_owner_mask": gtx.as_field(
-                    (dims.EdgeDim,),
-                    decomposition_info.owner_mask(dims.EdgeDim),
-                    dtype=bool,
-                    allocator=self._backend,
-                ),
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION
                 ],
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
+                "edge_owner_mask": gtx.as_field(
+                    (dims.EdgeDim,),
+                    decomposition_info.owner_mask(dims.EdgeDim),
+                    dtype=bool,
+                    allocator=self._backend,
+                ),
                 "vertex_owner_mask": gtx.as_field(
                     (dims.VertexDim,),
                     decomposition_info.owner_mask(dims.VertexDim),
@@ -189,7 +196,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         return provider
 
@@ -307,6 +314,68 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(edge_areas)
 
+        mean_edge_length_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.EDGE_LENGTH,
+            },
+            fields=(attrs.MEAN_EDGE_LENGTH,),
+        )
+        self.register_provider(mean_edge_length_np)
+
+        mean_dual_edge_length_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.DUAL_EDGE_LENGTH,
+            },
+            fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
+        )
+        self.register_provider(mean_dual_edge_length_np)
+
+        mean_cell_area_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.CELL_AREA,
+            },
+            fields=(attrs.MEAN_CELL_AREA,),
+        )
+        self.register_provider(mean_cell_area_np)
+
+        mean_dual_cell_area_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.DUAL_AREA,
+            },
+            fields=(attrs.MEAN_DUAL_AREA,),
+        )
+        self.register_provider(mean_dual_cell_area_np)
+
+        characteristic_length_np = factory.NumpyDataProvider(
+            func=xp_utils.compute_sqrt,
+            domain=(),
+            deps={
+                "input_val": attrs.MEAN_DUAL_AREA,
+            },
+            fields=(attrs.CHARACTERISTIC_LENGTH,),
+        )
+        self.register_provider(characteristic_length_np)
+
     def _register_normals_and_tangents_icosahedron(self) -> None:
         """Register normals and tangents specific to icosahedron geometry."""
         # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal)
@@ -357,7 +426,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(normal_uv)
 
@@ -407,7 +476,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -442,7 +511,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -479,7 +548,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -514,7 +583,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -705,6 +774,9 @@ class GridGeometry(factory.FieldSource):
             f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
         )
 
+    def get_wpfloat(self, name: str) -> float:
+        return ta.wpfloat(self.get(name, type_=factory.RetrievalType.SCALAR))
+
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs
@@ -802,7 +874,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],

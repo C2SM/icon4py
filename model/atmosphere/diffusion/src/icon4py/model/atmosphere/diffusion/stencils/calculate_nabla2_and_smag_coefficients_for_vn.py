@@ -91,7 +91,7 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_nabla2_and_smag_coefficients_for_vn(
         diff_multfac_smag,
         tangent_orientation,

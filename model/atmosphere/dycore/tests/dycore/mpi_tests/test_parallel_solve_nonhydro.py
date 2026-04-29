@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+import logging
+
 import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
@@ -22,7 +24,10 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+_log = logging.getLogger(__name__)
+
+
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
@@ -35,7 +40,7 @@ from ..fixtures import *  # noqa: F403
             2,
             "2021-06-20T12:00:10.000",
             1,
-        )
+        ),
     ],
 )
 @pytest.mark.mpi
@@ -53,36 +58,42 @@ def test_run_solve_nonhydro_single_step(
     model_top_height: ta.wpfloat,
     stretch_factor: ta.wpfloat,
     damping_height: ta.wpfloat,
+    is_iau_active: bool,
+    iau_wgt_dyn: ta.wpfloat,
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     savepoint_nonhydro_exit: serialbox.IconNonHydroExitSavepoint,
     savepoint_nonhydro_step_final: serialbox.IconNonHydroFinalSavepoint,
-    processor_props: definitions.ProcessProperties,
+    process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
     backend: gtx_typing.Backend | None,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
+    if test_utils.is_embedded(backend):
+        # https://github.com/GridTools/gt4py/issues/1583
+        pytest.xfail("ValueError: axes don't match array")
+
+    parallel_helpers.check_comm_size(process_props)
+    _log.info(
+        f"rank={process_props.rank}/{process_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
     )
-    print(
+    _log.info(
         f"local cells = {decomposition_info.global_index(dims.CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
     )
     owned_cells = decomposition_info.owner_mask(dims.CellDim)
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
+    _log.info(
+        f"rank={process_props.rank}/{process_props.comm_size}:  GHEX context setup: from {process_props.comm_name} with {process_props.comm_size} nodes"
     )
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
+    _log.info(
+        f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert( decomposition_info.owner_mask(dims.EdgeDim)))}"
+    _log.info(
+        f"rank={process_props.rank}/{process_props.comm_size}: number of halo edges {np.count_nonzero(np.invert(decomposition_info.owner_mask(dims.EdgeDim)))}"
     )
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
+    _log.info(
+        f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
     config = test_defs.construct_nonhydrostatic_config(experiment)
@@ -117,7 +128,7 @@ def test_run_solve_nonhydro_single_step(
 
     prognostic_states = utils.create_prognostic_states(savepoint_nonhydro_init)
 
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
 
     solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
@@ -133,8 +144,8 @@ def test_run_solve_nonhydro_single_step(
         exchange=exchange,
     )
 
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}:  entering : solve_nonhydro.time_step"
+    _log.info(
+        f"rank={process_props.rank}/{process_props.comm_size}:  entering : solve_nonhydro.time_step"
     )
 
     solve_nonhydro.time_step(
@@ -148,8 +159,10 @@ def test_run_solve_nonhydro_single_step(
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
         at_last_substep=(substep_init == ndyn_substeps),
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore step run ")
+    _log.info(f"rank={process_props.rank}/{process_props.comm_size}: dycore step run ")
 
     expected_theta_v = savepoint_nonhydro_step_final.theta_v_new().asnumpy()
     calculated_theta_v = prognostic_states.next.theta_v.asnumpy()

@@ -102,7 +102,7 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         w,
         w_concorr_c,

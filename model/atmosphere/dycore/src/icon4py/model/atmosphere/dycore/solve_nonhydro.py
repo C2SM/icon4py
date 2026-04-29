@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: ERA001, B008
+# ruff: noqa: B008
 
 import dataclasses
 import logging
@@ -13,7 +13,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -31,20 +31,21 @@ from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import
     compute_exner_from_rhotheta,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
-    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_averaged_vn_and_fluxes,
     compute_horizontal_velocity_quantities_and_fluxes,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
-from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
+from icon4py.model.atmosphere.dycore.stencils.update_theta_and_exner_in_halo import (
+    update_theta_and_exner_in_halo,
+)
 from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
 from icon4py.model.common import (
     constants,
@@ -110,11 +111,7 @@ class IntermediateFields:
     """
 
     @classmethod
-    def allocate(
-        cls,
-        grid: grid_def.Grid,
-        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-    ):
+    def allocate(cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
@@ -155,14 +152,12 @@ class NonHydrostaticConfig:
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
-        rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
-        is_iau_active: bool = False,
-        iau_wgt_dyn: float = 0.0,
         divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
-        divdamp_trans_start: float = 12500.0,
-        divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
+        deepatmos_mode: bool = False,
+        iau_init: bool = False,
+        extra_diffu: bool = True,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -176,7 +171,7 @@ class NonHydrostaticConfig:
         fourth_order_divdamp_z3: float = 60000.0,
         fourth_order_divdamp_z4: float = 80000.0,
     ):
-        # parameters from namelist diffusion_nml
+        # parameters from namelist nonhydrostatic_nml
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
@@ -187,17 +182,12 @@ class NonHydrostaticConfig:
 
         #: type of Rayleigh damping
         self.rayleigh_type: constants.RayleighType = rayleigh_type
-        # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
-        self.rayleigh_coeff: float = rayleigh_coeff
 
         #: order of divergence damping
         self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
 
         #: type of divergence damping
         self.divdamp_type: dycore_states.DivergenceDampingType = divdamp_type
-        #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
-        self.divdamp_trans_start: float = divdamp_trans_start
-        self.divdamp_trans_end: float = divdamp_trans_end
 
         #: off-centering for density and potential temperature at interface levels.
         #: Specifying a negative value here reduces the amount of vertical
@@ -207,6 +197,7 @@ class NonHydrostaticConfig:
         #: off-centering of velocity advection in corrector step
         self.veladv_offctr: float = veladv_offctr
 
+        # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
         #: scaling factor for divergence damping
         self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
         """
@@ -284,11 +275,16 @@ class NonHydrostaticConfig:
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
 
-        #: from mo_initicon_nml.f90/ mo_initicon_config.f90
-        #: whether IAU is active at current time
-        self.is_iau_active: bool = is_iau_active
-        #: IAU weight for dynamics fields
-        self.iau_wgt_dyn: float = iau_wgt_dyn
+        #: from dynamics_nml.f90
+        #: deep atmosphere mode, originally defined as ldeepatmo in ICON
+        self.deepatmos_mode: bool = deepatmos_mode
+
+        #: incremental analysis init mode, defined as one of the ICON init modes
+        self.iau_init: bool = iau_init
+
+        #: Apply additional diffusion at grid points close to CFL limit
+        #: Called 'lextra_diffu' in mo_nonhydrostatic_nml.f90
+        self.extra_diffu: bool = extra_diffu
 
         self._validate()
 
@@ -297,6 +293,9 @@ class NonHydrostaticConfig:
 
         if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
+
+        if self.deepatmos_mode:
+            raise NotImplementedError("Deep atmosphere mode not implemented")
 
         if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
@@ -307,12 +306,19 @@ class NonHydrostaticConfig:
         if self.iadv_rhotheta != dycore_states.RhoThetaAdvectionType.MIURA:
             raise NotImplementedError("iadv_rhotheta can only be 2 (Miura scheme)")
 
-        if self.divdamp_order != dycore_states.DivergenceDampingOrder.COMBINED:
-            raise NotImplementedError("divdamp_order can only be 24")
-
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
+        if self.rayleigh_type != constants.RayleighType.KLEMP:
+            raise NotImplementedError(
+                "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
+            )
+
+        if not self.extra_diffu:
+            raise NotImplementedError(
+                "extra_diffu=False is not supported; only True is implemented"
             )
 
 
@@ -377,25 +383,7 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
-        self._compute_theta_and_exner = setup_program(
-            backend=backend,
-            program=compute_theta_and_exner,
-            constant_args={
-                "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
-                "rd_o_cvd": constants.RD_O_CVD,
-                "rd_o_p0ref": constants.RD_O_P0REF,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._start_cell_local,
-                "horizontal_end": self._end_cell_end,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-        )
-
-        self._compute_exner_from_rhotheta = setup_program(
+        self._compute_exner_from_rhotheta_in_lateral_boundary = setup_program(
             backend=backend,
             program=compute_exner_from_rhotheta,
             constant_args={
@@ -412,9 +400,9 @@ class SolveNonhydro:
             },
         )
 
-        self._update_theta_v = setup_program(
+        self._update_theta_and_exner_in_halo = setup_program(
             backend=backend,
-            program=update_theta_v,
+            program=update_theta_and_exner_in_halo,
             constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
             },
@@ -449,9 +437,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = setup_program(
+        self._compute_rho_theta_pgrad_and_update_vn = setup_program(
             backend=backend,
-            program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
+            program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_rho_theta_pgrad_and_update_vn,
             constant_args={
                 "reference_rho_at_edges_on_model_levels": self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
                 "reference_theta_at_edges_on_model_levels": self._metric_state_nonhydro.reference_theta_at_edges_on_model_levels,
@@ -467,13 +455,11 @@ class SolveNonhydro:
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
                 "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,
-                "ipeidx_dsl": self._metric_state_nonhydro.pg_edgeidx_dsl,
                 "pg_exdist": self._metric_state_nonhydro.pg_exdist,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
             },
+            variants={"is_iau_active": [False, True] if self._config.iau_init else [False]},
             horizontal_sizes={
                 "start_edge_lateral_boundary": self._start_edge_lateral_boundary,
                 "start_edge_lateral_boundary_level_7": self._start_edge_lateral_boundary_level_7,
@@ -503,13 +489,16 @@ class SolveNonhydro:
                 "geofac_grdiv": self._interpolation_state.geofac_grdiv,
                 "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
+                "divdamp_order": gtx.int32(self._config.divdamp_order),
+                "mean_cell_area": self._cell_params.mean_cell_area,
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "dbl_eps": constants.DBL_EPS,
             },
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
                 "apply_4th_order_divergence_damping": [False, True],
+                "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
@@ -547,9 +536,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = setup_program(
+        self._compute_averaged_vn_and_fluxes = setup_program(
             backend=backend,
-            program=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+            program=compute_averaged_vn_and_fluxes,
             constant_args={
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
@@ -582,13 +571,12 @@ class SolveNonhydro:
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "wgtfac_c": self._metric_state_nonhydro.wgtfac_c,
                 "wgtfacq_c": self._metric_state_nonhydro.wgtfacq_c,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
             },
             variants={
                 "at_first_substep": [False, True],
+                "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -617,14 +605,13 @@ class SolveNonhydro:
                 "reference_exner_at_cells_on_model_levels": self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
                 "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
             },
             variants={
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
                 "lprep_adv": [False, True],
+                "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -684,16 +671,6 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
-        self._calculate_divdamp_fields = setup_program(
-            backend=backend,
-            program=dycore_utils.calculate_divdamp_fields,
-            constant_args={
-                "divdamp_order": gtx.int32(self._config.divdamp_order),
-                "mean_cell_area": self._grid.global_properties.mean_cell_area,
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
-                "dbl_eps": constants.DBL_EPS,
-            },
-        )
         self._compute_rayleigh_damping_factor = setup_program(
             backend=backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
@@ -736,9 +713,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = setup_program(
+        self._compute_interpolation_and_nonhydro_buoy = setup_program(
             backend=backend,
-            program=compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
+            program=compute_cell_diagnostics_for_dycore.compute_interpolation_and_nonhydro_buoy,
             constant_args={
                 "reference_theta_at_cells_on_model_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
                 "ddz_of_reference_exner_at_cells_on_half_levels": self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
@@ -824,7 +801,7 @@ class SolveNonhydro:
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
@@ -867,7 +844,7 @@ class SolveNonhydro:
         """
         Declared as z_theta_v_pr_ic in ICON.
         """
-        self.pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+        self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
@@ -948,18 +925,6 @@ class SolveNonhydro:
         """
         Declared as enh_divdamp_fac in ICON.
         """
-        self.reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-        """
-        Declared as bdy_divdamp in ICON.
-        """
-        self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-        """
-        Declared as scal_divdamp in ICON.
-        """
         self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
 
     def _determine_local_domains(self):
@@ -1037,6 +1002,8 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
+        is_iau_active: bool = False,
+        iau_wgt_dyn: float = 0.0,
     ):
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -1051,6 +1018,8 @@ class SolveNonhydro:
             lprep_adv: Preparation for tracer advection
             at_first_substep: first substep
             at_last_substep: last substep
+            is_iau_active: Incremental analysis update active during dycore step
+            iau_wgt_dyn: weight scalar for the incremental analysis update
         """
         log.info(
             f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
@@ -1071,6 +1040,8 @@ class SolveNonhydro:
             dtime=dtime,
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         self.run_corrector_step(
@@ -1084,28 +1055,24 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
         if self._grid.limited_area:
-            self._compute_theta_and_exner(
+            self._compute_exner_from_rhotheta_in_lateral_boundary(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-            self._compute_exner_from_rhotheta(
-                rho=prognostic_states.next.rho,
-                theta_v=prognostic_states.next.theta_v,
-                exner=prognostic_states.next.exner,
-            )
-        self._update_theta_v(
+        self._update_theta_and_exner_in_halo(
             rho_now=prognostic_states.current.rho,
-            theta_v_now=prognostic_states.current.theta_v,
-            exner_new=prognostic_states.next.exner,
-            exner_now=prognostic_states.current.exner,
             rho_new=prognostic_states.next.rho,
+            theta_v_now=prognostic_states.current.theta_v,
             theta_v_new=prognostic_states.next.theta_v,
+            exner_now=prognostic_states.current.exner,
+            exner_new=prognostic_states.next.exner,
         )
 
-    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
@@ -1114,6 +1081,8 @@ class SolveNonhydro:
         dtime: float,
         at_initial_timestep: bool,
         at_first_substep: bool,
+        is_iau_active: bool,
+        iau_wgt_dyn: float,
     ):
         """
         Runs the predictor step of the non-hydrostatic solver.
@@ -1154,20 +1123,18 @@ class SolveNonhydro:
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             current_exner=prognostic_states.current.exner,
         )
 
-        log.debug(
-            "predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
-        )
+        log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
 
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+        self._compute_rho_theta_pgrad_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
@@ -1184,12 +1151,17 @@ class SolveNonhydro:
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
-        self._exchange.exchange_and_wait(
-            dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
+        self._exchange.exchange(
+            dims.EdgeDim,
+            prognostic_states.next.vn,
+            z_fields.rho_at_edges_on_model_levels,
+            stream=decomposition.DEFAULT_STREAM,
         )
 
         self._compute_horizontal_velocity_quantities_and_fluxes(
@@ -1218,7 +1190,7 @@ class SolveNonhydro:
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             current_exner=prognostic_states.current.exner,
@@ -1233,6 +1205,8 @@ class SolveNonhydro:
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         if self._grid.limited_area:
@@ -1260,12 +1234,19 @@ class SolveNonhydro:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
-            self._exchange.exchange_and_wait(
-                dims.CellDim, prognostic_states.next.w, z_fields.dwdz_at_cells_on_model_levels
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.w,
+                z_fields.dwdz_at_cells_on_model_levels,
+                stream=decomposition.DEFAULT_STREAM,
             )
         else:
             log.debug("exchanging prognostic field 'w'")
-            self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.w,
+                stream=decomposition.DEFAULT_STREAM,
+            )
 
     def run_corrector_step(
         self,
@@ -1279,6 +1260,8 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
+        is_iau_active: bool,
+        iau_wgt_dyn: float,
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
@@ -1292,14 +1275,7 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
         second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
-        )
-
-        self._calculate_divdamp_fields(
-            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_factor,
+            second_order_divdamp_factor * self._cell_params.mean_cell_area
         )
 
         log.debug("corrector run velocity advection")
@@ -1312,11 +1288,11 @@ class SolveNonhydro:
             cell_areas=self._cell_params.area,
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+        self._compute_interpolation_and_nonhydro_buoy(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             w=prognostic_states.next.w,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
@@ -1329,8 +1305,11 @@ class SolveNonhydro:
 
         log.debug("corrector: start stencil apply_divergence_damping_and_update_vn")
         apply_2nd_order_divergence_damping = (
-            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-            and second_order_divdamp_scaling_coeff > 1.0e-6
+            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.SECOND_ORDER
+            or (
+                self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+                and second_order_divdamp_scaling_coeff > 1.0e-6
+            )
         )
         apply_4th_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
@@ -1351,18 +1330,24 @@ class SolveNonhydro:
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+            second_order_divdamp_factor=second_order_divdamp_factor,
             second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
             dtime=dtime,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
+        self._exchange.exchange(
+            dims.EdgeDim,
+            prognostic_states.next.vn,
+            stream=decomposition.DEFAULT_STREAM,
+        )
 
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+        self._compute_averaged_vn_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
@@ -1389,7 +1374,7 @@ class SolveNonhydro:
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             corrector_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             current_exner=prognostic_states.current.exner,
@@ -1401,6 +1386,8 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
@@ -1410,26 +1397,30 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        if lprep_adv:
-            if at_first_substep:
-                log.debug(
-                    "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+        # prepare flux field for tracer advection on lateral boundary, if exists
+        if self._grid.limited_area:
+            if lprep_adv:
+                if at_first_substep:
+                    log.debug(
+                        "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                    )
+                    self._init_cell_kdim_field_with_zero_wp(
+                        field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    )
+                self._update_mass_flux_weighted(
+                    rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
+                    w_now=prognostic_states.current.w,
+                    w_new=prognostic_states.next.w,
+                    w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+                    mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    r_nsubsteps=r_nsubsteps,
                 )
-                self._init_cell_kdim_field_with_zero_wp(
-                    field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                )
-            self._update_mass_flux_weighted(
-                rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
-                w_now=prognostic_states.current.w,
-                w_new=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-                mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                r_nsubsteps=r_nsubsteps,
-            )
-            log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-            self._exchange.exchange_and_wait(
-                dims.CellDim,
-                prognostic_states.next.rho,
-                prognostic_states.next.exner,
-                prognostic_states.next.w,
-            )
+
+        log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
+        self._exchange.exchange(
+            dims.CellDim,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.w,
+            stream=decomposition.DEFAULT_STREAM,
+        )

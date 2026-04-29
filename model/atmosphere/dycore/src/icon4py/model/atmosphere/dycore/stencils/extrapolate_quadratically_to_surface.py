@@ -35,7 +35,7 @@ def extrapolate_quadratically_to_surface(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _extrapolate_quadratically_to_surface(
         wgtfacq_c,
         interpolant,

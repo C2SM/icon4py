@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
     RhoThetaAdvectionType,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
-    compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
+    compute_rho_theta_pgrad_and_update_vn,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -125,7 +125,7 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
 @pytest.mark.uses_as_offset
 @pytest.mark.continuous_benchmarking
 class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
-    PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
+    PROGRAM = compute_rho_theta_pgrad_and_update_vn
     OUTPUTS = (
         "rho_at_edges_on_model_levels",
         "theta_v_at_edges_on_model_levels",
@@ -193,7 +193,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         c_lin_e: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,
-        ipeidx_dsl: np.ndarray,
         pg_exdist: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         dtime: ta.wpfloat,
@@ -395,10 +394,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             horizontal_pressure_gradient.shape[1],
             axis=1,
         )
-        horizontal_pressure_gradient = np.where(
-            ipeidx_dsl,
-            horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
-            horizontal_pressure_gradient,
+        horizontal_pressure_gradient = (
+            horizontal_pressure_gradient + hydrostatic_correction * pg_exdist
         )
 
         next_vn = np.where(
@@ -477,8 +474,9 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         )
         hydrostatic_correction_on_lowest_level = data_alloc.random_field(grid, dims.EdgeDim)
         zdiff_gradp = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim)
-        ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim)
-        pg_exdist = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        pg_exdist = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim
+        )  # TODO(havogt): should be allocated with a sparse pattern
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         predictor_normal_wind_advective_tendency = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
@@ -554,7 +552,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             c_lin_e=c_lin_e,
             ikoffset=ikoffset,
             zdiff_gradp=zdiff_gradp,
-            ipeidx_dsl=ipeidx_dsl,
             pg_exdist=pg_exdist,
             inv_dual_edge_length=inv_dual_edge_length,
             dtime=dtime,

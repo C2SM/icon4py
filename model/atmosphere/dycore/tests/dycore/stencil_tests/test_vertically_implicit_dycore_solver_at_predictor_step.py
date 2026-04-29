@@ -109,7 +109,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         mass_flux_at_edges_on_model_levels: np.ndarray,
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         predictor_vertical_wind_advective_tendency: np.ndarray,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
+        nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         contravariant_correction_at_edges_on_model_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
@@ -212,7 +212,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
-                z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=exner_w_explicit_weight_parameter,
@@ -328,7 +328,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             next_w[:, :n_lev],
         )
 
-        w_1 = next_w[:, 0]
         if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
@@ -338,7 +337,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
                     z_raylfac=rayleigh_damping_factor,
-                    w_1=w_1,
                     w=next_w[:, :n_lev],
                 ),
                 next_w[:, :n_lev],
@@ -405,7 +403,9 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 (False, False, 32),  # For benchmarking against MCH experiments
             ]
         ],
-        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]",
+        ids=lambda param: (
+            f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]"
+        ),
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
@@ -418,7 +418,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.random_field(
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
         rho_at_cells_on_half_levels = data_alloc.random_field(
@@ -494,7 +494,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,

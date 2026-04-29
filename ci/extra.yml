@@ -11,6 +11,14 @@ include:
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
         BACKEND: [embedded, gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu]
         LEVEL: [unit]
+  rules:
+    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '01:00:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:

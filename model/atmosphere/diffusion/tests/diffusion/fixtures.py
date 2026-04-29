@@ -35,8 +35,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
-    ranked_data_path,
+    process_props,
     rayleigh_coeff,
     rayleigh_type,
     savepoint_diffusion_exit,
@@ -69,7 +68,6 @@ def metric_state(
     metrics_savepoint: sb.MetricSavepoint,
 ) -> diffusion_states.DiffusionMetricState:
     return diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),

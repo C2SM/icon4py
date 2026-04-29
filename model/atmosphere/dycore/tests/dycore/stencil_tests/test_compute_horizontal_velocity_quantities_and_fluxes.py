@@ -22,9 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 from .test_compute_avg_vn_and_graddiv_vn_and_vt import compute_avg_vn_and_graddiv_vn_and_vt_numpy
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
-from .test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
-    extrapolate_to_surface_numpy,
-)
+from .test_compute_diagnostics_from_normal_wind import extrapolate_to_surface_numpy
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_mass_flux import compute_mass_flux_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (

@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
 
 import numpy as np
 
@@ -16,6 +17,7 @@ def gnomonic_proj(
     lat_c: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     lat: data_alloc.NDArray,
+    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute gnomonic projection.
@@ -37,10 +39,39 @@ def gnomonic_proj(
     TODO:
         replace this with a suitable library call
     """
-    cosc = np.sin(lat_c) * np.sin(lat) + np.cos(lat_c) * np.cos(lat) * np.cos(lon - lon_c)
+    cosc = array_ns.sin(lat_c) * array_ns.sin(lat) + array_ns.cos(lat_c) * array_ns.cos(
+        lat
+    ) * array_ns.cos(lon - lon_c)
     zk = 1.0 / cosc
 
-    x = zk * np.cos(lat) * np.sin(lon - lon_c)
-    y = zk * (np.cos(lat_c) * np.sin(lat) - np.sin(lat_c) * np.cos(lat) * np.cos(lon - lon_c))
+    x = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
+    y = zk * (
+        array_ns.cos(lat_c) * array_ns.sin(lat)
+        - array_ns.sin(lat_c) * array_ns.cos(lat) * array_ns.cos(lon - lon_c)
+    )
 
     return x, y
+
+
+def diff_on_edges_torus_numpy(
+    cc_cv_x: float,
+    cc_cv_y: float,
+    cc_cell_x: float,
+    cc_cell_y: float,
+    domain_length: float,
+    domain_height: float,
+) -> tuple[float, float]:
+    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
+        x1 = cc_cell_x
+    elif cc_cv_x > cc_cell_x:
+        x1 = cc_cell_x + domain_length
+    else:
+        x1 = cc_cell_x - domain_length
+
+    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
+        y1 = cc_cell_y
+    elif cc_cv_y > cc_cell_y:
+        y1 = cc_cell_y + domain_height
+    else:
+        y1 = cc_cell_y - domain_height
+    return x1, y1

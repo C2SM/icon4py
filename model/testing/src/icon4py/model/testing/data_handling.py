@@ -6,29 +6,75 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import tarfile
-from pathlib import Path
+from __future__ import annotations
+
+import hashlib
+import os
+import pathlib
+import shutil
+
+import pooch  # type: ignore[import-untyped]
+
+from icon4py.model.testing import config, locking
 
 
-def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.gz") -> None:
+def download_and_extract(
+    uri: str,
+    dst: pathlib.Path,
+) -> None:
     """
-    Download data archive from remote server.
+    Download and extract a tar file with locking.
 
-    Downloads a tar file at `uri` and extracts it.
     Args:
         uri: download url for archived data
-        destination: the archive is extracted at this path
-        data_file: filename of the downloaded archive, the archive is removed after download
+        dst: the archive is extracted at this path
+
+    Downloads the archive to a temporary cache directory (configured via
+    ``ICON4PY_DOWNLOAD_CACHE``, defaulting to a subdirectory of the system
+    temp directory), extracts to ``dst``, and deletes the archive. If
+    extraction fails the archive is left in the cache so that a subsequent
+    run can reuse it without re-downloading.
     """
     dst.mkdir(parents=True, exist_ok=True)
-    try:
-        import wget  # type: ignore[import-untyped]
-    except ImportError as err:
-        raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
+    cache = config.DOWNLOAD_CACHE_PATH
+    cache.mkdir(parents=True, exist_ok=True)
 
-    wget.download(uri, out=data_file)
-    if not tarfile.is_tarfile(data_file):
-        raise OSError(f"{data_file} needs to be a valid tar file")
-    with tarfile.open(data_file, mode="r:*") as tf:
-        tf.extractall(path=dst)
-    Path(data_file).unlink(missing_ok=True)
+    completion_marker = dst / ".extraction_complete"
+    lockfile = "filelock.lock"
+
+    with locking.lock(dst, lockfile=lockfile):
+        if completion_marker.exists():
+            return
+        # Clean up any partial data from previous failed attempts
+        # (except for the lockfile)
+        for item in dst.iterdir():
+            if item.name != lockfile:
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)
+        # Use a URI-derived filename to avoid collisions between different downloads
+        uri_hash = hashlib.sha256(uri.encode()).hexdigest()[:16]
+        archive_fname = f"archive_{uri_hash}.tar.gz"
+        pooch.retrieve(
+            url=uri,
+            known_hash=None,
+            path=str(cache),
+            fname=archive_fname,
+            processor=pooch.Untar(extract_dir=str(dst.resolve())),
+        )
+        completion_marker.touch()
+        (cache / archive_fname).unlink(missing_ok=True)
+
+
+def download_test_data(dst: pathlib.Path, uri: str) -> None:
+    if config.ENABLE_TESTDATA_DOWNLOAD:
+        download_and_extract(uri, dst)
+    else:
+        # If test data download is disabled, we check if the directory exists
+        # and isn't empty without locking. We assume the location is managed by the user
+        # and avoid locking shared directories (e.g. on CI).
+        if not dst.exists():
+            raise RuntimeError(f"Test data {dst} does not exist, and downloading is disabled.")
+        elif not any(os.scandir(dst)):
+            raise RuntimeError(f"Test data {dst} exists but is empty, and downloading is disabled.")

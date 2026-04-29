@@ -54,6 +54,7 @@ from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import xarray as xa
 from gt4py.next import common as gtx_common
 
@@ -99,7 +100,10 @@ class NeedsExchange(Protocol):
     def needs_exchange(self) -> bool: ...
 
     def exchange(
-        self, fields: Mapping[str, state_utils.FieldType], exchange: decomposition.ExchangeRuntime
+        self,
+        fields: Mapping[str, state_utils.FieldType],
+        exchange: decomposition.ExchangeRuntime,
+        stream: decomposition.StreamLike | decomposition.Block = decomposition.DEFAULT_STREAM,
     ) -> None:
         log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
         if self.needs_exchange():
@@ -112,7 +116,7 @@ class NeedsExchange(Protocol):
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
-                    exchange.exchange_and_wait(first_dim, buffer)
+                    exchange.exchange(first_dim, buffer, stream=stream)
                 log.debug(f"exchanged buffer for {name}")
 
 
@@ -155,6 +159,7 @@ class RetrievalType(enum.Enum):
     FIELD = 0
     DATA_ARRAY = 1
     METADATA = 2
+    SCALAR = 3
 
 
 class FieldSource(GridProvider, Protocol):
@@ -165,7 +170,7 @@ class FieldSource(GridProvider, Protocol):
     """
 
     _providers: MutableMapping[str, FieldProvider] = {}  # noqa:  RUF012 instance variable
-    _exchange: decomposition.ExchangeRuntime = decomposition.single_node_default
+    _exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
 
     @property
     def _sources(self) -> FieldSource:
@@ -194,7 +199,7 @@ class FieldSource(GridProvider, Protocol):
 
     @overload
     def get(
-        self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
+        self, field_name: str, type_: Literal[RetrievalType.SCALAR] = RetrievalType.SCALAR
     ) -> state_utils.ScalarType: ...
 
     @overload
@@ -227,7 +232,7 @@ class FieldSource(GridProvider, Protocol):
         match type_:
             case RetrievalType.METADATA:
                 return self.metadata[field_name]
-            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY | RetrievalType.SCALAR:
                 provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
@@ -237,7 +242,7 @@ class FieldSource(GridProvider, Protocol):
                 buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
                 return (
                     buffer
-                    if type_ == RetrievalType.FIELD
+                    if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
                     else state_utils.to_data_array(buffer, self.metadata[field_name])
                 )
             case _:
@@ -674,7 +679,7 @@ class NumpyDataProvider(FieldProvider):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
-            log.info(f"computeing field {field_name}")
+            log.info(f"computing field {field_name}")
             self._compute(factory, backend, grid)
         return self.fields[field_name]
 
@@ -685,7 +690,10 @@ class NumpyDataProvider(FieldProvider):
         grid_provider: GridProvider,
     ) -> None:
         self._validate_dependencies()
-        args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
+        args = {
+            k: factory.get(v).ndarray if hasattr(factory.get(v), "ndarray") else factory.get(v)
+            for k, v in self._dependencies.items()
+        }
         offsets = {
             k: grid_provider.grid.get_connectivity(v.value).ndarray
             for k, v in self._connectivities.items()
@@ -718,10 +726,12 @@ class NumpyDataProvider(FieldProvider):
             annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
             parameter_annotation = annotations.get(dep_key)
-            checked = _is_compatible_union(parameter_annotation, expected=data_alloc.NDArray)
+            checked = _is_compatible_union(
+                parameter_annotation, expected=data_alloc.NDArray | np.float64
+            )
             assert checked, (
                 f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
-                f"wrong type ('expected ndarray') but was '{parameter_annotation}'."
+                f"wrong type ('expected ndarray or float64') but was '{parameter_annotation}'."
             )
 
         supported_scalars = state_utils.IntegerType | state_utils.FloatType

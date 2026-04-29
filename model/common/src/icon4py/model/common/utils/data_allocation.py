@@ -12,11 +12,11 @@ import logging as log
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
 
+import array_api_compat
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
-from gt4py import next as gtx
-from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import device_utils
@@ -24,6 +24,7 @@ from icon4py.model.common.utils import device_utils
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
+    from icon4py.model.common.states import utils as state_utils
 
 
 try:
@@ -78,14 +79,14 @@ def array_ns(try_cupy: bool) -> ModuleType:
     return np
 
 
-def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
+def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(device_utils.is_cupy_device(allocator))
 
 
 def scalar_like_array(
     value: ScalarT,
-    allocator: ModuleType | gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: ModuleType | gtx_typing.Allocator | None = None,
 ) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types
     """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
     array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
@@ -95,7 +96,7 @@ def scalar_like_array(
 
 def as_field(
     field: gtx.Field,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
     embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
@@ -110,7 +111,7 @@ def random_field(
     high: float = 1.0,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
@@ -125,7 +126,7 @@ def random_sign(
     *dims: gtx.Dimension,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     """Generate a random field with values -1 or 1."""
     arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
@@ -139,15 +140,15 @@ def random_mask(
     *dims: gtx.Dimension,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator: gtx_typing.Backend | None = None,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
-    arr = np.full(shape, False).flatten()
-    num_true = int(arr.size * 0.5)
-    arr[:num_true] = True
-    rng.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape)
+    flat_arr = np.full(shape, False).flatten()
+    num_true = int(flat_arr.size * 0.5)
+    flat_arr[:num_true] = True
+    rng.shuffle(flat_arr)
+    arr = flat_arr.reshape(shape)
     if dtype:
         arr = arr.astype(dtype)
     return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
@@ -158,7 +159,7 @@ def zero_field(
     *dims: gtx.Dimension,
     dtype: npt.DTypeLike = ta.wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=allocator)
@@ -169,11 +170,11 @@ def constant_field(
     value: float,
     *dims: gtx.Dimension,
     dtype: npt.DTypeLike = ta.wpfloat,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        np.full(shape=tuple(map(lambda x: grid.size[x], dims)), fill_value=value, dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
         allocator=allocator,
     )
 
@@ -191,9 +192,37 @@ def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
-    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    dtype: npt.DTypeLike = gtx.int32,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)
     shapex = _shape(grid, dim, extend=extend)[0]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)
+
+
+def array_namespace(array: NDArray) -> ModuleType:
+    """
+    Returns the array namespace for a given array.
+    """
+    return array_api_compat.array_namespace(array)
+
+
+def list2field(
+    domain: gtx.Domain,
+    values: NDArray,
+    indices: tuple[NDArray, ...],
+    default_value: state_utils.ScalarType,
+    allocator: gtx_typing.Allocator,
+) -> gtx.Field:
+    if len(domain) != len(indices):
+        raise RuntimeError("The number of indices must match the shape of the domain.")
+    assert all(index.shape == indices[0].shape for index in indices if not isinstance(index, slice))
+    xp = array_namespace(values)
+    arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
+    arr[indices] = values
+    return gtx.as_field(domain, arr, allocator=allocator)
+
+
+def adjust_fortran_indices(inp: NDArray) -> NDArray:
+    """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
+    return inp - 1

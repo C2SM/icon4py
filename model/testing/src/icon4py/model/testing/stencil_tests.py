@@ -8,39 +8,43 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import os
-from collections.abc import Callable, Mapping, Sequence
-from typing import Any, ClassVar
+from collections.abc import Callable, Generator, Mapping, Sequence
+from typing import Any, ClassVar, Final
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
 from gt4py.next import (
-    config as gtx_config,
     constructors,
-    metrics as gtx_metrics,
+    named_collections as gtx_named_collections,
     typing as gtx_typing,
 )
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
+from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
+from icon4py.model.testing import test_utils
 
 
 def allocate_data(
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
-    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=allocator)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
+    allocator: gtx_typing.Allocator | None,
+    input_data: dict[
+        str, Any
+    ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
+) -> dict[str, Any]:
+    def _allocate_field(f: gtx.Field) -> gtx.Field:
+        return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
+
     input_data = {
-        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
-        if isinstance(v, tuple)
-        else _allocate_field(domain=v.domain, data=v.ndarray)
+        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
         if not gtx.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
@@ -88,6 +92,8 @@ def test_and_benchmark(
     skip_stenciltest_verification = request.config.getoption(
         "skip_stenciltest_verification"
     )  # skip verification if `--skip-stenciltest-verification` CLI option is set
+    skip_stenciltest_benchmark = benchmark is None or not benchmark.enabled
+
     if not skip_stenciltest_verification:
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
@@ -104,7 +110,7 @@ def test_and_benchmark(
             input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
         )
 
-    if benchmark is not None and benchmark.enabled:
+    if not skip_stenciltest_benchmark:
         warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
         iterations = int(os.getenv("ICON4PY_STENCIL_TEST_ITERATIONS", "10"))
 
@@ -121,24 +127,52 @@ def test_and_benchmark(
         )
 
         # Collect GT4Py runtime metrics if enabled
-        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+        if gtx_metrics.is_any_level_enabled():
+            metrics_key = None
+            # Run the program one final time to get the metrics key
+            METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
+
+            @contextlib.contextmanager
+            def _get_metrics_id_program_callback(
+                program: gtx_typing.Program,
+                args: tuple[Any, ...],
+                offset_provider: gtx.common.OffsetProvider,
+                enable_jit: bool,
+                kwargs: dict[str, Any],
+            ) -> Generator[None, None, None]:
+                yield
+                # Collect the key after running the program to make sure it is set
+                nonlocal metrics_key
+                metrics_key = gtx_metrics.get_current_source_key()
+
+            gtx_hooks.program_call_context.register(
+                _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
+            )
+            _configured_program(
+                **_properly_allocated_input_data, offset_provider=grid.connectivities
+            )
+            gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
+            assert metrics_key is not None, "Metrics key could not be recovered during run."
+            assert metrics_key.startswith(
+                _configured_program.__name__
+            ), f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
+
             assert (
                 len(_configured_program._compiled_programs.compiled_programs) == 1
             ), "Multiple compiled programs found, cannot extract metrics."
-            # Get compiled programs from the _configured_program passed to test
-            compiled_programs = _configured_program._compiled_programs.compiled_programs
-            # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program
-            pool_key = next(iter(compiled_programs.keys()))
-            # Get the metrics key from the pool key to read the corresponding metrics
-            metrics_key = _configured_program._compiled_programs._metrics_key_from_pool_key(
-                pool_key
-            )
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
-            # exclude warmup iterations, one extra iteration for calibrating pytest-benchmark and one for validation (if executed)
+            # exclude:
+            #  - one for validation (if executed)
+            #  - one extra warmup round for calibrating pytest-benchmark
+            #  - warmup iterations
+            #  - one last round to get the metrics key
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
-                1 if skip_stenciltest_verification else 2
+                2 if skip_stenciltest_verification else 3
             )
+            assert (
+                len(compute_samples) > initial_program_iterations_to_skip
+            ), "Not enough samples collected to compute metrics."
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
@@ -185,7 +219,7 @@ class StencilTest:
             )
         static_args = {name: [input_data[name]] for name in static_variant}
         backend = model_options.customize_backend(self.PROGRAM, backend_like)
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
+        program = self.PROGRAM.with_backend(backend)
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
@@ -195,7 +229,6 @@ class StencilTest:
             else:
                 program.compile(
                     offset_provider=grid.connectivities,
-                    enable_jit=False,
                     **static_args,  # type: ignore[arg-type]
                 )
 
@@ -207,7 +240,7 @@ class StencilTest:
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         backend_like: model_backends.BackendLike,
-    ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+    ) -> dict[str, Any]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
@@ -234,7 +267,7 @@ class StencilTest:
             relative_tolerance = 3e-6
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
-                    np.testing.assert_allclose(
+                    test_utils.assert_dallclose(
                         out_field.asnumpy()[gtslice],
                         reference_outputs[name][i_out_field][refslice],
                         equal_nan=True,
@@ -244,7 +277,7 @@ class StencilTest:
             else:
                 reference_outputs_name = reference_outputs[name]  # for mypy
                 assert isinstance(reference_outputs_name, np.ndarray)
-                np.testing.assert_allclose(
+                test_utils.assert_dallclose(
                     input_data_name.asnumpy()[gtslice],
                     reference_outputs_name[refslice],
                     equal_nan=True,
