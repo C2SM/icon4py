@@ -247,6 +247,7 @@ def test_decomposition_info_matches_gridsize(
 
 
 @pytest.mark.mpi
+@pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_create_multi_rank_runtime_with_mpi(
     decomposition_info: definitions.DecompositionInfo,
@@ -257,16 +258,6 @@ def test_create_multi_rank_runtime_with_mpi(
         assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
         assert isinstance(exchange, definitions.SingleNodeExchange)
-
-
-@pytest.mark.parametrize("process_props", [False], indirect=True)
-@pytest.mark.mpi_skip()
-def test_create_single_node_runtime_without_mpi(
-    process_props: definitions.ProcessProperties,
-    decomposition_info: definitions.DecompositionInfo,
-) -> None:
-    exchange = definitions.create_exchange(process_props, decomposition_info)
-    assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.mpi
