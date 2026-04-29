@@ -67,6 +67,8 @@ build_distributed:
     # This is not directly a gt4py variable. It's used to derive
     # GT4PY_BUILD_CACHE_DIR in ci/scripts/gt4py-cache.sh.
     GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
+    ICON4PY_DRIVER_LOGGING_LEVEL: critical
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PYTEST_ADDOPTS: "--durations=0"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$GT4PY_BUILD_CACHE_BASE_DIR"]'
@@ -96,6 +98,7 @@ build_distributed:
   parallel:
     matrix:
       # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
+      # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
       - COMPONENT: [common]
         # BACKEND: [embedded, gtfn_cpu, dace_cpu, gtfn_gpu]
         BACKEND: [gtfn_cpu]
@@ -117,6 +120,9 @@ build_distributed:
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
+    - if: $COMPONENT == 'standalone_driver'
+      variables:
+        SLURM_TIMELIMIT: '00:50:00'
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:45:00'
