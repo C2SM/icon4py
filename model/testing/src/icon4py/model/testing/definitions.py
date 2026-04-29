@@ -303,6 +303,21 @@ def construct_diffusion_config(
         return diffusion.DiffusionConfig(
             n_substeps=ndyn_substeps,
         )
+    elif experiment == Experiments.JW:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=5,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            zdiffu_t=False,
+            velocity_boundary_diffusion_denom=200.0,
+        )
     else:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."

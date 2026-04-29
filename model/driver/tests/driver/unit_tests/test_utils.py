@@ -28,15 +28,15 @@ def test_hydrostatic_adjustment_ndarray(backend):
     rho0 = 1.25
     exner0 = 0.935
     theta_v0 = 293.14
-    wgtfac_c = 1.05 * xp.ones((num_cells, num_levels))
+    wgtfac_c = xp.full((num_cells, num_levels), 1.05)
     ddqz_z_half = xp.ones((num_cells, num_levels))
-    exner_ref_mc = 0.89 * xp.ones((num_cells, num_levels))
-    d_exner_dz_ref_ic = 0.0 * xp.ones((num_cells, num_levels))
-    theta_ref_mc = 312 * xp.ones((num_cells, num_levels))
-    theta_ref_ic = 312 * xp.ones((num_cells, num_levels))
-    rho = rho0 * xp.ones((num_cells, num_levels))
-    exner = exner0 * xp.ones((num_cells, num_levels))
-    theta_v = theta_v0 * xp.ones((num_cells, num_levels))
+    exner_ref_mc = xp.full((num_cells, num_levels), 0.89)
+    d_exner_dz_ref_ic = xp.zeros((num_cells, num_levels))
+    theta_ref_mc = xp.full((num_cells, num_levels), 312)
+    theta_ref_ic = xp.full((num_cells, num_levels), 312)
+    rho = xp.full((num_cells, num_levels), rho0)
+    exner = xp.full((num_cells, num_levels), exner0)
+    theta_v = xp.full((num_cells, num_levels), theta_v0)
 
     # Call the function
     r_rho, r_exner, r_theta_v = functools.partial(
@@ -60,19 +60,19 @@ def test_hydrostatic_adjustment_ndarray(backend):
 
     assert test_utils.dallclose(
         r_rho[:, -1],
-        rho0 * np.ones(num_cells),
+        np.full(num_cells, rho0),
     )
     assert test_utils.dallclose(
         data_alloc.as_numpy(r_rho[:, :-1]),
-        1.0046424441749071 * np.ones((num_cells, num_levels - 1)),
+        np.full((num_cells, num_levels - 1), 1.0046424441749071),
     )
     assert test_utils.dallclose(
         data_alloc.as_numpy(r_exner),
-        exner0 * np.ones((num_cells, num_levels)),
+        np.full((num_cells, num_levels), exner0),
     )
     assert test_utils.dallclose(
         data_alloc.as_numpy(r_theta_v),
-        theta_v0 * np.ones((num_cells, num_levels)),
+        np.full((num_cells, num_levels), theta_v0),
     )
 
 
@@ -87,15 +87,15 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     rho0 = 1.25
     exner0 = 0.935
     theta_v0 = 293.14
-    wgtfac_c = 1.05 * xp.ones((num_cells, num_levels))
+    wgtfac_c = xp.full((num_cells, num_levels), 1.05)
     ddqz_z_half = xp.ones((num_cells, num_levels))
-    exner_ref_mc = 0.89 * xp.ones((num_cells, num_levels))
-    d_exner_dz_ref_ic = 0.0 * xp.ones((num_cells, num_levels))
-    theta_ref_mc = 312 * xp.ones((num_cells, num_levels))
-    theta_ref_ic = 312 * xp.ones((num_cells, num_levels))
-    rho = rho0 * xp.ones((num_cells, num_levels))
-    exner = exner0 * xp.ones((num_cells, num_levels))
-    theta_v = theta_v0 * xp.ones((num_cells, num_levels))
+    exner_ref_mc = xp.full((num_cells, num_levels), 0.89)
+    d_exner_dz_ref_ic = xp.zeros((num_cells, num_levels))
+    theta_ref_mc = xp.full((num_cells, num_levels), 312)
+    theta_ref_ic = xp.full((num_cells, num_levels), 312)
+    rho = xp.full((num_cells, num_levels), rho0)
+    exner = xp.full((num_cells, num_levels), exner0)
+    theta_v = xp.full((num_cells, num_levels), theta_v0)
 
     # Call the function
     r_rho, r_exner = utils.hydrostatic_adjustment_constant_thetav_ndarray(
@@ -116,9 +116,9 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
 
     assert test_utils.dallclose(
         data_alloc.as_numpy(r_rho),
-        1.0046424441749071 * np.ones((num_cells, num_levels)),
+        np.full((num_cells, num_levels), 1.0046424441749071),
     )
     assert test_utils.dallclose(
         data_alloc.as_numpy(r_exner),
-        exner0 * np.ones((num_cells, num_levels)),
+        np.full((num_cells, num_levels), exner0),
     )
