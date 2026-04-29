@@ -21,6 +21,8 @@ from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 # TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
 # once https://peps.python.org/pep-0747/ is approved.
 def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
+    if isinstance(annotation, typing.TypeAliasType):
+        annotation = annotation.__value__
     if hasattr(annotation, "__metadata__"):
         for perf_counters in annotation.__metadata__:
             if isinstance(perf_counters, _definitions.ParamDescriptor):
