@@ -52,12 +52,12 @@ def toy_problem(
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         backend=icon4py_driver.backend,
     )
-    updated_temperature = data_alloc.as_field(states.diagnostics.temperature)
+    updated_temperature = data_alloc.as_field(states.diagnostic.temperature)
     updated_qv = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QV])
     updated_qc = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QC])
 
     saturation_adjustment.with_backend(icon4py_driver.backend)(
-        te=states.diagnostics.temperature,
+        te=states.diagnostic.temperature,
         rho=states.prognostics.current.rho,
         q_in=states.prognostics.current.tracer[prognostic_state.QV],
         te_out=updated_temperature,
