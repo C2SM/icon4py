@@ -179,7 +179,6 @@ When performance is important you may want to
 export PYTHONOPTIMIZE=2
 ```
 
-however, verification tests between icon4py and icon fortran fail with this set to `2`.
 
 ### Benchmarking
 
