@@ -10,6 +10,7 @@ import logging
 import pathlib
 from typing import Annotated
 
+import numpy as np
 import typer
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
@@ -23,13 +24,15 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_utils, standalone_driver as driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 from icon4py.model.testing import definitions as test_defs, grid_utils
+from model.atmosphere.subgrid_scale_physics.muphys.tests.muphys.stencil_tests.test_saturation_adjustment import (
+    saturation_adjustment_numpy,
+)
 
 
 log = logging.getLogger(__file__)
 
 
-def toy_problem(
-    icon4py_backend: Annotated[
+def toy_problem( icon4py_backend: Annotated[
         str,
         typer.Option(
             help=f"Backend for running the driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
@@ -54,21 +57,30 @@ def toy_problem(
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         backend=icon4py_driver.backend,
     )
-    updated_temperature = data_alloc.as_field(states.diagnostic.temperature)
-    updated_qv = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QV])
-    updated_qc = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QC])
 
 
     cell_domain = h_grid.domain(dims.CellDim)
     local_cell_end = icon4py_driver.grid.end_index(cell_domain(h_grid.Zone.END))
 
+    # Numpy
+    np_temperature, np_qv, np_qc = saturation_adjustment_numpy(
+        te=np.asarray(states.diagnostic.temperature),
+        rho=np.asarray(states.prognostics.current.rho),
+        q_in=Q(*states.prognostics.current.tracer),
+    )
+
+    # GT4Py
+    gt4py_temperature = data_alloc.as_field(states.diagnostic.temperature)
+    gt4py_qv = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QV])
+    gt4py_qc = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QC])
+    #
     saturation_adjustment.with_backend(icon4py_driver.backend)(
         te=states.diagnostic.temperature,
         rho=states.prognostics.current.rho,
         q_in=Q(*states.prognostics.current.tracer),
-        te_out=updated_temperature,
-        qve_out=updated_qv,
-        qce_out=updated_qc,
+        te_out=gt4py_temperature,
+        qve_out=gt4py_qv,
+        qce_out=gt4py_qc,
         horizontal_start=0,
         horizontal_end=local_cell_end,
         vertical_start=0,

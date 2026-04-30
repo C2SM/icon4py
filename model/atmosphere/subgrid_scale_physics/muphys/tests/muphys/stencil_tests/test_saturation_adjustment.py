@@ -12,6 +12,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    GraupelConsts,
+    ThermodynamicConsts,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjustment import (
     saturation_adjustment,
@@ -24,6 +28,80 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
+
+C1ES = wpfloat(610.78)
+C3LES = wpfloat(17.269)
+C4LES = wpfloat(35.86)
+C5LES = C3LES * (ThermodynamicConsts.tmelt - C4LES)
+
+
+def _qsat_rho_numpy(t: np.ndarray, rho: np.ndarray) -> np.ndarray:
+    return (C1ES * np.exp(C3LES * (t - ThermodynamicConsts.tmelt) / (t - C4LES))) / (
+        rho * ThermodynamicConsts.rv * t
+    )
+
+
+def _dqsatdT_rho_numpy(qs: np.ndarray, t: np.ndarray) -> np.ndarray:
+    return qs * (C5LES / ((t - C4LES) * (t - C4LES)) - wpfloat(1.0) / t)
+
+
+def _newton_raphson_numpy(
+    Tx: np.ndarray,
+    rho: np.ndarray,
+    qve: np.ndarray,
+    qce: np.ndarray,
+    cvc: np.ndarray,
+    ue: np.ndarray,
+) -> np.ndarray:
+    qx = _qsat_rho_numpy(Tx, rho)
+    dqx = _dqsatdT_rho_numpy(qx, Tx)
+    qcx = qve + qce - qx
+    cv = cvc + ThermodynamicConsts.cvv * qx + ThermodynamicConsts.clw * qcx
+    ux = cv * Tx - qcx * GraupelConsts.lvc
+    dux = cv + dqx * (GraupelConsts.lvc + (ThermodynamicConsts.cvv - ThermodynamicConsts.clw) * Tx)
+    Tx = Tx - (ux - ue) / dux
+    return Tx
+
+
+def saturation_adjustment_numpy(
+    te: np.ndarray, rho: np.ndarray, q_in: Q
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    # Convert input fields to numpy arrays
+    te = np.asarray(te, dtype=np.float64)
+    rho = np.asarray(rho, dtype=np.float64)
+    qv = np.asarray(q_in.v, dtype=np.float64)
+    qc = np.asarray(q_in.c, dtype=np.float64)
+    qr = np.asarray(q_in.r, dtype=np.float64)
+    qs = np.asarray(q_in.s, dtype=np.float64)
+    qi = np.asarray(q_in.i, dtype=np.float64)
+    qg = np.asarray(q_in.g, dtype=np.float64)
+
+    qti = qs + qi + qg
+    qt = qv + qc + qr + qti
+
+    cvc = (
+        ThermodynamicConsts.cvd * (1.0 - qt) + ThermodynamicConsts.clw * qr + GraupelConsts.ci * qti
+    )
+    cv = cvc + ThermodynamicConsts.cvv * qv + ThermodynamicConsts.clw * qc
+    ue = cv * te - qc * GraupelConsts.lvc
+
+    Tx_hold = ue / (cv + qc * (ThermodynamicConsts.cvv - ThermodynamicConsts.clw))
+    qx_hold = _qsat_rho_numpy(Tx_hold, rho)
+
+    Tx = te.copy()
+
+    # Newton-Raphson iteration: 6 times the same operations
+    for _ in range(6):
+        Tx = _newton_raphson_numpy(Tx, rho, qv, qc, cvc, ue)
+
+    qx = _qsat_rho_numpy(Tx, rho)
+
+    mask = qv + qc <= qx_hold
+    te_out = np.where(mask, Tx_hold, Tx)
+    qce_out = np.where(mask, 0.0, np.maximum(qv + qc - qx, 0.0))
+    qve_out = np.where(mask, qv + qc, qx)
+
+    return te_out, qve_out, qce_out
 
 
 class TestSaturationAdjustment(StencilTest):
