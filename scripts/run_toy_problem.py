@@ -12,6 +12,7 @@ from typing import Annotated
 
 import typer
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjustment import (
     saturation_adjustment,
 )
@@ -56,10 +57,11 @@ def toy_problem(
     updated_qv = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QV])
     updated_qc = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QC])
 
+
     saturation_adjustment.with_backend(icon4py_driver.backend)(
         te=states.diagnostic.temperature,
         rho=states.prognostics.current.rho,
-        q_in=states.prognostics.current.tracer[prognostic_state.QV],
+        q_in=Q(*states.prognostics.current.tracer),
         te_out=updated_temperature,
         qve_out=updated_qv,
         qce_out=updated_qc,
