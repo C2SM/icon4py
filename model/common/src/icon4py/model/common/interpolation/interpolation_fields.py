@@ -691,7 +691,7 @@ def _create_inverse_neighbor_index(
         ndarray of the same shape as target_offset
 
     """
-    inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
+    inv_neighbor_idx = array_ns.full(inverse_offset.shape, MISSING, dtype=gtx.int32)
     source_offset[inverse_offset]
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
@@ -751,7 +751,7 @@ def compute_e_flx_avg(
     llb = 0
     e_flx_avg = array_ns.zeros((num_edges, diamond_shape + 1))
     index = array_ns.arange(llb, num_cells)
-    inv_neighbor_id = MISSING * array_ns.ones((num_cells - llb, c2e2c.shape[1]), dtype=int)
+    inv_neighbor_id = array_ns.full((num_cells - llb, c2e2c.shape[1]), MISSING, dtype=int)
     for i in range(c2e2c.shape[1]):
         for j in range(c2e2c.shape[1]):
             inv_neighbor_id[:, j] = array_ns.where(
@@ -792,7 +792,7 @@ def compute_e_flx_avg(
     exchange(e_flx_avg)
 
     # the icon prescribed order dependency is probably due to these magic numbers...
-    iie = MISSING * array_ns.ones(e2c2e.shape, dtype=int)
+    iie = array_ns.full(e2c2e.shape, MISSING, dtype=int)
     iie[:, 0] = array_ns.where(
         e2c[e2c2e[:, 0], 0] == e2c[:, 0],
         2,

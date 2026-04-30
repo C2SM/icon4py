@@ -22,7 +22,7 @@ from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
-    return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
+    return np.full(shape, k4 * hdiff_efdt_ratio / 3.0)
 
 
 def test_scale_k(backend):
