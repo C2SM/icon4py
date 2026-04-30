@@ -404,8 +404,8 @@ def toy_problem(
     qv_profile = ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(wavelength_y * cell_lat)
 
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
-    diagnostic_state.temperature.ndarray[:, :] = temperature_profile
-    prognostic_state_now.tracer[prognostics.QV].ndarray[:, :] = qv_profile
+    diagnostic_state.temperature.ndarray[:, :] = temperature_profile[:, xp.newaxis]
+    prognostic_state_now.tracer[prognostics.QV].ndarray[:, :] = qv_profile[:, xp.newaxis]
 
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
