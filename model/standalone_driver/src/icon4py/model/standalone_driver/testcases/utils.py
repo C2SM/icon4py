@@ -120,8 +120,8 @@ def zonalwind_2_normalwind_ndarray(
         eta_v_at_edge: vertical eta coordinate at edge center
     Returns: normal wind
     """
-    array_ns = data_alloc.array_namespace(edge_lat)
     # TODO(OngChia): this function needs a test
+    array_ns = data_alloc.array_namespace(edge_lat)
     ub = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
