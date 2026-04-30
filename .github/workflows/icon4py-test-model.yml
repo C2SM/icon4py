@@ -69,10 +69,10 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
-          key: gt4py-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            gt4py-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-
-            gt4py-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-main-
+            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-
+            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-main-
 
       - name: run nox session - unit tests
         shell: bash
@@ -89,4 +89,4 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
-          key: gt4py-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
