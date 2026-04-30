@@ -442,11 +442,12 @@ def _compute_rbf_interpolation_coeffs(
         for _ in range(num_zonal_meridional_components)
     ]
     # Batch solve by grouping elements with the same number of valid neighbors.
-    # In ICON grids, valid entries in connectivity tables are contiguous from the start.
+    # ASSUMPTIONS FOR MAKING THE FOLLOWING BATCH SOLVE POSSIBLE:
+    #   (1) In ICON grids, valid entries in connectivity tables are contiguous from the start.
+    #       In other words, those invalid neighbors must be located at the end of the neighbor list.
+    #   (2) Invalid indices must be a negative.
     n_valid = (rbf_offset >= 0).sum(axis=1)
-    for nv in array_ns.unique(n_valid):
-        if nv == 0:
-            continue
+    for nv in (u := array_ns.unique(n_valid))[u != 0]:
         group_idx = array_ns.where(n_valid == nv)[0]
         valid_cols = array_ns.arange(nv)
         mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
@@ -458,8 +459,10 @@ def _compute_rbf_interpolation_coeffs(
             # batched column vector (core dims (nv,1)) rather than a matrix
             # (core dims (B, nv)), which would mismatch m=nv from the LHS.
             # This problem is well explained in https://github.com/numpy/numpy/issues/26598
-            # The RBF matrix is symmetric but NOT necessarily positive definite
-            # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
+            # The RBF matrix is symmetric and positive definite. However,
+            # the Cholesky method is not chosen, as in ICON, simply because scipy
+            # does not support batched solving of the linear equation,
+            # necessitating a Python loop and resulting in poor performance.
             sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 

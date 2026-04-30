@@ -75,12 +75,10 @@ def compute_diffusion_mask_and_coef(
     Compute the diffusion coefficient.
 
     let x = diffusion coefficient
-    x = max(0,
-            max(
-                sqrt( max( 0, maxslp_avg - thslp_zdiffu ) ) / 250,
-                2e-4 * sqrt( max( 0, maxhgtd_avg - thhgtd_zdiffu ) )
-                )
-            )
+    x = max(
+        sqrt( max( 0, maxslp_avg - thslp_zdiffu ) ) / 250,
+        2e-4 * sqrt( max( 0, maxhgtd_avg - thhgtd_zdiffu ) )
+    )
     """
     n_cells = c2e2c.shape[0]
     zd_diffcoef = array_ns.zeros(shape=(n_cells, nlev))
@@ -106,13 +104,9 @@ def compute_diffusion_mask_and_coef(
     )  # (n_valid_cells, nlev)
 
     zd_diffcoef_var = array_ns.maximum(
-        0.0,
-        array_ns.maximum(
-            array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[valid_cell_mask, :] - thslp_zdiffu))
-            / 250.0,
-            2.0e-4
-            * array_ns.sqrt(array_ns.maximum(0.0, maxhgtd_avg[valid_cell_mask, :] - thhgtd_zdiffu)),
-        ),
+        array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[valid_cell_mask, :] - thslp_zdiffu)) / 250.0,
+        2.0e-4
+        * array_ns.sqrt(array_ns.maximum(0.0, maxhgtd_avg[valid_cell_mask, :] - thhgtd_zdiffu)),
     )
     zd_diffcoef[valid_cell_mask, :] = array_ns.where(
         krange_mask, array_ns.minimum(0.002, zd_diffcoef_var), 0.0

@@ -604,7 +604,7 @@ def _construct_diamond_vertices(
 
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
-    
+
     Args:
         e2v: ndarray containing the connectivity table for edge-to-vertex
         c2v: ndarray containing the connectivity table for cell-to-vertex
