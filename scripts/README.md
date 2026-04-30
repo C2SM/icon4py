@@ -1,8 +1,8 @@
 # scripts/ — Dev-Scripts Toolbox
 
-A unified CLI for project development scripts, supporting Python, Bash, and (possibly) other recipes through a single entry point.
+Conventions for standardized project development scripts using Python, Bash, and (possibly) other recipes. All scripts should be executable and testable standalone, but a single entry point (`./scripts/run`) is provided as an extra feature, mostly for exploration.
 
-## Quick Start
+## Single entry point CLI
 
 ```bash
 # Show all available commands
@@ -14,7 +14,7 @@ A unified CLI for project development scripts, supporting Python, Bash, and (pos
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/) — the entry point uses a special `uv` shebang (more or less: `uv` `uv run --isolated --group scripts`) so all scripts dependencies declared in the scripts dependency group (e.g. `typer`) are installed automatically into an ephemeral isolated environment.
+- [uv](https://docs.astral.sh/uv/) — Python scripts (including the single entry point) use a special `uv` shebang (more or less: `uv` `uv run --isolated --group scripts`) so all dependencies declared in the scripts dependency group (e.g. `typer`) are installed automatically into an ephemeral isolated environment.
 - [bats-core](https://github.com/bats-core/bats-core) — only needed to run Bash tests.
 
 ## Layout

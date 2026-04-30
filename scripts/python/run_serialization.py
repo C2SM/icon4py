@@ -56,6 +56,9 @@ class SerializationSettings:
 
     @classmethod
     def defaults(cls) -> SerializationSettings:
+        # ======================================
+        # START DEFAULT USER CONFIGURATION
+        # ======================================
         # We hardcode the settings here for simplicity, but they could be
         # extended to be read from a config file or command-line arguments
         # if needed in the future.
@@ -118,6 +121,10 @@ class SerializationSettings:
             output_root=OUTPUT_ROOT,
             max_threads=MAX_THREADS,
         )
+
+        # ======================================
+        # END DEFAULT USER CONFIGURATION
+        # ======================================
 
 
 def get_f90exp_name(experiment: definitions.Experiment) -> str:

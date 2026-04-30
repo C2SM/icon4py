@@ -44,7 +44,7 @@ jobs:
       - name: cache key
         id: cache-key
         run: |
-          echo "key=$(.github/validation_grid_utils.py cache-key)" >> $GITHUB_OUTPUT
+          echo "key=$(./scripts/python/validation_grid_utils.py cache-key)" >> $GITHUB_OUTPUT
 
       - name: gridfile cache
         id: grid-cache
@@ -58,7 +58,7 @@ jobs:
         env:
           ICON4PY_ENABLE_GRID_DOWNLOAD: true
         run: |
-          .github/validation_grid_utils.py download
+          ./scripts/python/validation_grid_utils.py download
 
       - name: run nox session - unit tests
         shell: bash
