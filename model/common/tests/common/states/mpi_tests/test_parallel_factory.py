@@ -22,7 +22,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils, parallel_helpers
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
 from ...grid.mpi_tests import utils as mpi_tests_utils
 from ..fixtures import backend, grid_description, process_props
@@ -59,7 +59,7 @@ def _fill_edges(
 def test_program_provider_exchange(
     do_exchange: bool,
     process_props: decomp_defs.ProcessProperties,
-    grid_description: definitions.GridDescription,
+    grid_description: test_defs.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
     if grid_description.params.limited_area:
@@ -126,7 +126,7 @@ def test_program_provider_exchange(
 def test_numpy_provider_exchange(
     do_exchange: bool,
     process_props: decomp_defs.ProcessProperties,
-    grid_description: definitions.GridDescription,
+    grid_description: test_defs.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
     if grid_description.params.limited_area:
