@@ -11,8 +11,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Final
-from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np

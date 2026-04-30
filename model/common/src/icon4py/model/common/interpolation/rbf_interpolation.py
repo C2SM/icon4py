@@ -9,7 +9,6 @@
 import enum
 import math
 from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
@@ -149,9 +148,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     return connectivity
 
 
-def _dot_product(
-    v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
+def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(v1)
     # alias: array_ns.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = array_ns.moveaxis(v2, 1, -1)
@@ -164,7 +161,6 @@ def _compute_distance_pairwise(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     v: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute the distance between points in each row of v.
@@ -183,7 +179,7 @@ def _compute_distance_pairwise(
             # For pairs of points p1 and p2 compute:
             # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
             # Compute all pairs of dot products
-            arc_lengths = _dot_product(v, v, array_ns=array_ns)
+            arc_lengths = _dot_product(v, v)
             # Use the dot product of the diagonals to get the norm of each point
             norms = array_ns.sqrt(array_ns.diagonal(arc_lengths, axis1=1, axis2=2))
             # Divide the dot products by the broadcasted norms
@@ -210,7 +206,6 @@ def _compute_distance_vector_matrix(
     domain_height: ta.wpfloat,
     v1: data_alloc.NDArray,
     v2: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute the distance between each point in v1 and the points in v2 at the
@@ -232,7 +227,7 @@ def _compute_distance_vector_matrix(
             # For pairs of points p1 and p2 compute:
             # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
             # Compute all pairs of dot products
-            arc_lengths = _dot_product(v1, v2, array_ns=array_ns)
+            arc_lengths = _dot_product(v1, v2)
             v1_norm = array_ns.linalg.norm(v1, axis=-1)
             v2_norm = array_ns.linalg.norm(v2, axis=-1)
             # Divide the dot products by the broadcasted norms
@@ -253,9 +248,7 @@ def _compute_distance_vector_matrix(
             return array_ns.linalg.norm(diff, axis=-1)
 
 
-def _gaussian(
-    lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
+def _gaussian(lengths: data_alloc.NDArray, scale: ta.wpfloat) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(lengths)
     val = lengths / scale
     return array_ns.exp(-1.0 * val * val)
@@ -264,7 +257,6 @@ def _gaussian(
 def _inverse_multiquadratic(
     distance: data_alloc.NDArray,
     scale: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(distance)
     val = distance / scale
@@ -275,14 +267,12 @@ def _kernel(
     kernel: InterpolationKernel,
     lengths: data_alloc.NDArray,
     scale: ta.wpfloat,
-    array_ns: ModuleType = np,
 ):
-    array_ns = data_alloc.array_namespace(lengths)
     match kernel:
         case InterpolationKernel.GAUSSIAN:
-            return _gaussian(lengths, scale, array_ns=array_ns)
+            return _gaussian(lengths, scale)
         case InterpolationKernel.INVERSE_MULTIQUADRATIC:
-            return _inverse_multiquadratic(lengths, scale, array_ns=array_ns)
+            return _inverse_multiquadratic(lengths, scale)
         case _:
             raise ValueError(f"Unsupported kernel: {kernel}")
 
@@ -293,7 +283,6 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
     lon: data_alloc.NDArray,
     u: data_alloc.NDArray,
     v: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(lat)
     match geometry_type:
@@ -334,7 +323,6 @@ def _compute_rbf_interpolation_coeffs(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
     array_ns = data_alloc.array_namespace(element_center_lat)
     rbf_offset_shape_full = rbf_offset.shape
@@ -387,10 +375,9 @@ def _compute_rbf_interpolation_coeffs(
         domain_height,
         element_center[:, array_ns.newaxis, :],
         edge_center,
-        array_ns=array_ns,
     )
     assert vector_dist.shape == rbf_offset.shape
-    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor, array_ns=array_ns)
+    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor)
     assert rbf_val.shape == rbf_offset.shape
 
     # Set up right hand side(s) of linear system
@@ -407,7 +394,6 @@ def _compute_rbf_interpolation_coeffs(
             element_center_lon[horizontal_start:horizontal_end],
             uv[i][0][horizontal_start:horizontal_end],
             uv[i][1][horizontal_start:horizontal_end],
-            array_ns=array_ns,
         )
         z_nx.append(array_ns.stack((z_nx_x, z_nx_y, z_nx_z), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
@@ -419,7 +405,7 @@ def _compute_rbf_interpolation_coeffs(
         assert rhs[i].shape == rbf_offset.shape
 
     # Compute dot product of normal vectors for RBF interpolation matrix
-    z_nxprod = _dot_product(edge_normal, edge_normal, array_ns=array_ns)
+    z_nxprod = _dot_product(edge_normal, edge_normal)
     assert z_nxprod.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -427,9 +413,7 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _compute_distance_pairwise(
-        geometry_type, domain_length, domain_height, edge_center, array_ns=array_ns
-    )
+    z_dist = _compute_distance_pairwise(geometry_type, domain_length, domain_height, edge_center)
     assert z_dist.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -437,7 +421,7 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Set up RBF interpolation matrix
-    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor, array_ns=array_ns)
+    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor)
     assert z_rbfmat.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -497,7 +481,6 @@ def compute_rbf_interpolation_coeffs_cell(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(cell_center_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -525,7 +508,6 @@ def compute_rbf_interpolation_coeffs_cell(
         domain_length,
         domain_height,
         exchange=exchange,
-        array_ns=array_ns,
     )
 
 
@@ -549,9 +531,7 @@ def compute_rbf_interpolation_coeffs_edge(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    array_ns = data_alloc.array_namespace(edge_lat)
     return _compute_rbf_interpolation_coeffs(
         edge_lat,
         edge_lon,
@@ -574,7 +554,6 @@ def compute_rbf_interpolation_coeffs_edge(
         domain_length,
         domain_height,
         exchange=exchange,
-        array_ns=array_ns,
     )[0]
 
 
@@ -599,7 +578,6 @@ def compute_rbf_interpolation_coeffs_vertex(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(vertex_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -627,5 +605,4 @@ def compute_rbf_interpolation_coeffs_vertex(
         domain_length,
         domain_height,
         exchange=exchange,
-        array_ns=array_ns,
     )

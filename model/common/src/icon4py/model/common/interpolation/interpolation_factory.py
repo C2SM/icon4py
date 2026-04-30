@@ -156,7 +156,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_N2S,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -179,7 +178,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_GRDIV,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -246,7 +244,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
             domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
@@ -285,7 +282,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                             dims.CellDim,
                             stream=decomposition.BLOCK,
                         ),
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.C_BLN_AVG,),
                     domain=(dims.CellDim, dims.C2E2CODim),
@@ -313,7 +309,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s,
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
@@ -336,7 +331,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                             dims.EdgeDim,
                             stream=decomposition.BLOCK,
                         ),
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),
@@ -370,7 +364,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                             dims.CellDim,
                             stream=decomposition.BLOCK,
                         ),
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.C_BLN_AVG,),
                     domain=(dims.CellDim, dims.C2E2CODim),
@@ -396,7 +389,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s_torus,
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
@@ -414,7 +406,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                             dims.EdgeDim,
                             stream=decomposition.BLOCK,
                         ),
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),
@@ -432,7 +423,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -455,7 +445,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -481,7 +470,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -518,7 +506,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     dims.VertexDim,
                     stream=decomposition.BLOCK,
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
@@ -547,7 +534,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
@@ -589,7 +575,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.RBF_VEC_COEFF_E,),
             domain=(dims.EdgeDim, dims.E2C2EDim),
@@ -632,7 +617,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     dims.VertexDim,
                     stream=decomposition.BLOCK,
                 ),
-                array_ns=self._xp,
             ),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),

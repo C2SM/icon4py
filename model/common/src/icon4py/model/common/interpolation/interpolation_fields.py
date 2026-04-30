@@ -9,10 +9,8 @@ import functools
 import logging
 import math
 from collections.abc import Callable
-from types import ModuleType
 from typing import Final
 
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import where
 
@@ -39,7 +37,6 @@ def compute_c_lin_e(
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute E2C average inverse distance.
@@ -114,7 +111,6 @@ def compute_geofac_n2s(
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute geometric factor for nabla2-scalar.
@@ -176,11 +172,10 @@ def compute_geofac_grg(
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(primal_normal_cell_x)
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
-    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
+    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e)
     primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
     primal_normal_ec_v = array_ns.where(owned, primal_normal_cell_y[c2e, inv_neighbor_index], 0.0)
 
@@ -224,7 +219,6 @@ def compute_geofac_grdiv(
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
@@ -237,7 +231,6 @@ def compute_geofac_grdiv(
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         e2c2e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
-        array_ns: module either used or array computations defaults to numpy
 
     Returns:
         geofac_grdiv:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
@@ -286,7 +279,6 @@ def _rotate_latlon(
     lon: data_alloc.NDArray,
     pollat: data_alloc.NDArray,
     pollon: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     (Compute rotation of lattitude and longitude.)
@@ -327,7 +319,6 @@ def _weighting_factors(
     yloc: data_alloc.NDArray,
     xloc: data_alloc.NDArray,
     wgt_loc: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
         Compute weighting factors.
@@ -353,7 +344,7 @@ def _weighting_factors(
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(ytemp)
-    rotate = functools.partial(_rotate_latlon, array_ns=array_ns)
+    rotate = functools.partial(_rotate_latlon)
 
     pollat = array_ns.where(yloc >= 0.0, yloc - math.pi * 0.5, yloc + math.pi * 0.5)
     pollon = xloc
@@ -400,7 +391,6 @@ def _compute_c_bln_avg(
     lon: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute bilinear cell average weight.
@@ -431,7 +421,6 @@ def _compute_c_bln_avg(
         lat[horizontal_start:],
         lon[horizontal_start:],
         divergence_averaging_central_cell_weight,
-        array_ns=array_ns,
     )
     c_bln_avg = array_ns.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
     c_bln_avg[horizontal_start:, 0] = divergence_averaging_central_cell_weight
@@ -449,7 +438,6 @@ def _force_mass_conservation_to_c_bln_avg(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
     """
@@ -550,7 +538,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
+    inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -592,7 +580,6 @@ def _compute_uniform_c_bln_avg(
     c2e2c: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute bilinear cell average weight for a torus grid.
@@ -629,16 +616,13 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    array_ns = data_alloc.array_namespace(c2e2c0)
     c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:],
         lat,
         lon,
         divergence_averaging_central_cell_weight,
         horizontal_start,
-        array_ns=array_ns,
     )
 
     exchange(c_bln_avg)
@@ -651,7 +635,6 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         divergence_averaging_central_cell_weight,
         horizontal_start_level_3,
         exchange=exchange,
-        array_ns=array_ns,
     )
 
 
@@ -663,14 +646,11 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    array_ns = data_alloc.array_namespace(c2e2c0)
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:],
         divergence_averaging_central_cell_weight,
         horizontal_start,
-        array_ns=array_ns,
     )
     exchange(c_bln_avg)
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error
@@ -683,12 +663,11 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
         divergence_averaging_central_cell_weight,
         horizontal_start_level_3,
         exchange=exchange,
-        array_ns=array_ns,
     )
 
 
 def _create_inverse_neighbor_index(
-    source_offset: data_alloc.NDArray, inverse_offset: data_alloc.NDArray, array_ns: ModuleType
+    source_offset: data_alloc.NDArray, inverse_offset: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
     The inverse neighbor index determines the position of a central element c_1
@@ -736,7 +715,6 @@ def compute_e_flx_avg(
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute edge flux average.
@@ -901,7 +879,6 @@ def compute_cells_aw_verts(
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute cells_aw_verts.
@@ -962,7 +939,6 @@ def compute_e_bln_c_s(
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
     weighting_factor: float,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -997,7 +973,6 @@ def compute_e_bln_c_s(
         yloc,
         xloc,
         weighting_factor,
-        array_ns=array_ns,
     )
 
     e_bln_c_s[:, 0] = wgt[0]
@@ -1008,7 +983,6 @@ def compute_e_bln_c_s(
 
 def compute_e_bln_c_s_torus(
     c2e: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -1037,7 +1011,6 @@ def compute_pos_on_tplane_e_x_y(
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute pos_on_tplane_e_x_y.
@@ -1125,7 +1098,6 @@ def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute pos_on_tplane_e_x_y.
@@ -1179,7 +1151,6 @@ def compute_lsq_pseudoinv(
     min_rlcell_int: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_owner_mask)
     for jjb in range(lsq_dim_c):
@@ -1199,7 +1170,6 @@ def compute_lsq_weights_c(
     lsq_weights_c_jc: data_alloc.NDArray,
     lsq_dim_stencil: int,
     lsq_wgt_exp: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(z_dist_g)
     for js in range(lsq_dim_stencil):
@@ -1245,7 +1215,6 @@ def compute_lsq_coeffs(
     min_rlcell_int: int,
     geometry_type: int,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
@@ -1291,7 +1260,7 @@ def compute_lsq_coeffs(
 
     for jc in range(start_idx, min_rlcell_int):
         lsq_weights_c[jc, :] = compute_lsq_weights_c(
-            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp, array_ns
+            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
         )
         z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
             cell_owner_mask,
@@ -1314,7 +1283,6 @@ def compute_lsq_coeffs(
         min_rlcell_int,
         lsq_dim_unk,
         lsq_dim_c,
-        array_ns,
     )
     exchange(lsq_pseudoinv[:, 0, :])
     exchange(lsq_pseudoinv[:, 1, :])

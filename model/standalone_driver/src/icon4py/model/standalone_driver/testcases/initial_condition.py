@@ -262,7 +262,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         edge_lon=edge_lon,
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge.ndarray,
-        array_ns=xp,
     )
     log.info("U2vn computation completed.")
 
@@ -286,7 +285,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
-        array_ns=xp,
     )
     exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
@@ -301,7 +299,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         wgtfac_c=wgtfac_c,
         ddqz_z_half=ddqz_z_half,
         num_levels=num_levels,
-        array_ns=xp,
     )
     log.info("Hydrostatic adjustment computation completed.")
     prognostic_state_next = prognostics.PrognosticState(

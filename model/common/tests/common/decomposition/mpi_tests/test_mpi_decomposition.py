@@ -13,6 +13,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
+from icon4py.model.common import model_backends
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
