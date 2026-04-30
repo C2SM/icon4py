@@ -171,7 +171,6 @@ def _compute_distance_pairwise(
         v: 3D array of shape (n, m, 3) where n is the number of elements,
            m is the number of points per row (RBF dimension), and 3 is the
            dimension of the points.
-        array_ns: numpy or cupy module to use for computations.
     """
     array_ns = data_alloc.array_namespace(v)
     match geometry_type:
@@ -219,7 +218,6 @@ def _compute_distance_vector_matrix(
         v2: 3D array of shape (n, m, 3) where n is the number of elements,  m is
             the number of points per row (RBF dimension), and 3 is the dimension
             of the points.
-        array_ns: numpy or cupy module to use for computations.
     """
     array_ns = data_alloc.array_namespace(v1)
     match geometry_type:

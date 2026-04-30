@@ -46,7 +46,6 @@ def compute_c_lin_e(
         inv_dual_edge_length: ndarray, inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edge_owner_mask: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index from the field is computed: c_lin_e is not calculated for the first boundary layer
-        array_ns: ModuleType to use for the computation, numpy or cupy, defaults to cupy
         exchange: Callback to the halo exchange function
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
@@ -122,7 +121,6 @@ def compute_geofac_n2s(
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         c2e2c: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start: start index from where the field is computed
-        array_ns: python module, numpy or cpu defaults to numpy
 
     Returns:
         geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
@@ -291,7 +289,6 @@ def _rotate_latlon(
         lon: scalar or numpy array
         pollat: scalar or numpy array
         pollon: scalar or numpy array
-        array_ns array namespace to be used, defaults to numpy
 
     Returns:
         rotlat:
@@ -338,7 +335,6 @@ def _weighting_factors(
             yloc:   \\   numpy array of size [[flexible], ta.wpfloat]
             xloc:   //
             wgt_loc:
-            array_ns: array namespace to be used defaults to numpy
 
         Returns:
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
@@ -893,7 +889,6 @@ def compute_cells_aw_verts(
         v2c: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start: int32, representing the start index of the horizontal dimension
-        array_ns: array namespace to be used, defaults to numpy
 
     Returns:
         aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
