@@ -27,12 +27,7 @@ from icon4py.model.testing import (
 )
 
 from ..fixtures import *  # noqa: F403
-from ..utils import (
-    compare_dace_orchestration_multiple_steps,
-    diff_multfac_vn_numpy,
-    smag_limit_numpy,
-    verify_diffusion_fields,
-)
+from ..utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
 
 
 grid_functionality = collections.defaultdict(dict)
@@ -332,7 +327,6 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
-        orchestration=False,
         backend=backend,
     )
 
@@ -357,8 +351,6 @@ def test_verify_diffusion_init_against_savepoint(
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
-# TODO(): Enable dace orchestration, currently broken by precompiled programs
-@pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_single_step(
     experiment,
     step_date_init,
@@ -374,11 +366,7 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
     backend,
-    orchestration,
 ):
-    if orchestration and not test_utils.is_dace(backend):
-        pytest.skip("Orchestration test requires a dace backend.")
-
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -420,7 +408,6 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        orchestration=orchestration,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -432,141 +419,9 @@ def test_run_diffusion_single_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
-    [
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-        ),
-    ],
-)
-@pytest.mark.parametrize("ndyn_substeps", (2,))
-def test_run_diffusion_multiple_steps(
-    experiment,
-    step_date_init,
-    step_date_exit,
-    *,
-    savepoint_diffusion_init,
-    savepoint_diffusion_exit,
-    interpolation_state: diffusion_states.DiffusionInterpolationState,
-    metric_state: diffusion_states.DiffusionMetricState,
-    grid_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    ndyn_substeps,
-    backend,
-    icon_grid,
-):
-    pytest.skip("dace orchestration broken by precompiled programs")
-    if not test_utils.is_dace(backend):
-        raise pytest.skip("This test is only executed for dace backends")
-    ######################################################################
-    # Diffusion initialization
-    ######################################################################
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
-    )
-
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
-    additional_parameters = diffusion.DiffusionParams(config)
-
-    ######################################################################
-    # DaCe NON-Orchestrated Backend
-    ######################################################################
-
-    diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
-    prognostic_state_dace_non_orch = savepoint_diffusion_init.construct_prognostics()
-
-    diffusion_granule = diffusion.Diffusion(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_grid=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        orchestration=False,
-        backend=backend,
-    )
-
-    for _ in range(3):
-        diffusion_granule.run(
-            diagnostic_state=diagnostic_state_dace_non_orch,
-            prognostic_state=prognostic_state_dace_non_orch,
-            dtime=dtime,
-        )
-
-    ######################################################################
-    # DaCe Orchestrated Backend
-    ######################################################################
-
-    diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
-    prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
-
-    diffusion_granule = diffusion.Diffusion(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_grid=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        backend=backend,
-        orchestration=True,
-    )
-
-    for _ in range(3):
-        diffusion_granule.run(
-            diagnostic_state=diagnostic_state_dace_orch,
-            prognostic_state=prognostic_state_dace_orch,
-            dtime=dtime,
-        )
-
-    ######################################################################
-    # Verify the results
-    ######################################################################
-    compare_dace_orchestration_multiple_steps(
-        diagnostic_state_dace_non_orch, diagnostic_state_dace_orch
-    )
-    compare_dace_orchestration_multiple_steps(
-        prognostic_state_dace_non_orch, prognostic_state_dace_orch
-    )
-
-
-@pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
-# TODO(): Enable dace orchestration, currently broken by precompiled programs
-@pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_initial_step(
     experiment,
     linit,
@@ -579,10 +434,7 @@ def test_run_diffusion_initial_step(
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
     backend,
-    orchestration,
 ):
-    if orchestration and not test_utils.is_dace(backend):
-        pytest.skip("Orchestration test requires a dace backend.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -621,7 +473,6 @@ def test_run_diffusion_initial_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        orchestration=orchestration,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
