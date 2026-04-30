@@ -4,7 +4,7 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 ## Monorepo structure
 
-uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
+uv workspace with 11 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
 
 ```
 model/
@@ -20,9 +20,10 @@ model/
   standalone_driver/    # icon4py.model.standalone_driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model
+bindings/               # icon4py.bindings ← Fortran wrappers for diffusion/dycore/muphys, depends on tools.py2fgen
 ```
 
-Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and standalone_driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent.
+Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and standalone_driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + muphys + common + tools.py2fgen.
 
 **Always run `uv sync` from the repo root.** Running it from a subpackage only installs that package's deps.
 
