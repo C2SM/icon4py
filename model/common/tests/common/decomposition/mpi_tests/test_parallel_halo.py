@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import (
 )
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import parallel_helpers
-from icon4py.model.testing.fixtures import processor_props
+from icon4py.model.testing.fixtures import process_props
 
 from .. import utils
 from ..fixtures import simple_neighbor_tables
@@ -42,17 +42,17 @@ def global_indices(dim: gtx.Dimension) -> np.ndarray:
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_element_ownership_is_unique(
     dim,
-    processor_props,
+    process_props,
     simple_neighbor_tables,
 ):
-    parallel_helpers.check_comm_size(processor_props, sizes=[4])
+    parallel_helpers.check_comm_size(process_props, sizes=[4])
 
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
-        run_properties=processor_props,
+        process_props=process_props,
         allocator=backend,
     )
 
@@ -60,17 +60,17 @@ def test_element_ownership_is_unique(
     owned = decomposition_info.global_index(
         dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
     )
-    _log.info(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
+    _log.info(f"\nrank {process_props.rank} owns {dim} : {owned} ")
     # assert that each cell is only owned by one rank
-    comm = processor_props.comm
+    comm = process_props.comm
 
     my_size = owned.shape[0]
     local_sizes = np.array(comm.gather(my_size, root=0))
     buffer_size = 27
     send_buf = np.full(buffer_size, -1, dtype=int)
     send_buf[:my_size] = owned
-    _log.info(f"rank {processor_props.rank} send_buf: {send_buf}")
-    if processor_props.rank == 0:
+    _log.info(f"rank {process_props.rank} send_buf: {send_buf}")
+    if process_props.rank == 0:
         _log.info(f"local_sizes: {local_sizes}")
         recv_buffer = np.full((4, buffer_size), -1, dtype=int)
         _log.info(f"{recv_buffer.shape}")
@@ -78,7 +78,7 @@ def test_element_ownership_is_unique(
         recv_buffer = None
     # Gatherv does not work if one of the buffers has size-0 (VertexDim)
     comm.Gather(sendbuf=send_buf, recvbuf=recv_buffer, root=0)
-    if processor_props.rank == 0:
+    if process_props.rank == 0:
         _log.info(f"global indices: {recv_buffer}")
         # check there are no duplicates
         values = recv_buffer[recv_buffer != -1]

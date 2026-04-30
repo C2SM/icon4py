@@ -26,7 +26,7 @@ from icon4py.model.testing.fixtures import (
     download_ser_data,
     grid_savepoint,
     icon_grid,
-    processor_props,
+    process_props,
 )
 
 from .. import utils

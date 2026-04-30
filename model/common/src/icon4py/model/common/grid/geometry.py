@@ -87,7 +87,7 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
         """

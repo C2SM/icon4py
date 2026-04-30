@@ -27,33 +27,39 @@ class Experiments:
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=mini.tar.gz",
     )
     TINY: Final = utils.MuphysExperiment(
         name="tiny",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=tiny.tar.gz",
     )
     R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=R2B05.tar.gz",
     )
+
+
+_GRAUPEL_TEST_CASES = [
+    (Experiments.MINI, True),
+    (Experiments.TINY, True),
+    (Experiments.R2B05, True),
+    (Experiments.R2B05, False),
+]
 
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
-    [
-        Experiments.MINI,
-        Experiments.TINY,
-        Experiments.R2B05,
+    ("experiment", "enable_dace_hooks"),
+    _GRAUPEL_TEST_CASES,
+    ids=[
+        f"{exp.name}-dacehooks[{enable_dace_hooks}]"
+        for exp, enable_dace_hooks in _GRAUPEL_TEST_CASES
     ],
-    ids=lambda exp: exp.name,
 )
 def test_graupel_only(
-    backend_like: model_backends.BackendLike, experiment: utils.MuphysExperiment
+    backend_like: model_backends.BackendLike,
+    experiment: utils.MuphysExperiment,
+    enable_dace_hooks: bool,
 ) -> None:
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
     inp = common.GraupelInput.load(
@@ -68,6 +74,7 @@ def test_graupel_only(
         horizontal_end=inp.ncells,
         vertical_start=0,
         vertical_end=inp.nlev,
+        enable_dace_hooks=enable_dace_hooks,
         enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
     )
 

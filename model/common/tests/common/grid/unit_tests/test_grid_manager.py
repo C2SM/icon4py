@@ -29,7 +29,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, definitions as test_defs, grid_utils, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    definitions as test_defs,
+    grid_utils,
+    test_utils,
+)
 
 
 if typing.TYPE_CHECKING:
@@ -51,7 +57,7 @@ from icon4py.model.testing.fixtures import (
     download_ser_data,
     experiment,
     grid_savepoint,
-    processor_props,
+    process_props,
 )
 
 from ...decomposition import utils as decomp_utils
@@ -608,17 +614,17 @@ def test_local_connectivity(
     field_offset: gtx.FieldOffset,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    processor_props = decomp_utils.DummyProps(rank=rank)
+    process_props = decomp_utils.DummyProps(rank=rank)
     caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
     manager(
         decomposer=partitioner,
         allocator=allocator,
         keep_skip_values=True,
-        run_properties=processor_props,
+        process_props=process_props,
     )
     grid = manager.grid
 
@@ -674,7 +680,7 @@ def test_decomposition_size(
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]

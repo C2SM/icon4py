@@ -41,7 +41,7 @@ from icon4py.model.testing.fixtures.datatest import (
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
-    processor_props,
+    process_props,
 )
 
 

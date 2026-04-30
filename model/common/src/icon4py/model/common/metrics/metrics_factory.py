@@ -71,7 +71,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vwind_offctr: float,
         thslp_zdiffu: float,
         thhgtd_zdiffu: float,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._backend = backend
@@ -642,7 +642,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"wgtfac_e": attrs.WGTFAC_E},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_wgtfac_e)
 

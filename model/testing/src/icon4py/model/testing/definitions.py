@@ -19,11 +19,17 @@ from icon4py.model.testing import config
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        single_moment_six_class_gscp_graupel as graupel,
+    )
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+EXPERIMENT_DATA_DIR: Final = "experiments"
+MUPHYS_DATA_DIR: Final = "muphys"
+TESTDATA_ROOT_URL: Final = "https://rgw.cscs.ch/c2sm:testdata"
 
 
 def serialized_data_path() -> pathlib.Path:
@@ -39,8 +45,6 @@ class GridDescription:
     name: str
     description: str
     params: icon_grid.GlobalGridParams
-    file_name: str
-    uri: str
     num_cells: int
     num_edges: int
     num_vertices: int
@@ -56,8 +60,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=1, level=1),
             ),
         ),
-        file_name="icon_grid_R01B01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/9M5JX4LJr3LGPqz/download",
         num_cells=80,
         num_vertices=42,
         num_edges=120,
@@ -70,8 +72,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=2, level=4),
             ),
         ),
-        file_name="icon_grid_0013_R02B04_R.nc",
-        uri="https://polybox.ethz.ch/index.php/s/BRiF7XrCCpGqpEF/download",
         num_cells=20480,
         num_vertices=10242,
         num_edges=30720,
@@ -84,8 +84,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=2, level=6),
             ),
         ),
-        file_name="icon_grid_0021_R02B06_G.nc",
-        uri="https://polybox.ethz.ch/index.php/s/WsHr5e2MKpHkkmp/download",
         num_cells=327680,
         num_vertices=163842,
         num_edges=491520,
@@ -98,8 +96,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=2, level=7),
             ),
         ),
-        file_name="icon_grid_0023_R02B07_G.nc",
-        uri="https://polybox.ethz.ch/index.php/s/RMqNbaeHLD5tDd6/download",
         num_cells=1310720,
         num_vertices=655362,
         num_edges=1966080,
@@ -112,8 +108,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=19, level=7),
             ),
         ),
-        file_name="icon_grid_0002_R19B07_mch.nc",
-        uri="https://polybox.ethz.ch/index.php/s/tFQian4aDzTES6c/download",
         limited_area=True,
         num_cells=283876,
         num_vertices=142724,
@@ -127,8 +121,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=4, level=7),
             ),
         ),
-        file_name="mch_opr_r4b7_DOM01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/ZL7LeEDijGCSJGz/download",
         limited_area=True,
         num_cells=10700,
         num_vertices=5510,
@@ -142,8 +134,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=19, level=8),
             ),
         ),
-        file_name="domain1_DOM01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/P6XfWcYjnrsNmeX/download",
         limited_area=True,
         num_cells=44528,
         num_vertices=22569,
@@ -157,8 +147,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=4, level=9),
             ),
         ),
-        file_name="grid.nc",
-        uri="https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download",
         limited_area=True,
         num_cells=20896,
         num_vertices=10663,
@@ -173,8 +161,6 @@ class Grids:
                 domain_height=100458.94683899487,
             ),
         ),
-        file_name="Torus_Triangles_100x116_1000m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download",
         num_cells=23200,
         num_vertices=11600,
         num_edges=34800,
@@ -188,8 +174,6 @@ class Grids:
                 domain_height=5248.638810814779,
             ),
         ),
-        file_name="Torus_Triangles_50000m_x_5000m_res500m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download",
         num_cells=1056,
         num_vertices=52,
         num_edges=1584,
@@ -203,8 +187,6 @@ class Grids:
                 domain_height=1154.7005383792514,
             ),
         ),
-        file_name="Torus_Triangles_1000m_x_1000m_res250m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/eMDbDbdmKLkDiwp/download",
         num_cells=24,
         num_vertices=12,
         num_edges=36,
@@ -213,9 +195,9 @@ class Grids:
 
 # Root URLs for downloading serialized data by communicator size
 SERIALIZED_DATA_ROOT_URLS: Final = {
-    1: "https://polybox.ethz.ch/index.php/s/KBsngNwwzRcMG5J",  # (jcanton)
-    2: "https://polybox.ethz.ch/index.php/s/KfmJEEnaKCFgGSM",  # (ongchia)
-    4: "https://polybox.ethz.ch/index.php/s/eLLcDtxek858ayt",  # (havogt)
+    1: "https://polybox.ethz.ch/index.php/s/KBsngNwwzRcMG5J",
+    2: "https://polybox.ethz.ch/index.php/s/KfmJEEnaKCFgGSM",
+    4: "https://polybox.ethz.ch/index.php/s/eLLcDtxek858ayt",
 }
 
 
@@ -261,6 +243,25 @@ class Experiments:
     )
 
 
+def construct_graupel_config(
+    experiment: Experiment,
+) -> graupel.SingleMomentSixClassIconGraupelConfig:
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        microphysics_options as mphy_options,
+        single_moment_six_class_gscp_graupel as graupel,
+    )
+
+    if experiment == Experiments.WEISMAN_KLEMP_TORUS:
+        return graupel.SingleMomentSixClassIconGraupelConfig(
+            liquid_autoconversion_option=mphy_options.LiquidAutoConversionType.SEIFERT_BEHENG,
+            ice_stickeff_min=0.075,
+        )
+    else:
+        raise NotImplementedError(
+            f"SingleMomentSixClassIconGraupelConfig for experiment {experiment.name} not implemented."
+        )
+
+
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
@@ -282,6 +283,7 @@ def construct_diffusion_config(
             max_nudging_coefficient=0.375,
             n_substeps=ndyn_substeps,
             shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+            iforcing=diffusion.ForcingType.NWP,
         )
     elif experiment == Experiments.EXCLAIM_APE:
         return diffusion.DiffusionConfig(
@@ -295,10 +297,26 @@ def construct_diffusion_config(
             smagorinski_scaling_factor=0.025,
             hdiff_temp=True,
             n_substeps=ndyn_substeps,
+            iforcing=diffusion.ForcingType.AES,
         )
     elif experiment == Experiments.GAUSS3D:
         return diffusion.DiffusionConfig(
             n_substeps=ndyn_substeps,
+        )
+    elif experiment == Experiments.JW:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=5,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            zdiffu_t=False,
+            velocity_boundary_diffusion_denom=200.0,
         )
     else:
         raise NotImplementedError(
@@ -311,14 +329,13 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
 
     if experiment == Experiments.MCH_CH_R04B09:
         return solve_nh.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
     elif experiment == Experiments.EXCLAIM_APE:
         return solve_nh.NonHydrostaticConfig(
-            rayleigh_coeff=0.1,
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         )
     elif experiment == Experiments.GAUSS3D:
         return solve_nh.NonHydrostaticConfig(

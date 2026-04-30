@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from types import ModuleType
-from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -31,7 +30,8 @@ from gt4py.next import (
 )
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -47,9 +47,6 @@ from icon4py.model.common.math.helpers import (
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-rayleigh_damping_options: Final = constants.RayleighType()
 
 
 # TODO(nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
@@ -221,13 +218,13 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == rayleigh_damping_options.CLASSIC:
+    if rayleigh_type == RayleighType.CLASSIC:
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == rayleigh_damping_options.KLEMP:
+    elif rayleigh_type == RayleighType.KLEMP:
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
