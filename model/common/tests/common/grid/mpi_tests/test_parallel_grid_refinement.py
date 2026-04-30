@@ -18,7 +18,14 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition,
 )
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
-from icon4py.model.testing import definitions, grid_utils, serialbox, test_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    grid_utils,
+    serialbox,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -119,7 +126,7 @@ def test_bounds_decomposition(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
     grid_manager = mpi_test_utils.run_grid_manager_for_multi_rank(
