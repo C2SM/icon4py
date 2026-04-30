@@ -106,13 +106,15 @@ def test_program_provider_exchange(
     owned_points = decomposition_info.local_index(
         dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.OWNED
     )
-    valid_values = {r + 10 for r in range(process_props.comm_size)}
+    xp = data_alloc.import_array_ns(backend)
+    valid_values = xp.asarray(
+        [r + 10 for r in range(process_props.comm_size) if r != process_props.rank]
+    )
     arr = field.ndarray
 
     assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
     if do_exchange:
-        assert (arr[halo_points] != number).all()  # type: ignore[attr-defined]
-        assert set(arr[halo_points].flatten()).issubset(valid_values)  # type: ignore[attr-defined]
+        assert xp.all(xp.isin(arr[halo_points], valid_values))
     else:
         assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
 
@@ -174,12 +176,13 @@ def test_numpy_provider_exchange(
     owned_points = decomposition_info.local_index(
         dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.OWNED
     )
-    valid_values = {r + 10 for r in range(process_props.comm_size)}
+    valid_values = xp.asarray(
+        [r + 10 for r in range(process_props.comm_size) if r != process_props.rank]
+    )
     arr = field.ndarray
 
     assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
     if do_exchange:
-        assert (arr[halo_points] != number).all()  # type: ignore[attr-defined]
-        assert set(arr[halo_points].flatten()).issubset(valid_values)  # type: ignore[attr-defined]
+        assert xp.all(xp.isin(arr[halo_points], valid_values))
     else:
         assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
