@@ -1225,17 +1225,17 @@ def compute_lsq_pseudoinv(
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
-    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
+    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_unk, lsq_dim_c), dtype=ta.wpfloat)
     u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(z_lsq_mat_c[valid_cell_mask, :, :])
     v_t_over_s = (
         v_t_matrix[:, :lsq_dim_unk, :lsq_dim_unk] / s_matrix[:, :lsq_dim_unk, array_ns.newaxis]
-    )
+    )  # (n_valid_cells, lsq_dim_unk, lsq_dim_unk)
     pinv = array_ns.matmul(
-        array_ns.transpose(v_t_over_s, (0, 2, 1))[:, :lsq_dim_unk, :lsq_dim_unk],
+        array_ns.transpose(v_t_over_s, (0, 2, 1)),
         array_ns.transpose(u_matrix, (0, 2, 1))[:, :lsq_dim_unk, :lsq_dim_c],
     )
     pinv *= lsq_weights_c[valid_cell_mask, array_ns.newaxis, :lsq_dim_c]
-    lsq_pseudoinv[valid_cell_mask, :lsq_dim_unk, :lsq_dim_c] = pinv
+    lsq_pseudoinv[valid_cell_mask, :, :] = pinv
 
     return lsq_pseudoinv
 

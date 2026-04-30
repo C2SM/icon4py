@@ -50,7 +50,7 @@ def _compute_k_start_end(
     kend = array_ns.where(
         array_ns.any(owned_cell_above_threshold, axis=1), last_true_indices + 1, 0
     )
-    kstart = np.argmax(condition1, axis=1)
+    kstart = array_ns.argmax(condition1, axis=1)
     # reset the values where start > end to be an empty range(start, end)
     kstart = array_ns.where(kstart > kend, nlev, kstart)
     cell_index_mask = array_ns.where(kend > kstart, True, False)

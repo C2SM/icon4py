@@ -445,6 +445,8 @@ def _compute_rbf_interpolation_coeffs(
     # ASSUMPTIONS FOR MAKING THE FOLLOWING BATCH SOLVE POSSIBLE:
     #   (1) In ICON grids, valid entries in connectivity tables are contiguous from the start.
     #       In other words, those invalid neighbors must be located at the end of the neighbor list.
+    #       Therefore, we cannot compute rbf all the way into halo cells or the first boundary layer
+    #       because the invalid neighbors may appear in the middle the the neighbor list.
     #   (2) Invalid indices must be a negative.
     n_valid = (rbf_offset >= 0).sum(axis=1)
     for nv in (u := array_ns.unique(n_valid))[u != 0]:
