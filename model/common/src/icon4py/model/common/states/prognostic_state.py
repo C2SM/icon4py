@@ -26,6 +26,7 @@ QI: Final[int] = 2
 QR: Final[int] = 3
 QS: Final[int] = 4
 QG: Final[int] = 5
+NTRACER: Final[int] = 6
 
 
 @dataclasses.dataclass
@@ -54,7 +55,7 @@ class PrognosticState:
 def initialize_prognostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    ntracer: int = 0,
+    ntracer: int = NTRACER,
 ) -> PrognosticState:
     """Initialize the prognostic state with zero fields."""
     rho = data_alloc.zero_field(
