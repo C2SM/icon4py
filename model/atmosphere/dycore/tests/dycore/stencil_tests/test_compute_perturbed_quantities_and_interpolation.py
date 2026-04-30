@@ -42,9 +42,6 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 )
 
 
-horzpres_discr_type = HorizontalPressureDiscretizationType()
-
-
 def compute_first_vertical_derivative_numpy(
     cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
 ) -> np.ndarray:
@@ -171,7 +168,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             np.zeros_like(temporal_extrapolation_of_perturbed_exner),
             temporal_extrapolation_of_perturbed_exner,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             exner_at_cells_on_half_levels = np.zeros_like(temporal_extrapolation_of_perturbed_exner)
             exner_at_cells_on_half_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
@@ -284,7 +281,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             ),
             (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
@@ -385,7 +382,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        igradp_method = horzpres_discr_type.TAYLOR_HYDRO
+        igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
 
         cell_domain = h_grid.domain(dims.CellDim)
         start_cell_lateral_boundary_level_3 = grid.start_index(

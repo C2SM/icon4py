@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
-
 import gt4py.next as gtx
 from gt4py.next import astype
 
@@ -30,9 +28,6 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 )
 from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
 
 @gtx.field_operator
@@ -138,7 +133,7 @@ def _compute_perturbed_quantities_and_interpolation(
         ddz_of_reference_exner_at_cells_on_half_levels,
     )
 
-    if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+    if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
         exner_at_cells_on_half_levels = (
             _interpolate_cell_field_to_half_levels_with_surface_value_vp(
                 wgtfac_c=wgtfac_c,
