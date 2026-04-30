@@ -156,15 +156,15 @@ def test_numpy_provider_exchange(
 
     xp = data_alloc.import_array_ns(backend)
 
-    def make_constant(size: int, value: int) -> data_alloc.NDArray:
-        return xp.full(size, value)
+    def make_constant() -> data_alloc.NDArray:
+        return xp.full(grid.size[dims.EdgeDim], number)
 
     provider = factory.NumpyDataProvider(
         func=make_constant,
         domain=(dims.EdgeDim,),
         fields=("out",),
         deps={},
-        params={"size": grid.size[dims.EdgeDim], "value": number},
+        params={},
         do_exchange=do_exchange,
     )
     source.register_provider(provider)
