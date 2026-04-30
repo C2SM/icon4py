@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 
 QV: Final[int] = 0
 QC: Final[int] = 1
-QI: Final[int] = 2
-QR: Final[int] = 3
-QS: Final[int] = 4
+QR: Final[int] = 2
+QS: Final[int] = 3
+QI: Final[int] = 4
 QG: Final[int] = 5
 NTRACER: Final[int] = 6
 
