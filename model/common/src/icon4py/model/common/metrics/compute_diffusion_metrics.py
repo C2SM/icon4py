@@ -93,14 +93,10 @@ def compute_diffusion_mask_and_coef(
         nlev=nlev,
         array_ns=array_ns,
     )
-
-    cell_sequence = array_ns.arange(n_cells)
-    valid_cell_mask = cell_index_mask & (cell_sequence >= cell_nudging)
-    masked_kend = k_end[valid_cell_mask]
-    masked_kstart = k_start[valid_cell_mask]
+    valid_cell_mask = cell_index_mask & (array_ns.arange(n_cells) >= cell_nudging)
     default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]
-    krange_mask = (default_level_idx >= masked_kstart[:, array_ns.newaxis]) & (
-        default_level_idx < masked_kend[:, array_ns.newaxis]
+    krange_mask = (default_level_idx >= k_start[valid_cell_mask][:, array_ns.newaxis]) & (
+        default_level_idx < k_end[valid_cell_mask][:, array_ns.newaxis]
     )  # (n_valid_cells, nlev)
 
     zd_diffcoef_var = array_ns.maximum(
@@ -157,12 +153,10 @@ def compute_diffusion_intcoef_and_vertoffset(
 
     if n_valid_cells > 0:
         masked_z_mc = z_mc[valid_cell_mask, :]  # (n_valid_cells, nlev)
-        masked_kstart = k_start[valid_cell_mask]  # (n_valid_cells)
-        masked_kend = k_end[valid_cell_mask]  # (n_valid_cells)
         # Level mask: True where level is in [kstart, kend) for each valid cell
         default_level_idx = array_ns.arange(nlev)[array_ns.newaxis, :]
-        krange_mask = (default_level_idx >= masked_kstart[:, array_ns.newaxis]) & (
-            default_level_idx < masked_kend[:, array_ns.newaxis]
+        krange_mask = (default_level_idx >= k_start[valid_cell_mask][:, array_ns.newaxis]) & (
+            default_level_idx < k_end[valid_cell_mask][:, array_ns.newaxis]
         )  # (n_valid_cells, nlev)
 
         # loop over neighboring cells, c2e2c_idx, of cells to obtain the k level index of the neighboring cell at the same altitude and the corresponding vertical interpolation coefficient

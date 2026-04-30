@@ -912,7 +912,7 @@ def compute_cells_aw_verts(
 
     In mathematical notation:
         let cells_aw_verts = x, x has dimensions (number of vertices, 6),
-        x(i,j) = 0.5 sum_k l(j,k) d(i,k) / dual_area(i), where summation is over neighboring edges of cell i,
+        x(i,j) = 0.5 sum_k l(j,k) d(i,k) / dual_area(i), where summation is over neighboring edges of vertex i,
         dual_area is the area of hexagon around the vertex, l(j,k) is the shortest distance between the center of cell j and edge k,
         d(i,k) is the distance between the vertex i and center of edge k.
 
@@ -973,7 +973,8 @@ def compute_cells_aw_verts(
             edge_vert_length[valid_v2e_edge, idx_ve] * edge_cell_length[valid_v2e_edge, 1]
         )
 
-        # loop over cells, jc, adjacent to the vertex adjacent to the edge je (v2e), check if jc belongs to one of the neighboring cells of the edge and add the corresponding coeff l(j,k) * d(i,k)
+        # loop over cells, jc, adjacent to the vertex adjacent to the edge je (v2e),
+        # check if jc belongs to one of the neighboring cells of the edge and add the corresponding coeff l(j,k) * d(i,k)
         for jc in range(num_cells_per_vert):
             current_cell = v2c[valid_vertices, jc]
             valid_cell = valid_v2c[valid_vertices, jc]
@@ -1299,7 +1300,7 @@ def compute_lsq_coeffs(
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2), dtype=ta.wpfloat)
+    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
