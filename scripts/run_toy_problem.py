@@ -64,8 +64,8 @@ def toy_problem( icon4py_backend: Annotated[
 
     # Numpy
     np_temperature, np_qv, np_qc = saturation_adjustment_numpy(
-        te=np.asarray(states.diagnostic.temperature),
-        rho=np.asarray(states.prognostics.current.rho),
+        te=states.diagnostic.temperature,
+        rho=states.prognostics.current.rho,
         q_in=Q(*states.prognostics.current.tracer),
     )
 
@@ -88,7 +88,6 @@ def toy_problem( icon4py_backend: Annotated[
     )
 
 
-    breakpoint()
 
 if __name__ == "__main__":
     typer.run(toy_problem)

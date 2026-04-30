@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions impo
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjustment import (
     saturation_adjustment,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -64,17 +64,17 @@ def _newton_raphson_numpy(
 
 
 def saturation_adjustment_numpy(
-    te: np.ndarray, rho: np.ndarray, q_in: Q
+    te: fa.CellKField[ta.wpfloat], rho: fa.CellKField[ta.wpfloat], q_in: Q
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     # Convert input fields to numpy arrays
-    te = np.asarray(te, dtype=np.float64)
-    rho = np.asarray(rho, dtype=np.float64)
-    qv = np.asarray(q_in.v, dtype=np.float64)
-    qc = np.asarray(q_in.c, dtype=np.float64)
-    qr = np.asarray(q_in.r, dtype=np.float64)
-    qs = np.asarray(q_in.s, dtype=np.float64)
-    qi = np.asarray(q_in.i, dtype=np.float64)
-    qg = np.asarray(q_in.g, dtype=np.float64)
+    te = data_alloc.as_numpy(te)
+    rho = data_alloc.as_numpy(rho)
+    qv = data_alloc.as_numpy(q_in.v)
+    qc = data_alloc.as_numpy(q_in.c)
+    qr = data_alloc.as_numpy(q_in.r)
+    qs = data_alloc.as_numpy(q_in.s)
+    qi = data_alloc.as_numpy(q_in.i)
+    qg = data_alloc.as_numpy(q_in.g)
 
     qti = qs + qi + qg
     qt = qv + qc + qr + qti

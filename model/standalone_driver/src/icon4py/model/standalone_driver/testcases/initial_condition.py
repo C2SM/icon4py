@@ -398,10 +398,16 @@ def toy_problem(
 
     prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
 
-    temperature_profile = ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(
+    T0 = 293.15
+    RHO0 = 1.0
+    # Tetens' formula
+    es = 610.78 * xp.exp(17.27 * (T0 - 273.15) / (T0 - 35.86))
+    qv0 = 0.622 * es / (RHO0 * 287.04 * T0 - es) # = 0.0178
+
+    temperature_profile = T0 + ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(
         wavelength_y * cell_lat
     )
-    qv_profile = ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(wavelength_y * cell_lat)
+    qv_profile = 2*qv0 * 1/2 * (1 + xp.sin(wavelength_x * cell_lon) + xp.sin(wavelength_y * cell_lat) )
 
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     diagnostic_state.temperature.ndarray[:, :] = temperature_profile[:, xp.newaxis]
