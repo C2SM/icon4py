@@ -427,11 +427,9 @@ class Diffusion:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
     ):
         self._allocator = model_backends.get_allocator(backend)
-        self._orchestration = orchestration
         self._exchange = exchange or decomposition.SingleNodeExchange()
         self.config = config
         self._params = params
@@ -773,16 +771,13 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
-        # NOTE: We do not specify a stream here but rely on the default argument.
-        #   We do this to ensure that the orchestrator works, but it is not aware
-        #   of the streams.
         log.debug("communication rbf extrapolation of vn - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
             full_exchange=True,
-            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -834,7 +829,7 @@ class Diffusion:
             self.v_vert,
             dim=dims.VertexDim,
             full_exchange=True,
-            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -854,7 +849,7 @@ class Diffusion:
             prognostic_state.vn,
             dim=dims.EdgeDim,
             full_exchange=False,
-            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+            stream=decomposition.DEFAULT_STREAM,
         )
 
         log.debug(
@@ -877,7 +872,7 @@ class Diffusion:
 
         self.halo_exchange_wait(
             handle_edge_comm,
-            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+            stream=decomposition.DEFAULT_STREAM,
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognostic.vn - end")
 
