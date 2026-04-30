@@ -16,7 +16,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions impo
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjustment import (
     saturation_adjustment,
 )
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_utils, standalone_driver as driver
@@ -36,8 +37,8 @@ def toy_problem(
     ],
 ) -> None:
     # Select grid file and download if necessary
-    grid = test_defs.Grids.R02B04_GLOBAL
-    grid_file_path = grid_utils._download_grid_file(grid)
+    grid_definition = test_defs.Grids.R02B04_GLOBAL
+    grid_file_path = grid_utils._download_grid_file(grid_definition)
 
     # Initialize driver
     icon4py_driver = driver.initialize_driver(
@@ -58,6 +59,9 @@ def toy_problem(
     updated_qc = data_alloc.as_field(states.prognostics.current.tracer[prognostic_state.QC])
 
 
+    cell_domain = h_grid.domain(dims.CellDim)
+    local_cell_end = icon4py_driver.grid.end_index(cell_domain(h_grid.Zone.END))
+
     saturation_adjustment.with_backend(icon4py_driver.backend)(
         te=states.diagnostic.temperature,
         rho=states.prognostics.current.rho,
@@ -66,11 +70,13 @@ def toy_problem(
         qve_out=updated_qv,
         qce_out=updated_qc,
         horizontal_start=0,
-        horizontal_end=icon4py_driver.grid.num_cells,
+        horizontal_end=local_cell_end,
         vertical_start=0,
         vertical_end=icon4py_driver.grid.num_levels,
     )
 
+
+    breakpoint()
 
 if __name__ == "__main__":
     typer.run(toy_problem)
