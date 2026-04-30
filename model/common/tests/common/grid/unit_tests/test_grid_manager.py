@@ -29,7 +29,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, definitions as test_defs, grid_utils, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    definitions as test_defs,
+    grid_utils,
+    test_utils,
+)
 
 
 if typing.TYPE_CHECKING:
@@ -611,7 +617,7 @@ def test_local_connectivity(
     caplog.set_level(logging.INFO)
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
     manager(
         decomposer=partitioner,
@@ -673,7 +679,7 @@ def test_decomposition_size(
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]
