@@ -21,7 +21,7 @@ import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
 from icon4py.model.common.orchestration import halo_exchange
 from icon4py.model.common.states import utils as state_utils
@@ -88,15 +88,15 @@ def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> A
         return MPICommProcessProperties(current_comm)
 
 
-@definitions.get_process_properties.register(definitions.MultiNodeRun)
+@decomp_defs.get_process_properties.register(decomp_defs.MultiNodeRun)
 def get_multinode_properties(
-    s: definitions.MultiNodeRun, comm_id: CommId = None
-) -> definitions.ProcessProperties:
+    s: decomp_defs.MultiNodeRun, comm_id: CommId = None
+) -> decomp_defs.ProcessProperties:
     return _get_process_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)
-class MPICommProcessProperties(definitions.ProcessProperties):
+class MPICommProcessProperties(decomp_defs.ProcessProperties):
     comm: mpi4py.MPI.Comm
 
     @functools.cached_property
@@ -112,18 +112,18 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
-class GHexMultiNodeExchange(definitions.ExchangeRuntime):
+class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
     max_num_of_fields_to_communicate_dace: Final[int] = (
         10  # maximum number of fields to perform halo exchange on (DaCe-related)
     )
 
     def __init__(
         self,
-        process_props: definitions.ProcessProperties,
-        domain_decomposition: definitions.DecompositionInfo,
+        process_props: decomp_defs.ProcessProperties,
+        domain_decomposition: decomp_defs.DecompositionInfo,
     ):
         self._context = make_context(process_props.comm, False)
-        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(process_props)
+        self._domain_id_gen = decomp_defs.DomainDescriptorIdGenerator(process_props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
@@ -160,10 +160,10 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
 
     def _create_domain_descriptor(self, dim: gtx.Dimension) -> DomainDescriptor:
         all_global = self._decomposition_info.global_index(
-            dim, definitions.DecompositionInfo.EntryType.ALL
+            dim, decomp_defs.DecompositionInfo.EntryType.ALL
         )
         local_halo = self._decomposition_info.local_index(
-            dim, definitions.DecompositionInfo.EntryType.HALO
+            dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
@@ -180,7 +180,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
-            horizontal_dim, definitions.DecompositionInfo.EntryType.HALO
+            horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
         halo_generator = HaloGenerator.from_gids(global_halo_idx)
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
@@ -236,7 +236,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
+        stream: decomp_defs.StreamLike = decomp_defs.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
         assert (
@@ -260,7 +260,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
+        stream: decomp_defs.StreamLike | decomp_defs.BlockType = decomp_defs.DEFAULT_STREAM,
     ) -> None:
         # Fall back to the default implementation provided by the protocol.
         super().exchange(dim, *fields, stream=stream)
@@ -319,7 +319,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
 
 
 @dataclass
-class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
+class HaloExchangeWait(decomp_defs.HaloExchangeWaitRuntime):
     buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
     exchange_object: GHexMultiNodeExchange
 
@@ -364,8 +364,8 @@ class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
 
     def __call__(
         self,
-        communication_handle: definitions.ExchangeResult,
-        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
+        communication_handle: decomp_defs.ExchangeResult,
+        stream: decomp_defs.StreamLike | decomp_defs.BlockType = decomp_defs.DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
 
@@ -374,22 +374,22 @@ class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
     __sdfg_signature__ = dace__sdfg_signature__
 
 
-@definitions.create_halo_exchange_wait.register(GHexMultiNodeExchange)
+@decomp_defs.create_halo_exchange_wait.register(GHexMultiNodeExchange)
 def create_multinode_halo_exchange_wait(runtime: GHexMultiNodeExchange) -> HaloExchangeWait:
     return HaloExchangeWait(runtime)
 
 
 @dataclass
-class MultiNodeResult(definitions.ExchangeResult):
+class MultiNodeResult(decomp_defs.ExchangeResult):
     handle: Any
     pattern_refs: Any
 
     def finish(
         self,
-        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
+        stream: decomp_defs.StreamLike | decomp_defs.BlockType = decomp_defs.DEFAULT_STREAM,
     ) -> None:
         """Finish the initiated halo exchange and either block or schedule completion on `stream`."""
-        if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
+        if (not ghex.__config__["gpu"]) or stream is decomp_defs.BLOCK:
             # No GPU support or blocking wait requested -> use normal `wait()`.
             self.handle.wait()
 
@@ -401,10 +401,10 @@ class MultiNodeResult(definitions.ExchangeResult):
         return self.handle.is_ready()
 
 
-@definitions.create_exchange.register(MPICommProcessProperties)
+@decomp_defs.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
-    process_props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
-) -> definitions.ExchangeRuntime:
+    process_props: MPICommProcessProperties, decomp_info: decomp_defs.DecompositionInfo
+) -> decomp_defs.ExchangeRuntime:
     if process_props.comm_size > 1:
         return GHexMultiNodeExchange(process_props, decomp_info)
     else:
@@ -426,13 +426,13 @@ class GlobalReductions(Reductions):
     # receiving Fields as arguments instead of NDArray, such that they get
     # domain info that can be used for masks
 
-    process_props: definitions.ProcessProperties
+    process_props: decomp_defs.ProcessProperties
     _owner_masks: dict[int, data_alloc.NDArray] = dataclasses.field(default_factory=dict)
 
     def __init__(
         self,
-        process_props: definitions.ProcessProperties,
-        decomposition_info: definitions.DecompositionInfo,
+        process_props: decomp_defs.ProcessProperties,
+        decomposition_info: decomp_defs.DecompositionInfo,
     ) -> None:
         self.process_props = process_props
         self._owner_masks = {}
@@ -574,8 +574,8 @@ class GlobalReductions(Reductions):
         )
 
 
-@definitions.create_reduction.register(MPICommProcessProperties)
+@decomp_defs.create_reduction.register(MPICommProcessProperties)
 def create_global_reduction(
-    process_props: MPICommProcessProperties, decomposition_info: definitions.DecompositionInfo
+    process_props: MPICommProcessProperties, decomposition_info: decomp_defs.DecompositionInfo
 ) -> Reductions:
     return GlobalReductions(process_props, decomposition_info)

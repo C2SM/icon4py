@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs, halo
+from icon4py.model.common.decomposition import definitions as decomp_defs, halo
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import parallel_helpers
 from icon4py.model.testing.fixtures import process_props
@@ -49,9 +49,7 @@ def test_element_ownership_is_unique(
     )
 
     decomposition_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
-    owned = decomposition_info.global_index(
-        dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
-    )
+    owned = decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
     _log.info(f"\nrank {process_props.rank} owns {dim} : {owned} ")
     # assert that each cell is only owned by one rank
     comm = process_props.comm
