@@ -11,19 +11,17 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Any, ClassVar, Final, Union
+from typing import Any, Union
 
-import dace  # type: ignore[import-untyped]
 import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
-from icon4py.model.common.orchestration import halo_exchange
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -85,18 +83,6 @@ def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> A
         return MPICommProcessProperties(current_comm)
 
 
-class ParallelLogger(logging.Filter):
-    def __init__(self, process_properties: definitions.ProcessProperties | None = None) -> None:
-        super().__init__()
-        self._rank_info = ""
-        if process_properties and process_properties.comm_size > 1:
-            self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        record.rank = self._rank_info
-        return True
-
-
 @definitions.get_process_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
     s: definitions.MultiNodeRun, comm_id: CommId = None
@@ -122,10 +108,6 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 
 
 class GHexMultiNodeExchange(definitions.ExchangeRuntime):
-    max_num_of_fields_to_communicate_dace: Final[int] = (
-        10  # maximum number of fields to perform halo exchange on (DaCe-related)
-    )
-
     def __init__(
         self,
         process_props: definitions.ProcessProperties,
@@ -148,11 +130,6 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
-
-        # DaCe SDFGConvertible interface
-        self.num_of_halo_tasklets = (
-            0  # Some SDFG variables need to be defined only once (per fused SDFG)
-        )
 
         self._applied_patterns_cache: dict = {}
 
@@ -275,101 +252,10 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         super().exchange(dim, *fields, stream=stream)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
-    # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
-    ) -> dace.sdfg.sdfg.SDFG:
-        # NOTE: Streams are not supported here.
-        if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
-            raise ValueError(
-                f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
-            )
-        if dim is None:
-            raise ValueError("Need to define a dimension.")
-
-        # Build the halo exchange SDFG and return it
-        sdfg = dace.SDFG("_halo_exchange_")
-        state = sdfg.add_state()
-
-        global_buffers = {
-            self.__sdfg_signature__()[0][i]: arg for i, arg in enumerate(args)
-        }  # Field name : Data Descriptor
-
-        halo_exchange.add_halo_tasklet(
-            sdfg,
-            state,
-            global_buffers,
-            self,
-            dim,
-            id(self),
-            full_exchange,
-            self.num_of_halo_tasklets,
-        )
-
-        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-        sdfg.arg_names.extend(list(self.__sdfg_closure__().keys()))
-
-        self.num_of_halo_tasklets += 1
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        # Get the underlying C++ pointers of the GHEX objects and use them in the halo exchange tasklet
-        return {ghex_ptr_name: dace.uintp for ghex_ptr_name in halo_exchange.GHEX_PTR_NAMES}
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        args = [
-            f"field_{i}" for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace)
-        ]
-        return (args, [])
-
-    __sdfg__ = dace__sdfg__
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
-
 
 @dataclass
 class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
-    buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
     exchange_object: GHexMultiNodeExchange
-
-    # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
-    ) -> dace.sdfg.sdfg.SDFG:
-        # Streams are not supported by the orchestrator. This is the reason why they
-        #  do not accept the `stream` argument.
-        sdfg = dace.SDFG("_halo_exchange_wait_")
-        state = sdfg.add_state()
-
-        # The communication handle used in the halo_exchange tasklet is a global variable
-        # ghex::communication_handle<communication_handle_type> h_{id(self.exchange_object)};
-        # Therefore, this tasklet calls the wait() method on the communication handle -disregards any input-
-        tasklet = dace.sdfg.nodes.Tasklet(
-            "_halo_exchange_wait_",
-            inputs=None,
-            outputs=None,
-            code=f"h_{id(self.exchange_object)}.wait();",
-            language=dace.dtypes.Language.CPP,
-            side_effects=False,
-        )
-        state.add_node(tasklet)
-
-        # Dummy input to maintain same interface with non-DaCe branch
-        buffer_name = HaloExchangeWait.buffer_name
-        sdfg.add_scalar(name=buffer_name, dtype=dace.int32)
-        buffer = state.add_read(buffer_name)
-        tasklet.in_connectors["IN_" + buffer_name] = dace.int32.dtype
-        state.add_edge(
-            buffer, None, tasklet, "IN_" + buffer_name, dace.Memlet(buffer_name, subset="0")
-        )
-        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        return {}
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return ([HaloExchangeWait.buffer_name], [])
 
     def __call__(
         self,
@@ -377,10 +263,6 @@ class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
         stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
-
-    __sdfg__ = dace__sdfg__  # type: ignore[assignment]
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
 
 
 @definitions.create_halo_exchange_wait.register(GHexMultiNodeExchange)
@@ -422,7 +304,63 @@ def create_multinode_node_exchange(
 
 @dataclasses.dataclass
 class GlobalReductions(Reductions):
+    """
+    MPI-aware global reductions.
+
+    Owner masks from the decomposition info are stored internally, keyed by the
+    horizontal dimension size (num_cells, num_edges, num_vertices). The correct
+    mask is resolved from buffer.shape[0], ensuring only owned (non-halo)
+    elements participate in the reduction.
+    """
+
+    # TODO (jcanton,msimberg,nfarabullini): the reductions may be better if
+    # receiving Fields as arguments instead of NDArray, such that they get
+    # domain info that can be used for masks
+
     process_props: definitions.ProcessProperties
+    _owner_masks: dict[int, data_alloc.NDArray] = dataclasses.field(default_factory=dict)
+
+    def __init__(
+        self,
+        process_props: definitions.ProcessProperties,
+        decomposition_info: definitions.DecompositionInfo,
+    ) -> None:
+        self.process_props = process_props
+        self._owner_masks = {}
+        for dim in (dims.CellDim, dims.EdgeDim, dims.VertexDim):
+            mask = decomposition_info.owner_mask(dim)
+            size = mask.shape[0]
+            if size in self._owner_masks:
+                raise ValueError(
+                    f"Ambiguous horizontal dimension size {size}: multiple dimensions "
+                    f"have the same local size. Cannot auto-resolve owner mask."
+                )
+            self._owner_masks[size] = mask
+
+    def _prepare_buffer(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
+        if len(buffer.shape) > 0:
+            owner_mask = self._resolve_owner_mask(buffer)
+            return buffer[owner_mask]
+        return buffer
+
+    def _resolve_owner_mask(self, buffer: data_alloc.NDArray) -> data_alloc.NDArray:
+        """Resolve the 1D owner mask for the buffer's first dimension.
+
+        The returned mask is always 1D (num_horizontal,). When used for
+        indexing, NumPy's boolean indexing with a 1D mask on a
+        multi-dimensional array selects along the first axis, so
+        ``buffer[mask]`` works correctly for both 1D buffers of shape
+        ``(num_horizontal,)`` and 2D buffers of shape
+        ``(num_horizontal, K)``.
+        """
+        first_dim_size = buffer.shape[0]
+        if first_dim_size not in self._owner_masks:
+            raise ValueError(
+                f"Cannot resolve owner mask: buffer's first dimension size "
+                f"({first_dim_size}) does not match any known horizontal "
+                f"dimension (known sizes: {list(self._owner_masks.keys())})."
+            )
+        return self._owner_masks[first_dim_size]
 
     @staticmethod
     def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
@@ -470,6 +408,7 @@ class GlobalReductions(Reductions):
         return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
@@ -480,6 +419,7 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
@@ -489,7 +429,12 @@ class GlobalReductions(Reductions):
             array_ns,
         )
 
-    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def sum(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
@@ -499,7 +444,12 @@ class GlobalReductions(Reductions):
             array_ns,
         )
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def mean(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
         global_buffer_size = self._calc_buffer_size(buffer, array_ns)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
@@ -516,5 +466,7 @@ class GlobalReductions(Reductions):
 
 
 @definitions.create_reduction.register(MPICommProcessProperties)
-def create_global_reduction(process_props: MPICommProcessProperties) -> Reductions:
-    return GlobalReductions(process_props)
+def create_global_reduction(
+    process_props: MPICommProcessProperties, decomposition_info: definitions.DecompositionInfo
+) -> Reductions:
+    return GlobalReductions(process_props, decomposition_info)
