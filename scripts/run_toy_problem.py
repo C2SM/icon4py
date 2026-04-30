@@ -41,7 +41,7 @@ def toy_problem(
     # Initialize driver
     icon4py_driver = driver.initialize_driver(
         grid_file_path=grid_file_path,
-        log_level="info",
+        log_level="warning",
         backend_like=driver_utils.get_backend_from_name(icon4py_backend),
         output_path=pathlib.Path("./output"),
     )
