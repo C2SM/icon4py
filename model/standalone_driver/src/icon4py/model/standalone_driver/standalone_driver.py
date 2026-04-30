@@ -49,6 +49,7 @@ class Icon4pyDriver:
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
+        process_props: decomposition_defs.ProcessProperties,
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
@@ -61,6 +62,7 @@ class Icon4pyDriver:
         self.config = config
         self.backend = backend
         self.grid = grid
+        self.process_props = process_props
         self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
@@ -691,6 +693,7 @@ def initialize_driver(
         config=driver_config,
         backend=backend,
         grid=grid_manager.grid,
+        process_props=process_props,
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
