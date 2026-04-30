@@ -1482,8 +1482,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.9"
-source = { registry = "https://pypi.org/simple" }
+version = "1.1.9+unknown.version.details"
+source = { git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning#75e062ace91b064a6331a99a44ced703f0947a83" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1513,10 +1513,6 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8d/5c/245aa4c321d4e0e6e3c707feeca7fa6e18561bdcf985572f3a56b4816532/gt4py-1.1.9.tar.gz", hash = "sha256:0331966d2df32e6f129d472e0165748d366ab01b03cce10b48d34c0c0ec99655", size = 823365, upload-time = "2026-04-01T12:43:14.601Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/cf/8ab8cb704761f0fc7b1f9a1954de0b93517ac7a5b95faf2bf21557db78ef/gt4py-1.1.9-py3-none-any.whl", hash = "sha256:f88a9323ae6ec3c8e90fb514d17ad39a469c845eb5e888771170904508a705aa", size = 1034973, upload-time = "2026-04-01T12:43:12.927Z" },
 ]
 
 [package.optional-dependencies]
@@ -1855,7 +1851,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1872,7 +1868,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1889,7 +1885,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1906,7 +1902,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1924,7 +1920,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1964,9 +1960,9 @@ requires-dist = [
     { name = "cffi", specifier = ">=1.5" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "gt4py", specifier = "==1.1.9" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
@@ -2043,10 +2039,10 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
-    { name = "gt4py", specifier = "==1.1.9" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-    { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
-    { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
+    { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
+    { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2083,7 +2079,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2111,7 +2107,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2140,7 +2136,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2186,7 +2182,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "configargparse", specifier = ">=1.7.1" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.1.9" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=compile_time_domain_enable_warning" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
     { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
