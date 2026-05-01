@@ -12,11 +12,13 @@ from typing import Annotated, Any
 
 import numpy as np
 import typer
-from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjustment import (
     saturation_adjustment,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjustment_numpy import (
+    saturation_adjustment_numpy,
 )
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
@@ -25,13 +27,11 @@ from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_utils, standalone_driver as driver
 from icon4py.model.standalone_driver.testcases import initial_condition
-from icon4py.model.testing import config, definitions as test_defs, grid_utils, parallel_helpers
-from model.atmosphere.subgrid_scale_physics.muphys.tests.muphys.stencil_tests.test_saturation_adjustment import (
-    saturation_adjustment_numpy,
-)
+from icon4py.model.testing import config, definitions as test_defs, grid_utils
 
 
 config.DALLCLOSE_PRINT_INSTEAD_OF_FAIL = True
+config.DRIVER_LOGGING_LEVEL = "warning"
 
 log = logging.getLogger(__file__)
 
@@ -132,12 +132,13 @@ def verify_field(
     if process_props.comm_size > 1:
         # barrier to ensure that all ranks have printed
         process_props.comm.barrier()
-    print( # print instead of log so all ranks print to stdout
+    print(  # print instead of log so all ranks print to stdout
         f"{color}\trank {process_props.rank}/{process_props.comm_size}: max diff {max_diff}\033[0m"
     )
     if process_props.comm_size > 1:
         # barrier to ensure that all ranks have printed
         process_props.comm.barrier()
+
 
 if __name__ == "__main__":
     typer.run(toy_problem)

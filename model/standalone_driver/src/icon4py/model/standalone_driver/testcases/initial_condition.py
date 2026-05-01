@@ -402,16 +402,19 @@ def toy_problem(
     RHO0 = 1.0
     # Tetens' formula
     es = 610.78 * xp.exp(17.27 * (T0 - 273.15) / (T0 - 35.86))
-    qv0 = 0.622 * es / (RHO0 * 287.04 * T0 - es) # = 0.0178
+    qv0 = 0.622 * es / (RHO0 * 287.04 * T0 - es)  # = 0.0178
 
-    temperature_profile = T0 + ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(
-        wavelength_y * cell_lat
+    temperature_profile = (
+        T0 + ampl_x * xp.sin(wavelength_x * cell_lon) + ampl_y * xp.sin(wavelength_y * cell_lat)
     )
-    qv_profile = 2*qv0 * 1/2 * (1 + xp.sin(wavelength_x * cell_lon) + xp.sin(wavelength_y * cell_lat) )
+    qv_profile = (
+        2 * qv0 * 1 / 2 * (1 + xp.sin(wavelength_x * cell_lon) + xp.sin(wavelength_y * cell_lat))
+    )
 
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     diagnostic_state.temperature.ndarray[:, :] = temperature_profile[:, xp.newaxis]
     prognostic_state_now.tracer[prognostics.QV].ndarray[:, :] = qv_profile[:, xp.newaxis]
+    prognostic_state_now.rho.ndarray[:, :] = RHO0
 
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
