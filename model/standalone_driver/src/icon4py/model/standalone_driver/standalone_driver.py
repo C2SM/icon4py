@@ -648,10 +648,7 @@ def initialize_driver(
 
     log.info("creating the decomposition info")
     _t0 = time.perf_counter()
-    decomposition_info = grid_manager.create_decomposition_info(
-        grid_manager=grid_manager,
-        allocator=allocator,
-    )
+    decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
     log.warning(f"TIMER: creating decomposition info completed in {time.perf_counter() - _t0:.3f}s")
     global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
