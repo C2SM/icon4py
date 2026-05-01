@@ -295,18 +295,12 @@ class Icon4pyDriver:
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
-<<<<<<< HEAD
-        # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = ta.wpfloat(solve_nonhydro_diagnostic_state.max_vertical_cfl[()])
-
-=======
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(
                 solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
             ),
             array_ns=self._xp,
         )
->>>>>>> static_field_vectorization
         if (
             global_max_vertical_cfl
             > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
@@ -653,19 +647,14 @@ def initialize_driver(
     log.warning(f"TIMER: initializing grid manager completed in {time.perf_counter() - _t0:.3f}s")
 
     log.info("creating the decomposition info")
-<<<<<<< HEAD
     _t0 = time.perf_counter()
-    decomposition_info = driver_utils.create_decomposition_info(
+    decomposition_info = grid_manager.create_decomposition_info(
         grid_manager=grid_manager,
         allocator=allocator,
     )
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
     log.warning(f"TIMER: creating decomposition info completed in {time.perf_counter() - _t0:.3f}s")
-=======
-    decomposition_info = grid_manager.decomposition_info
-    exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
     global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
->>>>>>> static_field_vectorization
 
     log.info("initializing the vertical grid")
     _t0 = time.perf_counter()

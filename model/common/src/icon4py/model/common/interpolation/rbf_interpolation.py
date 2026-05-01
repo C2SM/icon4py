@@ -437,39 +437,16 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Solve linear system for coefficients.
-<<<<<<< HEAD
-    # group_idx / valid_cols / n_valid stay as numpy arrays (CPU) because they
-    # are only used for Python control flow and fancy indexing; both numpy and
-    # cupy accept numpy integer index arrays.  The heavy data (z_rbfmat, rhs,
-    # rbf_vec_coeff) remain on the device selected by array_ns.
-=======
->>>>>>> static_field_vectorization
     rbf_vec_coeff = [
         array_ns.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
         for _ in range(num_zonal_meridional_components)
     ]
-<<<<<<< HEAD
-    rbf_offset_np = data_alloc.as_numpy(rbf_offset)
-=======
->>>>>>> static_field_vectorization
     # Batch solve by grouping elements with the same number of valid neighbors.
     # In ICON grids, valid entries in connectivity tables are contiguous from the start.
     n_valid = (rbf_offset >= 0).sum(axis=1)
     for nv in array_ns.unique(n_valid):
         if nv == 0:
             continue
-<<<<<<< HEAD
-        group_idx = np.where(n_valid == nv)[0]
-        valid_cols = np.arange(nv)
-        mat_batch = z_rbfmat[np.ix_(group_idx, valid_cols, valid_cols)]
-        for j in range(num_zonal_meridional_components):
-            rhs_batch = rhs[j][np.ix_(group_idx, valid_cols)]
-            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
-            # rhs_batch (B, nv) -> sol (B, nv).  Works for both numpy and cupy.
-            # The RBF matrix is symmetric but NOT necessarily positive definite
-            # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
-            sol = array_ns.linalg.solve(mat_batch, rhs_batch)
-=======
         group_idx = array_ns.where(n_valid == nv)[0]
         valid_cols = array_ns.arange(nv)
         mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
@@ -484,7 +461,6 @@ def _compute_rbf_interpolation_coeffs(
             # The RBF matrix is symmetric but NOT necessarily positive definite
             # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
             sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
->>>>>>> static_field_vectorization
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
     rbf_vec_coeff = tuple(rbf_vec_coeff)
