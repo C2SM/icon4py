@@ -295,18 +295,12 @@ class Icon4pyDriver:
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
-<<<<<<< HEAD
-        # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = ta.wpfloat(solve_nonhydro_diagnostic_state.max_vertical_cfl[()])
-
-=======
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(
                 solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
             ),
             array_ns=self._xp,
         )
->>>>>>> main
         if (
             global_max_vertical_cfl
             > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
