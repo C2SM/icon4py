@@ -241,7 +241,7 @@ def _compute_distance_vector_matrix(
         case base_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2) noqa: ERA001
-            diff = np.abs(v1 - v2)
+            diff = array_ns.abs(v1 - v2)
             domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
             domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
@@ -403,7 +403,9 @@ def _compute_rbf_interpolation_coeffs(
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
         nxnx.append(
-            array_ns.matmul(z_nx[i][:, array_ns.newaxis], edge_normal.transpose(0, 2, 1)).squeeze()
+            array_ns.matmul(
+                z_nx[i][:, array_ns.newaxis, :], edge_normal.transpose(0, 2, 1)
+            ).squeeze()
         )
         rhs.append(rbf_val * nxnx[i])
         assert rhs[i].shape == rbf_offset.shape
@@ -435,21 +437,28 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Solve linear system for coefficients.
+<<<<<<< HEAD
     # group_idx / valid_cols / n_valid stay as numpy arrays (CPU) because they
     # are only used for Python control flow and fancy indexing; both numpy and
     # cupy accept numpy integer index arrays.  The heavy data (z_rbfmat, rhs,
     # rbf_vec_coeff) remain on the device selected by array_ns.
+=======
+>>>>>>> static_field_vectorization
     rbf_vec_coeff = [
         array_ns.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
         for _ in range(num_zonal_meridional_components)
     ]
+<<<<<<< HEAD
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
+=======
+>>>>>>> static_field_vectorization
     # Batch solve by grouping elements with the same number of valid neighbors.
     # In ICON grids, valid entries in connectivity tables are contiguous from the start.
-    n_valid = (rbf_offset_np >= 0).sum(axis=1)
-    for nv in np.unique(n_valid):
+    n_valid = (rbf_offset >= 0).sum(axis=1)
+    for nv in array_ns.unique(n_valid):
         if nv == 0:
             continue
+<<<<<<< HEAD
         group_idx = np.where(n_valid == nv)[0]
         valid_cols = np.arange(nv)
         mat_batch = z_rbfmat[np.ix_(group_idx, valid_cols, valid_cols)]
@@ -460,6 +469,22 @@ def _compute_rbf_interpolation_coeffs(
             # The RBF matrix is symmetric but NOT necessarily positive definite
             # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
             sol = array_ns.linalg.solve(mat_batch, rhs_batch)
+=======
+        group_idx = array_ns.where(n_valid == nv)[0]
+        valid_cols = array_ns.arange(nv)
+        mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
+        for j in range(num_zonal_meridional_components):
+            rhs_batch = rhs[j][array_ns.ix_(group_idx, valid_cols)]
+            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
+            # rhs_batch (B, nv, 1). The solution of mat_batch x = rhs_batch is sol.
+            # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
+            # batched column vector (core dims (nv,1)) rather than a matrix
+            # (core dims (B, nv)), which would mismatch m=nv from the LHS.
+            # This problem is well explained in https://github.com/numpy/numpy/issues/26598
+            # The RBF matrix is symmetric but NOT necessarily positive definite
+            # (z_nxprod = n_i·n_j can be negative), so Cholesky would be wrong.
+            sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
+>>>>>>> static_field_vectorization
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
     rbf_vec_coeff = tuple(rbf_vec_coeff)

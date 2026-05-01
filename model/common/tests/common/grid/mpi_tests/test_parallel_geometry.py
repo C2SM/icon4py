@@ -212,57 +212,18 @@ def test_cartesian_geometry_attr_no_halos(
     "attr_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
 )
 def test_distributed_geometry_mean_fields(
-    backend: gtx_typing.Backend,
-    grid_savepoint: sb.IconGridSavepoint,
+    experiment: test_defs.Experiment,
     process_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attr_name: str,
 ) -> None:
-    if process_props.comm_size > 1:
-        pytest.skip("Values not serialized for multiple processors")
+    if experiment.grid.params.limited_area:
+        pytest.xfail("Limited-area grids not yet supported")
 
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    assert hasattr(experiment, "name")
     value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
     value = geometry_from_savepoint.get(attr_name)
     assert value == pytest.approx(value_ref)
-
-
-@pytest.mark.datatest
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_mean_cell_area(
-    backend: gtx_typing.Backend,
-    grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
-    geometry_from_savepoint: geometry.GridGeometry,
-) -> None:
-    parallel_helpers.check_comm_size(process_props)
-    parallel_helpers.log_process_properties(process_props)
-    parallel_helpers.log_local_field_size(decomposition_info)
-    value_ref = grid_savepoint.mean_cell_area()
-    value = geometry_from_savepoint.get("mean_cell_area")
-    assert value == pytest.approx(value_ref, rel=1e-1)
-
-
-@pytest.mark.datatest
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_mean_dual_edge_length(
-    backend: gtx_typing.Backend,
-    grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
-    geometry_from_savepoint: geometry.GridGeometry,
-) -> None:
-    parallel_helpers.check_comm_size(process_props)
-    parallel_helpers.log_process_properties(process_props)
-    parallel_helpers.log_local_field_size(decomposition_info)
-
-    value_ref = np.mean(grid_savepoint.dual_edge_length().asnumpy())
-    value = geometry_from_savepoint.get("mean_dual_edge_length")
-    assert value == pytest.approx(value_ref, rel=1e-1)
