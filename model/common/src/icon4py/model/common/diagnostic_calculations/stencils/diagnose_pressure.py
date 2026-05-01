@@ -5,20 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
-
 import gt4py.next as gtx
 from gt4py.next import exp, sqrt
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
-
-
-physics_constants: Final = phy_const.PhysicsConstants()
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 
 
 @gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
@@ -29,9 +20,9 @@ def _scan_pressure(
     surface_pressure: ta.wpfloat,
 ):
     pressure_interface = (
-        surface_pressure * exp(-physics_constants.grav_o_rd * ddqz_z_full / virtual_temperature)
+        surface_pressure * exp(-PhysicsConstants.grav_o_rd * ddqz_z_full / virtual_temperature)
         if state[2]
-        else state[1] * exp(-physics_constants.grav_o_rd * ddqz_z_full / virtual_temperature)
+        else state[1] * exp(-PhysicsConstants.grav_o_rd * ddqz_z_full / virtual_temperature)
     )
     pressure = (
         sqrt(surface_pressure * pressure_interface)
