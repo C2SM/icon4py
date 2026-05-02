@@ -119,7 +119,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # predefined constants used for Jablonowski-Williamson initial condition
     p_sfc = ta.wpfloat("100000.0")  # surface pressure (Pa)
     jw_baroclinic_amplitude = ta.wpfloat(
-        "0.0"
+        "1.0"
     )  # if doing baroclinic wave test, please set it to a nonzero value
     jw_u0 = ta.wpfloat("35.0")  # maximum zonal wind speed (m/s)
     jw_temp0 = ta.wpfloat("288.0")

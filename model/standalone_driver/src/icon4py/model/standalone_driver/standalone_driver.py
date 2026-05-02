@@ -307,7 +307,7 @@ class Icon4pyDriver:
         }
         gathered_model_data = {}
         for k, v in distributed_model_data.items():
-            v_numpy_array = v.as_numpy()
+            v_numpy_array = v.asnumpy()
             v_dim = v.domain.dims[0]
             owned_entries = v_numpy_array[
                 data_alloc.as_numpy(
@@ -322,10 +322,10 @@ class Icon4pyDriver:
 
             if self.processor_props.rank == 0:
                 assert np.all(
-                    gathered_sizes == self.global_index_sizes
-                ), f"gathered field sizes do not match:  {v_dim} {gathered_sizes} - {self.global_index_sizes}"
+                    gathered_sizes == self.global_index_sizes[v_dim]
+                ), f"gathered field sizes do not match:  {v_dim} {gathered_sizes} - {self.global_index_sizes[v_dim]}"
                 sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
-                sorted_[self.gathered_global_indices] = gathered_field
+                sorted_[self.gathered_global_indices[v_dim]] = gathered_field
                 gathered_model_data[k] = sorted_
         return gathered_model_data
 
@@ -989,6 +989,7 @@ def initialize_driver(
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
         processor_props=process_props,
+        exchange=exchange,
         global_reductions=global_reductions,
     )
 
