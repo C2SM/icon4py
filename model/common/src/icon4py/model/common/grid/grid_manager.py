@@ -604,7 +604,7 @@ def _construct_diamond_vertices(
 
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
-
+    
     Args:
         e2v: ndarray containing the connectivity table for edge-to-vertex
         c2v: ndarray containing the connectivity table for cell-to-vertex
@@ -612,15 +612,20 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
-    dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
-    expanded = dummy_c2v[e2c, :]
-    sh = expanded.shape
-    flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = array_ns.zeros_like(e2v)
-    # TODO(halungge): vectorize speed this up?
-    for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
-    return array_ns.hstack((e2v, far_indices))
+    e2c_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)[e2c, :]
+    # `flat` includes duplicated e2v vertices (v1, v3), shape (n_edges, 6).
+    flat = e2c_c2v.reshape(e2c_c2v.shape[0], -1)
+
+    far_indices_mask = (flat != e2v[:, 0, array_ns.newaxis]) & (flat != e2v[:, 1, array_ns.newaxis])
+
+    neighbor_idx = array_ns.arange(flat.shape[1], dtype=gtx.int32)
+    # identify v0 and v2 positions with the mask, and replace v1 and v3 positions with 6
+    far_indices_pos = array_ns.where(
+        far_indices_mask, neighbor_idx, neighbor_idx.shape[0]
+    )  # (n_edges, 6)
+    far_indices_pos = array_ns.sort(far_indices_pos, axis=1)[:, :2]
+    e2v_far = array_ns.take_along_axis(flat, far_indices_pos, axis=1)
+    return array_ns.hstack((e2v, e2v_far))
 
 
 def _determine_center_position(
