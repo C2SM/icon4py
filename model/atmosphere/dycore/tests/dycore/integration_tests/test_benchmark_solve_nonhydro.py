@@ -52,8 +52,7 @@ def solve_nonhydro(
     mesh = geometry_field_source.grid
 
     config = solve_nh.NonHydrostaticConfig(
-        rayleigh_coeff=0.1,
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
     )

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.decomposition.definitions import single_node_default
+from icon4py.model.common.decomposition.definitions import single_node_exchange
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_meta,
@@ -36,7 +36,7 @@ from icon4py.model.testing.fixtures import backend, data_provider, decomposition
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     interpolation_savepoint,
-    processor_props,
+    process_props,
 )
 
 from .test_rbf_interpolation import RBF_TOLERANCES

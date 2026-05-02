@@ -109,9 +109,9 @@ def test_verify_velocity_init_against_savepoint(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
-    assert velocity_advection.cfl_w_limit == 0.65
-    assert velocity_advection.scalfac_exdiff == 0.05
-    assert test_utils.dallclose(velocity_advection.vertical_cfl.asnumpy(), 0.0)
+    assert velocity_advection._cfl_w_limit == 0.65
+    assert velocity_advection._scalfac_exdiff == 0.05
+    assert test_utils.dallclose(velocity_advection._vertical_cfl.asnumpy(), 0.0)
 
 
 @pytest.mark.embedded_static_args

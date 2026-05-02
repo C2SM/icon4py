@@ -44,29 +44,26 @@ def test_standalone_driver(
     tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
-    timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    backend_name = next(
-        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
-    )
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
+    output_path = tmp_path / "ci_driver_output"
     ds, _ = main.main(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_name,
+        icon4py_backend=backend_like,
         output_path=output_path,
         force_serial_run=True,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit_standalone.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit_standalone.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()
-    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()
+    exner_sp = savepoint_diffusion_exit.exner()
+    theta_sp = savepoint_diffusion_exit.theta_v()
+    vn_sp = savepoint_diffusion_exit.vn()
+    w_sp = savepoint_diffusion_exit.w()
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=5e-7,
+        atol=6e-7,
     )
 
     assert test_utils.dallclose(

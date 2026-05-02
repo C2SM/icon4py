@@ -19,7 +19,7 @@ from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,
-    processor_props,
+    process_props,
 )
 
 
@@ -32,14 +32,11 @@ def test_standalone_driver_initial_condition(
     experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
 ) -> None:
-    backend_name = next(
-        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
-    )
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
+        output_path=tmp_path / "ci_driver_output",
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
-        backend_name=backend_name,
+        backend_like=backend_like,
     )
 
     ds = initial_condition.jablonowski_williamson(

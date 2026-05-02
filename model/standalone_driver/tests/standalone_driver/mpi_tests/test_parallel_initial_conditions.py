@@ -11,12 +11,12 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import driver_states, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
-from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
-from icon4py.model.testing.fixtures.datatest import backend_like, experiment, processor_props
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
+from icon4py.model.testing.fixtures.datatest import backend_like, experiment, process_props
 
 
 if mpi_decomposition.mpi4py is None:
@@ -34,31 +34,50 @@ _log = logging.getLogger(__file__)
     ],
 )
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
-    processor_props: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
+    # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
+    # distributed GPU, u,v do not because they are computed with RBF
 
-    backend_name = "embedded"  # shut up pyright/mypy
-    for k, v in model_backends.BACKENDS.items():
-        if backend_like == v:
-            backend_name = k
+    if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
+        model_options.customize_backend(program=None, backend=backend_like)
+    ):
+        # NOTE: we use gtfn_cpu to check that single and multirank give bitwise
+        # identical results, as gtfn_cpu is deterministic. In this case we can
+        # set atol = 0.0 and check for bitwise identical results. In theory
+        # dace_cpu should also be deterministic, but it results in 1.8e-14
+        # delta on vn and 4.3e-19 on w on the initial condition. We haven't
+        # investigated this yet.
+        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
+        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
+        # 0.0 is too strict.
+        rtol = 1e-15
+        atol = 0.0
+    else:
+        rtol = 0.0
+        atol = 2e-11
+
+    _log.info(
+        f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
+    )
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+            output_path=tmp_path / "ci_driver_output_for_backend_serial_rank0",
             grid_file_path=grid_file_path,
             log_level="info",
-            backend_name=backend_name,
+            backend_like=backend_like,
             force_serial_run=True,
         )
     )
@@ -78,10 +97,10 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+            output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
             grid_file_path=grid_file_path,
             log_level="info",
-            backend_name=backend_name,
+            backend_like=backend_like,
         )
     )
 
@@ -98,51 +117,25 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         exchange=multi_rank_icon4py_driver.exchange,
     )
 
-    # TODO (jcanton/msimberg): unify the two checks below and remove code duplication
-    fields = ["w", "vn", "exner", "theta_v", "rho"]
-    serial_reference_fields: dict[str, object] = {
-        field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
-        for field_name in fields
-    }
+    fields_to_check: list[tuple[str, object, object]] = [
+        (name, single_rank_ds.prognostics.current, multi_rank_ds.prognostics.current)
+        for name in ("vn", "w", "exner", "theta_v", "rho")
+    ] + [(name, single_rank_ds.diagnostic, multi_rank_ds.diagnostic) for name in ("u", "v")]
 
-    for field_name in fields:
+    for field_name, serial_source, local_source in fields_to_check:
         print(f"verifying field {field_name}")
-        global_reference_field = processor_props.comm.bcast(
-            serial_reference_fields.get(field_name),
+        global_reference_field = process_props.comm.bcast(
+            getattr(serial_source, field_name).asnumpy(),
             root=0,
         )
-        local_field = getattr(multi_rank_ds.prognostics.current, field_name)
-        dim = local_field.domain.dims[0]
+        local_field = getattr(local_source, field_name)
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_icon4py_driver.decomposition_info,
-            processor_props=processor_props,
-            dim=dim,
+            process_props=process_props,
+            dim=local_field.domain.dims[0],
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
-            atol=0.0,
+            atol=atol,
+            rtol=rtol,
         )
-
-    fields = ["u", "v"]
-    serial_reference_fields: dict[str, object] = {
-        field_name: getattr(single_rank_ds.diagnostic, field_name).asnumpy()
-        for field_name in fields
-    }
-    for field_name in fields:
-        print(f"verifying diagnostic field {field_name}")
-        global_reference_field = processor_props.comm.bcast(
-            serial_reference_fields.get(field_name),
-            root=0,
-        )
-        local_field = getattr(multi_rank_ds.diagnostic, field_name)
-        dim = local_field.domain.dims[0]
-        parallel_helpers.check_local_global_field(
-            decomposition_info=multi_rank_icon4py_driver.decomposition_info,
-            processor_props=processor_props,
-            dim=dim,
-            global_reference_field=global_reference_field,
-            local_field=local_field.asnumpy(),
-            check_halos=True,
-            atol=0.0,
-        )
-

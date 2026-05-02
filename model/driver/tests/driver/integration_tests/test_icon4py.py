@@ -113,7 +113,7 @@ def test_run_timeloop_single_step(
     damping_height: float,
     ndyn_substeps: int,
     timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
-    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
     savepoint_velocity_init: sb.IconVelocityInitSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
@@ -355,10 +355,10 @@ def test_run_timeloop_single_step(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit.vn()
-    w_sp = timeloop_diffusion_savepoint_exit.w()
+    exner_sp = savepoint_diffusion_exit.exner()
+    theta_sp = savepoint_diffusion_exit.theta_v()
+    vn_sp = savepoint_diffusion_exit.vn()
+    w_sp = savepoint_diffusion_exit.w()
 
     assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
@@ -403,7 +403,7 @@ def test_run_timeloop_single_step(
 def test_driver(
     experiment,
     experiment_type,
-    processor_props,
+    process_props,
     *,
     data_provider,
     backend_like,
@@ -414,7 +414,7 @@ def test_driver(
     TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
     """
     data_path = dt_utils.get_datapath_for_experiment(
-        processor_props=processor_props,
+        process_props=process_props,
         experiment=experiment,
     )
     gm = grid_utils.get_grid_manager_from_experiment(

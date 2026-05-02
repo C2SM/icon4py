@@ -33,7 +33,6 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -48,6 +47,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.testing import config as testing_config
 
 
 log = logging.getLogger(__name__)
@@ -66,24 +66,22 @@ def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
-    parallel_props: decomposition_defs.ProcessProperties,
-    global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
+    process_props: decomposition_defs.ProcessProperties,
 ) -> gm.GridManager:
     decomposer = (
-        decomp.MetisDecomposer()
-        if not parallel_props.is_single_rank()
-        else decomp.SingleNodeDecomposer()
+        decomp.SingleNodeDecomposer()
+        if process_props.is_single_rank()
+        else decomp.MetisDecomposer()
     )
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
         offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
-        global_reductions=global_reductions,
     )
     grid_manager(
         allocator=allocator,
         keep_skip_values=True,
-        run_properties=parallel_props,
+        process_props=process_props,
         decomposer=decomposer,
     )
 
@@ -199,7 +197,7 @@ def initialize_granules(
         primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
         primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
         dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
         dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
         primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
@@ -476,9 +474,8 @@ def display_driver_setup_in_log_file(
 
     log.info("==== Vertical Grid Parameters ====")
     log.info(vertical_params)
-    consts = constants.PhysicsConstants()
     log.info("==== Physical Constants ====")
-    for name, value in consts.__class__.__dict__.items():
+    for name, value in constants.PhysicsConstants.__class__.__dict__.items():
         if name.startswith("_") or callable(value):
             continue
         log.info(f"{name:30s}: {value}")
@@ -530,7 +527,8 @@ def make_handler(
 
 def configure_logging(
     logging_level: str,
-    processor_procs: decomposition_defs.ProcessProperties | None = None,
+    print_distributed_debug_msg: bool,
+    process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
@@ -541,7 +539,7 @@ def configure_logging(
 
     Args:
         logging_level: log level
-        processor_procs: ProcessProperties
+        process_props: ProcessProperties
 
     """
     if logging_level.lower() not in _LOGGING_LEVELS:
@@ -551,13 +549,14 @@ def configure_logging(
 
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
 
-    # TODO(OngChia): modify here when single_dispatch is ready
-    log_filter = mpi_decomp.ParallelLogger(processor_procs)
+    log_filter = decomposition_defs.ParallelLogger(
+        process_props, print_distributed_debug_msg=print_distributed_debug_msg
+    )
     formatter = _InfoFormatter(
         style="{",
-        default_fmt="{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
+        default_fmt="{rank_info_str} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
         info_fmt="{message}",
-        defaults={"rank": None},
+        defaults={"rank_info_str": ""},
     )
     handler = make_handler(
         logging_level=logging.DEBUG,
@@ -573,7 +572,10 @@ def configure_logging(
     )
     driver_module_name = __name__[: __name__.rindex(".")]
     logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
-    logging.getLogger(driver_module_name).setLevel(logging.DEBUG)
+    # TODO (ongchia): not ideal to import testing_config.DRIVER_LOGGING_LEVEL, waiting for proper logging config
+    logging.getLogger(driver_module_name).setLevel(
+        _LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL]
+    )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
     logging.getLogger("blib2to3").setLevel(logging.WARNING)
@@ -582,8 +584,10 @@ def configure_logging(
 
 
 def get_backend_from_name(
-    backend_name: str | model_backends.BackendLike | None,
+    backend_name: str | model_backends.BackendLike,
 ) -> model_backends.BackendLike:
+    if not isinstance(backend_name, str):
+        return backend_name
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
@@ -602,7 +606,9 @@ def gather_field(field: np.ndarray, props: decomposition_defs.ProcessProperties)
         return field.shape[0], field
     else:
         constant_dims = tuple(field.shape[1:])
-        log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+        log.info(
+            f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}"
+        )
         # Because of sparse indexing the field may have a non-contigous layout,
         # which Gatherv doesn't support. Make sure the field is contiguous.
         field = np.ascontiguousarray(field)

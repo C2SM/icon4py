@@ -58,7 +58,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
-    exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.SingleNodeExchange,
+    exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.single_node_exchange,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -85,11 +85,18 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exner_ref_mc = metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray
     d_exner_dz_ref_ic = metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
     geopot = phy_const.GRAV * metrics_field_source.get(metrics_attributes.Z_MC).ndarray
+    z_ifc = metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
 
     cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
     edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray
     edge_lon = geometry_field_source.get(geometry_meta.EDGE_LON).ndarray
     primal_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_U).ndarray
+    inv_dual_edge_length = geometry_field_source.get(
+        f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    ).ndarray
+    edge_cell_distance = geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray
+    primal_edge_length = geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray
+    cell_area = geometry_field_source.get(geometry_meta.CELL_AREA).ndarray
 
     cell_2_edge_coeff = interpolation_field_source.get(interpolation_attributes.C_LIN_E)
     rbf_vec_coeff_c1 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1)
@@ -242,7 +249,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(eta_v_at_edge, dim=dims.EdgeDim)
+    exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
@@ -271,19 +278,17 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
-        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
-        inv_dual_edge_length=geometry_field_source.get(
-            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-        ).ndarray,
-        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
-        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
-        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+        z_ifc=z_ifc,
+        inv_dual_edge_length=inv_dual_edge_length,
+        edge_cell_distance=edge_cell_distance,
+        primal_edge_length=primal_edge_length,
+        cell_area=cell_area,
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
         array_ns=xp,
     )
-    exchange(prognostic_state_now.w, dim=dims.CellDim)
+    exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
@@ -320,8 +325,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(diagnostic_state.u, dim=dims.CellDim)
-    exchange(diagnostic_state.v, dim=dims.CellDim)
+    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
 
     log.info("U, V computation completed.")
 

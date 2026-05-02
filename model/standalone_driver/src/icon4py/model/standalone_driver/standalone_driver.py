@@ -81,6 +81,7 @@ class Icon4pyDriver:
         tracer_advection_granule: advection.Advection,
         processor_props: decomposition_defs.ProcessProperties,
         exchange: decomposition_defs.ExchangeRuntime,
+        global_reductions: decomposition_defs.Reductions,
     ):
         self.config = config
         self.backend = backend
@@ -97,17 +98,18 @@ class Icon4pyDriver:
         )
         self.processor_props = processor_props
         self.exchange = exchange
+        self.global_reductions = global_reductions
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
             self.static_field_factories.metrics_field_source._vertical_grid,
             self.config,
         )
-        
-        self._compute_global_index_mapping()        
-            
+
+        self._compute_global_index_mapping()
+
         self.setup_diagnostic_stencils()
-        
+
         self.tracer_state = tracers.TracerState(
             qv=data_alloc.zero_field(
                 self.grid,
@@ -157,14 +159,16 @@ class Icon4pyDriver:
         self.global_index_sizes, self.gathered_global_indices = {}, {}
         for dim in (dims.CellDim, dims.EdgeDim):
             index_sizes, gathered_indices = driver_utils.gather_field(
-                    data_alloc.as_numpy(
-                        self.decomposition_info.global_index(dim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
-                    ),
-                    self.processor_props,
-                )
+                data_alloc.as_numpy(
+                    self.decomposition_info.global_index(
+                        dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+                    )
+                ),
+                self.processor_props,
+            )
             self.global_index_sizes[dim] = index_sizes
             self.gathered_global_indices[dim] = gathered_indices
-    
+
     def setup_diagnostic_stencils(self):
         cell_domain = h_grid.domain(dims.CellDim)
 
@@ -184,12 +188,14 @@ class Icon4pyDriver:
                 "vertical_end": gtx.int32(self.grid.num_levels),
             },
         )
-        
+
         self._diagnose_pressure = setup_program(
             backend=self.backend,
             program=diagnose_pressure,
             constant_args={
-                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(
+                    metrics_attr.DDQZ_Z_FULL
+                ),
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_local,
@@ -206,7 +212,9 @@ class Icon4pyDriver:
             backend=self.backend,
             program=diagnose_surface_pressure,
             constant_args={
-                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL),
+                "ddqz_z_full": self.static_field_factories.metrics_field_source.get(
+                    metrics_attr.DDQZ_Z_FULL
+                ),
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_local,
@@ -214,17 +222,21 @@ class Icon4pyDriver:
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(self.grid.num_levels),
-                "vertical_end": gtx.int32(self.grid.num_levels+1),
+                "vertical_end": gtx.int32(self.grid.num_levels + 1),
             },
             offset_provider=self.grid.connectivities,
         )
-        
+
         self._diagnose_uv = setup_program(
             backend=self.backend,
             program=edge_2_cell_vector_rbf_interpolation,
             constant_args={
-                "ptr_coeff_1": self.static_field_factories.interpolation_field_source.get(intp_attr.RBF_VEC_COEFF_C1),
-                "ptr_coeff_2": self.static_field_factories.interpolation_field_source.get(intp_attr.RBF_VEC_COEFF_C2),
+                "ptr_coeff_1": self.static_field_factories.interpolation_field_source.get(
+                    intp_attr.RBF_VEC_COEFF_C1
+                ),
+                "ptr_coeff_2": self.static_field_factories.interpolation_field_source.get(
+                    intp_attr.RBF_VEC_COEFF_C2
+                ),
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral,
@@ -299,15 +311,19 @@ class Icon4pyDriver:
             v_dim = v.domain.dims[0]
             owned_entries = v_numpy_array[
                 data_alloc.as_numpy(
-                    self.decomposition_info.local_index(v_dim, decomposition_defs.DecompositionInfo.EntryType.OWNED)
+                    self.decomposition_info.local_index(
+                        v_dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+                    )
                 )
             ]
-            gathered_sizes, gathered_field = driver_utils.gather_field(owned_entries, self.processor_props)
+            gathered_sizes, gathered_field = driver_utils.gather_field(
+                owned_entries, self.processor_props
+            )
 
             if self.processor_props.rank == 0:
-                assert np.all(gathered_sizes == self.global_index_sizes), (
-                    f"gathered field sizes do not match:  {v_dim} {gathered_sizes} - {self.global_index_sizes}"
-                )
+                assert np.all(
+                    gathered_sizes == self.global_index_sizes
+                ), f"gathered field sizes do not match:  {v_dim} {gathered_sizes} - {self.global_index_sizes}"
                 sorted_ = np.zeros(gathered_field.shape, dtype=gtx.float64)
                 sorted_[self.gathered_global_indices] = gathered_field
                 gathered_model_data[k] = sorted_
@@ -354,7 +370,13 @@ class Icon4pyDriver:
         if dump_pickle:
             log.debug("Running diagnostic calculations and output")
             self.compute_model_data(diagnostic_state, prognostic_states.current)
-            pickle_file_name = "model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl"
+            pickle_file_name = (
+                "model_data_day"
+                + str(self.model_time_variables.simulation_date.day)
+                + "_hour"
+                + str(self.model_time_variables.simulation_date.hour)
+                + ".pkl"
+            )
             with open(self.config.output_path / pickle_file_name, "wb") as file_obj:
                 model_data = self.pack_data(prognostic_states.current, diagnostic_state)
                 if self.processor_props.rank == 0:
@@ -390,10 +412,19 @@ class Icon4pyDriver:
             device_utils.sync(self.backend)
 
             if dump_pickle:
-                if self.model_time_variables.simulation_date.minute == 0 and self.model_time_variables.simulation_date.second == 0:
+                if (
+                    self.model_time_variables.simulation_date.minute == 0
+                    and self.model_time_variables.simulation_date.second == 0
+                ):
                     log.debug("Running diagnostic calculations and output")
                     self.compute_model_data(diagnostic_state, prognostic_states.current)
-                    pickle_file_name = "model_data_day"+str(self.model_time_variables.simulation_date.day)+"_hour"+str(self.model_time_variables.simulation_date.hour)+".pkl"
+                    pickle_file_name = (
+                        "model_data_day"
+                        + str(self.model_time_variables.simulation_date.day)
+                        + "_hour"
+                        + str(self.model_time_variables.simulation_date.hour)
+                        + ".pkl"
+                    )
                     with open(self.config.output_path / pickle_file_name, "wb") as file_obj:
                         model_data = self.pack_data(prognostic_states.current, diagnostic_state)
                         if self.processor_props.rank == 0:
@@ -447,11 +478,6 @@ class Icon4pyDriver:
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
-            self.exchange.exchange(
-                dims.CellDim,
-                prognostic_states.next.w,
-                stream=decomposition_defs.DEFAULT_STREAM,
-            )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
@@ -555,12 +581,15 @@ class Icon4pyDriver:
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
-        # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
-
+        global_max_vertical_cfl = self.global_reductions.max(
+            self._xp.asarray(
+                solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
+            ),
+            array_ns=self._xp,
+        )
         if (
             global_max_vertical_cfl
-            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator]
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
@@ -573,7 +602,7 @@ class Icon4pyDriver:
                 self.model_time_variables.ndyn_substeps_var / self.config.ndyn_substeps
             )
             if (
-                global_max_vertical_cfl * substep_fraction  # type: ignore[operator] # problem with ScalarLikeArray
+                global_max_vertical_cfl * substep_fraction
                 > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             ):
                 log.warning(
@@ -585,13 +614,13 @@ class Icon4pyDriver:
                 driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             )
 
-            if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:  # type: ignore[operator] # problem with ScalarLikeArray
+            if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
                 if self._xp.isfinite(global_max_vertical_cfl):
                     ndyn_substeps_increment = max(
                         1,
                         round(
                             self.model_time_variables.ndyn_substeps_var
-                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)  # type: ignore[operator] # problem with ScalarLikeArray
+                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
                             / vertical_cfl_threshold_for_increment
                         ),
                     )
@@ -612,7 +641,7 @@ class Icon4pyDriver:
             if (
                 self.model_time_variables.ndyn_substeps_var > self.config.ndyn_substeps
                 and global_max_vertical_cfl
-                * ta.wpfloat(  # type: ignore[operator] # problem with ScalarLikeArray
+                * ta.wpfloat(
                     self.model_time_variables.ndyn_substeps_var
                     / (self.model_time_variables.ndyn_substeps_var - 1)
                 )
@@ -629,7 +658,7 @@ class Icon4pyDriver:
                 if (
                     self.model_time_variables.ndyn_substeps_var == self.config.ndyn_substeps
                     and global_max_vertical_cfl
-                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR  # type: ignore[operator] # problem with ScalarLikeArray
+                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR
                     * self.config.vertical_cfl_threshold
                 ):
                     log.warning(
@@ -720,11 +749,12 @@ class Icon4pyDriver:
             cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
-            total_mass = self._xp.sum(
+            local_mass = (
                 rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
             )
+            global_total_mass = self.global_reductions.sum(local_mass, array_ns=self._xp)
             # TODO (Chia Rui): compute total energy
-            log.info(f"TOTAL MASS: {total_mass:.15e} kg")
+            log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -735,19 +765,15 @@ class Icon4pyDriver:
             w_ndarray = prognostic_states.w.ndarray
             theta_v_ndarray = prognostic_states.theta_v.ndarray
             exner_ndarray = prognostic_states.exner.ndarray
-            interface_physical_height_ndarray = self.static_field_factories.metrics_field_source._vertical_grid.interface_physical_height.ndarray
             log.info("")
+            log.info("Global mean of    rho         vn           w          theta_v     exner:")
             log.info(
-                "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
+                f"{self.global_reductions.mean(rho_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(vn_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(w_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(theta_v_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(exner_ndarray, array_ns=self._xp):.5e} "
             )
-            for k in range(rho_ndarray.shape[1]):
-                log.info(
-                    f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(w_ndarray[:, k + 1]):.5e} "
-                    f"{self._xp.mean(theta_v_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
-                )
 
 
 # TODO (Chia Rui): this should be replaced by real configuration reader when the configuration PR is merged
@@ -790,16 +816,14 @@ def _read_config(
         vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
-    nonhydro_config = solve_nh.NonHydrostaticConfig(
-        fourth_order_divdamp_factor=0.0025, rayleigh_coeff=0.1
-    )
+    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=75.0), # 6: 75, 7:40, 8:20, 9: 10, 10: 5
+        dtime=datetime.timedelta(seconds=75.0),  # 6: 75, 7:40, 8:20, 9: 10, 10: 5
         end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
@@ -821,7 +845,8 @@ def initialize_driver(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
-    backend_name: str | model_backends.BackendLike | None,
+    backend_like: model_backends.BackendLike,
+    print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """
@@ -837,7 +862,7 @@ def initialize_driver(
         output_path: path where to store the simulation output
         grid_file_path: path of the grid file
         log_level: logging level
-        backend: GT4Py backend-like
+        backend_like: backend-like
     Returns:
         Driver: driver object
     """
@@ -853,16 +878,16 @@ def initialize_driver(
         mpi_decomp.init_mpi()
         with_mpi = mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1
 
-    parallel_props = decomposition_defs.get_processor_properties(
+    process_props = decomposition_defs.get_process_properties(
         decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
-        processor_procs=parallel_props,
+        print_distributed_debug_msg=print_distributed_debug_msg,
+        process_props=process_props,
     )
 
-    global_reductions = decomposition_defs.create_reduction(parallel_props)
-    if parallel_props.rank == 0:
+    if process_props.rank == 0:
         if output_path.exists():
             current_time = datetime.datetime.now()
             log.warning(f"output path {output_path} already exists, a time stamp will be added")
@@ -871,11 +896,20 @@ def initialize_driver(
                 / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
             )
         output_path.mkdir(parents=True, exist_ok=False)
+    if with_mpi:
+        # broadcast (possibly changed) output_path
+        comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
+        output_path = pathlib.Path(
+            comm.bcast(str(output_path) if process_props.rank == 0 else None, root=0)
+        )
+        comm.Barrier()
 
-    log.debug(f"processor_procs: {parallel_props}, comm size: {parallel_props.comm_size}, is single rank: {parallel_props.is_single_rank}, comm rank: {parallel_props.rank}")
+    log.debug(
+        f"processor_procs: {process_props}, comm size: {process_props.comm_size}, is single rank: {process_props.is_single_rank}, comm rank: {process_props.rank}"
+    )
 
     backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+        program=None, backend=driver_utils.get_backend_from_name(backend_like)
     )
     allocator = model_backends.get_allocator(backend)
 
@@ -892,13 +926,13 @@ def initialize_driver(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
-        parallel_props=parallel_props,
-        global_reductions=global_reductions,
+        process_props=process_props,
     )
 
     log.info("creating the decomposition info")
     decomposition_info = grid_manager.decomposition_info
-    exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
+    exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+    global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
@@ -954,8 +988,8 @@ def initialize_driver(
         solve_nonhydro_granule=solve_nonhydro_granule,
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
-        processor_props=parallel_props,
-        exchange=exchange,
+        processor_props=process_props,
+        global_reductions=global_reductions,
     )
 
     return icon4py_driver
