@@ -40,7 +40,7 @@ _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.EdgeDim: gridfile.FixedSizeDimension.EDGE_GRF.size,
     dims.VertexDim: gridfile.FixedSizeDimension.VERTEX_GRF.size,
 }
-"""
+r"""
 Grid points in the grid refinement fields are labeled with their distance to the lateral boundary.
 The distance is counted in "rows" and distances up to _MAX_BOUNDARY_DISTANCE are computed, elements
 at distances larger than _MAX_BOUNDARY_DISTANCE are labeled as _UNORDERED

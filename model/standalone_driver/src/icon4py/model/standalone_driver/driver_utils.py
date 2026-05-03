@@ -392,7 +392,7 @@ def find_maximum_from_field(
 
 
 def display_icon4py_logo_in_log_file() -> None:
-    """
+    r"""
     Print out icon4py signature and some important information of the initial setup to the log file.
 
                                                                ___
