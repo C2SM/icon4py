@@ -31,8 +31,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import (
     coordinate_transformations as coord_trans,
-    math_utils,
-    vector_operations as vector_ops,
+    utils as math_utils,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
@@ -191,7 +190,7 @@ class GridGeometry(factory.FieldSource):
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         provider = factory.ProgramFieldProvider(
-            func=vector_ops.compute_inverse_on_edges,
+            func=math_utils.compute_inverse_on_edges,
             deps={"f": field_name},
             fields={"f_inverse": name},
             domain={

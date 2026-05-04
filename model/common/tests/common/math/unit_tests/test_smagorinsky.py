@@ -11,7 +11,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
@@ -28,7 +28,7 @@ def test_init_enh_smag_fac(backend_like: model_backends.BackendLike, grid: base_
     z = (0.1, 0.2, 0.3, 0.4)
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
-    smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
+    en_smag_fac_for_zero_nshift.with_backend(backend)(
         a_vec,
         *fac,
         *z,
