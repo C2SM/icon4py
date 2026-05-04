@@ -182,7 +182,7 @@ def test_compute_domain_bounds_for_global_grid(
     dim: gtx.Dimension,
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
-    if grid_description.params.limited_area:
+    if grid_description.limited_area:
         pytest.skip("This test is not for limited area grids")
 
     grid_manager = grid_utils.get_grid_manager_from_identifier(

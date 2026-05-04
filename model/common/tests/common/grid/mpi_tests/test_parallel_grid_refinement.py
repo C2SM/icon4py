@@ -124,7 +124,7 @@ def test_bounds_decomposition(
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)

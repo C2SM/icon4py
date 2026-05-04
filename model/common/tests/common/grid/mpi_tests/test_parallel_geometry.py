@@ -22,6 +22,7 @@ from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
+    icon,
 )
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -114,7 +115,7 @@ def test_distributed_geometry_attrs_for_inverse(
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
     if (
-        grid_geometry.grid.geometry_type == base.GeometryType.TORUS
+        grid_geometry.grid.geometry_type == icon.GeometryType.TORUS
         and grid_name == "inv_vert_vert_length"
     ):
         # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
@@ -189,14 +190,14 @@ def test_cartesian_geometry_attr_no_halos(
     y_field = grid_geometry.get(y)
     z_field = grid_geometry.get(z)
     match grid_geometry.grid.geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(
                 grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
             )
             math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
-        case base.GeometryType.TORUS:
+        case icon.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x_field.asnumpy() >= 0.0)
             assert all(x_field.asnumpy() <= grid_geometry.grid.global_properties.domain_length)
@@ -218,7 +219,7 @@ def test_distributed_geometry_mean_fields(
     geometry_from_savepoint: geometry.GridGeometry,
     attr_name: str,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     parallel_helpers.check_comm_size(process_props)

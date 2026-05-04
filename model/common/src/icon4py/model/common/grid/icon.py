@@ -6,10 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+import enum
 import logging
-import math
 from collections.abc import Callable
-from typing import Final, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -20,6 +19,17 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+
+class GeometryType(enum.Enum):
+    """Define geometries of the horizontal domain supported by the ICON grid.
+
+    Values are the same as mo_grid_geometry_info.f90.
+    """
+
+    ICOSAHEDRON = 1
+    TORUS = 2
+
 
 CONNECTIVITIES_ON_BOUNDARIES = (
     dims.C2E2C2EDim,
@@ -40,104 +50,88 @@ class GridSubdivision:
     level: int
 
 
-@dataclasses.dataclass(kw_only=True)
-class GridShape:
-    geometry_type: base.GeometryType
-    subdivision: GridSubdivision | None
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class IcosahedronParams:
+    subdivision: GridSubdivision
+    radius: float
 
     def __init__(
         self,
-        geometry_type: base.GeometryType | None = None,
-        subdivision: GridSubdivision | None = None,
+        *,
+        subdivision: GridSubdivision,
+        radius: float | None = None,
     ) -> None:
-        if geometry_type is None and subdivision is None:
-            raise ValueError("Either geometry_type or subdivision must be provided")
-        match geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                if subdivision is None:
-                    raise ValueError("Subdivision must be provided for icosahedron geometry type")
-                if subdivision.root < 1 or subdivision.level < 0:
-                    raise ValueError(
-                        f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
-                    )
-            case base.GeometryType.TORUS:
-                subdivision = None
+        object.__setattr__(self, "subdivision", subdivision)
+        object.__setattr__(
+            self,
+            "radius",
+            radius if radius is not None else constants.EARTH_RADIUS,
+        )
+        self.__post_init__()
 
-        self.geometry_type = geometry_type
-        self.subdivision = subdivision
+    def __post_init__(self) -> None:
+        if self.subdivision.root < 1 or self.subdivision.level < 0:
+            raise ValueError(
+                f"root must be >= 1 and level must be >= 0, got {self.subdivision.root=} and {self.subdivision.level=}"
+            )
+
+    @property
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.ICOSAHEDRON
 
 
-_T = TypeVar("_T")
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class TorusParams:
+    domain_length: float
+    domain_height: float
+
+    @property
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.TORUS
+
+
+GridParams = IcosahedronParams | TorusParams
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
-    grid_shape: Final[GridShape | None] = None
-    radius: float = constants.EARTH_RADIUS
-    domain_length: float | None = None
-    domain_height: float | None = None
-    global_num_cells: int | None = None
-    num_cells: int | None = None
-    num_edges: int | None = None
-    num_vertices: int | None = None
-    characteristic_length: float | None = None
-    limited_area: bool = False
-
-    def __post_init__(self) -> None:
-        if self.geometry_type is not None:
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    object.__setattr__(self, "domain_length", None)
-                    object.__setattr__(self, "domain_height", None)
-                    if self.radius is None:
-                        object.__setattr__(self, "radius", constants.EARTH_RADIUS)
-                case base.GeometryType.TORUS:
-                    object.__setattr__(self, "radius", None)
-
-        if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
-            object.__setattr__(
-                self,
-                "global_num_cells",
-                compute_icosahedron_num_cells(self.grid_shape.subdivision),
-            )
-
-        if self.num_cells is None and self.global_num_cells is not None:
-            object.__setattr__(self, "num_cells", self.global_num_cells)
+    grid_params: GridParams | None = None
 
     @property
-    def geometry_type(self) -> base.GeometryType | None:
-        return self.grid_shape.geometry_type if self.grid_shape else None
+    def geometry_type(self) -> GeometryType | None:
+        return self.grid_params.geometry_type if self.grid_params is not None else None
+
+    @property
+    def radius(self) -> float | None:
+        return self.grid_params.radius if isinstance(self.grid_params, IcosahedronParams) else None
+
+    @property
+    def domain_length(self) -> float | None:
+        return self.grid_params.domain_length if isinstance(self.grid_params, TorusParams) else None
+
+    @property
+    def domain_height(self) -> float | None:
+        return self.grid_params.domain_height if isinstance(self.grid_params, TorusParams) else None
 
     @property
     def subdivision(self) -> GridSubdivision | None:
-        return self.grid_shape.subdivision if self.grid_shape else None
-
-
-def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
-    return 20 * subdivision.root**2 * 4**subdivision.level
-
-
-def compute_mean_cell_area_for_sphere(radius, num_cells) -> float:
-    """
-    Compute the mean cell area.
-
-    Computes the mean cell area by dividing the sphere by the number of cells in the
-    global grid.
-
-    Args:
-        radius: average earth radius, might be rescaled by a scaling parameter
-        num_cells: number of cells on the global grid
-    Returns: mean area of one cell [m^2]
-    """
-    return 4.0 * math.pi * radius**2.0 / num_cells
+        return (
+            self.grid_params.subdivision
+            if isinstance(self.grid_params, IcosahedronParams)
+            else None
+        )
 
 
 @dataclasses.dataclass(frozen=True)
 class IconGrid(base.Grid):
-    global_properties: GlobalGridParams = dataclasses.field(default=None, kw_only=True)
+    global_properties: GlobalGridParams = dataclasses.field(kw_only=True)
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
+
+    @property
+    def geometry_type(self) -> GeometryType | None:
+        return self.global_properties.geometry_type
 
 
 def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
@@ -211,7 +205,6 @@ def icon_grid(
         id=id_,
         config=config,
         connectivities=connectivities,
-        geometry_type=global_properties.geometry_type,
         start_index=start_index,
         end_index=end_index,
         global_properties=global_properties,

@@ -18,12 +18,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import (
-    base,
-    icon as icon_grid,
-    states as grid_states,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -596,29 +591,26 @@ def _create_grid_global_params(
     grid_level = grid.getncattr("grid_level")
     grid_uuid = grid.getncattr("uuidOfHGrid")
     try:
-        grid_geometry_type = base.GeometryType(grid.getncattr("grid_geometry"))
+        grid_geometry_type = icon_grid.GeometryType(grid.getncattr("grid_geometry"))
     except AttributeError:
         log.warning(
             "Global attribute grid_geometry is not found in the grid. Icosahedral grid is assumed."
         )
-        grid_geometry_type = base.GeometryType.ICOSAHEDRON
+        grid_geometry_type = icon_grid.GeometryType.ICOSAHEDRON
 
     match grid_geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             global_grid_params = icon_grid.GlobalGridParams(
-                grid_shape=icon_grid.GridShape(
-                    geometry_type=grid_geometry_type,
+                grid_params=icon_grid.IcosahedronParams(
                     subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
                 ),
             )
-    match grid_geometry_type:
-        case base.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             global_grid_params = icon_grid.GlobalGridParams(
-                grid_shape=icon_grid.GridShape(
-                    geometry_type=grid_geometry_type,
+                grid_params=icon_grid.TorusParams(
+                    domain_length=grid.getncattr("domain_length"),
+                    domain_height=grid.getncattr("domain_height"),
                 ),
-                domain_length=grid.getncattr("domain_length"),
-                domain_height=grid.getncattr("domain_height"),
             )
 
     grid.close()

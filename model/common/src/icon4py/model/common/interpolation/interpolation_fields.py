@@ -22,7 +22,7 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
-from icon4py.model.common.grid import base as base_grid, gridfile
+from icon4py.model.common.grid import gridfile, icon as icon_grid
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.math.projection import diff_on_edges_torus_numpy, gnomonic_proj
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -1232,8 +1232,8 @@ def compute_lsq_coeffs(
     lsq_pseudoinv = array_ns.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
     z_lsq_mat_c = array_ns.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
     z_dist_g = array_ns.zeros((min_rlcell_int, lsq_dim_c, 2))
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
                 z_dist_g[:, js, :] = array_ns.asarray(
                     gnomonic_proj(
@@ -1251,7 +1251,7 @@ def compute_lsq_coeffs(
                 if cell_owner_mask[jc]:
                     z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
 
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
                 cc_cell = array_ns.zeros((lsq_dim_stencil, 2))

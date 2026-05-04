@@ -161,7 +161,7 @@ def test_advection_run_single_step(
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.geometry_type,
+        geometry_type=icon_grid.global_properties.geometry_type,
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 
@@ -269,7 +269,7 @@ def test_compute_lsq_coeffs(
         lsq_dim_stencil,
         start_idx,
         min_rlcell_int,
-        icon_grid.geometry_type,
+        icon_grid.global_properties.geometry_type,
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 

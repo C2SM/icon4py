@@ -62,7 +62,7 @@ def test_grid_manager_validate_decomposer(
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)
@@ -164,7 +164,7 @@ def _compare_geometry_fields_single_multi_rank(
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    if grid_description.params.limited_area:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -297,7 +297,7 @@ def _compare_interpolation_fields_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -422,7 +422,7 @@ def _compare_metrics_fields_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -667,7 +667,7 @@ def test_metrics_mask_prog_halo_c(
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)
@@ -782,7 +782,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)
@@ -860,7 +860,7 @@ def test_global_reductions_single_vs_multi_rank(
     edge_length on EdgeDim, dual_area on VertexDim) so that all three
     horizontal dimensions are exercised.
     """
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     xp = data_alloc.import_array_ns(backend)

@@ -40,7 +40,7 @@ def test_standalone_driver_compare_single_multi_rank(
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
