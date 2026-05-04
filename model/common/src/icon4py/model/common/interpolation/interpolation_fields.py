@@ -937,7 +937,8 @@ def compute_cells_aw_verts(
     num_edges_per_vert = v2e.shape[1]
     vertex_range = array_ns.arange(horizontal_start, num_verts)
 
-    # Precompute valid v2c mask: skip MISSING and consecutive duplicates that may come from the pentagon points or the domain boundary
+    # Precompute valid v2c mask: skip MISSING and consecutive duplicates that may come from the pentagon points or the domain boundary.
+    # Keep this outside the loop over edges to avoid unnecessarily recomputing: it only depends on v2c and not on the edge je.
     valid_v2c = array_ns.zeros(v2c.shape, dtype=bool)
     for jc in range(num_cells_per_vert):
         valid_v2c[:, jc] = (
