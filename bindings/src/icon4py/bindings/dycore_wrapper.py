@@ -19,7 +19,7 @@ Fortran granule interfaces:
 import dataclasses
 import logging
 from collections.abc import Callable
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 import gt4py.next as gtx
 import numpy as np
@@ -290,7 +290,7 @@ def solve_nh_init(
         gtx.wait_for_compilation()
 
 
-NumpyFloatArray1D: TypeAlias = Annotated[
+type NumpyFloatArray1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,

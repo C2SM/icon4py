@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias
+from typing import Final, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -25,9 +25,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc, field_util
 
 log = logging.getLogger(__name__)
 
-TimeIndex: TypeAlias = Literal[0, 1]
-FourIndex: TypeAlias = Literal[0, 1, 2, 3]
-TwoIndex: TypeAlias = Literal[0, 1]
+type TimeIndex = Literal[0, 1]
+type FourIndex = Literal[0, 1, 2, 3]
+type TwoIndex = Literal[0, 1]
 
 #: ICON default indices for the tracers, see mo_advection_utils.f90
 QV: Final[int] = 0
@@ -38,7 +38,7 @@ QS: Final[int] = 4
 QG: Final[int] = 5
 
 
-TracerIndex: TypeAlias = Literal[QV, QC, QI, QR, QS, QG]
+type TracerIndex = Literal[QV, QC, QI, QR, QS, QG]
 
 
 class IconSavepoint:

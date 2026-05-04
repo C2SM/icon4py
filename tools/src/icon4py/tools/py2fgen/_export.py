@@ -11,7 +11,7 @@ import functools
 import types
 import typing
 from collections.abc import Callable, Mapping
-from typing import Any, TypeAlias
+from typing import Any
 
 import cffi
 
@@ -21,6 +21,8 @@ from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 # TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
 # once https://peps.python.org/pep-0747/ is approved.
 def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
+    if isinstance(annotation, typing.TypeAliasType):
+        annotation = annotation.__value__
     if hasattr(annotation, "__metadata__"):
         for perf_counters in annotation.__metadata__:
             if isinstance(perf_counters, _definitions.ParamDescriptor):
@@ -28,7 +30,7 @@ def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     return None
 
 
-AnnotationDescriptorHook: TypeAlias = Callable[[Any], _definitions.ParamDescriptor | None]
+type AnnotationDescriptorHook = Callable[[Any], _definitions.ParamDescriptor | None]
 
 
 def param_descriptor_from_annotation(
@@ -63,7 +65,7 @@ def get_param_descriptors(
     }
 
 
-AnnotationMappingHook: TypeAlias = Callable[
+type AnnotationMappingHook = Callable[
     [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
 ]
 

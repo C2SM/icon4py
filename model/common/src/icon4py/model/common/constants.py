@@ -91,8 +91,8 @@ RD_O_P0REF: Final[ta.wpfloat] = RD / P0REF
 SEA_LEVEL_PRESSURE: Final[ta.wpfloat] = 101325.0
 P0SL_BG: Final[ta.wpfloat] = SEA_LEVEL_PRESSURE
 
-# average earth radius in [m]
-EARTH_RADIUS: Final[float] = 6.371229e6
+#: average earth radius in [m]
+EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 #: Earth angular velocity [rad/s]
 EARTH_ANGULAR_VELOCITY: Final[ta.wpfloat] = 7.29212e-5
@@ -116,9 +116,6 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 # Implementation constants
 #: default dynamics to physics time step ratio
 DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
-
-#: average earth radius in [m]
-EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 
 class PhysicsConstants(ta.wpfloat, enum.Enum):

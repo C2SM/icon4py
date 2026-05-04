@@ -13,16 +13,7 @@ import abc
 import copy
 import functools
 from collections.abc import Callable, Generator
-from typing import (
-    ClassVar,
-    Concatenate,
-    Final,
-    Generic,
-    ParamSpec,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import ClassVar, Concatenate, Final, ParamSpec, Protocol, TypeVar, runtime_checkable
 
 
 @runtime_checkable
@@ -35,7 +26,7 @@ T = TypeVar("T")
 C = TypeVar("C")
 
 
-class named_property(property, Generic[C, T]):
+class named_property[C, T](property):
     """
     A simple extension of the built-in `property` descriptor storing
     the name of the attribute it is assigned to.
@@ -100,7 +91,7 @@ class named_property(property, Generic[C, T]):
         return result
 
 
-class Pair(Generic[T]):
+class Pair[T]:  # noqa: PLW1641
     """
     Generic class representing a pair of values.
 
@@ -234,14 +225,16 @@ class PredictorCorrectorPair(Pair[T]):
 
 
 class TimeStepPair(Pair[T]):
-    current = Pair.frozen_first
-    next = Pair.frozen_second
+    current: named_property = Pair.frozen_first
+    next: named_property = Pair.frozen_second
 
 
 P = ParamSpec("P")
 
 
-def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concatenate[T, P], T]:
+def chainable[T, **P](
+    method_fn: Callable[Concatenate[T, P], None],
+) -> Callable[Concatenate[T, P], T]:
     """
     Make an instance method return the actual instance so it can be used in a chain of calls.
 

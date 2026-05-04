@@ -342,9 +342,9 @@ def assert_up_to_order(
     reduced_table = table[start_index:, :]
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
-        assert np.all(
-            np.isin(reduced_table[n, :], reduced_reference[n, :])
-        ), f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        assert np.all(np.isin(reduced_table[n, :], reduced_reference[n, :])), (
+            f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        )
 
 
 @pytest.mark.with_netcdf
@@ -427,15 +427,15 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     for domain in h_grid.get_domains_for_dim(dim):
         if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
             # serialized start indices for EdgeDim are all zero
-            assert grid.start_index(domain) == serialized_grid.start_index(
-                domain
-            ), f"start index wrong for domain {domain}"
+            assert grid.start_index(domain) == serialized_grid.start_index(domain), (
+                f"start index wrong for domain {domain}"
+            )
         if not grid.limited_area and domain.zone in [h_grid.Zone.END, h_grid.Zone.INTERIOR]:
             assert grid.end_index(domain) == grid.size[domain.dim]
         else:
-            assert grid.end_index(domain) == serialized_grid.end_index(
-                domain
-            ), f"end index wrong for domain {domain}"
+            assert grid.end_index(domain) == serialized_grid.end_index(domain), (
+                f"end index wrong for domain {domain}"
+            )
 
 
 @pytest.mark.datatest
@@ -614,7 +614,7 @@ def test_local_connectivity(
     backend_like: model_backends.BackendLike,
 ) -> None:
     process_props = decomp_utils.DummyProps(rank=rank)
-    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    caplog.set_level(logging.INFO)
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
     file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
@@ -643,9 +643,9 @@ def test_local_connectivity(
             field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
         )
     )
-    assert (
-        np.max(connectivity) == max_local_index
-    ), f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
+    assert np.max(connectivity) == max_local_index, (
+        f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
+    )
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
     neighbor_dim = field_offset.target[1]  # type: ignore [misc]
     dim = field_offset.target[0]

@@ -16,7 +16,7 @@ include:
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
     - !reference [.benchmark_nox_job, script]
   variables:
-    NOX_SESSION: "__bencher_feature_branch_CI-3.10"
+    NOX_SESSION: "__bencher_feature_branch_CI-3.14"
 
 benchmark_bencher_stencils_feature_aarch64:
   extends: [.test_template_aarch64, .bencher_feature_tests]

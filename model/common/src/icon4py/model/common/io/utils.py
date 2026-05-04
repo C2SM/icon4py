@@ -29,7 +29,7 @@ def to_data_array(
     if attrs is None:
         attrs = {}
     dims = tuple(dimension_mapping(d, is_on_interface) for d in field.domain.dims)
-    horizontal_dim = next(filter(lambda d: _is_horizontal(d), field.domain.dims))
+    horizontal_dim = next(filter(_is_horizontal, field.domain.dims))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
     assert isinstance(attrs, dict)
     attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility

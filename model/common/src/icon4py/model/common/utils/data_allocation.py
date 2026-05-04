@@ -33,12 +33,12 @@ except ImportError:
     import numpy as xp
 
 ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
-NDArray: TypeAlias = (
+NDArray: TypeAlias = (  # noqa: UP040
     np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
 )
-NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
+type NDArrayInterface = np.ndarray | xp.ndarray | gtx.Field
 
-ScalarLikeArray: TypeAlias = (
+ScalarLikeArray: TypeAlias = (  # noqa: UP040
     np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
 )
 
@@ -61,7 +61,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
     elif isinstance(array, gtx.Field):
         return array.asnumpy()
     else:
-        import cupy as cp
+        import cupy as cp  # noqa: PLC0415
 
         return cp.asnumpy(array)
 
@@ -69,12 +69,12 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
 def array_ns(try_cupy: bool) -> ModuleType:
     if try_cupy:
         try:
-            import cupy as cp
+            import cupy as cp  # noqa: PLC0415
 
             return cp
         except ImportError:
             log.warning("No cupy installed, falling back to numpy for array_ns")
-    import numpy as np
+    import numpy as np  # noqa: PLC0415
 
     return np
 
@@ -84,7 +84,7 @@ def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     return array_ns(device_utils.is_cupy_device(allocator))
 
 
-def scalar_like_array(
+def scalar_like_array[ScalarT: gtx_typing.Scalar](
     value: ScalarT,
     allocator: ModuleType | gtx_typing.Allocator | None = None,
 ) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types

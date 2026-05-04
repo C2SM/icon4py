@@ -112,9 +112,9 @@ class NeedsExchange(Protocol):
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
-                assert (
-                    first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-                ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                assert first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+                    f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                )
                 with as_exchangeable_field(field) as buffer:
                     exchange.exchange(first_dim, buffer, stream=stream)
                 log.debug(f"exchanged buffer for {name}")
@@ -608,7 +608,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid_provider: GridProvider,
     ) -> None:
         try:
-            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
+            metadata = {v: factory.get(v, RetrievalType.METADATA) for v in self._output.values()}
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
@@ -717,13 +717,10 @@ class NumpyDataProvider(FieldProvider):
         # TODO(egparedes): dealing with type annotations at run-time is error prone
         #   and requires robust utility functions. This snippet should use a better
         #   solution in the future.
-        try:
-            annotations = typing.get_type_hints(self._func)
-        except TypeError:
-            obj = self._func
-            while hasattr(obj, "__wrapped__") or isinstance(obj, functools.partial):
-                obj = getattr(obj, "__wrapped__", None) or obj.func
-            annotations = typing.get_type_hints(obj)
+        obj = self._func
+        while hasattr(obj, "__wrapped__") or isinstance(obj, functools.partial):
+            obj = getattr(obj, "__wrapped__", None) or obj.func
+        annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
             parameter_annotation = annotations.get(dep_key)
             checked = _is_compatible_union(

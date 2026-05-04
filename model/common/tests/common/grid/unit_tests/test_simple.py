@@ -25,7 +25,7 @@ def domain_generator() -> Iterator[h_grid.Domain]:
             try:
                 domain = h_grid.domain(dim)(z)
                 yield domain
-            except AssertionError:  # noqa: PERF203
+            except AssertionError:
                 ...
 
 

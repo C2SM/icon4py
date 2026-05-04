@@ -5,7 +5,7 @@ include:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+    - nox -s "test_model-3.14(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]

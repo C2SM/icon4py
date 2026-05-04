@@ -138,9 +138,9 @@ def check_local_global_field(
     if process_props.rank == 0:
         _log.info(f"rank = {process_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        assert np.all(gathered_sizes == global_index_sizes), (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
         _log.info(
             f"rank = {process_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
