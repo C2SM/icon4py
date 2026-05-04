@@ -7,6 +7,12 @@
 
 set -euo pipefail
 
+if [[ "${ICON4PY_CI_DISABLE_PERSISTENT_GT4PY_CACHE:-}" == "true" ]]; then
+    echo "Using non-persistent gt4py cache because ICON4PY_CI_DISABLE_PERSISTENT_GT4PY_CACHE is set"
+    export GT4PY_BUILD_CACHE_LIFETIME="session"
+    exit 0
+fi
+
 # First clean up files and directories older than 7 days in the base cache
 # directory. The backend directories can stay, but the date-based directories
 # are removed. There may be concurrent cleanup, ignore failures.
