@@ -61,6 +61,9 @@ jobs:
           .github/validation_grid_utils.py download
 
       - name: set GT4Py cache directory
+        # Note that this assumes that each backend gets a separate job in CI.
+        # Mixing e.g. dace_cpu and dace_gpu in the same cache directory may not
+        # work well.
         run: echo "GT4PY_BUILD_CACHE_DIR=${{ runner.temp }}/gt4py-cache" >> $GITHUB_ENV
 
       - name: restore GT4Py cache
