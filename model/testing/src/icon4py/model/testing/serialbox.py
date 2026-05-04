@@ -680,10 +680,14 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("nudgecoeff_e", dims.EdgeDim)
 
     def pos_on_tplane_e_x(self):
-        return self._get_field("pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim)[:, 0:2]
+        return self._get_field(
+            "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim, slice_=(slice(None), slice(0, 2))
+        )
 
     def pos_on_tplane_e_y(self):
-        return self._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)[:, 0:2]
+        return self._get_field(
+            "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim, slice_=(slice(None), slice(0, 2))
+        )
 
     def rbf_vec_coeff_e(self):
         return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim, transpose=(1, 0))
