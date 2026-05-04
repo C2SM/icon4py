@@ -7,14 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import contextlib
 from collections.abc import Iterator
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid
+from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 
@@ -37,13 +36,6 @@ def horizontal_offsets() -> Iterator[gtx.FieldOffset]:
     for d in vars(dims).values():
         if isinstance(d, gtx.FieldOffset) and len(d.target) == 2:
             yield d
-
-
-def _domain(dim: gtx.Dimension, zones: Iterator[h_grid.Zone]) -> Iterator[h_grid.Domain]:
-    domain = h_grid.domain(dim)
-    for zone in zones:
-        with contextlib.suppress(AssertionError):
-            yield domain(zone)
 
 
 def run_grid_manager(
