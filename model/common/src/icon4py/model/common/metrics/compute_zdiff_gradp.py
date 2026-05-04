@@ -7,10 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -26,8 +24,8 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
 

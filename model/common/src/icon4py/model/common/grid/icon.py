@@ -240,7 +240,7 @@ def get_start_and_end_index(
     """
     start_indices = {}
     end_indices = {}
-    for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+    for dim in dims.horizontal_dims():
         start_map, end_map = constructor(dim)
         start_indices.update(start_map)
         end_indices.update(end_map)

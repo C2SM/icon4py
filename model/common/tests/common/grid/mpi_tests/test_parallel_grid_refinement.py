@@ -12,11 +12,7 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.decomposition import (
-    decomposer as decomp,
-    definitions as decomposition,
-    mpi_decomposition,
-)
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -39,24 +35,19 @@ from .. import utils
 from . import utils as mpi_test_utils
 
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 _log = logging.getLogger(__name__)
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "zone" in metafunc.fixturenames:
         params = [
-            (dim, zone)
-            for dim in utils.main_horizontal_dims()
-            for zone in h_grid._get_zones_for_dim(dim)
+            (dim, zone) for dim in dims.horizontal_dims() for zone in h_grid._get_zones_for_dim(dim)
         ]
         ids = [f"{dim.value}-{zone}" for dim, zone in params]
         metafunc.parametrize("dim,zone", params, ids=ids)
     elif "dim" in metafunc.fixturenames:
-        ids = [dim.value for dim in utils.main_horizontal_dims()]
-        metafunc.parametrize("dim", utils.main_horizontal_dims(), ids=ids)
+        ids = [dim.value for dim in dims.horizontal_dims()]
+        metafunc.parametrize("dim", dims.horizontal_dims(), ids=ids)
 
 
 @pytest.fixture
@@ -64,6 +55,7 @@ def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
     return h_grid.domain(dim)(zone)
 
 
+@pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_compute_domain_bounds(
     dim: gtx.Dimension,
@@ -71,7 +63,7 @@ def test_compute_domain_bounds(
     domain: h_grid.Domain,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> None:
     if (
@@ -85,12 +77,11 @@ def test_compute_domain_bounds(
 
     ref_grid = grid_savepoint.construct_icon_grid(backend=backend, keep_skip_values=True)
     decomposition_info = grid_savepoint.construct_decomposition_info()
-    refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in utils.main_horizontal_dims()}
+    refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in dims.horizontal_dims()}
     start_indices, end_indices = grid_refinement.compute_domain_bounds(
         dim,
         refin_ctrl,
         decomposition_info,
-        array_ns=data_alloc.import_array_ns(backend),
     )
     if (
         experiment == definitions.Experiments.GAUSS3D
@@ -119,7 +110,7 @@ def test_compute_domain_bounds(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_bounds_decomposition(
-    process_props: decomposition.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
@@ -141,8 +132,8 @@ def test_bounds_decomposition(
     )
     _log.info(
         f"rank = {process_props.rank}: halo size for 'CellDim' "
-        f"(1: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-        f"(2: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"(1: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
 
     decomposition_info = grid_manager.decomposition_info
@@ -155,22 +146,22 @@ def test_bounds_decomposition(
     ), f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
 
     local_owned_size = decomposition_info.local_index(
-        dim, decomposition.DecompositionInfo.EntryType.OWNED
+        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
     ).shape[0]
     local_all_size = decomposition_info.local_index(
-        dim, decomposition.DecompositionInfo.EntryType.ALL
+        dim, decomp_defs.DecompositionInfo.EntryType.ALL
     ).shape[0]
     local_halo_size = decomposition_info.local_index(
-        dim, decomposition.DecompositionInfo.EntryType.HALO
+        dim, decomp_defs.DecompositionInfo.EntryType.HALO
     ).shape[0]
     global_owned_size = decomposition_info.global_index(
-        dim, decomposition.DecompositionInfo.EntryType.OWNED
+        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
     ).shape[0]
     global_all_size = decomposition_info.global_index(
-        dim, decomposition.DecompositionInfo.EntryType.ALL
+        dim, decomp_defs.DecompositionInfo.EntryType.ALL
     ).shape[0]
     global_halo_size = decomposition_info.global_index(
-        dim, decomposition.DecompositionInfo.EntryType.HALO
+        dim, decomp_defs.DecompositionInfo.EntryType.HALO
     ).shape[0]
 
     # NOTE: These assumptions may change once limited area grids are supported

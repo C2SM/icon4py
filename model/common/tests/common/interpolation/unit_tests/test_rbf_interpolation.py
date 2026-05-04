@@ -203,7 +203,6 @@ def test_rbf_interpolation_coeffs_cell(
         horizontal_end,
         grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
         grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
-        array_ns=data_alloc.import_array_ns(backend),
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
@@ -279,7 +278,6 @@ def test_rbf_interpolation_coeffs_vertex(
         horizontal_end,
         grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
         grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
-        array_ns=data_alloc.import_array_ns(backend),
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
@@ -357,7 +355,6 @@ def test_rbf_interpolation_coeffs_edge(
         horizontal_end=horizontal_end,
         domain_length=grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
         domain_height=grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
-        array_ns=data_alloc.import_array_ns(backend),
     )
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()

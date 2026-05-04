@@ -9,10 +9,8 @@ import functools
 import logging
 import math
 from collections.abc import Callable
-from types import ModuleType
 from typing import Final
 
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import where
 
@@ -38,7 +36,6 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute E2C average inverse distance.
@@ -48,10 +45,10 @@ def compute_c_lin_e(
         inv_dual_edge_length: ndarray, inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edge_owner_mask: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index from the field is computed: c_lin_e is not calculated for the first boundary layer
-        array_ns: ModuleType to use for the computation, numpy or cupy, defaults to cupy
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
+    array_ns = data_alloc.array_namespace(edge_cell_length)
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
     c_lin_e = array_ns.transpose(array_ns.vstack((c_lin_e_, (1.0 - c_lin_e_))))
     c_lin_e[0:horizontal_start, :] = 0.0
@@ -109,7 +106,6 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute geometric factor for nabla2-scalar.
@@ -121,11 +117,11 @@ def compute_geofac_n2s(
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         c2e2c: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start: start index from where the field is computed
-        array_ns: python module, numpy or cpu defaults to numpy
 
     Returns:
         geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
     """
+    array_ns = data_alloc.array_namespace(dual_edge_length)
     num_cells = c2e.shape[0]
     geofac_n2s = array_ns.zeros([num_cells, 4])
     index = array_ns.transpose(
@@ -169,10 +165,10 @@ def compute_geofac_grg(
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(primal_normal_cell_x)
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
-    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
+    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e)
     primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
     primal_normal_ec_v = array_ns.where(owned, primal_normal_cell_y[c2e, inv_neighbor_index], 0.0)
 
@@ -215,7 +211,6 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
@@ -228,11 +223,11 @@ def compute_geofac_grdiv(
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         e2c2e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
-        array_ns: module either used or array computations defaults to numpy
 
     Returns:
         geofac_grdiv:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(geofac_div)
     num_edges = e2c.shape[0]
     geofac_grdiv = array_ns.zeros([num_edges, 1 + 2 * e2c.shape[1]])
     index = array_ns.arange(horizontal_start, num_edges)
@@ -275,7 +270,6 @@ def _rotate_latlon(
     lon: data_alloc.NDArray,
     pollat: data_alloc.NDArray,
     pollon: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     (Compute rotation of lattitude and longitude.)
@@ -288,12 +282,12 @@ def _rotate_latlon(
         lon: scalar or numpy array
         pollat: scalar or numpy array
         pollon: scalar or numpy array
-        array_ns array namespace to be used, defaults to numpy
 
     Returns:
         rotlat:
         rotlon:
     """
+    array_ns = data_alloc.array_namespace(lat)
     rotlat = array_ns.arcsin(
         array_ns.sin(lat) * array_ns.sin(pollat)
         + array_ns.cos(lat) * array_ns.cos(pollat) * array_ns.cos(lon - pollon)
@@ -315,7 +309,6 @@ def _weighting_factors(
     yloc: data_alloc.NDArray,
     xloc: data_alloc.NDArray,
     wgt_loc: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
         Compute weighting factors.
@@ -335,12 +328,12 @@ def _weighting_factors(
             yloc:   \\   numpy array of size [[flexible], ta.wpfloat]
             xloc:   //
             wgt_loc:
-            array_ns: array namespace to be used defaults to numpy
 
         Returns:
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
-    rotate = functools.partial(_rotate_latlon, array_ns=array_ns)
+    array_ns = data_alloc.array_namespace(ytemp)
+    rotate = functools.partial(_rotate_latlon)
 
     pollat = array_ns.where(yloc >= 0.0, yloc - math.pi * 0.5, yloc + math.pi * 0.5)
     pollon = xloc
@@ -387,7 +380,6 @@ def _compute_c_bln_avg(
     lon: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute bilinear cell average weight.
@@ -403,6 +395,7 @@ def _compute_c_bln_avg(
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(c2e2c)
     num_cells = c2e2c.shape[0]
     ytemp = array_ns.zeros([c2e2c.shape[1], num_cells - horizontal_start])
     xtemp = array_ns.zeros([c2e2c.shape[1], num_cells - horizontal_start])
@@ -417,7 +410,6 @@ def _compute_c_bln_avg(
         lat[horizontal_start:],
         lon[horizontal_start:],
         divergence_averaging_central_cell_weight,
-        array_ns=array_ns,
     )
     c_bln_avg = array_ns.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
     c_bln_avg[horizontal_start:, 0] = divergence_averaging_central_cell_weight
@@ -435,7 +427,6 @@ def _force_mass_conservation_to_c_bln_avg(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
     """
@@ -460,6 +451,7 @@ def _force_mass_conservation_to_c_bln_avg(
     Returns:
 
     """
+    array_ns = data_alloc.array_namespace(c2e2c0)
 
     def _compute_local_weights(
         c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
@@ -535,7 +527,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
+    inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -577,7 +569,6 @@ def _compute_uniform_c_bln_avg(
     c2e2c: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute bilinear cell average weight for a torus grid.
@@ -590,6 +581,7 @@ def _compute_uniform_c_bln_avg(
     Returns:
         c_bln_avg
     """
+    array_ns = data_alloc.array_namespace(c2e2c)
     local_weight = divergence_averaging_central_cell_weight
     neighbor_weight = (1.0 - divergence_averaging_central_cell_weight) / 3.0
 
@@ -613,7 +605,6 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:],
@@ -621,7 +612,6 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         lon,
         divergence_averaging_central_cell_weight,
         horizontal_start,
-        array_ns=array_ns,
     )
 
     exchange(c_bln_avg)
@@ -634,7 +624,6 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         divergence_averaging_central_cell_weight,
         horizontal_start_level_3,
         exchange=exchange,
-        array_ns=array_ns,
     )
 
 
@@ -646,13 +635,11 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:],
         divergence_averaging_central_cell_weight,
         horizontal_start,
-        array_ns=array_ns,
     )
     exchange(c_bln_avg)
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error
@@ -665,12 +652,11 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
         divergence_averaging_central_cell_weight,
         horizontal_start_level_3,
         exchange=exchange,
-        array_ns=array_ns,
     )
 
 
 def _create_inverse_neighbor_index(
-    source_offset: data_alloc.NDArray, inverse_offset: data_alloc.NDArray, array_ns: ModuleType
+    source_offset: data_alloc.NDArray, inverse_offset: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
     The inverse neighbor index determines the position of a central element c_1
@@ -682,23 +668,40 @@ def _create_inverse_neighbor_index(
     The inverse neighbor index tells what position that is. It essentially says
     "I am neighbor number x \\in (0,1) of my neighboring edges"
 
+    In mathematical notation:
+        given a and a2b, find b2a such that [b, b2a] = a for all a, a2b where a2b[a, b] != MISSING
+        assume a and b are dimensions
+        source_offset = [a, a2b]
+        inverse_offset = [b, b2a]
+        inv_neighbor_idx = [a, b2a], this is the output
 
     Args:
-        source_offset:
-        inverse_offset:
+        source_offset: [a, a2b]
+        inverse_offset: [b, b2a]
 
     Returns:
-        ndarray of the same shape as target_offset
+        ndarray of the same shape as target_offset: [a, b2a]
 
     """
-    inv_neighbor_idx = array_ns.full(inverse_offset.shape, MISSING, dtype=gtx.int32)
-    source_offset[inverse_offset]
-    for jc in range(inverse_offset.shape[0]):
-        for i in range(inverse_offset.shape[1]):
-            if inverse_offset[jc, i] >= 0:
-                inverse_nn = array_ns.argwhere(source_offset[inverse_offset[jc, i], :] == jc)
-                # TODO (halungge): this happens for halo cells, need to handle this properly, ICON runs only over owned indices
-                inv_neighbor_idx[jc, i] = inverse_nn[0, 0] if len(inverse_nn) > 0 else MISSING
+    array_ns = data_alloc.array_namespace(source_offset)
+    inv_neighbor_idx = array_ns.full(inverse_offset.shape, fill_value=MISSING, dtype=gtx.int32)
+    n_inv_elem, n_inv_neighbors = inverse_offset.shape
+    # loop over all neighbors, denoted by i, of inverse_offset. For each neighbor i, find which neighbor of the source_offset goes back to the inverse_offset itself
+    for i in range(n_inv_neighbors):
+        inverse_neighbor = inverse_offset[:, i]
+        valid_mask = inverse_neighbor >= 0
+        valid_source_offset = source_offset[
+            inverse_neighbor[valid_mask], :
+        ]  # (n_valid, n_source_neighbors)
+        # find for each valid neighbor of an inverse_offset element, which neighbor of the source_offset matches the index of the inverse_offset
+        inv_elem_indices = array_ns.arange(n_inv_elem)[valid_mask]
+        matches = array_ns.equal(
+            valid_source_offset, inv_elem_indices[:, array_ns.newaxis]
+        )  # (n_valid, n_source_neighbors)
+        # we need has_match here before argmax, because argmax will return 0 if there is no match, which is a valid index, but we want to ignore it in that case
+        has_match = array_ns.any(matches, axis=1)
+        first_match = array_ns.argmax(matches, axis=1)
+        inv_neighbor_idx[inv_elem_indices[has_match], i] = first_match[has_match].astype(gtx.int32)
 
     return inv_neighbor_idx
 
@@ -717,7 +720,6 @@ def compute_e_flx_avg(
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute edge flux average.
@@ -739,11 +741,11 @@ def compute_e_flx_avg(
     Returns:
         e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(c_bln_avg)
     primal_cart_normal = compute_primal_cart_normal(
         primal_cart_normal_x,
         primal_cart_normal_y,
         primal_cart_normal_z,
-        array_ns=array_ns,
     )
     diamond_shape = e2c2e.shape[1]
     num_edges = e2c.shape[0]
@@ -881,10 +883,15 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute cells_aw_verts.
+    Compute cells_aw_verts for interpolating fields from cells to vertices.
+
+    In mathematical notation:
+        let cells_aw_verts = x, x has dimensions (number of vertices, 6),
+        x(i,j) = 0.5 sum_k l(j,k) d(i,k) / dual_area(i), where summation is over neighboring edges of vertex i,
+        dual_area is the area of hexagon around the vertex, l(j,k) is the shortest distance between the center of cell j and edge k,
+        d(i,k) is the distance between the vertex i and center of edge k.
 
     Args:
         dual_area: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
@@ -896,40 +903,64 @@ def compute_cells_aw_verts(
         v2c: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start: int32, representing the start index of the horizontal dimension
-        array_ns: array namespace to be used, defaults to numpy
 
     Returns:
         aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(dual_area)
     cells_aw_verts = array_ns.zeros(v2e.shape)
-    for jv in range(horizontal_start, cells_aw_verts.shape[0]):
-        for je in range(v2e.shape[1]):
-            # INVALID_INDEX
-            if v2e[jv, je] == MISSING or (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
-                continue
-            ile = v2e[jv, je]
-            idx_ve = 0 if e2v[ile, 0] == jv else 1
-            cell_offset_idx_0 = e2c[ile, 0]
-            cell_offset_idx_1 = e2c[ile, 1]
-            for jc in range(v2e.shape[1]):
-                if v2c[jv, jc] == MISSING or (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
-                    continue
-                if cell_offset_idx_0 == v2c[jv, jc]:
-                    cells_aw_verts[jv, jc] = (
-                        cells_aw_verts[jv, jc]
-                        + 0.5
-                        / dual_area[jv]
-                        * edge_vert_length[ile, idx_ve]
-                        * edge_cell_length[ile, 0]
-                    )
-                elif cell_offset_idx_1 == v2c[jv, jc]:
-                    cells_aw_verts[jv, jc] = (
-                        cells_aw_verts[jv, jc]
-                        + 0.5
-                        / dual_area[jv]
-                        * edge_vert_length[ile, idx_ve]
-                        * edge_cell_length[ile, 1]
-                    )
+    num_verts = cells_aw_verts.shape[0]
+    num_cells_per_vert = v2c.shape[1]
+    num_edges_per_vert = v2e.shape[1]
+    vertex_range = array_ns.arange(horizontal_start, num_verts)
+
+    # Precompute valid v2c mask: skip MISSING and consecutive duplicates that may come from the pentagon points or the domain boundary.
+    # Keep this outside the loop over edges to avoid unnecessarily recomputing: it only depends on v2c and not on the edge je.
+    valid_v2c = array_ns.zeros(v2c.shape, dtype=bool)
+    for jc in range(num_cells_per_vert):
+        valid_v2c[:, jc] = (
+            v2c[:, jc] != MISSING
+            if jc == 0
+            else (v2c[:, jc] != MISSING) & (v2c[:, jc] != v2c[:, jc - 1])
+        )
+
+    # loop over all edges, je, adjacent to vertices and compute the weighting coefficients of the cells adjacent to je
+    for je in range(num_edges_per_vert):
+        v2e_edge = v2e[horizontal_start:, je]
+
+        # skip invalid or duplicate edges that may come from the pentagon points or the domain boundary
+        valid_v2e = (
+            v2e_edge != MISSING
+            if je == 0
+            else (v2e_edge != MISSING) & (v2e_edge != v2e[horizontal_start:, je - 1])
+        )
+
+        valid_v2e_edge = v2e_edge[valid_v2e]
+        valid_vertices = vertex_range[valid_v2e]
+
+        # determine which vertex of the edge je this is (0 or 1)
+        idx_ve = array_ns.where(e2v[valid_v2e_edge, 0] == valid_vertices, 0, 1)
+
+        # cells adjacent to each edge and the corresponding coefficients at those cells
+        cell_0 = e2c[valid_v2e_edge, 0]
+        cell_1 = e2c[valid_v2e_edge, 1]
+        coefficient_at_cell_0 = (
+            edge_vert_length[valid_v2e_edge, idx_ve] * edge_cell_length[valid_v2e_edge, 0]
+        )
+        coefficient_at_cell_1 = (
+            edge_vert_length[valid_v2e_edge, idx_ve] * edge_cell_length[valid_v2e_edge, 1]
+        )
+
+        # loop over cells, jc, adjacent to the vertex adjacent to the edge je (v2e),
+        # check if jc belongs to one of the neighboring cells of the edge and add the corresponding coeff l(j,k) * d(i,k)
+        for jc in range(num_cells_per_vert):
+            current_cell = v2c[valid_vertices, jc]
+            valid_cell = valid_v2c[valid_vertices, jc]
+            match0 = valid_cell & (cell_0 == current_cell)
+            match1 = valid_cell & (cell_1 == current_cell)
+            cells_aw_verts[valid_vertices[match0], jc] += coefficient_at_cell_0[match0]
+            cells_aw_verts[valid_vertices[match1], jc] += coefficient_at_cell_1[match1]
+    cells_aw_verts = 0.5 * cells_aw_verts / dual_area[:, array_ns.newaxis]
     return cells_aw_verts
 
 
@@ -940,7 +971,6 @@ def compute_e_bln_c_s(
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
     weighting_factor: float,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -956,6 +986,7 @@ def compute_e_bln_c_s(
     Returns:
         e_bln_c_s: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
+    array_ns = data_alloc.array_namespace(c2e)
     llb = 0
     num_cells = c2e.shape[0]
     e_bln_c_s = array_ns.zeros([num_cells, c2e.shape[1]])
@@ -974,7 +1005,6 @@ def compute_e_bln_c_s(
         yloc,
         xloc,
         weighting_factor,
-        array_ns=array_ns,
     )
 
     e_bln_c_s[:, 0] = wgt[0]
@@ -985,7 +1015,6 @@ def compute_e_bln_c_s(
 
 def compute_e_bln_c_s_torus(
     c2e: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -996,6 +1025,7 @@ def compute_e_bln_c_s_torus(
     Returns:
         e_bln_c_s
     """
+    array_ns = data_alloc.array_namespace(c2e)
     return array_ns.full_like(c2e, 1.0 / 3.0, dtype=ta.wpfloat)
 
 
@@ -1012,7 +1042,6 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute pos_on_tplane_e_x_y.
@@ -1041,6 +1070,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         pos_on_tplane_e_y: //
     """
+    array_ns = data_alloc.array_namespace(primal_normal_v1)
     llb = horizontal_start
     pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
@@ -1096,7 +1126,6 @@ def compute_pos_on_tplane_e_x_y(
 def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute pos_on_tplane_e_x_y.
@@ -1115,6 +1144,7 @@ def compute_pos_on_tplane_e_x_y_torus(
         pos_on_tplane_e_x
         pos_on_tplane_e_y
     """
+    array_ns = data_alloc.array_namespace(dual_edge_length)
     # The implementation makes the simplifying assumptions that:
     # - The torus grid consists of equilateral triangles, which means that the
     #   neighboring cell centers must always be at 0.5 * dual_edge_length from
@@ -1140,57 +1170,84 @@ def compute_pos_on_tplane_e_x_y_torus(
 
 def compute_lsq_pseudoinv(
     cell_owner_mask: data_alloc.NDArray,
-    lsq_pseudoinv: data_alloc.NDArray,
     z_lsq_mat_c: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    for jjb in range(lsq_dim_c):
-        for jjk in range(lsq_dim_unk):
-            for jc in range(start_idx, min_rlcell_int):
-                if cell_owner_mask[jc]:
-                    u, s, v_t = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
-                    lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
-                        lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
-                        + v_t[jjk, :lsq_dim_unk] / s[jjk] * u[jjb, jjk] * lsq_weights_c[jc, jjb]
-                    )
+    """
+    Compute least-squares pseudoinverse.
+
+    let lsq_dim_c = c, lsq_dim_unk = k, where c is the number of neighboring cells for the least squares fit,
+    and k is the number of unknowns we want to solve for (e.g. k=2 for a linear fit in 2D: f(x) = a + b*x)
+
+    z_lsq_mat_c is a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of z_lsq_mat_c.
+    let lsq_pseudoinv be the inverse matrix of z_lsq_mat_c.
+    z_lsq_mat_c has dimensions (c, k), lsq_pseudoinv has (k, c), and lsq_weights_c has (c)
+    singular value decomposition of the matrix z_lsq_mat_c gives u_matrix (c, k), s_matrix (k), v_t_matrix (k, k)
+    lsq_pseudoinv = v_t_matrix^T u_matrix^T / s * lsq_weights_c
+    """
+    array_ns = data_alloc.array_namespace(cell_owner_mask)
+    cell_size = cell_owner_mask.shape[0]
+    cell_sequence = array_ns.arange(cell_size)
+    valid_cell_mask = (
+        cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
+    )
+    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_unk, lsq_dim_c), dtype=ta.wpfloat)
+    u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(z_lsq_mat_c[valid_cell_mask, :, :])
+    v_t_over_s = (
+        v_t_matrix[:, :lsq_dim_unk, :lsq_dim_unk] / s_matrix[:, :lsq_dim_unk, array_ns.newaxis]
+    )  # (n_valid_cells, lsq_dim_unk, lsq_dim_unk)
+    pinv = array_ns.matmul(
+        array_ns.transpose(v_t_over_s, (0, 2, 1)),
+        array_ns.transpose(u_matrix, (0, 2, 1))[:, :lsq_dim_unk, :lsq_dim_c],
+    )
+    pinv *= lsq_weights_c[valid_cell_mask, array_ns.newaxis, :lsq_dim_c]
+    lsq_pseudoinv[valid_cell_mask, :, :] = pinv
+
     return lsq_pseudoinv
 
 
 def compute_lsq_weights_c(
     z_dist_g: data_alloc.NDArray,
-    lsq_weights_c_jc: data_alloc.NDArray,
     lsq_dim_stencil: int,
     lsq_wgt_exp: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    for js in range(lsq_dim_stencil):
-        z_norm = array_ns.sqrt(array_ns.dot(z_dist_g[js, :], z_dist_g[js, :]))
-        lsq_weights_c_jc[js] = 1.0 / (z_norm**lsq_wgt_exp)
-    return lsq_weights_c_jc / array_ns.max(lsq_weights_c_jc)
+    array_ns = data_alloc.array_namespace(z_dist_g)
+    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g[:, :lsq_dim_stencil, :] ** 2, axis=2))
+    lsq_weights_c = 1.0 / (z_norm**lsq_wgt_exp)
+    lsq_weights_c = lsq_weights_c / array_ns.max(lsq_weights_c, axis=1)[:, array_ns.newaxis]
+    return lsq_weights_c
 
 
 def compute_z_lsq_mat_c(
     cell_owner_mask: data_alloc.NDArray,
-    z_lsq_mat_c: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
     z_dist_g: data_alloc.NDArray,
-    jc: int,
+    start_idx: int,
+    min_rlcell_int: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(cell_owner_mask)
+    cell_size = cell_owner_mask.shape[0]
+    cell_sequence = array_ns.arange(cell_size)
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-    if cell_owner_mask[jc]:
-        z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
 
-    for js in range(lsq_dim_c):
-        z_lsq_mat_c[jc, js, :lsq_dim_unk] = lsq_weights_c[jc, js] * z_dist_g[js, :]
+    valid_cell_mask = (
+        cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
+    )
+    z_lsq_mat_c[valid_cell_mask, :min_lsq_bound, :min_lsq_bound] = 1.0
+    valid_cell_mask_with_halo = (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
 
-    return z_lsq_mat_c[jc, js, :lsq_dim_unk]
+    z_lsq_mat_c[valid_cell_mask_with_halo, :lsq_dim_c, :lsq_dim_unk] = (
+        lsq_weights_c[valid_cell_mask_with_halo, :lsq_dim_c, array_ns.newaxis]
+        * z_dist_g[valid_cell_mask_with_halo, :lsq_dim_c, :]
+    )
+    return z_lsq_mat_c
 
 
 def compute_lsq_coeffs(
@@ -1211,12 +1268,9 @@ def compute_lsq_coeffs(
     min_rlcell_int: int,
     geometry_type: int,
     exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
-    lsq_pseudoinv = array_ns.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
-    z_lsq_mat_c = array_ns.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
-    z_dist_g = array_ns.zeros((min_rlcell_int, lsq_dim_c, 2))
+    array_ns = data_alloc.array_namespace(cell_center_x)
+    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
@@ -1226,15 +1280,10 @@ def compute_lsq_coeffs(
                         cell_lat,
                         cell_lon[c2e2c[:, js]],
                         cell_lat[c2e2c[:, js]],
-                        array_ns,
                     )
                 ).T
 
             z_dist_g *= grid_sphere_radius
-            min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-            for jc in range(start_idx, min_rlcell_int):
-                if cell_owner_mask[jc]:
-                    z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
 
         case base_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
@@ -1255,32 +1304,28 @@ def compute_lsq_coeffs(
                     )
                 z_dist_g[jc, :, :] = cc_cell - cc_cv
 
-    for jc in range(start_idx, min_rlcell_int):
-        lsq_weights_c[jc, :] = compute_lsq_weights_c(
-            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp, array_ns
-        )
-        z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
-            cell_owner_mask,
-            z_lsq_mat_c,
-            lsq_weights_c,
-            z_dist_g[jc, :, :],
-            jc,
-            lsq_dim_unk,
-            lsq_dim_c,
-        )
+    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_dim_stencil, lsq_wgt_exp)
+
+    z_lsq_mat_c = compute_z_lsq_mat_c(
+        cell_owner_mask,
+        lsq_weights_c,
+        z_dist_g,
+        start_idx,
+        min_rlcell_int,
+        lsq_dim_unk,
+        lsq_dim_c,
+    )
 
     exchange(lsq_weights_c)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
-        lsq_pseudoinv,
         z_lsq_mat_c,
         lsq_weights_c,
         start_idx,
         min_rlcell_int,
         lsq_dim_unk,
         lsq_dim_c,
-        array_ns,
     )
     exchange(lsq_pseudoinv[:, 0, :])
     exchange(lsq_pseudoinv[:, 1, :])

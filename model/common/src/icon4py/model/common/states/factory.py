@@ -112,8 +112,8 @@ class NeedsExchange(Protocol):
                 log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
                 assert (
-                    first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-                ), f"1st dimension {first_dim} needs to be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()} for exchange"
+                    first_dim.kind == gtx.DimensionKind.HORIZONTAL
+                ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
                     exchange.exchange(first_dim, buffer, stream=decomposition.BLOCK)
                 log.debug(f"exchanged buffer for {name}")
