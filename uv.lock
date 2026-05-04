@@ -1657,8 +1657,8 @@ testing = [
 build = [
     { name = "bump-my-version" },
     { name = "pip" },
-    { name = "setuptools" },
     { name = "pooch" },
+    { name = "setuptools" },
     { name = "wheel" },
 ]
 dev = [
@@ -1763,8 +1763,8 @@ provides-extras = ["all", "cuda12", "cuda13", "distributed", "fortran", "io", "p
 build = [
     { name = "bump-my-version", specifier = ">=0.16.0" },
     { name = "pip", specifier = ">=22.1.1" },
-    { name = "setuptools", specifier = ">=70.1.1" },
     { name = "pooch", specifier = ">=1.7.0" },
+    { name = "setuptools", specifier = ">=70.1.1" },
     { name = "wheel", specifier = ">=0.45.0" },
 ]
 dev = [
@@ -2101,7 +2101,6 @@ dependencies = [
     { name = "icon4py-atmosphere-dycore" },
     { name = "icon4py-common" },
     { name = "icon4py-testing" },
-    { name = "numpy" },
     { name = "packaging" },
     { name = "typer" },
 ]
@@ -2114,7 +2113,6 @@ requires-dist = [
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-testing", editable = "model/testing" },
-    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
@@ -2129,10 +2127,10 @@ dependencies = [
     { name = "icon4py-common", extra = ["io"] },
     { name = "numpy" },
     { name = "packaging" },
+    { name = "pooch" },
     { name = "pytest" },
     { name = "serialbox4py" },
     { name = "typing-extensions" },
-    { name = "pooch" },
 ]
 
 [package.metadata]

@@ -82,7 +82,6 @@ def test_compute_domain_bounds(
         dim,
         refin_ctrl,
         decomposition_info,
-        array_ns=data_alloc.import_array_ns(backend),
     )
     if (
         experiment == definitions.Experiments.GAUSS3D

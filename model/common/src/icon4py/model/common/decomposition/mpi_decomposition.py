@@ -389,8 +389,8 @@ class GlobalReductions(Reductions):
         buffer: data_alloc.NDArray,
         local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
         global_reduction: mpi4py.MPI.Op,
-        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
+        array_ns = data_alloc.array_namespace(buffer)
         local_red_val = local_reduction(buffer)
         recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
         if hasattr(
@@ -403,54 +403,47 @@ class GlobalReductions(Reductions):
     def _calc_buffer_size(
         self,
         buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+        array_ns = data_alloc.array_namespace(buffer)
+        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM)
 
-    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._min_identity(buffer.dtype, array_ns),
             array_ns.min,
             mpi4py.MPI.MIN,
-            array_ns,
         )
 
-    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._max_identity(buffer.dtype, array_ns),
             array_ns.max,
             mpi4py.MPI.MAX,
-            array_ns,
         )
 
-    def sum(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
+    def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
             array_ns.sum,
             mpi4py.MPI.SUM,
-            array_ns,
         )
 
-    def mean(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        global_buffer_size = self._calc_buffer_size(buffer, array_ns)
+        array_ns = data_alloc.array_namespace(buffer)
+        global_buffer_size = self._calc_buffer_size(buffer)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
 
@@ -459,7 +452,6 @@ class GlobalReductions(Reductions):
                 (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
                 array_ns.sum,
                 mpi4py.MPI.SUM,
-                array_ns,
             )
             / global_buffer_size
         )
