@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast
@@ -48,17 +47,9 @@ from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increm
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
     _update_mass_volume_flux,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants, RayleighType
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = constants.RayleighType()
 
 
 @gtx.field_operator
@@ -108,7 +99,7 @@ def _compute_w_explicit_term_with_predictor_advective_tendency(
 
     w_explicit_term_wp = current_w + dtime * (
         predictor_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
+        - PhysicsConstants.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -139,7 +130,7 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     w_explicit_term_wp = current_w + dtime * (
         advection_explicit_weight_parameter * predictor_vertical_wind_advective_tendency_wp
         + advection_implicit_weight_parameter * corrector_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
+        - PhysicsConstants.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -159,9 +150,9 @@ def _compute_solver_coefficients_matrix(
 
     z_beta_wp = (
         dtime
-        * dycore_consts.rd
+        * PhysicsConstants.rd
         * current_exner
-        / (dycore_consts.cvd * current_rho * current_theta_v)
+        / (PhysicsConstants.cvd * current_rho * current_theta_v)
         * inv_ddqz_z_full_wp
     )
     z_alpha_wp = (
@@ -340,10 +331,10 @@ def _vertically_implicit_solver_at_predictor_step(
         w_explicit_term=w_explicit_term,
         exner_explicit_term=exner_explicit_term,
         dtime=dtime,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
-    if rayleigh_type == rayleigh_damping_options.KLEMP:
+    if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
@@ -653,10 +644,10 @@ def _vertically_implicit_solver_at_corrector_step(
         w_explicit_term=w_explicit_term,
         exner_explicit_term=exner_explicit_term,
         dtime=dtime,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
-    if rayleigh_type == rayleigh_damping_options.KLEMP:
+    if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(

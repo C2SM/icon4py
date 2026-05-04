@@ -11,15 +11,10 @@ import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
 
-import icon4py.model.common.dimension as dims
-import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    SingleNodeExchange,
-    create_exchange,
-)
 from icon4py.model.common.grid import simple
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
     backend,
@@ -28,16 +23,16 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures form te
     experiment,
     grid_savepoint,
     icon_grid,
-    processor_props,
+    process_props,
 )
 
 from ...grid import utils as grid_utils
 
 
-@pytest.mark.parametrize("processor_props", [False], indirect=True)
-def test_create_single_node_runtime_without_mpi(processor_props):  # fixture
+@pytest.mark.parametrize("process_props", [False], indirect=True)
+def test_create_single_node_runtime_without_mpi(process_props):  # fixture
     decomposition_info = definitions.DecompositionInfo()
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)
 
@@ -91,6 +86,6 @@ def test_decomposition_info_is_distributed(flag, expected) -> None:
         dims.CellDim,
         np.arange(mesh.num_cells),
         np.arange(mesh.num_cells),
-        np.ones((mesh.num_cells,)) * flag,
+        np.full((mesh.num_cells,), flag),
     )
     assert decomp.is_distributed() == expected

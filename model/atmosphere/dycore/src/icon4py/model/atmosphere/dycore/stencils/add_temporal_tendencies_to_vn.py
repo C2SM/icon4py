@@ -5,16 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
-
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-dycore_consts: Final = constants.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -31,7 +27,7 @@ def _add_temporal_tendencies_to_vn(
 
     vn_nnew_wp = current_vn + dtime * (
         astype(predictor_normal_wind_advective_tendency, wpfloat)
-        - dycore_consts.cpd * theta_v_at_edges_on_model_levels * z_gradh_exner_wp
+        - PhysicsConstants.cpd * theta_v_at_edges_on_model_levels * z_gradh_exner_wp
         + astype(normal_wind_tendency_due_to_slow_physics_process, wpfloat)
     )
     return vn_nnew_wp

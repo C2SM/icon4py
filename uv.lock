@@ -1658,7 +1658,7 @@ build = [
     { name = "bump-my-version" },
     { name = "pip" },
     { name = "setuptools" },
-    { name = "wget" },
+    { name = "pooch" },
     { name = "wheel" },
 ]
 dev = [
@@ -1670,6 +1670,7 @@ dev = [
     { name = "myst-parser" },
     { name = "nox" },
     { name = "pip" },
+    { name = "pooch" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -1691,7 +1692,6 @@ dev = [
     { name = "types-cffi" },
     { name = "typing-extensions" },
     { name = "validate-pyproject-schema-store", extra = ["all"] },
-    { name = "wget" },
     { name = "wheel" },
 ]
 docs = [
@@ -1764,7 +1764,7 @@ build = [
     { name = "bump-my-version", specifier = ">=0.16.0" },
     { name = "pip", specifier = ">=22.1.1" },
     { name = "setuptools", specifier = ">=70.1.1" },
-    { name = "wget", specifier = ">=3.2" },
+    { name = "pooch", specifier = ">=1.7.0" },
     { name = "wheel", specifier = ">=0.45.0" },
 ]
 dev = [
@@ -1776,6 +1776,7 @@ dev = [
     { name = "myst-parser", specifier = ">=4.0.0" },
     { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
     { name = "pip", specifier = ">=22.1.1" },
+    { name = "pooch", specifier = ">=1.7.0" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.0.1" },
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
@@ -1797,7 +1798,6 @@ dev = [
     { name = "types-cffi", specifier = ">=1.16.0" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
-    { name = "wget", specifier = ">=3.2" },
     { name = "wheel", specifier = ">=0.45.0" },
 ]
 docs = [
@@ -1988,7 +1988,6 @@ dependencies = [
     { name = "gt4py" },
     { name = "numpy" },
     { name = "packaging" },
-    { name = "scipy" },
     { name = "typing-extensions" },
 ]
 
@@ -2056,7 +2055,6 @@ requires-dist = [
     { name = "packaging", specifier = ">=20.0" },
     { name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1" },
     { name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0" },
-    { name = "scipy", specifier = ">=1.14.1" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0" },
     { name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0" },
@@ -2134,7 +2132,7 @@ dependencies = [
     { name = "pytest" },
     { name = "serialbox4py" },
     { name = "typing-extensions" },
-    { name = "wget" },
+    { name = "pooch" },
 ]
 
 [package.metadata]
@@ -2144,10 +2142,10 @@ requires-dist = [
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pooch", specifier = ">=1.7.0" },
     { name = "pytest", specifier = ">=8.0.1" },
     { name = "serialbox4py", specifier = ">=2.6.2", index = "https://test.pypi.org/simple/" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
-    { name = "wget", specifier = ">=3.2" },
 ]
 
 [[package]]
@@ -5002,12 +5000,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/0b/02/ae6ceac1baeda5308
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f4/24/2a3e3df732393fed8b3ebf2ec078f05546de641fe1b667ee316ec1dcf3b7/webencodings-0.5.1-py2.py3-none-any.whl", hash = "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78", size = 11774, upload-time = "2017-04-05T20:21:32.581Z" },
 ]
-
-[[package]]
-name = "wget"
-version = "3.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/47/6a/62e288da7bcda82b935ff0c6cfe542970f04e29c756b0e147251b2fb251f/wget-3.2.zip", hash = "sha256:35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061", size = 10857, upload-time = "2015-10-22T15:26:37.51Z" }
 
 [[package]]
 name = "wheel"

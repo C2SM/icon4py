@@ -66,7 +66,6 @@ class GridManager:
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(msimberg): remove to separate vertical and horizontal grid
         offset_transformation: gridfile.IndexTransformation = _fortran_to_python_transformer,
-        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._offset_transformation = offset_transformation
         self._file_name = str(grid_file)
@@ -77,7 +76,6 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
-        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -106,9 +104,9 @@ class GridManager:
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        run_properties=_single_process_props,
-    ):
-        if not run_properties.is_single_rank() and isinstance(
+        process_props: decomposition.ProcessProperties = _single_process_props,
+    ) -> None:
+        if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer
         ):
             raise InvalidConfigError("Need a Decomposer for multi node run")
@@ -126,7 +124,7 @@ class GridManager:
             keep_skip_values=keep_skip_values,
             geometry_type=geometry_type,
             decomposer=decomposer,
-            run_properties=run_properties,
+            process_props=process_props,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self._geometry = self._read_geometry_fields(allocator)
@@ -393,14 +391,14 @@ class GridManager:
         keep_skip_values: bool,
         geometry_type: base.GeometryType,
         decomposer: decomp.Decomposer,
-        run_properties: decomposition.ProcessProperties,
+        process_props: decomposition.ProcessProperties,
     ) -> None:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived
         connectivities needed in Icon4py from them. Adds constructed start/end
         index information to the grid. The grid will be distributed or not based
-        on run_properties.
+        on process_props.
 
         """
         xp = data_alloc.import_array_ns(allocator)
@@ -412,7 +410,7 @@ class GridManager:
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
-        if limited_area and not run_properties.is_single_rank():
+        if limited_area and not process_props.is_single_rank():
             raise NotImplementedError("Limited-area grids are not supported in distributed runs")
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
@@ -427,12 +425,12 @@ class GridManager:
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V, array_ns=xp),
         }
 
-        cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, run_properties.comm_size)
+        cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, process_props.comm_size)
         # HALO CONSTRUCTION
         # TODO(halungge): reduce the set of neighbor tables used in the halo construction
         # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
         halo_constructor = halo.get_halo_constructor(
-            run_properties=run_properties,
+            process_props=process_props,
             full_grid_size=global_size,
             connectivities=global_neighbor_tables,
             allocator=allocator,
@@ -460,7 +458,7 @@ class GridManager:
             horizontal_config=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
-            distributed=not run_properties.is_single_rank(),
+            distributed=not process_props.is_single_rank(),
             keep_skip_values=keep_skip_values,
         )
 
@@ -614,15 +612,20 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
-    dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
-    expanded = dummy_c2v[e2c, :]
-    sh = expanded.shape
-    flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = array_ns.zeros_like(e2v)
-    # TODO(halungge): vectorize speed this up?
-    for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
-    return array_ns.hstack((e2v, far_indices))
+    e2c_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)[e2c, :]
+    # `flat` includes duplicated e2v vertices (v1, v3), shape (n_edges, 6).
+    flat = e2c_c2v.reshape(e2c_c2v.shape[0], -1)
+
+    far_indices_mask = (flat != e2v[:, 0, array_ns.newaxis]) & (flat != e2v[:, 1, array_ns.newaxis])
+
+    neighbor_idx = array_ns.arange(flat.shape[1], dtype=gtx.int32)
+    # identify v0 and v2 positions with the mask, and replace v1 and v3 positions with 6
+    far_indices_pos = array_ns.where(
+        far_indices_mask, neighbor_idx, neighbor_idx.shape[0]
+    )  # (n_edges, 6)
+    far_indices_pos = array_ns.sort(far_indices_pos, axis=1)[:, :2]
+    e2v_far = array_ns.take_along_axis(flat, far_indices_pos, axis=1)
+    return array_ns.hstack((e2v, e2v_far))
 
 
 def _determine_center_position(
@@ -770,7 +773,7 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
     """
     patched_ar = array_ns.append(
         ar,
-        gridfile.GridFile.INVALID_INDEX * array_ns.ones((1, ar.shape[1]), dtype=gtx.int32),
+        array_ns.full((1, ar.shape[1]), gridfile.GridFile.INVALID_INDEX, dtype=gtx.int32),
         axis=0,
     )
     return patched_ar

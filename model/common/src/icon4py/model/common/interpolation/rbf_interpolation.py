@@ -13,7 +13,6 @@ from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
-import scipy.linalg as sla
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -242,7 +241,7 @@ def _compute_distance_vector_matrix(
         case base_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2) noqa: ERA001
-            diff = np.abs(v1 - v2)
+            diff = array_ns.abs(v1 - v2)
             domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
             domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
@@ -332,7 +331,6 @@ def _compute_rbf_interpolation_coeffs(
     rbf_offset_shape_full = rbf_offset.shape
     assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
-    num_elements = rbf_offset.shape[0]
 
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
@@ -405,7 +403,9 @@ def _compute_rbf_interpolation_coeffs(
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
         nxnx.append(
-            array_ns.matmul(z_nx[i][:, array_ns.newaxis], edge_normal.transpose(0, 2, 1)).squeeze()
+            array_ns.matmul(
+                z_nx[i][:, array_ns.newaxis, :], edge_normal.transpose(0, 2, 1)
+            ).squeeze()
         )
         rhs.append(rbf_val * nxnx[i])
         assert rhs[i].shape == rbf_offset.shape
@@ -436,27 +436,39 @@ def _compute_rbf_interpolation_coeffs(
         rbf_offset.shape[1],
     )
 
-    # Solve linear system for coefficients
-    #
-    # Currently always on CPU. At the time of writing cupy does not have
-    # cho_solve with the same interface as scipy, but one has been proposed:
-    # https://github.com/cupy/cupy/pull/9116.
-    rbf_vec_coeff_np = [
-        np.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
+    # Solve linear system for coefficients.
+    rbf_vec_coeff = [
+        array_ns.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
         for _ in range(num_zonal_meridional_components)
     ]
-    rbf_offset_np = data_alloc.as_numpy(rbf_offset)
-    z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
-    rhs_np = [data_alloc.as_numpy(x) for x in rhs]
-    for i in range(num_elements):
-        valid_neighbors = np.where(rbf_offset_np[i, :] >= 0)[0]
-        rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])
-        z_diag_np = sla.cho_factor(rbfmat_np)
+    # Batch solve by grouping elements with the same number of valid neighbors.
+    # ASSUMPTIONS FOR MAKING THE FOLLOWING BATCH SOLVE POSSIBLE:
+    #   (1) In ICON grids, valid entries in connectivity tables are contiguous from the start.
+    #       In other words, those invalid neighbors must be located at the end of the neighbor list.
+    #       Therefore, we cannot compute rbf all the way into halo cells or the first boundary layer
+    #       because the invalid neighbors may appear in the middle the the neighbor list.
+    #   (2) Invalid indices must be a negative.
+    n_valid = (rbf_offset >= 0).sum(axis=1)
+    for nv in (u := array_ns.unique(n_valid))[u != 0]:
+        group_idx = array_ns.where(n_valid == nv)[0]
+        valid_cols = array_ns.arange(nv)
+        mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
-            rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
-                z_diag_np, rhs_np[j][i, valid_neighbors]
-            )
-    rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])
+            rhs_batch = rhs[j][array_ns.ix_(group_idx, valid_cols)]
+            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
+            # rhs_batch (B, nv, 1). The solution of mat_batch x = rhs_batch is sol.
+            # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
+            # batched column vector (core dims (nv,1)) rather than a matrix
+            # (core dims (B, nv)), which would mismatch m=nv from the LHS.
+            # This problem is well explained in https://github.com/numpy/numpy/issues/26598
+            # The RBF matrix is symmetric and positive definite. However,
+            # the Cholesky method is not chosen, as in ICON, simply because scipy
+            # does not support batched solving of the linear equation,
+            # necessitating a Python loop and resulting in poor performance.
+            sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
+            rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
+
+    rbf_vec_coeff = tuple(rbf_vec_coeff)
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):

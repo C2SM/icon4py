@@ -21,9 +21,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-dycore_consts: Final = constants.PhysicsConstants()
-
-
 def compute_results_for_thermodynamic_variables_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     rho_explicit_term: np.ndarray,
@@ -56,7 +53,7 @@ def compute_results_for_thermodynamic_variables_numpy(
     theta_v_new = (
         current_rho
         * current_theta_v
-        * ((exner_new / current_exner - 1.0) * dycore_consts.cvd_o_rd + 1.0)
+        * ((exner_new / current_exner - 1.0) * constants.CVD_O_RD + 1.0)
         / rho_new
     )
     return rho_new, exner_new, theta_v_new

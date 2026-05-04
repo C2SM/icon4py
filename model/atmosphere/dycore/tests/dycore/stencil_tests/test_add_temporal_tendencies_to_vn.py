@@ -22,9 +22,6 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-dycore_consts: Final = constants.PhysicsConstants()
-
-
 def add_temporal_tendencies_to_vn_numpy(
     current_vn: np.ndarray,
     predictor_normal_wind_advective_tendency: np.ndarray,
@@ -34,7 +31,7 @@ def add_temporal_tendencies_to_vn_numpy(
     dtime: float,
 ) -> np.ndarray:
     vn_nnew = current_vn + dtime * (
-        predictor_normal_wind_advective_tendency + normal_wind_tendency_due_to_slow_physics_process - dycore_consts.cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+        predictor_normal_wind_advective_tendency + normal_wind_tendency_due_to_slow_physics_process - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
     )
     return vn_nnew
 
