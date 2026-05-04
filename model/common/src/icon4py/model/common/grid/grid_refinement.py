@@ -202,8 +202,8 @@ def compute_domain_bounds(
 
     """
     assert (
-        dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-    ), f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
+        dim.kind == gtx.DimensionKind.HORIZONTAL
+    ), f"Dimension must be one of {list(dims.horizontal_dims())}"
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
     array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)

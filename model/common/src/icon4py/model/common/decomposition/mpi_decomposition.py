@@ -120,17 +120,14 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         self._domain_id_gen = decomp_defs.DomainDescriptorIdGenerator(process_props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            dim: self._create_domain_descriptor(dim)
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            dim: self._create_domain_descriptor(dim) for dim in dims.horizontal_dims()
         }
         self._field_size: dict[gtx.Dimension, int] = {
             dim: self._decomposition_info.global_index(dim).shape[0]
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for dim in dims.horizontal_dims()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-        self._patterns = {
-            dim: self._create_pattern(dim) for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        }
+        self._patterns = {dim: self._create_pattern(dim) for dim in dims.horizontal_dims()}
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
 
@@ -190,7 +187,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
         the granule context where fields otherwise have length nproma.
         """
-        if dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+        if dim.kind == gtx.DimensionKind.HORIZONTAL:
             return field.ndarray[: self._field_size[dim]]
         else:
             raise ValueError(f"Unknown dimension {dim}")
@@ -229,8 +226,8 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
         assert (
-            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+            dim in dims.horizontal_dims()
+        ), f"first dimension must be one of ({list(dims.horizontal_dims())})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:

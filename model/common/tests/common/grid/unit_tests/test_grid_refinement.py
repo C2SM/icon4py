@@ -19,7 +19,7 @@ from icon4py.model.testing.fixtures import backend, cpu_allocator, grid_descript
 from .. import utils
 
 
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize(
     "grid_file, expected",
     [
@@ -173,7 +173,7 @@ def test_compute_domain_bounds_for_limited_area_grid(
         ), f"Expected end index {expected_value} for domain = {d} , but got {v}"
 
 
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_compute_domain_bounds_for_global_grid(
     grid_description: test_defs.GridDescription,
     dim: gtx.Dimension,
