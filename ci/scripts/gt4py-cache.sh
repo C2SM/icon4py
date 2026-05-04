@@ -3,7 +3,7 @@
 # Sets up a persistent gt4py cache directory based on backend and week to start
 # with a fresh cache every week. ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR is set as
 # the root and GT4PY_BUILD_CACHE_DIR is set to
-# ${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/${BACKEND}/uv-lock-<hash of uv.lock>-${DATE}.
+# ${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/${BACKEND}/uv-lock-<hash of uv.lock>-${DATE}.
 
 set -euo pipefail
 
