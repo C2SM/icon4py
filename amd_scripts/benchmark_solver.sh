@@ -14,7 +14,7 @@ cd $ICON4PY_GIT_ROOT
 # Set necessasry flags for compilation
 source amd_scripts/setup_env.sh
 
-source .venv/bin/activate
+source .venv_rocm/bin/activate
 
 export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
 export GT4PY_BUILD_CACHE_LIFETIME=persistent
@@ -30,7 +30,7 @@ export ICON_GRID="icon_benchmark_regional" # TODO(CSCS): Check also `icon_benchm
 
 # Run the benchmark and collect the runtime of the whole GT4Py program (see `GT4Py Timer Report` in the output)
 # The compiled GT4Py programs will be cached in the directory specified by `GT4PY_BUILD_CACHE_DIR` to be reused for running the profilers afterwards
-pytest -sv \
+.venv_rocm/bin/python -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
@@ -45,7 +45,7 @@ export ICON4PY_STENCIL_TEST_ITERATIONS=10
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=100
 # Can also add `--att` for thread tracing
 rocprofv3 --kernel-trace on --hip-trace on --marker-trace on --memory-copy-trace on --memory-allocation-trace on --output-format pftrace -o rocprofv3_${GT4PY_BUILD_CACHE_DIR} -- \
-    $(which python3.12) -m pytest -sv \
+    .venv_rocm/bin/python -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
@@ -68,7 +68,7 @@ export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=0
 export ICON4PY_STENCIL_TEST_ITERATIONS=1
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=1
 rocprof-compute profile --name rcu_${GT4PY_BUILD_CACHE_DIR} ${ROCPROF_COMPUTE_KERNEL_NAME_FILTER} --format-rocprof-output rocpd --kernel-names -R FP64 -- \
-    $(which python3.12) -m pytest -sv \
+    .venv_rocm/bin/python -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
