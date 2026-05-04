@@ -7,10 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-"""
-Package for development scripts.
+from __future__ import annotations
 
-Dependencies for all the modules in this package should be declared
-in the 'scripts' dependency group (in 'pyproject.toml').
+import lazy_loader as lazy
 
-"""
+
+submodules = ["common"]
+
+__getattr__, __dir__, _ = lazy.attach(__name__, submodules)

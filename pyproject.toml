@@ -35,13 +35,18 @@ lint = [
   "tach>=0.23.0",
   'validate-pyproject-schema-store[all]>=2025.06.13'
 ]
-scripts = ["typer>=0.12.3", "pytest"]
+scripts = [
+  "lazy-loader>=0.5",
+  "typer>=0.15",
+  {include-group = "build"},
+  {include-group = "test"}
+]
 test = [
   # workspace members
   "icon4py-testing~=0.1.0",
   # external dependencies
   "coverage[toml]>=7.5.0",
-  "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO(): remove once there is any release newer than 2024.10.09
+  "nox>=2025.5.1",
   "pytest>=8.0.1",
   "pytest-benchmark>=5.0.0",
   "pytest-cache>=1.0",
