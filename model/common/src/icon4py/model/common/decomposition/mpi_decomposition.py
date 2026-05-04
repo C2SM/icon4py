@@ -55,7 +55,7 @@ log = logging.getLogger(__name__)
 
 
 def init_mpi() -> None:
-    from mpi4py import MPI
+    from mpi4py import MPI  # noqa: PLC0415
 
     if not MPI.Is_initialized():
         log.info("initializing MPI")
@@ -63,7 +63,7 @@ def init_mpi() -> None:
 
 
 def finalize_mpi() -> None:
-    from mpi4py import MPI
+    from mpi4py import MPI  # noqa: PLC0415
 
     if not MPI.Is_finalized():
         log.info("finalizing MPI")
@@ -228,9 +228,9 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         stream: decomp_defs.StreamLike = decomp_defs.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
-        assert (
-            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+            f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        )
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:
