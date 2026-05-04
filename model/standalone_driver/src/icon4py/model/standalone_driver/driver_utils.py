@@ -194,7 +194,7 @@ def initialize_granules(
         primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
         primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
         dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
         dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
         primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
@@ -282,7 +282,7 @@ def initialize_granules(
             metrics_attributes.THETA_REF_IC
         ),
         d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC2_MC),
         reference_rho_at_edges_on_model_levels=metrics_field_source.get(
             metrics_attributes.RHO_REF_ME
         ),
@@ -471,9 +471,8 @@ def display_driver_setup_in_log_file(
 
     log.info("==== Vertical Grid Parameters ====")
     log.info(vertical_params)
-    consts = constants.PhysicsConstants()
     log.info("==== Physical Constants ====")
-    for name, value in consts.__class__.__dict__.items():
+    for name, value in constants.PhysicsConstants.__class__.__dict__.items():
         if name.startswith("_") or callable(value):
             continue
         log.info(f"{name:30s}: {value}")

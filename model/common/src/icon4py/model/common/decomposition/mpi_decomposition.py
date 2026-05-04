@@ -11,19 +11,17 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Any, ClassVar, Final, Union
+from typing import Any, Union
 
-import dace  # type: ignore[import-untyped]
 import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
-from icon4py.model.common.orchestration import halo_exchange
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -113,10 +111,6 @@ class MPICommProcessProperties(decomp_defs.ProcessProperties):
 
 
 class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
-    max_num_of_fields_to_communicate_dace: Final[int] = (
-        10  # maximum number of fields to perform halo exchange on (DaCe-related)
-    )
-
     def __init__(
         self,
         process_props: decomp_defs.ProcessProperties,
@@ -139,11 +133,6 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
-
-        # DaCe SDFGConvertible interface
-        self.num_of_halo_tasklets = (
-            0  # Some SDFG variables need to be defined only once (per fused SDFG)
-        )
 
         self._applied_patterns_cache: dict = {}
 
@@ -266,101 +255,15 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         super().exchange(dim, *fields, stream=stream)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
-    # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
-    ) -> dace.sdfg.sdfg.SDFG:
-        # NOTE: Streams are not supported here.
-        if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
-            raise ValueError(
-                f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
-            )
-        if dim is None:
-            raise ValueError("Need to define a dimension.")
-
-        # Build the halo exchange SDFG and return it
-        sdfg = dace.SDFG("_halo_exchange_")
-        state = sdfg.add_state()
-
-        global_buffers = {
-            self.__sdfg_signature__()[0][i]: arg for i, arg in enumerate(args)
-        }  # Field name : Data Descriptor
-
-        halo_exchange.add_halo_tasklet(
-            sdfg,
-            state,
-            global_buffers,
-            self,
-            dim,
-            id(self),
-            full_exchange,
-            self.num_of_halo_tasklets,
-        )
-
-        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-        sdfg.arg_names.extend(list(self.__sdfg_closure__().keys()))
-
-        self.num_of_halo_tasklets += 1
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        # Get the underlying C++ pointers of the GHEX objects and use them in the halo exchange tasklet
-        return {ghex_ptr_name: dace.uintp for ghex_ptr_name in halo_exchange.GHEX_PTR_NAMES}
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        args = [
-            f"field_{i}" for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace)
-        ]
-        return (args, [])
-
-    __sdfg__ = dace__sdfg__
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
-
 
 @dataclass
+<<<<<<< HEAD
 class HaloExchangeWait(decomp_defs.HaloExchangeWaitRuntime):
     buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
+=======
+class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
+>>>>>>> main
     exchange_object: GHexMultiNodeExchange
-
-    # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
-    ) -> dace.sdfg.sdfg.SDFG:
-        # Streams are not supported by the orchestrator. This is the reason why they
-        #  do not accept the `stream` argument.
-        sdfg = dace.SDFG("_halo_exchange_wait_")
-        state = sdfg.add_state()
-
-        # The communication handle used in the halo_exchange tasklet is a global variable
-        # ghex::communication_handle<communication_handle_type> h_{id(self.exchange_object)};
-        # Therefore, this tasklet calls the wait() method on the communication handle -disregards any input-
-        tasklet = dace.sdfg.nodes.Tasklet(
-            "_halo_exchange_wait_",
-            inputs=None,
-            outputs=None,
-            code=f"h_{id(self.exchange_object)}.wait();",
-            language=dace.dtypes.Language.CPP,
-            side_effects=False,
-        )
-        state.add_node(tasklet)
-
-        # Dummy input to maintain same interface with non-DaCe branch
-        buffer_name = HaloExchangeWait.buffer_name
-        sdfg.add_scalar(name=buffer_name, dtype=dace.int32)
-        buffer = state.add_read(buffer_name)
-        tasklet.in_connectors["IN_" + buffer_name] = dace.int32.dtype
-        state.add_edge(
-            buffer, None, tasklet, "IN_" + buffer_name, dace.Memlet(buffer_name, subset="0")
-        )
-        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        return {}
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return ([HaloExchangeWait.buffer_name], [])
 
     def __call__(
         self,
@@ -368,10 +271,6 @@ class HaloExchangeWait(decomp_defs.HaloExchangeWaitRuntime):
         stream: decomp_defs.StreamLike | decomp_defs.BlockType = decomp_defs.DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
-
-    __sdfg__ = dace__sdfg__  # type: ignore[assignment]
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
 
 
 @decomp_defs.create_halo_exchange_wait.register(GHexMultiNodeExchange)
