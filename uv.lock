@@ -2029,7 +2029,6 @@ dependencies = [
     { name = "gt4py" },
     { name = "numpy" },
     { name = "packaging" },
-    { name = "scipy" },
     { name = "typing-extensions" },
 ]
 
@@ -2097,7 +2096,6 @@ requires-dist = [
     { name = "packaging", specifier = ">=20.0" },
     { name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1" },
     { name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0" },
-    { name = "scipy", specifier = ">=1.14.1" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0" },
     { name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0" },

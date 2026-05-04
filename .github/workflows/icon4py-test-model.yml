@@ -60,6 +60,23 @@ jobs:
         run: |
           ./scripts/python/validation_grid_utils.py download
 
+      - name: set GT4Py cache directory
+        # Note that this assumes that each backend gets a separate job in CI.
+        # Mixing e.g. dace_cpu and dace_gpu in the same cache directory may not
+        # work well.
+        run: echo "GT4PY_BUILD_CACHE_DIR=${{ runner.temp }}/gt4py-cache" >> $GITHUB_ENV
+
+      - name: restore GT4Py cache
+        id: gt4py-cache-restore
+        if: github.ref != 'refs/heads/main'
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
+          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-
+            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-main-
+
       - name: run nox session - unit tests
         shell: bash
         run: |
@@ -69,3 +86,10 @@ jobs:
         shell: bash
         run: |
           uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_regional
+
+      - name: save GT4Py cache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
+          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
