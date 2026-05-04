@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.math.derivative import compute_first_vertical_derivative_at_cells
+from icon4py.model.common.math import derivative
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
@@ -28,7 +28,7 @@ def compute_first_vertical_derivative_numpy(
 
 
 class TestComputeFirstVerticalDerivative(StencilTest):
-    PROGRAM = compute_first_vertical_derivative_at_cells
+    PROGRAM = derivative.compute_first_vertical_derivative_at_cells
     OUTPUTS = ("first_vertical_derivative",)
 
     @staticmethod
