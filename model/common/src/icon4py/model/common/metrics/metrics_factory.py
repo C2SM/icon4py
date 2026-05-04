@@ -792,7 +792,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_zdiff_gradp_np)
 
         coeff_gradekin = factory.NumpyDataProvider(
-            func= compute_coeff_gradekin.compute_coeff_gradekin,
+            func=compute_coeff_gradekin.compute_coeff_gradekin,
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
             deps={
@@ -892,7 +892,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
         compute_max_nbhgt = factory.NumpyDataProvider(
-            func= compute_diffusion_metrics.compute_max_nbhgt_array_ns,
+            func=compute_diffusion_metrics.compute_max_nbhgt_array_ns,
             deps={
                 "z_mc": attrs.Z_MC,
             },

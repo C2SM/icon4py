@@ -169,7 +169,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_n2s)
 
         geofac_grdiv = factory.NumpyDataProvider(
-            func= interpolation_fields.compute_geofac_grdiv,
+            func=interpolation_fields.compute_geofac_grdiv,
             fields=(attrs.GEOFAC_GRDIV,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
             deps={
@@ -385,7 +385,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 self.register_provider(e_bln_c_s)
 
                 pos_on_tplane_e_x_y = factory.NumpyDataProvider(
-                    func= interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
+                    func=interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),
                     deps={
@@ -398,7 +398,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 self.register_provider(pos_on_tplane_e_x_y)
 
         c_lin_e = factory.NumpyDataProvider(
-            func= interpolation_fields.compute_c_lin_e,
+            func=interpolation_fields.compute_c_lin_e,
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
             deps={
@@ -475,7 +475,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(e_flx_avg)
 
         cells_aw_verts = factory.NumpyDataProvider(
-            func= interpolation_fields.compute_cells_aw_verts,
+            func=interpolation_fields.compute_cells_aw_verts,
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
             deps={
@@ -499,7 +499,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(cells_aw_verts)
 
         rbf_vec_coeff_c = factory.NumpyDataProvider(
-            func= rbf.compute_rbf_interpolation_coeffs_cell,
+            func=rbf.compute_rbf_interpolation_coeffs_cell,
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
             deps={
@@ -536,7 +536,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(rbf_vec_coeff_c)
 
         rbf_vec_coeff_e = factory.NumpyDataProvider(
-            func= rbf.compute_rbf_interpolation_coeffs_edge,
+            func=rbf.compute_rbf_interpolation_coeffs_edge,
             fields=(attrs.RBF_VEC_COEFF_E,),
             domain=(dims.EdgeDim, dims.E2C2EDim),
             deps={
@@ -572,7 +572,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(rbf_vec_coeff_e)
 
         rbf_vec_coeff_v = factory.NumpyDataProvider(
-            func= rbf.compute_rbf_interpolation_coeffs_vertex,
+            func=rbf.compute_rbf_interpolation_coeffs_vertex,
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),
             deps={
