@@ -67,7 +67,7 @@ def test_compute_zdiff_gradp(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
         array_ns=xp,
     )
 
@@ -81,7 +81,7 @@ def test_compute_zdiff_gradp(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
         array_ns=xp,
     )
 

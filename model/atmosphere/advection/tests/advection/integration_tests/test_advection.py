@@ -162,7 +162,7 @@ def test_advection_run_single_step(
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
         geometry_type=icon_grid.geometry_type,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
     )
 
     least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
@@ -270,7 +270,7 @@ def test_compute_lsq_coeffs(
         start_idx,
         min_rlcell_int,
         icon_grid.geometry_type,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
     )
 
     assert test_helpers.dallclose(

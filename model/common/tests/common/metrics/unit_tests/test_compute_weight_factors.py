@@ -88,7 +88,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=exchange_utils.noop_exchange,
         array_ns=xp,
     )
 
