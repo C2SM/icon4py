@@ -9,12 +9,10 @@
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend, cpu_allocator, grid_description
 
@@ -38,9 +36,8 @@ def test_is_local_area_grid_for_grid_files(
     grid = grid_utils.get_grid_manager_from_identifier(
         grid_file, 1, True, model_backends.get_allocator(backend)
     ).grid
-    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
-    limited_area = refinement.is_limited_area_grid(refinement_field.ndarray, array_ns=xp)
+    limited_area = refinement.is_limited_area_grid(refinement_field.ndarray)
     assert isinstance(limited_area, bool)
     assert expected == limited_area
 
@@ -160,7 +157,7 @@ def test_compute_domain_bounds_for_limited_area_grid(
     decomposition_info = grid_manager.decomposition_info
 
     start_index, end_index = refinement.compute_domain_bounds(
-        dim, refinement_field, decomposition_info=decomposition_info, array_ns=np
+        dim, refinement_field, decomposition_info=decomposition_info
     )
 
     for d, v in start_index.items():
@@ -192,7 +189,7 @@ def test_compute_domain_bounds_for_global_grid(
     refinement_fields = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
     start_index, end_index = refinement.compute_domain_bounds(
-        dim, refinement_fields, decomposition_info, array_ns=np
+        dim, refinement_fields, decomposition_info
     )
     for k, v in start_index.items():
         assert isinstance(v, gtx.int32)
