@@ -241,10 +241,9 @@ def test_global_to_local_index(offset, rank):
                 # global index is not on this local patch:
                 assert not np.isin(offset_full_grid[i][k], neighbor_index_full_grid)
             else:
-                (
-                    neighbor_index_full_grid[k_] == offset_full_grid[i][k],
-                    f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]",
-                )
+                assert (
+                    neighbor_index_full_grid[k_] == offset_full_grid[i][k]
+                ), f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]"
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
