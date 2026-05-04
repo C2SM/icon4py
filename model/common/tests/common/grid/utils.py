@@ -39,17 +39,6 @@ def horizontal_offsets() -> Iterator[gtx.FieldOffset]:
             yield d
 
 
-def non_local_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.vertical_dims()
-    yield from dims.horizontal_dims()
-
-
-def all_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.vertical_dims()
-    yield from dims.horizontal_dims()
-    yield from local_dims()
-
-
 def _domain(dim: gtx.Dimension, zones: Iterator[h_grid.Zone]) -> Iterator[h_grid.Domain]:
     domain = h_grid.domain(dim)
     for zone in zones:
