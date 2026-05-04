@@ -1,6 +1,6 @@
 include:
-  - local: 'ci/base.yml'
-  - local: 'ci/benchmark_bencher_common.yml'
+  - local: '.cscs-ci/base.yml'
+  - local: '.cscs-ci/benchmark_bencher_common.yml'
 
 # benchmark_bencher_stencils_baseline_x86_64:
 #   extends: [.benchmark_model_baseline, .test_template_x86_64]
