@@ -156,7 +156,6 @@ def test_compute_geofac_n2s(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-<<<<<<< HEAD
     geofac_n2s = compute_geofac_n2s(
         dual_edge_length.ndarray,
         geofac_div.ndarray,
