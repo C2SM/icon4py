@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Iterator
-from typing import Final
 
 import gt4py.next as gtx
 
@@ -49,17 +48,22 @@ V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
-_HORIZONTAL_DIMS: Final[tuple[gtx.Dimension, ...]] = tuple(
-    d for d in globals().values() if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL
-)
-_VERTICAL_DIMS: Final[tuple[gtx.Dimension, ...]] = tuple(
-    d for d in globals().values() if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL
-)
-
 
 def horizontal_dims() -> Iterator[gtx.Dimension]:
-    return iter(_HORIZONTAL_DIMS)
+    return iter(
+        tuple(
+            d
+            for d in globals().values()
+            if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL
+        )
+    )
 
 
 def vertical_dims() -> Iterator[gtx.Dimension]:
-    return iter(_VERTICAL_DIMS)
+    return iter(
+        tuple(
+            d
+            for d in globals().values()
+            if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL
+        )
+    )
