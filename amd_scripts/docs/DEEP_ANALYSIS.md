@@ -148,8 +148,16 @@ optimizations that reduce HBM traffic (e.g., fusing intermediates) will move wal
 ## Block size effect on MI300A — verified A/B (32,8) vs (256,1,1)
 
 Same gt4py, same build cache (separate dirs to force recompile), only block size
-differs. Both runs use the patched `extract_pmc.py` (which uses `(TCC_READ + TCC_WRITE) × 64` for HBM BW and `TCC_HIT/TCC_REQ` for L2 hit, verified to match
-rocprof-compute analyze §4.1.9 and §2.1.21 within 3% on map_100_fieldop_1).
+differs.
+
+> **Note (2026-05-03):** the table below reports the "HBM BW" column from the
+> 2026-04-19 version of `extract_pmc.py`, which actually computed
+> `(TCC_READ + TCC_WRITE) × 64 / dur` — that's L1↔L2 throughput, not HBM. The
+> current `extract_pmc.py` separates the planes: L1↔L2, L2-Fabric, and HBM are
+> three columns now. Numbers below are L1↔L2 (or, equivalently, what the script
+> labeled "HBM BW" at the time). For an HBM number validated against
+> rocprof-compute §4.1.9, re-run extract_pmc.py with the current version on
+> the same pmc_perf.csv.
 
 | Kernel            | (32,8) Dur | (32,8) HBM BW | (32,8) L2 hit | (256,1,1) Dur   | (256,1,1) HBM BW | (256,1,1) L2 hit |
 | ----------------- | ---------- | ------------- | ------------- | --------------- | ---------------- | ---------------- |
@@ -173,10 +181,12 @@ rocprofv3 numbers are lower.
 - Heavy 2D kernels (map_100_1, map_111_1, map_60, map_0, map_31): **L2 hit rate
   triples** (15-20% → 32-50%) with `(256,1,1)`. Cell-consecutive threads on the
   same CU share cache lines.
-- HBM BW also **increases** (1.7-2.2 → 2.0-3.1 TB/s) — the kernel runs faster
-  and pushes more bytes/sec into HBM. (Note: the earlier doc claimed HBM "slightly
-  drops because cache absorbs more"; that was wrong, based on the buggy
-  `extract_pmc.py`. With the corrected formula, HBM BW rises.)
+- HBM BW (well, what was called HBM in 2026-04-19's extract_pmc — actually
+  L1↔L2, see note above) also **increases** (1.7-2.2 → 2.0-3.1 TB/s) — the
+  kernel runs faster and pushes more bytes/sec through L2. The earlier-still
+  doc claimed HBM "slightly drops because cache absorbs more"; that was wrong,
+  based on the EA0-channel-0-only formula. With current extract_pmc.py the
+  three planes (L1↔L2, L2-Fabric, HBM) are reported separately.
 - 1D / scan kernels (map_85, map_90, map_91 etc.): unchanged as expected.
 
 GT4Py Timer A/B at the full-solver level (1000 runs each, same MI300A, current gt4py):
