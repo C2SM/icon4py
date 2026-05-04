@@ -1245,8 +1245,8 @@ def compute_z_lsq_mat_c(
     min_rlcell_int: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(cell_owner_mask)
     cell_size = cell_owner_mask.shape[0]
     cell_sequence = array_ns.arange(cell_size)
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)

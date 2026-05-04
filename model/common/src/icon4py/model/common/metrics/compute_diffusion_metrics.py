@@ -9,7 +9,6 @@
 from collections.abc import Callable
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
