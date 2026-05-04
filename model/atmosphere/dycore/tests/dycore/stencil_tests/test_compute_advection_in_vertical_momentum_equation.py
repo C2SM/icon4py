@@ -30,7 +30,7 @@ from .test_compute_advective_vertical_wind_tendency import (
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
-from .test_interpolate_cell_field_to_half_levels_vp import (
+from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy

@@ -156,8 +156,6 @@ def test_time_step_flags(
     ],
 )
 def test_nonhydro_predictor_step(
-    istep_init,
-    istep_exit,
     substep_init,
     step_date_init,
     step_date_exit,
@@ -174,7 +172,6 @@ def test_nonhydro_predictor_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     experiment,
-    ndyn_substeps,
     at_initial_timestep,
     caplog,
     backend,
@@ -214,7 +211,6 @@ def test_nonhydro_predictor_step(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
-    nlev = icon_grid.num_levels
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -238,7 +234,7 @@ def test_nonhydro_predictor_step(
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    cell_start_lateral_boundary_level_2 = icon_grid.start_index(
+    cell_start_lateral_boundary_level_3 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
 
@@ -254,90 +250,76 @@ def test_nonhydro_predictor_step(
     # stencils 2, 3
     assert test_utils.dallclose(
         diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
     assert test_utils.dallclose(
         solve_nonhydro.temporal_extrapolation_of_perturbed_exner.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
 
-    # stencils 4,5
-    assert test_utils.dallclose(
-        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nlev - 1
-        ],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nlev - 1],
-    )
     nflatlev = vertical_params.nflatlev
-    assert test_utils.dallclose(
-        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1
-        ],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1],
-        rtol=1.0e-9,
-    )
     # stencil 6
     assert test_utils.dallclose(
         solve_nonhydro.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nflatlev:
+            cell_start_lateral_boundary_level_3:, nflatlev:
         ],
-        sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
+        sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_3:, nflatlev:],
         atol=5e-18,
     )
 
     # stencils 7,8,9
     assert test_utils.dallclose(
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
     assert test_utils.dallclose(
         solve_nonhydro.nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, 1:
+            cell_start_lateral_boundary_level_3:, 1:
         ],
-        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_3:, 1:],
         rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
     assert test_utils.dallclose(
         solve_nonhydro.perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
     assert test_utils.dallclose(
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
     # stencils 7,8,9, 13
     assert test_utils.dallclose(
         solve_nonhydro.perturbed_rho_at_cells_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
     assert test_utils.dallclose(
         solve_nonhydro.perturbed_theta_v_at_cells_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
 
     # stencils 12
     nflat_gradp = grid_savepoint.nflat_gradp()
     assert test_utils.dallclose(
         solve_nonhydro.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nflat_gradp:
+            cell_start_lateral_boundary_level_3:, nflat_gradp:
         ],
-        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
+        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_3:, nflat_gradp:],
         atol=1e-22,
     )
 
@@ -812,7 +794,6 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-# why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
@@ -1029,7 +1010,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
     model_top_height,
@@ -1037,9 +1017,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     damping_height,
     grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1077,9 +1054,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
-    exner_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
@@ -1097,13 +1071,14 @@ def test_compute_perturbed_quantities_and_interpolation(
     nflat_gradp = grid_savepoint.nflat_gradp()
 
     cell_domain = h_grid.domain(dims.CellDim)
-    start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
     start_cell_lateral_boundary_level_3 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     end_cell_halo_level_2 = icon_grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
+    print("start_cell_lateral_boundary_level_3", start_cell_lateral_boundary_level_3)
+    print("end_cell_halo", end_cell_halo)
+    print("end_cell_halo_level_2", end_cell_halo_level_2)
 
     reference_rho_at_cells_on_model_levels = metrics_savepoint.rho_ref_mc()
     reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
@@ -1124,7 +1099,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
     exner_pr_ref = sp_exit.exner_pr()
     rho_ic_ref = sp_exit.rho_ic()
-    z_exner_ic_ref = sp_exit.z_exner_ic()
     z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_dexner_dz_c_1_ref = sp_ref.z_dexner_dz_c(0)
@@ -1137,7 +1111,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
-        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
@@ -1163,9 +1136,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         igradp_method=igradp_method,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
-        start_cell_lateral_boundary=start_cell_lateral_boundary,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
-        start_cell_halo_level_2=start_cell_halo_level_2,
         end_cell_halo=end_cell_halo,
         end_cell_halo_level_2=end_cell_halo_level_2,
         model_top=0,
@@ -1192,16 +1163,8 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert test_utils.dallclose(
         perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
     )
-    assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
 
-    # `exner_at_cells_on_half_levels` is only computed in a subset of the whole domain, reference may contain garbage outside this range
-    assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:
-        ],
-        z_exner_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:],
-        rtol=1e-11,
-    )
+    assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
 
     assert test_utils.dallclose(
         perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:, :],
@@ -1251,17 +1214,8 @@ def test_compute_interpolation_and_nonhydro_buoy(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1393,7 +1347,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -1406,9 +1359,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
@@ -1608,7 +1558,6 @@ def test_apply_divergence_damping_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -1622,7 +1571,6 @@ def test_apply_divergence_damping_and_update_vn(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
     sp_nh_init = savepoint_nonhydro_init
@@ -1755,15 +1703,10 @@ def test_apply_divergence_damping_and_update_vn(
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
-    ndyn_substeps,
     grid_savepoint,
     lowest_layer_thickness,
     model_top_height,
@@ -1773,8 +1716,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1937,21 +1878,17 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
 def test_compute_averaged_vn_and_fluxes(
     istep_init,
     istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
     ndyn_substeps,
     at_first_substep,
-    grid_savepoint,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -2058,7 +1995,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -2071,9 +2007,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    istep_exit,
-    substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
 ):

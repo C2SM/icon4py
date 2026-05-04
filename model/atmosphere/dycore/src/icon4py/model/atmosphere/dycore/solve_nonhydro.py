@@ -667,7 +667,7 @@ class SolveNonhydro:
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(0),
+                "vertical_start": gtx.int32(1),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
@@ -700,10 +700,8 @@ class SolveNonhydro:
             },
             horizontal_sizes={
                 "start_cell_lateral_boundary_level_3": self._start_cell_lateral_boundary_level_3,
-                "start_cell_halo_level_2": self._start_cell_halo_level_2,
                 "end_cell_halo": self._end_cell_halo,
                 "end_cell_halo_level_2": self._end_cell_halo_level_2,
-                "start_cell_lateral_boundary": self._start_cell_lateral_boundary,
             },
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
@@ -813,17 +811,6 @@ class SolveNonhydro:
         )
         """
         Declared as z_exner_ex_pr in ICON.
-        """
-        self.exner_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid,
-            dims.CellDim,
-            dims.KDim,
-            dtype=ta.vpfloat,
-            extend={dims.KDim: 1},
-            allocator=allocator,
-        )
-        """
-        Declared as z_exner_ic in ICON.
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
@@ -943,9 +930,6 @@ class SolveNonhydro:
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._start_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.LOCAL))
         self._start_cell_halo = self._grid.start_index(cell_domain(h_grid.Zone.HALO))
-        self._start_cell_halo_level_2 = self._grid.start_index(
-            cell_domain(h_grid.Zone.HALO_LEVEL_2)
-        )
 
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
@@ -1116,7 +1100,6 @@ class SolveNonhydro:
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
-            exner_at_cells_on_half_levels=self.exner_at_cells_on_half_levels,
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
