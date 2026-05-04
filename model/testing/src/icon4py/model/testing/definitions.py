@@ -19,6 +19,9 @@ from icon4py.model.testing import config
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        single_moment_six_class_gscp_graupel as graupel,
+    )
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
@@ -233,6 +236,25 @@ class Experiments:
     )
 
 
+def construct_graupel_config(
+    experiment: Experiment,
+) -> graupel.SingleMomentSixClassIconGraupelConfig:
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        microphysics_options as mphy_options,
+        single_moment_six_class_gscp_graupel as graupel,
+    )
+
+    if experiment == Experiments.WEISMAN_KLEMP_TORUS:
+        return graupel.SingleMomentSixClassIconGraupelConfig(
+            liquid_autoconversion_option=mphy_options.LiquidAutoConversionType.SEIFERT_BEHENG,
+            ice_stickeff_min=0.075,
+        )
+    else:
+        raise NotImplementedError(
+            f"SingleMomentSixClassIconGraupelConfig for experiment {experiment.name} not implemented."
+        )
+
+
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
@@ -300,13 +322,13 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
 
     if experiment == Experiments.MCH_CH_R04B09:
         return solve_nh.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
     elif experiment == Experiments.EXCLAIM_APE:
         return solve_nh.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         )
     elif experiment == Experiments.GAUSS3D:
         return solve_nh.NonHydrostaticConfig(
