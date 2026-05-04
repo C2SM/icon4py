@@ -42,8 +42,14 @@ def get_validation_grids() -> list[definitions.GridDescription]:
 
 @cli.command(name="cache-key")
 def cache_key() -> None:
-    """Generate a cache key for the Github action cache based on grid file name and download URI."""
-    d = "_".join(grid.name + grid.uri for grid in get_validation_grids())
+    """Generate a cache key for the GitHub action cache based on grid file name and download URI."""
+
+    from icon4py.model.testing import datatest_utils as dt_utils, definitions
+
+    d = "_".join(
+        grid.name + dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
+        for grid in get_validation_grids()
+    )
     hexdigest = hashlib.md5(d.encode()).hexdigest()
     print(hexdigest)
 

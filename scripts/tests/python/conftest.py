@@ -10,18 +10,23 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import pathlib
+import sys
 
 import pytest
 
 
+_scripts_dir = pathlib.Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_scripts_dir / "python"))
+
+
 @pytest.fixture()
-def scripts_dir() -> Path:
+def scripts_dir() -> pathlib.Path:
     """Return the ``scripts/`` directory."""
-    return Path(__file__).resolve().parent.parent
+    return _scripts_dir
 
 
 @pytest.fixture()
-def repo_root(scripts_dir: Path) -> Path:
+def repo_root(scripts_dir: pathlib.Path) -> pathlib.Path:
     """Return the repository root."""
     return scripts_dir.parent

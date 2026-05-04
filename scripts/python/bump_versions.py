@@ -85,9 +85,8 @@ def _bump_package(pkg_dir: pathlib.Path, new_version: str, dry_run: bool, verbos
     result = subprocess.run(cmd, cwd=pkg_dir, capture_output=not verbose, check=False)
     if result.returncode != 0:
         err = result.stderr.decode() if result.stderr else ""
-        raise typer.Exit(
-            typer.echo(f"  [ERROR] bump-my-version failed for {pkg_dir}:\n{err}", err=True) or 1
-        )
+        typer.echo(f"  [ERROR] bump-my-version failed for {pkg_dir}:\n{err}", err=True)
+        raise typer.Exit(code=1)
 
 
 def _update_cross_package_constraints(

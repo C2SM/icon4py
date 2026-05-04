@@ -79,11 +79,22 @@ def _collect_targets(
     else:
         member_paths = list(workspace_members)
 
-    targets: list[tuple[pathlib.Path, str]] = [
-        (common.REPO_ROOT / m, _get_package_name(common.REPO_ROOT / m)) for m in member_paths
-    ]
+    targets: list[tuple[pathlib.Path, str]] = []
+    seen_paths: set[pathlib.Path] = set()
+    for member_path in member_paths:
+        target_path = common.REPO_ROOT / member_path
+        normalized_path = target_path.resolve()
+        if normalized_path in seen_paths:
+            continue
+        seen_paths.add(normalized_path)
+        targets.append((target_path, _get_package_name(target_path)))
+
     root_name = pyproject.get("project", {}).get("name", "icon4py")
-    targets.append((common.REPO_ROOT, root_name))
+    root_path = common.REPO_ROOT
+    normalized_root_path = root_path.resolve()
+    if normalized_root_path not in seen_paths:
+        targets.append((root_path, root_name))
+
     return targets
 
 

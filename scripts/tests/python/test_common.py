@@ -10,18 +10,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from unittest.mock import patch
-
 import pytest
-import typer
 
-from scripts.py._common import repo_root, run_or_fail
-
-
-def test_repo_root_is_parent_of_scripts():
-    root = repo_root()
-    assert (root / "scripts").is_dir()
+from scripts.python.helpers.common import run_or_fail
 
 
 def test_run_or_fail_success():

@@ -35,7 +35,12 @@ lint = [
   "tach>=0.23.0",
   'validate-pyproject-schema-store[all]>=2025.06.13'
 ]
-scripts = ["lazy-loader>=0.5", "pytest", "typer>=0.15"]
+scripts = [
+  "lazy-loader>=0.5",
+  "typer>=0.15",
+  {include-group = "build"},
+  {include-group = "test"}
+]
 test = [
   # workspace members
   "icon4py-testing~=0.1.0",

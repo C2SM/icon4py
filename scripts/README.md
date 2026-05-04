@@ -1,6 +1,6 @@
 # scripts/ — Dev-Scripts Toolbox
 
-Conventions for standardized project development scripts using Python, Bash, and (possibly) other recipes. All scripts should be executable and testable standalone, but a single entry point (`./scripts/run`) is provided as an extra feature, mostly for exploration.
+Conventions for standardized project development scripts using Python, Bash, and (possibly) other recipes. All scripts should be executable and testable standalone, but a single entry point (`./scripts/run`) is provided as an extra feature.
 
 ## Single entry point CLI
 
@@ -26,8 +26,8 @@ scripts/
 ├── python/                  # Python scripts (importable package)
 │   ├── __init__.py
 │   ├── helpers/             # Shared helpers
-|   |    ├── __init__.py   
-|   |    └── common.py       # Common definitions (e.g. paths)
+│   │   ├── __init__.py
+|   │   └── common.py        # Common definitions (e.g. paths)
 |   |
 │   └── <...>.py             # Script: contains a `cli = typer.Typer()` global symbol
 │
