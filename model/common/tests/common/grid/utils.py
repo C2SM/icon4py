@@ -23,11 +23,11 @@ managers: dict[str, gm.GridManager] = {}
 
 
 def horizontal_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+    yield from dims.horizontal_dims()
 
 
 def vertical_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.MAIN_VERTICAL_DIMENSIONS.values()
+    yield from dims.vertical_dims()
 
 
 def non_horizontal_dims() -> Iterator[gtx.Dimension]:

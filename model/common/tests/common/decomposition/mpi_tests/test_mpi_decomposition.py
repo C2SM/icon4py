@@ -164,7 +164,7 @@ def test_decomposition_info_local_index(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", dims.MAIN_HORIZONTAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_halo_level_mask(
     dim: gtx.Dimension,
     experiment: test_defs.Experiment,
@@ -191,7 +191,7 @@ def test_decomposition_info_halo_level_mask(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", dims.MAIN_HORIZONTAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_third_level_is_empty(
     dim: gtx.Dimension,
     experiment: test_defs.Experiment,
@@ -281,7 +281,7 @@ def test_create_single_node_runtime_without_mpi(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-@pytest.mark.parametrize("dimension", dims.MAIN_HORIZONTAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dimension", dims.horizontal_dims())
 def test_exchange_on_dummy_data(
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,

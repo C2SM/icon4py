@@ -198,7 +198,7 @@ def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, kind: gtx.Dimensi
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_top(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -209,7 +209,7 @@ def test_grid_index_top(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -226,7 +226,7 @@ def test_grid_index_damping(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -243,7 +243,7 @@ def test_grid_index_moist(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -263,7 +263,7 @@ def test_grid_index_flat(
     "experiment",
     [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
 )
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_bottom(
     grid_savepoint: sb.IconGridSavepoint,
@@ -281,7 +281,7 @@ def test_grid_index_bottom(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
@@ -301,7 +301,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
-@pytest.mark.parametrize("dim", dims.MAIN_VERTICAL_DIMENSIONS.values())
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
