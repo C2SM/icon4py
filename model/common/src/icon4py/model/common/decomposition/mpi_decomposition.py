@@ -117,17 +117,14 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(process_props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            dim: self._create_domain_descriptor(dim)
-            for dim in dims.horizontal_dims()
+            dim: self._create_domain_descriptor(dim) for dim in dims.horizontal_dims()
         }
         self._field_size: dict[gtx.Dimension, int] = {
             dim: self._decomposition_info.global_index(dim).shape[0]
             for dim in dims.horizontal_dims()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-        self._patterns = {
-            dim: self._create_pattern(dim) for dim in dims.horizontal_dims()
-        }
+        self._patterns = {dim: self._create_pattern(dim) for dim in dims.horizontal_dims()}
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
 

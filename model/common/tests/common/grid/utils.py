@@ -21,17 +21,6 @@ from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 managers: dict[str, gm.GridManager] = {}
 
 
-def non_horizontal_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.vertical_dims()
-    yield from local_dims()
-
-
-def local_dims() -> Iterator[gtx.Dimension]:
-    for d in vars(dims).values():
-        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
-            yield d
-
-
 def horizontal_offsets() -> Iterator[gtx.FieldOffset]:
     for d in vars(dims).values():
         if isinstance(d, gtx.FieldOffset) and len(d.target) == 2:

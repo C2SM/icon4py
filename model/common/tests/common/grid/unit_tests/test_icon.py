@@ -18,7 +18,6 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
@@ -206,7 +205,7 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
     "grid_descriptor",
     (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
 )
-@pytest.mark.parametrize("dim", (utils.local_dims()))
+@pytest.mark.parametrize("dim", (dims.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
     grid_descriptor: definitions.GridDescription,
     dim: gtx.Dimension,

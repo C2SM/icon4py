@@ -48,9 +48,7 @@ _log = logging.getLogger(__name__)
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "zone" in metafunc.fixturenames:
         params = [
-            (dim, zone)
-            for dim in dims.horizontal_dims()
-            for zone in h_grid._get_zones_for_dim(dim)
+            (dim, zone) for dim in dims.horizontal_dims() for zone in h_grid._get_zones_for_dim(dim)
         ]
         ids = [f"{dim.value}-{zone}" for dim, zone in params]
         metafunc.parametrize("dim,zone", params, ids=ids)

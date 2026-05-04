@@ -59,6 +59,17 @@ def horizontal_dims() -> Iterator[gtx.Dimension]:
     )
 
 
+def non_horizontal_dims() -> Iterator[gtx.Dimension]:
+    yield from vertical_dims()
+    yield from local_dims()
+
+
+def local_dims() -> Iterator[gtx.Dimension]:
+    for d in globals().values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
+            yield d
+
+
 def vertical_dims() -> Iterator[gtx.Dimension]:
     return iter(
         tuple(
