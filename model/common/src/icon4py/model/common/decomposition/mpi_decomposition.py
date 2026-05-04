@@ -257,12 +257,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
 
 
 @dataclass
-<<<<<<< HEAD
 class HaloExchangeWait(decomp_defs.HaloExchangeWaitRuntime):
-    buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
-=======
-class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
->>>>>>> main
     exchange_object: GHexMultiNodeExchange
 
     def __call__(
