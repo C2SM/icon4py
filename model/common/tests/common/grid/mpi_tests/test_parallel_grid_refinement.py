@@ -43,14 +43,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "zone" in metafunc.fixturenames:
         params = [
             (dim, zone)
-            for dim in utils.main_horizontal_dims()
+            for dim in utils.horizontal_dims()
             for zone in h_grid._get_zones_for_dim(dim)
         ]
         ids = [f"{dim.value}-{zone}" for dim, zone in params]
         metafunc.parametrize("dim,zone", params, ids=ids)
     elif "dim" in metafunc.fixturenames:
-        ids = [dim.value for dim in utils.main_horizontal_dims()]
-        metafunc.parametrize("dim", utils.main_horizontal_dims(), ids=ids)
+        ids = [dim.value for dim in utils.horizontal_dims()]
+        metafunc.parametrize("dim", utils.horizontal_dims(), ids=ids)
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ def test_compute_domain_bounds(
 
     ref_grid = grid_savepoint.construct_icon_grid(backend=backend, keep_skip_values=True)
     decomposition_info = grid_savepoint.construct_decomposition_info()
-    refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in utils.main_horizontal_dims()}
+    refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in utils.horizontal_dims()}
     start_indices, end_indices = grid_refinement.compute_domain_bounds(
         dim,
         refin_ctrl,

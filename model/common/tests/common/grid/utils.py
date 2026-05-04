@@ -26,10 +26,6 @@ def horizontal_dims() -> Iterator[gtx.Dimension]:
     yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
 
 
-def main_horizontal_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-
-
 def vertical_dims() -> Iterator[gtx.Dimension]:
     yield from dims.MAIN_VERTICAL_DIMENSIONS.values()
 

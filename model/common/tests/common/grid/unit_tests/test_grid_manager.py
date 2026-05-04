@@ -408,7 +408,7 @@ def test_grid_manager_eval_c2e2c2e(
 # TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,

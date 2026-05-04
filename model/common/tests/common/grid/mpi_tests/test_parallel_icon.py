@@ -85,7 +85,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
         test_defs.Experiments.MCH_CH_R04B09,
     ],
 )
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_start_index_end_index_local_zone_on_distributed_lam_grid(
     process_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
@@ -148,7 +148,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
 @pytest.mark.parametrize(
     "experiment",
     [
