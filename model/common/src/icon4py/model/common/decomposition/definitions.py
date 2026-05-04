@@ -12,18 +12,16 @@ import abc
 import dataclasses
 import functools
 import logging
-from collections.abc import Sequence
+import warnings
 from enum import Enum
 from types import ModuleType
-from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
+from typing import Any, ClassVar, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
-import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
-from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -160,6 +158,8 @@ class DecompositionInfo:
         ALL = 0
         OWNED = 1
         HALO = 2
+        HALO_LEVEL_1 = 11
+        HALO_LEVEL_2 = 12
 
     @utils.chainable
     def set_dimension(
@@ -187,6 +187,14 @@ class DecompositionInfo:
                 index = self._to_local_index(dim)
                 mask = self._owner_mask[dim]
                 return index[~mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_1:
+                index = self._to_local_index(dim)
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.FIRST_HALO_LEVEL)
+                return index[mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_2:
+                index = self._to_local_index(dim)
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.SECOND_HALO_LEVEL)
+                return index[mask]
             case DecompositionInfo.EntryType.OWNED:
                 index = self._to_local_index(dim)
                 mask = self._owner_mask[dim]
@@ -212,6 +220,12 @@ class DecompositionInfo:
                 return self._global_index[dim][self._owner_mask[dim]]
             case DecompositionInfo.EntryType.HALO:
                 return self._global_index[dim][~self._owner_mask[dim]]
+            case DecompositionInfo.EntryType.HALO_LEVEL_1:
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.FIRST_HALO_LEVEL)
+                return self._global_index[dim][mask]
+            case DecompositionInfo.EntryType.HALO_LEVEL_2:
+                mask = self.halo_level_mask(dim=dim, level=DecompositionFlag.SECOND_HALO_LEVEL)
+                return self._global_index[dim][mask]
             case _:
                 raise NotImplementedError()
 
@@ -408,6 +422,23 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
+    _warning_emitted: ClassVar[bool] = False
+
+    @classmethod
+    def _warn_if_used(cls, *, stacklevel: int = 3) -> None:
+        """
+        Debugging helper: emit a single warning when SingleNodeExchange is used.
+        Not called in production code.  Enable manually during development to
+        spot unintended single-node exchange usage.
+        """
+        if not cls._warning_emitted:
+            warnings.warn(
+                "***** SingleNodeExchange is in use; HALO EXCHANGE IS RUNNING IN SINGLE-NODE *****",
+                RuntimeWarning,
+                stacklevel=stacklevel,
+            )
+            cls._warning_emitted = True
+
     def start(
         self,
         dim: gtx.Dimension,
@@ -421,26 +452,6 @@ class SingleNodeExchange(ExchangeRuntime):
 
     def get_size(self) -> int:
         return 1
-
-    # Implementation of DaCe SDFGConvertible interface
-    # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-    # NOTE: Stream are not supported here.
-    def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
-    ) -> dace.sdfg.sdfg.SDFG:
-        sdfg = DummyNestedSDFG().__sdfg__()
-        sdfg.name = "_halo_exchange_"
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        return DummyNestedSDFG().__sdfg_closure__()
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return DummyNestedSDFG().__sdfg_signature__()
-
-    __sdfg__ = dace__sdfg__
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
 
 
 class HaloExchangeWaitRuntime(Protocol):
@@ -460,40 +471,10 @@ class HaloExchangeWaitRuntime(Protocol):
         #   of this function or such that it is no longer needed.
         ...
 
-    def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
-        """DaCe related: SDFGConvertible interface."""
-        ...
-
-    def __sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        """DaCe related: SDFGConvertible interface."""
-        ...
-
-    def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        """DaCe related: SDFGConvertible interface."""
-        ...
-
 
 @dataclasses.dataclass
 class HaloExchangeWait(HaloExchangeWaitRuntime):
-    exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
-
-    # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(
-        self,
-        *args: Any,
-        dim: gtx.Dimension,
-        full_exchange: bool = True,
-        stream: StreamLike | BlockType = DEFAULT_STREAM,
-    ) -> dace.sdfg.sdfg.SDFG:
-        sdfg = DummyNestedSDFG().__sdfg__()
-        sdfg.name = "_halo_exchange_wait_"
-        return sdfg
-
-    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-        return DummyNestedSDFG().__sdfg_closure__()
-
-    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return DummyNestedSDFG().__sdfg_signature__()
+    exchange_object: SingleNodeExchange
 
     def __call__(
         self,
@@ -501,10 +482,6 @@ class HaloExchangeWait(HaloExchangeWaitRuntime):
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
-
-    __sdfg__ = dace__sdfg__  # type: ignore[assignment]
-    __sdfg_closure__ = dace__sdfg_closure__
-    __sdfg_signature__ = dace__sdfg_signature__
 
 
 @functools.singledispatch
@@ -554,6 +531,10 @@ class SingleNodeRun(RunType):
 
 
 class Reductions(Protocol):
+    """
+    Protocol for global reduction operations across distributed ranks.
+    """
+
     def min(
         self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
     ) -> state_utils.ScalarType: ...
@@ -563,34 +544,44 @@ class Reductions(Protocol):
     ) -> state_utils.ScalarType: ...
 
     def sum(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType: ...
 
     def mean(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType: ...
 
 
 class SingleNodeReductions(Reductions):
+    """Reductions for single-rank (non-distributed) runs.
+
+    Single-rank runs have no halos, so all elements are owned and no masking
+    is needed. The entire buffer is reduced directly.
+    """
+
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.min(buffer).item()
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.max(buffer).item()
 
-    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def sum(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item()
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def mean(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item() / buffer.size
-
-
-@overload
-def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
-
-
-@overload
-def get_runtype(with_mpi: Literal[False]) -> SingleNodeRun: ...
 
 
 def get_runtype(with_mpi: bool = False) -> RunType:
@@ -630,7 +621,9 @@ def create_single_node_exchange(
 
 
 @functools.singledispatch
-def create_reduction(process_props: ProcessProperties) -> Reductions:
+def create_reduction(
+    process_props: ProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
@@ -640,7 +633,9 @@ def create_reduction(process_props: ProcessProperties) -> Reductions:
 
 
 @create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(process_props: SingleNodeProcessProperties) -> Reductions:
+def create_single_reduction_exchange(
+    process_props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     return SingleNodeReductions()
 
 
@@ -673,6 +668,29 @@ class DecompositionFlag(int, Enum):
     - vertices (NOT USED)
     - edges that are only on the cell(SECOND_HALO_LEVEL)
     """
+
+
+class ParallelLogger(logging.Filter):
+    def __init__(
+        self,
+        process_properties: ProcessProperties | None = None,
+        print_distributed_debug_msg: bool = False,
+    ) -> None:
+        super().__init__()
+        self._rank_info_str = ""
+        self._print_distributed_debug_msg = print_distributed_debug_msg
+        self._rank_id = 0
+        if process_properties and process_properties.comm_size > 1:
+            self._rank_info_str = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
+            self._rank_id = process_properties.rank
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.rank_info_str = self._rank_info_str
+        if self._rank_id == 0:
+            return True
+        return record.levelno >= logging.WARNING or (
+            self._print_distributed_debug_msg and record.levelno == logging.DEBUG
+        )
 
 
 single_node_exchange = SingleNodeExchange()

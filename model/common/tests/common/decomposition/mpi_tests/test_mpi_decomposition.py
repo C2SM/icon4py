@@ -9,32 +9,21 @@ import functools
 import logging
 from typing import Any
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
+import icon4py.model.testing.test_utils as test_helpers
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation import interpolation_fields
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-try:
-    import mpi4py  # import mpi4py to check for optional mpi dependency
-    from mpi4py import MPI
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
-import gt4py.next as gtx
-
-import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 
 from ...fixtures import (
     backend,
-    backend_like,
     data_provider,
     decomposition_info,
     download_ser_data,
@@ -52,7 +41,7 @@ _log = logging.getLogger(__name__)
 
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_props(process_props: definitions.ProcessProperties) -> None:
+def test_props(process_props: decomp_defs.ProcessProperties) -> None:
     assert process_props.comm
     assert process_props.comm_size > 1
     assert 0 <= process_props.rank < process_props.comm_size
@@ -81,24 +70,24 @@ def test_decomposition_info_masked(
     total: int,
     caplog: Any,
     download_ser_data: Any,
-    decomposition_info: definitions.DecompositionInfo,
-    process_props: definitions.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(process_props, sizes=(2,))
     my_rank = process_props.rank
-    all_indices = decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL)
+    all_indices = decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
     assert all_indices.shape[0] == my_total
 
     owned_indices = decomposition_info.global_index(
-        dim, definitions.DecompositionInfo.EntryType.OWNED
+        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
     )
     assert owned_indices.shape[0] == my_owned
 
     halo_indices = decomposition_info.global_index(
-        dim, definitions.DecompositionInfo.EntryType.HALO
+        dim, decomp_defs.DecompositionInfo.EntryType.HALO
     )
     assert halo_indices.shape[0] == my_total - my_owned
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
@@ -136,26 +125,26 @@ def test_decomposition_info_local_index(
     owned: int,
     total: int,
     caplog: Any,
-    decomposition_info: definitions.DecompositionInfo,
-    process_props: definitions.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ):
     caplog.set_level(logging.INFO)
     parallel_helpers.check_comm_size(process_props, sizes=(2,))
     my_rank = process_props.rank
-    all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
+    all_indices = decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
 
     assert all_indices.shape[0] == my_total
     assert np.array_equal(all_indices, np.arange(0, my_total))
-    halo_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.HALO)
+    halo_indices = decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
     assert halo_indices.shape[0] == my_total - my_owned
     assert halo_indices.shape[0] < all_indices.shape[0]
     assert np.all(halo_indices <= np.max(all_indices))
 
     owned_indices = decomposition_info.local_index(
-        dim, definitions.DecompositionInfo.EntryType.OWNED
+        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
     )
     assert owned_indices.shape[0] == my_owned
     assert owned_indices.shape[0] <= all_indices.shape[0]
@@ -169,21 +158,21 @@ def test_decomposition_info_local_index(
 def test_decomposition_info_halo_level_mask(
     dim: gtx.Dimension,
     experiment: test_defs.Experiment,
-    decomposition_info: definitions.DecompositionInfo,
+    decomposition_info: decomp_defs.DecompositionInfo,
 ) -> None:
     first_halo_level = decomposition_info.halo_level_mask(
-        dim, definitions.DecompositionFlag.FIRST_HALO_LEVEL
+        dim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL
     )
     assert first_halo_level.ndim == 1
     assert np.count_nonzero(first_halo_level) == decomposition_info.get_halo_size(
-        dim, definitions.DecompositionFlag.FIRST_HALO_LEVEL
+        dim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL
     )
     second_halo_level = decomposition_info.halo_level_mask(
-        dim, definitions.DecompositionFlag.SECOND_HALO_LEVEL
+        dim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
     )
     assert second_halo_level.ndim == 1
     assert np.count_nonzero(second_halo_level) == decomposition_info.get_halo_size(
-        dim, definitions.DecompositionFlag.SECOND_HALO_LEVEL
+        dim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
     )
     assert np.count_nonzero(first_halo_level) + np.count_nonzero(
         second_halo_level
@@ -196,9 +185,9 @@ def test_decomposition_info_halo_level_mask(
 def test_decomposition_info_third_level_is_empty(
     dim: gtx.Dimension,
     experiment: test_defs.Experiment,
-    decomposition_info: definitions.DecompositionInfo,
+    decomposition_info: decomp_defs.DecompositionInfo,
 ) -> None:
-    level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.THIRD_HALO_LEVEL)
+    level = decomposition_info.halo_level_mask(dim, decomp_defs.DecompositionFlag.THIRD_HALO_LEVEL)
     assert np.count_nonzero(level) == 0
 
 
@@ -207,10 +196,10 @@ def test_decomposition_info_third_level_is_empty(
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5, 6, 7, 8])
 def test_domain_descriptor_id_are_globally_unique(
     num: int,
-    process_props: definitions.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
 ) -> None:
     size = process_props.comm_size
-    id_gen = definitions.DomainDescriptorIdGenerator(process_props=process_props)
+    id_gen = decomp_defs.DomainDescriptorIdGenerator(process_props=process_props)
     id1 = id_gen()
     assert id1 == process_props.comm_size * process_props.rank
     assert id1 < process_props.comm_size * (process_props.rank + 2)
@@ -232,65 +221,56 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog: Any,
-    decomposition_info: definitions.DecompositionInfo,
+    decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,
-    process_props: definitions.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
     assert (
         decomposition_info.global_index(
-            dim=dims.CellDim, entry_type=definitions.DecompositionInfo.EntryType.ALL
+            dim=dims.CellDim, entry_type=decomp_defs.DecompositionInfo.EntryType.ALL
         ).shape[0]
         == icon_grid.num_cells
     )
     assert (
         decomposition_info.global_index(
-            dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL
+            dims.VertexDim, decomp_defs.DecompositionInfo.EntryType.ALL
         ).shape[0]
         == icon_grid.num_vertices
     )
     assert (
         decomposition_info.global_index(
-            dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL
+            dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.ALL
         ).shape[0]
         == icon_grid.num_edges
     )
 
 
 @pytest.mark.mpi
+@pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_create_multi_rank_runtime_with_mpi(
-    decomposition_info: definitions.DecompositionInfo,
-    process_props: definitions.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
 ) -> None:
-    exchange = definitions.create_exchange(process_props, decomposition_info)
+    exchange = decomp_defs.create_exchange(process_props, decomposition_info)
     if process_props.comm_size > 1:
         assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
-        assert isinstance(exchange, definitions.SingleNodeExchange)
-
-
-@pytest.mark.parametrize("process_props", [False], indirect=True)
-@pytest.mark.mpi_skip()
-def test_create_single_node_runtime_without_mpi(
-    process_props: definitions.ProcessProperties,
-    decomposition_info: definitions.DecompositionInfo,
-) -> None:
-    exchange = definitions.create_exchange(process_props, decomposition_info)
-    assert isinstance(exchange, definitions.SingleNodeExchange)
+        assert isinstance(exchange, decomp_defs.SingleNodeExchange)
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_exchange_on_dummy_data(
-    process_props: definitions.ProcessProperties,
-    decomposition_info: definitions.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     grid_savepoint: serialbox.IconGridSavepoint,
     dimension: gtx.Dimension,
     backend: gtx.typing.Backend | None,
 ) -> None:
-    exchange = definitions.create_exchange(process_props, decomposition_info)
+    exchange = decomp_defs.create_exchange(process_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = process_props.rank + 10
@@ -303,13 +283,13 @@ def test_exchange_on_dummy_data(
     )
 
     halo_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dimension, definitions.DecompositionInfo.EntryType.HALO)
+        decomposition_info.local_index(dimension, decomp_defs.DecompositionInfo.EntryType.HALO)
     )
     local_points = data_alloc.as_numpy(
-        decomposition_info.local_index(dimension, definitions.DecompositionInfo.EntryType.OWNED)
+        decomposition_info.local_index(dimension, decomp_defs.DecompositionInfo.EntryType.OWNED)
     )
     assert (input_field.ndarray == number).all()
-    exchange.exchange(dimension, input_field, stream=definitions.BLOCK)
+    exchange.exchange(dimension, input_field, stream=decomp_defs.BLOCK)
     result = input_field.asnumpy()
     _log.info(f"rank={process_props.rank} - num of halo points ={halo_points.shape}")
     _log.info(
@@ -330,10 +310,10 @@ def test_exchange_on_dummy_data(
 def test_halo_exchange_for_sparse_field(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: test_defs.Experiment,
-    process_props: definitions.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
-    decomposition_info: definitions.DecompositionInfo,
+    decomposition_info: decomp_defs.DecompositionInfo,
 ):
     edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
@@ -345,7 +325,7 @@ def test_halo_exchange_for_sparse_field(
     result = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.C2EDim, dtype=gtx.float64, allocator=None
     )
-    exchange = definitions.create_exchange(process_props, decomposition_info)
+    exchange = decomp_defs.create_exchange(process_props, decomposition_info)
 
     # mandatory computation on embedded because the result is sparse
     interpolation_fields.compute_geofac_div.with_backend(None)(
@@ -358,108 +338,6 @@ def test_halo_exchange_for_sparse_field(
     _log.info(
         f"{process_props.rank}/{process_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
-    exchange.exchange(dims.CellDim, result, stream=definitions.BLOCK)
+    exchange.exchange(dims.CellDim, result, stream=decomp_defs.BLOCK)
 
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
-
-
-inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], [], [-10, 20, 4]]
-
-
-@pytest.mark.parametrize("global_list", inputs_ls)
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_global_reductions_min(
-    process_props: definitions.ProcessProperties,
-    backend_like: model_backends.BackendLike,
-    global_list: list[data_alloc.ScalarT],
-) -> None:
-    my_rank = process_props.rank
-    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = process_props.comm_size
-    chunks = np.array_split(global_list, comm_size)
-    local_data = xp.array(chunks[my_rank])
-
-    global_reduc = definitions.create_reduction(process_props)
-
-    if len(global_list) > 0:
-        min_val = global_reduc.min(local_data, array_ns=xp)
-        expected_val = np.min(global_list)
-        assert expected_val == min_val
-    else:
-        with pytest.raises(ValueError, match="global_min requires a non-empty buffer"):
-            global_reduc.min(local_data, array_ns=xp)
-
-
-@pytest.mark.parametrize("global_list", inputs_ls)
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_global_reductions_max(
-    process_props: definitions.ProcessProperties,
-    backend_like: model_backends.BackendLike,
-    global_list: list[data_alloc.ScalarT],
-) -> None:
-    my_rank = process_props.rank
-    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = process_props.comm_size
-    chunks = np.array_split(global_list, comm_size)
-    local_data = xp.array(chunks[my_rank])
-
-    global_reduc = definitions.create_reduction(process_props)
-
-    if len(global_list) > 0:
-        max_val = global_reduc.max(local_data, array_ns=xp)
-        expected_val = np.max(global_list)
-        assert expected_val == max_val
-    else:
-        with pytest.raises(ValueError, match="global_max requires a non-empty buffer"):
-            global_reduc.max(local_data, array_ns=xp)
-
-
-@pytest.mark.parametrize("global_list", inputs_ls)
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_global_reductions_sum(
-    process_props: definitions.ProcessProperties,
-    backend_like: model_backends.BackendLike,
-    global_list: list[data_alloc.ScalarT],
-) -> None:
-    my_rank = process_props.rank
-    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = process_props.comm_size
-    chunks = np.array_split(global_list, comm_size)
-    local_data = xp.array(chunks[my_rank])
-
-    global_reduc = definitions.create_reduction(process_props)
-
-    if len(global_list) > 0:
-        sum_val = global_reduc.sum(local_data, array_ns=xp)
-        expected_val = np.sum(global_list)
-        assert expected_val == sum_val
-    else:
-        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer"):
-            global_reduc.sum(local_data, array_ns=xp)
-
-
-@pytest.mark.parametrize("global_list", inputs_ls)
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_global_reductions_mean(
-    process_props: definitions.ProcessProperties,
-    backend_like: model_backends.BackendLike,
-    global_list: list[data_alloc.ScalarT],
-) -> None:
-    my_rank = process_props.rank
-    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-    comm_size = process_props.comm_size
-    chunks = np.array_split(global_list, comm_size)
-    local_data = xp.array(chunks[my_rank])
-    global_reduc = definitions.create_reduction(process_props)
-
-    if len(global_list) > 0:
-        mean_val = global_reduc.mean(local_data, array_ns=xp)
-        expected_val = np.mean(global_list)
-        assert expected_val == mean_val
-    else:
-        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer"):
-            global_reduc.mean(local_data, array_ns=xp)

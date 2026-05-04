@@ -12,14 +12,16 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.decomposition import (
-    decomposer as decomp,
-    definitions as decomposition,
-    mpi_decomposition,
-)
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils, serialbox, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    grid_utils,
+    serialbox,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -32,9 +34,6 @@ from icon4py.model.testing.fixtures.datatest import (
 from .. import utils
 from . import utils as mpi_test_utils
 
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__name__)
 
@@ -58,6 +57,7 @@ def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
     return h_grid.domain(dim)(zone)
 
 
+@pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_compute_domain_bounds(
     dim: gtx.Dimension,
@@ -65,7 +65,7 @@ def test_compute_domain_bounds(
     domain: h_grid.Domain,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> None:
     if (
@@ -113,7 +113,7 @@ def test_compute_domain_bounds(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_bounds_decomposition(
-    process_props: decomposition.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
@@ -121,7 +121,7 @@ def test_bounds_decomposition(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
     grid_manager = mpi_test_utils.run_grid_manager_for_multi_rank(
@@ -135,8 +135,8 @@ def test_bounds_decomposition(
     )
     _log.info(
         f"rank = {process_props.rank}: halo size for 'CellDim' "
-        f"(1: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-        f"(2: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"(1: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
 
     decomposition_info = grid_manager.decomposition_info
@@ -149,22 +149,22 @@ def test_bounds_decomposition(
     ), f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
 
     local_owned_size = decomposition_info.local_index(
-        dim, decomposition.DecompositionInfo.EntryType.OWNED
+        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
     ).shape[0]
     local_all_size = decomposition_info.local_index(
-        dim, decomposition.DecompositionInfo.EntryType.ALL
+        dim, decomp_defs.DecompositionInfo.EntryType.ALL
     ).shape[0]
     local_halo_size = decomposition_info.local_index(
-        dim, decomposition.DecompositionInfo.EntryType.HALO
+        dim, decomp_defs.DecompositionInfo.EntryType.HALO
     ).shape[0]
     global_owned_size = decomposition_info.global_index(
-        dim, decomposition.DecompositionInfo.EntryType.OWNED
+        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
     ).shape[0]
     global_all_size = decomposition_info.global_index(
-        dim, decomposition.DecompositionInfo.EntryType.ALL
+        dim, decomp_defs.DecompositionInfo.EntryType.ALL
     ).shape[0]
     global_halo_size = decomposition_info.global_index(
-        dim, decomposition.DecompositionInfo.EntryType.HALO
+        dim, decomp_defs.DecompositionInfo.EntryType.HALO
     ).shape[0]
 
     # NOTE: These assumptions may change once limited area grids are supported
