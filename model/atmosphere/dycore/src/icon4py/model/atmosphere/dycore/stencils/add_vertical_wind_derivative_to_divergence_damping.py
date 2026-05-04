@@ -29,7 +29,9 @@ def _add_vertical_wind_derivative_to_divergence_damping(
         horizontal_mask_for_3d_divdamp
         * scaling_factor_for_3d_divdamp
         * inv_dual_edge_length
-        * astype(dwdz_at_cells_on_model_levels(E2C[1]) - dwdz_at_cells_on_model_levels(E2C[0]), wpfloat)
+        * astype(
+            dwdz_at_cells_on_model_levels(E2C[1]) - dwdz_at_cells_on_model_levels(E2C[0]), wpfloat
+        )
     )
     return astype(z_graddiv_vn_wp, vpfloat)
 

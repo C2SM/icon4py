@@ -38,7 +38,9 @@ def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
     z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[c2e], axis=1)
     z_w_concorr_mc_m2 = np.sum(e_bln_c_s * z_w_concorr_me_offset_2[c2e], axis=1)
 
-    contravariant_correction_at_cells_on_half_levels = np.zeros_like(wgtfacq_c, shape=(wgtfacq_c.shape[0], wgtfacq_c.shape[1] + 1))
+    contravariant_correction_at_cells_on_half_levels = np.zeros_like(
+        wgtfacq_c, shape=(wgtfacq_c.shape[0], wgtfacq_c.shape[1] + 1)
+    )
     contravariant_correction_at_cells_on_half_levels[:, -1] = (
         wgtfacq_c * z_w_concorr_mc_m0
         + np.roll(wgtfacq_c, shift=1, axis=1) * z_w_concorr_mc_m1
@@ -60,10 +62,14 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
         wgtfacq_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        contravariant_correction_at_cells_on_half_levels = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
-            connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
+        contravariant_correction_at_cells_on_half_levels = (
+            compute_contravariant_correction_of_w_for_lower_boundary_numpy(
+                connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
+            )
         )
-        return dict(contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels)
+        return dict(
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:

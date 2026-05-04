@@ -22,10 +22,16 @@ def _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_19."""
-    ddxn_z_full_wp, z_dexner_dz_c_1_wp = astype((ddxn_z_full, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels), wpfloat)
+    ddxn_z_full_wp, z_dexner_dz_c_1_wp = astype(
+        (ddxn_z_full, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels), wpfloat
+    )
 
     z_gradh_exner_wp = inv_dual_edge_length * (
-        astype(temporal_extrapolation_of_perturbed_exner(E2C[1]) - temporal_extrapolation_of_perturbed_exner(E2C[0]), wpfloat)
+        astype(
+            temporal_extrapolation_of_perturbed_exner(E2C[1])
+            - temporal_extrapolation_of_perturbed_exner(E2C[0]),
+            wpfloat,
+        )
     ) - ddxn_z_full_wp * neighbor_sum(z_dexner_dz_c_1_wp(E2C) * c_lin_e, axis=E2CDim)
     return astype(z_gradh_exner_wp, vpfloat)
 

@@ -20,7 +20,9 @@ def _set_theta_v_prime_ic_at_lower_boundary(
     reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_11_upper."""
-    z_theta_v_pr_ic_vp = _interpolate_to_surface(wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels)
+    z_theta_v_pr_ic_vp = _interpolate_to_surface(
+        wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
+    )
     theta_v_ic_vp = reference_theta_at_cells_on_half_levels + z_theta_v_pr_ic_vp
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
 

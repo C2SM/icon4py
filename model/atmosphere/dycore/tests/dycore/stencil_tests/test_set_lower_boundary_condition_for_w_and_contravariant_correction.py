@@ -28,7 +28,9 @@ def set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
     vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     w_nnew = contravariant_correction_at_cells_on_half_levels
-    vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(vertical_mass_flux_at_cells_on_half_levels)
+    vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(
+        vertical_mass_flux_at_cells_on_half_levels
+    )
     return (w_nnew, vertical_mass_flux_at_cells_on_half_levels)
 
 
@@ -47,14 +49,23 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
             w_nnew,
             vertical_mass_flux_at_cells_on_half_levels,
         ) = set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-            connectivities, contravariant_correction_at_cells_on_half_levels, vertical_mass_flux_at_cells_on_half_levels
+            connectivities,
+            contravariant_correction_at_cells_on_half_levels,
+            vertical_mass_flux_at_cells_on_half_levels,
         )
-        return dict(w_nnew=w_nnew, vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels)
+        return dict(
+            w_nnew=w_nnew,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        contravariant_correction_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vertical_mass_flux_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        contravariant_correction_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        vertical_mass_flux_at_cells_on_half_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
         w_nnew = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(

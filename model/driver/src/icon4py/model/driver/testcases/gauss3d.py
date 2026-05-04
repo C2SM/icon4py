@@ -74,9 +74,15 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
-    reference_theta_at_cells_on_model_levels = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
-    reference_theta_at_cells_on_half_levels = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
-    reference_exner_at_cells_on_model_levels = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    reference_theta_at_cells_on_model_levels = (
+        data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    )
+    reference_theta_at_cells_on_half_levels = (
+        data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    )
+    reference_exner_at_cells_on_model_levels = (
+        data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    )
     d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
     geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 

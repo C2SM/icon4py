@@ -43,7 +43,8 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
         wgtfac_c=wgtfac_c_wp, interpolant=theta_v
     )
     z_th_ddz_exner_c_wp = exner_w_explicit_weight_parameter * theta_v_ic_wp * (
-        perturbed_exner_at_cells_on_model_levels(Koff[-1]) - perturbed_exner_at_cells_on_model_levels
+        perturbed_exner_at_cells_on_model_levels(Koff[-1])
+        - perturbed_exner_at_cells_on_model_levels
     ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
     return z_theta_v_pr_ic_vp, theta_v_ic_wp, astype(z_th_ddz_exner_c_wp, vpfloat)
 
@@ -73,7 +74,11 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
         perturbed_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
         ddqz_z_half,
-        out=(perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels),
+        out=(
+            perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -110,6 +115,9 @@ def _compute_pressure_gradient(
 ) -> fa.CellKField[ta.vpfloat]:
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
     z_th_ddz_exner_c_wp = exner_w_explicit_weight_parameter * theta_v_at_cells_on_half_levels * (
-        perturbed_exner_at_cells_on_model_levels(Koff[-1]) - perturbed_exner_at_cells_on_model_levels
-    ) / ddqz_z_half_wp + astype(perturbed_theta_v_at_cells_on_half_levels * d_exner_dz_ref_ic, wpfloat)
+        perturbed_exner_at_cells_on_model_levels(Koff[-1])
+        - perturbed_exner_at_cells_on_model_levels
+    ) / ddqz_z_half_wp + astype(
+        perturbed_theta_v_at_cells_on_half_levels * d_exner_dz_ref_ic, wpfloat
+    )
     return astype(z_th_ddz_exner_c_wp, vpfloat)

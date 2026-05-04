@@ -35,7 +35,9 @@ def compute_explicit_part_for_rho_and_exner_numpy(
     dtime: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     rho_explicit_term = current_rho - dtime * inv_ddqz_z_full * (
-        divergence_of_mass + vertical_mass_flux_at_cells_on_half_levels[:, :-1] - vertical_mass_flux_at_cells_on_half_levels[:, 1:]
+        divergence_of_mass
+        + vertical_mass_flux_at_cells_on_half_levels[:, :-1]
+        - vertical_mass_flux_at_cells_on_half_levels[:, 1:]
     )
 
     exner_explicit_term = (
@@ -90,17 +92,27 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         dtime = ta.wpfloat("1.0")
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        divergence_of_mass = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        divergence_of_mass = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        divergence_of_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        divergence_of_theta_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        exner_tendency_due_to_slow_physics = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
 
         rho_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         exner_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

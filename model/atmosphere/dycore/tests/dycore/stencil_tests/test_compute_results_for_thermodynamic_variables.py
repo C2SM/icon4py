@@ -48,7 +48,11 @@ def compute_results_for_thermodynamic_variables_numpy(
     exner_new = (
         exner_explicit_term
         + reference_exner_at_cells_on_model_levels
-        - tridiagonal_beta_coeff_at_cells_on_model_levels * (tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
+        - tridiagonal_beta_coeff_at_cells_on_model_levels
+        * (
+            tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :-1] * w_offset_0
+            - z_alpha_offset_1 * w_offset_1
+        )
     )
     theta_v_new = (
         current_rho
@@ -102,7 +106,9 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         rho_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
@@ -110,14 +116,18 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         w = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        exner_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_explicit_term = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
         tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

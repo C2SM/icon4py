@@ -184,7 +184,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency[:, :n_lev],
                 ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=nonhydro_buoy_at_cells_on_half_levels,
                 rho_at_cells_on_half_levels=rho_at_cells_on_half_levels[:, :n_lev],
-                contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
+                contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[
+                    :, :n_lev
+                ],
                 exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
                 dtime=dtime,
                 advection_explicit_weight_parameter=advection_explicit_weight_parameter,
@@ -350,11 +352,15 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
                 update_mass_volume_flux_numpy(
                     connectivities=connectivities,
-                    vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
+                    vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels[
+                        :, :n_lev
+                    ],
                     rho_at_cells_on_half_levels=rho_at_cells_on_half_levels[:, :n_lev],
                     exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
                     w=next_w[:, :n_lev],
-                    dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
+                    dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels[
+                        :, :n_lev
+                    ],
                     dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels[
                         :, :n_lev
                     ],

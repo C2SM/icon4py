@@ -24,7 +24,9 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def apply_2nd_order_divergence_damping_numpy(
-    horizontal_gradient_of_normal_wind_divergence: np.ndarray, vn: np.ndarray, second_order_divdamp_scaling_coeff: wpfloat
+    horizontal_gradient_of_normal_wind_divergence: np.ndarray,
+    vn: np.ndarray,
+    second_order_divdamp_scaling_coeff: wpfloat,
 ) -> np.ndarray:
     vn = vn + (second_order_divdamp_scaling_coeff * horizontal_gradient_of_normal_wind_divergence)
     return vn
@@ -42,12 +44,16 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
         second_order_divdamp_scaling_coeff: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vn = apply_2nd_order_divergence_damping_numpy(horizontal_gradient_of_normal_wind_divergence, vn, second_order_divdamp_scaling_coeff)
+        vn = apply_2nd_order_divergence_damping_numpy(
+            horizontal_gradient_of_normal_wind_divergence, vn, second_order_divdamp_scaling_coeff
+        )
         return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        horizontal_gradient_of_normal_wind_divergence = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         second_order_divdamp_scaling_coeff = wpfloat("5.0")
 

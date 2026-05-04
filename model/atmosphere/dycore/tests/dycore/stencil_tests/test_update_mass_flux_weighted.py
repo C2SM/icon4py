@@ -53,12 +53,27 @@ class TestUpdateMassFluxWeighted(StencilTest):
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
-        exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
-        exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
-        dynamical_vertical_mass_flux_at_cells_on_half_levels = dynamical_vertical_mass_flux_at_cells_on_half_levels + (
-            r_nsubsteps * rho_at_cells_on_half_levels * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - contravariant_correction_at_cells_on_half_levels)
+        exner_w_explicit_weight_parameter = np.expand_dims(
+            exner_w_explicit_weight_parameter, axis=-1
         )
-        return dict(dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels)
+        exner_w_implicit_weight_parameter = np.expand_dims(
+            exner_w_implicit_weight_parameter, axis=-1
+        )
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = (
+            dynamical_vertical_mass_flux_at_cells_on_half_levels
+            + (
+                r_nsubsteps
+                * rho_at_cells_on_half_levels
+                * (
+                    exner_w_explicit_weight_parameter * w_now
+                    + exner_w_implicit_weight_parameter * w_new
+                    - contravariant_correction_at_cells_on_half_levels
+                )
+            )
+        )
+        return dict(
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -68,8 +83,12 @@ class TestUpdateMassFluxWeighted(StencilTest):
         exner_w_implicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
         w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         w_new = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        contravariant_correction_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        dynamical_vertical_mass_flux_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        contravariant_correction_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
 
         return dict(
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,

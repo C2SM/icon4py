@@ -38,12 +38,18 @@ def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     exner_pr_offset = np.roll(perturbed_exner_at_cells_on_model_levels, axis=1, shift=1)
     exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
 
-    perturbed_theta_v_at_cells_on_half_levels = wgtfac_c * perturbed_theta_v_at_cells_on_model_levels_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
+    perturbed_theta_v_at_cells_on_half_levels = (
+        wgtfac_c * perturbed_theta_v_at_cells_on_model_levels_2
+        + (1.0 - wgtfac_c) * z_rth_pr_2_offset
+    )
     perturbed_theta_v_at_cells_on_half_levels[:, 0] = 0
     theta_v_at_cells_on_half_levels = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
     theta_v_at_cells_on_half_levels[:, 0] = 0
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        exner_w_explicit_weight_parameter * theta_v_at_cells_on_half_levels * (exner_pr_offset - perturbed_exner_at_cells_on_model_levels) / ddqz_z_half
+        exner_w_explicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * (exner_pr_offset - perturbed_exner_at_cells_on_model_levels)
+        / ddqz_z_half
         + perturbed_theta_v_at_cells_on_half_levels * d_exner_dz_ref_ic
     )
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[:, 0] = 0
@@ -57,7 +63,11 @@ def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
 
 class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     PROGRAM = compute_virtual_potential_temperatures_and_pressure_gradient
-    OUTPUTS = ("perturbed_theta_v_at_cells_on_half_levels", "theta_v_at_cells_on_half_levels", "ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels")
+    OUTPUTS = (
+        "perturbed_theta_v_at_cells_on_half_levels",
+        "theta_v_at_cells_on_half_levels",
+        "ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
+    )
 
     @staticmethod
     def reference(
@@ -95,15 +105,23 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        perturbed_theta_v_at_cells_on_model_levels_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels_2 = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
-        perturbed_exner_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        perturbed_exner_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
         d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        perturbed_theta_v_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_half_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         theta_v_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             wgtfac_c=wgtfac_c,

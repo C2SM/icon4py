@@ -28,7 +28,11 @@ def compute_dwdz_for_divergence_damping_numpy(
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
 ) -> np.ndarray:
     dwdz_at_cells_on_model_levels = inv_ddqz_z_full * (
-        (w[:, :-1] - w[:, 1:]) - (contravariant_correction_at_cells_on_half_levels[:, :-1] - contravariant_correction_at_cells_on_half_levels[:, 1:])
+        (w[:, :-1] - w[:, 1:])
+        - (
+            contravariant_correction_at_cells_on_half_levels[:, :-1]
+            - contravariant_correction_at_cells_on_half_levels[:, 1:]
+        )
     )
     return dwdz_at_cells_on_model_levels
 
@@ -46,7 +50,10 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         **kwargs: Any,
     ) -> dict:
         dwdz_at_cells_on_model_levels = compute_dwdz_for_divergence_damping_numpy(
-            connectivities, inv_ddqz_z_full=inv_ddqz_z_full, w=w, contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels
+            connectivities,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            w=w,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         )
         return dict(out=dwdz_at_cells_on_model_levels)
 

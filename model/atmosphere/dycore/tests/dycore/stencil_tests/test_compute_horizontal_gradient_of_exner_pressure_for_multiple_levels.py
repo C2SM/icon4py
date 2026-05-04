@@ -47,9 +47,18 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
     full_shape = ikoffset.shape
-    z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, temporal_extrapolation_of_perturbed_exner, e2c, ikoffset)
-    z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels, e2c, ikoffset)
-    z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels, e2c, ikoffset)
+    z_exner_ex_pr_at_kidx = _apply_index_field(
+        full_shape, temporal_extrapolation_of_perturbed_exner, e2c, ikoffset
+    )
+    z_dexner_dz_c_1_at_kidx = _apply_index_field(
+        full_shape, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels, e2c, ikoffset
+    )
+    z_dexner_dz_c_2_at_kidx = _apply_index_field(
+        full_shape,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        e2c,
+        ikoffset,
+    )
 
     def at_neighbor(i: int) -> np.ndarray:
         return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
@@ -80,21 +89,25 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        horizontal_pressure_gradient = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
-            connectivities,
-            inv_dual_edge_length,
-            temporal_extrapolation_of_perturbed_exner,
-            zdiff_gradp,
-            ikoffset,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        horizontal_pressure_gradient = (
+            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
+                connectivities,
+                inv_dual_edge_length,
+                temporal_extrapolation_of_perturbed_exner,
+                zdiff_gradp,
+                ikoffset,
+                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            )
         )
         return dict(horizontal_pressure_gradient=horizontal_pressure_gradient)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        temporal_extrapolation_of_perturbed_exner = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        temporal_extrapolation_of_perturbed_exner = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat)
         ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
@@ -106,8 +119,12 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         horizontal_pressure_gradient = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(

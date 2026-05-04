@@ -23,7 +23,12 @@ def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
-        (w - w(Koff[1])) - astype(contravariant_correction_at_cells_on_half_levels - contravariant_correction_at_cells_on_half_levels(Koff[1]), wpfloat)
+        (w - w(Koff[1]))
+        - astype(
+            contravariant_correction_at_cells_on_half_levels
+            - contravariant_correction_at_cells_on_half_levels(Koff[1]),
+            wpfloat,
+        )
     )
     return astype(z_dwdz_dd_wp, vpfloat)
 

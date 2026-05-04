@@ -20,7 +20,9 @@ def _temporary_field_for_grid_point_cold_pools_enhancement(
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
 ) -> fa.CellKField[vpfloat]:
-    reference_theta_at_cells_on_model_levels_wp = astype(reference_theta_at_cells_on_model_levels, wpfloat)
+    reference_theta_at_cells_on_model_levels_wp = astype(
+        reference_theta_at_cells_on_model_levels, wpfloat
+    )
 
     tdiff = theta_v - neighbor_sum(theta_v(C2E2C), axis=C2E2CDim) / wpfloat("3.0")
     trefdiff = reference_theta_at_cells_on_model_levels_wp - astype(

@@ -37,8 +37,12 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
     z_exner_ex_pr_e2c = temporal_extrapolation_of_perturbed_exner[e2c]
     z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
-    horizontal_pressure_gradient = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
-        c_lin_e * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[e2c], axis=1
+    horizontal_pressure_gradient = (
+        inv_dual_edge_length * z_exner_ex_weighted
+        - ddxn_z_full
+        * np.sum(
+            c_lin_e * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[e2c], axis=1
+        )
     )
     return horizontal_pressure_gradient
 
@@ -58,23 +62,29 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        horizontal_pressure_gradient = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-            connectivities,
-            inv_dual_edge_length,
-            temporal_extrapolation_of_perturbed_exner,
-            ddxn_z_full,
-            c_lin_e,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        horizontal_pressure_gradient = (
+            compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
+                connectivities,
+                inv_dual_edge_length,
+                temporal_extrapolation_of_perturbed_exner,
+                ddxn_z_full,
+                c_lin_e,
+                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            )
         )
         return dict(horizontal_pressure_gradient=horizontal_pressure_gradient)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        temporal_extrapolation_of_perturbed_exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        temporal_extrapolation_of_perturbed_exner = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(

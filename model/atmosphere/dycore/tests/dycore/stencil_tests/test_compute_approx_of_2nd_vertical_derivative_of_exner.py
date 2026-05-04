@@ -30,7 +30,8 @@ def compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
 ) -> np.ndarray:
     z_theta_v_pr_ic_offset_1 = perturbed_theta_v_at_cells_on_half_levels[:, 1:]
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = -0.5 * (
-        (perturbed_theta_v_at_cells_on_half_levels[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
+        (perturbed_theta_v_at_cells_on_half_levels[:, :-1] - z_theta_v_pr_ic_offset_1)
+        * d2dexdz2_fac1_mc
         + perturbed_theta_v_at_cells_on_model_levels_2 * d2dexdz2_fac2_mc
     )
     return d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
@@ -55,7 +56,9 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
             d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
             perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
         )
-        return dict(d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels)
+        return dict(
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -63,10 +66,14 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
         d2dexdz2_fac1_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        perturbed_theta_v_at_cells_on_model_levels_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels_2 = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         d2dexdz2_fac2_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,

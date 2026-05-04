@@ -34,15 +34,27 @@ def compute_solver_coefficients_matrix_numpy(
     rd: ta.wpfloat,
     cvd: ta.wpfloat,
 ) -> tuple[np.ndarray, np.ndarray]:
-    tridiagonal_beta_coeff_at_cells_on_model_levels = dtime * rd * current_exner / (cvd * current_rho * current_theta_v) * inv_ddqz_z_full
+    tridiagonal_beta_coeff_at_cells_on_model_levels = (
+        dtime * rd * current_exner / (cvd * current_rho * current_theta_v) * inv_ddqz_z_full
+    )
     exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
-    tridiagonal_alpha_coeff_at_cells_on_half_levels = exner_w_implicit_weight_parameter * theta_v_at_cells_on_half_levels * rho_at_cells_on_half_levels
-    return (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels)
+    tridiagonal_alpha_coeff_at_cells_on_half_levels = (
+        exner_w_implicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * rho_at_cells_on_half_levels
+    )
+    return (
+        tridiagonal_beta_coeff_at_cells_on_model_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+    )
 
 
 class TestComputeSolverCoefficientsMatrix(StencilTest):
     PROGRAM = compute_solver_coefficients_matrix
-    OUTPUTS = ("tridiagonal_beta_coeff_at_cells_on_model_levels", "tridiagonal_alpha_coeff_at_cells_on_half_levels")
+    OUTPUTS = (
+        "tridiagonal_beta_coeff_at_cells_on_model_levels",
+        "tridiagonal_alpha_coeff_at_cells_on_half_levels",
+    )
 
     @staticmethod
     def reference(
@@ -59,7 +71,10 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         cvd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels) = compute_solver_coefficients_matrix_numpy(
+        (
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        ) = compute_solver_coefficients_matrix_numpy(
             connectivities,
             current_exner=current_exner,
             current_rho=current_rho,
@@ -72,7 +87,10 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
             rd=rd,
             cvd=cvd,
         )
-        return dict(tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels)
+        return dict(
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -80,11 +98,21 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        theta_v_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        rho_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         dtime = ta.wpfloat("10.0")
         rd = ta.wpfloat("5.0")
         cvd = ta.wpfloat("3.0")

@@ -46,7 +46,9 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     theta_ref_mc_offset = np.roll(reference_theta_at_cells_on_model_levels, shift=1, axis=1)
     exner_pr_offset = np.roll(perturbed_exner_at_cells_on_model_levels, shift=1, axis=1)
 
-    z_w_backtraj = -(w - contravariant_correction_at_cells_on_half_levels) * dtime * 0.5 / ddqz_z_half
+    z_w_backtraj = (
+        -(w - contravariant_correction_at_cells_on_half_levels) * dtime * 0.5 / ddqz_z_half
+    )
     z_rho_tavg_m1 = wgt_nnow_rth * rho_now_offset + wgt_nnew_rth * rho_var_offset
     z_theta_tavg_m1 = wgt_nnow_rth * theta_now_offset + wgt_nnew_rth * theta_var_offset
     z_rho_tavg = wgt_nnow_rth * current_rho + wgt_nnew_rth * rho_var
@@ -59,7 +61,9 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     rho_at_cells_on_half_levels[:, 0] = 0
     z_theta_v_pr_mc_m1 = z_theta_tavg_m1 - theta_ref_mc_offset
     z_theta_v_pr_mc = z_theta_tavg - reference_theta_at_cells_on_model_levels
-    perturbed_theta_v_at_cells_on_half_levels = wgtfac_c * z_theta_v_pr_mc + (1 - wgtfac_c) * z_theta_v_pr_mc_m1
+    perturbed_theta_v_at_cells_on_half_levels = (
+        wgtfac_c * z_theta_v_pr_mc + (1 - wgtfac_c) * z_theta_v_pr_mc_m1
+    )
     perturbed_theta_v_at_cells_on_half_levels[:, 0] = 0
     theta_v_at_cells_on_half_levels = (
         wgtfac_c * z_theta_tavg
@@ -68,16 +72,29 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     )
     theta_v_at_cells_on_half_levels[:, 0] = 0
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        exner_w_explicit_weight_parameter * theta_v_at_cells_on_half_levels * (exner_pr_offset - perturbed_exner_at_cells_on_model_levels) / ddqz_z_half
+        exner_w_explicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * (exner_pr_offset - perturbed_exner_at_cells_on_model_levels)
+        / ddqz_z_half
         + perturbed_theta_v_at_cells_on_half_levels * d_exner_dz_ref_ic
     )
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[:, 0] = 0
-    return (rho_at_cells_on_half_levels, perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels)
+    return (
+        rho_at_cells_on_half_levels,
+        perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+    )
 
 
 class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     PROGRAM = compute_rho_virtual_potential_temperatures_and_pressure_gradient
-    OUTPUTS = ("rho_at_cells_on_half_levels", "perturbed_theta_v_at_cells_on_half_levels", "theta_v_at_cells_on_half_levels", "ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels")
+    OUTPUTS = (
+        "rho_at_cells_on_half_levels",
+        "perturbed_theta_v_at_cells_on_half_levels",
+        "theta_v_at_cells_on_half_levels",
+        "ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
+    )
 
     @staticmethod
     def reference(
@@ -134,21 +151,37 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         wgt_nnow_rth = ta.wpfloat("2.0")
         wgt_nnew_rth = ta.wpfloat("3.0")
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        reference_theta_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        reference_theta_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        exner_w_explicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         d_exner_dz_ref_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        theta_v_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        theta_v_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         return dict(
             w=w,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,

@@ -38,7 +38,13 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     w = np.copy(w_ref)
     exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
 
-    z_gamma = dtime * cpd * exner_w_implicit_weight_parameter * theta_v_at_cells_on_half_levels / ddqz_z_half
+    z_gamma = (
+        dtime
+        * cpd
+        * exner_w_implicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        / ddqz_z_half
+    )
     z_a = np.zeros_like(z_gamma)
     z_b = np.zeros_like(z_gamma)
     z_c = np.zeros_like(z_gamma)
@@ -46,13 +52,26 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
 
     k_size = w.shape[1]
     for k in range(1, k_size):
-        z_a[:, k] = -z_gamma[:, k] * tridiagonal_beta_coeff_at_cells_on_model_levels[:, k - 1] * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k - 1]
-        z_c[:, k] = -z_gamma[:, k] * tridiagonal_beta_coeff_at_cells_on_model_levels[:, k] * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k + 1]
-        z_b[:, k] = 1.0 + z_gamma[:, k] * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k] * (tridiagonal_beta_coeff_at_cells_on_model_levels[:, k - 1] + tridiagonal_beta_coeff_at_cells_on_model_levels[:, k])
+        z_a[:, k] = (
+            -z_gamma[:, k]
+            * tridiagonal_beta_coeff_at_cells_on_model_levels[:, k - 1]
+            * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k - 1]
+        )
+        z_c[:, k] = (
+            -z_gamma[:, k]
+            * tridiagonal_beta_coeff_at_cells_on_model_levels[:, k]
+            * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k + 1]
+        )
+        z_b[:, k] = 1.0 + z_gamma[:, k] * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k] * (
+            tridiagonal_beta_coeff_at_cells_on_model_levels[:, k - 1]
+            + tridiagonal_beta_coeff_at_cells_on_model_levels[:, k]
+        )
         z_g[:, k] = 1.0 / (z_b[:, k] + z_a[:, k] * tridiagonal_intermediate_result[:, k - 1])
         tridiagonal_intermediate_result[:, k] = -z_c[:, k] * z_g[:, k]
 
-        w[:, k] = w_explicit_term[:, k] - z_gamma[:, k] * (exner_explicit_term[:, k - 1] - exner_explicit_term[:, k])
+        w[:, k] = w_explicit_term[:, k] - z_gamma[:, k] * (
+            exner_explicit_term[:, k - 1] - exner_explicit_term[:, k]
+        )
         w[:, k] = (w[:, k] - z_a[:, k] * w[:, k - 1]) * z_g[:, k]
     return tridiagonal_intermediate_result, w
 
@@ -94,18 +113,28 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        theta_v_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        exner_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        exner_explicit_term = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         w_explicit_term = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        tridiagonal_intermediate_result = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        tridiagonal_intermediate_result = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         # tridiagonal_intermediate_result first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
         tridiagonal_intermediate_result.asnumpy()[:, 0] = 0.0
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

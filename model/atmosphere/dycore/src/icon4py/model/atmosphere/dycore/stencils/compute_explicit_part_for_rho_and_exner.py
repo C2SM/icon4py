@@ -28,11 +28,20 @@ def _compute_explicit_part_for_rho_and_exner(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49."""
     inv_ddqz_z_full_wp, z_flxdiv_mass_wp, z_beta_wp, z_flxdiv_theta_wp, ddt_exner_phy_wp = astype(
-        (inv_ddqz_z_full, divergence_of_mass, tridiagonal_beta_coeff_at_cells_on_model_levels, divergence_of_theta_v, exner_tendency_due_to_slow_physics), wpfloat
+        (
+            inv_ddqz_z_full,
+            divergence_of_mass,
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            divergence_of_theta_v,
+            exner_tendency_due_to_slow_physics,
+        ),
+        wpfloat,
     )
 
     z_rho_expl_wp = current_rho - dtime * inv_ddqz_z_full_wp * (
-        z_flxdiv_mass_wp + vertical_mass_flux_at_cells_on_half_levels - vertical_mass_flux_at_cells_on_half_levels(Koff[1])
+        z_flxdiv_mass_wp
+        + vertical_mass_flux_at_cells_on_half_levels
+        - vertical_mass_flux_at_cells_on_half_levels(Koff[1])
     )
 
     z_exner_expl_wp = (
@@ -41,7 +50,8 @@ def _compute_explicit_part_for_rho_and_exner(
         * (
             z_flxdiv_theta_wp
             + theta_v_at_cells_on_half_levels * vertical_mass_flux_at_cells_on_half_levels
-            - theta_v_at_cells_on_half_levels(Koff[1]) * vertical_mass_flux_at_cells_on_half_levels(Koff[1])
+            - theta_v_at_cells_on_half_levels(Koff[1])
+            * vertical_mass_flux_at_cells_on_half_levels(Koff[1])
         )
         + dtime * ddt_exner_phy_wp
     )

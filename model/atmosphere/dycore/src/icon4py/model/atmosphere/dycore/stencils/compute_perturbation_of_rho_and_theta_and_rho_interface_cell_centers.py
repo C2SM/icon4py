@@ -32,11 +32,13 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     rho_at_cells_on_half_levels = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
-    z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2 = _compute_perturbation_of_rho_and_theta(
-        rho=rho,
-        reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
-        theta_v=theta_v,
-        reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
+    z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2 = (
+        _compute_perturbation_of_rho_and_theta(
+            rho=rho,
+            reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
+            theta_v=theta_v,
+            reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
+        )
     )
     return rho_at_cells_on_half_levels, z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2
 

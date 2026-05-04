@@ -20,8 +20,12 @@ def _compute_divergence_of_fluxes_of_rho_and_theta(
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_41."""
-    z_flxdiv_mass_wp = neighbor_sum(geofac_div * mass_flux_at_edges_on_model_levels(C2E), axis=C2EDim)
-    z_flxdiv_theta_wp = neighbor_sum(geofac_div * theta_v_flux_at_edges_on_model_levels(C2E), axis=C2EDim)
+    z_flxdiv_mass_wp = neighbor_sum(
+        geofac_div * mass_flux_at_edges_on_model_levels(C2E), axis=C2EDim
+    )
+    z_flxdiv_theta_wp = neighbor_sum(
+        geofac_div * theta_v_flux_at_edges_on_model_levels(C2E), axis=C2EDim
+    )
     return astype((z_flxdiv_mass_wp, z_flxdiv_theta_wp), vpfloat)
 
 

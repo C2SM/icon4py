@@ -77,7 +77,9 @@ def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     # Note: In the original Fortran code `pg_exdist` is implemented as a list,
     # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
     z_gradh_exner_vp = where(
-        pg_exdist != 0.0, horizontal_pressure_gradient + hydrostatic_correction_on_lowest_level * pg_exdist, horizontal_pressure_gradient
+        pg_exdist != 0.0,
+        horizontal_pressure_gradient + hydrostatic_correction_on_lowest_level * pg_exdist,
+        horizontal_pressure_gradient,
     )
     return z_gradh_exner_vp
 
@@ -245,7 +247,9 @@ def _compute_rho_theta_pgrad_and_update_vn(
         next_vn = concat_where(
             start_edge_nudging_level_2 <= dims.EdgeDim,
             _add_analysis_increments_to_vn(
-                normal_wind_iau_increment=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
+                normal_wind_iau_increment=normal_wind_iau_increment,
+                vn=next_vn,
+                iau_wgt_dyn=iau_wgt_dyn,
             ),
             next_vn,
         )
@@ -336,7 +340,8 @@ def _apply_divergence_damping_and_update_vn(
 
     if apply_4th_order_divergence_damping:
         squared_horizontal_gradient_of_total_divergence = _compute_graddiv2_of_vn(
-            geofac_grdiv=geofac_grdiv, horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_total_divergence
+            geofac_grdiv=geofac_grdiv,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_total_divergence,
         )
         if limited_area:
             next_vn = _apply_weighted_2nd_and_4th_order_divergence_damping(

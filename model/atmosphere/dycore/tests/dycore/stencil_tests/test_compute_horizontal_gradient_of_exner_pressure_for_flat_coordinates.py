@@ -48,15 +48,19 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
         temporal_extrapolation_of_perturbed_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        horizontal_pressure_gradient = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
-            connectivities, inv_dual_edge_length, temporal_extrapolation_of_perturbed_exner
+        horizontal_pressure_gradient = (
+            compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
+                connectivities, inv_dual_edge_length, temporal_extrapolation_of_perturbed_exner
+            )
         )
         return dict(horizontal_pressure_gradient=horizontal_pressure_gradient)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        temporal_extrapolation_of_perturbed_exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        temporal_extrapolation_of_perturbed_exner = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(

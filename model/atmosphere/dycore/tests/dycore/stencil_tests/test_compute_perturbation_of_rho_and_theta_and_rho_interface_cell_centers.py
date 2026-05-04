@@ -34,14 +34,20 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
     rho_at_cells_on_half_levels[:, 0] = 0
     z_rth_pr_1 = rho - reference_rho_at_cells_on_model_levels
     z_rth_pr_1[:, 0] = 0
-    perturbed_theta_v_at_cells_on_model_levels_2 = theta_v - reference_theta_at_cells_on_model_levels
+    perturbed_theta_v_at_cells_on_model_levels_2 = (
+        theta_v - reference_theta_at_cells_on_model_levels
+    )
     perturbed_theta_v_at_cells_on_model_levels_2[:, 0] = 0
     return rho_at_cells_on_half_levels, z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2
 
 
 class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers
-    OUTPUTS = ("rho_at_cells_on_half_levels", "z_rth_pr_1", "perturbed_theta_v_at_cells_on_model_levels_2")
+    OUTPUTS = (
+        "rho_at_cells_on_half_levels",
+        "z_rth_pr_1",
+        "perturbed_theta_v_at_cells_on_model_levels_2",
+    )
 
     @staticmethod
     def reference(
@@ -64,18 +70,28 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
             theta_v=theta_v,
             reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
         )
-        return dict(rho_at_cells_on_half_levels=rho_at_cells_on_half_levels, z_rth_pr_1=z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2)
+        return dict(
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            z_rth_pr_1=z_rth_pr_1,
+            perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        reference_rho_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_rho_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        reference_theta_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_theta_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         rho_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        perturbed_theta_v_at_cells_on_model_levels_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels_2 = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             wgtfac_c=wgtfac_c,

@@ -32,7 +32,11 @@ def apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
     vn: np.ndarray,
 ) -> np.ndarray:
     nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
-    vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * squared_horizontal_gradient_of_total_divergence
+    vn = (
+        vn
+        + (scal_divdamp + bdy_divdamp * nudgecoeff_e)
+        * squared_horizontal_gradient_of_total_divergence
+    )
     return vn
 
 
@@ -78,7 +82,9 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        squared_horizontal_gradient_of_total_divergence = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        squared_horizontal_gradient_of_total_divergence = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         divdamp_order = 24

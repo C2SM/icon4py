@@ -48,20 +48,26 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         iau_wgt_dyn: float,
         **kwargs: Any,
     ) -> dict:
-        rho_explicit_term, exner_explicit_term = add_analysis_increments_from_data_assimilation_numpy(
-            connectivities,
-            rho_explicit_term=rho_explicit_term,
-            rho_iau_increment=rho_iau_increment,
-            exner_explicit_term=exner_explicit_term,
-            exner_iau_increment=exner_iau_increment,
-            iau_wgt_dyn=iau_wgt_dyn,
+        rho_explicit_term, exner_explicit_term = (
+            add_analysis_increments_from_data_assimilation_numpy(
+                connectivities,
+                rho_explicit_term=rho_explicit_term,
+                rho_iau_increment=rho_iau_increment,
+                exner_explicit_term=exner_explicit_term,
+                exner_iau_increment=exner_iau_increment,
+                iau_wgt_dyn=iau_wgt_dyn,
+            )
         )
         return dict(rho_explicit_term=rho_explicit_term, exner_explicit_term=exner_explicit_term)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        exner_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        exner_explicit_term = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        exner_iau_increment = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         rho_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         iau_wgt_dyn = ta.wpfloat("8.0")

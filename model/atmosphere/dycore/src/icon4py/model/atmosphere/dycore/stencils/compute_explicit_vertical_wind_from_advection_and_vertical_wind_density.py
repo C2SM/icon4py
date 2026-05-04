@@ -28,7 +28,13 @@ def _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_42."""
     ddt_w_adv_ntl1_wp, ddt_w_adv_ntl2_wp, z_th_ddz_exner_c_wp, w_concorr_c_wp = astype(
-        (ddt_w_adv_ntl1, ddt_w_adv_ntl2, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels, contravariant_correction_at_cells_on_half_levels), wpfloat
+        (
+            ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            contravariant_correction_at_cells_on_half_levels,
+        ),
+        wpfloat,
     )
 
     z_w_expl_wp = w_nnow + dtime * (
@@ -36,7 +42,9 @@ def _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
         + advection_implicit_weight_parameter * ddt_w_adv_ntl2_wp
         - cpd * z_th_ddz_exner_c_wp
     )
-    z_contr_w_fl_l_wp = rho_at_cells_on_half_levels * (-w_concorr_c_wp + exner_w_explicit_weight_parameter * w_nnow)
+    z_contr_w_fl_l_wp = rho_at_cells_on_half_levels * (
+        -w_concorr_c_wp + exner_w_explicit_weight_parameter * w_nnow
+    )
     return z_w_expl_wp, z_contr_w_fl_l_wp
 
 

@@ -49,7 +49,9 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
         w: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        w_new = solve_tridiagonal_matrix_for_w_back_substitution_numpy(connectivities, tridiagonal_intermediate_result=tridiagonal_intermediate_result, w=w)
+        w_new = solve_tridiagonal_matrix_for_w_back_substitution_numpy(
+            connectivities, tridiagonal_intermediate_result=tridiagonal_intermediate_result, w=w
+        )
         return dict(w=w_new)
 
     @pytest.fixture

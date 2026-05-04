@@ -37,8 +37,14 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     z_dwdz_dd_e2c = dwdz_at_cells_on_model_levels[e2c]
     z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
-    horizontal_gradient_of_normal_wind_divergence = horizontal_gradient_of_normal_wind_divergence + (
-        horizontal_mask_for_3d_divdamp * scaling_factor_for_3d_divdamp * inv_dual_edge_length * z_dwdz_dd_weighted
+    horizontal_gradient_of_normal_wind_divergence = (
+        horizontal_gradient_of_normal_wind_divergence
+        + (
+            horizontal_mask_for_3d_divdamp
+            * scaling_factor_for_3d_divdamp
+            * inv_dual_edge_length
+            * z_dwdz_dd_weighted
+        )
     )
     return horizontal_gradient_of_normal_wind_divergence
 
@@ -58,23 +64,33 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        horizontal_gradient_of_normal_wind_divergence = add_vertical_wind_derivative_to_divergence_damping_numpy(
-            connectivities,
-            horizontal_mask_for_3d_divdamp,
-            scaling_factor_for_3d_divdamp,
-            inv_dual_edge_length,
-            dwdz_at_cells_on_model_levels,
-            horizontal_gradient_of_normal_wind_divergence,
+        horizontal_gradient_of_normal_wind_divergence = (
+            add_vertical_wind_derivative_to_divergence_damping_numpy(
+                connectivities,
+                horizontal_mask_for_3d_divdamp,
+                scaling_factor_for_3d_divdamp,
+                inv_dual_edge_length,
+                dwdz_at_cells_on_model_levels,
+                horizontal_gradient_of_normal_wind_divergence,
+            )
         )
-        return dict(horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence)
+        return dict(
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        horizontal_mask_for_3d_divdamp = data_alloc.random_field(
+            grid, dims.EdgeDim, dtype=ta.wpfloat
+        )
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        dwdz_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        dwdz_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
 
         return dict(
             horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,

@@ -272,7 +272,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
                 connectivities=connectivities,
                 wgtfac_c=wgtfac_c[:, : surface_level - 1],
-                perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
+                perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels[
+                    :, : surface_level - 1
+                ],
                 theta_v=current_theta_v,
                 exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
                 perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
@@ -294,7 +296,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 wgtfacq_c=wgtfacq_c,
                 perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
                 reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
-                perturbed_theta_v_at_cells_on_half_levels=np.zeros_like(perturbed_theta_v_at_cells_on_half_levels),
+                perturbed_theta_v_at_cells_on_half_levels=np.zeros_like(
+                    perturbed_theta_v_at_cells_on_half_levels
+                ),
                 theta_v_at_cells_on_half_levels=np.zeros_like(theta_v_at_cells_on_half_levels),
             ),
             (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
@@ -308,7 +312,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                     perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
                     d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
                     d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-                    perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
+                    perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels[
+                        :, : surface_level - 1
+                    ],
                 ),
                 d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             )

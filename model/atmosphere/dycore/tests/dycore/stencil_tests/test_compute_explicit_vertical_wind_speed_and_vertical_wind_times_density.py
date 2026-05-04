@@ -34,8 +34,13 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
     cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, -1)
-    w_explicit_term = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels)
-    vertical_mass_flux_at_cells_on_half_levels = rho_at_cells_on_half_levels * (-contravariant_correction_at_cells_on_half_levels + exner_w_explicit_weight_parameter * w_nnow)
+    w_explicit_term = w_nnow + dtime * (
+        ddt_w_adv_ntl1 - cpd * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
+    )
+    vertical_mass_flux_at_cells_on_half_levels = rho_at_cells_on_half_levels * (
+        -contravariant_correction_at_cells_on_half_levels
+        + exner_w_explicit_weight_parameter * w_nnow
+    )
     return (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels)
 
 
@@ -70,18 +75,27 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
             dtime=dtime,
             cpd=cpd,
         )
-        return dict(w_explicit_term=w_explicit_term, vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels)
+        return dict(
+            w_explicit_term=w_explicit_term,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         w_explicit_term = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        contravariant_correction_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        contravariant_correction_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
-        vertical_mass_flux_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        vertical_mass_flux_at_cells_on_half_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
         dtime = wpfloat("5.0")
         cpd = wpfloat("10.0")
 

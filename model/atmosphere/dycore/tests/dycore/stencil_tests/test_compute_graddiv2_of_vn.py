@@ -28,7 +28,11 @@ def compute_graddiv2_of_vn_numpy(
     e2c2eO = connectivities[dims.E2C2EODim]
     geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
     squared_horizontal_gradient_of_total_divergence = np.sum(
-        np.where((e2c2eO != -1)[:, :, np.newaxis], horizontal_gradient_of_normal_wind_divergence[e2c2eO] * geofac_grdiv, 0),
+        np.where(
+            (e2c2eO != -1)[:, :, np.newaxis],
+            horizontal_gradient_of_normal_wind_divergence[e2c2eO] * geofac_grdiv,
+            0,
+        ),
         axis=1,
     )
     return squared_horizontal_gradient_of_total_divergence
@@ -46,14 +50,22 @@ class TestComputeGraddiv2OfVn(StencilTest):
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        squared_horizontal_gradient_of_total_divergence = compute_graddiv2_of_vn_numpy(connectivities, geofac_grdiv, horizontal_gradient_of_normal_wind_divergence)
-        return dict(squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence)
+        squared_horizontal_gradient_of_total_divergence = compute_graddiv2_of_vn_numpy(
+            connectivities, geofac_grdiv, horizontal_gradient_of_normal_wind_divergence
+        )
+        return dict(
+            squared_horizontal_gradient_of_total_divergence=squared_horizontal_gradient_of_total_divergence
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        horizontal_gradient_of_normal_wind_divergence = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        squared_horizontal_gradient_of_total_divergence = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        squared_horizontal_gradient_of_total_divergence = zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             geofac_grdiv=geofac_grdiv,

@@ -37,11 +37,21 @@ def _compute_results_for_thermodynamic_variables(
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_55."""
     inv_ddqz_z_full_wp, reference_exner_at_cells_on_model_levels_wp, z_alpha_wp, z_beta_wp = astype(
-        (inv_ddqz_z_full, reference_exner_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels, tridiagonal_beta_coeff_at_cells_on_model_levels), wpfloat
+        (
+            inv_ddqz_z_full,
+            reference_exner_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+        ),
+        wpfloat,
     )
 
-    rho_new_wp = rho_explicit_term - exner_w_implicit_weight_parameter * dtime * inv_ddqz_z_full_wp * (
-        rho_at_cells_on_half_levels * w - rho_at_cells_on_half_levels(Koff[1]) * w(Koff[1])
+    rho_new_wp = (
+        rho_explicit_term
+        - exner_w_implicit_weight_parameter
+        * dtime
+        * inv_ddqz_z_full_wp
+        * (rho_at_cells_on_half_levels * w - rho_at_cells_on_half_levels(Koff[1]) * w(Koff[1]))
     )
     exner_new_wp = (
         exner_explicit_term
@@ -51,7 +61,10 @@ def _compute_results_for_thermodynamic_variables(
     theta_v_new_wp = (
         current_rho
         * current_theta_v
-        * ((exner_new_wp / current_exner - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd + wpfloat("1.0"))
+        * (
+            (exner_new_wp / current_exner - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd
+            + wpfloat("1.0")
+        )
         / rho_new_wp
     )
     return rho_new_wp, exner_new_wp, theta_v_new_wp

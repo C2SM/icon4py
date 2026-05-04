@@ -62,7 +62,9 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        mass_flux_at_edges_on_model_levels = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        mass_flux_at_edges_on_model_levels = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
+        )
         mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vn_traj = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

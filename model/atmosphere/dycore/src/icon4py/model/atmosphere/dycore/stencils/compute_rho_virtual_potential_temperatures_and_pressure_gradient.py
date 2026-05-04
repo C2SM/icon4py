@@ -37,8 +37,16 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     fa.CellKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_10."""
-    w_concorr_c_wp, wgtfac_c_wp, reference_theta_at_cells_on_model_levels_wp, ddqz_z_half_wp = astype(
-        (contravariant_correction_at_cells_on_half_levels, wgtfac_c, reference_theta_at_cells_on_model_levels, ddqz_z_half), wpfloat
+    w_concorr_c_wp, wgtfac_c_wp, reference_theta_at_cells_on_model_levels_wp, ddqz_z_half_wp = (
+        astype(
+            (
+                contravariant_correction_at_cells_on_half_levels,
+                wgtfac_c,
+                reference_theta_at_cells_on_model_levels,
+                ddqz_z_half,
+            ),
+            wpfloat,
+        )
     )
 
     z_w_backtraj_wp = -(w - w_concorr_c_wp) * dtime * wpfloat("0.5") / ddqz_z_half_wp
@@ -51,7 +59,9 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         + (wpfloat("1.0") - wgtfac_c_wp) * z_rho_tavg_m1_wp
         + z_w_backtraj_wp * (z_rho_tavg_m1_wp - z_rho_tavg_wp)
     )
-    z_theta_v_pr_mc_m1_wp = z_theta_tavg_m1_wp - reference_theta_at_cells_on_model_levels_wp(Koff[-1])
+    z_theta_v_pr_mc_m1_wp = z_theta_tavg_m1_wp - reference_theta_at_cells_on_model_levels_wp(
+        Koff[-1]
+    )
     z_theta_v_pr_mc_wp = z_theta_tavg_wp - reference_theta_at_cells_on_model_levels_wp
 
     z_theta_v_pr_mc_vp, z_theta_v_pr_mc_m1_vp = astype(
@@ -66,9 +76,10 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         + (wpfloat("1.0") - wgtfac_c_wp) * z_theta_tavg_m1_wp
         + z_w_backtraj_wp * (z_theta_tavg_m1_wp - z_theta_tavg_wp)
     )
-    z_th_ddz_exner_c_wp = exner_w_explicit_weight_parameter * theta_v_ic_wp * (perturbed_exner_at_cells_on_model_levels(Koff[-1]) - perturbed_exner_at_cells_on_model_levels) / astype(
-        ddqz_z_half, wpfloat
-    ) + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
+    z_th_ddz_exner_c_wp = exner_w_explicit_weight_parameter * theta_v_ic_wp * (
+        perturbed_exner_at_cells_on_model_levels(Koff[-1])
+        - perturbed_exner_at_cells_on_model_levels
+    ) / astype(ddqz_z_half, wpfloat) + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
     return (
         rho_ic_wp,
         z_theta_v_pr_ic_vp,

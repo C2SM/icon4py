@@ -28,8 +28,14 @@ def _compute_solver_coefficients_matrix(
     """Formerly known as _mo_solve_nonhydro_stencil_44."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
-    z_beta_wp = dtime * rd * current_exner / (cvd * current_rho * current_theta_v) * inv_ddqz_z_full_wp
-    z_alpha_wp = exner_w_implicit_weight_parameter * theta_v_at_cells_on_half_levels * rho_at_cells_on_half_levels
+    z_beta_wp = (
+        dtime * rd * current_exner / (cvd * current_rho * current_theta_v) * inv_ddqz_z_full_wp
+    )
+    z_alpha_wp = (
+        exner_w_implicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * rho_at_cells_on_half_levels
+    )
     return astype((z_beta_wp, z_alpha_wp), vpfloat)
 
 
@@ -63,7 +69,10 @@ def compute_solver_coefficients_matrix(
         dtime,
         rd,
         cvd,
-        out=(tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels),
+        out=(
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

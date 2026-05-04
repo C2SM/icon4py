@@ -49,20 +49,30 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.Stenc
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        divergence_of_mass, divergence_of_theta_v = compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-            connectivities,
-            geofac_div,
-            mass_flux_at_edges_on_model_levels,
-            theta_v_flux_at_edges_on_model_levels,
+        divergence_of_mass, divergence_of_theta_v = (
+            compute_divergence_of_fluxes_of_rho_and_theta_numpy(
+                connectivities,
+                geofac_div,
+                mass_flux_at_edges_on_model_levels,
+                theta_v_flux_at_edges_on_model_levels,
+            )
         )
-        return dict(divergence_of_mass=divergence_of_mass, divergence_of_theta_v=divergence_of_theta_v)
+        return dict(
+            divergence_of_mass=divergence_of_mass, divergence_of_theta_v=divergence_of_theta_v
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        divergence_of_theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat
+        )
+        divergence_of_theta_v = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat
+        )
         divergence_of_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(

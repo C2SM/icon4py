@@ -31,7 +31,8 @@ def _compute_backward_trajectory_from_edge_center(
     lvn_pos = where(current_vn >= wpfloat("0.0"), True, False)
 
     z_ntdistv_bary_1 = -(
-        current_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
+        current_vn * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
     )
 
     z_ntdistv_bary_2 = -(

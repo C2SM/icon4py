@@ -59,10 +59,28 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
-    z_gamma_vp = astype(dtime * cpd * exner_w_implicit_weight_parameter * theta_v_at_cells_on_half_levels / ddqz_z_half_wp, vpfloat)
-    z_a = (vpfloat("0.0") - z_gamma_vp) * tridiagonal_beta_coeff_at_cells_on_model_levels(Koff[-1]) * tridiagonal_alpha_coeff_at_cells_on_half_levels(Koff[-1])
-    z_c = (vpfloat("0.0") - z_gamma_vp) * tridiagonal_beta_coeff_at_cells_on_model_levels * tridiagonal_alpha_coeff_at_cells_on_half_levels(Koff[1])
-    z_b = vpfloat("1.0") + z_gamma_vp * tridiagonal_alpha_coeff_at_cells_on_half_levels * (tridiagonal_beta_coeff_at_cells_on_model_levels(Koff[-1]) + tridiagonal_beta_coeff_at_cells_on_model_levels)
+    z_gamma_vp = astype(
+        dtime
+        * cpd
+        * exner_w_implicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        / ddqz_z_half_wp,
+        vpfloat,
+    )
+    z_a = (
+        (vpfloat("0.0") - z_gamma_vp)
+        * tridiagonal_beta_coeff_at_cells_on_model_levels(Koff[-1])
+        * tridiagonal_alpha_coeff_at_cells_on_half_levels(Koff[-1])
+    )
+    z_c = (
+        (vpfloat("0.0") - z_gamma_vp)
+        * tridiagonal_beta_coeff_at_cells_on_model_levels
+        * tridiagonal_alpha_coeff_at_cells_on_half_levels(Koff[1])
+    )
+    z_b = vpfloat("1.0") + z_gamma_vp * tridiagonal_alpha_coeff_at_cells_on_half_levels * (
+        tridiagonal_beta_coeff_at_cells_on_model_levels(Koff[-1])
+        + tridiagonal_beta_coeff_at_cells_on_model_levels
+    )
     z_gamma_wp = astype(z_gamma_vp, wpfloat)
     w_prep = w_explicit_term - z_gamma_wp * (exner_explicit_term(Koff[-1]) - exner_explicit_term)
     z_q_res, w_res = tridiagonal_forward_sweep_for_w(z_a, z_b, z_c, w_prep)

@@ -79,10 +79,18 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         current_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        predictor_normal_wind_advective_tendency = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        corrector_normal_wind_advective_tendency = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        normal_wind_tendency_due_to_slow_physics_process = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        theta_v_at_edges_on_model_levels = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        predictor_normal_wind_advective_tendency = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        corrector_normal_wind_advective_tendency = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        normal_wind_tendency_due_to_slow_physics_process = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        theta_v_at_edges_on_model_levels = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat
+        )
         horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         vn_nnew = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")

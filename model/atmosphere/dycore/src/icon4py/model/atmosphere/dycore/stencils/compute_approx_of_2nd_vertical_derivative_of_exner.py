@@ -21,7 +21,11 @@ def _compute_approx_of_2nd_vertical_derivative_of_exner(
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_12."""
     z_dexner_dz_c_2_vp = -vpfloat("0.5") * (
-        (perturbed_theta_v_at_cells_on_half_levels - perturbed_theta_v_at_cells_on_half_levels(Koff[1])) * d2dexdz2_fac1_mc
+        (
+            perturbed_theta_v_at_cells_on_half_levels
+            - perturbed_theta_v_at_cells_on_half_levels(Koff[1])
+        )
+        * d2dexdz2_fac1_mc
         + perturbed_theta_v_at_cells_on_model_levels_2 * d2dexdz2_fac2_mc
     )
     return z_dexner_dz_c_2_vp

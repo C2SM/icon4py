@@ -214,7 +214,9 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
                 ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=nonhydro_buoy_at_cells_on_half_levels,
                 rho_at_cells_on_half_levels=rho_at_cells_on_half_levels[:, :n_lev],
-                contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
+                contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[
+                    :, :n_lev
+                ],
                 exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
                 dtime=dtime,
                 cpd=constants.CPD,

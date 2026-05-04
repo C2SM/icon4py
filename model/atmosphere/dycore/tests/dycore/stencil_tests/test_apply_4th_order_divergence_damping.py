@@ -55,13 +55,17 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
             second_order_divdamp_factor,
             mean_cell_area,
         )
-        vn = apply_4th_order_divergence_damping_numpy(scal_divdamp, squared_horizontal_gradient_of_total_divergence, vn)
+        vn = apply_4th_order_divergence_damping_numpy(
+            scal_divdamp, squared_horizontal_gradient_of_total_divergence, vn
+        )
         return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
-        squared_horizontal_gradient_of_total_divergence = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        squared_horizontal_gradient_of_total_divergence = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         divdamp_order = 24

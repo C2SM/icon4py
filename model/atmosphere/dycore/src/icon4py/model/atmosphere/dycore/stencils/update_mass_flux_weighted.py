@@ -27,7 +27,13 @@ def _update_mass_flux_weighted(
     w_concorr_c_wp = astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
 
     mass_flx_ic_wp = dynamical_vertical_mass_flux_at_cells_on_half_levels + (
-        r_nsubsteps * rho_at_cells_on_half_levels * (exner_w_explicit_weight_parameter * w_now + exner_w_implicit_weight_parameter * w_new - w_concorr_c_wp)
+        r_nsubsteps
+        * rho_at_cells_on_half_levels
+        * (
+            exner_w_explicit_weight_parameter * w_now
+            + exner_w_implicit_weight_parameter * w_new
+            - w_concorr_c_wp
+        )
     )
     return mass_flx_ic_wp
 

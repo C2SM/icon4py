@@ -56,14 +56,20 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_vn_avg, horizontal_gradient_of_normal_wind_divergence, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-            connectivities,
-            e_flx_avg,
-            vn,
-            geofac_grdiv,
-            rbf_vec_coeff_e,
+        z_vn_avg, horizontal_gradient_of_normal_wind_divergence, vt = (
+            compute_avg_vn_and_graddiv_vn_and_vt_numpy(
+                connectivities,
+                e_flx_avg,
+                vn,
+                geofac_grdiv,
+                rbf_vec_coeff_e,
+            )
         )
-        return dict(z_vn_avg=z_vn_avg, horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence, vt=vt)
+        return dict(
+            z_vn_avg=z_vn_avg,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
+            vt=vt,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -72,7 +78,9 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        horizontal_gradient_of_normal_wind_divergence = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
         vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(

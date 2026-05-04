@@ -30,7 +30,9 @@ def update_dynamical_exner_time_increment_numpy(
     ndyn_substeps_var: float,
     dtime: float,
 ) -> np.ndarray:
-    exner_dynamical_increment = exner - (exner_dynamical_increment + ndyn_substeps_var * dtime * exner_tendency_due_to_slow_physics)
+    exner_dynamical_increment = exner - (
+        exner_dynamical_increment + ndyn_substeps_var * dtime * exner_tendency_due_to_slow_physics
+    )
     return exner_dynamical_increment
 
 
@@ -62,7 +64,9 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_tendency_due_to_slow_physics = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_tendency_due_to_slow_physics = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         exner_dynamical_increment = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(

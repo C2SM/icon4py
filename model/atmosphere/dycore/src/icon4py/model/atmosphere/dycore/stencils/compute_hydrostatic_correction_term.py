@@ -33,8 +33,12 @@ def _compute_hydrostatic_correction_term(
     theta_v_ic_0 = theta_v_at_cells_on_half_levels(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)]))
     theta_v_ic_1 = theta_v_at_cells_on_half_levels(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)]))
 
-    theta_v_ic_p1_0 = theta_v_at_cells_on_half_levels(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)] + 1))
-    theta_v_ic_p1_1 = theta_v_at_cells_on_half_levels(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)] + 1))
+    theta_v_ic_p1_0 = theta_v_at_cells_on_half_levels(E2C[0])(
+        as_offset(Koff, ikoffset[E2CDim(0)] + 1)
+    )
+    theta_v_ic_p1_1 = theta_v_at_cells_on_half_levels(E2C[1])(
+        as_offset(Koff, ikoffset[E2CDim(1)] + 1)
+    )
 
     inv_ddqz_z_full_0_wp = astype(
         inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)])), wpfloat

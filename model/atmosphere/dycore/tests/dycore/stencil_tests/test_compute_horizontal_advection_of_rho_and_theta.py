@@ -76,7 +76,8 @@ def compute_btraj_numpy(
         current_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
     z_ntdistv_bary_2 = -(
-        tangential_wind * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+        tangential_wind * p_dthalf
+        + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 
     p_distv_bary_1 = np.where(
@@ -231,23 +232,25 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_rho_e, theta_v_at_edges_on_model_levels = compute_horizontal_advection_of_rho_and_theta_numpy(
-            connectivities,
-            current_vn,
-            tangential_wind,
-            pos_on_tplane_e_1,
-            pos_on_tplane_e_2,
-            primal_normal_cell_1,
-            dual_normal_cell_1,
-            primal_normal_cell_2,
-            dual_normal_cell_2,
-            p_dthalf,
-            reference_rho_at_edges_on_model_levels,
-            reference_theta_at_edges_on_model_levels,
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-            geofac_grg_x,
-            geofac_grg_y,
+        z_rho_e, theta_v_at_edges_on_model_levels = (
+            compute_horizontal_advection_of_rho_and_theta_numpy(
+                connectivities,
+                current_vn,
+                tangential_wind,
+                pos_on_tplane_e_1,
+                pos_on_tplane_e_2,
+                primal_normal_cell_1,
+                dual_normal_cell_1,
+                primal_normal_cell_2,
+                dual_normal_cell_2,
+                p_dthalf,
+                reference_rho_at_edges_on_model_levels,
+                reference_theta_at_edges_on_model_levels,
+                perturbed_rho_at_cells_on_model_levels,
+                perturbed_theta_v_at_cells_on_model_levels,
+                geofac_grg_x,
+                geofac_grg_y,
+            )
         )
         return dict(out=(z_rho_e, theta_v_at_edges_on_model_levels))
 
@@ -277,8 +280,12 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         )
         p_dthalf = 2.0
 
-        reference_rho_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        reference_theta_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        reference_rho_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        reference_theta_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
         perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
@@ -288,7 +295,9 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat
+        )
 
         return dict(
             current_vn=current_vn,

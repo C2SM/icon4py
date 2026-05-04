@@ -39,13 +39,25 @@ def hydrostatic_adjustment_ndarray(
 
     for k in range(num_levels - 2, -1, -1):
         fac1 = (
-            wgtfac_c[:, k + 1] * (temp_v[:, k + 1] - reference_theta_at_cells_on_model_levels[:, k + 1] * exner[:, k + 1])
-            - (1.0 - wgtfac_c[:, k + 1]) * reference_theta_at_cells_on_model_levels[:, k] * exner[:, k + 1]
+            wgtfac_c[:, k + 1]
+            * (
+                temp_v[:, k + 1]
+                - reference_theta_at_cells_on_model_levels[:, k + 1] * exner[:, k + 1]
+            )
+            - (1.0 - wgtfac_c[:, k + 1])
+            * reference_theta_at_cells_on_model_levels[:, k]
+            * exner[:, k + 1]
         )
         fac2 = (1.0 - wgtfac_c[:, k + 1]) * temp_v[:, k] * exner[:, k + 1]
-        fac3 = reference_exner_at_cells_on_model_levels[:, k + 1] - reference_exner_at_cells_on_model_levels[:, k] - exner[:, k + 1]
+        fac3 = (
+            reference_exner_at_cells_on_model_levels[:, k + 1]
+            - reference_exner_at_cells_on_model_levels[:, k]
+            - exner[:, k + 1]
+        )
 
-        quadratic_a = (reference_theta_at_cells_on_half_levels[:, k + 1] * exner[:, k + 1] + fac1) / ddqz_z_half[:, k + 1]
+        quadratic_a = (
+            reference_theta_at_cells_on_half_levels[:, k + 1] * exner[:, k + 1] + fac1
+        ) / ddqz_z_half[:, k + 1]
         quadratic_b = -(
             quadratic_a * fac3 + fac2 / ddqz_z_half[:, k + 1] + fac1 * d_exner_dz_ref_ic[:, k + 1]
         )
@@ -81,13 +93,18 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
     """
 
     for k in range(num_levels - 2, -1, -1):
-        theta_v_pr_ic = wgtfac_c[:, k + 1] * (theta_v[:, k + 1] - reference_theta_at_cells_on_model_levels[:, k + 1]) + (
-            1.0 - wgtfac_c[:, k + 1]
-        ) * (theta_v[:, k] - reference_theta_at_cells_on_model_levels[:, k])
+        theta_v_pr_ic = wgtfac_c[:, k + 1] * (
+            theta_v[:, k + 1] - reference_theta_at_cells_on_model_levels[:, k + 1]
+        ) + (1.0 - wgtfac_c[:, k + 1]) * (
+            theta_v[:, k] - reference_theta_at_cells_on_model_levels[:, k]
+        )
 
         exner[:, k] = (
             exner[:, k + 1]
-            + (reference_exner_at_cells_on_model_levels[:, k] - reference_exner_at_cells_on_model_levels[:, k + 1])
+            + (
+                reference_exner_at_cells_on_model_levels[:, k]
+                - reference_exner_at_cells_on_model_levels[:, k + 1]
+            )
             - ddqz_z_half[:, k + 1]
             / (theta_v_pr_ic + reference_theta_at_cells_on_half_levels[:, k + 1])
             * theta_v_pr_ic

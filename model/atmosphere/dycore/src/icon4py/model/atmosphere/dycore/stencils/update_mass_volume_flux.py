@@ -22,9 +22,15 @@ def _update_mass_volume_flux(
     r_nsubsteps: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_58."""
-    z_a = r_nsubsteps * (vertical_mass_flux_at_cells_on_half_levels + rho_at_cells_on_half_levels * exner_w_implicit_weight_parameter * w)
+    z_a = r_nsubsteps * (
+        vertical_mass_flux_at_cells_on_half_levels
+        + rho_at_cells_on_half_levels * exner_w_implicit_weight_parameter * w
+    )
     mass_flx_ic_wp = dynamical_vertical_mass_flux_at_cells_on_half_levels + z_a
-    vol_flx_ic_wp = dynamical_vertical_volumetric_flux_at_cells_on_half_levels + z_a / rho_at_cells_on_half_levels
+    vol_flx_ic_wp = (
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels
+        + z_a / rho_at_cells_on_half_levels
+    )
     return mass_flx_ic_wp, vol_flx_ic_wp
 
 
@@ -50,7 +56,10 @@ def update_mass_volume_flux(
         dynamical_vertical_mass_flux_at_cells_on_half_levels,
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         r_nsubsteps,
-        out=(dynamical_vertical_mass_flux_at_cells_on_half_levels, dynamical_vertical_volumetric_flux_at_cells_on_half_levels),
+        out=(
+            dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

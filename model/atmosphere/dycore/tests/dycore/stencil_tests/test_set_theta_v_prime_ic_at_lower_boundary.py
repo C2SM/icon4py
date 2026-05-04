@@ -36,7 +36,9 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
         interpolant=perturbed_theta_v_at_cells_on_model_levels,
         interpolation_to_surface=perturbed_theta_v_at_cells_on_half_levels,
     )
-    theta_v_at_cells_on_half_levels[:, 3:] = (reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels)[:, 3:]
+    theta_v_at_cells_on_half_levels[:, 3:] = (
+        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels
+    )[:, 3:]
     return (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels)
 
 
@@ -54,21 +56,32 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
         theta_v_at_cells_on_half_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels) = set_theta_v_prime_ic_at_lower_boundary_numpy(
-            wgtfacq_c=wgtfacq_c,
-            perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-            reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+        (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels) = (
+            set_theta_v_prime_ic_at_lower_boundary_numpy(
+                wgtfacq_c=wgtfacq_c,
+                perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+                reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+                perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+                theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            )
+        )
+        return dict(
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         )
-        return dict(perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        perturbed_theta_v_at_cells_on_model_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        reference_theta_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        perturbed_theta_v_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        reference_theta_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        perturbed_theta_v_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         theta_v_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(

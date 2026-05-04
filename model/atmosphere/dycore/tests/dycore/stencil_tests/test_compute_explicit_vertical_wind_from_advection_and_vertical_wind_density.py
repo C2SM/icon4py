@@ -36,10 +36,15 @@ def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_nump
     cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     w_explicit_term = w_nnow + dtime * (
-        advection_explicit_weight_parameter * ddt_w_adv_ntl1 + advection_implicit_weight_parameter * ddt_w_adv_ntl2 - cpd * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
+        advection_explicit_weight_parameter * ddt_w_adv_ntl1
+        + advection_implicit_weight_parameter * ddt_w_adv_ntl2
+        - cpd * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
     exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
-    vertical_mass_flux_at_cells_on_half_levels = rho_at_cells_on_half_levels * (-contravariant_correction_at_cells_on_half_levels + exner_w_explicit_weight_parameter * w_nnow)
+    vertical_mass_flux_at_cells_on_half_levels = rho_at_cells_on_half_levels * (
+        -contravariant_correction_at_cells_on_half_levels
+        + exner_w_explicit_weight_parameter * w_nnow
+    )
     return (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels)
 
 
@@ -80,19 +85,32 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             cpd=cpd,
         )
-        return dict(w_explicit_term=w_explicit_term, vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels)
+        return dict(
+            w_explicit_term=w_explicit_term,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         ddt_w_adv_ntl2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
         w_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        exner_w_explicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
+        vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         dtime = ta.wpfloat("5.0")
         advection_explicit_weight_parameter = ta.wpfloat("8.0")
         advection_implicit_weight_parameter = ta.wpfloat("9.0")

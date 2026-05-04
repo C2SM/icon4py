@@ -27,7 +27,13 @@ def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_23."""
     ddt_vn_phy_wp, z_gradh_exner_wp, ddt_vn_apc_ntl1_wp, ddt_vn_apc_ntl2_wp = astype(
-        (normal_wind_tendency_due_to_slow_physics_process, horizontal_pressure_gradient, predictor_normal_wind_advective_tendency, corrector_normal_wind_advective_tendency), wpfloat
+        (
+            normal_wind_tendency_due_to_slow_physics_process,
+            horizontal_pressure_gradient,
+            predictor_normal_wind_advective_tendency,
+            corrector_normal_wind_advective_tendency,
+        ),
+        wpfloat,
     )
 
     vn_nnew_wp = current_vn + dtime * (

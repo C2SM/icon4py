@@ -39,7 +39,10 @@ def _update_theta_and_exner_in_halo(
         mask_prog_halo_c,
         current_rho
         * current_theta_v
-        * ((exner_new / current_exner - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd + wpfloat("1.0"))
+        * (
+            (exner_new / current_exner - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd
+            + wpfloat("1.0")
+        )
         / rho_new,
         exner_new,
     )

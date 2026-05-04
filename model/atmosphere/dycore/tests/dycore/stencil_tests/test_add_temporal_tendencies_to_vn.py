@@ -31,7 +31,9 @@ def add_temporal_tendencies_to_vn_numpy(
     dtime: float,
 ) -> np.ndarray:
     vn_nnew = current_vn + dtime * (
-        predictor_normal_wind_advective_tendency + normal_wind_tendency_due_to_slow_physics_process - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+        predictor_normal_wind_advective_tendency
+        + normal_wind_tendency_due_to_slow_physics_process
+        - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
     )
     return vn_nnew
 
@@ -52,7 +54,12 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         **kwargs: Any,
     ) -> dict:
         vn_nnew = add_temporal_tendencies_to_vn_numpy(
-            current_vn, predictor_normal_wind_advective_tendency, normal_wind_tendency_due_to_slow_physics_process, theta_v_at_edges_on_model_levels, horizontal_pressure_gradient, dtime
+            current_vn,
+            predictor_normal_wind_advective_tendency,
+            normal_wind_tendency_due_to_slow_physics_process,
+            theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient,
+            dtime,
         )
         return dict(vn_nnew=vn_nnew)
 
@@ -60,9 +67,15 @@ class TestAddTemporalTendenciesToVn(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
         current_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        predictor_normal_wind_advective_tendency = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        normal_wind_tendency_due_to_slow_physics_process = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        theta_v_at_edges_on_model_levels = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        predictor_normal_wind_advective_tendency = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
+        normal_wind_tendency_due_to_slow_physics_process = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
+        theta_v_at_edges_on_model_levels = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
+        )
         horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn_nnew = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
