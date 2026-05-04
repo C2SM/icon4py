@@ -179,7 +179,6 @@ When performance is important you may want to
 export PYTHONOPTIMIZE=2
 ```
 
-
 ### Benchmarking
 
 We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.
