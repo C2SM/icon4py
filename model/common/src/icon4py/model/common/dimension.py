@@ -49,10 +49,6 @@ V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
-DIMENSIONS_BY_OFFSET_NAME: Final[dict[str, gtx.Dimension]] = {
-    dim.value: dim for dim in globals().values() if isinstance(dim, gtx.Dimension)
-}
-
 _HORIZONTAL_DIMS: Final[tuple[gtx.Dimension, ...]] = tuple(
     d for d in globals().values() if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL
 )
