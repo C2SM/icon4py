@@ -113,7 +113,7 @@ class NeedsExchange(Protocol):
                 first_dim = field.domain.dims[0]
                 assert (
                     first_dim.kind == gtx.DimensionKind.HORIZONTAL
-                ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                ), f"1st dimension {first_dim} needs to be one of {list(dims.horizontal_dims())} for exchange"
                 with as_exchangeable_field(field) as buffer:
                     exchange.exchange(first_dim, buffer, stream=decomposition.BLOCK)
                 log.debug(f"exchanged buffer for {name}")
