@@ -254,11 +254,10 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
     # Merge some stencils into 'boundary_halo_cleanup'
     assert "boundary_halo_cleanup" not in data
     data["boundary_halo_cleanup"] = [
-        a + b + c
-        for a, b, c in zip(
+        a + b
+        for a, b in zip(
             unmatched_data.pop("compute_exner_from_rhotheta"),
-            unmatched_data.pop("compute_theta_and_exner"),
-            unmatched_data.pop("update_theta_v"),
+            unmatched_data.pop("update_theta_and_exner_in_halo"),
             strict=True,
         )
     ]

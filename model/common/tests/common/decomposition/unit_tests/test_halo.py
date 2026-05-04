@@ -175,7 +175,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
 def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
     process_props = utils.DummyProps(rank=rank)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
-    distribution = (process_props.comm_size + 1) * np.ones((num_cells,), dtype=int)
+    distribution = np.full(num_cells, process_props.comm_size + 1, dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
