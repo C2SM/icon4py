@@ -50,6 +50,20 @@ def pytest_configure(config):
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
 
+    with_mpi = config.getoption("--with-mpi", default=False)
+    only_mpi = config.getoption("--only-mpi", default=False)
+    if with_mpi or only_mpi:
+        from icon4py.model.common.decomposition.mpi_decomposition import import_error, mpi4py
+
+        if mpi4py is None:
+            raise pytest.UsageError(
+                f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
+            )
+
+        from icon4py.model.common.decomposition.mpi_decomposition import init_mpi
+
+        init_mpi()
+
 
 def pytest_addoption(parser: pytest.Parser):
     """Add custom commandline options for pytest."""
@@ -116,9 +130,9 @@ def pytest_collection_modifyitems(config, items):
         return
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
-            assert all(level in _TEST_LEVELS for level in marker.args), (
-                f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
-            )
+            assert all(
+                level in _TEST_LEVELS for level in marker.args
+            ), f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             if test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(
@@ -174,9 +188,9 @@ def pytest_benchmark_update_json(output_json):
         # to avoid reporting python overheads in `bencher` so that the results are comparable to the Fortran stencil benchmarks
         if "extra_info" in bench and "gtx_metrics" in bench["extra_info"]:
             gt4py_metrics_runtimes = bench.get("extra_info").get("gtx_metrics")
-            assert len(gt4py_metrics_runtimes) > 0, (
-                "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
-            )
+            assert (
+                len(gt4py_metrics_runtimes) > 0
+            ), "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
             bench["stats"]["mean"] = np.mean(gt4py_metrics_runtimes)
             bench["stats"]["median"] = np.median(gt4py_metrics_runtimes)
             bench["stats"]["stddev"] = np.std(gt4py_metrics_runtimes)

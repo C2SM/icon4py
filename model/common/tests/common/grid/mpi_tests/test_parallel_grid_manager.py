@@ -50,9 +50,6 @@ from icon4py.model.testing.fixtures.datatest import (
 from . import utils
 
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 _log = logging.getLogger(__file__)
 
 
@@ -797,17 +794,15 @@ def test_validate_skip_values_in_distributed_connectivities(
         if gtx_common.is_neighbor_connectivity(c):
             skip_values_in_table = np.count_nonzero(c.asnumpy() == c.skip_value)
             found_skips = skip_values_in_table > 0
-            assert found_skips == (c.skip_value is not None), (
-                f"rank={process_props.rank} / {process_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
-            )
+            assert (
+                found_skips == (c.skip_value is not None)
+            ), f"rank={process_props.rank} / {process_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
             if skip_values_in_table > 0:
                 dim = gtx.Dimension(k, gtx.DimensionKind.LOCAL)
                 assert (
                     dim in icon.CONNECTIVITIES_ON_BOUNDARIES
                     or dim in icon.CONNECTIVITIES_ON_PENTAGONS
-                ), (
-                    f"rank={process_props.rank} / {process_props.comm_size}: {k} has skip found in table, expected none"
-                )
+                ), f"rank={process_props.rank} / {process_props.comm_size}: {k} has skip found in table, expected none"
 
 
 @pytest.mark.mpi
