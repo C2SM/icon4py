@@ -120,17 +120,14 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         self._domain_id_gen = decomp_defs.DomainDescriptorIdGenerator(process_props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            dim: self._create_domain_descriptor(dim)
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            dim: self._create_domain_descriptor(dim) for dim in dims.horizontal_dims()
         }
         self._field_size: dict[gtx.Dimension, int] = {
             dim: self._decomposition_info.global_index(dim).shape[0]
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for dim in dims.horizontal_dims()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-        self._patterns = {
-            dim: self._create_pattern(dim) for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        }
+        self._patterns = {dim: self._create_pattern(dim) for dim in dims.horizontal_dims()}
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
 
@@ -190,7 +187,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
         the granule context where fields otherwise have length nproma.
         """
-        if dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+        if dim.kind == gtx.DimensionKind.HORIZONTAL:
             return field.ndarray[: self._field_size[dim]]
         else:
             raise ValueError(f"Unknown dimension {dim}")
@@ -229,8 +226,8 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
         assert (
-            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+            dim in dims.horizontal_dims()
+        ), f"first dimension must be one of ({list(dims.horizontal_dims())})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if not ghex.__config__["gpu"]:
@@ -392,8 +389,8 @@ class GlobalReductions(Reductions):
         buffer: data_alloc.NDArray,
         local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
         global_reduction: mpi4py.MPI.Op,
-        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
+        array_ns = data_alloc.array_namespace(buffer)
         local_red_val = local_reduction(buffer)
         recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
         if hasattr(
@@ -406,54 +403,47 @@ class GlobalReductions(Reductions):
     def _calc_buffer_size(
         self,
         buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+        array_ns = data_alloc.array_namespace(buffer)
+        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM)
 
-    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._min_identity(buffer.dtype, array_ns),
             array_ns.min,
             mpi4py.MPI.MIN,
-            array_ns,
         )
 
-    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._max_identity(buffer.dtype, array_ns),
             array_ns.max,
             mpi4py.MPI.MAX,
-            array_ns,
         )
 
-    def sum(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
+    def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
             array_ns.sum,
             mpi4py.MPI.SUM,
-            array_ns,
         )
 
-    def mean(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        global_buffer_size = self._calc_buffer_size(buffer, array_ns)
+        array_ns = data_alloc.array_namespace(buffer)
+        global_buffer_size = self._calc_buffer_size(buffer)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
 
@@ -462,7 +452,6 @@ class GlobalReductions(Reductions):
                 (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
                 array_ns.sum,
                 mpi4py.MPI.SUM,
-                array_ns,
             )
             / global_buffer_size
         )

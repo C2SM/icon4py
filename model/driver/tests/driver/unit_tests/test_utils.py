@@ -39,9 +39,7 @@ def test_hydrostatic_adjustment_ndarray(backend):
     theta_v = xp.full((num_cells, num_levels), theta_v0)
 
     # Call the function
-    r_rho, r_exner, r_theta_v = functools.partial(
-        utils.hydrostatic_adjustment_ndarray, array_ns=xp
-    )(
+    r_rho, r_exner, r_theta_v = functools.partial(utils.hydrostatic_adjustment_ndarray)(
         wgtfac_c,
         ddqz_z_half,
         reference_exner_at_cells_on_model_levels,
