@@ -38,7 +38,7 @@ def zones() -> Iterator[h_grid.Zone]:
     yield from h_grid.Zone.__members__.values()
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize("zone", zones())
 def test_domain_raises_for_invalid_zones(dim: gtx.Dimension, zone: h_grid.Zone) -> None:
     if dim in (dims.CellDim, dims.VertexDim):

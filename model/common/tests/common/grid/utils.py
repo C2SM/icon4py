@@ -22,16 +22,8 @@ from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 managers: dict[str, gm.GridManager] = {}
 
 
-def horizontal_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.horizontal_dims()
-
-
-def vertical_dims() -> Iterator[gtx.Dimension]:
-    yield from dims.vertical_dims()
-
-
 def non_horizontal_dims() -> Iterator[gtx.Dimension]:
-    yield from vertical_dims()
+    yield from dims.vertical_dims()
     yield from local_dims()
 
 
@@ -48,13 +40,13 @@ def horizontal_offsets() -> Iterator[gtx.FieldOffset]:
 
 
 def non_local_dims() -> Iterator[gtx.Dimension]:
-    yield from vertical_dims()
-    yield from horizontal_dims()
+    yield from dims.vertical_dims()
+    yield from dims.horizontal_dims()
 
 
 def all_dims() -> Iterator[gtx.Dimension]:
-    yield from vertical_dims()
-    yield from horizontal_dims()
+    yield from dims.vertical_dims()
+    yield from dims.horizontal_dims()
     yield from local_dims()
 
 

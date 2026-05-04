@@ -100,7 +100,7 @@ def test_grid_manager_eval_v2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -414,7 +414,7 @@ def test_grid_manager_eval_c2e2c2e(
 # TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -455,7 +455,7 @@ def test_read_geometry_fields(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -569,7 +569,7 @@ def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expe
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_single_rank(
     dim: gtx.Dimension,
     experiment: definitions.Experiment,
