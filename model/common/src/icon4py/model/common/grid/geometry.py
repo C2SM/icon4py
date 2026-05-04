@@ -29,10 +29,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.math import (
-    coordinate_transformations as coord_trans,
-    utils as math_utils,
-)
+from icon4py.model.common.math import coordinate_transformations as coord_trans, utils as math_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 

@@ -12,7 +12,6 @@ import math
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.common.math import vertical_operations as vertical_ops
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import (
     constants,
@@ -32,6 +31,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.math import vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_advection_metrics,
     compute_coeff_gradekin,

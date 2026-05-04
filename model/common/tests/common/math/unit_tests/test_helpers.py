@@ -15,7 +15,10 @@ import pytest
 import icon4py.model.testing.test_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
-from icon4py.model.common.math import vector_operations as vector_ops, vertical_operations as vertical_ops
+from icon4py.model.common.math import (
+    vector_operations as vector_ops,
+    vertical_operations as vertical_ops,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
