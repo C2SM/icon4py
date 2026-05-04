@@ -24,49 +24,65 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 def compute_perturbation_of_rho_and_theta_numpy(
     rho: np.ndarray,
-    rho_ref_mc: np.ndarray,
+    reference_rho_at_cells_on_model_levels: np.ndarray,
     theta_v: np.ndarray,
-    theta_ref_mc: np.ndarray,
+    reference_theta_at_cells_on_model_levels: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    z_rth_pr_1 = rho - rho_ref_mc
-    z_rth_pr_2 = theta_v - theta_ref_mc
-    return (z_rth_pr_1, z_rth_pr_2)
+    z_rth_pr_1 = rho - reference_rho_at_cells_on_model_levels
+    perturbed_theta_v_at_cells_on_model_levels_2 = (
+        theta_v - reference_theta_at_cells_on_model_levels
+    )
+    return (z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2)
 
 
 class TestComputePerturbationOfRhoAndTheta(StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta
-    OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
+    OUTPUTS = ("z_rth_pr_1", "perturbed_theta_v_at_cells_on_model_levels_2")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho: np.ndarray,
-        rho_ref_mc: np.ndarray,
+        reference_rho_at_cells_on_model_levels: np.ndarray,
         theta_v: np.ndarray,
-        theta_ref_mc: np.ndarray,
+        reference_theta_at_cells_on_model_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        (z_rth_pr_1, z_rth_pr_2) = compute_perturbation_of_rho_and_theta_numpy(
-            rho=rho, rho_ref_mc=rho_ref_mc, theta_v=theta_v, theta_ref_mc=theta_ref_mc
+        (z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2) = (
+            compute_perturbation_of_rho_and_theta_numpy(
+                rho=rho,
+                reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
+                theta_v=theta_v,
+                reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
+            )
         )
-        return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
+        return dict(
+            z_rth_pr_1=z_rth_pr_1,
+            perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_rho_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_theta_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels_2 = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             rho=rho,
-            rho_ref_mc=rho_ref_mc,
+            reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
             theta_v=theta_v,
-            theta_ref_mc=theta_ref_mc,
+            reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
             z_rth_pr_1=z_rth_pr_1,
-            z_rth_pr_2=z_rth_pr_2,
+            perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

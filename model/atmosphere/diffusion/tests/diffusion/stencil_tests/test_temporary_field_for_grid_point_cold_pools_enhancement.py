@@ -28,7 +28,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         theta_v: np.ndarray,
-        theta_ref_mc: np.ndarray,
+        reference_theta_at_cells_on_model_levels: np.ndarray,
         thresh_tdiff,
         smallest_vpfloat,
         **kwargs,
@@ -39,8 +39,16 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
             - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_v[c2e2c], 0), axis=1) / 3
         )
         trefdiff = (
-            theta_ref_mc
-            - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_ref_mc[c2e2c], 0), axis=1) / 3
+            reference_theta_at_cells_on_model_levels
+            - np.sum(
+                np.where(
+                    (c2e2c != -1)[:, :, np.newaxis],
+                    reference_theta_at_cells_on_model_levels[c2e2c],
+                    0,
+                ),
+                axis=1,
+            )
+            / 3
         )
 
         enh_diffu_3d = np.where(
@@ -55,14 +63,16 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_theta_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         enh_diffu_3d = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         thresh_tdiff = wpfloat("5.0")
         smallest_vpfloat = -np.finfo(vpfloat).max
 
         return dict(
             theta_v=theta_v,
-            theta_ref_mc=theta_ref_mc,
+            reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
             enh_diffu_3d=enh_diffu_3d,
             thresh_tdiff=thresh_tdiff,
             smallest_vpfloat=smallest_vpfloat,

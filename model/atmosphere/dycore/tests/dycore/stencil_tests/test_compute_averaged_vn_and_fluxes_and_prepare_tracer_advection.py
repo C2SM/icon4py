@@ -170,8 +170,8 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         self, request: pytest.FixtureRequest, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         substep_and_spatially_averaged_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         substep_averaged_mass_flux = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -179,7 +179,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         prepare_advection = request.param["prepare_advection"]
         at_first_substep = request.param["at_first_substep"]
         r_nsubsteps = 0.5
@@ -190,15 +190,15 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,
-            mass_flux_at_edges_on_model_levels=mass_fl_e,
-            theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
             substep_averaged_mass_flux=substep_averaged_mass_flux,
             e_flx_avg=e_flx_avg,
             vn=vn,
             rho_at_edges_on_model_levels=z_rho_e,
             ddqz_z_full_e=ddqz_z_full_e,
-            theta_v_at_edges_on_model_levels=z_theta_v_e,
+            theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
             prepare_advection=prepare_advection,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,

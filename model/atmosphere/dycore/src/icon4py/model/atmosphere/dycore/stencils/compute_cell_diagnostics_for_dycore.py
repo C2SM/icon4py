@@ -359,10 +359,10 @@ def compute_perturbed_quantities_and_interpolation(
     """
 
     _extrapolate_temporally_exner_pressure(
-        exner_exfac=time_extrapolation_parameter_for_exner,
+        time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
         exner=current_exner,
-        exner_ref_mc=reference_exner_at_cells_on_model_levels,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
@@ -455,9 +455,9 @@ def compute_perturbed_quantities_and_interpolation(
 
     _compute_perturbation_of_rho_and_theta(
         rho=current_rho,
-        rho_ref_mc=reference_rho_at_cells_on_model_levels,
+        reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
         theta_v=current_theta_v,
-        theta_ref_mc=reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
         out=(
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,

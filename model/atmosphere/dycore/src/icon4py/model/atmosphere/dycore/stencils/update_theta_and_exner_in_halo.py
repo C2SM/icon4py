@@ -17,10 +17,10 @@ from icon4py.model.common.type_alias import wpfloat
 @gtx.field_operator
 def _update_theta_and_exner_in_halo(
     mask_prog_halo_c: fa.CellField[bool],
-    rho_now: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
-    exner_now: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    current_exner: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     #
@@ -37,9 +37,12 @@ def _update_theta_and_exner_in_halo(
 
     theta_v_new = where(
         mask_prog_halo_c,
-        rho_now
-        * theta_v_now
-        * ((exner_new / exner_now - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd + wpfloat("1.0"))
+        current_rho
+        * current_theta_v
+        * (
+            (exner_new / current_exner - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd
+            + wpfloat("1.0")
+        )
         / rho_new,
         exner_new,
     )
@@ -55,12 +58,12 @@ def _update_theta_and_exner_in_halo(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_theta_and_exner_in_halo(
     mask_prog_halo_c: fa.CellField[bool],
-    rho_now: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
     theta_v_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
-    exner_now: fa.CellKField[wpfloat],
+    current_exner: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -68,10 +71,10 @@ def update_theta_and_exner_in_halo(
 ) -> None:
     _update_theta_and_exner_in_halo(
         mask_prog_halo_c,
-        rho_now,
+        current_rho,
         rho_new,
-        theta_v_now,
-        exner_now,
+        current_theta_v,
+        current_exner,
         exner_new,
         out=(theta_v_new, exner_new),
         domain={

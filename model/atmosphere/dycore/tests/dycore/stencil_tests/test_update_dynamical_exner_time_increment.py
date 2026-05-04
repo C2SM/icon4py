@@ -25,50 +25,54 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def update_dynamical_exner_time_increment_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner: np.ndarray,
-    ddt_exner_phy: np.ndarray,
-    exner_dyn_incr: np.ndarray,
+    exner_tendency_due_to_slow_physics: np.ndarray,
+    exner_dynamical_increment: np.ndarray,
     ndyn_substeps_var: float,
     dtime: float,
 ) -> np.ndarray:
-    exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
-    return exner_dyn_incr
+    exner_dynamical_increment = exner - (
+        exner_dynamical_increment + ndyn_substeps_var * dtime * exner_tendency_due_to_slow_physics
+    )
+    return exner_dynamical_increment
 
 
 class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
-    OUTPUTS = ("exner_dyn_incr",)
+    OUTPUTS = ("exner_dynamical_increment",)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
-        ddt_exner_phy: np.ndarray,
-        exner_dyn_incr: np.ndarray,
+        exner_tendency_due_to_slow_physics: np.ndarray,
+        exner_dynamical_increment: np.ndarray,
         ndyn_substeps_var: float,
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        exner_dyn_incr = update_dynamical_exner_time_increment_numpy(
+        exner_dynamical_increment = update_dynamical_exner_time_increment_numpy(
             connectivities,
             exner,
-            ddt_exner_phy,
-            exner_dyn_incr,
+            exner_tendency_due_to_slow_physics,
+            exner_dynamical_increment,
             ndyn_substeps_var,
             dtime,
         )
-        return dict(exner_dyn_incr=exner_dyn_incr)
+        return dict(exner_dynamical_increment=exner_dynamical_increment)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_exner_phy = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_dyn_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_tendency_due_to_slow_physics = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        exner_dynamical_increment = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,
-            ddt_exner_phy=ddt_exner_phy,
-            exner_dyn_incr=exner_dyn_incr,
+            exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
+            exner_dynamical_increment=exner_dynamical_increment,
             ndyn_substeps_var=ndyn_substeps_var,
             dtime=dtime,
             horizontal_start=0,

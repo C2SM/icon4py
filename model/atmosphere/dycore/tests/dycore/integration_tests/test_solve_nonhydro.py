@@ -1182,7 +1182,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert test_utils.dallclose(
         perturbed_theta_v_at_cells_on_model_levels.asnumpy(), z_rth_pr_2_ref.asnumpy()
     )
-    # `z_exner_ex_pr` is only computed in a subset of the whole domain, reference may contain garbage outside this range
+    # `temporal_extrapolation_of_perturbed_exner` is only computed in a subset of the whole domain, reference may contain garbage outside this range
     assert test_utils.dallclose(
         temporal_extrapolation_of_perturbed_exner.asnumpy()[
             start_cell_lateral_boundary_level_3:end_cell_halo, :
@@ -1483,10 +1483,10 @@ def test_compute_rho_theta_pgrad_and_update_vn(
             theta_v=theta_v,
             ikoffset=metrics_savepoint.vertoffset_gradp(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-            theta_v_ic=theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
             inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-            z_hydro_corr=hydrostatic_correction,
+            hydrostatic_correction_on_lowest_level=hydrostatic_correction,
             grav_o_cpd=constants.GRAV_O_CPD,
             horizontal_start=start_edge_nudging_level_2,
             horizontal_end=end_edge_local,
@@ -2213,8 +2213,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     )
     assert test_utils.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
 
-    # In ICON, z_dwdz_dd is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
-    # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
+    # In ICON, dwdz_at_cells_on_model_levels is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
+    # serialized data of dwdz_at_cells_on_model_levels can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
     # Since dwdz_at_cells_on_model_levels is computed for all levels in icon4py, we have to
     # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
     starting_vertical_index_for_3d_divdamp = (

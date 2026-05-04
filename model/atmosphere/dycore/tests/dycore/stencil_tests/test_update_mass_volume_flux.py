@@ -21,69 +21,96 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 def update_mass_volume_flux_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    z_contr_w_fl_l: np.ndarray,
-    rho_ic: np.ndarray,
-    vwind_impl_wgt: np.ndarray,
+    vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
+    rho_at_cells_on_half_levels: np.ndarray,
+    exner_w_implicit_weight_parameter: np.ndarray,
     w: np.ndarray,
-    mass_flx_ic: np.ndarray,
-    vol_flx_ic: np.ndarray,
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: np.ndarray,
     r_nsubsteps: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
-    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
-    mass_flx_ic = mass_flx_ic + z_a
-    vol_flx_ic = vol_flx_ic + z_a / rho_ic
-    return (mass_flx_ic, vol_flx_ic)
+    exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=1)
+    z_a = r_nsubsteps * (
+        vertical_mass_flux_at_cells_on_half_levels
+        + rho_at_cells_on_half_levels * exner_w_implicit_weight_parameter * w
+    )
+    dynamical_vertical_mass_flux_at_cells_on_half_levels = (
+        dynamical_vertical_mass_flux_at_cells_on_half_levels + z_a
+    )
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels = (
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels
+        + z_a / rho_at_cells_on_half_levels
+    )
+    return (
+        dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+    )
 
 
 class TestUpdateMassVolumeFlux(StencilTest):
     PROGRAM = update_mass_volume_flux
     OUTPUTS = (
-        "mass_flx_ic",
-        "vol_flx_ic",
+        "dynamical_vertical_mass_flux_at_cells_on_half_levels",
+        "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
     )
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_contr_w_fl_l: np.ndarray,
-        rho_ic: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
+        vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
+        rho_at_cells_on_half_levels: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         w: np.ndarray,
-        mass_flx_ic: np.ndarray,
-        vol_flx_ic: np.ndarray,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels: np.ndarray,
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
-        (mass_flx_ic, vol_flx_ic) = update_mass_volume_flux_numpy(
+        (
+            dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        ) = update_mass_volume_flux_numpy(
             connectivities,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            vwind_impl_wgt=vwind_impl_wgt,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             w=w,
-            mass_flx_ic=mass_flx_ic,
-            vol_flx_ic=vol_flx_ic,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             r_nsubsteps=r_nsubsteps,
         )
-        return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
+        return dict(
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        rho_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        exner_w_implicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         r_nsubsteps = 7.0
 
         return dict(
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            vwind_impl_wgt=vwind_impl_wgt,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             w=w,
-            mass_flx_ic=mass_flx_ic,
-            vol_flx_ic=vol_flx_ic,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

@@ -24,43 +24,54 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 def set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    w_concorr_c: np.ndarray,
-    z_contr_w_fl_l: np.ndarray,
+    contravariant_correction_at_cells_on_half_levels: np.ndarray,
+    vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    w_nnew = w_concorr_c
-    z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
-    return (w_nnew, z_contr_w_fl_l)
+    w_nnew = contravariant_correction_at_cells_on_half_levels
+    vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(
+        vertical_mass_flux_at_cells_on_half_levels
+    )
+    return (w_nnew, vertical_mass_flux_at_cells_on_half_levels)
 
 
 class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
     PROGRAM = set_lower_boundary_condition_for_w_and_contravariant_correction
-    OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
+    OUTPUTS = ("w_nnew", "vertical_mass_flux_at_cells_on_half_levels")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        w_concorr_c: np.ndarray,
-        z_contr_w_fl_l: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
+        vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         (
             w_nnew,
-            z_contr_w_fl_l,
+            vertical_mass_flux_at_cells_on_half_levels,
         ) = set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-            connectivities, w_concorr_c, z_contr_w_fl_l
+            connectivities,
+            contravariant_correction_at_cells_on_half_levels,
+            vertical_mass_flux_at_cells_on_half_levels,
         )
-        return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
+        return dict(
+            w_nnew=w_nnew,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        contravariant_correction_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        vertical_mass_flux_at_cells_on_half_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
         w_nnew = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             w_nnew=w_nnew,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            w_concorr_c=w_concorr_c,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

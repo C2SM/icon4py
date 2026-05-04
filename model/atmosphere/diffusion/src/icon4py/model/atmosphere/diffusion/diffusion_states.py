@@ -42,7 +42,7 @@ class DiffusionDiagnosticState:
 class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
-    theta_ref_mc: fa.CellKField[float]
+    reference_theta_at_cells_on_model_levels: fa.CellKField[float]
     wgtfac_c: fa.CellKField[
         float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)

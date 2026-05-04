@@ -23,15 +23,17 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_temporal_tendencies_to_vn_numpy(
-    vn_nnow: np.ndarray,
-    ddt_vn_apc_ntl1: np.ndarray,
-    ddt_vn_phy: np.ndarray,
-    z_theta_v_e: np.ndarray,
-    z_gradh_exner: np.ndarray,
+    current_vn: np.ndarray,
+    predictor_normal_wind_advective_tendency: np.ndarray,
+    normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
+    theta_v_at_edges_on_model_levels: np.ndarray,
+    horizontal_pressure_gradient: np.ndarray,
     dtime: float,
 ) -> np.ndarray:
-    vn_nnew = vn_nnow + dtime * (
-        ddt_vn_apc_ntl1 + ddt_vn_phy - constants.CPD * z_theta_v_e * z_gradh_exner
+    vn_nnew = current_vn + dtime * (
+        predictor_normal_wind_advective_tendency
+        + normal_wind_tendency_due_to_slow_physics_process
+        - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
     )
     return vn_nnew
 
@@ -43,35 +45,46 @@ class TestAddTemporalTendenciesToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vn_nnow: np.ndarray,
-        ddt_vn_apc_ntl1: np.ndarray,
-        ddt_vn_phy: np.ndarray,
-        z_theta_v_e: np.ndarray,
-        z_gradh_exner: np.ndarray,
+        current_vn: np.ndarray,
+        predictor_normal_wind_advective_tendency: np.ndarray,
+        normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
+        theta_v_at_edges_on_model_levels: np.ndarray,
+        horizontal_pressure_gradient: np.ndarray,
         dtime: float,
         **kwargs: Any,
     ) -> dict:
         vn_nnew = add_temporal_tendencies_to_vn_numpy(
-            vn_nnow, ddt_vn_apc_ntl1, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime
+            current_vn,
+            predictor_normal_wind_advective_tendency,
+            normal_wind_tendency_due_to_slow_physics_process,
+            theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient,
+            dtime,
         )
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
-        vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddt_vn_phy = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        current_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        predictor_normal_wind_advective_tendency = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
+        normal_wind_tendency_due_to_slow_physics_process = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
+        theta_v_at_edges_on_model_levels = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
+        )
+        horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn_nnew = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
-            vn_nnow=vn_nnow,
-            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-            ddt_vn_phy=ddt_vn_phy,
-            z_theta_v_e=z_theta_v_e,
-            z_gradh_exner=z_gradh_exner,
+            current_vn=current_vn,
+            predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
+            normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
+            theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient=horizontal_pressure_gradient,
             vn_nnew=vn_nnew,
             dtime=dtime,
             horizontal_start=0,

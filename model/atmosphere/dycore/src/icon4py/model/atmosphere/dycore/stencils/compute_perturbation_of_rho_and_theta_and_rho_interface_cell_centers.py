@@ -20,9 +20,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: fa.CellKField[vpfloat],
     rho: fa.CellKField[wpfloat],
-    rho_ref_mc: fa.CellKField[vpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
 ) -> tuple[
     fa.CellKField[wpfloat],
     fa.CellKField[vpfloat],
@@ -31,23 +31,28 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     """Formerly known as _mo_solve_nonhydro_stencil_08."""
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
-    rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
-    z_rth_pr_1, z_rth_pr_2 = _compute_perturbation_of_rho_and_theta(
-        rho=rho, rho_ref_mc=rho_ref_mc, theta_v=theta_v, theta_ref_mc=theta_ref_mc
+    rho_at_cells_on_half_levels = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
+    z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2 = (
+        _compute_perturbation_of_rho_and_theta(
+            rho=rho,
+            reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
+            theta_v=theta_v,
+            reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
+        )
     )
-    return rho_ic, z_rth_pr_1, z_rth_pr_2
+    return rho_at_cells_on_half_levels, z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: fa.CellKField[vpfloat],
     rho: fa.CellKField[wpfloat],
-    rho_ref_mc: fa.CellKField[vpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     z_rth_pr_1: fa.CellKField[vpfloat],
-    z_rth_pr_2: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels_2: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -56,10 +61,10 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
         wgtfac_c,
         rho,
-        rho_ref_mc,
+        reference_rho_at_cells_on_model_levels,
         theta_v,
-        theta_ref_mc,
-        out=(rho_ic, z_rth_pr_1, z_rth_pr_2),
+        reference_theta_at_cells_on_model_levels,
+        out=(rho_at_cells_on_half_levels, z_rth_pr_1, perturbed_theta_v_at_cells_on_model_levels_2),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

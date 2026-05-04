@@ -14,43 +14,49 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
-    vn_nnow: fa.EdgeKField[wpfloat],
-    ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
-    ddt_vn_apc_ntl2: fa.EdgeKField[vpfloat],
-    ddt_vn_phy: fa.EdgeKField[vpfloat],
-    z_theta_v_e: fa.EdgeKField[wpfloat],
-    z_gradh_exner: fa.EdgeKField[vpfloat],
+    current_vn: fa.EdgeKField[wpfloat],
+    predictor_normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
+    corrector_normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[vpfloat],
+    theta_v_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
+    horizontal_pressure_gradient: fa.EdgeKField[vpfloat],
     dtime: wpfloat,
-    wgt_nnow_vel: wpfloat,
-    wgt_nnew_vel: wpfloat,
+    advection_explicit_weight_parameter: wpfloat,
+    advection_implicit_weight_parameter: wpfloat,
     cpd: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_23."""
     ddt_vn_phy_wp, z_gradh_exner_wp, ddt_vn_apc_ntl1_wp, ddt_vn_apc_ntl2_wp = astype(
-        (ddt_vn_phy, z_gradh_exner, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2), wpfloat
+        (
+            normal_wind_tendency_due_to_slow_physics_process,
+            horizontal_pressure_gradient,
+            predictor_normal_wind_advective_tendency,
+            corrector_normal_wind_advective_tendency,
+        ),
+        wpfloat,
     )
 
-    vn_nnew_wp = vn_nnow + dtime * (
-        wgt_nnow_vel * ddt_vn_apc_ntl1_wp
-        + wgt_nnew_vel * ddt_vn_apc_ntl2_wp
+    vn_nnew_wp = current_vn + dtime * (
+        advection_explicit_weight_parameter * ddt_vn_apc_ntl1_wp
+        + advection_implicit_weight_parameter * ddt_vn_apc_ntl2_wp
         + ddt_vn_phy_wp
-        - cpd * z_theta_v_e * z_gradh_exner_wp
+        - cpd * theta_v_at_edges_on_model_levels * z_gradh_exner_wp
     )
     return vn_nnew_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
-    vn_nnow: fa.EdgeKField[wpfloat],
-    ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
-    ddt_vn_apc_ntl2: fa.EdgeKField[vpfloat],
-    ddt_vn_phy: fa.EdgeKField[vpfloat],
-    z_theta_v_e: fa.EdgeKField[wpfloat],
-    z_gradh_exner: fa.EdgeKField[vpfloat],
+    current_vn: fa.EdgeKField[wpfloat],
+    predictor_normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
+    corrector_normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[vpfloat],
+    theta_v_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
+    horizontal_pressure_gradient: fa.EdgeKField[vpfloat],
     vn_nnew: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
-    wgt_nnow_vel: wpfloat,
-    wgt_nnew_vel: wpfloat,
+    advection_explicit_weight_parameter: wpfloat,
+    advection_implicit_weight_parameter: wpfloat,
     cpd: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -58,15 +64,15 @@ def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     vertical_end: gtx.int32,
 ) -> None:
     _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
-        vn_nnow,
-        ddt_vn_apc_ntl1,
-        ddt_vn_apc_ntl2,
-        ddt_vn_phy,
-        z_theta_v_e,
-        z_gradh_exner,
+        current_vn,
+        predictor_normal_wind_advective_tendency,
+        corrector_normal_wind_advective_tendency,
+        normal_wind_tendency_due_to_slow_physics_process,
+        theta_v_at_edges_on_model_levels,
+        horizontal_pressure_gradient,
         dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
+        advection_explicit_weight_parameter,
+        advection_implicit_weight_parameter,
         cpd,
         out=vn_nnew,
         domain={

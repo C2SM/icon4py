@@ -24,7 +24,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    z_q: np.ndarray,
+    tridiagonal_intermediate_result: np.ndarray,
     w: np.ndarray,
 ) -> np.ndarray:
     rng = np.random.default_rng()
@@ -33,7 +33,7 @@ def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
 
     w_new[:, last_k_level] = w[:, last_k_level]
     for k in reversed(range(1, last_k_level)):
-        w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
+        w_new[:, k] = w[:, k] + w_new[:, k + 1] * tridiagonal_intermediate_result[:, k]
     w_new[:, 0] = w[:, 0]
     return w_new
 
@@ -45,23 +45,25 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_q: np.ndarray,
+        tridiagonal_intermediate_result: np.ndarray,
         w: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        w_new = solve_tridiagonal_matrix_for_w_back_substitution_numpy(connectivities, z_q=z_q, w=w)
+        w_new = solve_tridiagonal_matrix_for_w_back_substitution_numpy(
+            connectivities, tridiagonal_intermediate_result=tridiagonal_intermediate_result, w=w
+        )
         return dict(w=w_new)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        tridiagonal_intermediate_result = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0
         h_end = gtx.int32(grid.num_cells)
         v_start = 1
         v_end = gtx.int32(grid.num_levels)
         return dict(
-            z_q=z_q,
+            tridiagonal_intermediate_result=tridiagonal_intermediate_result,
             w=w,
             horizontal_start=h_start,
             horizontal_end=h_end,

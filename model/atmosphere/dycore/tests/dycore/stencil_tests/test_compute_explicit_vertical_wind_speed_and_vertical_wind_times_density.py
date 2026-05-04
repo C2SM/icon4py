@@ -26,74 +26,88 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
-    z_th_ddz_exner_c: np.ndarray,
-    rho_ic: np.ndarray,
-    w_concorr_c: np.ndarray,
-    vwind_expl_wgt: np.ndarray,
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
+    rho_at_cells_on_half_levels: np.ndarray,
+    contravariant_correction_at_cells_on_half_levels: np.ndarray,
+    exner_w_explicit_weight_parameter: np.ndarray,
     dtime: float,
     cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
-    z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
-    return (z_w_expl, z_contr_w_fl_l)
+    exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, -1)
+    w_explicit_term = w_nnow + dtime * (
+        ddt_w_adv_ntl1 - cpd * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
+    )
+    vertical_mass_flux_at_cells_on_half_levels = rho_at_cells_on_half_levels * (
+        -contravariant_correction_at_cells_on_half_levels
+        + exner_w_explicit_weight_parameter * w_nnow
+    )
+    return (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels)
 
 
 class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density
-    OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
+    OUTPUTS = ("w_explicit_term", "vertical_mass_flux_at_cells_on_half_levels")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         w_nnow: np.ndarray,
         ddt_w_adv_ntl1: np.ndarray,
-        z_th_ddz_exner_c: np.ndarray,
-        rho_ic: np.ndarray,
-        w_concorr_c: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
+        rho_at_cells_on_half_levels: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         dtime: float,
         cpd: float,
         **kwargs: Any,
     ) -> dict:
         (
-            z_w_expl,
-            z_contr_w_fl_l,
+            w_explicit_term,
+            vertical_mass_flux_at_cells_on_half_levels,
         ) = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
             connectivities,
             w_nnow=w_nnow,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             cpd=cpd,
         )
-        return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
+        return dict(
+            w_explicit_term=w_explicit_term,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        w_explicit_term = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_at_cells_on_half_levels = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        contravariant_correction_at_cells_on_half_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
+        vertical_mass_flux_at_cells_on_half_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
         dtime = wpfloat("5.0")
         cpd = wpfloat("10.0")
 
         return dict(
-            z_w_expl=z_w_expl,
+            w_explicit_term=w_explicit_term,
             w_nnow=w_nnow,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             cpd=cpd,
             horizontal_start=0,

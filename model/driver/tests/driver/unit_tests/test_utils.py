@@ -30,10 +30,10 @@ def test_hydrostatic_adjustment_ndarray(backend):
     theta_v0 = 293.14
     wgtfac_c = xp.full((num_cells, num_levels), 1.05)
     ddqz_z_half = xp.ones((num_cells, num_levels))
-    exner_ref_mc = xp.full((num_cells, num_levels), 0.89)
+    reference_exner_at_cells_on_model_levels = xp.full((num_cells, num_levels), 0.89)
     d_exner_dz_ref_ic = xp.zeros((num_cells, num_levels))
-    theta_ref_mc = xp.full((num_cells, num_levels), 312)
-    theta_ref_ic = xp.full((num_cells, num_levels), 312)
+    reference_theta_at_cells_on_model_levels = xp.full((num_cells, num_levels), 312)
+    reference_theta_at_cells_on_half_levels = xp.full((num_cells, num_levels), 312)
     rho = xp.full((num_cells, num_levels), rho0)
     exner = xp.full((num_cells, num_levels), exner0)
     theta_v = xp.full((num_cells, num_levels), theta_v0)
@@ -42,10 +42,10 @@ def test_hydrostatic_adjustment_ndarray(backend):
     r_rho, r_exner, r_theta_v = functools.partial(utils.hydrostatic_adjustment_ndarray)(
         wgtfac_c,
         ddqz_z_half,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
+        reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels,
         rho,
         exner,
         theta_v,
@@ -87,10 +87,10 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     theta_v0 = 293.14
     wgtfac_c = xp.full((num_cells, num_levels), 1.05)
     ddqz_z_half = xp.ones((num_cells, num_levels))
-    exner_ref_mc = xp.full((num_cells, num_levels), 0.89)
+    reference_exner_at_cells_on_model_levels = xp.full((num_cells, num_levels), 0.89)
     d_exner_dz_ref_ic = xp.zeros((num_cells, num_levels))
-    theta_ref_mc = xp.full((num_cells, num_levels), 312)
-    theta_ref_ic = xp.full((num_cells, num_levels), 312)
+    reference_theta_at_cells_on_model_levels = xp.full((num_cells, num_levels), 312)
+    reference_theta_at_cells_on_half_levels = xp.full((num_cells, num_levels), 312)
     rho = xp.full((num_cells, num_levels), rho0)
     exner = xp.full((num_cells, num_levels), exner0)
     theta_v = xp.full((num_cells, num_levels), theta_v0)
@@ -99,10 +99,10 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     r_rho, r_exner = utils.hydrostatic_adjustment_constant_thetav_ndarray(
         wgtfac_c,
         ddqz_z_half,
-        exner_ref_mc,
+        reference_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
+        reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels,
         rho,
         exner,
         theta_v,

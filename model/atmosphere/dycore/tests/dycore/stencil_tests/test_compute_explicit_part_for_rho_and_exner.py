@@ -23,100 +23,112 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 def compute_explicit_part_for_rho_and_exner_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    rho_nnow: np.ndarray,
+    current_rho: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
-    z_flxdiv_mass: np.ndarray,
-    z_contr_w_fl_l: np.ndarray,
-    exner_pr: np.ndarray,
-    z_beta: np.ndarray,
-    z_flxdiv_theta: np.ndarray,
-    theta_v_ic: np.ndarray,
-    ddt_exner_phy: np.ndarray,
+    divergence_of_mass: np.ndarray,
+    vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
+    perturbed_exner_at_cells_on_model_levels: np.ndarray,
+    tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
+    divergence_of_theta_v: np.ndarray,
+    theta_v_at_cells_on_half_levels: np.ndarray,
+    exner_tendency_due_to_slow_physics: np.ndarray,
     dtime: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
-        z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
+    rho_explicit_term = current_rho - dtime * inv_ddqz_z_full * (
+        divergence_of_mass
+        + vertical_mass_flux_at_cells_on_half_levels[:, :-1]
+        - vertical_mass_flux_at_cells_on_half_levels[:, 1:]
     )
 
-    z_exner_expl = (
-        exner_pr
-        - z_beta
+    exner_explicit_term = (
+        perturbed_exner_at_cells_on_model_levels
+        - tridiagonal_beta_coeff_at_cells_on_model_levels
         * (
-            z_flxdiv_theta
-            + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
-            - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
+            divergence_of_theta_v
+            + (theta_v_at_cells_on_half_levels * vertical_mass_flux_at_cells_on_half_levels)[:, :-1]
+            - (theta_v_at_cells_on_half_levels * vertical_mass_flux_at_cells_on_half_levels)[:, 1:]
         )
-        + dtime * ddt_exner_phy
+        + dtime * exner_tendency_due_to_slow_physics
     )
-    return (z_rho_expl, z_exner_expl)
+    return (rho_explicit_term, exner_explicit_term)
 
 
 class TestComputeExplicitPartForRhoAndExner(StencilTest):
     PROGRAM = compute_explicit_part_for_rho_and_exner
-    OUTPUTS = ("z_rho_expl", "z_exner_expl")
+    OUTPUTS = ("rho_explicit_term", "exner_explicit_term")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        rho_nnow: np.ndarray,
+        current_rho: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
-        z_flxdiv_mass: np.ndarray,
-        z_contr_w_fl_l: np.ndarray,
-        exner_pr: np.ndarray,
-        z_beta: np.ndarray,
-        z_flxdiv_theta: np.ndarray,
-        theta_v_ic: np.ndarray,
-        ddt_exner_phy: np.ndarray,
+        divergence_of_mass: np.ndarray,
+        vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
+        perturbed_exner_at_cells_on_model_levels: np.ndarray,
+        tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
+        divergence_of_theta_v: np.ndarray,
+        theta_v_at_cells_on_half_levels: np.ndarray,
+        exner_tendency_due_to_slow_physics: np.ndarray,
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        (z_rho_expl, z_exner_expl) = compute_explicit_part_for_rho_and_exner_numpy(
+        (rho_explicit_term, exner_explicit_term) = compute_explicit_part_for_rho_and_exner_numpy(
             connectivities,
-            rho_nnow=rho_nnow,
+            current_rho=current_rho,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            exner_pr=exner_pr,
-            z_beta=z_beta,
-            z_flxdiv_theta=z_flxdiv_theta,
-            theta_v_ic=theta_v_ic,
-            ddt_exner_phy=ddt_exner_phy,
+            divergence_of_mass=divergence_of_mass,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            divergence_of_theta_v=divergence_of_theta_v,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
             dtime=dtime,
         )
-        return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
+        return dict(rho_explicit_term=rho_explicit_term, exner_explicit_term=exner_explicit_term)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
-        rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_flxdiv_mass = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_contr_w_fl_l = data_alloc.random_field(
+        divergence_of_mass = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_flxdiv_theta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        theta_v_ic = data_alloc.random_field(
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        divergence_of_theta_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        ddt_exner_phy = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        exner_tendency_due_to_slow_physics = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
 
-        z_rho_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_exner_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
-            z_rho_expl=z_rho_expl,
-            z_exner_expl=z_exner_expl,
-            rho_nnow=rho_nnow,
+            rho_explicit_term=rho_explicit_term,
+            exner_explicit_term=exner_explicit_term,
+            current_rho=current_rho,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            exner_pr=exner_pr,
-            z_beta=z_beta,
-            z_flxdiv_theta=z_flxdiv_theta,
-            theta_v_ic=theta_v_ic,
-            ddt_exner_phy=ddt_exner_phy,
+            divergence_of_mass=divergence_of_mass,
+            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            divergence_of_theta_v=divergence_of_theta_v,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
             dtime=dtime,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

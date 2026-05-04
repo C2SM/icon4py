@@ -566,7 +566,7 @@ class Diffusion:
             backend=backend,
             program=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
             constant_args={
-                "theta_ref_mc": self._metric_state.theta_ref_mc,
+                "reference_theta_at_cells_on_model_levels": self._metric_state.reference_theta_at_cells_on_model_levels,
                 "thresh_tdiff": self.thresh_tdiff,
                 "smallest_vpfloat": constants.DBL_EPS,
             },
