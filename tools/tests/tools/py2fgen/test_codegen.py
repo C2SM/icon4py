@@ -278,7 +278,7 @@ from libtest import foo
 from libtest import bar
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=1)
 def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
     with runtime_config.HOOK_BINDINGS_FUNCTION["foo"]:
         try:
@@ -358,7 +358,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
     return 0
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=1)
 def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
     with runtime_config.HOOK_BINDINGS_FUNCTION["bar"]:
         try:

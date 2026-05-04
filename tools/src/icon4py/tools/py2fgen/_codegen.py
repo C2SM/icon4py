@@ -15,7 +15,7 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from icon4py.tools.py2fgen import _definitions, _utils
 
 
-CFFI_DECORATOR = "@ffi.def_extern()"
+CFFI_DECORATOR = "@ffi.def_extern(error=1)"
 
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
