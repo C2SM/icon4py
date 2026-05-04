@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     base,
     geometry,
@@ -44,9 +44,6 @@ from .. import utils
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 
 edge_domain = h_grid.domain(dims.EdgeDim)
 lb_local = edge_domain(h_grid.Zone.LOCAL)
@@ -73,8 +70,8 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 )
 def test_distributed_geometry_attrs(
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
@@ -100,8 +97,8 @@ def test_distributed_geometry_attrs(
 )
 def test_distributed_geometry_attrs_for_inverse(
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
@@ -144,8 +141,8 @@ def test_distributed_geometry_attrs_for_inverse(
 )
 def test_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
@@ -173,8 +170,8 @@ def test_geometry_attr_no_halos(
 def test_cartesian_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     x: str,
     y: str,
@@ -213,8 +210,8 @@ def test_cartesian_geometry_attr_no_halos(
 )
 def test_distributed_geometry_mean_fields(
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attr_name: str,
 ) -> None:

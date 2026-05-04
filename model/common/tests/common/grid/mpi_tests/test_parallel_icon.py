@@ -17,7 +17,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.decomposition.decomposer import MetisDecomposer
 from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
@@ -40,20 +40,15 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
-from mpi4py import MPI
-
-
 _log = logging.getLogger(__name__)
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_props(process_props: decomposition.ProcessProperties) -> None:
+def test_props(process_props: decomp_defs.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex  # type: ignore[import-not-found]
+    from mpi4py import MPI
 
     assert process_props.comm
 
@@ -87,7 +82,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_start_index_end_index_local_zone_on_distributed_lam_grid(
-    process_props: decomposition.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
@@ -157,7 +152,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
 def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
-    process_props: decomposition.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
