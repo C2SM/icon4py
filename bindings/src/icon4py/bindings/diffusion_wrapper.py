@@ -210,7 +210,7 @@ def diffusion_init(
 
     # Metric state
     metric_state = DiffusionMetricState(
-        theta_ref_mc=theta_ref_mc,
+        reference_theta_at_cells_on_model_levels=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
