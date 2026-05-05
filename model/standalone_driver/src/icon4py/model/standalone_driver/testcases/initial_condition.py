@@ -50,14 +50,11 @@ log = logging.getLogger(__name__)
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
+    vertical_grid: v_grid.VerticalGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx.typing.Backend | None,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
     exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.single_node_exchange,
 ) -> driver_states.DriverStates:
     """
@@ -119,7 +116,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # predefined constants used for Jablonowski-Williamson initial condition
     p_sfc = ta.wpfloat("100000.0")  # surface pressure (Pa)
     jw_baroclinic_amplitude = ta.wpfloat(
-        "1.0"
+        "0.0"
     )  # if doing baroclinic wave test, please set it to a nonzero value
     jw_u0 = ta.wpfloat("35.0")  # maximum zonal wind speed (m/s)
     jw_temp0 = ta.wpfloat("288.0")
@@ -266,16 +263,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("U2vn computation completed.")
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
-
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
@@ -284,7 +271,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_edge_length=primal_edge_length,
         cell_area=cell_area,
         vn=prognostic_state_now.vn.ndarray,
-        vct_b=vct_b.ndarray,
+        vct_b=vertical_grid._vct_b.ndarray,
         nlev=num_levels,
         array_ns=xp,
     )

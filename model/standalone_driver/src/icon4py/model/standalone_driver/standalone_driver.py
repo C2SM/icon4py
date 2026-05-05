@@ -73,11 +73,11 @@ class Icon4pyDriver:
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
+        vertical_grid: v_grid.VerticalGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
-        vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
         processor_props: decomposition_defs.ProcessProperties,
         exchange: decomposition_defs.ExchangeRuntime,
@@ -86,11 +86,11 @@ class Icon4pyDriver:
         self.config = config
         self.backend = backend
         self.grid = grid
+        self.vertical_grid = vertical_grid
         self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
-        self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
         self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
@@ -823,8 +823,8 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=75.0),  # 6: 75, 7:40, 8:20, 9: 10, 10: 5
-        end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
+        dtime=datetime.timedelta(seconds=300.0),  # 6: 75, 7:40, 8:20, 9: 10, 10: 5
+        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
@@ -982,11 +982,11 @@ def initialize_driver(
         config=driver_config,
         backend=backend,
         grid=grid_manager.grid,
+        vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
-        vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
         processor_props=process_props,
         exchange=exchange,

@@ -84,14 +84,11 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     single_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=single_rank_icon4py_driver.grid,
+        vertical_grid=single_rank_icon4py_driver.vertical_grid,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=single_rank_icon4py_driver.static_field_factories.metrics_field_source,
         backend=single_rank_icon4py_driver.backend,
-        lowest_layer_thickness=single_rank_icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=single_rank_icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=single_rank_icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=single_rank_icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=single_rank_icon4py_driver.exchange,
     )
 
@@ -106,14 +103,11 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     multi_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=multi_rank_icon4py_driver.grid,
+        vertical_grid=multi_rank_icon4py_driver.vertical_grid,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=multi_rank_icon4py_driver.static_field_factories.metrics_field_source,
         backend=multi_rank_icon4py_driver.backend,
-        lowest_layer_thickness=multi_rank_icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=multi_rank_icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=multi_rank_icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=multi_rank_icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=multi_rank_icon4py_driver.exchange,
     )
 
