@@ -13,20 +13,7 @@ from __future__ import annotations
 import pathlib
 import sys
 
-import pytest
 
-
-_scripts_dir = pathlib.Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_scripts_dir / "python"))
-
-
-@pytest.fixture()
-def scripts_dir() -> pathlib.Path:
-    """Return the ``scripts/`` directory."""
-    return _scripts_dir
-
-
-@pytest.fixture()
-def repo_root(scripts_dir: pathlib.Path) -> pathlib.Path:
-    """Return the repository root."""
-    return scripts_dir.parent
+# Add the 'python' folder to sys.path to mimic the `sys.path` of the command modules run directly as scripts.
+python_modules_path = pathlib.Path(__file__).resolve().absolute().parent.parent.parent / "python"
+sys.path.insert(0, str(python_modules_path))

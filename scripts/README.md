@@ -90,8 +90,8 @@ Note: avoid very expensive imports in the global scope to minimize startup time.
 
 ```bash
 # Python tests
-cd scripts && uv run --group test pytest
+./scripts/tests python
 
 # Bash tests
-bats scripts/tests/sh/
+./scripts/tests sh
 ```

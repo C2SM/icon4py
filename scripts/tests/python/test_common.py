@@ -11,8 +11,8 @@
 from __future__ import annotations
 
 import pytest
-
-from scripts.python.helpers.common import run_or_fail
+import typer
+from helpers.common import run_or_fail
 
 
 def test_run_or_fail_success():
@@ -21,6 +21,6 @@ def test_run_or_fail_success():
 
 
 def test_run_or_fail_propagates_failure():
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(typer.Exit) as exc_info:
         run_or_fail(["false"])
-    assert exc_info.value.code != 0
+    assert exc_info.value != 0
