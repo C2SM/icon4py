@@ -17,7 +17,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
 from ...fixtures import backend_like, process_props
-from ...grid.utils import main_horizontal_dims
 from .. import utils
 from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
@@ -195,7 +194,7 @@ def test_owned_halo_mask_contiguous(rank):
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
 
-    for dim in main_horizontal_dims():
+    for dim in dims.horizontal_dims():
         owner_mask = decomp_info.owner_mask(dim)
         owned_indices = np.where(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are

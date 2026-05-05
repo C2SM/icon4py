@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from types import ModuleType
 
 import gt4py.next.typing as gtx_typing
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import sin, where
 
@@ -824,8 +822,8 @@ def compute_primal_cart_normal(
     primal_cart_normal_x: data_alloc.NDArray,
     primal_cart_normal_y: data_alloc.NDArray,
     primal_cart_normal_z: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(primal_cart_normal_x)
     primal_cart_normal = array_ns.transpose(
         array_ns.stack(
             (
