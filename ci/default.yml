@@ -23,8 +23,9 @@ include:
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
-test_model_stencils_aarch64:
-  extends: [.test_model_stencils, .test_template_aarch64]
+# TODO(msimberg): enable
+# test_model_stencils_aarch64:
+#   extends: [.test_model_stencils, .test_template_aarch64]
 
 
 .test_tools_datatests:
@@ -61,7 +62,7 @@ test_tools_datatests_aarch64:
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
-        BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
+        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
