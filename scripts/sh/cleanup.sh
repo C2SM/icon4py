@@ -31,7 +31,19 @@ PATTERNS=(
     "build"
 )
 
+EXCLUDE_PATTERNS=(
+    ".git"
+    ".venv"
+)
+
 for pat in "${PATTERNS[@]}"; do
+    # Build find command with exclude patterns
+    find_cmd=("find" "$REPO_ROOT" "-name" "$pat")
+    for ex_pat in "${EXCLUDE_PATTERNS[@]}"; do
+        find_cmd+=("-not" "-path" "*/$ex_pat/*")
+    done
+    find_cmd+=("-print0")
+
     while IFS= read -r -d '' target; do
         if [[ "$DRY_RUN" -eq 1 ]]; then
             log_info "[dry-run] would remove: $target"
@@ -39,7 +51,7 @@ for pat in "${PATTERNS[@]}"; do
             log_info "Removing: $target"
             rm -rf "$target"
         fi
-    done < <(find "$REPO_ROOT" -name "$pat" -not -path '*/.git/*' -print0 2>/dev/null)
+    done < <("${find_cmd[@]}" 2>/dev/null)
 done
 
 [[ "$DRY_RUN" -eq 0 ]] && log_info "Cleanup complete."
