@@ -22,7 +22,7 @@ from icon4py.model.common.grid import (
     simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
-from icon4py.model.common.math import helpers as math_helpers
+from icon4py.model.common.math import vector_operations as vector_ops
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
@@ -346,7 +346,7 @@ def test_cartesian_centers_edge(
         case base.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, allocator=backend)
-            math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+            vector_ops.norm2_on_edges(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
@@ -385,7 +385,7 @@ def test_cartesian_centers_cell(
         case base.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, allocator=backend)
-            math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+            vector_ops.norm2_on_cells(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
@@ -424,7 +424,7 @@ def test_vertex(
         case base.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, allocator=backend)
-            math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
+            vector_ops.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
             # on a torus coordinates should be within the domain

@@ -39,11 +39,8 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
 )
-from icon4py.model.common.math.helpers import (
-    _grad_fd_tang,
-    difference_level_plus1_on_cells,
-    grad_fd_norm,
-)
+from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
+from icon4py.model.common.math.vertical_operations import difference_level_plus1_on_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
