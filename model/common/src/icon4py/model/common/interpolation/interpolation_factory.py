@@ -39,22 +39,69 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 log = logging.getLogger(__name__)
 
+
 @dataclasses.dataclass
 class InterpolationConfig:
-    """Configuration parameters for interpolation field computation."""
-
     divergence_averaging_central_cell_weight: float = 0.5  # divavg_cntrwgt in ICON
+    """
+    Central-cell weight used in divergence averaging.
+    """
+
     weighting_factor: float = 0.0
+    """
+    General weighting factor used by interpolation operators.
+    """
+
     max_nudging_coefficient: float = 0.375
+    """
+    Maximum nudging coefficient applied in the lateral nudging zone.
+    """
+
     nudge_efold_width: float = 2.0
+    """
+    E-folding width controlling the exponential decay of nudging strength.
+    """
+
     nudge_zone_width: int = 10
+    """
+    Width of the lateral nudging zone in grid refinement levels.
+    """
+
     rbf_kernel_cell: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
+    """
+    Radial basis function kernel used for cell-based interpolation.
+    """
+
     rbf_kernel_edge: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
+    """
+    Radial basis function kernel used for edge-based interpolation.
+    """
+
     rbf_kernel_vertex: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
+    """
+    Radial basis function kernel used for vertex-based interpolation.
+    """
+
     lsq_dim_unk: int = 2
+    """
+    Number of unknowns in the least-squares reconstruction.
+    """
+
     lsq_dim_c: int = 3
+    """
+    Dimension of the least-squares coefficient space.
+    """
+
     lsq_wgt_exp: int = 2
+    """
+    Exponent used in distance-based least-squares weighting.
+    """
+
     lsq_dim_stencil: int = 3
+    """
+    Stencil size used for least-squares reconstruction.
+    """
+
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(

@@ -55,9 +55,9 @@ vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
+
 @dataclasses.dataclass
 class MetricsConfig:
-
     exner_expol: float = 1.0 / 3.0
     """
     Temporal extrapolation (fraction of dt) of Exner function for computation
@@ -123,7 +123,6 @@ class MetricsConfig:
             raise NotImplementedError(
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
             )
-
 
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
