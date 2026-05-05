@@ -2,7 +2,7 @@
 
 Conventions for standardized project development scripts using Python, Bash, and (possibly) other recipes. All scripts should be executable and testable standalone, but a single entry point (`./scripts/run`) is provided as an extra feature.
 
-## Single entry point CLI
+## Using the unified CLI to run scripts
 
 ```bash
 # Show all available commands
@@ -27,8 +27,8 @@ scripts/
 │   ├── __init__.py
 │   ├── helpers/             # Shared helpers
 │   │   ├── __init__.py
-|   │   └── common.py        # Common definitions (e.g. paths)
-|   |
+│   │   └── common.py        # Common definitions (e.g. paths)
+│   │
 │   └── <...>.py             # Script: contains a `cli = typer.Typer()` global symbol
 │
 ├── sh/                      # Bash scripts
@@ -86,12 +86,12 @@ Note: avoid very expensive imports in the global scope to minimize startup time.
 2. Source `_lib.sh` at the top for shared helpers if needed.
 3. Add tests in `tests/sh/test_my_tool.bats`.
 
-## Running Tests
+## Testing scripts
 
 ```bash
 # Python tests
-./scripts/tests python
+./scripts/test python
 
 # Bash tests
-./scripts/tests sh
+./scripts/test sh
 ```

@@ -23,4 +23,4 @@ def test_run_or_fail_success():
 def test_run_or_fail_propagates_failure():
     with pytest.raises(typer.Exit) as exc_info:
         run_or_fail(["false"])
-    assert exc_info.value != 0
+    assert exc_info.value.exit_code != 0
