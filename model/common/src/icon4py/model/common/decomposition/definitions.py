@@ -18,7 +18,6 @@ from types import ModuleType
 from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
@@ -535,25 +534,13 @@ class Reductions(Protocol):
     Protocol for global reduction operations across distributed ranks.
     """
 
-    def min(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
-    ) -> state_utils.ScalarType: ...
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
-    def max(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
-    ) -> state_utils.ScalarType: ...
+    def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
-    def sum(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType: ...
+    def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
-    def mean(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType: ...
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
 
 class SingleNodeReductions(Reductions):
@@ -563,24 +550,20 @@ class SingleNodeReductions(Reductions):
     is needed. The entire buffer is reduced directly.
     """
 
-    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        array_ns = data_alloc.array_namespace(buffer)
         return array_ns.min(buffer).item()
 
-    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        array_ns = data_alloc.array_namespace(buffer)
         return array_ns.max(buffer).item()
 
-    def sum(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
+    def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        array_ns = data_alloc.array_namespace(buffer)
         return array_ns.sum(buffer).item()
 
-    def mean(
-        self,
-        buffer: data_alloc.NDArray,
-        array_ns: ModuleType = np,
-    ) -> state_utils.ScalarType:
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        array_ns = data_alloc.array_namespace(buffer)
         return array_ns.sum(buffer).item() / buffer.size
 
 

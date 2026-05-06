@@ -298,7 +298,6 @@ class Icon4pyDriver:
             self._xp.asarray(
                 solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
             ),
-            array_ns=self._xp,
         )
         if (
             global_max_vertical_cfl
@@ -427,13 +426,11 @@ class Icon4pyDriver:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
                 prognostic_states.rho,
-                self._xp,
             )
             vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
                 prognostic_states.vn,
-                self._xp,
             )
-            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w, self._xp)
+            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -465,7 +462,7 @@ class Icon4pyDriver:
             local_mass = (
                 rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
             )
-            global_total_mass = self.global_reductions.sum(local_mass, array_ns=self._xp)
+            global_total_mass = self.global_reductions.sum(local_mass)
             # TODO (Chia Rui): compute total energy
             log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
@@ -481,11 +478,11 @@ class Icon4pyDriver:
             log.info("")
             log.info("Global mean of    rho         vn           w          theta_v     exner:")
             log.info(
-                f"{self.global_reductions.mean(rho_ndarray, array_ns=self._xp):.5e} "
-                f"{self.global_reductions.mean(vn_ndarray, array_ns=self._xp):.5e} "
-                f"{self.global_reductions.mean(w_ndarray, array_ns=self._xp):.5e} "
-                f"{self.global_reductions.mean(theta_v_ndarray, array_ns=self._xp):.5e} "
-                f"{self.global_reductions.mean(exner_ndarray, array_ns=self._xp):.5e} "
+                f"{self.global_reductions.mean(rho_ndarray):.5e} "
+                f"{self.global_reductions.mean(vn_ndarray):.5e} "
+                f"{self.global_reductions.mean(w_ndarray):.5e} "
+                f"{self.global_reductions.mean(theta_v_ndarray):.5e} "
+                f"{self.global_reductions.mean(exner_ndarray):.5e} "
             )
 
 
@@ -653,7 +650,6 @@ def initialize_driver(
     cell_topography = topography.jablonowski_williamson(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
         u0=35.0,
-        array_ns=data_alloc.import_array_ns(allocator=allocator),
     )
 
     log.info("initializing the static-field factories")

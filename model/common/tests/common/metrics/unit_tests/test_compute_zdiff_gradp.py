@@ -46,7 +46,6 @@ def test_compute_zdiff_gradp(
     interpolation_savepoint: sb.InterpolationSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     vertoffset_gradp_ref = metrics_savepoint.vertoffset_gradp()
 
@@ -68,7 +67,6 @@ def test_compute_zdiff_gradp(
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
     )
 
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp(
@@ -82,7 +80,6 @@ def test_compute_zdiff_gradp(
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
     )
 
     assert test_utils.dallclose(
