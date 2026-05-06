@@ -18,7 +18,7 @@ from gt4py.next.type_system import type_specifications as gtx_ts
 # As long as we use gt4py.eve, we can also just use the gt4py.next types.
 # Note that the user-facing type should be py2fgen.ScalarKind, so we can
 # copy over the gt4py.next types if we want to.
-ScalarKind: TypeAlias = gtx_ts.ScalarKind  # noqa: UP040
+ScalarKind: TypeAlias = gtx_ts.ScalarKind
 
 BOOL = gtx_ts.ScalarKind.BOOL
 INT32 = gtx_ts.ScalarKind.INT32
@@ -60,13 +60,13 @@ class ScalarParamDescriptor(eve.Node):
     dtype: ScalarKind
 
 
-ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor  # noqa: UP040
+ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor
 """
 Describes the parameter type of a function, which is used to generate the
 Fortran signature and semantics.
 """
 
-type ParamDescriptors = Mapping[str, ParamDescriptor]
+ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
 """
 Mapping of parameter names to their descriptors.
 """
@@ -75,7 +75,7 @@ Mapping of parameter names to their descriptors.
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
 # alias with type `Any` (as the `TypeAlias` will be runtime evaluated)
 if TYPE_CHECKING:
-    type ArrayInfo = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+    ArrayInfo: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
     """
     ArrayInfo describes the runtime information of a buffer:
 
@@ -92,16 +92,16 @@ if TYPE_CHECKING:
 else:
     from typing import Any
 
-    type ArrayInfo = tuple[Any, tuple[int, ...], bool, bool]
+    ArrayInfo: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
 
 if TYPE_CHECKING:
     import cupy as cp  # type: ignore[import-not-found]
 
-    type NDArray = cp.ndarray | np.ndarray
+    NDArray: TypeAlias = cp.ndarray | np.ndarray
 else:
-    type NDArray = np.ndarray
+    NDArray: TypeAlias = np.ndarray
 
-type MapperType = (
+MapperType: TypeAlias = (
     Callable[[ArrayInfo, cffi.FFI], Any]
     | Callable[[bool, cffi.FFI], Any]
     | Callable[[int, cffi.FFI], Any]

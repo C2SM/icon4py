@@ -40,12 +40,12 @@ SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
 
 
-class SerializationType(enum.StrEnum):
+class SerializationType(str, enum.Enum):
     SB = "serialbox"
     NC = "netcdf"
 
 
-class ExperimentType(enum.StrEnum):
+class ExperimentType(str, enum.Enum):
     JABW = "jabw"
     """initial condition of Jablonowski-Williamson test"""
     GAUSS3D = "gauss3d_torus"

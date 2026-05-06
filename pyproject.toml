@@ -35,7 +35,13 @@ lint = [
   "tach>=0.23.0",
   'validate-pyproject-schema-store[all]>=2025.06.13'
 ]
-scripts = ["typer>=0.12.3", "pytest"]
+scripts = [
+  "lazy-loader>=0.5",
+  "rich>=13.0.0",
+  "typer>=0.15",
+  {include-group = "build"},
+  {include-group = "test"}
+]
 test = [
   # workspace members
   "icon4py-testing~=0.1.0",
@@ -70,7 +76,10 @@ classifiers = [
   'Programming Language :: Python',
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: 3.13',
   'Programming Language :: Python :: 3.14',
   'Programming Language :: Python :: Implementation :: CPython',
   'Topic :: Scientific/Engineering :: Atmospheric Science',
@@ -91,7 +100,7 @@ description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
 name = "icon4py"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 # managed by bump-my-version:
 version = "0.1.0"
 
@@ -262,7 +271,7 @@ pythonpath = [
 line-length = 100
 respect-gitignore = true
 show-fixes = true
-target-version = "py312"
+target-version = "py310"
 
 [tool.ruff.format]
 docstring-code-format = true

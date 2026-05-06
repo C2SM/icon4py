@@ -8,7 +8,7 @@
 
 import dataclasses
 import logging
-from typing import Annotated
+from typing import Annotated, TypeAlias
 
 import numpy as np
 from gt4py import next as gtx
@@ -41,7 +41,7 @@ class GridState:
 
 grid_state: GridState | None = None  # TODO(havogt): remove module global state
 
-type NumpyInt32Array1D = Annotated[
+NumpyInt32Array1D: TypeAlias = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -51,7 +51,7 @@ type NumpyInt32Array1D = Annotated[
     ),
 ]
 
-type NumpyBoolArray1D = Annotated[
+NumpyBoolArray1D: TypeAlias = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,

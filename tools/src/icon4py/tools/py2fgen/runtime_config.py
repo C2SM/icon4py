@@ -10,8 +10,12 @@ import collections
 import contextlib
 import os
 from types import TracebackType
+from typing import TypeVar
 
 from gt4py import eve
+
+
+_T = TypeVar("_T", bound=eve.StrEnum)
 
 
 def _env_flag_to_bool(name: str, default: bool) -> bool:
@@ -33,7 +37,7 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
             )
 
 
-def _env_to_strenum[T: eve.StrEnum](name: str, enum_type: type[T], default: T) -> T:
+def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
     """Read an enum value from an environment variable (with checking)."""
     value = os.environ.get(name, default).upper()
     if value not in enum_type.__members__:

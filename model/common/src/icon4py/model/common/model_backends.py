@@ -14,12 +14,12 @@ from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
-DeviceType: TypeAlias = gtx.DeviceType  # noqa: UP040 used with isinstance()
+DeviceType: TypeAlias = gtx.DeviceType
 CPU = DeviceType.CPU
 GPU = gtx.CUPY_DEVICE_TYPE
 
-type BackendDescriptor = dict[str, Any]
-type BackendLike = DeviceType | gtx_typing.Backend | BackendDescriptor | None
+BackendDescriptor: TypeAlias = dict[str, Any]
+BackendLike: TypeAlias = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"

@@ -27,7 +27,7 @@ from icon4py.model.common.io.writers import GlobalFileAttributes
 log = logging.getLogger(__name__)
 
 
-class OutputInterval(enum.StrEnum):
+class OutputInterval(str, enum.Enum):
     SECOND = "SECOND"
     MINUTE = "MINUTE"
     HOUR = "HOUR"
