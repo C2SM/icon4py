@@ -77,6 +77,7 @@ LATERAL_BOUNDARY_IDX = {
 NUDGING_IDX = {
     dims.CellDim: [3316, 4104],
     dims.EdgeDim: [4989, 5387, 6176],
+    dims.VertexDim: [1673, 2071],
 }
 HALO_IDX = {
     dims.CellDim: [20896, 20896],
@@ -148,7 +149,7 @@ def test_end(grid: base_grid.Grid, dim: gtx.Dimension) -> None:
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_nudging(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
-    if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
+    if dim in (dims.VertexDim, dims.CellDim) and num > 1:
         with pytest.raises(AssertionError, match=f"Invalid zone {marker} for dimension"):
             h_grid.domain(dim)(marker)
     else:
