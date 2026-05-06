@@ -15,9 +15,6 @@ from typing import TypeVar
 from gt4py import eve
 
 
-_T = TypeVar("_T", bound=eve.StrEnum)
-
-
 def _env_flag_to_bool(name: str, default: bool) -> bool:
     """Recognize true or false signaling string values."""
     flag_value = None
@@ -35,6 +32,9 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
                 f"Invalid value {flag_value!r} for environment variable {name!r}: "
                 "use '0 | false | off' or '1 | true | on'."
             )
+
+
+_T = TypeVar("_T", bound=eve.StrEnum)
 
 
 def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
