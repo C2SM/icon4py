@@ -176,43 +176,43 @@ def test_run_solve_nonhydro_single_step(
         expected_exner,
         calculated_exner,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_states.next.vn.asnumpy(),
         rtol=1e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_states.next.w.asnumpy(),
         atol=8e-14,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_states.next.rho.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,
