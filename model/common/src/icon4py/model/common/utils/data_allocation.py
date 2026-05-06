@@ -44,7 +44,7 @@ ScalarLikeArray: TypeAlias = (
 
 
 def is_ndarray(obj: Any) -> TypeGuard[NDArray]:
-    return isinstance(obj, (np.ndarray, xp.ndarray))
+    return isinstance(obj, np.ndarray | xp.ndarray)
 
 
 def is_rank0_ndarray(obj: Any) -> TypeGuard[ScalarLikeArray]:
