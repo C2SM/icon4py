@@ -259,6 +259,7 @@ class Experiments:
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
+        version = 4,
     )
 
 

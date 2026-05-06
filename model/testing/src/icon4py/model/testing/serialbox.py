@@ -1835,6 +1835,9 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
 
+    def tracer_now(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
+
 
 class IconGraupelSavepoint(IconSavepoint):
     def temperature(self):
