@@ -10,7 +10,6 @@ import enum
 import functools
 import logging
 from collections.abc import Callable, Sequence
-from types import ModuleType
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -178,7 +177,7 @@ def construct_connectivity(
     if replace_skip_values:
         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
         skip_value = None
-        table = _replace_skip_values(dim, table, array_ns=data_alloc.import_array_ns(allocator))
+        table = _replace_skip_values(dim, table)
 
     return gtx.as_connectivity(
         [from_dim, dim],
@@ -191,7 +190,7 @@ def construct_connectivity(
 
 
 def _replace_skip_values(
-    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType
+    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.
@@ -221,11 +220,11 @@ def _replace_skip_values(
     Args:
         domain: the domain of the Connectivity
         connectivity: NDArray object to be manipulated
-        array_ns: numpy or cupy module to use for array operations
     Returns:
         NDArray without skip values
     """
-    if _has_skip_values_in_table(neighbor_table, array_ns):
+    array_ns = data_alloc.array_namespace(neighbor_table)
+    if _has_skip_values_in_table(neighbor_table):
         _log.info(f"Found invalid indices in {domain}. Replacing...")
         max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
         if not array_ns.all(max_valid_neighbor >= 0):
@@ -241,5 +240,6 @@ def _replace_skip_values(
     return neighbor_table
 
 
-def _has_skip_values_in_table(data: data_alloc.NDArray, array_ns: ModuleType) -> bool:
+def _has_skip_values_in_table(data: data_alloc.NDArray) -> bool:
+    array_ns = data_alloc.array_namespace(data)
     return array_ns.amin(data).item() == GridFile.INVALID_INDEX

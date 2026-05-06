@@ -128,12 +128,12 @@ def grid_init(
     allocator = model_backends.get_allocator(actual_backend)
 
     if comm_id is None:
-        processor_props = decomposition_defs.SingleNodeProcessProperties()
+        process_props = decomposition_defs.SingleNodeProcessProperties()
         exchange_runtime = decomposition_defs.SingleNodeExchange()
     else:
         # Set MultiNodeExchange as exchange runtime
         (
-            processor_props,
+            process_props,
             decomposition_info,
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
@@ -171,14 +171,14 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        distributed=not processor_props.is_single_rank(),
+        distributed=not process_props.is_single_rank(),
         allocator=allocator,
     )
 
     if comm_id is not None:
         wrapper_debug_utils.print_grid_decomp_info(
             grid,
-            processor_props,
+            process_props,
             decomposition_info,
             num_cells,
             num_edges,

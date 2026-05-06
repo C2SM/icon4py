@@ -152,11 +152,20 @@ module diffusion
                                       hdiff_efdt_ratio, &
                                       hdiff_w_efdt_ratio, &
                                       smagorinski_scaling_factor, &
+                                      smagorinski_scaling_factor2, &
+                                      smagorinski_scaling_factor3, &
+                                      smagorinski_scaling_factor4, &
+                                      smagorinski_scaling_height, &
+                                      smagorinski_scaling_height2, &
+                                      smagorinski_scaling_height3, &
+                                      smagorinski_scaling_height4, &
                                       hdiff_temp, &
                                       denom_diffu_v, &
                                       nudge_max_coeff, &
                                       itype_sher, &
-                                      ltkeshs, &
+                                      iforcing, &
+                                      a_hshr, &
+                                      loutshs, &
                                       backend, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
@@ -260,6 +269,20 @@ module diffusion
 
          real(c_double), value, target :: smagorinski_scaling_factor
 
+         real(c_double), value, target :: smagorinski_scaling_factor2
+
+         real(c_double), value, target :: smagorinski_scaling_factor3
+
+         real(c_double), value, target :: smagorinski_scaling_factor4
+
+         real(c_double), value, target :: smagorinski_scaling_height
+
+         real(c_double), value, target :: smagorinski_scaling_height2
+
+         real(c_double), value, target :: smagorinski_scaling_height3
+
+         real(c_double), value, target :: smagorinski_scaling_height4
+
          logical(c_int), value, target :: hdiff_temp
 
          real(c_double), value, target :: denom_diffu_v
@@ -268,7 +291,11 @@ module diffusion
 
          integer(c_int), value, target :: itype_sher
 
-         logical(c_int), value, target :: ltkeshs
+         integer(c_int), value, target :: iforcing
+
+         real(c_double), value, target :: a_hshr
+
+         logical(c_int), value, target :: loutshs
 
          integer(c_int), value, target :: backend
 
@@ -493,11 +520,20 @@ contains
                              hdiff_efdt_ratio, &
                              hdiff_w_efdt_ratio, &
                              smagorinski_scaling_factor, &
+                             smagorinski_scaling_factor2, &
+                             smagorinski_scaling_factor3, &
+                             smagorinski_scaling_factor4, &
+                             smagorinski_scaling_height, &
+                             smagorinski_scaling_height2, &
+                             smagorinski_scaling_height3, &
+                             smagorinski_scaling_height4, &
                              hdiff_temp, &
                              denom_diffu_v, &
                              nudge_max_coeff, &
                              itype_sher, &
-                             ltkeshs, &
+                             iforcing, &
+                             a_hshr, &
+                             loutshs, &
                              backend, &
                              rc)
       use, intrinsic :: iso_c_binding
@@ -550,6 +586,20 @@ contains
 
       real(c_double), value, target :: smagorinski_scaling_factor
 
+      real(c_double), value, target :: smagorinski_scaling_factor2
+
+      real(c_double), value, target :: smagorinski_scaling_factor3
+
+      real(c_double), value, target :: smagorinski_scaling_factor4
+
+      real(c_double), value, target :: smagorinski_scaling_height
+
+      real(c_double), value, target :: smagorinski_scaling_height2
+
+      real(c_double), value, target :: smagorinski_scaling_height3
+
+      real(c_double), value, target :: smagorinski_scaling_height4
+
       logical(c_int), value, target :: hdiff_temp
 
       real(c_double), value, target :: denom_diffu_v
@@ -558,7 +608,11 @@ contains
 
       integer(c_int), value, target :: itype_sher
 
-      logical(c_int), value, target :: ltkeshs
+      integer(c_int), value, target :: iforcing
+
+      real(c_double), value, target :: a_hshr
+
+      logical(c_int), value, target :: loutshs
 
       integer(c_int), value, target :: backend
 
@@ -752,11 +806,20 @@ contains
                                   hdiff_efdt_ratio=hdiff_efdt_ratio, &
                                   hdiff_w_efdt_ratio=hdiff_w_efdt_ratio, &
                                   smagorinski_scaling_factor=smagorinski_scaling_factor, &
+                                  smagorinski_scaling_factor2=smagorinski_scaling_factor2, &
+                                  smagorinski_scaling_factor3=smagorinski_scaling_factor3, &
+                                  smagorinski_scaling_factor4=smagorinski_scaling_factor4, &
+                                  smagorinski_scaling_height=smagorinski_scaling_height, &
+                                  smagorinski_scaling_height2=smagorinski_scaling_height2, &
+                                  smagorinski_scaling_height3=smagorinski_scaling_height3, &
+                                  smagorinski_scaling_height4=smagorinski_scaling_height4, &
                                   hdiff_temp=hdiff_temp, &
                                   denom_diffu_v=denom_diffu_v, &
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
-                                  ltkeshs=ltkeshs, &
+                                  iforcing=iforcing, &
+                                  a_hshr=a_hshr, &
+                                  loutshs=loutshs, &
                                   backend=backend, &
                                   on_gpu=on_gpu)
       !$acc end host_data

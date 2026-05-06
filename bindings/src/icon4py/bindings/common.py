@@ -42,7 +42,7 @@ else:
 
 NDArray: TypeAlias = np.ndarray | xp.ndarray
 
-# TODO(havogt): import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
+# TODO(havogt): import needed to register MultNodeRun in get_process_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 log = logging.getLogger(__name__)
@@ -319,7 +319,7 @@ def construct_decomposition(
         .set_dimension(dims.EdgeDim, e_glb_index, e_owner_mask, None)
         .set_dimension(dims.VertexDim, v_glb_index, v_owner_mask, None)
     )
-    processor_props = definitions.get_processor_properties(definitions.MultiNodeRun(), comm_id)
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    process_props = definitions.get_process_properties(definitions.MultiNodeRun(), comm_id)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
 
-    return processor_props, decomposition_info, exchange
+    return process_props, decomposition_info, exchange

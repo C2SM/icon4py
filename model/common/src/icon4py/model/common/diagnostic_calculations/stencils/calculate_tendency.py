@@ -6,20 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
-
 from gt4py import next as gtx
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
-
-
-physics_constants: Final = phy_const.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -53,7 +44,7 @@ def _calculate_virtual_temperature_tendency(
     qsum = qc + qi + qr + qs + qg
 
     new_virtual_temperature = temperature * (
-        wpfloat("1.0") + physics_constants.rv_o_rd_minus_1 * qv - qsum
+        wpfloat("1.0") + PhysicsConstants.rv_o_rd_minus_1 * qv - qsum
     )
 
     return (new_virtual_temperature - virtual_temperature) / dtime
@@ -115,7 +106,7 @@ def _calculate_exner_tendency(
 
     new_exner = exner * (
         wpfloat("1.0")
-        + physics_constants.rd_o_cpd * virtual_temperature_tendency / virtual_temperature * dtime
+        + PhysicsConstants.rd_o_cpd * virtual_temperature_tendency / virtual_temperature * dtime
     )
 
     return (new_exner - exner) / dtime

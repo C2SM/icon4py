@@ -403,7 +403,7 @@ def test_run_timeloop_single_step(
 def test_driver(
     experiment,
     experiment_type,
-    processor_props,
+    process_props,
     *,
     data_provider,
     backend_like,
@@ -414,7 +414,7 @@ def test_driver(
     TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
     """
     data_path = dt_utils.get_datapath_for_experiment(
-        processor_props=processor_props,
+        process_props=process_props,
         experiment=experiment,
     )
     gm = grid_utils.get_grid_manager_from_experiment(

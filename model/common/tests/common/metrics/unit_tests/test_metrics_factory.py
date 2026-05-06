@@ -36,7 +36,7 @@ from icon4py.model.testing.fixtures.datatest import (
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
-    processor_props,
+    process_props,
     topography_savepoint,
 )
 
@@ -539,6 +539,26 @@ def test_factory_coeff_gradekin(
     )
     field = factory.get(attrs.COEFF_GRADEKIN)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+def test_factory_wgtfacq_c(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field = factory.get(attrs.WGTFACQ_C)
+    field_ref = metrics_savepoint.wgtfacq_c()
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
 @pytest.mark.level("integration")

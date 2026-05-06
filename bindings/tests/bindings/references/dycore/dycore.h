@@ -90,7 +90,7 @@ extern int solve_nh_init_wrapper(
     int coeff_gradekin_size_1, int *c_owner_mask, int c_owner_mask_size_0,
     int itime_scheme, int iadv_rhotheta, int igradp_method, int rayleigh_type,
     int divdamp_order, int divdamp_type, int l_vert_nested, int ldeepatmo,
-    int iau_init, double rhotheta_offctr, double veladv_offctr,
+    int iau_init, int extra_diffu, double rhotheta_offctr, double veladv_offctr,
     double nudge_max_coeff, double divdamp_fac, double divdamp_fac2,
     double divdamp_fac3, double divdamp_fac4, double divdamp_z,
     double divdamp_z2, double divdamp_z3, double divdamp_z4, int nflat_gradp,

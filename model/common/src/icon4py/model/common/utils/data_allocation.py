@@ -174,7 +174,7 @@ def constant_field(
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        np.full(shape=tuple(map(lambda x: grid.size[x], dims)), fill_value=value, dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
         allocator=allocator,
     )
 

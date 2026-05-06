@@ -12,6 +12,7 @@ from typing import Annotated
 import typer
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 
@@ -25,7 +26,7 @@ def main(
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
     icon4py_backend: Annotated[
-        str,
+        str | model_backends.BackendLike,
         typer.Option(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
         ),
@@ -39,7 +40,19 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-) -> driver_states.DriverStates:
+    print_distributed_debug_msg: Annotated[
+        bool,
+        typer.Option(
+            help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
+        ),
+    ] = False,
+    force_serial_run: Annotated[
+        bool,
+        typer.Option(
+            help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
+        ),
+    ] = False,
+) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
     condition from the Jablonowski Williamson test case
@@ -50,11 +63,15 @@ def main(
     The integration can then be executed by calling time_integration function in Icon4pyDriver
     """
 
+    icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
+
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,
-        backend_name=icon4py_backend,
+        print_distributed_debug_msg=print_distributed_debug_msg,
+        backend_like=icon4py_backend,
+        force_serial_run=force_serial_run,
     )
 
     log.info("Generating the initial condition")
@@ -68,6 +85,7 @@ def main(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        exchange=icon4py_driver.exchange,
     )
 
     log.info("driver setup: DONE")
@@ -79,7 +97,7 @@ def main(
     )
 
     log.info("time loop:  DONE")
-    return ds
+    return ds, icon4py_driver.decomposition_info
 
 
 if __name__ == "__main__":

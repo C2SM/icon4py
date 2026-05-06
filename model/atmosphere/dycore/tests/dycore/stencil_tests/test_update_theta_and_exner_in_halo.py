@@ -22,9 +22,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-dycore_consts: Final = constants.PhysicsConstants()
-
-
 class TestUpdateThetaV(StencilTest):
     PROGRAM = update_theta_and_exner_in_halo
     OUTPUTS = (
@@ -49,7 +46,7 @@ class TestUpdateThetaV(StencilTest):
         theta_v_new = np.where(mask_prog_halo_c != 1, exner_new, theta_v_new)
         exner_new = np.where(
             mask_prog_halo_c != 1,
-            np.exp(dycore_consts.rd_o_cvd * np.log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
+            np.exp(constants.RD_O_CVD * np.log(constants.RD_O_P0REF * rho_new * exner_new)),
             exner_new,
         )
 
@@ -57,7 +54,7 @@ class TestUpdateThetaV(StencilTest):
             mask_prog_halo_c,
             rho_now
             * theta_v_now
-            * ((exner_new / exner_now - 1) * dycore_consts.cvd_o_rd + 1.0)
+            * ((exner_new / exner_now - 1) * constants.CVD_O_RD + 1.0)
             / rho_new,
             theta_v_new,
         )
