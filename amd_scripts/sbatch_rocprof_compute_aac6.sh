@@ -9,10 +9,6 @@
 # Layered on top of the GT4Py timer flow: compiles + runs once for warmup,
 # then runs again under rocprof-compute profile to collect per-kernel pmc data.
 #
-# Required: $HOME/run_with_patch.py — the cupy NVRTC monkey-patch wrapper that
-# injects -DHIP_DISABLE_WARP_SYNC_BUILTINS and #include <cupy/hip_workaround.cuh>
-# to work around aac6's CuPy 14.0.1 + ROCm 7.2 hiprtc_runtime.h 64-bit-mask issue.
-#
 # Pin to a node and set a unique cache dir per node:
 #   GT4PY_BUILD_CACHE_DIR=amd_aac6_pmc_26 \
 #       sbatch --nodelist=ppac-pl1-s24-26 \
@@ -29,7 +25,6 @@ set -eu
 module load rocm/7.2.0 openmpi mpi4py rocprofiler-compute/7.2.0
 
 source $HOME/icon4py_debug/setup_env.sh
-unset PYTHONPATH
 
 cd $HOME/icon4py
 
@@ -38,12 +33,7 @@ if [ "${ICON4PY_ENV_SOURCED:-}" != "1" ]; then
     exit 1
 fi
 
-if [ ! -f $HOME/run_with_patch.py ]; then
-    echo "ERROR: $HOME/run_with_patch.py not found — needed for cupy NVRTC fix." >&2
-    exit 1
-fi
-
-OUTPUT_DIR=$HOME/icon4py/rocprof-compute
+OUTPUT_DIR=$HOME/icon4py/rocprof-compute_${SLURM_JOB_ID:-$$}_$(hostname -s)
 
 # --- GT4Py / pytest config (matches sbatch_gt4py_timer_aac6.sh) ---
 export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
@@ -64,14 +54,20 @@ echo "rocm module:  $(module list 2>&1 | grep -oE 'rocm/[0-9.]+' | head -1)"
 echo "ROCM_VERSION: ${ROCM_VERSION:-unset}"
 echo "python:       $(command -v python) ($(python --version 2>&1))"
 echo "hipcc:        $(command -v hipcc)"
-echo "cupy:         $(python -c 'import cupy; print(cupy.__version__, cupy.__file__)' 2>/dev/null)"
+echo "cupy:         $(python -c 'import cupy; print(cupy.__version__, cupy.__file__)' 2>&1)"
 echo "icon4py HEAD: $(git log --oneline -1)"
 echo "cache dir:    $GT4PY_BUILD_CACHE_DIR"
 echo "==================="
 
+# Hard-fail early if cupy is unimportable — no point profiling otherwise.
+python -c "import cupy" || {
+    echo "ERROR: cupy import failed — aborting before pytest." >&2
+    exit 1
+}
+
 # --- phase 1: warmed-up benchmark to populate the build cache ---
 # Look for "GT4Py Timer Report" in the output for the timer median.
-python3 $HOME/run_with_patch.py -m pytest -sv \
+python3 -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
@@ -101,7 +97,7 @@ rocprof-compute profile \
     -R FP64 \
     -p ${OUTPUT_DIR} \
     -- \
-    python3 $HOME/run_with_patch.py -m pytest -sv \
+    python3 -m pytest -sv \
         -m continuous_benchmarking \
         -p no:tach \
         --backend=dace_gpu \

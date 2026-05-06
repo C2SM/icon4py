@@ -87,6 +87,10 @@ def main():
         }
     )
 
+    # All 11 counters below are in rocprof-compute's default counter set
+    # (verified on rocprof-compute 7.1.0 and 7.2.0). No `-c <counter-file>`
+    # override needed — they appear automatically in pmc_perf.csv on both
+    # versions, in a single merged file once the run completes.
     counter_columns = [
         ("hit", "TCC_HIT_sum"),
         ("req", "TCC_REQ_sum"),

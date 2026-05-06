@@ -2,8 +2,8 @@
 #SBATCH --gpus=1
 #SBATCH --time=01:00:00
 #SBATCH --ntasks=4
-#SBATCH --output=gt4py_timer_aac6.out
-#SBATCH --error=gt4py_timer_aac6.err
+#SBATCH --output=gt4py_timer_aac6_%j.out
+#SBATCH --error=gt4py_timer_aac6_%j.err
 #SBATCH --partition=1CN192C4G1H_MI300A_Ubuntu22
 #SBATCH --exclusive
 
@@ -69,6 +69,7 @@ echo "ROCM_PATH:    ${ROCM_PATH:-unset}"
 echo "python:       $(command -v python) ($(python --version 2>&1))"
 echo "hipcc:        $(command -v hipcc)"
 echo "hip ver:      $(hipcc --version 2>&1 | head -2 | tail -1)"
+echo "cupy:         $(python -c 'import cupy; print(cupy.__version__, cupy.__file__)' 2>&1)"
 echo "gt4py:        $(python -c 'import gt4py; print(gt4py.__file__)' 2>/dev/null)"
 echo "dace:         $(python -c 'import dace; print(dace.__version__)' 2>/dev/null)"
 echo "icon4py HEAD: $(git log --oneline -1)"
@@ -80,13 +81,7 @@ echo "==================="
 
 # --- single-stencil GT4Py timer run ---
 # Look for "GT4Py Timer Report" in the output; that's the headline number.
-#
-# run_with_patch.py monkey-patches cupy's NVRTC compile to inject:
-#   1. -DHIP_DISABLE_WARP_SYNC_BUILTINS in compile options
-#   2. #include <cupy/hip_workaround.cuh> at the top of every kernel source
-# Required to work around aac6's CuPy 14.0.1 + ROCm 7.2 hiprtc_runtime.h
-# 64-bit-mask static_assert. See $HOME/run_with_patch.py for details.
-python3 $HOME/run_with_patch.py -m pytest -sv \
+python3 -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \

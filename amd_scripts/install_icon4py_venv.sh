@@ -25,8 +25,14 @@ uv sync --extra rocm7 --python $(which python3.12)
 # Activate virtual environment
 source .venv/bin/activate
 
-# Install the requirements for rocprofiler-compute so we can run the profiler from the same environment
-uv pip install -r /user-environment/linux-zen3/rocprofiler-compute-7.1.0-rjjjgkz67w66bp46jw7bvlfyduzr6vhv/libexec/rocprofiler-compute/requirements.txt
+# Install the requirements for rocprofiler-compute so we can run the profiler from the same environment.
+# Auto-detect under /user-environment/ — versioned spack hash differs per uenv, so glob.
+ROCPROF_REQ=$(ls -d /user-environment/linux-zen3/rocprofiler-compute-*/libexec/rocprofiler-compute/requirements.txt 2>/dev/null | head -1)
+if [ -n "$ROCPROF_REQ" ]; then
+    uv pip install -r "$ROCPROF_REQ"
+else
+    echo "# WARN: rocprofiler-compute requirements.txt not found under /user-environment/; skipping."
+fi
 
 # Patch CuPy hip_workaround.cuh: force mask-stripping for __shfl_*_sync on all ROCm versions.
 # CuPy 14.0.1 passes a 32-bit mask to __shfl_xor_sync which requires 64-bit on ROCm 7.0+.

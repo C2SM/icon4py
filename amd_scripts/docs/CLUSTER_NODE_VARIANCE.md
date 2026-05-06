@@ -1,10 +1,12 @@
 # MI300A node variance — aac6 vs beverin
 
-> ⚠️ **Provisional snapshot — 2026-05-04.** AMD confirmed they are rebuilding
-> parts of the aac6 software stack, which may affect these numbers. After the
-> rebuild lands, re-run the verify commands below to check whether the data
-> still matches. The conclusion (chip-to-chip variance is the dominant cause)
-> may need revision if the rebuild changes how aac6 nodes behave.
+> ✅ **Verified 2026-05-06 under cupy 13.5.1 (ROCm 7.2.0).** The aac6 cupy
+> install was briefly on cupy 14 over the prior weekend; cupy 14 broke the
+> dycore solver due to a `__shfl_xor_sync` 64-bit-mask issue, and aac6 was
+> moved back to cupy 13.5.1 on 2026-05-05 (for both ROCm 7.2.0 and 7.2.1).
+> All three aac6 nodes (`-26`, `-30`, `-16`) re-measured under cupy 13.5.1
+> reproduce the headline numbers below within ~1% on both timer median and
+> per-kernel HBM bandwidth. The chip-to-chip variance interpretation stands.
 
 ## Summary
 
@@ -180,21 +182,19 @@ grep -A 4 "GT4Py Timer Report" gt4py_repro.out | tail -2
 
 ```bash
 # on beverin — pin to a node, use a fresh cache directory
-GT4PY_BUILD_CACHE_DIR=amd_rocm72_repro_$(hostname -s) \
+GT4PY_BUILD_CACHE_DIR=amd_repro_$(hostname -s) \
     sbatch --nodelist=nid002510 \
     --output=gt4py_repro.out --error=gt4py_repro.err \
-    amd_scripts/sbatch_gt4py_timer_rocm72.sh
+    amd_scripts/benchmark_solver.sh
 
 # wait, then read the timer report
 grep -A 4 "GT4Py Timer Report" gt4py_repro.out | tail -2
 ```
 
-Both scripts use `--exclusive` and set up the right environment. The aac6
-script wraps pytest with `run_with_patch.py`, which monkey-patches CuPy's
-NVRTC compile to inject `-DHIP_DISABLE_WARP_SYNC_BUILTINS` and prepend
-`#include <cupy/hip_workaround.cuh>` — a workaround for the
-`__shfl_xor_sync(0xffffffff, ...)` static_assert failure on ROCm 7.2 with
-CuPy 14.0.1. The wrapper script lives at `$HOME/run_with_patch.py` on aac6.
+Both scripts use `--exclusive` and set up the right environment. To run
+benchmark_solver.sh under a different ROCm uenv (e.g. ROCm 7.2 for testing),
+override at submission time:
+`sbatch --uenv=<image-id> --view=default amd_scripts/benchmark_solver.sh`.
 
 ## Where the source data lives
 

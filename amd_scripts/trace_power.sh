@@ -8,7 +8,7 @@
 # Example:
 #   srun --partition=mi300 --gres=gpu:1 --exclusive --ntasks=1 --time=02:00:00 \
 #       bash amd_scripts/trace_power.sh beverin_run1 -- \
-#       .venv_rocm/bin/python -m pytest -sv -m continuous_benchmarking -p no:tach \
+#       .venv/bin/python -m pytest -sv -m continuous_benchmarking -p no:tach \
 #           --backend=dace_gpu --grid=icon_benchmark_regional \
 #           model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
 #           -k "test_TestVerticallyImplicitSolverAtPredictorStep[..."
