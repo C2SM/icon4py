@@ -8,7 +8,6 @@
 import functools
 import logging
 import math
-from collections.abc import Callable
 from typing import Final
 
 from gt4py import next as gtx
@@ -163,7 +162,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(primal_normal_cell_x)
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -171,7 +170,9 @@ def compute_geofac_grg(
     primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
     primal_normal_ec_v = array_ns.where(owned, primal_normal_cell_y[c2e, inv_neighbor_index], 0.0)
 
-    exchange(primal_normal_ec_u, primal_normal_ec_v)
+    exchange.exchange(
+        dims.CellDim, primal_normal_ec_u, primal_normal_ec_v, stream=decomposition.BLOCK
+    )
 
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
@@ -197,7 +198,7 @@ def compute_geofac_grg(
             geofac_grg_y[horizontal_start:, 1:]
             + mask * (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
         )
-    exchange(geofac_grg_x, geofac_grg_y)
+    exchange.exchange(dims.CellDim, geofac_grg_x, geofac_grg_y, stream=decomposition.BLOCK)
 
     return geofac_grg_x, geofac_grg_y
 
@@ -425,7 +426,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
     """
@@ -537,7 +538,7 @@ def _force_mass_conservation_to_c_bln_avg(
             cell_owner_mask, local_summed_weights, cell_areas
         )[horizontal_start:]
 
-        exchange(residual)
+        exchange.exchange(dims.CellDim, residual, stream=decomposition.BLOCK)
 
         # in practice the convergence criteria is never reached before the niter is reached for (niter <= 1000)
         # so when parallelizing we opt for disableing the criteria instead of doing an inefficient
@@ -559,7 +560,7 @@ def _force_mass_conservation_to_c_bln_avg(
                 horizontal_start=horizontal_start,
             )
 
-        exchange(c_bln_avg)
+        exchange.exchange(dims.CellDim, c_bln_avg, stream=decomposition.BLOCK)
 
     return c_bln_avg
 
@@ -603,7 +604,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:],
@@ -613,7 +614,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         horizontal_start,
     )
 
-    exchange(c_bln_avg)
+    exchange.exchange(dims.CellDim, c_bln_avg, stream=decomposition.BLOCK)
 
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0,
@@ -633,14 +634,14 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:],
         divergence_averaging_central_cell_weight,
         horizontal_start,
     )
-    exchange(c_bln_avg)
+    exchange.exchange(dims.CellDim, c_bln_avg, stream=decomposition.BLOCK)
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error
     # with the the following. Is it needed?
     return _force_mass_conservation_to_c_bln_avg(
@@ -718,7 +719,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
 ) -> data_alloc.NDArray:
     """
     Compute edge flux average.
@@ -790,7 +791,7 @@ def compute_e_flx_avg(
                 e_flx_avg[llb:, i + 3],
             )
 
-    exchange(e_flx_avg)
+    exchange.exchange(dims.EdgeDim, e_flx_avg, stream=decomposition.BLOCK)
 
     # the icon prescribed order dependency is probably due to these magic numbers...
     iie = array_ns.full(e2c2e.shape, MISSING, dtype=int)
@@ -868,7 +869,7 @@ def compute_e_flx_avg(
         owner_mask[llb:, None], e_flx_avg[llb:, :] / checksum[llb:, None], e_flx_avg[llb:, :]
     )
 
-    exchange(e_flx_avg)
+    exchange.exchange(dims.EdgeDim, e_flx_avg, stream=decomposition.BLOCK)
 
     return e_flx_avg
 
@@ -1266,7 +1267,7 @@ def compute_lsq_coeffs(
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
-    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
     z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
@@ -1315,7 +1316,7 @@ def compute_lsq_coeffs(
         lsq_dim_c,
     )
 
-    exchange(lsq_weights_c)
+    exchange.exchange(dims.CellDim, lsq_weights_c, stream=decomposition.BLOCK)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
@@ -1326,7 +1327,7 @@ def compute_lsq_coeffs(
         lsq_dim_unk,
         lsq_dim_c,
     )
-    exchange(lsq_pseudoinv[:, 0, :])
-    exchange(lsq_pseudoinv[:, 1, :])
+    exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 0, :], stream=decomposition.BLOCK)
+    exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 1, :], stream=decomposition.BLOCK)
 
     return lsq_pseudoinv

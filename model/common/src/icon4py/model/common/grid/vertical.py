@@ -11,7 +11,6 @@ import functools
 import logging
 import math
 import pathlib
-from collections.abc import Callable
 from typing import Final
 
 import gt4py.next as gtx
@@ -21,6 +20,7 @@ import numpy as np
 import icon4py.model.common.states.metadata as data
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -566,7 +566,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
     SLEVE_decay_scale_2: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute the 3D vertical coordinate field using the SLEVE coordinate
@@ -749,7 +749,7 @@ def compute_vertical_coordinate(
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute the (Cell, K) vertical coordinate field starting from the

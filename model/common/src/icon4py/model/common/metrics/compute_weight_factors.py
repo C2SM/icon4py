@@ -5,12 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from collections.abc import Callable
 
 import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -123,7 +123,7 @@ def compute_wgtfacq_e_dsl(
     wgtfacq_c_dsl: data_alloc.NDArray,
     n_edges: int,
     nlev: int,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute weighting factor for quadratic interpolation to surface.
@@ -153,7 +153,7 @@ def compute_wgtfacq_e_dsl(
 
     c_lin_e = c_lin_e[:, :, array_ns.newaxis]
     z_aux_e = array_ns.sum(c_lin_e * z_aux_c[e2c], axis=1)
-    exchange(z_aux_e)
+    exchange.exchange(dims.EdgeDim, z_aux_e, stream=decomposition.BLOCK)
 
     wgtfacq_e_dsl[:, nlev] = z_aux_e[:, 0]
     wgtfacq_e_dsl[:, nlev - 1] = z_aux_e[:, 1]
