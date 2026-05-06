@@ -426,6 +426,14 @@ def copy_ser_data(
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
+    # Translate to json and copy NAMELIST_ICON_output_atm
+    cmd = [
+        "f90nml",
+        str(exp_dir / definitions.NAMELIST_ICON_FNAME),
+        str(dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")),
+    ]
+    _ = run_command(cmd)
+
     # Copy NAMELIST files
     namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
     for src_file in namelist_files:
@@ -514,11 +522,19 @@ def run_experiment(
         raise
 
 
+def require_cli(command_name):
+    if shutil.which(command_name) is None:
+        print(f"Error: '{command_name}' is not installed or not on PATH.")
+        sys.exit(1)
+
+
 @cli.command()
 def run_serialization() -> None:
     """Run the serialization experiment series."""
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
+
+    require_cli("f90nml")
 
     total_tasks = len(settings.experiments) * len(settings.comm_sizes)
     log_status(
