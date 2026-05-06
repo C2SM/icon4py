@@ -14,7 +14,6 @@ import functools
 import logging
 import warnings
 from enum import Enum
-from types import ModuleType
 from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
