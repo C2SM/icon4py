@@ -389,7 +389,7 @@ def test_grid_manager_grid_level_and_root(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert expected_subdivision == grid.global_properties.subdivision
+    assert expected_subdivision == grid.grid_params.subdivision
 
 
 @pytest.mark.datatest

@@ -90,48 +90,41 @@ class TorusParams:
         return GeometryType.TORUS
 
 
-GridParams = IcosahedronParams | TorusParams
-
-
 @dataclasses.dataclass(kw_only=True, frozen=True)
-class GlobalGridParams:
-    grid_params: GridParams | None = None
+class GridParams:
+    params: IcosahedronParams | TorusParams | None = None
 
     @property
     def geometry_type(self) -> GeometryType | None:
-        return self.grid_params.geometry_type if self.grid_params is not None else None
+        return self.params.geometry_type if self.params is not None else None
 
     @property
     def radius(self) -> float | None:
-        return self.grid_params.radius if isinstance(self.grid_params, IcosahedronParams) else None
+        return self.params.radius if isinstance(self.params, IcosahedronParams) else None
 
     @property
     def domain_length(self) -> float | None:
-        return self.grid_params.domain_length if isinstance(self.grid_params, TorusParams) else None
+        return self.params.domain_length if isinstance(self.params, TorusParams) else None
 
     @property
     def domain_height(self) -> float | None:
-        return self.grid_params.domain_height if isinstance(self.grid_params, TorusParams) else None
+        return self.params.domain_height if isinstance(self.params, TorusParams) else None
 
     @property
     def subdivision(self) -> GridSubdivision | None:
-        return (
-            self.grid_params.subdivision
-            if isinstance(self.grid_params, IcosahedronParams)
-            else None
-        )
+        return self.params.subdivision if isinstance(self.params, IcosahedronParams) else None
 
 
 @dataclasses.dataclass(frozen=True)
 class IconGrid(base.Grid):
-    global_properties: GlobalGridParams = dataclasses.field(kw_only=True)
+    grid_params: GridParams = dataclasses.field(kw_only=True)
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
 
     @property
     def geometry_type(self) -> GeometryType | None:
-        return self.global_properties.geometry_type
+        return self.grid_params.geometry_type
 
 
 def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
@@ -185,7 +178,7 @@ def icon_grid(
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],
     end_index: Callable[[h_grid.Domain], gtx.int32],
-    global_properties: GlobalGridParams,
+    grid_params: GridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed
@@ -207,7 +200,7 @@ def icon_grid(
         connectivities=connectivities,
         start_index=start_index,
         end_index=end_index,
-        global_properties=global_properties,
+        grid_params=grid_params,
         refinement_control=refinement_control or {},
     )
 

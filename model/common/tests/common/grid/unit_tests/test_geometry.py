@@ -352,9 +352,9 @@ def test_cartesian_centers_edge(
         case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x.asnumpy() >= 0.0)
-            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(x.asnumpy() <= grid.grid_params.domain_length)
             assert all(y.asnumpy() >= 0.0)
-            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(y.asnumpy() <= grid.grid_params.domain_height)
             assert all(z.asnumpy() == 0.0)
 
 
@@ -391,9 +391,9 @@ def test_cartesian_centers_cell(
         case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x.asnumpy() >= 0.0)
-            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(x.asnumpy() <= grid.grid_params.domain_length)
             assert all(y.asnumpy() >= 0.0)
-            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(y.asnumpy() <= grid.grid_params.domain_height)
             assert all(z.asnumpy() == 0.0)
 
 
@@ -430,9 +430,9 @@ def test_vertex(
         case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x.asnumpy() >= 0.0)
-            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(x.asnumpy() <= grid.grid_params.domain_length)
             assert all(y.asnumpy() >= 0.0)
-            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(y.asnumpy() <= grid.grid_params.domain_height)
             assert all(z.asnumpy() == 0.0)
 
 

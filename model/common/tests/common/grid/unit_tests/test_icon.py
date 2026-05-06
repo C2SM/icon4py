@@ -240,21 +240,21 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
         (icon.GeometryType.TORUS, None, None),
     ],
 )
-def test_global_grid_params(
+def test_grid_params(
     geometry_type: icon.GeometryType,
     grid_root: int | None,
     grid_level: int | None,
 ) -> None:
     match geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
-            params = icon.GlobalGridParams(
-                grid_params=icon.IcosahedronParams(
+            params = icon.GridParams(
+                params=icon.IcosahedronParams(
                     subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),  # type: ignore[arg-type]
                 ),
             )
         case icon.GeometryType.TORUS:
-            params = icon.GlobalGridParams(
-                grid_params=icon.TorusParams(
+            params = icon.GridParams(
+                params=icon.TorusParams(
                     domain_length=42.0,
                     domain_height=100.5,
                 ),
@@ -347,7 +347,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
         ),
     ],
 )
-def test_global_grid_params_from_grid_manager(
+def test_grid_params_from_grid_manager(
     grid_descriptor: definitions.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: icon.GeometryType,
@@ -358,7 +358,7 @@ def test_global_grid_params_from_grid_manager(
     num_cells: int,
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    params = grid.global_properties
+    params = grid.grid_params
     assert params is not None
     assert params.geometry_type == geometry_type
     match geometry_type:

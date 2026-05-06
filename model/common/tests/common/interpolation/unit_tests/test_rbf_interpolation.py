@@ -175,8 +175,8 @@ def test_rbf_interpolation_coeffs_cell(
     assert horizontal_start < horizontal_end <= grid.num_cells
 
     geometry_type = (
-        grid.global_properties.geometry_type
-        if grid.global_properties.geometry_type
+        grid.grid_params.geometry_type
+        if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
 
@@ -202,8 +202,8 @@ def test_rbf_interpolation_coeffs_cell(
         ),
         horizontal_start,
         horizontal_end,
-        grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
-        grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
+        grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -252,8 +252,8 @@ def test_rbf_interpolation_coeffs_vertex(
     assert horizontal_start < horizontal_end <= grid.num_vertices
 
     geometry_type = (
-        grid.global_properties.geometry_type
-        if grid.global_properties.geometry_type
+        grid.grid_params.geometry_type
+        if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
 
@@ -279,8 +279,8 @@ def test_rbf_interpolation_coeffs_vertex(
         ),
         horizontal_start,
         horizontal_end,
-        grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
-        grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
+        grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -329,8 +329,8 @@ def test_rbf_interpolation_coeffs_edge(
     assert horizontal_start < horizontal_end <= grid.num_edges
 
     geometry_type = (
-        grid.global_properties.geometry_type
-        if grid.global_properties.geometry_type
+        grid.grid_params.geometry_type
+        if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
 
@@ -358,8 +358,8 @@ def test_rbf_interpolation_coeffs_edge(
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        domain_length=grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
-        domain_height=grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=data_alloc.import_array_ns(backend),
     )

@@ -108,7 +108,7 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: icon.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._exchange = exchange
         self._global_reductions = global_reductions
@@ -229,7 +229,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lat": attrs.VERTEX_LAT,
                         "vertex_lon": attrs.VERTEX_LON,
                     },
-                    params={"radius": self._grid.global_properties.radius},
+                    params={"radius": self._grid.grid_params.radius},
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
@@ -266,8 +266,8 @@ class GridGeometry(factory.FieldSource):
                         "vertex_y": attrs.VERTEX_Y,
                     },
                     params={
-                        "domain_length": self._grid.global_properties.domain_length,
-                        "domain_height": self._grid.global_properties.domain_height,
+                        "domain_length": self._grid.grid_params.domain_length,
+                        "domain_height": self._grid.grid_params.domain_height,
                     },
                     do_exchange=True,
                 )
@@ -627,8 +627,8 @@ class GridGeometry(factory.FieldSource):
                 )
             },
             params={
-                "domain_length": self._grid.global_properties.domain_length,
-                "domain_height": self._grid.global_properties.domain_height,
+                "domain_length": self._grid.grid_params.domain_length,
+                "domain_height": self._grid.grid_params.domain_height,
             },
             do_exchange=False,
         )

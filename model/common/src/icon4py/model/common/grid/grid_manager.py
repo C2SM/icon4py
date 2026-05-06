@@ -407,7 +407,7 @@ class GridManager:
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
         global_size = self._read_full_grid_size()
-        global_params = self._construct_global_params(allocator, geometry_type)
+        global_params = self._construct_grid_params(geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         if limited_area and not process_props.is_single_rank():
@@ -469,7 +469,7 @@ class GridManager:
             neighbor_tables=neighbor_tables,
             start_index=start_index,
             end_index=end_index,
-            global_properties=global_params,
+            grid_params=global_params,
             refinement_control=refinement_fields,
         )
 
@@ -490,11 +490,7 @@ class GridManager:
         else:
             return neighbor_tables_global
 
-    def _construct_global_params(
-        self,
-        allocator: gtx_typing.Allocator,
-        geometry_type: icon.GeometryType,
-    ):
+    def _construct_grid_params(self, geometry_type: icon.GeometryType):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
@@ -503,15 +499,15 @@ class GridManager:
 
         match geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
-                return icon.GlobalGridParams(
-                    grid_params=icon.IcosahedronParams(
+                return icon.GridParams(
+                    params=icon.IcosahedronParams(
                         subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
                         radius=sphere_radius,
                     ),
                 )
             case icon.GeometryType.TORUS:
-                return icon.GlobalGridParams(
-                    grid_params=icon.TorusParams(
+                return icon.GridParams(
+                    params=icon.TorusParams(
                         domain_length=domain_length,
                         domain_height=domain_height,
                     ),

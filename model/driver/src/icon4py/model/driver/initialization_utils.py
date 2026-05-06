@@ -380,10 +380,10 @@ def _grid_savepoint(
     grid_file: pathlib.Path,
     rank: int,
 ) -> sb.IconGridSavepoint:
-    global_grid_params, grid_uuid = _create_grid_global_params(grid_file)
+    grid_params, grid_uuid = _create_grid_params(grid_file)
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_uuid,
-        global_grid_params,
+        grid_params,
     )
     return sp
 
@@ -573,17 +573,17 @@ def configure_logging(
 
 
 @functools.cache
-def _create_grid_global_params(
+def _create_grid_params(
     grid_file: pathlib.Path,
-) -> tuple[icon_grid.GlobalGridParams, str]:
+) -> tuple[icon_grid.GridParams, str]:
     """
-    Create global grid params and its uuid.
+    Create grid params and its uuid.
 
     Args:
         grid_file: path of the grid file
 
     Returns:
-        global_grid_params: GlobalGridParams
+        grid_params: GridParams
         grid_uuid: id (uuid) of the horizontal grid
     """
     grid = nc4.Dataset(grid_file, "r", format="NETCDF4")
@@ -600,14 +600,14 @@ def _create_grid_global_params(
 
     match grid_geometry_type:
         case icon_grid.GeometryType.ICOSAHEDRON:
-            global_grid_params = icon_grid.GlobalGridParams(
-                grid_params=icon_grid.IcosahedronParams(
+            grid_params = icon_grid.GridParams(
+                params=icon_grid.IcosahedronParams(
                     subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
                 ),
             )
         case icon_grid.GeometryType.TORUS:
-            global_grid_params = icon_grid.GlobalGridParams(
-                grid_params=icon_grid.TorusParams(
+            grid_params = icon_grid.GridParams(
+                params=icon_grid.TorusParams(
                     domain_length=grid.getncattr("domain_length"),
                     domain_height=grid.getncattr("domain_height"),
                 ),
@@ -615,4 +615,4 @@ def _create_grid_global_params(
 
     grid.close()
 
-    return global_grid_params, grid_uuid
+    return grid_params, grid_uuid
