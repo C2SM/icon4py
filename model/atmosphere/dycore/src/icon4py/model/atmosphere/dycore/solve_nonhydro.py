@@ -12,6 +12,7 @@ import logging
 from functools import partial
 from typing import Final
 
+import cupy as cp
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import common as gtx_common
@@ -831,6 +832,11 @@ class SolveNonhydro:
         self._first_half_field_cache = {}
         self._second_half_field_cache = {}
 
+        self._stream_a = cp.cuda.Stream(non_blocking=True)
+        self._stream_b = cp.cuda.Stream(non_blocking=True)
+        self._decomp_stream_a = decomposition.Stream(self._stream_a.ptr)
+        self._decomp_stream_b = decomposition.Stream(self._stream_b.ptr)
+
         self.p_test_run = False
 
         self._dtime_previous_substep: float = 0.0
@@ -911,9 +917,25 @@ class SolveNonhydro:
         f21()
         eh2 = e2()
         eh1.finish(stream=stream)
-        f21()
+        f12()
         eh2.finish(stream=stream)
         f22()
+
+    def _enter_overlap(self):
+        """Order streams A/B after all prior work on the default stream."""
+        fork_point = cp.cuda.Event()
+        fork_point.record(cp.cuda.Stream.null)
+        self._stream_a.wait_event(fork_point)
+        self._stream_b.wait_event(fork_point)
+
+    def _exit_overlap(self):
+        """Synchronize streams A/B -> default stream after overlap section."""
+        done_a = cp.cuda.Event()
+        done_b = cp.cuda.Event()
+        done_a.record(self._stream_a)
+        done_b.record(self._stream_b)
+        cp.cuda.Stream.null.wait_event(done_a)
+        cp.cuda.Stream.null.wait_event(done_b)
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -1256,6 +1278,8 @@ class SolveNonhydro:
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
 
+        self._enter_overlap()
+
         self._compute_rho_theta_pgrad_and_update_vn1(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
@@ -1276,13 +1300,14 @@ class SolveNonhydro:
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
+            cuda_stream=self._stream_a.ptr,
         )
 
         exchange_handle1 = self._exchange1.start(
             dims.EdgeDim,
             self._get_first_half_field(prognostic_states.next.vn),
             self._get_first_half_field(z_fields.rho_at_edges_on_model_levels),
-            stream=decomposition.DEFAULT_STREAM,
+            stream=self._decomp_stream_a,
         )
 
         self._compute_rho_theta_pgrad_and_update_vn2(
@@ -1305,16 +1330,17 @@ class SolveNonhydro:
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
+            cuda_stream=self._stream_b.ptr,
         )
 
         exchange_handle2 = self._exchange2.start(
             dims.EdgeDim,
             self._get_second_half_field(prognostic_states.next.vn),
             self._get_second_half_field(z_fields.rho_at_edges_on_model_levels),
-            stream=decomposition.DEFAULT_STREAM,
+            stream=self._decomp_stream_b,
         )
 
-        exchange_handle1.finish(stream=decomposition.DEFAULT_STREAM)
+        exchange_handle1.finish(stream=self._decomp_stream_a)
 
         self._compute_horizontal_velocity_quantities_and_fluxes1(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1329,9 +1355,10 @@ class SolveNonhydro:
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            cuda_stream=self._stream_a.ptr,
         )
 
-        exchange_handle2.finish(stream=decomposition.DEFAULT_STREAM)
+        exchange_handle2.finish(stream=self._decomp_stream_b)
 
         self._compute_horizontal_velocity_quantities_and_fluxes2(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1346,7 +1373,10 @@ class SolveNonhydro:
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            cuda_stream=self._stream_b.ptr,
         )
+
+        self._exit_overlap()
 
         self._vertically_implicit_solver_at_predictor_step(
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
@@ -1488,6 +1518,8 @@ class SolveNonhydro:
             )
         )
 
+        self._enter_overlap()
+
         self._apply_divergence_damping_and_update_vn1(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
@@ -1507,12 +1539,13 @@ class SolveNonhydro:
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
+            cuda_stream=self._stream_a.ptr,
         )
 
         exchange_handle1 = self._exchange1.start(
             dims.EdgeDim,
             self._get_first_half_field(prognostic_states.next.vn),
-            stream=decomposition.DEFAULT_STREAM,
+            stream=self._decomp_stream_a,
         )
 
         self._apply_divergence_damping_and_update_vn2(
@@ -1534,15 +1567,16 @@ class SolveNonhydro:
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
+            cuda_stream=self._stream_b.ptr,
         )
 
         exchange_handle2 = self._exchange2.start(
             dims.EdgeDim,
             self._get_second_half_field(prognostic_states.next.vn),
-            stream=decomposition.DEFAULT_STREAM,
+            stream=self._decomp_stream_b,
         )
 
-        exchange_handle1.finish(stream=decomposition.DEFAULT_STREAM)
+        exchange_handle1.finish(stream=self._decomp_stream_a)
 
         self._compute_averaged_vn_and_fluxes1(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1556,9 +1590,10 @@ class SolveNonhydro:
             prepare_advection=lprep_adv,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
+            cuda_stream=self._stream_a.ptr,
         )
 
-        exchange_handle2.finish(stream=decomposition.DEFAULT_STREAM)
+        exchange_handle2.finish(stream=self._decomp_stream_b)
 
         self._compute_averaged_vn_and_fluxes2(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1572,7 +1607,10 @@ class SolveNonhydro:
             prepare_advection=lprep_adv,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
+            cuda_stream=self._stream_b.ptr,
         )
+
+        self._exit_overlap()
 
         self._vertically_implicit_solver_at_corrector_step(
             next_w=prognostic_states.next.w,
