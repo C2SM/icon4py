@@ -8,7 +8,6 @@
 
 
 import gt4py.next as gtx
-from gt4py.eve import utils as eve_utils
 from gt4py.next import broadcast, where
 from gt4py.next.experimental import concat_where
 
@@ -49,16 +48,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     _compute_vn_on_lateral_boundary,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
-
-
-dycore_consts: eve_utils.FrozenNamespace[ta.wpfloat] = constants.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -332,7 +324,7 @@ def _apply_divergence_damping_and_update_vn(
         dtime=dtime,
         wgt_nnow_vel=advection_explicit_weight_parameter,
         wgt_nnew_vel=advection_implicit_weight_parameter,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
     if apply_2nd_order_divergence_damping:
@@ -470,8 +462,6 @@ def compute_rho_theta_pgrad_and_update_vn(
         - is_iau_active: option for iau increment analysis
         - iau_wgt_dyn: a scaling factor for iau increment
         - limited_area: option indicating the grid is limited area or not
-        - iadv_rhotheta: advection type for air density and virtual potential temperature (see RhoThetaAdvectionType)
-        - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
         - nflatlev: starting vertical index of flat levels
         - nflat_gradp: starting vertical index when neighboring cell centers lie within the thickness of the layer
         - start_edge_halo_level_2: start index of second halo level zone for edges

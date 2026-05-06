@@ -165,7 +165,6 @@ def test_diffusion_benchmark(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend_like,
-        orchestration=False,
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)

@@ -9,22 +9,17 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import dimension as dims, model_backends, model_options
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
+from icon4py.model.common import model_backends
+from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
-from icon4py.model.testing import definitions, grid_utils, serialbox, serialbox as sb, test_utils
+from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
     damping_height,
     data_provider,
     download_ser_data,
-    istep_init,
     process_props,
-    savepoint_nonhydro_init,
-    step_date_init,
-    substep_init,
 )
 
 
@@ -35,16 +30,13 @@ def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiment,
-    data_provider: serialbox.IconSerialDataProvider,
+    data_provider: sb.IconSerialDataProvider,
 ) -> None:
-    backend_name = next(
-        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
-    )
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
+        output_path=tmp_path / "ci_driver_output",
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
-        backend_name=backend_name,
+        backend_like=backend_like,
     )
 
     ds = initial_condition.jablonowski_williamson(
@@ -53,10 +45,11 @@ def test_standalone_driver_initial_condition(
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
-        lowest_layer_thickness=icon4py_driver.vertical_grid.config.lowest_layer_thickness,
-        model_top_height=icon4py_driver.vertical_grid.config.model_top_height,
-        stretch_factor=icon4py_driver.vertical_grid.config.stretch_factor,
-        damping_height=icon4py_driver.vertical_grid.config.rayleigh_damping_height,
+        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
+        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
+        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
+        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        exchange=icon4py_driver.exchange,
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 

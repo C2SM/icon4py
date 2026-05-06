@@ -19,7 +19,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast, maximum
@@ -43,9 +42,6 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 )
 from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
 
 @gtx.field_operator
@@ -102,7 +98,7 @@ def _compute_perturbed_quantities_and_interpolation(
             ),
             exner_at_cells_on_half_levels,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
     )
 
@@ -178,7 +174,7 @@ def _surface_computations(
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
     )
 
@@ -210,7 +206,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
             ),
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 
@@ -228,7 +224,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
             ),
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 

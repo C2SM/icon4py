@@ -29,7 +29,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, definitions as test_defs, grid_utils, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    definitions as test_defs,
+    grid_utils,
+    test_utils,
+)
 
 
 if typing.TYPE_CHECKING:
@@ -94,7 +100,7 @@ def test_grid_manager_eval_v2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -408,7 +414,7 @@ def test_grid_manager_eval_c2e2c2e(
 # TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -449,7 +455,7 @@ def test_read_geometry_fields(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -563,7 +569,7 @@ def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expe
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_single_rank(
     dim: gtx.Dimension,
     experiment: definitions.Experiment,
@@ -611,7 +617,7 @@ def test_local_connectivity(
     caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
     manager(
         decomposer=partitioner,
@@ -673,7 +679,7 @@ def test_decomposition_size(
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    file = dt_utils.get_grid_filepath(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]

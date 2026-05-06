@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
-from types import ModuleType
 
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -16,7 +15,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 def jablonowski_williamson(
     cell_lat: data_alloc.NDArray,
     u0: float,
-    array_ns: ModuleType,
 ) -> data_alloc.NDArray:
     """Function to initialize topography.
 
@@ -27,6 +25,7 @@ def jablonowski_williamson(
     This topography is coupled with the Jablonowski-Williamson test case for global atmospheric models.
 
     """
+    array_ns = data_alloc.array_namespace(cell_lat)
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
 

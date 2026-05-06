@@ -5,19 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
-
 import gt4py.next as gtx
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
-
-
-physics_constants: Final = phy_const.PhysicsConstants()
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 
 
 @gtx.field_operator
@@ -33,7 +24,7 @@ def _diagnose_virtual_temperature_and_temperature(
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     qsum = qc + qi + qr + qs + qg
     virtual_temperature = theta_v * exner
-    temperature = virtual_temperature / (1.0 + physics_constants.rv_o_rd_minus_1 * qv - qsum)
+    temperature = virtual_temperature / (1.0 + PhysicsConstants.rv_o_rd_minus_1 * qv - qsum)
     return virtual_temperature, temperature
 
 

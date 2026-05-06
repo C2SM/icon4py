@@ -399,7 +399,7 @@ def _get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
             return EDGE_ZONES
         case _:
             raise ValueError(
-                f"Dimension should be one of {(dims.MAIN_HORIZONTAL_DIMENSIONS.values())} but was {dim}"
+                f"Dimension should be one of {list(dims.horizontal_dims())} but was {dim}"
             )
 
 

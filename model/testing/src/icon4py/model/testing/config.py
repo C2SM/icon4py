@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import os
 import pathlib
 import tempfile
 
@@ -29,4 +30,8 @@ def _default_download_cache() -> pathlib.Path:
 ENABLE_GRID_DOWNLOAD: bool = env.flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = env.flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
 TEST_DATA_PATH: pathlib.Path = env.path("ICON4PY_TEST_DATA_PATH", _project_root() / "testdata")
+DALLCLOSE_PRINT_INSTEAD_OF_FAIL: bool = env.flag_to_bool(
+    "ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL", False
+)
 DOWNLOAD_CACHE_PATH: pathlib.Path = env.path("ICON4PY_DOWNLOAD_CACHE", _default_download_cache())
+DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")

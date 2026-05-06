@@ -6,10 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import enum
 import sys
 from typing import Final
-
-from gt4py.eve import utils as eve_utils
 
 from icon4py.model.common import type_alias as ta
 
@@ -133,7 +132,7 @@ TETENS_BW = 35.86
 TETENS_DER = TETENS_AW * (MELTING_TEMPERATURE - TETENS_BW)
 
 
-class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
+class PhysicsConstants(ta.wpfloat, enum.Enum):
     """
     Constants used in gt4py stencils.
     """
@@ -164,7 +163,7 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     eps = DBL_EPS
 
 
-class RayleighType(eve_utils.FrozenNamespace[int]):
+class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
     #: Klemp (2008) type Rayleigh damping

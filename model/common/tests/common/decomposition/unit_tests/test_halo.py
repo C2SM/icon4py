@@ -17,7 +17,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
 from ...fixtures import backend_like, process_props
-from ...grid.utils import main_horizontal_dims
 from .. import utils
 from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
@@ -175,7 +174,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
 def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
     process_props = utils.DummyProps(rank=rank)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
-    distribution = (process_props.comm_size + 1) * np.ones((num_cells,), dtype=int)
+    distribution = np.full(num_cells, process_props.comm_size + 1, dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
@@ -195,7 +194,7 @@ def test_owned_halo_mask_contiguous(rank):
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
 
-    for dim in main_horizontal_dims():
+    for dim in dims.horizontal_dims():
         owner_mask = decomp_info.owner_mask(dim)
         owned_indices = np.where(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are
@@ -241,10 +240,9 @@ def test_global_to_local_index(offset, rank):
                 # global index is not on this local patch:
                 assert not np.isin(offset_full_grid[i][k], neighbor_index_full_grid)
             else:
-                (
-                    neighbor_index_full_grid[k_] == offset_full_grid[i][k],
-                    f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]",
-                )
+                assert (
+                    neighbor_index_full_grid[k_] == offset_full_grid[i][k]
+                ), f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]"
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))

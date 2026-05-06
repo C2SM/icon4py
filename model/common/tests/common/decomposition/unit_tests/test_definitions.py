@@ -11,15 +11,10 @@ import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
 
-import icon4py.model.common.dimension as dims
-import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    SingleNodeExchange,
-    create_exchange,
-)
 from icon4py.model.common.grid import simple
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
     backend,
@@ -55,7 +50,7 @@ def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
 offsets = [dims.E2C, dims.E2V, dims.C2E, dims.C2E2C, dims.V2C, dims.V2E, dims.C2V, dims.E2C2V]
 
 
-@pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
     manager = grid_utils.run_grid_manager(
         test_defs.Grids.MCH_CH_R04B09_DSL, keep_skip_values=True, backend=None
@@ -91,6 +86,6 @@ def test_decomposition_info_is_distributed(flag, expected) -> None:
         dims.CellDim,
         np.arange(mesh.num_cells),
         np.arange(mesh.num_cells),
-        np.ones((mesh.num_cells,)) * flag,
+        np.full((mesh.num_cells,), flag),
     )
     assert decomp.is_distributed() == expected

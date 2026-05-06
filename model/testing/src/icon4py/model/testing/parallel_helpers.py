@@ -14,7 +14,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
@@ -23,7 +23,7 @@ _log = logging.getLogger(__file__)
 
 
 def check_comm_size(
-    process_props: definitions.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
+    process_props: decomp_defs.ProcessProperties, sizes: tuple[int, ...] = (1, 2, 4)
 ) -> None:
     if process_props.comm_size not in sizes:
         pytest.xfail(
@@ -31,11 +31,11 @@ def check_comm_size(
         )
 
 
-def log_process_properties(process_props: definitions.ProcessProperties) -> None:
+def log_process_properties(process_props: decomp_defs.ProcessProperties) -> None:
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}")
 
 
-def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> None:
+def log_local_field_size(decomposition_info: decomp_defs.DecompositionInfo) -> None:
     _log.info(
         f"local grid size: cells={decomposition_info.global_index(dims.CellDim).size}, "
         f"edges={decomposition_info.global_index(dims.EdgeDim).size}, "
@@ -43,7 +43,7 @@ def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> N
     )
 
 
-def gather_field(field: np.ndarray, process_props: definitions.ProcessProperties) -> tuple:
+def gather_field(field: np.ndarray, process_props: decomp_defs.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
     _log.info(
         f"gather_field on rank={process_props.rank} - gathering field of local shape {field.shape}"
@@ -75,13 +75,14 @@ def gather_field(field: np.ndarray, process_props: definitions.ProcessProperties
 
 
 def check_local_global_field(
-    decomposition_info: definitions.DecompositionInfo,
-    process_props: definitions.ProcessProperties,  # F811 # fixture
+    decomposition_info: decomp_defs.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,  # F811 # fixture
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
     check_halos: bool,
     atol: float,
+    rtol: float = 0.0,
 ) -> None:
     if dim == dims.KDim:
         test_utils.assert_dallclose(global_reference_field, local_field)
@@ -92,45 +93,44 @@ def check_local_global_field(
     )
     assert (
         local_field.shape[0]
-        == decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL).shape[
+        == decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL).shape[
             0
         ]
     )
 
     # Compare halo against global reference field
     if check_halos:
-        test_utils.assert_dallclose(
-            global_reference_field[
-                data_alloc.as_numpy(
-                    decomposition_info.global_index(
-                        dim, definitions.DecompositionInfo.EntryType.HALO
-                    )
+        halo_entry_types = [
+            decomp_defs.DecompositionInfo.EntryType.HALO,
+            decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_1,
+            decomp_defs.DecompositionInfo.EntryType.HALO_LEVEL_2,
+        ]
+        for entry_type in halo_entry_types:
+            desired = global_reference_field[
+                data_alloc.as_numpy(decomposition_info.global_index(dim, entry_type))
+            ]
+            actual = local_field[
+                data_alloc.as_numpy(decomposition_info.local_index(dim, entry_type))
+            ]
+            if actual.shape[0] > 0 and desired.shape[0] > 0:
+                # abuse err_msg to print the domain region
+                test_utils.assert_dallclose(
+                    actual, desired, atol=atol, rtol=rtol, err_msg=entry_type.name
                 )
-            ],
-            local_field[
-                data_alloc.as_numpy(
-                    decomposition_info.local_index(
-                        dim, definitions.DecompositionInfo.EntryType.HALO
-                    )
-                )
-            ],
-            atol=atol,
-            verbose=True,
-        )
 
     # Compare owned local field, excluding halos, against global reference
     # field, by gathering owned entries to the first rank. This ensures that in
     # total we have the full global field distributed on all ranks.
     owned_entries = local_field[
         data_alloc.as_numpy(
-            decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
+            decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
         )
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, process_props)
 
     global_index_sizes, gathered_global_indices = gather_field(
         data_alloc.as_numpy(
-            decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
+            decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
         ),
         process_props,
     )
@@ -153,4 +153,7 @@ def check_local_global_field(
             f" rank = {process_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        test_utils.assert_dallclose(sorted_, global_reference_field, atol=atol, verbose=True)
+        # abuse err_msg to print the domain region
+        test_utils.assert_dallclose(
+            actual=sorted_, desired=global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
+        )
