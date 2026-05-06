@@ -68,7 +68,7 @@ def benchmark_model(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=["3.12", "3.14"], requires=["benchmark_model-{python}"])
+@nox.session(python=["3.12", "3.13", "3.14"], requires=["benchmark_model-{python}"])
 def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -103,7 +103,7 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=["3.12", "3.14"], requires=["benchmark_model-{python}"])
+@nox.session(python=["3.12", "3.13", "3.14"], requires=["benchmark_model-{python}"])
 def __bencher_feature_branch_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
