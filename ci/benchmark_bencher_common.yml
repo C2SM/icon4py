@@ -19,4 +19,4 @@
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: "normal"
-    SLURM_TIMELIMIT: '01:30:00'
+    SLURM_TIMELIMIT: '02:30:00'
