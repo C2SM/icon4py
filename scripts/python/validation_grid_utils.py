@@ -29,7 +29,7 @@ cli = typer.Typer(
 
 
 def get_validation_grids() -> list[definitions.GridDescription]:
-    from icon4py.model.testing import definitions  # noqa: PLC0415
+    from icon4py.model.testing import definitions  # noqa: PLC0415  # Import here to reduce startup time of the CLI
 
     return [
         definitions.Grids.R01B01_GLOBAL,
