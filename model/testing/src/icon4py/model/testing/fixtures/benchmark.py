@@ -24,7 +24,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @pytest.fixture(
@@ -108,7 +107,6 @@ def metrics_field_source(
     topo_c = topography.jablonowski_williamson(
         cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
-        array_ns=data_alloc.import_array_ns(allocator),
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(

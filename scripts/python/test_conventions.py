@@ -1,3 +1,5 @@
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -24,8 +26,7 @@ from typing import Annotated, NamedTuple, TypeAlias
 import pytest
 import rich
 import typer
-
-from . import _common as common
+from helpers import common
 
 
 class ExitCode(enum.IntEnum):
@@ -35,8 +36,11 @@ class ExitCode(enum.IntEnum):
     UNKNOWN_FIXTURE_REQUESTS = 2
 
 
-cli = typer.Typer(no_args_is_help=True, help=__doc__)
-
+cli = typer.Typer(
+    name=__name__.split(".")[-1].replace("_", "-"),
+    no_args_is_help=True,
+    help="[DEPRECATED] " + __doc__,
+)
 
 # -- check-layout --
 _INIT_PY_DEFAULT_CONTENT = (

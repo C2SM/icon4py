@@ -50,9 +50,6 @@ from icon4py.model.testing.fixtures.datatest import (
 from . import utils
 
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 _log = logging.getLogger(__file__)
 
 
@@ -863,7 +860,6 @@ def test_global_reductions_single_vs_multi_rank(
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     grid_file = grid_utils._download_grid_file(experiment.grid)
 
@@ -884,8 +880,8 @@ def test_global_reductions_single_vs_multi_rank(
     reduce_fn_single = getattr(single_rank_reductions, reduction)
     reduce_fn_multi = getattr(multi_rank_reductions, reduction)
 
-    expected = reduce_fn_single(single_rank_field, array_ns=xp)
-    result = reduce_fn_multi(multi_rank_field, array_ns=xp)
+    expected = reduce_fn_single(single_rank_field)
+    result = reduce_fn_multi(multi_rank_field)
 
     # Also verify against plain NumPy as a sanity check.
     np_reference = getattr(np, reduction)(data_alloc.as_numpy(single_rank_field))

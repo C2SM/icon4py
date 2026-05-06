@@ -16,7 +16,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, exchange_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
@@ -198,7 +198,7 @@ def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, kind: gtx.Dimensi
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_top(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -209,7 +209,7 @@ def test_grid_index_top(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -226,7 +226,7 @@ def test_grid_index_damping(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -243,7 +243,7 @@ def test_grid_index_moist(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
     grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
@@ -263,7 +263,7 @@ def test_grid_index_flat(
     "experiment",
     [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
 )
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_bottom(
     grid_savepoint: sb.IconGridSavepoint,
@@ -281,7 +281,7 @@ def test_grid_index_bottom(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
@@ -301,7 +301,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
-@pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
+@pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
@@ -368,7 +368,6 @@ def test_compute_vertical_coordinate(
     model_top_height: float,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -427,7 +426,6 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_layer_thickness_2=500.0,
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
-        array_ns=xp,
         exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 
