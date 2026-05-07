@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
@@ -40,11 +39,8 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
 )
-from icon4py.model.common.math.helpers import (
-    _grad_fd_tang,
-    difference_level_plus1_on_cells,
-    grad_fd_norm,
-)
+from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
+from icon4py.model.common.math.vertical_operations import difference_level_plus1_on_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -569,8 +565,8 @@ def compute_flat_max_idx(
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
     exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(e2c)
     k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
@@ -595,20 +591,20 @@ def compute_nflat_gradp(
     lateral_boundary_level: int,
     nlev: int,
     min_reduction: Callable[
-        [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+        [data_alloc.NDArray], data_alloc.ScalarT
     ] = decomposition.single_node_reductions.min,
-    array_ns: ModuleType = np,
 ) -> int:
     """
     compute the nflat_gradp value as the minimum value of the flat_idx_max array.
     """
+    array_ns = data_alloc.array_namespace(flat_idx_max)
     boundary_mask = array_ns.arange(flat_idx_max.shape[0]) >= lateral_boundary_level
     mask_array = array_ns.where(
         e_owner_mask & boundary_mask,
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = min_reduction(mask_array, array_ns=array_ns)
+    nflat_gradp = min_reduction(mask_array)
     return nflat_gradp
 
 
@@ -923,8 +919,8 @@ def compute_exner_w_implicit_weight_parameter(
     vwind_offctr: float,
     nlev: int,
     horizontal_start_cell: int,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e)
     factor = max(vwind_offctr, 0.75)
 
     zn_off = array_ns.abs(z_ddxn_z_half_e[:, nlev][c2e])

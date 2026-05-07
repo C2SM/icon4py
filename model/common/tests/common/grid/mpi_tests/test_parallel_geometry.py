@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     base,
     geometry,
@@ -24,7 +24,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.math import helpers as math_helpers
+from icon4py.model.common.math import vector_operations as vector_ops
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
@@ -44,9 +44,6 @@ from .. import utils
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 edge_domain = h_grid.domain(dims.EdgeDim)
@@ -74,8 +71,8 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 )
 def test_distributed_geometry_attrs(
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
@@ -101,8 +98,8 @@ def test_distributed_geometry_attrs(
 )
 def test_distributed_geometry_attrs_for_inverse(
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
@@ -145,8 +142,8 @@ def test_distributed_geometry_attrs_for_inverse(
 )
 def test_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
@@ -174,8 +171,8 @@ def test_geometry_attr_no_halos(
 def test_cartesian_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     x: str,
     y: str,
@@ -195,7 +192,7 @@ def test_cartesian_geometry_attr_no_halos(
             norm = data_alloc.zero_field(
                 grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
             )
-            math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
+            vector_ops.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case icon.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
@@ -214,8 +211,8 @@ def test_cartesian_geometry_attr_no_halos(
 )
 def test_distributed_geometry_mean_fields(
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attr_name: str,
 ) -> None:
