@@ -521,8 +521,7 @@ def test_geometry_mean_fields(
     experiment: definitions.Experiment,
     attr_name: str,
 ) -> None:
-    assert hasattr(experiment, "name")
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
-    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
     value = grid_geometry.get(attr_name)
     assert value == pytest.approx(value_ref)

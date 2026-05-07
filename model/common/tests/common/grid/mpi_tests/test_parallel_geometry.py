@@ -222,6 +222,6 @@ def test_distributed_geometry_mean_fields(
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
     value = geometry_from_savepoint.get(attr_name)
     assert value == pytest.approx(value_ref)

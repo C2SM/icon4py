@@ -325,9 +325,10 @@ def test_grid_manager_grid_size(
     backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert grid_descriptor.num_cells == grid.size[dims.CellDim]
-    assert grid_descriptor.num_edges == grid.size[dims.EdgeDim]
-    assert grid_descriptor.num_vertices == grid.size[dims.VertexDim]
+    ref = utils.GRID_REFERENCE_VALUES[grid_descriptor.name]
+    assert ref["num_cells"] == grid.size[dims.CellDim]
+    assert ref["num_edges"] == grid.size[dims.EdgeDim]
+    assert ref["num_vertices"] == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(

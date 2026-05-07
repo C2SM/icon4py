@@ -45,9 +45,6 @@ class GridDescription:
     name: str
     description: str
     params: icon_grid.GridParams
-    num_cells: int
-    num_edges: int
-    num_vertices: int
     limited_area: bool = False
 
 
@@ -60,9 +57,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=1, level=1),
             ),
         ),
-        num_cells=80,
-        num_vertices=42,
-        num_edges=120,
     )
     R02B04_GLOBAL: Final = GridDescription(
         name="r02b04_global",
@@ -72,9 +66,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=2, level=4),
             ),
         ),
-        num_cells=20480,
-        num_vertices=10242,
-        num_edges=30720,
     )
     R02B06_GLOBAL: Final = GridDescription(
         name="r02b06_global",
@@ -84,9 +75,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=2, level=6),
             ),
         ),
-        num_cells=327680,
-        num_vertices=163842,
-        num_edges=491520,
     )
     R02B07_GLOBAL: Final = GridDescription(
         name="r02b07_global",
@@ -96,9 +84,6 @@ class Grids:
                 subdivision=icon_grid.GridSubdivision(root=2, level=7),
             ),
         ),
-        num_cells=1310720,
-        num_vertices=655362,
-        num_edges=1966080,
     )
     R19_B07_MCH_LOCAL: Final = GridDescription(
         name="mch_opr_r19b07_icon_ch2",
@@ -109,9 +94,6 @@ class Grids:
             ),
         ),
         limited_area=True,
-        num_cells=283876,
-        num_vertices=142724,
-        num_edges=426599,
     )
     MCH_OPR_R04B07_DOMAIN01: Final = GridDescription(
         name="mch_opr_r4b7",
@@ -122,9 +104,6 @@ class Grids:
             ),
         ),
         limited_area=True,
-        num_cells=10700,
-        num_vertices=5510,
-        num_edges=16209,
     )
     MCH_OPR_R19B08_DOMAIN01: Final = GridDescription(
         name="mch_opr_r19b08",
@@ -135,9 +114,6 @@ class Grids:
             ),
         ),
         limited_area=True,
-        num_cells=44528,
-        num_vertices=22569,
-        num_edges=67096,
     )
     MCH_CH_R04B09_DSL: Final = GridDescription(
         name="mch_ch_r04b09_dsl",
@@ -148,9 +124,6 @@ class Grids:
             ),
         ),
         limited_area=True,
-        num_cells=20896,
-        num_vertices=10663,
-        num_edges=31558,
     )
     TORUS_100X116_1000M: Final = GridDescription(
         name="torus_100x116_res1000",
@@ -161,9 +134,6 @@ class Grids:
                 domain_height=100458.94683899487,
             ),
         ),
-        num_cells=23200,
-        num_vertices=11600,
-        num_edges=34800,
     )
     TORUS_50000x5000: Final = GridDescription(
         name="torus_50000x5000_res500",
@@ -174,9 +144,6 @@ class Grids:
                 domain_height=5248.638810814779,
             ),
         ),
-        num_cells=1056,
-        num_vertices=52,
-        num_edges=1584,
     )
     TORUS_1000X1000_250M: Final = GridDescription(
         name="torus_1000x1000_res250",
@@ -187,9 +154,6 @@ class Grids:
                 domain_height=1154.7005383792514,
             ),
         ),
-        num_cells=24,
-        num_vertices=12,
-        num_edges=36,
     )
 
 
