@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
+from collections.abc import Iterator
 
 import gt4py.next as gtx
 
@@ -15,7 +15,6 @@ KHalfDim = gtx.Dimension("KHalf", kind=gtx.DimensionKind.VERTICAL)
 EdgeDim = gtx.Dimension("Edge")
 CellDim = gtx.Dimension("Cell")
 VertexDim = gtx.Dimension("Vertex")
-MAIN_HORIZONTAL_DIMENSIONS = {"CellDim": CellDim, "EdgeDim": EdgeDim, "VertexDim": VertexDim}
 LsqCDim = gtx.Dimension("LsqC", gtx.DimensionKind.LOCAL)
 LsqUnkDim = gtx.Dimension("LsqUnk", gtx.DimensionKind.LOCAL)
 E2CDim = gtx.Dimension("E2C", gtx.DimensionKind.LOCAL)
@@ -49,6 +48,33 @@ V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
-DIMENSIONS_BY_OFFSET_NAME: Final[dict[str, gtx.Dimension]] = {
-    dim.value: dim for dim in globals().values() if isinstance(dim, gtx.Dimension)
-}
+
+def horizontal_dims() -> Iterator[gtx.Dimension]:
+    return iter(
+        tuple(
+            d
+            for d in globals().values()
+            if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL
+        )
+    )
+
+
+def non_horizontal_dims() -> Iterator[gtx.Dimension]:
+    yield from vertical_dims()
+    yield from local_dims()
+
+
+def local_dims() -> Iterator[gtx.Dimension]:
+    for d in globals().values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
+            yield d
+
+
+def vertical_dims() -> Iterator[gtx.Dimension]:
+    return iter(
+        tuple(
+            d
+            for d in globals().values()
+            if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL
+        )
+    )
