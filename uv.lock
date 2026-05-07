@@ -1534,7 +1534,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.9+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_fix_stride_if_region#80c45e6432589964475d184f570be7604f087c15" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_fix_stride_if_region#f56010746631697427e6c12edd211f04436dd969" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
