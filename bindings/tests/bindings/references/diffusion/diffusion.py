@@ -22,7 +22,7 @@ from icon4py.bindings.diffusion_wrapper import diffusion_run
 from icon4py.bindings.diffusion_wrapper import diffusion_init
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def diffusion_run_wrapper(
     w,
     w_size_0,
@@ -335,12 +335,12 @@ def diffusion_run_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def diffusion_init_wrapper(
     theta_ref_mc,
     theta_ref_mc_size_0,
@@ -821,6 +821,6 @@ def diffusion_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1

@@ -278,7 +278,7 @@ from libtest import foo
 from libtest import bar
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
     with runtime_config.HOOK_BINDINGS_FUNCTION["foo"]:
         try:
@@ -353,12 +353,12 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
     with runtime_config.HOOK_BINDINGS_FUNCTION["bar"]:
         try:
@@ -433,9 +433,9 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 
 """
     assert compare_ignore_whitespace(interface, expected)
