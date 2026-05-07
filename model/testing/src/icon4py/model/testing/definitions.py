@@ -157,14 +157,6 @@ class Grids:
     )
 
 
-# Root URLs for downloading serialized data by communicator size
-SERIALIZED_DATA_ROOT_URLS: Final = {
-    1: "https://polybox.ethz.ch/index.php/s/KBsngNwwzRcMG5J",
-    2: "https://polybox.ethz.ch/index.php/s/KfmJEEnaKCFgGSM",
-    4: "https://polybox.ethz.ch/index.php/s/eLLcDtxek858ayt",
-}
-
-
 @dataclasses.dataclass
 class Experiment:
     name: str
