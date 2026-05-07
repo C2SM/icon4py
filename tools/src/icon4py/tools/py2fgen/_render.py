@@ -9,11 +9,7 @@
 """Pure-string render API for py2fgen.
 
 Produces the four bindings sources (.py, .f90, .h, .c) as in-memory strings
-without touching disk. Callers (the CLI, ``all_bindings``, custom build
-scripts) decide what to write, where.
-
-CFFI's ``emit_c_code`` accepts any writable stream; we hand it a
-``StringIO`` to keep the renderer I/O-free.
+without touching disk.
 """
 
 from __future__ import annotations

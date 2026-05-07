@@ -6,14 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Self-contained @py2fgen.export-decorated test functions.
-
-Stand-in for ``icon4py.bindings.simple`` used by the py2fgen test suite so
-that ``tools/tests/`` no longer reaches into the ``bindings`` package.
-The Fortran driver (``fortran_samples/test_square.f90``) only checks that
-``square_from_function`` squares a 2-D float64 array and returns 1, so a
-plain ``np.square`` body is sufficient.
-"""
+"""@py2fgen.export-decorated test functions."""
 
 from __future__ import annotations
 

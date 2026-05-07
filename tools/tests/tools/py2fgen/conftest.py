@@ -21,15 +21,9 @@ def samples_path():
 def fortran_subprocess_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Forward parent sys.path through PYTHONPATH for the test's duration.
 
-    Compiled .so files spawn a fresh Python interpreter (via CFFI's embedded
-    init) that inherits the subprocess's env vars but not pytest's
-    rootdir-induced sys.path additions. Mirroring sys.path through PYTHONPATH
-    lets the embedded interpreter resolve test fixtures like
-    ``tests.tools.py2fgen.wrappers.simple``.
-
-    Request this fixture from any test that spawns a subprocess linking the
-    compiled .so. Tests that only run the CLI in-process via
-    ``cli.invoke(...)`` don't need it.
+    A subprocess that embeds Python via CFFI inherits the env's PYTHONPATH
+    but not pytest's rootdir-induced sys.path additions; without this, the
+    embedded interpreter cannot resolve pytest-discovered packages.
     """
     monkeypatch.setenv(
         "PYTHONPATH",
