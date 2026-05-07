@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import io
 from dataclasses import dataclass
+from typing import Any, cast
 
 import cffi
 
@@ -67,9 +68,10 @@ def render(
     builder.embedding_init_code(py_wrapper)
 
     buf = io.StringIO()
-    # CFFI accepts a writable stream at runtime, but its stub only declares
-    # ``filename: str``; the StringIO path keeps render() free of disk I/O.
-    builder.emit_c_code(buf)  # type: ignore[arg-type]
+    # CFFI's emit_c_code accepts any writable stream at runtime (long-stable
+    # behavior; cffi>=1.5 is pinned in bindings/pyproject.toml). Its type stub
+    # only declares ``filename: str``, so we narrow the suppression to a cast.
+    builder.emit_c_code(cast(Any, buf))
     c_source = buf.getvalue()
 
     return RenderedSources(py=py_wrapper, f90=f90_interface, h=c_header, c=c_source)

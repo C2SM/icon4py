@@ -61,9 +61,13 @@ def test_render_c_source_h_basename_threading(square_plugin):
 
 
 def test_render_fortran_module_is_named_after_library(square_plugin):
+    import re
+
     sources = _render.render(square_plugin, h_basename="square_plugin.h")
-    # Fortran ISO-C interface should declare a module matching library_name.
-    assert "square_plugin" in sources.f90
+    # The generated F90 must declare a module whose name matches library_name —
+    # check the actual ``module <library_name>`` line, not just any occurrence
+    # of the string elsewhere (e.g. inside a bind(c, name=...) attribute).
+    assert re.search(r"(?im)^\s*module\s+square_plugin\b", sources.f90)
 
 
 def test_render_c_header_declares_user_function(square_plugin):
