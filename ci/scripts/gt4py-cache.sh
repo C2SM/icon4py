@@ -7,6 +7,12 @@
 
 set -euo pipefail
 
+# if BACKEND isn't set, skip setting up cache dir
+if [[ -z "${BACKEND:-}" ]]; then
+    echo "BACKEND not set, not setting gt4py cache directory"
+    return 0
+fi
+
 # First clean up files and directories older than 7 days in the base cache
 # directory. The backend directories can stay, but the date-based directories
 # are removed. There may be concurrent cleanup, ignore failures.
