@@ -201,9 +201,9 @@ def compute_domain_bounds(
         decomposition_info: DecompositionInfo needed to determine the HALO `Zone`s
 
     """
-    assert (
-        dim.kind == gtx.DimensionKind.HORIZONTAL
-    ), f"Dimension must be one of {list(dims.horizontal_dims())}"
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, (
+        f"Dimension must be one of {list(dims.horizontal_dims())}"
+    )
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
     array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)

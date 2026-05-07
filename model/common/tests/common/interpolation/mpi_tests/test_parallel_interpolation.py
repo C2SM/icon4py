@@ -79,9 +79,9 @@ def test_distributed_interpolation_with_custom_tolerance(
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(
-        field, field_ref, atol=atol, rtol=rtol
-    ), f"comparison of {attrs_name} failed"
+    assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
+        f"comparison of {attrs_name} failed"
+    )
 
 
 # attrs.E_FLX_AVG should work here
@@ -175,9 +175,9 @@ def test_distributed_interpolation_geofac_rot(
     )
     field_ref = interpolation_savepoint.geofac_rot().asnumpy()
     field = factory.get(attrs.GEOFAC_ROT).asnumpy()
-    assert test_utils.dallclose(
-        field[horizontal_start:, :], field_ref[horizontal_start:, :]
-    ), f"comparison of {attrs.GEOFAC_ROT} failed"
+    assert test_utils.dallclose(field[horizontal_start:, :], field_ref[horizontal_start:, :]), (
+        f"comparison of {attrs.GEOFAC_ROT} failed"
+    )
 
 
 @pytest.mark.datatest
