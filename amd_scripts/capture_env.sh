@@ -78,7 +78,6 @@ run() {
     run rocm-smi --showclocks --showperflevel
     run rocm-smi -P
     run rocm-smi --showmaxpower
-    run rocm-smi --showpowercap
 
     section "rocm-smi: memory"
     run rocm-smi --showmeminfo vram --showmeminfo vis_vram --showmeminfo gtt

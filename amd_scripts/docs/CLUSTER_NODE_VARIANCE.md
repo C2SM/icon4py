@@ -79,6 +79,22 @@ table above. The number is in Gb/s.
    running the same kernels that the fastest node (-26) does at 157 W. Higher
    leakage current → less work per unit of power.
 
+### Power cap and draw across clusters (verified 2026-05-07)
+
+- **Power cap is identical on all 6 measured nodes** (3 aac6 + 3 beverin):
+  550 W per GPU socket.
+- **Under-load p50 (typical draw while running)**: 157–184 W on every node
+  — well below cap, similar across both clusters.
+- **Peak/max draw is where nodes differ**: every measured node except aac6
+  `-26` had at least one 100 ms sample above 400 W during the workload
+  (-30: 491 W; nid002510: 550 W; nid002420: 548 W). `-26` peaks at only
+  291 W. Same cap everywhere, but `-26` is the only chip that never gets
+  close — consistent with the silicon-binning story.
+
+Caveat: traces are 100 ms cadence over ~120 s wall, ~13–32 "busy" samples
+per node. Each spike is a single sample, so peak counts are based on
+small N. -16 trace job failed mid-run; no data for that node.
+
 ### Per-kernel within-cluster comparison (silicon binning at the kernel level)
 
 Same software, same firmware, same partition mode — just different chips.
@@ -117,14 +133,15 @@ sub-10 μs kernels are within noise.
 
 ## What we ruled out
 
-| Cause we suspected                                        | Result              | How we know                                                                                                                                                                                                                                        |
-| --------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compute partition (SPX vs CPX)                            | **Same**            | Both clusters: `compute_partition=SPX` in sysinfo                                                                                                                                                                                                  |
-| Memory partition (NPS1 vs NPS4)                           | **Same**            | Both clusters: `memory_partition=NPS1`                                                                                                                                                                                                             |
-| Maximum clock setting                                     | **Same**            | All nodes: `max_mclk=2100, max_sclk=2100`                                                                                                                                                                                                          |
-| Memory clock dropping under load                          | **No**              | mclk stays at 1300 MHz the whole time, on every node we traced                                                                                                                                                                                     |
-| Code or compiler differences per node                     | **Same**            | Same VGPR count, block size, kernels per cluster                                                                                                                                                                                                   |
-| **Firmware / driver difference between aac6 and beverin** | **Real, but small** | aac6 SMC firmware 04.85.90.00 vs beverin 04.85.112.00; aac6 driver 6.16.6 vs beverin 6.10.5. This may shift things slightly but does **not** explain the within-aac6 difference (`-26` and `-16` have identical firmware and still differ by 26%). |
+| Cause we suspected                                        | Result                    | How we know                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute partition (SPX vs CPX)                            | **Same**                  | Both clusters: `compute_partition=SPX` in sysinfo                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Memory partition (NPS1 vs NPS4)                           | **Same**                  | Both clusters: `memory_partition=NPS1`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Maximum clock setting                                     | **Same**                  | All nodes: `max_mclk=2100, max_sclk=2100`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Memory clock dropping under load                          | **No**                    | mclk stays at 1300 MHz the whole time, on every node we traced                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Code or compiler differences per node                     | **Same**                  | Same VGPR count, block size, kernels per cluster                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Power cap                                                 | **Same on both clusters** | All 6 nodes (3 aac6 + 3 beverin): 550 W per GPU socket (`rocm-smi --showmaxpower`). Idle draw 112–132 W across all nodes. Under-load p50 draw: aac6 -26 157 W, -30 184 W; beverin nid002510 174 W, nid002420 181 W — all well below cap. Brief spikes near cap on -30 (491 W, 1 of 15 samples) and on both beverin nodes (548–550 W, rare). Only `-26` keeps both p50 and max well below cap (159 W max), consistent with silicon binning. Cap doesn't differ between nodes or clusters, so it's not the cause of variance. |
+| **Firmware / driver difference between aac6 and beverin** | **Real, but small**       | aac6 SMC firmware 04.85.90.00 vs beverin 04.85.112.00; aac6 driver 6.16.6 vs beverin 6.10.5. This may shift things slightly but does **not** explain the within-aac6 difference (`-26` and `-16` have identical firmware and still differ by 26%).                                                                                                                                                                                                                                                                          |
 
 ### Verify firmware and driver yourself
 
@@ -203,7 +220,7 @@ On the Mac under `amd_scripts/`:
 - `aac6_node{16,26,30}_rocprof/` — full rocprof-compute output (sysinfo, pmc, log) for the 3 aac6 nodes
 - `beverin_nid002{510,420}_pmc.csv` — counter data for 2 beverin nodes
 - `analyze_*.txt` — rocprof-compute analyze command output, used to cross-check the HBM column
-- `node{26,30}_*_summary.txt` — aac6 power traces (-16 trace partial only, errored at compile mid-trace yesterday)
+- `node{26,30}_*_summary.txt` — aac6 under-load power traces (-16 trace job failed mid-run, no data; could be re-run if needed)
 - `nid002{510,920,420}_*_summary.txt` — beverin power traces (3 nodes)
 - `env_*.txt` — full per-node environment captures (firmware, driver, kernel, etc.)
 - `gt4py_v{2,3}_nid*.out`, `gt4py_aac6_v{1,2}_*.out` — GT4Py timer outputs from the per-node sweeps
