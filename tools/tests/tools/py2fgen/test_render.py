@@ -18,8 +18,9 @@ import re
 
 import pytest
 
-from icon4py.bindings.simple import square_from_function
 from icon4py.tools.py2fgen import _codegen, _definitions, _generator, _render
+
+from tests.tools.py2fgen.wrappers.simple import square_from_function
 
 
 @pytest.fixture
@@ -46,7 +47,7 @@ def test_render_python_wrapper_imports_from_definition_module(square_plugin):
     sources = _render.render(square_plugin, h_basename="square_plugin.h")
     # The wrapper's embedded init code must import the function from its
     # actual definition module, not from the caller's namespace.
-    assert "from icon4py.bindings.simple import square_from_function" in sources.py
+    assert "from tests.tools.py2fgen.wrappers.simple import square_from_function" in sources.py
 
 
 def test_render_c_source_embeds_python_wrapper_and_header(square_plugin):

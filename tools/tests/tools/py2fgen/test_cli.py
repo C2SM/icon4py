@@ -10,12 +10,15 @@ import logging
 import os
 import pathlib
 import subprocess
+from types import ModuleType
 
 import pytest
 from click.testing import CliRunner
 
 import icon4py.tools.py2fgen._utils as utils
 from icon4py.tools.py2fgen._cli import main
+
+from tests.tools.py2fgen.wrappers import simple
 
 
 @pytest.fixture
@@ -24,8 +27,8 @@ def cli_runner():
 
 
 @pytest.fixture
-def square_wrapper_module():
-    return "icon4py.bindings.simple"
+def square_wrapper_module() -> ModuleType:
+    return simple
 
 
 def compile_fortran_code(
@@ -85,10 +88,10 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module, function, library_name, extra_args=None):
+def invoke_cli(cli, module: ModuleType, function, library_name, extra_args=None):
     rpath = utils.get_prefix_lib_path()
 
-    cli_args = [module, function, library_name, "-r", rpath]
+    cli_args = [module.__name__, function, library_name, "-r", rpath]
     if extra_args:
         cli_args.extend(extra_args)
     result = cli.invoke(main, cli_args)
@@ -132,7 +135,13 @@ def compile_and_run_fortran(
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
-    cli_runner, run_backend, samples_path, square_wrapper_module, extra_flags, test_temp_dir
+    cli_runner,
+    run_backend,
+    samples_path,
+    square_wrapper_module,
+    extra_flags,
+    test_temp_dir,
+    fortran_subprocess_env,
 ):
     """Tests embedding Python functions, and GT4Py program directly.
     Also tests embedding multiple functions in one shared library.
@@ -150,7 +159,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
 
 
 def test_py2fgen_python_error_propagation_to_fortran(
-    cli_runner, samples_path, square_wrapper_module, test_temp_dir
+    cli_runner, samples_path, square_wrapper_module, test_temp_dir, fortran_subprocess_env
 ):
     """Tests that Exceptions triggered in Python propagate an error code (1) up to Fortran."""
     run_test_case(
@@ -187,6 +196,7 @@ def test_py2fgen_compilation_and_execution_gpu(
     square_wrapper_module,
     extra_flags,
     test_temp_dir,
+    fortran_subprocess_env,
 ):
     run_test_case(
         cli_runner,
@@ -209,9 +219,23 @@ def test_py2fgen_compilation_and_execution_gpu(
     ],
 )
 def test_py2fgen_compilation_and_profiling(
-    cli_runner, samples_path, square_wrapper_module, extra_flags, test_temp_dir, tmp_path
+    cli_runner,
+    samples_path,
+    square_wrapper_module,
+    extra_flags,
+    test_temp_dir,
+    tmp_path,
+    fortran_subprocess_env,
 ):
     """Test profiling using cProfile of the generated wrapper."""
+
+    # TODO(havogt):
+    # The ``PY2FGEN_EXTRA_CALLABLES`` env var below points at
+    # ``icon4py.bindings.viztracer_plugin`` — a runtime indirection (the
+    # embedded Python plugin only resolves it when the compiled .so runs),
+    # not a static import edge from ``tools/tests/`` into ``bindings``.
+    # Exercising the real plugin keeps the integration coverage; a stand-in
+    # would duplicate ~80 lines for nothing.
 
     run_test_case(
         cli_runner,

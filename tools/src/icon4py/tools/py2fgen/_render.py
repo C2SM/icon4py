@@ -47,7 +47,7 @@ def render(
 
     Args:
         plugin: The parsed bindings description (from
-            :func:`icon4py.tools.py2fgen._generator.get_cffi_description`).
+            :func:`icon4py.tools.py2fgen.get_cffi_description`).
         h_basename: Basename embedded in the ``#include "<h_basename>"``
             line at the top of the generated C source. The caller picks
             this so the eventual on-disk ``.h`` filename matches.
@@ -69,8 +69,9 @@ def render(
 
     buf = io.StringIO()
     # CFFI's emit_c_code accepts any writable stream at runtime (long-stable
-    # behavior; cffi>=1.5 is pinned in bindings/pyproject.toml). Its type stub
-    # only declares ``filename: str``, so we narrow the suppression to a cast.
+    # behavior; the cffi>=1.5 pin in tools/pyproject.toml is well within the
+    # supported range). The type stub only declares ``filename: str``, so we
+    # narrow the suppression to a cast.
     builder.emit_c_code(cast(Any, buf))
     c_source = buf.getvalue()
 
