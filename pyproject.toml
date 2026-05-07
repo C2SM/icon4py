@@ -39,6 +39,7 @@ scripts = [
   "lazy-loader>=0.5",
   "rich>=13.0.0",
   "typer>=0.15",
+  "f90nml>=1.5",
   {include-group = "build"},
   {include-group = "test"}
 ]

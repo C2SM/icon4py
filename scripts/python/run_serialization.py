@@ -25,11 +25,15 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+import lazy_loader as lazy
 import typer
 
 
 if TYPE_CHECKING:
-    from icon4py.model.testing import datatest_utils as dt_utils, definitions
+    from icon4py.model.testing import definitions
+else:
+    definitions = lazy.load("icon4py.model.testing.definitions")
+    dt_utils = lazy.load("icon4py.model.testing.datatest_utils")
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
@@ -62,10 +66,6 @@ class SerializationSettings:
         # We hardcode the settings here for simplicity, but they could be
         # extended to be read from a config file or command-line arguments
         # if needed in the future.
-
-        from icon4py.model.testing import (
-            definitions,  # Import here to reduce startup time for the CLI
-        )
 
         COMM_SIZES: list[int] = [1, 2, 4]
 
