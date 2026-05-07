@@ -49,9 +49,8 @@ class SerializationSettings:
     sbatch_uenv: str
     sbatch_uenv_view: str
     job_poll_seconds: int
-    projects_dir: pathlib.Path
-    iconf90_dir: pathlib.Path
-    iconf90_build_folder: str
+    iconf90_repo_dir: pathlib.Path
+    icon4py_repo_dir: pathlib.Path
     build_dir: pathlib.Path
     runscript_dir: pathlib.Path
     experiments_dir: pathlib.Path
@@ -85,15 +84,11 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Base directories (adjust if needed)
-        PROJECTS_DIR = pathlib.Path(
-            os.environ.get("SCRATCH", str(pathlib.Path.home() / "projects"))
-        )
-        ICONF90_DIR = PROJECTS_DIR / "icon-exclaim.serialize"
-        ICONF90_BUILD_FOLDER = "build_serialize"
-
-        # Derived paths
-        BUILD_DIR = ICONF90_DIR / ICONF90_BUILD_FOLDER
+        # Directories (adjust if needed)
+        ROOT_PROJECT_DIR = pathlib.Path( os.environ.get("SCRATCH", "/projects")) / "icon-exclaim.serialize"
+        ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
+        ICON4PY_REPO_DIR = ICONF90_REPO_DIR / "externals" / "icon4py"
+        BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
         RUNSCRIPTS_DIR = BUILD_DIR / "run"
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 
@@ -112,9 +107,8 @@ class SerializationSettings:
             sbatch_uenv=SBATCH_UENV,
             sbatch_uenv_view=SBATCH_UENV_VIEW,
             job_poll_seconds=JOB_POLL_SECONDS,
-            projects_dir=PROJECTS_DIR,
-            iconf90_dir=ICONF90_DIR,
-            iconf90_build_folder=ICONF90_BUILD_FOLDER,
+            iconf90_repo_dir=ICONF90_REPO_DIR,
+            icon4py_repo_dir=ICON4PY_REPO_DIR,
             build_dir=BUILD_DIR,
             runscript_dir=RUNSCRIPTS_DIR,
             experiments_dir=EXPERIMENTS_DIR,
@@ -471,7 +465,7 @@ def generate_update_script(
 ) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
-        settings.iconf90_dir / "run" / get_nmlfile_name(experiment),
+        settings.iconf90_repo_dir / "run" / get_nmlfile_name(experiment),
         settings.runscript_dir / get_nmlfile_name(experiment),
     )
 
