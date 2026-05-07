@@ -1566,7 +1566,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace-fill_node#28e8808d1768fdbab8daba153a198196600ad065"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace-fill_node#790c953badb4a232f14770c5b4c4336f3451df95"}
 version = "1.1.9+unknown.version.details"
 
 [package.optional-dependencies]
