@@ -20,3 +20,9 @@ export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/$
 mkdir -p "${GT4PY_BUILD_CACHE_DIR}"
 
 echo "Using GT4PY_BUILD_CACHE_DIR=${GT4PY_BUILD_CACHE_DIR}"
+
+# TODO: This is here just for debugging, probably remove?
+if [[ "${ICON4PY_CI_WIPE_GT4PY_CACHE:-}" == "true" ]]; then
+    echo "Wiping cache in ${GT4PY_BUILD_CACHE_DIR}"
+    rm -rf "${GT4PY_BUILD_CACHE_DIR}"
+fi
