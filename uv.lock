@@ -1384,12 +1384,11 @@ wheels = [
 [[package]]
 name = "ghex"
 version = "0.5.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/msimberg/GHEX?branch=nccl-2#793c766e54d8d65f46187e33913d7c27c802f549" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/45/834e3c9c67e3ea329a6ba778155d2e472d107165b7824bdd3d9029afa0a2/ghex-0.5.0.tar.gz", hash = "sha256:e877e46cf46cd80d16671d3537c0b0e5cec9a0fc5f04b873052ab363de7f5f79", size = 8911842, upload-time = "2026-03-18T08:29:41.269Z" }
 
 [[package]]
 name = "gitdb"
@@ -1925,7 +1924,7 @@ requires-dist = [
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "dace", git = "https://github.com/msimberg/dace?branch=explicit-cuda-streams" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
-    { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.0" },
+    { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX?branch=nccl-2" },
     { name = "gt4py", git = "https://github.com/msimberg/gt4py?branch=explicit-cuda-streams" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/msimberg/gt4py?branch=explicit-cuda-streams" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/msimberg/gt4py?branch=explicit-cuda-streams" },

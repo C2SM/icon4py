@@ -128,8 +128,8 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         domain_decomposition: definitions.DecompositionInfo,
     ):
         self._props = props
-        self._context = make_context(process_props.comm, False)
-        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(process_props)
+        self._context = make_context(props.comm, False)
+        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
