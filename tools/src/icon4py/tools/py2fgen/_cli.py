@@ -79,7 +79,7 @@ def main(
         (python_wrapper, f"{plugin.library_name}.py", "Python wrapper"),
         (f90_interface, f"{plugin.library_name}.f90", "Fortran interface"),
     ]:
-        changed = _utils.write_file_if_changed(content, output_path, fname, force=regenerate)
+        changed = _utils.write_if_changed(content, output_path / fname, force=regenerate)
         logger.info("%s %s.", label, "changed" if changed else "is up to date")
         any_changed |= changed
 
