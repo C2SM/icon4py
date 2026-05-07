@@ -18,8 +18,8 @@ CFFI's ``emit_c_code`` accepts any writable stream; we hand it a
 
 from __future__ import annotations
 
+import dataclasses
 import io
-from dataclasses import dataclass
 from typing import Any, cast
 
 import cffi
@@ -27,7 +27,7 @@ import cffi
 from icon4py.tools.py2fgen import _codegen
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class RenderedSources:
     """The four bindings artifacts produced by :func:`render`, all as strings."""
 

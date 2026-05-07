@@ -10,7 +10,7 @@ import logging
 import os
 import pathlib
 import subprocess
-from types import ModuleType
+import types
 
 import pytest
 from click.testing import CliRunner
@@ -27,7 +27,7 @@ def cli_runner():
 
 
 @pytest.fixture
-def square_wrapper_module() -> ModuleType:
+def square_wrapper_module() -> types.ModuleType:
     return simple
 
 
@@ -88,7 +88,7 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module: ModuleType, function, library_name, extra_args=None):
+def invoke_cli(cli, module: types.ModuleType, function, library_name, extra_args=None):
     rpath = utils.get_prefix_lib_path()
 
     cli_args = [module.__name__, function, library_name, "-r", rpath]

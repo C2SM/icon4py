@@ -20,12 +20,12 @@ import pytest
 
 from icon4py.tools.py2fgen import _codegen, _definitions, _generator, _render
 
-from tests.tools.py2fgen.wrappers.simple import square_from_function
+from tests.tools.py2fgen.wrappers import simple
 
 
 @pytest.fixture
 def square_plugin():
-    return _generator.get_cffi_description([square_from_function], "square_plugin")
+    return _generator.get_cffi_description([simple.square_from_function], "square_plugin")
 
 
 def test_render_returns_all_four_sources(square_plugin):
