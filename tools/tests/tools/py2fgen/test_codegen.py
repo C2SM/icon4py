@@ -49,6 +49,7 @@ def test_as_target(param, expected):
 
 foo = Func(
     name="foo",
+    module_name="libtest",
     args={
         "one": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
         "two": py2fgen.ArrayParamDescriptor(
@@ -62,6 +63,7 @@ foo = Func(
 
 bar = Func(
     name="bar",
+    module_name="libtest",
     args={
         "one": py2fgen.ArrayParamDescriptor(
             rank=2,
@@ -75,7 +77,7 @@ bar = Func(
 
 
 def test_cheader_generation_for_single_function():
-    plugin = BindingsLibrary(module_name="libtest", library_name="libtest_plugin", functions=[foo])
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -85,7 +87,7 @@ def test_cheader_generation_for_single_function():
 
 
 def test_cheader_for_pointer_args():
-    plugin = BindingsLibrary(module_name="libtest", library_name="libtest_plugin", functions=[bar])
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -110,7 +112,6 @@ def compare_ignore_whitespace(actual: str, expected: str):
 @pytest.fixture
 def dummy_plugin():
     return BindingsLibrary(
-        module_name="libtest",
         library_name="libtest_plugin",
         functions=[foo, bar],
     )
