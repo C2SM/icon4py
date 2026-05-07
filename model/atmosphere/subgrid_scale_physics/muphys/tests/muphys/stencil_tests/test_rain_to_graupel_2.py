@@ -15,7 +15,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-class TestRainToGraupel1(StencilTest):
+class TestRainToGraupel2(StencilTest):
     PROGRAM = rain_to_graupel
     OUTPUTS = ("conversion_rate",)
 

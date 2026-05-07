@@ -94,7 +94,7 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     #: Exponent in the terminal velocity for snow, see unnumbered eq. (v = 25 D^0.5) below eq. 5.159 in the COSMO microphysics documentation. Originally expressed as v1s in ICON.
     POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED = 0.5
     #: kinematic viscosity of air. Originally expressed as eta in ICON.
-    AIR_KINEMETIC_VISCOSITY = 1.75e-5
+    AIR_KINEMATIC_VISCOSITY = 1.75e-5
     #: molecular diffusion coefficient for water vapour. Originally expressed as dv in ICON.
     DIFFUSION_COEFF_FOR_WATER_VAPOR = 2.22e-5
     #: thermal conductivity of dry air. Originally expressed as lheat in ICON.
@@ -185,7 +185,7 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     CCSDEP = (
         0.26
         * math.gamma((POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + 5.0) / 2.0)
-        * math.sqrt(1.0 / AIR_KINEMETIC_VISCOSITY)
+        * math.sqrt(1.0 / AIR_KINEMATIC_VISCOSITY)
     )
     _ccsvxp = -(
         POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED / (POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + 1.0)

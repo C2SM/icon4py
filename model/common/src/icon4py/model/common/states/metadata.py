@@ -142,7 +142,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "e_owner_mask": dict(
         standard_name="e_owner_mask",
         units="",
-        dims=(dims.EdgeDim),
+        dims=(dims.EdgeDim,),
         dtype=bool,
         icon_var_name="e_owner_mask",
         long_name="grid savepoint field",
@@ -150,7 +150,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "c_owner_mask": dict(
         standard_name="c_owner_mask",
         units="",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim,),
         dtype=bool,
         icon_var_name="c_owner_mask",
         long_name="grid savepoint field",

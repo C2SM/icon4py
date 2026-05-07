@@ -63,8 +63,8 @@ class SingleMomentSixClassIconGraupelConfig:
         mphys_options.LiquidAutoConversionType.KESSLER
     )
     #: snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    snow_intercept_option: mphys_options.SnowInterceptParametererization = (
-        mphys_options.SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
+    snow_intercept_option: mphys_options.SnowInterceptParameterization = (
+        mphys_options.SnowInterceptParameterization.FIELD_GENERAL_MOMENT_ESTIMATION
     )
     #: Do latent heat nudging. Originally defined as dass_lhn in mo_run_config.f90 in ICON.
     do_latent_heat_nudging = False
@@ -184,7 +184,7 @@ class SingleMomentSixClassIconGraupel:
             * math.sqrt(
                 MicrophysicsConstants.REF_AIR_DENSITY
                 * 130.0
-                / MicrophysicsConstants.AIR_KINEMETIC_VISCOSITY
+                / MicrophysicsConstants.AIR_KINEMATIC_VISCOSITY
             )
             * _ar ** (-precomputed_evaporation_beta_exp_coeff)
             * math.gamma((2.0 * self.config.rain_mu + 5.5) / 2.0)

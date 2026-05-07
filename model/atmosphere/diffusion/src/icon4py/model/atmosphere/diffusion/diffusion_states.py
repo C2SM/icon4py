@@ -76,7 +76,7 @@ class DiffusionInterpolationState:
     geofac_grg_y: gtx.Field[
         gtx.Dims[dims.CellDim, dims.C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
-    nudgecoeff_e: fa.EdgeField[float]  # Nudgeing coeffients for edges
+    nudgecoeff_e: fa.EdgeField[float]  # Nudging coefficients for edges
 
     @functools.cached_property
     def geofac_n2s_c(self) -> fa.CellField[float]:

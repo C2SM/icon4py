@@ -74,9 +74,7 @@ def _deposition_factor(
     CX = wpfloat(2.22e-5) * power(ThermodynamicConsts.tmelt, (-B)) * wpfloat(101325.0)  # TBD
 
     x = CX / ThermodynamicConsts.rd * power(t, B - wpfloat(1.0))
-    return (CX / ThermodynamicConsts.rd * power(t, B - wpfloat(1.0))) / (
-        wpfloat(1.0) + A * x * qvsi / (t * t)
-    )
+    return x / (wpfloat("1.0") + A * x * qvsi / (t * t))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

@@ -162,7 +162,7 @@ def test_model(
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", "basic")
+@nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
 
