@@ -110,18 +110,11 @@ def make_custom_dace_backend(
         A dace backend with custom configuration for the target device.
     """
     on_gpu = device == GPU
-    if optimization_args is None:
-        optimization_args = {
-            "fuse_tasklets": True,
-        }
-    else:
-        optimization_args["fuse_tasklets"] = True
-
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         cached=cached,
         apply_common_transform=True,
-        auto_optimize=False,
+        auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,
         use_metrics=use_metrics,
