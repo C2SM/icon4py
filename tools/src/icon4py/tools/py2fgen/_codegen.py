@@ -15,7 +15,13 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from icon4py.tools.py2fgen import _definitions, _utils
 
 
-CFFI_DECORATOR = "@ffi.def_extern()"
+# rc convention (chosen so init-fail is distinguishable from success — cffi
+# forces the result slot to 0 on init-fail, see _cffi_start_and_call_python
+# in _embedding.h of cffi):
+#   0 -> embedding init failed
+#   1 -> success
+#   2 -> Python wrapper raised an exception
+CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
@@ -227,9 +233,9 @@ def {{ func.name }}_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 {% endfor %}
 """
     )
