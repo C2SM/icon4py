@@ -52,7 +52,13 @@ def test_compile_and_run_cffi_plugin_from_C():
             # Generate and compile the CFFI plugin, which creates lib{library_name}.so
             shared_library = f"{library_name}"
 
-            generate_and_compile_cffi_plugin(library_name, c_header, python_wrapper, build_path)
+            generate_and_compile_cffi_plugin(
+                library_name,
+                c_header,
+                python_wrapper,
+                build_path,
+                build_path / f"{library_name}.h",
+            )
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created

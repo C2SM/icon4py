@@ -54,10 +54,16 @@ def write_file_if_changed(
     Returns True if the file was written (content changed, file was new, or force=True),
     False if the existing file already has the same content.
     """
-    path = outdir / fname
+    return write_path_if_changed(content, outdir / fname, force=force)
+
+
+def write_path_if_changed(content: str, path: pathlib.Path, *, force: bool = False) -> bool:
+    """Like ``write_file_if_changed`` but takes a full path instead of (dir, fname)."""
     if not force and path.exists() and path.read_text() == content:
         return False
-    write_file(content, outdir, fname)
+    path.parent.mkdir(exist_ok=True, parents=True)
+    with path.open("w") as f:
+        f.write(content)
     return True
 
 

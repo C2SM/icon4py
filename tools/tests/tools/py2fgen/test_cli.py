@@ -73,7 +73,7 @@ def run_test_case(
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, library_name)
+        invoke_cli(cli, module, function, library_name, extra_args=["--compile"])
         compile_and_run_fortran(
             library_name,
             samples_path,
@@ -235,19 +235,29 @@ def test_py2fgen_compilation_and_profiling(
 def test_py2fgen_incremental_skips_compilation_when_unchanged(
     cli_runner, square_wrapper_module, test_temp_dir, caplog
 ):
-    """Test that running py2fgen twice without changes skips compilation on the second run."""
+    """Test that running py2fgen --compile twice without changes skips compilation on the second run."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
-        # First run: should generate and compile
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
-            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--compile"],
+            )
             first_log = caplog.text
         assert "Compiling CFFI dynamic library" in first_log
 
-        # Second run: all files should be up to date, compilation should be skipped
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
-            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--compile"],
+            )
             second_log = caplog.text
         assert "Python wrapper is up to date" in second_log
         assert "Fortran interface is up to date" in second_log
@@ -260,10 +270,14 @@ def test_py2fgen_regenerate_forces_recompilation(
 ):
     """Test that --regenerate forces recompilation even if files are up to date."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
-        # First run: generate and compile
-        invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=["--compile"],
+        )
 
-        # Second run with --regenerate: should recompile
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
             invoke_cli(
@@ -271,7 +285,7 @@ def test_py2fgen_regenerate_forces_recompilation(
                 square_wrapper_module,
                 "square_from_function",
                 "square_plugin",
-                extra_args=["--regenerate"],
+                extra_args=["--compile", "--regenerate"],
             )
             regen_log = caplog.text
         assert "Force regeneration requested" in regen_log
@@ -279,20 +293,14 @@ def test_py2fgen_regenerate_forces_recompilation(
         assert "Skipping compilation" not in regen_log
 
 
-def test_py2fgen_skip_compilation_generates_c_and_header(
+def test_py2fgen_default_generates_sources_without_compiling(
     cli_runner, square_wrapper_module, test_temp_dir, caplog
 ):
-    """Test that --skip-compilation generates .c, .h, .py, .f90 files but no shared library."""
+    """Default invocation (no --compile) generates .py/.f90/.c/.h but no .so."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
-            invoke_cli(
-                cli_runner,
-                square_wrapper_module,
-                "square_from_function",
-                "square_plugin",
-                extra_args=["--skip-compilation"],
-            )
+            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
             log = caplog.text
 
         assert "Generating C source and header files" in log
@@ -305,63 +313,119 @@ def test_py2fgen_skip_compilation_generates_c_and_header(
         assert not pathlib.Path("libsquare_plugin.so").exists()
 
 
-def test_py2fgen_skip_compilation_skips_when_up_to_date(
+def test_py2fgen_default_skips_when_up_to_date(
     cli_runner, square_wrapper_module, test_temp_dir, caplog
 ):
-    """Test that --skip-compilation skips regeneration when all files are up to date."""
+    """Default invocation (no --compile) skips C code regeneration when up to date."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
-        # First run: generate files
-        invoke_cli(
-            cli_runner,
-            square_wrapper_module,
-            "square_from_function",
-            "square_plugin",
-            extra_args=["--skip-compilation"],
-        )
+        invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
 
-        # Second run: should skip
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
-            invoke_cli(
-                cli_runner,
-                square_wrapper_module,
-                "square_from_function",
-                "square_plugin",
-                extra_args=["--skip-compilation"],
-            )
+            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
             second_log = caplog.text
         assert "Skipping C code generation" in second_log
         assert "Generating C source and header files" not in second_log
 
 
-def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
-    cli_runner, square_wrapper_module, test_temp_dir, caplog
-):
-    """Test that --skip-compilation regenerates if .c file is missing."""
+def test_py2fgen_compile_with_output_flag_errors(cli_runner, square_wrapper_module, test_temp_dir):
+    """``--compile`` combined with any --output-<kind> is rejected."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
-        # First run
+        rpath = utils.get_prefix_lib_path()
+        result = cli_runner.invoke(
+            main,
+            [
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                "-r",
+                rpath,
+                "--compile",
+                "--output-f90",
+                "my.f90",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--compile cannot be combined with --output-" in result.output
+
+
+def test_py2fgen_per_artifact_output_path(cli_runner, square_wrapper_module, test_temp_dir):
+    """``--output-f90 PATH`` alone produces only that file at the custom path."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         invoke_cli(
             cli_runner,
             square_wrapper_module,
             "square_from_function",
             "square_plugin",
-            extra_args=["--skip-compilation"],
+            extra_args=["--output-f90", "my_fortran.f90"],
         )
+        assert pathlib.Path("my_fortran.f90").exists()
+        assert not pathlib.Path("square_plugin.f90").exists()
+        assert not pathlib.Path("square_plugin.py").exists()
+        assert not pathlib.Path("square_plugin.c").exists()
+        assert not pathlib.Path("square_plugin.h").exists()
+        assert not pathlib.Path("libsquare_plugin.so").exists()
+
+
+def test_py2fgen_mixed_per_artifact_paths(cli_runner, square_wrapper_module, test_temp_dir):
+    """``--output-f90`` and ``--output-c`` together emit both with custom names; .h goes alongside .c."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=[
+                "--output-f90",
+                "my_fortran.f90",
+                "--output-c",
+                "my_c.c",
+            ],
+        )
+        assert pathlib.Path("my_fortran.f90").exists()
+        assert pathlib.Path("my_c.c").exists()
+        assert pathlib.Path("my_c.h").exists()
+        assert not pathlib.Path("square_plugin.py").exists()
+        assert not pathlib.Path("square_plugin.f90").exists()
+        assert not pathlib.Path("square_plugin.c").exists()
+        assert not pathlib.Path("square_plugin.h").exists()
+        assert not pathlib.Path("libsquare_plugin.so").exists()
+
+
+def test_py2fgen_output_h_override(cli_runner, square_wrapper_module, test_temp_dir):
+    """``--output-h`` overrides the header path; the emitted .c references it via #include."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=[
+                "--output-c",
+                "foo.c",
+                "--output-h",
+                "custom.h",
+            ],
+        )
+        assert pathlib.Path("foo.c").exists()
+        assert pathlib.Path("custom.h").exists()
+        assert not pathlib.Path("foo.h").exists()
+        assert '#include "custom.h"' in pathlib.Path("foo.c").read_text()
+
+
+def test_py2fgen_default_regenerates_if_c_file_deleted(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Default invocation regenerates .c if it is missing on the next run."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
         assert pathlib.Path("square_plugin.c").exists()
 
-        # Delete the .c file
         pathlib.Path("square_plugin.c").unlink()
 
-        # Second run: should regenerate since .c is missing
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
-            invoke_cli(
-                cli_runner,
-                square_wrapper_module,
-                "square_from_function",
-                "square_plugin",
-                extra_args=["--skip-compilation"],
-            )
+            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
             regen_log = caplog.text
         assert "Generating C source and header files" in regen_log
         assert pathlib.Path("square_plugin.c").exists()

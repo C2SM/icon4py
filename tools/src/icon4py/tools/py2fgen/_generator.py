@@ -40,20 +40,18 @@ def configure_cffi_builder(
     library_name: str,
     c_header: str,
     python_wrapper: str,
-    build_path: Path,
+    h_path: Path,
     rpath: str,
 ) -> cffi.FFI:
-    """Write the C header, configure and return a CFFI FFI builder ready for compilation or code emission."""
-    header_file_path = build_path / f"{library_name}.h"
-    with header_file_path.open("w") as f:
+    """Write the C header at ``h_path`` and return a CFFI builder ready for compilation or code emission."""
+    h_path.parent.mkdir(exist_ok=True, parents=True)
+    with h_path.open("w") as f:
         f.write(c_header)
 
     builder = cffi.FFI()
     extra_link_args = [f"-Wl,-rpath={rpath}"] if rpath else []
     builder.embedding_api(c_header)
-    builder.set_source(
-        library_name, f'#include "{header_file_path.name}"', extra_link_args=extra_link_args
-    )
+    builder.set_source(library_name, f'#include "{h_path.name}"', extra_link_args=extra_link_args)
     builder.embedding_init_code(python_wrapper)
     return builder
 
@@ -63,6 +61,7 @@ def generate_and_compile_cffi_plugin(
     c_header: str,
     python_wrapper: str,
     build_path: Path,
+    h_path: Path,
     rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
     """
@@ -73,14 +72,15 @@ def generate_and_compile_cffi_plugin(
     'lib{library_name}.so' in the specified build directory.
 
     Args:
-        library_name: Name of the plugin.
+        library_name: Name of the plugin (also the basename of the .so).
         c_header: C header signatures for the Python functions.
         python_wrapper: Python code wrapping the original function to be exposed.
-        build_path: Path to the build directory.
+        build_path: Path to the build directory (where lib{library_name}.so is written).
+        h_path: Target path for the C header file.
         rpath: Runtime library search path to embed in the shared library.
     """
     try:
-        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, h_path, rpath)
         builder.compile(tmpdir=str(build_path), target=f"lib{library_name}.*", verbose=True)
     except Exception as e:
         logging.error(f"Error generating and compiling CFFI plugin: {e}")
@@ -91,13 +91,15 @@ def generate_cffi_source(
     library_name: str,
     c_header: str,
     python_wrapper: str,
-    build_path: Path,
+    c_path: Path,
+    h_path: Path,
     rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
-    """Generate the C source file and header without compiling."""
+    """Generate the C source file at ``c_path`` and header at ``h_path`` without compiling."""
     try:
-        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
-        builder.emit_c_code(str(build_path / f"{library_name}.c"))
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, h_path, rpath)
+        c_path.parent.mkdir(exist_ok=True, parents=True)
+        builder.emit_c_code(str(c_path))
     except Exception as e:
         logging.error(f"Error generating CFFI C source: {e}")
         raise
