@@ -14,6 +14,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
@@ -32,7 +33,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y_torus,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, exchange_utils, serialbox as sb
+from icon4py.model.testing import definitions, serialbox as sb
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -187,7 +188,7 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, exchange=exchange_utils.dummy_exchange_with_bound_dim
+        compute_geofac_grg, exchange=decomposition.single_node_exchange
     )(
         primal_normal_cell_x,
         primal_normal_cell_y,
@@ -273,7 +274,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight,
                 horizontal_start,
                 horizontal_start_p2,
-                exchange=exchange_utils.dummy_exchange_with_bound_dim,
+                exchange=decomposition.single_node_exchange,
             )
         case base_grid.GeometryType.TORUS:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
@@ -283,7 +284,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight,
                 horizontal_start,
                 horizontal_start_p2,
-                exchange=exchange_utils.dummy_exchange_with_bound_dim,
+                exchange=decomposition.single_node_exchange,
             )
 
     assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
@@ -311,9 +312,7 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(
-        compute_e_flx_avg, exchange=exchange_utils.dummy_exchange_with_bound_dim
-    )(
+    e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.single_node_exchange)(
         c_bln_avg,
         geofac_div,
         owner_mask,
