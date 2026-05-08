@@ -52,11 +52,11 @@ def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.Arra
 
 class Func(Node):
     name: str
+    module_name: str
     args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
 
 
 class BindingsLibrary(Node):
-    module_name: str
     library_name: str
     functions: list[Func]
 
@@ -163,7 +163,7 @@ logging.basicConfig(
 
 # embedded function imports
 {% for func in _this_node.functions -%}
-from {{ module_name }} import {{ func.name }}
+from {{ func.module_name }} import {{ func.name }}
 {% endfor %}
 
 {% for func in _this_node.functions %}
