@@ -309,6 +309,7 @@ def _compare_interpolation_fields_single_multi_rank(
         grid=single_rank_gm.grid,
         decomposition_info=single_rank_gm.decomposition_info,
         geometry_source=single_rank_geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.SingleNodeExchange(),
@@ -333,6 +334,7 @@ def _compare_interpolation_fields_single_multi_rank(
         grid=multi_rank_gm.grid,
         decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
@@ -427,25 +429,7 @@ def _compare_metrics_fields_single_multi_rank(
 
     file = dt_utils.get_grid_filepath(experiment.grid)
 
-    (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
-    ) = test_defs.construct_metrics_config(experiment)
-    vertical_config = v_grid.VerticalGridConfig(
-        experiment.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -470,6 +454,7 @@ def _compare_metrics_fields_single_multi_rank(
         grid=single_rank_gm.grid,
         decomposition_info=single_rank_gm.decomposition_info,
         geometry_source=single_rank_geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.SingleNodeExchange(),
@@ -487,14 +472,9 @@ def _compare_metrics_fields_single_multi_rank(
             )
         ),
         interpolation_source=single_rank_interpolation,
+        config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=decomp_defs.SingleNodeExchange(),
     )
     _log.info(
@@ -517,6 +497,7 @@ def _compare_metrics_fields_single_multi_rank(
         grid=multi_rank_gm.grid,
         decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
@@ -534,14 +515,9 @@ def _compare_metrics_fields_single_multi_rank(
             )
         ),
         interpolation_source=multi_rank_interpolation,
+        config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             process_props, multi_rank_gm.decomposition_info
         ),
@@ -721,6 +697,7 @@ def test_metrics_mask_prog_halo_c(
         grid=multi_rank_gm.grid,
         decomposition_info=multi_rank_gm.decomposition_info,
         geometry_source=multi_rank_geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
@@ -738,14 +715,9 @@ def test_metrics_mask_prog_halo_c(
             )
         ),
         interpolation_source=multi_rank_interpolation,
+        config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             process_props, multi_rank_gm.decomposition_info
         ),
