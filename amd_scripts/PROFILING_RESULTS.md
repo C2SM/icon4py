@@ -211,11 +211,15 @@ sed -n '/^2\.1 System/,/^2\.2/p' /tmp/m100.txt      # SOL: HBM BW, IPC, VALU
 sed -n '/^17\. L2 Cache/,/^18\./p' /tmp/m100.txt    # L2 section: hit rate, fabric BW
 ```
 
-**Per-kernel HBM BW + L2 hit rate (MI300A, lighter-weight):**
+**Per-kernel L1↔L2, L2-Fabric, HBM BW + L2 hit rate (MI300A, lighter-weight):**
 
 ```bash
 python3 amd_scripts/extract_pmc.py workloads/<your-workload>/MI300A_A1/pmc_perf.csv
 ```
+
+Reports three cache-plane bandwidths per kernel. HBM column matches
+`rocprof-compute analyze` §4.1.9 within ~0.4% (validated 2026-05-03).
+See module docstring in `extract_pmc.py` for formulas.
 
 **Inter-kernel gap (MI300A, rocprofv3 kernel-trace):**
 
@@ -466,11 +470,21 @@ moved (misses L2 hits) and overcounts (each miss loads a full 64B line even if o
 8B is used). Instead, count `global_load`/`global_store` instructions from the GCN
 assembly (`hipcc -S`) and multiply by their width × thread count.
 
-**`extract_pmc.py` HBM BW formula** was patched 2026-04-19. Old formula
-`(TCC_EA0_RDREQ + TCC_EA0_WRREQ) × 64` only counted External Access channel 0
-(L2-miss traffic from one channel) and missed L2 traffic on hits — discrepancy with
-rocprof-compute analyze was 1.62×. Patched formula: `(TCC_READ + TCC_WRITE) × 64`,
-verified to match rocprof-compute within 3%.
+**`extract_pmc.py` cache plane formulas** were finalized 2026-05-03. The
+script now reports three columns measuring distinct cache planes:
+
+- `L1↔L2(TB/s)` = `(TCC_READ_sum + TCC_WRITE_sum) × 64 / dur`. Upstream plane.
+- `L2Fab(TB/s)` = rocprof-compute §2.1.23 + §2.1.24 formula
+  (`128×BUBBLE + 64×(RDREQ−BUBBLE−RDREQ_32B) + 32×RDREQ_32B` for reads,
+  `64×WRREQ_64B + 32×(WRREQ−WRREQ_64B)` for writes+atomics). Downstream plane.
+- `HBM(TB/s)` = `L2Fab × DRAM-traffic-fraction`. Validated against
+  rocprof-compute analyze §4.1.9 within 0.4% on map_100_fieldop_1_0_0
+  (nid002510): 2.59 vs 2.601 TB/s.
+
+Earlier (2026-04-19) the script reported `(TCC_READ + TCC_WRITE) × 64`
+mis-labeled as HBM; it's L2-side throughput, kept as the L1↔L2 column now.
+Earlier-still (pre-2026-04-19) `(TCC_EA0_RDREQ + TCC_EA0_WRREQ) × 64` was
+wrong by 1.62× because EA0 counters are channel-0 only.
 
 ## Files
 
@@ -482,7 +496,7 @@ verified to match rocprof-compute within 3%.
 - `amd_scripts/set_waves_per_eu.py` — patch DaCe-generated HIP with waves_per_eu attribute
 - `amd_scripts/patch_cse.py` — patch redundant reads (confirmed unnecessary)
 - `amd_scripts/patch_lds_c2e_v2.py` — stage C2E gather through LDS (neutral)
-- `amd_scripts/extract_pmc.py` — extract per-kernel duration, HBM BW, L2 hit rate from rocprof-compute pmc_perf.csv
+- `amd_scripts/extract_pmc.py` — extract per-kernel duration, L1↔L2, L2-Fabric, HBM BW, L2 hit rate from rocprof-compute pmc_perf.csv
 - `workloads/rcu_amd_*/` — per-kernel profiling data (rocprof-compute output)
 - `pmc_perf.csv` — hardware counter data for all kernels
 

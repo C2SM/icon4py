@@ -6,6 +6,13 @@
 #SBATCH --partition=mi300
 #SBATCH --uenv=prgenv-gnu/25.12:2333839235
 #SBATCH --view=default
+#
+# Default uenv above is the ROCm 7.1 image. To run under a different ROCm
+# uenv (e.g. ROCm 7.2 for testing), override at submission time:
+#   sbatch --uenv=<image-id> --view=default amd_scripts/benchmark_solver.sh
+# install_icon4py_venv.sh and setup_env.sh both auto-detect the active
+# ROCm version, so the same .venv works across uenvs as long as you
+# rebuild via install_icon4py_venv.sh after switching.
 
 # Go to the root of the icon4py repository to run the script from there
 ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
@@ -30,7 +37,7 @@ export ICON_GRID="icon_benchmark_regional" # TODO(CSCS): Check also `icon_benchm
 
 # Run the benchmark and collect the runtime of the whole GT4Py program (see `GT4Py Timer Report` in the output)
 # The compiled GT4Py programs will be cached in the directory specified by `GT4PY_BUILD_CACHE_DIR` to be reused for running the profilers afterwards
-pytest -sv \
+.venv/bin/python -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
@@ -45,7 +52,7 @@ export ICON4PY_STENCIL_TEST_ITERATIONS=10
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=100
 # Can also add `--att` for thread tracing
 rocprofv3 --kernel-trace on --hip-trace on --marker-trace on --memory-copy-trace on --memory-allocation-trace on --output-format pftrace -o rocprofv3_${GT4PY_BUILD_CACHE_DIR} -- \
-    $(which python3.12) -m pytest -sv \
+    .venv/bin/python -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
@@ -68,7 +75,7 @@ export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=0
 export ICON4PY_STENCIL_TEST_ITERATIONS=1
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=1
 rocprof-compute profile --name rcu_${GT4PY_BUILD_CACHE_DIR} ${ROCPROF_COMPUTE_KERNEL_NAME_FILTER} --format-rocprof-output rocpd --kernel-names -R FP64 -- \
-    $(which python3.12) -m pytest -sv \
+    .venv/bin/python -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
