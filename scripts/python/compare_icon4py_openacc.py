@@ -35,10 +35,8 @@ output_filename = "bench_blueline_stencil_compute"
 
 # the default 'file_prefix' assumes that the json files are in the script folder
 file_prefix = pathlib.Path(__file__).parent
-openacc_input = file_prefix / "bencher=mch_icon-ch1_medium_stencils=0.604598=ACC.json"
-gt4py_input = {
-    "gt4py_v1.1.4": file_prefix / "gt4py_timers_gt4py114.json",
-}
+openacc_input = file_prefix / "../data/bencher=mch_icon-ch1_medium_stencils=0.604598=ACC.json"
+gt4py_input = {}
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 gt4py_unmatched_ncalls_threshold = (
     2  # ignore unmatched icon4py stencils if less than this threshold
