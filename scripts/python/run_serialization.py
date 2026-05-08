@@ -515,10 +515,10 @@ def run_experiment(
         raise
 
 
-def require_cli(command_name):
+def require_cli(command_name) -> None:
     if shutil.which(command_name) is None:
-        print(f"Error: '{command_name}' is not installed or not on PATH.")
-        sys.exit(1)
+        typer.echo(f"Error: '{command_name}' is not installed or not on PATH.")
+        raise typer.Exit(code=1)
 
 
 @cli.command()
