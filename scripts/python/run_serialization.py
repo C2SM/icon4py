@@ -84,9 +84,9 @@ class SerializationSettings:
         JOB_POLL_SECONDS = 10
 
         # Directories (adjust if needed)
-        ROOT_PROJECT_DIR = pathlib.Path( os.environ.get("SCRATCH", "/projects")) / "icon-exclaim.serialize"
+        ROOT_PROJECT_DIR = pathlib.Path( os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
-        ICON4PY_REPO_DIR = ICONF90_REPO_DIR / "externals" / "icon4py"
+        ICON4PY_REPO_DIR = ROOT_PROJECT_DIR / "icon4py"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
         RUNSCRIPTS_DIR = BUILD_DIR / "run"
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
