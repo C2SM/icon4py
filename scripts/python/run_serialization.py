@@ -29,7 +29,7 @@ import typer
 
 
 if TYPE_CHECKING:
-    from icon4py.model.testing import definitions, datatest_utils as dt_utils
+    from icon4py.model.testing import definitions
 else:
     definitions = None
     dt_utils = None
@@ -526,9 +526,10 @@ def run_serialization() -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
-    globals dt_utils, definitions
-    from icon4py.model.testing import datatest_utils as dt_utils
-    from icon4py.model.testing import definitions
+    import icon4py.model.testing.datatest_utils as _dt_utils
+    import icon4py.model.testing.definitions as _definitions
+    globals()["dt_utils"] = _dt_utils
+    globals()["definitions"] = _definitions
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
