@@ -27,7 +27,6 @@ from icon4py.model.testing import (
     serialbox,
     test_utils as test_helpers,
 )
-from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -58,26 +57,8 @@ def _get_metrics_factory(
 
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-        (
-            lowest_layer_thickness,
-            model_top_height,
-            stretch_factor,
-            damping_height,
-            rayleigh_coeff,
-            exner_expol,
-            vwind_offctr,
-            rayleigh_type,
-            thslp_zdiffu,
-            thhgtd_zdiffu,
-        ) = construct_metrics_config(experiment)
 
-        vertical_config = v_grid.VerticalGridConfig(
-            geometry.grid.num_levels,
-            lowest_layer_thickness=lowest_layer_thickness,
-            model_top_height=model_top_height,
-            stretch_factor=stretch_factor,
-            rayleigh_damping_height=damping_height,
-        )
+        vertical_config = experiment.config.vertical_grid
         vertical_grid = v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         )
@@ -86,6 +67,7 @@ def _get_metrics_factory(
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
             backend=backend,
+            config=experiment.config.interpolation,
             metadata=interpolation_attributes.attrs,
             exchange=exchange,
         )
@@ -96,14 +78,9 @@ def _get_metrics_factory(
             geometry_source=geometry,
             topography=topography,
             interpolation_source=interpolation_field_source,
+            config=experiment.config.metrics,
             backend=backend,
             metadata=attrs.attrs,
-            rayleigh_type=rayleigh_type,
-            rayleigh_coeff=rayleigh_coeff,
-            exner_expol=exner_expol,
-            vwind_offctr=vwind_offctr,
-            thslp_zdiffu=thslp_zdiffu,
-            thhgtd_zdiffu=thhgtd_zdiffu,
             exchange=exchange,
         )
         metrics_factories[registry_name] = factory
