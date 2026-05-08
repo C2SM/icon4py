@@ -65,9 +65,8 @@ def test_compute_diffusion_mask_and_coeff(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
-    (_, _, _, _, _, _, _, _, thslp_zdiffu, thhgtd_zdiffu) = definitions.construct_metrics_config(
-        experiment
-    )
+    thslp_zdiffu = experiment.config.metrics.thslp_zdiffu
+    thhgtd_zdiffu = experiment.config.metrics.thhgtd_zdiffu
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(
@@ -148,9 +147,9 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
-    (_, _, _, _, _, _, _, _, thslp_zdiffu, thhgtd_zdiffu) = definitions.construct_metrics_config(
-        experiment
-    )
+    thslp_zdiffu = experiment.config.metrics.thslp_zdiffu
+    thhgtd_zdiffu = experiment.config.metrics.thhgtd_zdiffu
+
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(
