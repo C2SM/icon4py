@@ -21,7 +21,7 @@ logging.basicConfig(
 from icon4py.bindings.grid_wrapper import grid_init
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def grid_init_wrapper(
     cell_starts,
     cell_starts_size_0,
@@ -1165,6 +1165,6 @@ def grid_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1

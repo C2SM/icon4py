@@ -29,7 +29,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.math import helpers as math_helpers, xp_utils
+from icon4py.model.common.math import coordinate_transformations as coord_trans, utils as math_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
@@ -187,7 +187,7 @@ class GridGeometry(factory.FieldSource):
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         provider = factory.ProgramFieldProvider(
-            func=math_helpers.compute_inverse_on_edges,
+            func=math_utils.compute_inverse_on_edges,
             deps={"f": field_name},
             fields={"f_inverse": name},
             domain={
@@ -355,7 +355,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(mean_dual_cell_area_np)
 
         characteristic_length_np = factory.NumpyDataProvider(
-            func=xp_utils.compute_sqrt,
+            func=math_utils.compute_sqrt,
             domain=(),
             deps={
                 "input_val": attrs.MEAN_DUAL_AREA,
@@ -396,7 +396,7 @@ class GridGeometry(factory.FieldSource):
 
         # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
         normal_uv = factory.ProgramFieldProvider(
-            func=math_helpers.compute_zonal_and_meridional_components_on_edges,
+            func=coord_trans.compute_zonal_and_meridional_components_on_edges,
             deps={
                 "lat": attrs.EDGE_LAT,
                 "lon": attrs.EDGE_LON,
@@ -419,7 +419,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(normal_uv)
 
         dual_uv = factory.ProgramFieldProvider(
-            func=math_helpers.compute_zonal_and_meridional_components_on_edges,
+            func=coord_trans.compute_zonal_and_meridional_components_on_edges,
             deps={
                 "lat": attrs.EDGE_LAT,
                 "lon": attrs.EDGE_LON,
@@ -696,7 +696,7 @@ class GridGeometry(factory.FieldSource):
     def _register_cartesian_coordinates_icosahedron(self) -> None:
         """Register Cartesian coordinate conversions for icosahedron geometry."""
         cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
-            func=math_helpers.geographical_to_cartesian_on_vertices.with_backend(self.backend),
+            func=coord_trans.geographical_to_cartesian_on_vertices.with_backend(self.backend),
             domain={
                 dims.VertexDim: (
                     h_grid.vertex_domain(h_grid.Zone.LOCAL),
@@ -716,7 +716,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
-            func=math_helpers.geographical_to_cartesian_on_edges.with_backend(self.backend),
+            func=coord_trans.geographical_to_cartesian_on_edges.with_backend(self.backend),
             domain={
                 dims.EdgeDim: (
                     h_grid.edge_domain(h_grid.Zone.LOCAL),
@@ -736,7 +736,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_edge_centers)
         cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
-            func=math_helpers.geographical_to_cartesian_on_cells.with_backend(self.backend),
+            func=coord_trans.geographical_to_cartesian_on_cells.with_backend(self.backend),
             domain={
                 dims.CellDim: (
                     h_grid.cell_domain(h_grid.Zone.LOCAL),
