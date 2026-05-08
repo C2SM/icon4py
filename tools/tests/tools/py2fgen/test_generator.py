@@ -17,10 +17,11 @@ from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin, g
 
 
 def test_parse_functions_on_wrapper():
-    # TODO(): make independent of `bindings`
-    module_path = "icon4py.bindings.diffusion_wrapper"
-    functions = ["diffusion_init", "diffusion_run"]
-    plugin = get_cffi_description(module_path, functions, "diffusion_plugin")
+    from tests.tools.py2fgen.wrappers import simple
+
+    plugin = get_cffi_description(
+        [simple.square_from_function, simple.square_error], "square_plugin"
+    )
     assert isinstance(plugin, BindingsLibrary)
 
 
