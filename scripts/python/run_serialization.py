@@ -25,15 +25,14 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-import lazy_loader as lazy
 import typer
 
 
 if TYPE_CHECKING:
-    from icon4py.model.testing import definitions
+    from icon4py.model.testing import definitions, datatest_utils as dt_utils
 else:
-    definitions = lazy.load("icon4py.model.testing.definitions")
-    dt_utils = lazy.load("icon4py.model.testing.datatest_utils")
+    definitions = None
+    dt_utils = None
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
@@ -525,6 +524,12 @@ def require_cli(command_name):
 @cli.command()
 def run_serialization() -> None:
     """Run the serialization experiment series."""
+
+    # Import here to reduce startup time for the CLI
+    globals dt_utils, definitions
+    from icon4py.model.testing import datatest_utils as dt_utils
+    from icon4py.model.testing import definitions
+
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
 
