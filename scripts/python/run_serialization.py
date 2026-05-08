@@ -84,7 +84,7 @@ class SerializationSettings:
         JOB_POLL_SECONDS = 10
 
         # Directories (adjust if needed)
-        ROOT_PROJECT_DIR = pathlib.Path( os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
+        ROOT_PROJECT_DIR = pathlib.Path(os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
         ICON4PY_REPO_DIR = ROOT_PROJECT_DIR / "icon4py"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
@@ -515,10 +515,10 @@ def run_experiment(
         raise
 
 
-def require_cli(command_name):
+def require_cli(command_name) -> None:
     if shutil.which(command_name) is None:
-        print(f"Error: '{command_name}' is not installed or not on PATH.")
-        sys.exit(1)
+        typer.echo(f"Error: '{command_name}' is not installed or not on PATH.")
+        raise typer.Exit(code=1)
 
 
 @cli.command()
@@ -528,6 +528,7 @@ def run_serialization() -> None:
     # Import here to reduce startup time for the CLI
     import icon4py.model.testing.datatest_utils as _dt_utils
     import icon4py.model.testing.definitions as _definitions
+
     globals()["dt_utils"] = _dt_utils
     globals()["definitions"] = _definitions
 

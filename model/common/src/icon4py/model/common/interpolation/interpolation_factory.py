@@ -285,9 +285,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         lsq_pseudoinv = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_lsq_coeffs,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
             domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
@@ -321,11 +319,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.CellDim,
-                            stream=decomposition.BLOCK,
-                        ),
+                        exchange=self._exchange,
                     ),
                     fields=(attrs.C_BLN_AVG,),
                     domain=(dims.CellDim, dims.C2E2CODim),
@@ -395,11 +389,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight_torus,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.CellDim,
-                            stream=decomposition.BLOCK,
-                        ),
+                        exchange=self._exchange,
                     ),
                     fields=(attrs.C_BLN_AVG,),
                     domain=(dims.CellDim, dims.C2E2CODim),
@@ -466,9 +456,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geofac_grg = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_geofac_grg,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -491,9 +479,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_flx_avg = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_e_flx_avg,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),

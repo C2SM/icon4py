@@ -1991,6 +1991,7 @@ version = "0.1.0"
 source = { editable = "bindings" }
 dependencies = [
     { name = "cffi" },
+    { name = "click" },
     { name = "gt4py" },
     { name = "icon4py-atmosphere-diffusion" },
     { name = "icon4py-atmosphere-dycore" },
@@ -2017,6 +2018,7 @@ profiling = [
 [package.metadata]
 requires-dist = [
     { name = "cffi", specifier = ">=1.5" },
+    { name = "click", specifier = ">=8.0" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "gt4py", specifier = "==1.1.9" },
