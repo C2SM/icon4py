@@ -49,8 +49,7 @@ def write_if_changed(content: str, path: pathlib.Path, *, force: bool = False) -
     if not force and path.exists() and path.read_text(encoding="utf-8") == content:
         return False
     path.parent.mkdir(exist_ok=True, parents=True)
-    with path.open("w", encoding="utf-8") as f:
-        f.write(content)
+    path.write_text(content, encoding="utf-8")
     return True
 
 
