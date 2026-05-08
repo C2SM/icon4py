@@ -29,7 +29,10 @@ import typer
 
 
 if TYPE_CHECKING:
-    from icon4py.model.testing import datatest_utils as dt_utils, definitions
+    from icon4py.model.testing import definitions
+else:
+    definitions = None
+    dt_utils = None
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
@@ -45,9 +48,8 @@ class SerializationSettings:
     sbatch_uenv: str
     sbatch_uenv_view: str
     job_poll_seconds: int
-    projects_dir: pathlib.Path
-    iconf90_dir: pathlib.Path
-    iconf90_build_folder: str
+    iconf90_repo_dir: pathlib.Path
+    icon4py_repo_dir: pathlib.Path
     build_dir: pathlib.Path
     runscript_dir: pathlib.Path
     experiments_dir: pathlib.Path
@@ -62,10 +64,6 @@ class SerializationSettings:
         # We hardcode the settings here for simplicity, but they could be
         # extended to be read from a config file or command-line arguments
         # if needed in the future.
-
-        from icon4py.model.testing import (
-            definitions,  # Import here to reduce startup time for the CLI
-        )
 
         COMM_SIZES: list[int] = [1, 2, 4]
 
@@ -85,15 +83,11 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Base directories (adjust if needed)
-        PROJECTS_DIR = pathlib.Path(
-            os.environ.get("SCRATCH", str(pathlib.Path.home() / "projects"))
-        )
-        ICONF90_DIR = PROJECTS_DIR / "icon-exclaim.serialize"
-        ICONF90_BUILD_FOLDER = "build_serialize"
-
-        # Derived paths
-        BUILD_DIR = ICONF90_DIR / ICONF90_BUILD_FOLDER
+        # Directories (adjust if needed)
+        ROOT_PROJECT_DIR = pathlib.Path( os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
+        ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
+        ICON4PY_REPO_DIR = ROOT_PROJECT_DIR / "icon4py"
+        BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
         RUNSCRIPTS_DIR = BUILD_DIR / "run"
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 
@@ -112,9 +106,8 @@ class SerializationSettings:
             sbatch_uenv=SBATCH_UENV,
             sbatch_uenv_view=SBATCH_UENV_VIEW,
             job_poll_seconds=JOB_POLL_SECONDS,
-            projects_dir=PROJECTS_DIR,
-            iconf90_dir=ICONF90_DIR,
-            iconf90_build_folder=ICONF90_BUILD_FOLDER,
+            iconf90_repo_dir=ICONF90_REPO_DIR,
+            icon4py_repo_dir=ICON4PY_REPO_DIR,
             build_dir=BUILD_DIR,
             runscript_dir=RUNSCRIPTS_DIR,
             experiments_dir=EXPERIMENTS_DIR,
@@ -426,6 +419,14 @@ def copy_ser_data(
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
+    # Translate to json and copy NAMELIST_ICON_output_atm
+    cmd = [
+        "f90nml",
+        str(exp_dir / definitions.NAMELIST_ICON_FNAME),
+        str(dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")),
+    ]
+    _ = run_command(cmd)
+
     # Copy NAMELIST files
     namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
     for src_file in namelist_files:
@@ -463,7 +464,7 @@ def generate_update_script(
 ) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
-        settings.iconf90_dir / "run" / get_nmlfile_name(experiment),
+        settings.iconf90_repo_dir / "run" / get_nmlfile_name(experiment),
         settings.runscript_dir / get_nmlfile_name(experiment),
     )
 
@@ -514,11 +515,26 @@ def run_experiment(
         raise
 
 
+def require_cli(command_name):
+    if shutil.which(command_name) is None:
+        print(f"Error: '{command_name}' is not installed or not on PATH.")
+        sys.exit(1)
+
+
 @cli.command()
 def run_serialization() -> None:
     """Run the serialization experiment series."""
+
+    # Import here to reduce startup time for the CLI
+    import icon4py.model.testing.datatest_utils as _dt_utils
+    import icon4py.model.testing.definitions as _definitions
+    globals()["dt_utils"] = _dt_utils
+    globals()["definitions"] = _definitions
+
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
+
+    require_cli("f90nml")
 
     total_tasks = len(settings.experiments) * len(settings.comm_sizes)
     log_status(
