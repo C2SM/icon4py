@@ -144,16 +144,19 @@ Functions, methods, and dataclasses that take a **single argument** should have 
 # single argument — positional
 result = my_func(value)
 
+
 # two or more arguments — keyword-only enforced at definition
 def my_func(*, a, b, c): ...
+
+
 my_func(a=1, b=2, c=3)
+
 
 @dataclass(kw_only=True)
 class MyClass:
     a: int
     b: str
 ```
-
 
 ## Testing
 
