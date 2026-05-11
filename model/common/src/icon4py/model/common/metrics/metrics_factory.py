@@ -157,9 +157,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_coordinates_on_half_levels = factory.NumpyDataProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
             domain=(dims.CellDim, dims.KHalfDim),
@@ -648,9 +646,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_flat_max_idx,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -762,9 +758,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_zdiff_gradp_np = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_zdiff_gradp.compute_zdiff_gradp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -826,9 +820,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_wgtfacq_e = factory.NumpyDataProvider(
             func=functools.partial(
                 weight_factors.compute_wgtfacq_e_dsl,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,

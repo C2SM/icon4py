@@ -22,7 +22,7 @@ from icon4py.bindings.dycore_wrapper import solve_nh_run
 from icon4py.bindings.dycore_wrapper import solve_nh_init
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def solve_nh_run_wrapper(
     rho_now,
     rho_now_size_0,
@@ -1167,12 +1167,12 @@ def solve_nh_run_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def solve_nh_init_wrapper(
     c_lin_e,
     c_lin_e_size_0,
@@ -2650,6 +2650,6 @@ def solve_nh_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
