@@ -133,6 +133,28 @@ and, if needed, a brief comment for future reference:
 return undeclared_symbol  # noqa: F821 [undefined-name] on purpose to trigger black-magic
 ```
 
+### Keyword arguments
+
+Functions, methods, and dataclasses that take a **single argument** should have it passed **positionally**. Those taking **two or more arguments** must enforce **keyword-only** passing:
+
+- For dataclasses: use `kw_only=True` in the `@dataclass` (or equivalent) decorator.
+- For functions and methods: use a bare `*` separator in the signature before the arguments.
+
+```python
+# single argument — positional
+result = my_func(value)
+
+# two or more arguments — keyword-only enforced at definition
+def my_func(*, a, b, c): ...
+my_func(a=1, b=2, c=3)
+
+@dataclass(kw_only=True)
+class MyClass:
+    a: int
+    b: str
+```
+
+
 ## Testing
 
 Testing components is a critical part of a software development project. We follow standard software engineering practices and write unit, integration, and regression tests. [Doctests][doctest] are great for documentation purposes, but they lack features and are difficult to debug, therefore they should not be used as replacement for proper unit tests except in trivial cases.
