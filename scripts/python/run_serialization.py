@@ -519,7 +519,7 @@ def run_serialization() -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
-    global dt_utils, definitions  # noqa: PLW0603
+    global dt_utils, definitions  # noqa: PLW0603 [global-statement]
     import icon4py.model.testing.datatest_utils as dt_utils
     from icon4py.model.testing import definitions
 
