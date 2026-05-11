@@ -100,7 +100,7 @@ class named_property(property, Generic[C, T]):
         return result
 
 
-class Pair(Generic[T]):  # noqa: PLW1641
+class Pair(Generic[T]):  # noqa: PLW1641 [eq-without-hash]
     """
     Generic class representing a pair of values.
 

@@ -63,7 +63,7 @@ class SerializationSettings:
         # extended to be read from a config file or command-line arguments
         # if needed in the future.
 
-        from icon4py.model.testing import (  # noqa: PLC0415
+        from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
             definitions,  # Import here to reduce startup time for the CLI
         )
 

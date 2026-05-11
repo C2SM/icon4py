@@ -182,7 +182,7 @@ def load_openacc_log(filename: pathlib.Path) -> dict:
 
 
 def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
-    import numpy as np  # noqa: PLC0415
+    import numpy as np  # noqa: PLC0415 [import-outside-top-level]
 
     log.info(f"Loading icon4py data from {filename}")
     with filename.open("r") as f:
@@ -289,8 +289,8 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
 
 @cli.command(help=__doc__)
 def compare_icon4py_openacc():
-    import matplotlib.pyplot as plt  # noqa: PLC0415
-    import numpy as np  # noqa: PLC0415
+    import matplotlib.pyplot as plt  # noqa: PLC0415 [import-outside-top-level]
+    import numpy as np  # noqa: PLC0415 [import-outside-top-level]
 
     openacc_meas, openacc_count = load_openacc_log(openacc_input)
 

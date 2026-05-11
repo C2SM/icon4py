@@ -53,7 +53,7 @@ def pytest_configure(config):
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
     if with_mpi or only_mpi:
-        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415
+        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
             import_error,
             mpi4py,
         )
@@ -63,7 +63,9 @@ def pytest_configure(config):
                 f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
             )
 
-        from icon4py.model.common.decomposition.mpi_decomposition import init_mpi  # noqa: PLC0415
+        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+            init_mpi,
+        )
 
         init_mpi()
 

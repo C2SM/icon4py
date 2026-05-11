@@ -50,7 +50,7 @@ class MetisDecomposer(Decomposer):
         Returns: data_alloc.NDArray: array with partition label (int, rank number) for each cell
         """
 
-        import pymetis  # noqa: PLC0415
+        import pymetis  # noqa: PLC0415 [import-outside-top-level]
 
         # Invalid indices are not allowed here. Metis will segfault or fail if
         # there are any invalid indices in the adjacency matrix.

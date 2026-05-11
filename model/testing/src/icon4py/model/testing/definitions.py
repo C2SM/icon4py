@@ -255,7 +255,9 @@ def construct_graupel_config(
 def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
 ) -> diffusion.DiffusionConfig:
-    from icon4py.model.atmosphere.diffusion import diffusion  # noqa: PLC0415
+    from icon4py.model.atmosphere.diffusion import (  # noqa: PLC0415 [import-outside-top-level]
+        diffusion,
+    )
 
     if experiment == Experiments.MCH_CH_R04B09:
         return diffusion.DiffusionConfig(
@@ -314,7 +316,7 @@ def construct_diffusion_config(
 
 
 def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
-    from icon4py.model.atmosphere.dycore import (  # noqa: PLC0415
+    from icon4py.model.atmosphere.dycore import (  # noqa: PLC0415 [import-outside-top-level]
         dycore_states,
         solve_nonhydro as solve_nh,
     )
