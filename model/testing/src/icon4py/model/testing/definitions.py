@@ -206,9 +206,9 @@ class Experiment:
     grid: GridDescription
     num_levels: int
     version: int = 3
-    # TODO (jcanton): _processor_props doesn't really belong here. find a
-    # better way. prefer error to default single proc
-    _processor_props: decomp_defs.ProcessProperties | None = dataclasses.field(
+    # TODO (jcanton): _process_props doesn't really belong here. find a better
+    # way. prefer error to default single proc
+    _process_props: decomp_defs.ProcessProperties | None = dataclasses.field(
         default=None, repr=False, init=False, compare=False
     )
     _config: ExperimentConfig | None = dataclasses.field(
@@ -220,12 +220,10 @@ class Experiment:
         """Lazily load the experiment configuration on first access.
         """
         if self._config is None:
-            if self._processor_props is None:
-                self._processor_props = decomp_defs.get_processor_properties(
-                    decomp_defs.get_runtype(with_mpi=False)
-                )
-            dt_utils.download_experiment(self, self._processor_props)
-            self._config = dt_utils.create_experiment_configuration(self, self._processor_props)
+            if self._process_props is None:
+                self._process_props = decomp_defs.SingleNodeProcessProperties()
+            dt_utils.download_experiment(self, self._process_props)
+            self._config = dt_utils.create_experiment_configuration(self, self._process_props)
         return self._config
 
 

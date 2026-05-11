@@ -114,9 +114,9 @@ def download_experiment(
     """Download data and config for an experiment--if not already present."""
     comm_size = processor_props.comm_size
     try:
-        root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
+        root_url = definitions.TESTDATA_ROOT_URL
         archive_filename = get_experiment_archive_filename(experiment, comm_size)
-        archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
+        archive_path = definitions.EXPERIMENT_DATA_DIR + "/" + archive_filename
         uri = get_experiment_archive_url(root_url, archive_path)
         destination_path = get_datapath_for_experiment(experiment, processor_props)
         data_handling.download_test_data(destination_path.parent, uri)
