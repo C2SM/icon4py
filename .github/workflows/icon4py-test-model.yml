@@ -12,8 +12,8 @@ on:
 env:
   ICON4PY_TEST_DATA_PATH: "${{ github.workspace }}/testdata"
   NUM_PROCESSES: auto
-  ICON4PY_ENABLE_GRID_DOWNLOAD: true
-  ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
+  ICON4PY_ENABLE_GRID_DOWNLOAD: false
+  ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
   PYTEST_ADDOPTS: "--durations=0"
 
 jobs:
