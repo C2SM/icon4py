@@ -12,6 +12,7 @@ import pytest
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
@@ -21,7 +22,6 @@ from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
-    exchange_utils,
     grid_utils,
     grid_utils as gridtest_utils,
     serialbox as sb,
@@ -162,7 +162,7 @@ def test_advection_run_single_step(
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
         geometry_type=icon_grid.grid_params.geometry_type,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=decomposition.single_node_exchange,
     )
 
     least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
@@ -270,7 +270,7 @@ def test_compute_lsq_coeffs(
         start_idx,
         min_rlcell_int,
         icon_grid.grid_params.geometry_type,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=decomposition.single_node_exchange,
     )
 
     assert test_helpers.dallclose(
