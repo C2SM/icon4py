@@ -57,7 +57,7 @@ RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
 ENV NVHPC_SILENT=true
 ENV NVHPC_INSTALL_DIR=/opt/nvidia/hpc_sdk
 ENV NVHPC_INSTALL_TYPE=single
-RUN cd /opt/nvidia/${HPC_SDK_NAME} && sudo bash -x ./install
+RUN cd /opt/nvidia/${HPC_SDK_NAME} && bash -x ./install
 
 # Set environment variables
 ARG ARCH=aarch64
