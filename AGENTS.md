@@ -4,7 +4,7 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 ## Coding guidelines
 
-Follow the conventions in `CODING_GUIDELINES.md` at the repo root.
+Always read the CODING_GUIDELINES.md document first and follow it.
 
 ## Monorepo structure
 
