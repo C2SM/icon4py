@@ -247,13 +247,13 @@ def test_grid_params(
     match geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
             params = icon.GridParams(
-                params=icon.IcosahedronParams(
+                icon.IcosahedronParams(
                     subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),  # type: ignore[arg-type]
                 ),
             )
         case icon.GeometryType.TORUS:
             params = icon.GridParams(
-                params=icon.TorusParams(
+                icon.TorusParams(
                     domain_length=42.0,
                     domain_height=100.5,
                 ),

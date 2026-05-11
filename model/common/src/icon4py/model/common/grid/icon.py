@@ -90,29 +90,29 @@ class TorusParams:
         return GeometryType.TORUS
 
 
-@dataclasses.dataclass(kw_only=True, frozen=True)
+@dataclasses.dataclass(frozen=True)
 class GridParams:
-    params: IcosahedronParams | TorusParams | None = None
+    _params: IcosahedronParams | TorusParams | None = None
 
     @property
     def geometry_type(self) -> GeometryType | None:
-        return self.params.geometry_type if self.params is not None else None
+        return self._params.geometry_type if self._params is not None else None
 
     @property
     def radius(self) -> float | None:
-        return self.params.radius if isinstance(self.params, IcosahedronParams) else None
+        return self._params.radius if isinstance(self._params, IcosahedronParams) else None
 
     @property
     def domain_length(self) -> float | None:
-        return self.params.domain_length if isinstance(self.params, TorusParams) else None
+        return self._params.domain_length if isinstance(self._params, TorusParams) else None
 
     @property
     def domain_height(self) -> float | None:
-        return self.params.domain_height if isinstance(self.params, TorusParams) else None
+        return self._params.domain_height if isinstance(self._params, TorusParams) else None
 
     @property
     def subdivision(self) -> GridSubdivision | None:
-        return self.params.subdivision if isinstance(self.params, IcosahedronParams) else None
+        return self._params.subdivision if isinstance(self._params, IcosahedronParams) else None
 
 
 @dataclasses.dataclass(frozen=True)

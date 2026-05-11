@@ -497,14 +497,14 @@ class GridManager:
         match geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
                 return icon.GridParams(
-                    params=icon.IcosahedronParams(
+                    icon.IcosahedronParams(
                         subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
                         radius=sphere_radius,
                     ),
                 )
             case icon.GeometryType.TORUS:
                 return icon.GridParams(
-                    params=icon.TorusParams(
+                    icon.TorusParams(
                         domain_length=domain_length,
                         domain_height=domain_height,
                     ),

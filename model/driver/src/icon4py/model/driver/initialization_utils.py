@@ -601,13 +601,13 @@ def _create_grid_params(
     match grid_geometry_type:
         case icon_grid.GeometryType.ICOSAHEDRON:
             grid_params = icon_grid.GridParams(
-                params=icon_grid.IcosahedronParams(
+                icon_grid.IcosahedronParams(
                     subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
                 ),
             )
         case icon_grid.GeometryType.TORUS:
             grid_params = icon_grid.GridParams(
-                params=icon_grid.TorusParams(
+                icon_grid.TorusParams(
                     domain_length=grid.getncattr("domain_length"),
                     domain_height=grid.getncattr("domain_height"),
                 ),
