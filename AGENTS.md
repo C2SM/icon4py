@@ -2,6 +2,10 @@
 
 ICON4Py is a Python implementation of the Fortran [ICON climate and weather model](https://www.icon-model.org/). The upstream open source release is available at https://gitlab.dkrz.de/icon/icon-model.
 
+## Coding guidelines
+
+Follow the conventions in `CODING_GUIDELINES.md` at the repo root.
+
 ## Monorepo structure
 
 uv workspace with 11 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
