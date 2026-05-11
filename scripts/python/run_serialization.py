@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 import pathlib
 import re
@@ -25,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+import f90nml
 import typer
 
 
@@ -420,12 +422,9 @@ def copy_ser_data(
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
     # Translate to json and copy NAMELIST_ICON_output_atm
-    cmd = [
-        "f90nml",
-        str(exp_dir / definitions.NAMELIST_ICON_FNAME),
-        str(dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")),
-    ]
-    _ = run_command(cmd)
+    nml = f90nml.read(exp_dir / definitions.NAMELIST_ICON_FNAME)
+    with (dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")).open("w") as f:
+        json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files
     namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
@@ -515,25 +514,17 @@ def run_experiment(
         raise
 
 
-def require_cli(command_name) -> None:
-    if shutil.which(command_name) is None:
-        typer.echo(f"Error: '{command_name}' is not installed or not on PATH.")
-        raise typer.Exit(code=1)
-
-
 @cli.command()
 def run_serialization() -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
-    global dt_utils, definitions
+    global dt_utils, definitions  # noqa: PLW0603
     import icon4py.model.testing.datatest_utils as dt_utils
-    import icon4py.model.testing.definitions as definitions
+    from icon4py.model.testing import definitions
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
-
-    require_cli("f90nml")
 
     total_tasks = len(settings.experiments) * len(settings.comm_sizes)
     log_status(
