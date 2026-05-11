@@ -34,7 +34,7 @@ We deviate from the [Google Python Style Guide][google-style-guide] only in the 
 Further guidance and repository- or package specific guidelines can be found in the respective `docs` folders and `README.md` files.
 In particular
 
-- [naming conventions for stencils](model/docs/stencil_naming_convention.md)
+- [naming conventions for stencils](docs/stencil_naming_convention.md)
 - [liskov integration style guide ](tools/docs/ICON_Liskov_integration_style_guide.md)
 
 ### Common questions
