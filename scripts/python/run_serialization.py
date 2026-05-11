@@ -526,11 +526,9 @@ def run_serialization() -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
-    import icon4py.model.testing.datatest_utils as _dt_utils
-    import icon4py.model.testing.definitions as _definitions
-
-    globals()["dt_utils"] = _dt_utils
-    globals()["definitions"] = _definitions
+    global dt_utils, definitions
+    import icon4py.model.testing.datatest_utils as dt_utils
+    import icon4py.model.testing.definitions as definitions
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
