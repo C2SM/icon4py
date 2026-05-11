@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import importlib
 import logging
 import pathlib
 import sysconfig
@@ -62,7 +63,9 @@ def main(
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
-    plugin = _generator.get_cffi_description(module_import_path, functions, library_name)
+    module = importlib.import_module(module_import_path)
+    callables = [getattr(module, name) for name in functions]
+    plugin = _generator.get_cffi_description(callables, library_name)
 
     logger.info("Generating C header...")
     c_header = _codegen.generate_c_header(plugin)
@@ -79,7 +82,7 @@ def main(
         (python_wrapper, f"{plugin.library_name}.py", "Python wrapper"),
         (f90_interface, f"{plugin.library_name}.f90", "Fortran interface"),
     ]:
-        changed = _utils.write_file_if_changed(content, output_path, fname, force=regenerate)
+        changed = _utils.write_if_changed(content, output_path / fname, force=regenerate)
         logger.info("%s %s.", label, "changed" if changed else "is up to date")
         any_changed |= changed
 

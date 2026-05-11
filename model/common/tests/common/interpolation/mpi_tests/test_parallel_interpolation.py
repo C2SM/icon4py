@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -41,9 +41,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox as sb
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
@@ -69,8 +66,8 @@ def test_distributed_interpolation_with_custom_tolerance(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -108,8 +105,8 @@ def test_distributed_interpolation_fields(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -131,8 +128,8 @@ def test_distributed_interpolation_grg(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
@@ -165,8 +162,8 @@ def test_distributed_interpolation_geofac_rot(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
@@ -201,8 +198,8 @@ def test_distributed_interpolation_rbf(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -227,8 +224,8 @@ def test_distributed_interpolation_lsq_pseudoinv(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)

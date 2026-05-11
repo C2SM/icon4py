@@ -5,16 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import exp, log, where
 
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
-
-
-dycore_consts: Final = constants.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -42,14 +39,14 @@ def _update_theta_and_exner_in_halo(
         mask_prog_halo_c,
         rho_now
         * theta_v_now
-        * ((exner_new / exner_now - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
+        * ((exner_new / exner_now - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd + wpfloat("1.0"))
         / rho_new,
         exner_new,
     )
     exner_new = where(
         mask_prog_halo_c,
         exner_new,
-        exp(dycore_consts.rd_o_cvd * log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
+        exp(PhysicsConstants.rd_o_cvd * log(PhysicsConstants.rd_o_p0ref * rho_new * exner_new)),
     )
 
     return theta_v_new, exner_new

@@ -14,10 +14,11 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, exchange_utils, test_utils as testing_helpers
+from icon4py.model.testing import definitions, test_utils as testing_helpers
 from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -351,7 +352,6 @@ def test_compute_exner_w_implicit_weight_parameter(
         case _:
             vwind_offctr = 0.15
 
-    xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.get_connectivity(dims.C2E).ndarray,
         vct_a=grid_savepoint.vct_a().ndarray,
@@ -362,7 +362,6 @@ def test_compute_exner_w_implicit_weight_parameter(
         vwind_offctr=vwind_offctr,
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
-        array_ns=xp,
     )
     assert testing_helpers.dallclose(
         vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(exner_w_implicit_weight_parameter)
@@ -420,15 +419,13 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
 
-    xp = data_alloc.import_array_ns(backend)
     flat_idx_max = mf.compute_flat_max_idx(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
+        exchange=decomposition.single_node_exchange,
     )
     # TODO (nfarabullini): fix type ignore
     flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]

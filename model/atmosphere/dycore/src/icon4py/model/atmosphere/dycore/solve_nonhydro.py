@@ -157,6 +157,7 @@ class NonHydrostaticConfig:
         l_vert_nested: bool = False,
         deepatmos_mode: bool = False,
         iau_init: bool = False,
+        extra_diffu: bool = True,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -196,6 +197,7 @@ class NonHydrostaticConfig:
         #: off-centering of velocity advection in corrector step
         self.veladv_offctr: float = veladv_offctr
 
+        # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
         #: scaling factor for divergence damping
         self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
         """
@@ -280,6 +282,10 @@ class NonHydrostaticConfig:
         #: incremental analysis init mode, defined as one of the ICON init modes
         self.iau_init: bool = iau_init
 
+        #: Apply additional diffusion at grid points close to CFL limit
+        #: Called 'lextra_diffu' in mo_nonhydrostatic_nml.f90
+        self.extra_diffu: bool = extra_diffu
+
         self._validate()
 
     def _validate(self):
@@ -308,6 +314,11 @@ class NonHydrostaticConfig:
         if self.rayleigh_type != constants.RayleighType.KLEMP:
             raise NotImplementedError(
                 "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
+            )
+
+        if not self.extra_diffu:
+            raise NotImplementedError(
+                "extra_diffu=False is not supported; only True is implemented"
             )
 
 

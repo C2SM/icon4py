@@ -6,12 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Callable
-from types import ModuleType
-
 import gt4py.next as gtx
-import numpy as np
 
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -25,13 +23,13 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
     nlev: int,
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
+    exchange: decomposition.ExchangeRuntime,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
 
-    exchange(z_me)
+    exchange.exchange(dims.EdgeDim, z_me, stream=decomposition.BLOCK)
 
     z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
@@ -130,8 +128,7 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
 
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
 
-    # TODO(havogt): NumpyDataProvider needs to be extended to support implict exchange.
-    exchange(zdiff_gradp[:, 0, :])
-    exchange(zdiff_gradp[:, 1, :])
+    exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 0, :], stream=decomposition.BLOCK)
+    exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 1, :], stream=decomposition.BLOCK)
 
     return zdiff_gradp, vertoffset_gradp

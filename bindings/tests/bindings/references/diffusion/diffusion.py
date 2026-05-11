@@ -22,7 +22,7 @@ from icon4py.bindings.diffusion_wrapper import diffusion_run
 from icon4py.bindings.diffusion_wrapper import diffusion_init
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def diffusion_run_wrapper(
     w,
     w_size_0,
@@ -335,12 +335,12 @@ def diffusion_run_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 
 
-@ffi.def_extern()
+@ffi.def_extern(error=2)
 def diffusion_init_wrapper(
     theta_ref_mc,
     theta_ref_mc_size_0,
@@ -391,11 +391,20 @@ def diffusion_init_wrapper(
     hdiff_efdt_ratio,
     hdiff_w_efdt_ratio,
     smagorinski_scaling_factor,
+    smagorinski_scaling_factor2,
+    smagorinski_scaling_factor3,
+    smagorinski_scaling_factor4,
+    smagorinski_scaling_height,
+    smagorinski_scaling_height2,
+    smagorinski_scaling_height3,
+    smagorinski_scaling_height4,
     hdiff_temp,
     denom_diffu_v,
     nudge_max_coeff,
     itype_sher,
-    ltkeshs,
+    iforcing,
+    a_hshr,
+    loutshs,
     backend,
     on_gpu,
 ):
@@ -566,11 +575,20 @@ def diffusion_init_wrapper(
                 hdiff_efdt_ratio=hdiff_efdt_ratio,
                 hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
                 smagorinski_scaling_factor=smagorinski_scaling_factor,
+                smagorinski_scaling_factor2=smagorinski_scaling_factor2,
+                smagorinski_scaling_factor3=smagorinski_scaling_factor3,
+                smagorinski_scaling_factor4=smagorinski_scaling_factor4,
+                smagorinski_scaling_height=smagorinski_scaling_height,
+                smagorinski_scaling_height2=smagorinski_scaling_height2,
+                smagorinski_scaling_height3=smagorinski_scaling_height3,
+                smagorinski_scaling_height4=smagorinski_scaling_height4,
                 hdiff_temp=hdiff_temp,
                 denom_diffu_v=denom_diffu_v,
                 nudge_max_coeff=nudge_max_coeff,
                 itype_sher=itype_sher,
-                ltkeshs=ltkeshs,
+                iforcing=iforcing,
+                a_hshr=a_hshr,
+                loutshs=loutshs,
                 backend=backend,
             )
 
@@ -803,6 +821,6 @@ def diffusion_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1

@@ -5,11 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import enum
+
 import gt4py.next as gtx
-from gt4py.eve import utils as eve_utils
 
 
-class LiquidAutoConversionType(eve_utils.FrozenNamespace[gtx.int32]):
+class LiquidAutoConversionType(gtx.int32, enum.Enum):
     """
     Options for computing liquid auto conversion rate
     """
@@ -20,7 +21,7 @@ class LiquidAutoConversionType(eve_utils.FrozenNamespace[gtx.int32]):
     SEIFERT_BEHENG = 1
 
 
-class SnowInterceptParametererization(eve_utils.FrozenNamespace[gtx.int32]):
+class SnowInterceptParametererization(gtx.int32, enum.Enum):
     """
     Options for deriving snow intercept parameter
     """
