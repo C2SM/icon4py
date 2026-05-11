@@ -54,7 +54,9 @@ RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
     rm /tmp/nvhpc.tar.gz
 
-ENV NVHPC_SILENT=1
+ENV NVHPC_SILENT=true
+ENV NVHPC_INSTALL_DIR=/opt/nvidia/hpc_sdk
+ENV NVHPC_INSTALL_TYPE=single
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
 # Set environment variables
