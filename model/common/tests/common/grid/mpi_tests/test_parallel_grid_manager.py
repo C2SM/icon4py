@@ -645,25 +645,7 @@ def test_metrics_mask_prog_halo_c(
 
     file = dt_utils.get_grid_filepath(experiment.grid)
 
-    (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
-    ) = test_defs.construct_metrics_config(experiment)
-    vertical_config = v_grid.VerticalGridConfig(
-        experiment.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
