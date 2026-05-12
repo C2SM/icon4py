@@ -1,5 +1,24 @@
 # MI300A node variance — aac6 vs beverin
 
+> ✅ **Confirmed by AMD 2026-05-07: within-aac6 variance is silicon binning.**
+> AMD audited all three aac6 nodes (`-16`, `-26`, `-30`) and found everything
+> bit-identical: same BIOS, same kernel, same amdgpu driver, same SMC firmware,
+> same Slurm/cgroup config, same Warewulf image, same ROCm install. The only
+> per-node difference is the GPU unique IDs on the silicon itself.
+>
+> The mechanism: **APCC** — the on-chip power governor inside the SMC (the
+> small chip that controls clocks and voltages). APCC senses how much
+> leakage current each individual chip has and throttles the leakier
+> ones harder to keep them within the same power envelope. So a chip with
+> more leakage current ends up running its clocks lower under load, even
+> though the cap is identical. That's why our slower nodes draw more power
+> (more leakage) and also run slower (clocks pulled back). AMD will add a
+> note to the MOTD so future users know to expect this.
+>
+> The cross-cluster gap (aac6 vs beverin) is still open — different SMC
+> firmware vintages (aac6 `04.85.90.00` vs beverin `04.85.112.00`) may
+> run APCC with different parameters.
+
 > ✅ **Verified 2026-05-06 under cupy 13.5.1 (ROCm 7.2.0).** The aac6 cupy
 > install was briefly on cupy 14 over the prior weekend; cupy 14 broke the
 > dycore solver due to a `__shfl_xor_sync` 64-bit-mask issue, and aac6 was
