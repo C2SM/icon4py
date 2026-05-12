@@ -197,64 +197,22 @@ def create_experiment_configuration(
 
     # Create NonHydrostaticConfig
     # Map divdamp_order from JSON to enum
-    divdamp_order_value = nonhydrostatic_nml["divdamp_order"]
-    divdamp_order_map = {
-        4: dycore_states.DivergenceDampingOrder.FOURTH_ORDER,
-        24: dycore_states.DivergenceDampingOrder.COMBINED,
-    }
-    divdamp_order = divdamp_order_map[divdamp_order_value]
-
-    # Map divdamp_type from JSON to enum
-    divdamp_type_value = nonhydrostatic_nml["divdamp_type"]
-    divdamp_type_map = {
-        3: dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
-        32: dycore_states.DivergenceDampingType.COMBINED,
-    }
-    divdamp_type = divdamp_type_map[divdamp_type_value]
-
-    # Map itime_scheme from JSON to enum
-    itime_scheme_value = nonhydrostatic_nml["itime_scheme"]
-    itime_scheme_map = {
-        4: dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
-        5: dycore_states.TimeSteppingScheme.STABLE,
-        6: dycore_states.TimeSteppingScheme.EXPENSIVE,
-    }
-    itime_scheme = itime_scheme_map[itime_scheme_value]
-
-    # Map iadv_rhotheta from JSON to enum
-    iadv_rhotheta_value = nonhydrostatic_nml["iadv_rhotheta"]
-    iadv_rhotheta_map = {
-        2: dycore_states.RhoThetaAdvectionType.MIURA,
-    }
-    iadv_rhotheta = iadv_rhotheta_map[iadv_rhotheta_value]
-
-    # Map igradp_method from JSON to enum
-    igradp_method_value = nonhydrostatic_nml["igradp_method"]
-    igradp_method_map = {
-        1: dycore_states.HorizontalPressureDiscretizationType.CONVENTIONAL,
-        2: dycore_states.HorizontalPressureDiscretizationType.TAYLOR,
-        3: dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        4: dycore_states.HorizontalPressureDiscretizationType.POLYNOMIAL,
-        5: dycore_states.HorizontalPressureDiscretizationType.POLYNOMIAL_HYDRO,
-    }
-    igradp_method = igradp_method_map[igradp_method_value]
-
-    # Map rayleigh_type from JSON to enum
-    rayleigh_type_value = nonhydrostatic_nml["rayleigh_type"]
-    rayleigh_type_map = {
-        2: constants.RayleighType.KLEMP,
-    }
-    rayleigh_type = rayleigh_type_map[rayleigh_type_value]
+    divdamp_order = dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"])
+    divdamp_type = dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"])
+    itime_scheme = dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"])
+    iadv_rhotheta = dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"])
+    igradp_method = dycore_states.HorizontalPressureDiscretizationType(nonhydrostatic_nml["igradp_method"])
+    rayleigh_type = constants.RayleighType(nonhydrostatic_nml["rayleigh_type"])
 
     rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
     if isinstance(rayleigh_coeff, list):
         rayleigh_coeff = rayleigh_coeff[0]
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
-        itime_scheme=itime_scheme,  # type: ignore[arg-type]
-        iadv_rhotheta=iadv_rhotheta,  # type: ignore[arg-type]
-        igradp_method=igradp_method,  # type: ignore[arg-type]
-        divdamp_order=divdamp_order,  # type: ignore[arg-type]
+        itime_scheme=itime_scheme,
+        iadv_rhotheta=iadv_rhotheta,
+        igradp_method=igradp_method,
+        divdamp_order=divdamp_order,
         divdamp_type=divdamp_type,
         rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
         veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
@@ -271,30 +229,13 @@ def create_experiment_configuration(
     # Create DiffusionConfig
     # Map diffusion_type from hdiff_order
     hdiff_order_value = diffusion_nml["hdiff_order"]
-    diffusion_type_map = {
-        -1: diffusion.DiffusionType.NO_DIFFUSION,
-        2: diffusion.DiffusionType.LINEAR_2ND_ORDER,
-        3: diffusion.DiffusionType.SMAGORINSKY_NO_BACKGROUND,
-        4: diffusion.DiffusionType.LINEAR_4TH_ORDER,
-        5: diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-    }
-    diffusion_type = diffusion_type_map[hdiff_order_value]
+    diffusion_type = diffusion.DiffusionType(hdiff_order_value)
 
     # Map type_vn_diffu from itype_vn_diffu
-    type_vn_diffu_value = diffusion_nml["itype_vn_diffu"]
-    type_vn_diffu_map = {
-        1: diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-        2: diffusion.SmagorinskyStencilType.CELLS_AND_VERTICES,
-    }
-    type_vn_diffu = type_vn_diffu_map[type_vn_diffu_value]
+    type_vn_diffu = diffusion.SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"])
 
     # Map type_t_diffu from itype_t_diffu
-    type_t_diffu_value = diffusion_nml["itype_t_diffu"]
-    type_t_diffu_map = {
-        1: diffusion.TemperatureDiscretizationType.HOMOGENEOUS,
-        2: diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-    }
-    type_t_diffu = type_t_diffu_map[type_t_diffu_value]
+    type_t_diffu = diffusion.TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"])
 
     # Extract hdiff_smag_w (can be a list or single value)
     lhdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
@@ -308,14 +249,14 @@ def create_experiment_configuration(
     ndyn_substeps = nonhydrostatic_nml["ndyn_substeps"]
 
     diffusion_config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion_type,  # type: ignore[arg-type]
+        diffusion_type=diffusion_type,
         hdiff_w=diffusion_nml["lhdiff_w"],
         hdiff_vn=diffusion_nml["lhdiff_vn"],
         hdiff_temp=diffusion_nml["lhdiff_temp"],
         hdiff_smag_w=hdiff_smag_w,
-        type_vn_diffu=type_vn_diffu,  # type: ignore[arg-type]
+        type_vn_diffu=type_vn_diffu,
         smag_3d=smag_3d,
-        type_t_diffu=type_t_diffu,  # type: ignore[arg-type]
+        type_t_diffu=type_t_diffu,
         hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
         hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
         smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
