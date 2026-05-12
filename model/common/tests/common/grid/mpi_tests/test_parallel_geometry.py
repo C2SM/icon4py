@@ -22,7 +22,7 @@ from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
-    icon,
+    icon as icon_grid,
 )
 from icon4py.model.common.math import vector_operations as vector_ops
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -36,7 +36,6 @@ from ...fixtures import (
     experiment,
     geometry_from_savepoint,
     grid_savepoint,
-    icon_grid,
     process_props,
 )
 from .. import utils
@@ -112,7 +111,7 @@ def test_distributed_geometry_attrs_for_inverse(
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
     if (
-        grid_geometry.grid.geometry_type == icon.GeometryType.TORUS
+        grid_geometry.grid.geometry_type == icon_grid.GeometryType.TORUS
         and grid_name == "inv_vert_vert_length"
     ):
         # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
@@ -187,14 +186,14 @@ def test_cartesian_geometry_attr_no_halos(
     y_field = grid_geometry.get(y)
     z_field = grid_geometry.get(z)
     match grid_geometry.grid.geometry_type:
-        case icon.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(
                 grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
             )
             vector_ops.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
-        case icon.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x_field.asnumpy() >= 0.0)
             assert all(x_field.asnumpy() <= grid_geometry.grid.grid_params.domain_length)
