@@ -96,7 +96,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = test_defs.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     nonhydro_params = nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
