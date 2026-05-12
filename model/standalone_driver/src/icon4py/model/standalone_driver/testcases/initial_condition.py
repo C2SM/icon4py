@@ -440,7 +440,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         repeats=num_cells,
         axis=0,
     )
-    # TODO (Yilu):
+
     above_tropopause_levels = xp.flatnonzero(model_level_height[0,:] > H_TROPOPAUSE)
 
     assert (
