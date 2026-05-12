@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.interpolation import interpolation_factory, rbf_interpolation as rbf
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import data_handling, definitions, serialbox
@@ -370,9 +370,9 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
         nudge_efold_width=interpol_nml["nudge_efold_width"],
         nudge_zone_width=interpol_nml["nudge_zone_width"],
-        rbf_kernel_cell=interpol_nml["rbf_vec_kern_c"],
-        rbf_kernel_edge=interpol_nml["rbf_vec_kern_e"],
-        rbf_kernel_vertex=interpol_nml["rbf_vec_kern_v"],
+        rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+        rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+        rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
         lsq_dim_stencil=interpol_nml["lsq_high_ord"],
     )
 
