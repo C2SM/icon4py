@@ -75,6 +75,7 @@ def _get_interpolation_factory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
+            config=experiment.config.interpolation,
             backend=backend,
             metadata=attrs.attrs,
         )
@@ -93,6 +94,7 @@ def test_factory_raises_error_on_unknown_field(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=attrs.attrs,
     )
