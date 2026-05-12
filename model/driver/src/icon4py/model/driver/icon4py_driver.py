@@ -449,6 +449,7 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        exchange=exchange,
     )
 
     (

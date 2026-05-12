@@ -181,6 +181,7 @@ def test_advection_run_single_step(
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     diagnostic_state = construct_diagnostic_init_state(

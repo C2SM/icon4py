@@ -15,7 +15,7 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import constants, model_backends, model_options
+from icon4py.model.common import constants, decomposition, model_backends, model_options
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -165,6 +165,7 @@ def test_diffusion_benchmark(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend_like,
+        exchange=decomposition.single_node_exchange,
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)
