@@ -23,9 +23,6 @@ from icon4py.model.testing import config, datatest_utils as dt_utils
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
-    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
-        single_moment_six_class_gscp_graupel as graupel,
-    )
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
@@ -217,8 +214,7 @@ class Experiment:
 
     @property
     def config(self) -> ExperimentConfig:
-        """Lazily load the experiment configuration on first access.
-        """
+        """Lazily load the experiment configuration on first access."""
         if self._config is None:
             if self._process_props is None:
                 self._process_props = decomp_defs.SingleNodeProcessProperties()

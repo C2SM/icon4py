@@ -200,7 +200,9 @@ def create_experiment_configuration(
     divdamp_type = dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"])
     itime_scheme = dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"])
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"])
-    igradp_method = dycore_states.HorizontalPressureDiscretizationType(nonhydrostatic_nml["igradp_method"])
+    igradp_method = dycore_states.HorizontalPressureDiscretizationType(
+        nonhydrostatic_nml["igradp_method"]
+    )
     rayleigh_type = constants.RayleighType(nonhydrostatic_nml["rayleigh_type"])
 
     # Extract (can be a list or single value)

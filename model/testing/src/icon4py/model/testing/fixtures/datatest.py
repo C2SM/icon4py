@@ -17,7 +17,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
 
 if TYPE_CHECKING:
