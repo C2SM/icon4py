@@ -114,25 +114,6 @@ def process_props(request: pytest.FixtureRequest) -> decomposition.ProcessProper
     return decomposition.get_process_properties(runtype)
 
 
-def _download_ser_data(
-    _experiment: definitions.Experiment,
-    process_props: decomposition.ProcessProperties,
-) -> None:
-    # not a fixture to be able to use this function outside of pytest
-    comm_size = process_props.comm_size
-    try:
-        root_url = definitions.TESTDATA_ROOT_URL
-        archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
-        archive_path = definitions.EXPERIMENT_DATA_DIR + "/" + archive_filename
-        uri = dt_utils.get_experiment_archive_url(root_url, archive_path)
-        destination_path = dt_utils.get_datapath_for_experiment(_experiment, process_props)
-        data_handling.download_test_data(destination_path.parent, uri)
-    except KeyError as err:
-        raise RuntimeError(
-            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
-        ) from err
-
-
 @pytest.fixture
 def download_ser_data(
     request: pytest.FixtureRequest,
@@ -149,7 +130,7 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    _download_ser_data(experiment, process_props)
+    dt_utils.download_experiment(experiment, process_props)
 
 
 @pytest.fixture

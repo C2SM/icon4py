@@ -107,6 +107,7 @@ def create_icon_serial_data_provider(
         do_print=True,
     )
 
+
 def download_experiment(
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
@@ -122,8 +123,9 @@ def download_experiment(
         data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
-            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
+            f"No data for communicator of size {comm_size} exists, check on the server"
         ) from err
+
 
 @functools.cache
 def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
