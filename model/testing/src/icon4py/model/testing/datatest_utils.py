@@ -196,7 +196,6 @@ def create_experiment_configuration(
     )
 
     # Create NonHydrostaticConfig
-    # Map divdamp_order from JSON to enum
     divdamp_order = dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"])
     divdamp_type = dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"])
     itime_scheme = dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"])
@@ -204,6 +203,7 @@ def create_experiment_configuration(
     igradp_method = dycore_states.HorizontalPressureDiscretizationType(nonhydrostatic_nml["igradp_method"])
     rayleigh_type = constants.RayleighType(nonhydrostatic_nml["rayleigh_type"])
 
+    # Extract (can be a list or single value)
     rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
     if isinstance(rayleigh_coeff, list):
         rayleigh_coeff = rayleigh_coeff[0]
@@ -227,26 +227,17 @@ def create_experiment_configuration(
     )
 
     # Create DiffusionConfig
-    # Map diffusion_type from hdiff_order
-    hdiff_order_value = diffusion_nml["hdiff_order"]
-    diffusion_type = diffusion.DiffusionType(hdiff_order_value)
-
-    # Map type_vn_diffu from itype_vn_diffu
+    diffusion_type = diffusion.DiffusionType(diffusion_nml["hdiff_order"])
     type_vn_diffu = diffusion.SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"])
-
-    # Map type_t_diffu from itype_t_diffu
     type_t_diffu = diffusion.TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"])
 
-    # Extract hdiff_smag_w (can be a list or single value)
+    # Extract (can be a list or single value)
     lhdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
     hdiff_smag_w = lhdiff_smag_w[0] if isinstance(lhdiff_smag_w, list) else lhdiff_smag_w
 
-    # Extract lsmag_3d (can be a list or single value)
+    # Extract (can be a list or single value)
     lsmag_3d = diffusion_nml["lsmag_3d"]
     smag_3d = lsmag_3d[0] if isinstance(lsmag_3d, list) else lsmag_3d
-
-    # Get ndyn_substeps from either nonhydrostatic_nml or run_nml
-    ndyn_substeps = nonhydrostatic_nml["ndyn_substeps"]
 
     diffusion_config = diffusion.DiffusionConfig(
         diffusion_type=diffusion_type,
@@ -260,7 +251,7 @@ def create_experiment_configuration(
         hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
         hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
         smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
-        n_substeps=ndyn_substeps,
+        n_substeps=nonhydrostatic_nml["ndyn_substeps"],
         zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
     )
 
@@ -276,11 +267,10 @@ def create_experiment_configuration(
         end_date=datetime.datetime(1, 1, 1, 1, 0, 0),  # Placeholder
         apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
         vertical_cfl_threshold=nonhydrostatic_nml["vcfl_threshold"],
-        ndyn_substeps=ndyn_substeps,
+        ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
         enable_statistics_output=False,
     )
 
-    # Extract metrics-related parameters not in any config class
     exner_expol = nonhydrostatic_nml["exner_expol"]
     if isinstance(exner_expol, list):
         exner_expol = exner_expol[0]
