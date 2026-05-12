@@ -36,12 +36,14 @@ scripts/
 │   ├── _<...>.sh            # Utility: helper functions, not a script
 │   ├── <...>.sh             # Script: setup-env sub-command
 │
-└── tests/
-    ├── python/              # Python scripts tests
-    │   ├── conftest.py      # Shared pytest fixtures
-    │   └── test_<...>.py    # Command test
-    └── sh/
-        └── test_lib.bats    # Bash library tests (bats-core)
+├── tests/
+│   ├── python/              # Python scripts tests
+│   │   ├── conftest.py      # Shared pytest fixtures
+│   │   └── test_<...>.py    # Command test
+│   └── sh/
+│       └── test_lib.bats    # Bash library tests (bats-core)
+│
+└── data/                    # Files needed by the scripts
 ```
 
 ## Conventions

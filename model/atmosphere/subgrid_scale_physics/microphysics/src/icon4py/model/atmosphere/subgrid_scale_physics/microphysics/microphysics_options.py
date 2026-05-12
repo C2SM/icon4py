@@ -21,7 +21,7 @@ class LiquidAutoConversionType(gtx.int32, enum.Enum):
     SEIFERT_BEHENG = 1
 
 
-class SnowInterceptParametererization(gtx.int32, enum.Enum):
+class SnowInterceptParameterization(gtx.int32, enum.Enum):
     """
     Options for deriving snow intercept parameter
     """
