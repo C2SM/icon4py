@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import importlib
 import logging
 from collections.abc import Callable
 from pathlib import Path
@@ -16,24 +15,24 @@ import cffi
 from icon4py.tools.py2fgen import _codegen, _utils
 
 
-def get_cffi_description(
-    module_name: str, functions: list[str], library_name: str
-) -> _codegen.BindingsLibrary:
-    # TODO(havogt): instead of a list of function names, we could just export all
-    # exportable functions of the module(functions with the `param_descriptors` attribute).
-    module = importlib.import_module(module_name)
-    parsed_functions = [_get_function_descriptor(getattr(module, f)) for f in functions]
+def get_cffi_description(functions: list[Callable], library_name: str) -> _codegen.BindingsLibrary:
+    """Build the CFFI plugin description from already-imported callables.
+
+    Each callable's import location is derived from ``__module__``, so
+    callers can mix functions from different source modules in a single
+    library. The generated Python wrapper imports each function from its
+    own definition module.
+    """
     return _codegen.BindingsLibrary(
-        module_name=module_name,
         library_name=library_name,
-        functions=parsed_functions,
+        functions=[_get_function_descriptor(f) for f in functions],
     )
 
 
 def _get_function_descriptor(fun: Callable) -> _codegen.Func:
     if not hasattr(fun, "param_descriptors"):
         raise TypeError("Cannot parse function, did you forget to decorate it with '@export'?")
-    return _codegen.Func(name=fun.__name__, args=fun.param_descriptors)
+    return _codegen.Func(name=fun.__name__, module_name=fun.__module__, args=fun.param_descriptors)
 
 
 def configure_cffi_builder(
