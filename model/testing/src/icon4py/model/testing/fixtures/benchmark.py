@@ -14,7 +14,6 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
