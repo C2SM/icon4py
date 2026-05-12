@@ -6,12 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import contextlib
 import datetime
 import functools
 import logging
 import pathlib
 import types
 from collections.abc import Callable
+
+try:
+    import nvtx
+    _NVTX_AVAILABLE = True
+except ImportError:
+    _NVTX_AVAILABLE = False
 
 import gt4py.next as gtx
 from gt4py.next import config as gtx_config
@@ -186,11 +193,13 @@ class Icon4pyDriver:
                 else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
             )
             with timer_diffusion:
-                self.diffusion.run(
-                    diffusion_diagnostic_state,
-                    prognostic_states.next,
-                    self.model_time_variables.dtime_in_seconds,
-                )
+                with nvtx.annotate("diffusion", color="green") if _NVTX_AVAILABLE else contextlib.nullcontext():
+                    self.diffusion.run(
+                        diffusion_diagnostic_state,
+                        prognostic_states.next,
+                        self.model_time_variables.dtime_in_seconds,
+                    )
+                    device_utils.sync(self.backend)
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
@@ -268,18 +277,20 @@ class Icon4pyDriver:
             )
 
             with timer_solve_nh:
-                self.solve_nonhydro.time_step(
-                    solve_nonhydro_diagnostic_state,
-                    prognostic_states,
-                    prep_adv=prep_adv,
-                    second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
-                    dtime=self.model_time_variables.substep_timestep,
-                    ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
-                    at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    lprep_adv=do_prep_adv,
-                    at_first_substep=self._is_first_substep(dyn_substep),
-                    at_last_substep=self._is_last_substep(dyn_substep),
-                )
+                with nvtx.annotate("solve_nonhydro", color="blue") if _NVTX_AVAILABLE else contextlib.nullcontext():
+                    self.solve_nonhydro.time_step(
+                        solve_nonhydro_diagnostic_state,
+                        prognostic_states,
+                        prep_adv=prep_adv,
+                        second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
+                        dtime=self.model_time_variables.substep_timestep,
+                        ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
+                        at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
+                        lprep_adv=do_prep_adv,
+                        at_first_substep=self._is_first_substep(dyn_substep),
+                        at_last_substep=self._is_last_substep(dyn_substep),
+                    )
+                    device_utils.sync(self.backend)
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
@@ -534,7 +545,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        end_date=datetime.datetime(1, 1, 1, 3, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
