@@ -184,10 +184,10 @@ def create_experiment_configuration(
     # Create VerticalGridConfig
     vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=experiment.num_levels,
-        lowest_layer_thickness=sleve_nml["min_lay_thckn"],
-        model_top_height=sleve_nml["top_height"],
         maximal_layer_thickness=sleve_nml["max_lay_thckn"],
         top_height_limit_for_maximal_layer_thickness=sleve_nml["htop_thcknlimit"],
+        lowest_layer_thickness=sleve_nml["min_lay_thckn"],
+        model_top_height=sleve_nml["top_height"],
         flat_height=sleve_nml["flat_height"],
         stretch_factor=sleve_nml["stretch_fac"],
         rayleigh_damping_height=(
@@ -195,6 +195,10 @@ def create_experiment_configuration(
             if isinstance(nonhydrostatic_nml["damp_height"], list)
             else nonhydrostatic_nml["damp_height"]
         ),
+        htop_moist_proc=nonhydrostatic_nml["htop_moist_proc"],
+        SLEVE_decay_scale_1=sleve_nml["decay_scale_1"],
+        SLEVE_decay_scale_2=sleve_nml["decay_scale_2"],
+        SLEVE_decay_exponent=sleve_nml["decay_exp"],
     )
 
     # Create NonHydrostaticConfig
@@ -266,8 +270,6 @@ def create_experiment_configuration(
         shear_type=diffusion.TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
         iforcing=diffusion.ForcingType(run_nml["iforcing"]),
         a_hshr=turbdiff_nml["a_hshr"],
-        # loutshs is not in NAMELIST_ICON_output_atm: its default is FALSE and
-        # only set to true in fortran `IF (.NOT. ldynamics)
     )
 
     # Create DriverConfig (using defaults for now, as these are not in the JSON)
