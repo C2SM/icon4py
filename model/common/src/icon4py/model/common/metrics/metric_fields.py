@@ -213,10 +213,6 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    # NOTE: integer literals are used here instead of RayleighType.CLASSIC /
-    # RayleighType.KLEMP because gtfn codegen does not lower IntEnum members
-    # inside field_operator bodies (emits the attribute name verbatim into C++).
-    # The values must stay in sync with constants.RayleighType.
     if rayleigh_type == 1:  # RayleighType.CLASSIC
         rayleigh_w = (
             rayleigh_coeff
