@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
@@ -220,7 +221,8 @@ class Experiment:
                 self._process_props = decomp_defs.SingleNodeProcessProperties()
             dt_utils.download_experiment(self, self._process_props)
             self._config = dt_utils.create_experiment_configuration(self, self._process_props)
-        return self._config
+        # Return a deep copy so that tests cannot mutate the shared cached config.
+        return copy.deepcopy(self._config)
 
 
 @dataclasses.dataclass
