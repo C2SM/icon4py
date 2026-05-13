@@ -90,7 +90,7 @@ def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.B
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = experiment.config.diffusion
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -103,7 +103,7 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
-    config = definitions.construct_diffusion_config(experiment)
+    config = experiment.config.diffusion
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -118,7 +118,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     experiment,
 ):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = experiment.config.diffusion
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -133,9 +133,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
 
 
 def test_smagorinski_factor_diffusion_type_5(experiment):
-    params = diffusion.DiffusionParams(
-        definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
-    )
+    params = diffusion.DiffusionParams(experiment.config.diffusion)
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert all(p >= 0 for p in params.smagorinski_factor)
@@ -273,7 +271,6 @@ def _verify_init_values_against_savepoint(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_savepoint(
     experiment,
     step_date_init,
@@ -328,7 +325,6 @@ def test_verify_diffusion_init_against_savepoint(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2])
 def test_run_diffusion_single_step(
     experiment,
     step_date_init,
@@ -459,10 +455,10 @@ def test_run_diffusion_initial_step(
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
+    savepoint_diffusion_init, experiment, icon_grid, linit, backend
 ):
     savepoint = savepoint_diffusion_init
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = experiment.config.diffusion
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()
