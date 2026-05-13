@@ -1036,7 +1036,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "2.3.5"
-source = { git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev#a62787d92d4ffe3f4586e8be1fdfc4169e791c17" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev#28c27de36a387af49c2bf75c25e6a1d257f12d15" }
 dependencies = [
     { name = "astunparse" },
     { name = "dill" },
@@ -1531,7 +1531,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.9+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_mixed_ir#bb33fd4941e6e1e3415527e3339d271dd4ba60ad" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_mixed_ir#39fca693cefb177f23f8027e638ba4a25a05e3ab" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
