@@ -304,7 +304,7 @@ class DiffusionConfig:
             )
 
         #: Type of shear forcing used in turbulence
-        #: Called 'itype_shear' in mo_turbdiff_nml.f90
+        #: Called 'itype_sher' in mo_turbdiff_nml.f90
         self.shear_type = shear_type
 
         #: Type of physics forcing
