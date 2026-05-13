@@ -317,6 +317,7 @@ class DiffusionConfig:
 
         #: Output flag for horizontal shear
         #: Called 'loutshs' in mo_turbdiff_nml.f90
+        #: not a namelist parameter: its default is FALSE and only set to true in fortran `IF (.NOT. ldynamics)`
         self.loutshs: bool = loutshs
 
         self._validate()
