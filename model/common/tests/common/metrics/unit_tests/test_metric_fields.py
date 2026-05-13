@@ -14,10 +14,11 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, exchange_utils, test_utils as testing_helpers
+from icon4py.model.testing import definitions, test_utils as testing_helpers
 from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -424,7 +425,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=decomposition.single_node_exchange,
     )
     # TODO (nfarabullini): fix type ignore
     flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]
