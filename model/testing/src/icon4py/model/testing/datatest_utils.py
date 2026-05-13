@@ -231,10 +231,6 @@ def create_experiment_configuration(
     )
 
     # Create DiffusionConfig
-    diffusion_type = diffusion.DiffusionType(diffusion_nml["hdiff_order"])
-    type_vn_diffu = diffusion.SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"])
-    type_t_diffu = diffusion.TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"])
-
     # Extract (can be a list or single value)
     lhdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
     hdiff_smag_w = lhdiff_smag_w[0] if isinstance(lhdiff_smag_w, list) else lhdiff_smag_w
@@ -244,14 +240,14 @@ def create_experiment_configuration(
     smag_3d = lsmag_3d[0] if isinstance(lsmag_3d, list) else lsmag_3d
 
     diffusion_config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion_type,
+        diffusion_type=diffusion.DiffusionType(diffusion_nml["hdiff_order"]),
         hdiff_w=diffusion_nml["lhdiff_w"],
         hdiff_vn=diffusion_nml["lhdiff_vn"],
         hdiff_temp=diffusion_nml["lhdiff_temp"],
         hdiff_smag_w=hdiff_smag_w,
-        type_vn_diffu=type_vn_diffu,
+        type_vn_diffu=diffusion.SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"]),
         smag_3d=smag_3d,
-        type_t_diffu=type_t_diffu,
+        type_t_diffu=diffusion.TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"]),
         hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
         hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
         smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
@@ -269,8 +265,9 @@ def create_experiment_configuration(
         _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
         shear_type=diffusion.TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
         iforcing=diffusion.ForcingType(run_nml["iforcing"]),
-        a_hshr=turbdiff_nml["a_hshr"], # this is not actually used in diffusion
-        #loutshs=turbdiff_nml["loutshs"], # TODO (jcanton): this is not in NAMELIST_ICON_output_atm, possibly should be entirely removed
+        a_hshr=turbdiff_nml["a_hshr"],
+        # loutshs is not in NAMELIST_ICON_output_atm: its default is FALSE and
+        # only set to true in fortran `IF (.NOT. ldynamics)
     )
 
     # Create DriverConfig (using defaults for now, as these are not in the JSON)
