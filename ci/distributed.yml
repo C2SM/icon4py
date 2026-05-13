@@ -117,7 +117,7 @@ build_distributed:
         SLURM_TIMELIMIT: '00:15:00'
     - if: $COMPONENT == 'standalone_driver'
       variables:
-        SLURM_TIMELIMIT: '00:50:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:45:00'
