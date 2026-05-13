@@ -173,10 +173,12 @@ def create_experiment_configuration(
 
     nml_data = _read_namelist_json(json_file_path)
 
+    gridref_nml = nml_data["gridref_nml"]
     sleve_nml = nml_data["sleve_nml"]
     nonhydrostatic_nml = nml_data["nonhydrostatic_nml"]
     interpol_nml = nml_data["interpol_nml"]
     diffusion_nml = nml_data["diffusion_nml"]
+    turbdiff_nml = nml_data["turbdiff_nml"]
     run_nml = nml_data["run_nml"]
 
     # Create VerticalGridConfig
@@ -253,8 +255,22 @@ def create_experiment_configuration(
         hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
         hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
         smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
+        smagorinski_scaling_factor2=diffusion_nml["hdiff_smag_fac2"],
+        smagorinski_scaling_factor3=diffusion_nml["hdiff_smag_fac3"],
+        smagorinski_scaling_factor4=diffusion_nml["hdiff_smag_fac4"],
+        smagorinski_scaling_height=diffusion_nml["hdiff_smag_z"],
+        smagorinski_scaling_height2=diffusion_nml["hdiff_smag_z2"],
+        smagorinski_scaling_height3=diffusion_nml["hdiff_smag_z3"],
+        smagorinski_scaling_height4=diffusion_nml["hdiff_smag_z4"],
         n_substeps=nonhydrostatic_nml["ndyn_substeps"],
         zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
+        velocity_boundary_diffusion_denom=gridref_nml["denom_diffu_v"],
+        temperature_boundary_diffusion_denom=gridref_nml["denom_diffu_t"],
+        _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+        shear_type=diffusion.TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
+        iforcing=diffusion.ForcingType(run_nml["iforcing"]),
+        a_hshr=turbdiff_nml["a_hshr"], # this is not actually used in diffusion
+        #loutshs=turbdiff_nml["loutshs"], # TODO (jcanton): this is not in NAMELIST_ICON_output_atm, possibly should be entirely removed
     )
 
     # Create DriverConfig (using defaults for now, as these are not in the JSON)
