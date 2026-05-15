@@ -47,11 +47,6 @@ class InterpolationConfig:
     Central-cell weight used in divergence averaging.
     """
 
-    weighting_factor: float = 0.0
-    """
-    General weighting factor used by interpolation operators.
-    """
-
     max_nudging_coefficient: float = 0.375
     """
     Maximum nudging coefficient applied in the lateral nudging zone.
@@ -85,16 +80,19 @@ class InterpolationConfig:
     lsq_dim_unk: int = 2
     """
     Number of unknowns in the least-squares reconstruction.
+    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
     """
 
     lsq_dim_c: int = 3
     """
     Dimension of the least-squares coefficient space.
+    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
     """
 
     lsq_wgt_exp: int = 2
     """
     Exponent used in distance-based least-squares weighting.
+    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
     """
 
     lsq_dim_stencil: int = 3
@@ -355,7 +353,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "edges_lon": geometry_attrs.EDGE_LON,
                     },
                     connectivities={"c2e": dims.C2EDim},
-                    params={"weighting_factor": self._config.weighting_factor},
                 )
                 self.register_provider(e_bln_c_s)
 
