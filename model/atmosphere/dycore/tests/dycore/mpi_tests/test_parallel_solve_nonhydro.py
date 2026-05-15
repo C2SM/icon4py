@@ -51,13 +51,8 @@ def test_run_solve_nonhydro_single_step(
     step_date_exit: str,
     substep_init: int,
     experiment: test_defs.Experiment,
-    ndyn_substeps: int,
     icon_grid: icon.IconGrid,
     savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     is_iau_active: bool,
     iau_wgt_dyn: ta.wpfloat,
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -98,13 +93,7 @@ def test_run_solve_nonhydro_single_step(
 
     config = experiment.config.nonhydrostatic
     nonhydro_params = nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
     lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
@@ -154,11 +143,11 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
+        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == ndyn_substeps),
+        at_last_substep=(substep_init == experiment.config.diffusion.ndyn_substeps),
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )

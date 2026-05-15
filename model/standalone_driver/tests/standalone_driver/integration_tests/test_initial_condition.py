@@ -16,7 +16,6 @@ from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
-    damping_height,
     data_provider,
     download_ser_data,
     process_props,

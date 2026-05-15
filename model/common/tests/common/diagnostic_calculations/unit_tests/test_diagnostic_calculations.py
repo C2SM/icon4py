@@ -241,8 +241,8 @@ def test_diagnose_pressure(
 
 
 @pytest.mark.parametrize(
-    "experiment, model_top_height, damping_height, stretch_factor",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
+    "experiment",
+    [(definitions.Experiments.WEISMAN_KLEMP_TORUS,)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
@@ -252,9 +252,7 @@ def test_diagnose_pressure(
 def test_diagnostic_update_after_saturation_adjustement(
     location: str,
     date: str,
-    model_top_height: float,  # TODO(havogt): unused?
-    damping_height: float,  # TODO(havogt): unused?
-    stretch_factor: float,  # TODO(havogt): unused?
+    experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
