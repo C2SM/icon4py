@@ -181,35 +181,26 @@ def create_experiment_configuration(
     turbdiff_nml = nml_data["turbdiff_nml"]
     run_nml = nml_data["run_nml"]
 
-    exner_expol = nonhydrostatic_nml["exner_expol"]
-    if isinstance(exner_expol, list):
-        exner_expol = exner_expol[0]
 
-    vwind_offctr = nonhydrostatic_nml["vwind_offctr"]
-    if isinstance(vwind_offctr, list):
-        vwind_offctr = vwind_offctr[0]
-
-    thslp_zdiffu = nonhydrostatic_nml["thslp_zdiffu"]
-    if isinstance(thslp_zdiffu, list):
-        thslp_zdiffu = thslp_zdiffu[0]
-
-    thhgtd_zdiffu = nonhydrostatic_nml["thhgtd_zdiffu"]
-    if isinstance(thhgtd_zdiffu, list):
-        thhgtd_zdiffu = thhgtd_zdiffu[0]
-
+    # *** MetricsConfig ***
     rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
     if isinstance(rayleigh_coeff, list):
         rayleigh_coeff = rayleigh_coeff[0]
 
     metrics_config = metrics_factory.MetricsConfig(
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
+        exner_expol=nonhydrostatic_nml["exner_expol"],
+        vwind_offctr=nonhydrostatic_nml["vwind_offctr"],
+        thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
+        thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
         rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
         rayleigh_coeff=rayleigh_coeff,
+        divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
+        divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
+        divdamp_type=nonhydrostatic_nml["divdamp_type"],
+        igradp_method=nonhydrostatic_nml["igradp_method"],
     )
 
+    # *** InterpolationConfig ***
     interpolation_config = interpolation_factory.InterpolationConfig(
         divergence_averaging_central_cell_weight=nml_data["dynamics_nml"]["divavg_cntrwgt"],
         max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
