@@ -171,8 +171,6 @@ def decomposition_info(
     ).construct_decomposition_info()
 
 
-
-
 @pytest.fixture
 def linit() -> bool:
     """

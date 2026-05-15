@@ -8,7 +8,6 @@
 
 import pytest
 
-# TODO: Replace hardcoded config values with experiment.config.* across bindings tests.
 from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
