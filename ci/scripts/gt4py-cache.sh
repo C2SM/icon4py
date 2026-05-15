@@ -9,14 +9,14 @@ set -euo pipefail
 
 # First clean up files and directories older than 7 days in the base cache
 # directory. There may be concurrent cleanup, ignore failures.
-find "${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + || true
+find "${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + || true
 
 uv_lock_hash=$(sha256sum "./uv.lock" | awk '{print $1}')
 job_name="${CI_JOB_NAME_SLUG}"
 
 # Then set the cache directory for this run based on the backend and current date.
 DATE=$(date +%Y-%W)
-export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/uv-lock-${uv_lock_hash}-job-${job_name}-${DATE}"
+export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/uv-lock-${uv_lock_hash}-job-${job_name}-${DATE}"
 mkdir -p "${GT4PY_BUILD_CACHE_DIR}"
 
 echo "Using GT4PY_BUILD_CACHE_DIR=${GT4PY_BUILD_CACHE_DIR}"
