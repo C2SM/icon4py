@@ -82,22 +82,12 @@ def test_verify_velocity_init_against_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     metrics_savepoint: serialbox.MetricSavepoint,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -131,22 +121,12 @@ def test_scale_factors_by_dtime(
     savepoint_velocity_init,
     icon_grid,
     grid_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     backend,
 ):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -186,10 +166,6 @@ def test_velocity_predictor_step(
     step_date_init,
     step_date_exit,
     *,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     icon_grid,
     grid_savepoint,
     savepoint_velocity_init,
@@ -243,13 +219,7 @@ def test_velocity_predictor_step(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -343,10 +313,6 @@ def test_velocity_corrector_step(
     step_date_init,
     step_date_exit,
     *,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     icon_grid,
     grid_savepoint,
     savepoint_velocity_init,
@@ -402,13 +368,7 @@ def test_velocity_corrector_step(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(

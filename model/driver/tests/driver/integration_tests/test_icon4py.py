@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from datetime import datetime, timedelta
+
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -20,7 +22,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
-    icon4py_configuration,
+    icon4py_configuration as driver_config,
     icon4py_driver,
     initialization_utils as driver_init,
 )
@@ -28,7 +30,6 @@ from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
-from ..utils import construct_icon4pyrun_config
 
 
 if TYPE_CHECKING:
@@ -107,11 +108,6 @@ def test_run_timeloop_single_step(
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
-    ndyn_substeps: int,
     timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
     savepoint_velocity_init: sb.IconVelocityInitSavepoint,
@@ -119,33 +115,17 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
-    if experiment in (definitions.Experiments.GAUSS3D, definitions.Experiments.JW):
-        experiment_type = (
-            driver_init.ExperimentType.GAUSS3D
-            if experiment == definitions.Experiments.GAUSS3D
-            else driver_init.ExperimentType.JABW
-        )
-        config = icon4py_configuration.read_config(
-            experiment_type=experiment_type,
-            backend=backend,
-        )
-        diffusion_config = config.diffusion_config
-        nonhydro_config = config.solve_nonhydro_config
-        icon4pyrun_config = config.run_config
-
-    else:
-        diffusion_config = definitions.construct_diffusion_config(
-            experiment, ndyn_substeps=ndyn_substeps
-        )
-        nonhydro_config = definitions.construct_nonhydrostatic_config(experiment)
-        icon4pyrun_config = construct_icon4pyrun_config(
-            experiment,
-            timeloop_date_init,
-            timeloop_date_exit,
-            timeloop_diffusion_linit_init,
-            ndyn_substeps=ndyn_substeps,
-            backend=backend,
-        )
+    diffusion_config = experiment.config.diffusion
+    nonhydro_config = experiment.config.nonhydrostatic
+    icon4pyrun_config = driver_config.Icon4pyRunConfig(
+        dtime=experiment.config.driver.dtime,
+        start_date=datetime.fromisoformat(timeloop_date_init),
+        end_date=datetime.fromisoformat(timeloop_date_exit),
+        n_substeps=experiment.config.diffusion.ndyn_substeps,
+        apply_initial_stabilization=timeloop_diffusion_linit_init,
+        restart_mode=not timeloop_diffusion_linit_init,
+        backend=backend,
+    )
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
@@ -169,13 +149,7 @@ def test_run_timeloop_single_step(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
