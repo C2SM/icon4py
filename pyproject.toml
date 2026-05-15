@@ -313,6 +313,7 @@ select = [
   'PLC',  # Pylint-Convention
   'PLE',  # Pylint-Error
   'PLR',  # Pylint-Refactor
+  'PLR0917',  # [too-many-positional-arguments]
   'PLW',  # Pylint-Warning
   'PTH',  # flake8-use-pathlib
   'Q',  # flake8-quotes
@@ -368,6 +369,7 @@ max-complexity = 15
 
 [tool.ruff.lint.pylint]
 max-branches = 12
+max-positional-args = 5
 max-statements = 60
 
 # -- setuptools --
