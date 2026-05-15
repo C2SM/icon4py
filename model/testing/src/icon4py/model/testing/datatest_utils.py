@@ -181,7 +181,47 @@ def create_experiment_configuration(
     turbdiff_nml = nml_data["turbdiff_nml"]
     run_nml = nml_data["run_nml"]
 
-    # Create VerticalGridConfig
+    exner_expol = nonhydrostatic_nml["exner_expol"]
+    if isinstance(exner_expol, list):
+        exner_expol = exner_expol[0]
+
+    vwind_offctr = nonhydrostatic_nml["vwind_offctr"]
+    if isinstance(vwind_offctr, list):
+        vwind_offctr = vwind_offctr[0]
+
+    thslp_zdiffu = nonhydrostatic_nml["thslp_zdiffu"]
+    if isinstance(thslp_zdiffu, list):
+        thslp_zdiffu = thslp_zdiffu[0]
+
+    thhgtd_zdiffu = nonhydrostatic_nml["thhgtd_zdiffu"]
+    if isinstance(thhgtd_zdiffu, list):
+        thhgtd_zdiffu = thhgtd_zdiffu[0]
+
+    rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
+    if isinstance(rayleigh_coeff, list):
+        rayleigh_coeff = rayleigh_coeff[0]
+
+    metrics_config = metrics_factory.MetricsConfig(
+        exner_expol=exner_expol,
+        vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
+        rayleigh_coeff=rayleigh_coeff,
+    )
+
+    interpolation_config = interpolation_factory.InterpolationConfig(
+        divergence_averaging_central_cell_weight=nml_data["dynamics_nml"]["divavg_cntrwgt"],
+        max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
+        nudge_efold_width=interpol_nml["nudge_efold_width"],
+        nudge_zone_width=interpol_nml["nudge_zone_width"],
+        rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+        rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+        rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+        lsq_dim_stencil=interpol_nml["lsq_high_ord"],
+    )
+
+    # *** VerticalGridConfig ***
     vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=experiment.num_levels,
         maximal_layer_thickness=sleve_nml["max_lay_thckn"],
@@ -201,7 +241,7 @@ def create_experiment_configuration(
         SLEVE_decay_exponent=sleve_nml["decay_exp"],
     )
 
-    # Create NonHydrostaticConfig
+    # *** NonHydrostaticConfig ***
     divdamp_order = dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"])
     divdamp_type = dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"])
     itime_scheme = dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"])
@@ -209,12 +249,6 @@ def create_experiment_configuration(
     igradp_method = dycore_states.HorizontalPressureDiscretizationType(
         nonhydrostatic_nml["igradp_method"]
     )
-    rayleigh_type = constants.RayleighType(nonhydrostatic_nml["rayleigh_type"])
-
-    # Extract (can be a list or single value)
-    rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
-    if isinstance(rayleigh_coeff, list):
-        rayleigh_coeff = rayleigh_coeff[0]
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -234,14 +268,14 @@ def create_experiment_configuration(
         fourth_order_divdamp_z4=nonhydrostatic_nml["divdamp_z4"],
     )
 
-    # Create DiffusionConfig
-    # Extract (can be a list or single value)
+    # *** DiffusionConfig ***
     lhdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
-    hdiff_smag_w = lhdiff_smag_w[0] if isinstance(lhdiff_smag_w, list) else lhdiff_smag_w
+    if isinstance(lhdiff_smag_w, list):
+        hdiff_smag_w = lhdiff_smag_w[0]
 
-    # Extract (can be a list or single value)
     lsmag_3d = diffusion_nml["lsmag_3d"]
-    smag_3d = lsmag_3d[0] if isinstance(lsmag_3d, list) else lsmag_3d
+    if isinstance(lsmag_3d, list):
+        smag_3d = lsmag_3d[0]
 
     diffusion_config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType(diffusion_nml["hdiff_order"]),
@@ -272,7 +306,8 @@ def create_experiment_configuration(
         a_hshr=turbdiff_nml["a_hshr"],
     )
 
-    # Create DriverConfig (using defaults for now, as these are not in the JSON)
+    # *** DriverConfig ***
+    # (using defaults for now, as these are not in the JSON)
     # TODO(jcanton): Extract these from the JSON when available
 
     driver_cfg = driver_config.DriverConfig(
@@ -286,42 +321,6 @@ def create_experiment_configuration(
         vertical_cfl_threshold=nonhydrostatic_nml["vcfl_threshold"],
         ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
         enable_statistics_output=False,
-    )
-
-    exner_expol = nonhydrostatic_nml["exner_expol"]
-    if isinstance(exner_expol, list):
-        exner_expol = exner_expol[0]
-
-    vwind_offctr = nonhydrostatic_nml["vwind_offctr"]
-    if isinstance(vwind_offctr, list):
-        vwind_offctr = vwind_offctr[0]
-
-    thslp_zdiffu = nonhydrostatic_nml["thslp_zdiffu"]
-    if isinstance(thslp_zdiffu, list):
-        thslp_zdiffu = thslp_zdiffu[0]
-
-    thhgtd_zdiffu = nonhydrostatic_nml["thhgtd_zdiffu"]
-    if isinstance(thhgtd_zdiffu, list):
-        thhgtd_zdiffu = thhgtd_zdiffu[0]
-
-    metrics_config = metrics_factory.MetricsConfig(
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-    )
-
-    interpolation_config = interpolation_factory.InterpolationConfig(
-        divergence_averaging_central_cell_weight=nml_data["dynamics_nml"]["divavg_cntrwgt"],
-        max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
-        nudge_efold_width=interpol_nml["nudge_efold_width"],
-        nudge_zone_width=interpol_nml["nudge_zone_width"],
-        rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
-        rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
-        rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
-        lsq_dim_stencil=interpol_nml["lsq_high_ord"],
     )
 
     return definitions.ExperimentConfig(
