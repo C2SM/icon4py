@@ -41,10 +41,6 @@ test_tools_datatests_aarch64:
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'common'
-      when: never  # run only in daily CI, to save compute resources
-    - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'driver'
-      when: never  # run only in daily CI, to save compute resources
     - if: $COMPONENT == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
