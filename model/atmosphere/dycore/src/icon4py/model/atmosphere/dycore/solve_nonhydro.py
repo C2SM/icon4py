@@ -180,7 +180,7 @@ class NonHydrostaticConfig:
         #: stability without heavy orography smoothing
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
-        #: type of Rayleigh damping
+        #: type of Rayleigh damping (namelist key: rayleigh_type)
         self.rayleigh_type: constants.RayleighType = rayleigh_type
 
         #: order of divergence damping
@@ -271,15 +271,15 @@ class NonHydrostaticConfig:
                 constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
             )
 
-        #: from mo_run_nml.f90
+        #: from mo_run_nml.f90 (namelist key: lvert_nest).
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
 
-        #: from dynamics_nml.f90
+        #: from dynamics_nml.f90 (namelist key: ldeepatmo).
         #: deep atmosphere mode, originally defined as ldeepatmo in ICON
         self.deepatmos_mode: bool = deepatmos_mode
 
-        #: incremental analysis init mode, defined as one of the ICON init modes
+        #: incremental analysis init mode, set to init_mode == MODE_IAU (5) in Fortran.
         self.iau_init: bool = iau_init
 
         #: Apply additional diffusion at grid points close to CFL limit

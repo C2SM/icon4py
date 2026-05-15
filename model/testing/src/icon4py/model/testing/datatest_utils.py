@@ -181,7 +181,6 @@ def create_experiment_configuration(
     turbdiff_nml = nml_data["turbdiff_nml"]
     run_nml = nml_data["run_nml"]
 
-
     # *** MetricsConfig ***
     rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
     if isinstance(rayleigh_coeff, list):
@@ -233,22 +232,21 @@ def create_experiment_configuration(
     )
 
     # *** NonHydrostaticConfig ***
-    divdamp_order = dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"])
-    divdamp_type = dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"])
-    itime_scheme = dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"])
-    iadv_rhotheta = dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"])
-    igradp_method = dycore_states.HorizontalPressureDiscretizationType(
-        nonhydrostatic_nml["igradp_method"]
-    )
-
     nonhydro_config = solve_nh.NonHydrostaticConfig(
-        itime_scheme=itime_scheme,
-        iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method,
-        divdamp_order=divdamp_order,
-        divdamp_type=divdamp_type,
+        itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
+        iadv_rhotheta=dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"]),
+        igradp_method=dycore_states.HorizontalPressureDiscretizationType(
+            nonhydrostatic_nml["igradp_method"]
+        ),
+        rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
+        divdamp_order=dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"]),
+        divdamp_type=dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"]),
+        l_vert_nested=run_nml["lvert_nest"],
+        deepatmos_mode=nml_data["dynamics_nml"]["ldeepatmo"],
+        extra_diffu=nonhydrostatic_nml["lextra_diffu"],
         rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
         veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
+        _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
         fourth_order_divdamp_factor=nonhydrostatic_nml["divdamp_fac"],
         fourth_order_divdamp_factor2=nonhydrostatic_nml["divdamp_fac2"],
         fourth_order_divdamp_factor3=nonhydrostatic_nml["divdamp_fac3"],
