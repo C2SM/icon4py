@@ -379,7 +379,7 @@ def test_compute_e_bln_c_s(
 
     match icon_grid.global_properties.geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
-            e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0)
+            e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon)
         case base_grid.GeometryType.TORUS:
             e_bln_c_s = compute_e_bln_c_s_torus(c2e)
     assert test_helpers.dallclose(
