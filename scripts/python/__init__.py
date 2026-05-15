@@ -7,10 +7,4 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-"""
-Package for development scripts.
-
-Dependencies for all the modules in this package should be declared
-in the 'scripts' dependency group (in 'pyproject.toml').
-
-"""
+"""Python dev-scripts package."""

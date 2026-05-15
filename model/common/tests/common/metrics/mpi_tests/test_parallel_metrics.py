@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
@@ -40,10 +40,6 @@ if TYPE_CHECKING:
     from gt4py.next import typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
-
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 def _get_slice_tuple_from_horizontal_range(
@@ -94,8 +90,8 @@ def test_distributed_metrics_attrs(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -155,8 +151,8 @@ def test_distributed_metrics_attrs_no_halo(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -187,8 +183,8 @@ def test_distributed_metrics_attrs_no_halo_regional(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -216,8 +212,8 @@ def test_distributed_metrics_wgtfacq_e(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -237,8 +233,8 @@ def test_distributed_metrics_wgtfacq_e(
 def test_distributed_metrics_nflat_gradp(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:

@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import exchange_utils, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -80,7 +81,6 @@ def test_compute_wgtfacq_e_dsl(
     wgtfacq_e_ref = metrics_savepoint.wgtfacq_e()
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
 
-    xp = data_alloc.import_array_ns(backend)
     wgtfacq_e_dsl = weight_factors.compute_wgtfacq_e_dsl(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
@@ -88,8 +88,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
+        exchange=decomposition.single_node_exchange,
     )
 
     assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_ref.asnumpy())
@@ -103,10 +102,8 @@ def test_compute_wgtfacq_c_dsl(
 ) -> None:
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
 
-    xp = data_alloc.import_array_ns(backend)
     wgtfacq_c_dsl = weight_factors.compute_wgtfacq_c_dsl(
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         nlev=icon_grid.num_levels,
-        array_ns=xp,
     )
     assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl), wgtfacq_c_ref.asnumpy())

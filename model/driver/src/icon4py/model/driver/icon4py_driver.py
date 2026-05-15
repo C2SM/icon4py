@@ -140,10 +140,11 @@ class TimeLoop:
             and self._is_first_step_in_simulation
         ):
             log.info("running initial step to diffuse fields before time loop starts")
-            self.diffusion.initial_run(
+            self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.current,
                 self.dtime_in_seconds,
+                initial_run=True,
             )
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
@@ -536,7 +537,7 @@ def initialize(
     "--icon4py_driver_backend",
     "-b",
     required=True,
-    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
+    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_gpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
 )
 def icon4py_driver(
     input_path,
