@@ -538,7 +538,7 @@ def configure_logging(
     run_path: str,
     experiment_name: str,
     enable_output: bool = True,
-    process_props: decomposition.ProcessProperties = None,
+    process_props: decomposition.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.

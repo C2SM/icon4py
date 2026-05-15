@@ -27,9 +27,8 @@ log = logging.getLogger(__name__)
 
 @pytest.mark.parametrize("dim", dims.non_horizontal_dims())
 def test_domain_raises_for_non_horizontal_dim(dim: gtx.Dimension) -> None:
-    with pytest.raises(AssertionError) as e:
+    with pytest.raises(AssertionError, match="horizontal dimensions"):
         h_grid.domain(dim)
-    e.match("horizontal dimensions")
 
 
 def zones() -> Iterator[h_grid.Zone]:
@@ -45,9 +44,8 @@ def test_domain_raises_for_invalid_zones(dim: gtx.Dimension, zone: h_grid.Zone) 
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
         ):
-            with pytest.raises(AssertionError) as e:
+            with pytest.raises(AssertionError, match="Invalid zone"):
                 h_grid.domain(dim)(zone)
-            e.match("Invalid zone")
 
 
 @pytest.mark.parametrize("zone", zones())
