@@ -1541,7 +1541,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.9+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_mixed_ir#609aa97eaedfe2e4a0fa34d349ac8221a6b6355c" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_mixed_ir#7a0a792e9fed88c5fb75cf8702b13cf22e32654d" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
