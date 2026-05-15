@@ -8,8 +8,7 @@
 set -euo pipefail
 
 # First clean up files and directories older than 7 days in the base cache
-# directory. The backend directories can stay, but the date-based directories
-# are removed. There may be concurrent cleanup, ignore failures.
+# directory. There may be concurrent cleanup, ignore failures.
 find "${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + || true
 
 uv_lock_hash=$(sha256sum "./uv.lock" | awk '{print $1}')
