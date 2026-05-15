@@ -145,15 +145,12 @@ def test_compute_rayleigh_w(
     rayleigh_w_full = data_alloc.zero_field(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
-    damping_height = experiment.config.vertical_grid.rayleigh_damping_height
-    rayleigh_coeff = experiment.config.metrics.rayleigh_coeff
-    rayleigh_type = experiment.config.metrics.rayleigh_type
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
-        damping_height=damping_height,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
+        damping_height=experiment.config.vertical_grid.rayleigh_damping_height,
+        rayleigh_type=experiment.config.metrics.rayleigh_type,
+        rayleigh_coeff=experiment.config.metrics.rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
         vertical_start=0,
@@ -231,13 +228,6 @@ def test_compute_exner_exfac(
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            exner_expol = 0.333
-        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
-            exner_expol = 0.333
-        case _:
-            exner_expol = 1.0 / 3.0
 
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -258,7 +248,7 @@ def test_compute_exner_exfac(
         maxslp=max_slp,
         maxhgtd=max_hgtd,
         exner_exfac=exner_exfac,
-        exner_expol=exner_expol,
+        exner_expol=experiment.config.metrics.exner_expol,
         lateral_boundary_level_2=horizontal_start,
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(icon_grid.num_cells),
@@ -334,13 +324,6 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            vwind_offctr = 0.2
-        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
-            vwind_offctr = 0.2
-        case _:
-            vwind_offctr = 0.15
 
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.get_connectivity(dims.C2E).ndarray,
@@ -349,7 +332,7 @@ def test_compute_exner_w_implicit_weight_parameter(
         z_ddxn_z_half_e=z_ddxn_z_half_e.ndarray,
         z_ddxt_z_half_e=z_ddxt_z_half_e.ndarray,
         dual_edge_length=dual_edge_length.ndarray,
-        vwind_offctr=vwind_offctr,
+        vwind_offctr=experiment.config.metrics.vwind_offctr,
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
     )

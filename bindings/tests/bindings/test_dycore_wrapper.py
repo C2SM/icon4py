@@ -37,28 +37,30 @@ def solve_nh_init(
     grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
+    experiment,
 ):
-    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
-    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    rayleigh_type = constants.RayleighType.KLEMP
-    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    divdamp_type = 3
-    l_vert_nested = False
-    ldeepatmo = False
-    iau_init = False
-    extra_diffu = True
-    rhotheta_offctr = -0.1
-    veladv_offctr = 0.25
-    max_nudging_coefficient = 0.375
-    divdamp_fac = 0.004
-    divdamp_fac2 = 0.004
-    divdamp_fac3 = 0.004
-    divdamp_fac4 = 0.004
-    divdamp_z = 32500.0
-    divdamp_z2 = 40000.0
-    divdamp_z3 = 60000.0
-    divdamp_z4 = 80000.0
+    cfg = experiment.config.nonhydrostatic
+    itime_scheme = cfg.itime_scheme
+    iadv_rhotheta = cfg.iadv_rhotheta
+    igradp_method = cfg.igradp_method
+    rayleigh_type = cfg.rayleigh_type
+    divdamp_order = cfg.divdamp_order
+    divdamp_type = cfg.divdamp_type
+    l_vert_nested = cfg.l_vert_nested
+    ldeepatmo = cfg.deepatmos_mode
+    iau_init = cfg.iau_init
+    extra_diffu = cfg.extra_diffu
+    rhotheta_offctr = cfg.rhotheta_offctr
+    veladv_offctr = cfg.veladv_offctr
+    max_nudging_coefficient = cfg.max_nudging_coefficient
+    divdamp_fac = cfg.fourth_order_divdamp_factor
+    divdamp_fac2 = cfg.fourth_order_divdamp_factor2
+    divdamp_fac3 = cfg.fourth_order_divdamp_factor3
+    divdamp_fac4 = cfg.fourth_order_divdamp_factor4
+    divdamp_z = cfg.fourth_order_divdamp_z
+    divdamp_z2 = cfg.fourth_order_divdamp_z2
+    divdamp_z3 = cfg.fourth_order_divdamp_z3
+    divdamp_z4 = cfg.fourth_order_divdamp_z4
 
     # vertical grid params
     nflat_gradp = gtx.int32(
@@ -518,7 +520,7 @@ def test_dycore_wrapper_granule_inputs(
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
-    expected_config = definitions.construct_nonhydrostatic_config(experiment)
+    expected_config = experiment.config.nonhydrostatic
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---

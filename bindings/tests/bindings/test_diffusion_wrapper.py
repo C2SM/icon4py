@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import math
 from unittest import mock
 
 import cffi
@@ -36,7 +35,6 @@ from .test_grid_init import grid_init
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
@@ -47,35 +45,34 @@ def test_diffusion_wrapper_granule_inputs(
     grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
-    ndyn_substeps,
 ):
-    # --- Define Diffusion Configuration ---
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
-    hdiff_w = True
-    hdiff_vn = True
-    hdiff_temp = True
-    hdiff_smag_w = False
-    iforcing = diffusion.ForcingType.NWP
-    a_hshr = 1.0
-    loutshs = False
-    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
-    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
-    hdiff_efdt_ratio = 24.0
-    hdiff_w_efdt_ratio = 15.0
-    smagorinski_scaling_factor = 0.025
-    smagorinski_scaling_factor2 = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
-    smagorinski_scaling_factor3 = 0.0
-    smagorinski_scaling_factor4 = 1.0
-    smagorinski_scaling_height = 32500.0
-    smagorinski_scaling_height2 = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
-    smagorinski_scaling_height3 = 50000.0
-    smagorinski_scaling_height4 = 90000.0
-    zdiffu_t = True
-    denom_diffu_v = 150.0
-    max_nudging_coefficient = 0.375
-    itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
-    )
+    # Diffusion config values (sourced from experiment namelist)
+    cfg = experiment.config.diffusion
+    diffusion_type = cfg.diffusion_type
+    hdiff_w = cfg.apply_to_vertical_wind
+    hdiff_vn = cfg.apply_to_horizontal_wind
+    hdiff_temp = cfg.apply_to_temperature
+    hdiff_smag_w = cfg.apply_smag_diff_to_vertical_wind
+    iforcing = cfg.iforcing
+    a_hshr = cfg.a_hshr
+    loutshs = cfg.loutshs
+    type_t_diffu = cfg.type_t_diffu
+    type_vn_diffu = cfg.type_vn_diffu
+    hdiff_efdt_ratio = cfg.hdiff_efdt_ratio
+    hdiff_w_efdt_ratio = cfg.hdiff_w_efdt_ratio
+    smagorinski_scaling_factor = cfg.smagorinski_scaling_factor
+    smagorinski_scaling_factor2 = cfg.smagorinski_scaling_factor2
+    smagorinski_scaling_factor3 = cfg.smagorinski_scaling_factor3
+    smagorinski_scaling_factor4 = cfg.smagorinski_scaling_factor4
+    smagorinski_scaling_height = cfg.smagorinski_scaling_height
+    smagorinski_scaling_height2 = cfg.smagorinski_scaling_height2
+    smagorinski_scaling_height3 = cfg.smagorinski_scaling_height3
+    smagorinski_scaling_height4 = cfg.smagorinski_scaling_height4
+    zdiffu_t = cfg.apply_zdiffusion_t
+    denom_diffu_v = cfg.velocity_boundary_diffusion_denominator
+    max_nudging_coefficient = cfg.max_nudging_coefficient
+    itype_sher = cfg.shear_type
+    ndyn_substeps = cfg.ndyn_substeps
 
     # --- Extract Metric State Parameters ---
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -159,7 +156,7 @@ def test_diffusion_wrapper_granule_inputs(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    expected_config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    expected_config = experiment.config.diffusion
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Mock and Test Diffusion.init ---
@@ -290,7 +287,6 @@ def test_diffusion_wrapper_granule_inputs(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
@@ -300,37 +296,36 @@ def test_diffusion_wrapper_single_step(
     grid_savepoint,
     grid_init,  # initializes the grid as side-effect
     experiment,
-    ndyn_substeps,
     step_date_init,
     step_date_exit,
 ):
-    # Hardcoded DiffusionConfig parameters
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
-    hdiff_w = True
-    hdiff_vn = True
-    hdiff_temp = True
-    hdiff_smag_w = False
-    iforcing = diffusion.ForcingType.NWP
-    a_hshr = 1.0
-    loutshs = False
-    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
-    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
-    hdiff_efdt_ratio = 24.0
-    hdiff_w_efdt_ratio = 15.0
-    smagorinski_scaling_factor = 0.025
-    smagorinski_scaling_factor2 = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
-    smagorinski_scaling_factor3 = 0.0
-    smagorinski_scaling_factor4 = 1.0
-    smagorinski_scaling_height = 32500.0
-    smagorinski_scaling_height2 = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
-    smagorinski_scaling_height3 = 50000.0
-    smagorinski_scaling_height4 = 90000.0
-    zdiffu_t = True
-    denom_diffu_v = 150.0
-    max_nudging_coefficient = 0.375
-    itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
-    )
+    # Diffusion config values (sourced from experiment namelist)
+    cfg = experiment.config.diffusion
+    diffusion_type = cfg.diffusion_type
+    hdiff_w = cfg.apply_to_vertical_wind
+    hdiff_vn = cfg.apply_to_horizontal_wind
+    hdiff_temp = cfg.apply_to_temperature
+    hdiff_smag_w = cfg.apply_smag_diff_to_vertical_wind
+    iforcing = cfg.iforcing
+    a_hshr = cfg.a_hshr
+    loutshs = cfg.loutshs
+    type_t_diffu = cfg.type_t_diffu
+    type_vn_diffu = cfg.type_vn_diffu
+    hdiff_efdt_ratio = cfg.hdiff_efdt_ratio
+    hdiff_w_efdt_ratio = cfg.hdiff_w_efdt_ratio
+    smagorinski_scaling_factor = cfg.smagorinski_scaling_factor
+    smagorinski_scaling_factor2 = cfg.smagorinski_scaling_factor2
+    smagorinski_scaling_factor3 = cfg.smagorinski_scaling_factor3
+    smagorinski_scaling_factor4 = cfg.smagorinski_scaling_factor4
+    smagorinski_scaling_height = cfg.smagorinski_scaling_height
+    smagorinski_scaling_height2 = cfg.smagorinski_scaling_height2
+    smagorinski_scaling_height3 = cfg.smagorinski_scaling_height3
+    smagorinski_scaling_height4 = cfg.smagorinski_scaling_height4
+    zdiffu_t = cfg.apply_zdiffusion_t
+    denom_diffu_v = cfg.velocity_boundary_diffusion_denominator
+    max_nudging_coefficient = cfg.max_nudging_coefficient
+    itype_sher = cfg.shear_type
+    ndyn_substeps = cfg.ndyn_substeps
 
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
