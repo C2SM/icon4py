@@ -115,9 +115,6 @@ class MetricsConfig:
     igradp_method: int = 3
     """Method for computing the horizontal pressure gradient."""
 
-    igradp_constant: int = 3
-    """Constant for pressure gradient computation."""
-
     def __post_init__(self):
         if self.rayleigh_type != constants.RayleighType.KLEMP:
             raise NotImplementedError(
