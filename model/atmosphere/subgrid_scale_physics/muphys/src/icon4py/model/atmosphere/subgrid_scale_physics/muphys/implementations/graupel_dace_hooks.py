@@ -6,17 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import copy
 from collections.abc import Sequence
 from typing import Any
 
 import dace
-from dace import (
-    nodes as dace_nodes,
-    sdfg as dace_sdfg,
-    symbolic as dace_sym,
-    transformation as dace_transformation,
-)
+from dace import nodes as dace_nodes, sdfg as dace_sdfg, symbolic as dace_sym
 from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
@@ -505,37 +499,18 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
         ]
         assert len(output_edges) == 1
         output_edge = output_edges[0]
-        intermediate_an = output_edge.dst
-        assert isinstance(intermediate_an, dace_nodes.AccessNode)
-        out_edge_of_inter_an = st.out_edges(intermediate_an)[0]
-        dst_out_edge_of_inter_an = out_edge_of_inter_an.dst
-        assert isinstance(dst_out_edge_of_inter_an, dace_nodes.MapExit)
+        dst_out_edge = output_edge.dst
+        assert isinstance(dst_out_edge, dace_nodes.MapExit)
         out_edges_of_map_exit = [
             oedge_map_exit
             for oedge_map_exit in st.out_edges_by_connector(
-                dst_out_edge_of_inter_an, "OUT_" + out_edge_of_inter_an.dst_conn[3:]
+                dst_out_edge, "OUT_" + output_edge.dst_conn[3:]
             )
         ]
         assert len(out_edges_of_map_exit) == 1
         out_edge_of_map_exit = out_edges_of_map_exit[0]
         dst_out_edge_of_map_exit = out_edge_of_map_exit.dst
         assert isinstance(dst_out_edge_of_map_exit, dace_nodes.AccessNode)
-        new_memlet = dace.Memlet(
-            data=out_edge_of_inter_an.data.data,
-            subset=copy.deepcopy(out_edge_of_inter_an.data.subset),
-            other_subset=copy.deepcopy(output_edge.data.subset),
-        )
-        new_output_edge = dace_transformation.helpers.redirect_edge(
-            state=st,
-            edge=output_edge,
-            new_dst=dst_out_edge_of_inter_an,
-            new_dst_conn=out_edge_of_inter_an.dst_conn,
-            new_memlet=new_memlet,
-        )
-        new_output_edge.data.allow_oob = True
-        st.remove_edge(out_edge_of_inter_an)
-        st.remove_node(intermediate_an)
-        sdfg.arrays.pop(intermediate_an.data)
         if (
             "else_body" in else_branch.name
             and len(else_branch_state.nodes()) == 2
