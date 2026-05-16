@@ -60,7 +60,14 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(connectivities, hmask_dd3d, scalfac_dd3d, inv_dual_edge_length, z_dwdz_dd, z_graddiv_vn=z_graddiv_vn)
+        z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
+            connectivities=connectivities,
+            hmask_dd3d=hmask_dd3d,
+            scalfac_dd3d=scalfac_dd3d,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_dwdz_dd=z_dwdz_dd,
+            z_graddiv_vn=z_graddiv_vn,
+        )
         return dict(z_graddiv_vn=z_graddiv_vn)
 
     @pytest.fixture

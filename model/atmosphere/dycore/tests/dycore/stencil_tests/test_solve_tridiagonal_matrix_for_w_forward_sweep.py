@@ -79,7 +79,19 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         cpd: float,
         **kwargs: Any,
     ) -> dict:
-        z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(vwind_impl_wgt, theta_v_ic, ddqz_z_half, z_alpha, z_beta, z_exner_expl=z_exner_expl, z_w_expl=z_w_expl, z_q_ref=z_q, w_ref=w, dtime=dtime, cpd=cpd)
+        z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_ic=theta_v_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_alpha=z_alpha,
+            z_beta=z_beta,
+            z_exner_expl=z_exner_expl,
+            z_w_expl=z_w_expl,
+            z_q_ref=z_q,
+            w_ref=w,
+            dtime=dtime,
+            cpd=cpd,
+        )
         return dict(z_q=z_q_ref, w=w_ref)
 
     @pytest.fixture

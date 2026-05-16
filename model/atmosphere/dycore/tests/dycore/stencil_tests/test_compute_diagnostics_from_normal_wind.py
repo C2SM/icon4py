@@ -106,7 +106,16 @@ def compute_diagnostics_from_normal_wind_numpy(
         )
         horizontal_advection_of_w_at_edges_on_half_levels = np.where(
             k_nlev >= vertical_start,
-            compute_horizontal_advection_term_for_vertical_velocity_numpy(connectivities, vn_on_half_levels[:, : nlevp1 - 1], inv_dual_edge_length, w, tangential_wind_on_half_levels, inv_primal_edge_length=inv_primal_edge_length, tangent_orientation=tangent_orientation, z_w_v=w_at_vertices),
+            compute_horizontal_advection_term_for_vertical_velocity_numpy(
+                connectivities=connectivities,
+                vn_ie=vn_on_half_levels[:, : nlevp1 - 1],
+                inv_dual_edge_length=inv_dual_edge_length,
+                w=w,
+                z_vt_ie=tangential_wind_on_half_levels,
+                inv_primal_edge_length=inv_primal_edge_length,
+                tangent_orientation=tangent_orientation,
+                z_w_v=w_at_vertices,
+            ),
             horizontal_advection_of_w_at_edges_on_half_levels,
         )
 

@@ -134,7 +134,15 @@ class Icon4pyDriver:
 
             self.model_time_variables.next_simulation_date()
 
-            self._integrate_one_time_step(diffusion_diagnostic_state, solve_nonhydro_diagnostic_state, tracer_advection_diagnostic_state, prognostic_states, prep_adv=prep_adv, do_prep_adv=do_prep_adv, tracer_prep_adv=tracer_prep_adv)
+            self._integrate_one_time_step(
+                diffusion_diagnostic_state,
+                solve_nonhydro_diagnostic_state,
+                tracer_advection_diagnostic_state,
+                prognostic_states,
+                prep_adv=prep_adv,
+                do_prep_adv=do_prep_adv,
+                tracer_prep_adv=tracer_prep_adv,
+            )
             device_utils.sync(self.backend)
 
             self.model_time_variables.is_first_step_in_simulation = False

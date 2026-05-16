@@ -64,7 +64,18 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
         cpd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(vn_nnow, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_vn_phy, z_theta_v_e, z_gradh_exner=z_gradh_exner, dtime=dtime, wgt_nnow_vel=wgt_nnow_vel, wgt_nnew_vel=wgt_nnew_vel, cpd=cpd)
+        vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+            vn_nnow=vn_nnow,
+            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+            ddt_vn_phy=ddt_vn_phy,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            dtime=dtime,
+            wgt_nnow_vel=wgt_nnow_vel,
+            wgt_nnew_vel=wgt_nnew_vel,
+            cpd=cpd,
+        )
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture

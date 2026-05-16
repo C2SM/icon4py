@@ -50,7 +50,14 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        exner_dyn_incr = update_dynamical_exner_time_increment_numpy(connectivities, exner, ddt_exner_phy, exner_dyn_incr, ndyn_substeps_var, dtime=dtime)
+        exner_dyn_incr = update_dynamical_exner_time_increment_numpy(
+            connectivities=connectivities,
+            exner=exner,
+            ddt_exner_phy=ddt_exner_phy,
+            exner_dyn_incr=exner_dyn_incr,
+            ndyn_substeps_var=ndyn_substeps_var,
+            dtime=dtime,
+        )
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture

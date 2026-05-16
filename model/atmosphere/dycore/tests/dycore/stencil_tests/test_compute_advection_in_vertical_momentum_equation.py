@@ -142,7 +142,16 @@ def compute_horizontal_advection_of_w(
     )
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
-        compute_horizontal_advection_term_for_vertical_velocity_numpy(connectivities, vn_on_half_levels, inv_dual_edge_length, w, tangential_wind_on_half_levels, inv_primal_edge_length=inv_primal_edge_length, tangent_orientation=tangent_orientation, z_w_v=w_at_vertices)
+        compute_horizontal_advection_term_for_vertical_velocity_numpy(
+            connectivities=connectivities,
+            vn_ie=vn_on_half_levels,
+            inv_dual_edge_length=inv_dual_edge_length,
+            w=w,
+            z_vt_ie=tangential_wind_on_half_levels,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
+            z_w_v=w_at_vertices,
+        )
     )
 
     return horizontal_advection_of_w_at_edges_on_half_levels
@@ -244,7 +253,20 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
 
     vertical_wind_advective_tendency = np.where(
         condition2,
-        add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(connectivities, cfl_clipping, owner_mask, contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half, area=area, geofac_n2s=geofac_n2s, w=w[:, :-1], vertical_wind_advective_tendency=vertical_wind_advective_tendency, scalfac_exdiff=scalfac_exdiff, cfl_w_limit=cfl_w_limit, dtime=dtime),
+        add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
+            connectivities=connectivities,
+            cfl_clipping=cfl_clipping,
+            owner_mask=owner_mask,
+            contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+            ddqz_z_half=ddqz_z_half,
+            area=area,
+            geofac_n2s=geofac_n2s,
+            w=w[:, :-1],
+            vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+        ),
         vertical_wind_advective_tendency,
     )
 
@@ -306,7 +328,16 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     ) -> dict:
         nlev = kwargs["vertical_end"]
 
-        horizontal_advection_of_w_at_edges_on_half_levels = compute_horizontal_advection_of_w(connectivities, w, tangential_wind_on_half_levels, vn_on_half_levels, c_intp, inv_dual_edge_length=inv_dual_edge_length, inv_primal_edge_length=inv_primal_edge_length, tangent_orientation=tangent_orientation)
+        horizontal_advection_of_w_at_edges_on_half_levels = compute_horizontal_advection_of_w(
+            connectivities=connectivities,
+            w=w,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            c_intp=c_intp,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
+        )
 
         # We need to store the initial return field, because we only compute on a subdomain.
         contravariant_corrected_w_at_cells_on_model_levels_ret = (
@@ -319,10 +350,37 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             contravariant_corrected_w_at_cells_on_half_levels,
             cfl_clipping,
             vertical_cfl,
-        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(w[:, :-1], contravariant_correction_at_cells_on_half_levels[:, :-1], ddqz_z_half, cfl_w_limit, dtime, nlev=nlev, end_index_of_damping_layer=end_index_of_damping_layer)
+        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
+            w=w[:, :-1],
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[
+                :, :-1
+            ],
+            ddqz_z_half=ddqz_z_half,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            nlev=nlev,
+            end_index_of_damping_layer=end_index_of_damping_layer,
+        )
 
-        vertical_wind_advective_tendency = (
-            compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(connectivities, vertical_wind_advective_tendency, w, horizontal_advection_of_w_at_edges_on_half_levels, contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping=cfl_clipping, coeff1_dwdz=coeff1_dwdz, coeff2_dwdz=coeff2_dwdz, e_bln_c_s=e_bln_c_s, ddqz_z_half=ddqz_z_half, area=area, geofac_n2s=geofac_n2s, owner_mask=owner_mask, scalfac_exdiff=scalfac_exdiff, cfl_w_limit=cfl_w_limit, dtime=dtime, nlev=nlev, end_index_of_damping_layer=end_index_of_damping_layer)
+        vertical_wind_advective_tendency = compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
+            connectivities=connectivities,
+            vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+            w=w,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+            contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+            cfl_clipping=cfl_clipping,
+            coeff1_dwdz=coeff1_dwdz,
+            coeff2_dwdz=coeff2_dwdz,
+            e_bln_c_s=e_bln_c_s,
+            ddqz_z_half=ddqz_z_half,
+            area=area,
+            geofac_n2s=geofac_n2s,
+            owner_mask=owner_mask,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            nlev=nlev,
+            end_index_of_damping_layer=end_index_of_damping_layer,
         )
 
         contravariant_corrected_w_at_cells_on_model_levels = (
@@ -484,18 +542,51 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         vertical_wind_advective_tendency_ret = vertical_wind_advective_tendency.copy()
         vertical_cfl_ret = vertical_cfl.copy()
 
-        contravariant_correction_at_cells_on_half_levels_nlev = (
-            interpolate_contravariant_correction_to_cells_on_half_levels_numpy(connectivities, contravariant_correction_at_cells_on_half_levels[:, :-1], contravariant_correction_at_edges_on_model_levels, e_bln_c_s, wgtfac_c, nflatlev=nflatlev, nlev=nlev)
+        contravariant_correction_at_cells_on_half_levels_nlev = interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
+            connectivities=connectivities,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[
+                :, :-1
+            ],
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+            e_bln_c_s=e_bln_c_s,
+            wgtfac_c=wgtfac_c,
+            nflatlev=nflatlev,
+            nlev=nlev,
         )
 
         (
             contravariant_corrected_w_at_cells_on_half_levels,
             cfl_clipping,
             vertical_cfl,
-        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(w[:, :-1], contravariant_correction_at_cells_on_half_levels_nlev, ddqz_z_half, cfl_w_limit, dtime, nlev=nlev, end_index_of_damping_layer=end_index_of_damping_layer)
+        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
+            w=w[:, :-1],
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels_nlev,
+            ddqz_z_half=ddqz_z_half,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            nlev=nlev,
+            end_index_of_damping_layer=end_index_of_damping_layer,
+        )
         if not skip_compute_predictor_vertical_advection:
-            vertical_wind_advective_tendency = (
-                compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(connectivities, vertical_wind_advective_tendency, w, horizontal_advection_of_w_at_edges_on_half_levels, contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping=cfl_clipping, coeff1_dwdz=coeff1_dwdz, coeff2_dwdz=coeff2_dwdz, e_bln_c_s=e_bln_c_s, ddqz_z_half=ddqz_z_half, area=area, geofac_n2s=geofac_n2s, owner_mask=owner_mask, scalfac_exdiff=scalfac_exdiff, cfl_w_limit=cfl_w_limit, dtime=dtime, nlev=nlev, end_index_of_damping_layer=end_index_of_damping_layer)
+            vertical_wind_advective_tendency = compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
+                connectivities=connectivities,
+                vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+                w=w,
+                horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+                contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+                cfl_clipping=cfl_clipping,
+                coeff1_dwdz=coeff1_dwdz,
+                coeff2_dwdz=coeff2_dwdz,
+                e_bln_c_s=e_bln_c_s,
+                ddqz_z_half=ddqz_z_half,
+                area=area,
+                geofac_n2s=geofac_n2s,
+                owner_mask=owner_mask,
+                scalfac_exdiff=scalfac_exdiff,
+                cfl_w_limit=cfl_w_limit,
+                dtime=dtime,
+                nlev=nlev,
+                end_index_of_damping_layer=end_index_of_damping_layer,
             )
 
         contravariant_corrected_w_at_cells_on_model_levels = (

@@ -82,7 +82,15 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         z_dexner_dz_c_2: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(connectivities, inv_dual_edge_length, z_exner_ex_pr, zdiff_gradp, ikoffset, z_dexner_dz_c_1=z_dexner_dz_c_1, z_dexner_dz_c_2=z_dexner_dz_c_2)
+        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
+            connectivities=connectivities,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=z_exner_ex_pr,
+            zdiff_gradp=zdiff_gradp,
+            ikoffset=ikoffset,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
+            z_dexner_dz_c_2=z_dexner_dz_c_2,
+        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

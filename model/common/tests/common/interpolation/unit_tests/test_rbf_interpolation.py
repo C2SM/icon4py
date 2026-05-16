@@ -255,11 +255,11 @@ def test_rbf_interpolation_coeffs_vertex(
     )
 
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
-        geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
-        geometry.get(geometry_attrs.VERTEX_LON).ndarray,
-        geometry.get(geometry_attrs.VERTEX_X).ndarray,
-        geometry.get(geometry_attrs.VERTEX_Y).ndarray,
-        geometry.get(geometry_attrs.VERTEX_Z).ndarray,
+        vertex_lat=geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
+        vertex_lon=geometry.get(geometry_attrs.VERTEX_LON).ndarray,
+        vertex_x=geometry.get(geometry_attrs.VERTEX_X).ndarray,
+        vertex_y=geometry.get(geometry_attrs.VERTEX_Y).ndarray,
+        vertex_z=geometry.get(geometry_attrs.VERTEX_Z).ndarray,
         edge_center_x=geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
         edge_center_y=geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
         edge_center_z=geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,

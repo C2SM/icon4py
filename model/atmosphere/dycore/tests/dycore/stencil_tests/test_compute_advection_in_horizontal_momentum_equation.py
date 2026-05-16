@@ -198,12 +198,39 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
             connectivities, vn, geofac_rot
         )
 
-        normal_wind_advective_tendency = _compute_advective_normal_wind_tendency_numpy(connectivities, horizontal_kinetic_energy_at_edges_on_model_levels, coeff_gradekin, horizontal_kinetic_energy_at_cells_on_model_levels, upward_vorticity_at_vertices, tangential_wind=tangential_wind, coriolis_frequency=coriolis_frequency, c_lin_e=c_lin_e, contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels, vn_on_half_levels=vn_on_half_levels, ddqz_z_full_e=ddqz_z_full_e)
+        normal_wind_advective_tendency = _compute_advective_normal_wind_tendency_numpy(
+            connectivities=connectivities,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            coeff_gradekin=coeff_gradekin,
+            horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels,
+            upward_vorticity_at_vertices=upward_vorticity_at_vertices,
+            tangential_wind=tangential_wind,
+            coriolis_frequency=coriolis_frequency,
+            c_lin_e=c_lin_e,
+            contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            ddqz_z_full_e=ddqz_z_full_e,
+        )
 
         condition = (np.maximum(2, end_index_of_damping_layer - 2) <= k) & (k < nlev - 4)
 
         if apply_extra_diffusion_on_vn:
-            normal_wind_advective_tendency_extra_diffu = _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(connectivities, c_lin_e, contravariant_corrected_w_at_cells_on_model_levels, ddqz_z_full_e, area_edge, tangent_orientation=tangent_orientation, inv_primal_edge_length=inv_primal_edge_length, upward_vorticity_at_vertices=upward_vorticity_at_vertices, geofac_grdiv=geofac_grdiv, vn=vn, normal_wind_advective_tendency=normal_wind_advective_tendency, cfl_w_limit=cfl_w_limit, scalfac_exdiff=scalfac_exdiff, dtime=dtime)
+            normal_wind_advective_tendency_extra_diffu = _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
+                connectivities=connectivities,
+                c_lin_e=c_lin_e,
+                contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+                ddqz_z_full_e=ddqz_z_full_e,
+                area_edge=area_edge,
+                tangent_orientation=tangent_orientation,
+                inv_primal_edge_length=inv_primal_edge_length,
+                upward_vorticity_at_vertices=upward_vorticity_at_vertices,
+                geofac_grdiv=geofac_grdiv,
+                vn=vn,
+                normal_wind_advective_tendency=normal_wind_advective_tendency,
+                cfl_w_limit=cfl_w_limit,
+                scalfac_exdiff=scalfac_exdiff,
+                dtime=dtime,
+            )
 
             normal_wind_advective_tendency = np.where(
                 condition,
