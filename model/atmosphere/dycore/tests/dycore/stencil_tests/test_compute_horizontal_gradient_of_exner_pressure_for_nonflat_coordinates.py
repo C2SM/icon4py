@@ -60,14 +60,7 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         z_dexner_dz_c_1: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-            connectivities,
-            inv_dual_edge_length,
-            z_exner_ex_pr,
-            ddxn_z_full,
-            c_lin_e,
-            z_dexner_dz_c_1,
-        )
+        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(connectivities, inv_dual_edge_length, z_exner_ex_pr, ddxn_z_full, c_lin_e, z_dexner_dz_c_1=z_dexner_dz_c_1)
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

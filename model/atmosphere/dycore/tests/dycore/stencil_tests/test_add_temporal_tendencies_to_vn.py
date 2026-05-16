@@ -53,9 +53,7 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        vn_nnew = add_temporal_tendencies_to_vn_numpy(
-            vn_nnow, ddt_vn_apc_ntl1, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime
-        )
+        vn_nnew = add_temporal_tendencies_to_vn_numpy(vn_nnow, ddt_vn_apc_ntl1, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime=dtime)
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture

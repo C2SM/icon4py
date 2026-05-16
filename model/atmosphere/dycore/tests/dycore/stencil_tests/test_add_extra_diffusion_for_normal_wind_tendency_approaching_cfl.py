@@ -162,21 +162,5 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        ddt_vn_apc = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
-            connectivities,
-            levelmask,
-            c_lin_e,
-            z_w_con_c_full,
-            ddqz_z_full_e,
-            area_edge,
-            tangent_orientation,
-            inv_primal_edge_length,
-            zeta,
-            geofac_grdiv,
-            vn,
-            ddt_vn_apc,
-            cfl_w_limit,
-            scalfac_exdiff,
-            dtime,
-        )
+        ddt_vn_apc = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(connectivities, levelmask, c_lin_e, z_w_con_c_full, ddqz_z_full_e, area_edge=area_edge, tangent_orientation=tangent_orientation, inv_primal_edge_length=inv_primal_edge_length, zeta=zeta, geofac_grdiv=geofac_grdiv, vn=vn, ddt_vn_apc=ddt_vn_apc, cfl_w_limit=cfl_w_limit, scalfac_exdiff=scalfac_exdiff, dtime=dtime)
         return dict(ddt_vn_apc=ddt_vn_apc)

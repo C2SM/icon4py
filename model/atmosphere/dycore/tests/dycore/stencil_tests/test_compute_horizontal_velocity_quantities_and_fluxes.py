@@ -196,17 +196,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             vn_on_half_levels,
             tangential_wind_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels,
-        ) = compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
-            connectivities,
-            vn,
-            tangential_wind,
-            vn_on_half_levels,
-            tangential_wind_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels,
-            wgtfac_e,
-            wgtfacq_e,
-            vertical_end,
-        )
+        ) = compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(connectivities, vn, tangential_wind, vn_on_half_levels, tangential_wind_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels, wgtfac_e=wgtfac_e, wgtfacq_e=wgtfacq_e, nlevp1=vertical_end)
 
         spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[
             :horizontal_start, :

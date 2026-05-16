@@ -260,24 +260,24 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.VERTEX_X).ndarray,
         geometry.get(geometry_attrs.VERTEX_Y).ndarray,
         geometry.get(geometry_attrs.VERTEX_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
-        rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        geometry_type.value,
-        rbf.compute_default_rbf_scale_vertex(
+        edge_center_x=geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        edge_center_y=geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        edge_center_z=geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        edge_normal_x=geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        edge_normal_y=geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        edge_normal_z=geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
+        rbf_offset=rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
+        rbf_kernel=rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        geometry_type=geometry_type.value,
+        scale_factor=rbf.compute_default_rbf_scale_vertex(
             geometry_type.value,
             geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
-        horizontal_start,
-        horizontal_end,
-        grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
-        grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=grid.global_properties.domain_length,  # type: ignore[arg-type] # test would fail if None
+        domain_height=grid.global_properties.domain_height,  # type: ignore[arg-type] # test would fail if None
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()

@@ -71,16 +71,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         **kwargs: Any,
     ) -> dict:
         z_v_grad_w[horizontal_start:horizontal_end, :] = (
-            compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                connectivities,
-                vn_ie,
-                inv_dual_edge_length,
-                w,
-                z_vt_ie,
-                inv_primal_edge_length,
-                tangent_orientation,
-                z_w_v,
-            )
+            compute_horizontal_advection_term_for_vertical_velocity_numpy(connectivities, vn_ie, inv_dual_edge_length, w, z_vt_ie, inv_primal_edge_length=inv_primal_edge_length, tangent_orientation=tangent_orientation, z_w_v=z_w_v)
         )[horizontal_start:horizontal_end, :]
         return dict(z_v_grad_w=z_v_grad_w)
 
