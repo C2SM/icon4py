@@ -375,13 +375,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_second_halo = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_cutting_line)
         all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
-        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            vertex_owner_mask,
-            all_vertices,
-            vertex_on_cutting_line,
-            self._connectivity(dims.V2C),
-        )
+        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(cell_to_rank, vertex_owner_mask, all_vertices, vertex_on_cutting_line, target_connectivity=self._connectivity(dims.V2C))
 
         # Once mask has been updated, some owned cells may now belong to the
         # halo and be in the wrong position. We reorder the list of all
@@ -427,13 +421,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         all_edges = self._xp.hstack((edge_on_owned_cells, edge_second_level, edge_third_level))
         edge_owner_mask = self._xp.isin(all_edges, edge_on_owned_cells)
-        edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            edge_owner_mask,
-            all_edges,
-            edge_on_cutting_line,
-            self._connectivity(dims.E2C),
-        )
+        edge_owner_mask = self._update_owner_mask_by_max_rank_convention(cell_to_rank, edge_owner_mask, all_edges, edge_on_cutting_line, target_connectivity=self._connectivity(dims.E2C))
 
         # Once mask has been updated, some owned cells may now belong to the
         # halo and be in the wrong position. We reorder the list of all

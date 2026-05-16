@@ -193,21 +193,10 @@ def init_w(
     c2e = grid.get_connectivity(dims.C2E).ndarray
     e2c = grid.get_connectivity(dims.E2C).ndarray
 
-    z_grad_e = generic_math_operations_array_ns.compute_directional_derivative_on_edges(
-        z_ifc[:, nlev], e2c, inv_dual_edge_length, lb_e, ub_e, grid.num_edges
-    )
+    z_grad_e = generic_math_operations_array_ns.compute_directional_derivative_on_edges(z_ifc[:, nlev], e2c, inv_dual_edge_length, lb_e, ub_e, num_edges=grid.num_edges)
     z_wsfc_e = vn[:, nlev - 1] * z_grad_e
 
-    z_wsfc_c = generic_math_operations_array_ns.interpolate_edges_to_cell(
-        z_wsfc_e,
-        c2e,
-        e2c,
-        edge_cell_distance,
-        primal_edge_length,
-        cell_area,
-        ub_c,
-        grid.num_cells,
-    )
+    z_wsfc_c = generic_math_operations_array_ns.interpolate_edges_to_cell(z_wsfc_e, c2e, e2c, edge_cell_distance, primal_edge_length, cell_area=cell_area, ub_c=ub_c, num_cells=grid.num_cells)
 
     w = array_ns.zeros((grid.num_cells, nlev + 1))
     w[lb_c:ub_c, nlev] = z_wsfc_c[lb_c:ub_c]

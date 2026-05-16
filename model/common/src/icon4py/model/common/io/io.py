@@ -287,7 +287,7 @@ class FieldGroupMonitor(monitor.Monitor):
             vertical_params,
             horizontal_size,
             self._time_properties,
-            self._global_attrs,
+            global_attrs=self._global_attrs,
         )
         df.initialize_dataset()
         self._dataset = df

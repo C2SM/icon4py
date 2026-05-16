@@ -111,8 +111,8 @@ def get_grid_geometry(
             gm.decomposition_info,
             backend,
             gm.coordinates,
-            gm.geometry_fields,
-            geometry_attrs.attrs,
+            extra_fields=gm.geometry_fields,
+            metadata=geometry_attrs.attrs,
         )
 
     if not grid_geometries.get(register_name):
