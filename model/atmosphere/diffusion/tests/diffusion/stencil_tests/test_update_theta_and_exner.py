@@ -44,6 +44,7 @@ class TestUpdateThetaAndExner(StencilTest):
         area: np.ndarray,
         theta_v: np.ndarray,
         exner: np.ndarray,
+        *,
         rd_o_cvd: float,
         **kwargs,
     ) -> dict:

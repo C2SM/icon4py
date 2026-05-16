@@ -53,6 +53,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         next_vn: np.ndarray,
         current_vn: np.ndarray,
         dwdz_at_cells_on_model_levels: np.ndarray,
+        *,
         predictor_normal_wind_advective_tendency: np.ndarray,
         corrector_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_slow_physics_process: np.ndarray,

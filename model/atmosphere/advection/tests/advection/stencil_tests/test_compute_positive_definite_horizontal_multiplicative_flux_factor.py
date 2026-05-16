@@ -29,6 +29,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
+        *,
         p_dtime,
         dbl_eps,
         **kwargs,

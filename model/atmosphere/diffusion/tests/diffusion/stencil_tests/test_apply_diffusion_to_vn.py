@@ -54,6 +54,7 @@ class TestApplyDiffusionToVn(StencilTest):
         v_vert: np.ndarray,
         primal_normal_vert_v1: np.ndarray,
         primal_normal_vert_v2: np.ndarray,
+        *,
         z_nabla2_e: np.ndarray,
         inv_vert_vert_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,

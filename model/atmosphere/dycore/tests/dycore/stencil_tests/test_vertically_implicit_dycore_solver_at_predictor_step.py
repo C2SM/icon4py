@@ -102,6 +102,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         next_w: np.ndarray,
         next_rho: np.ndarray,
         next_exner: np.ndarray,
+        *,
         next_theta_v: np.ndarray,
         dwdz_at_cells_on_model_levels: np.ndarray,
         exner_dynamical_increment: np.ndarray,

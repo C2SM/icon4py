@@ -31,6 +31,7 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         deepatmo_divh: np.ndarray,
         tracer_now: np.ndarray,
         rhodz_now: np.ndarray,
+        *,
         rhodz_new: np.ndarray,
         geofac_div: np.ndarray,
         p_dtime: float,

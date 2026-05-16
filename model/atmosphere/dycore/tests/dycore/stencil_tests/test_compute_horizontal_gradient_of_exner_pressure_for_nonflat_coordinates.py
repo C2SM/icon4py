@@ -28,6 +28,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
     z_exner_ex_pr: np.ndarray,
     ddxn_z_full: np.ndarray,
     c_lin_e: np.ndarray,
+    *,
     z_dexner_dz_c_1: np.ndarray,
 ) -> np.ndarray:
     e2c = connectivities[dims.E2CDim]
@@ -55,6 +56,7 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         z_exner_ex_pr: np.ndarray,
         ddxn_z_full: np.ndarray,
         c_lin_e: np.ndarray,
+        *,
         z_dexner_dz_c_1: np.ndarray,
         **kwargs: Any,
     ) -> dict:

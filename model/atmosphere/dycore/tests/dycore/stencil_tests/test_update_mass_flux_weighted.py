@@ -47,6 +47,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
         vwind_expl_wgt: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         w_now: np.ndarray,
+        *,
         w_new: np.ndarray,
         w_concorr_c: np.ndarray,
         mass_flx_ic: np.ndarray,

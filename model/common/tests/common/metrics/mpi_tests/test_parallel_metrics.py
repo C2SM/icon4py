@@ -92,6 +92,7 @@ def test_distributed_metrics_attrs(
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
+    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -153,6 +154,7 @@ def test_distributed_metrics_attrs_no_halo(
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
+    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -185,6 +187,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
+    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -214,6 +217,7 @@ def test_distributed_metrics_wgtfacq_e(
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
+    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -236,6 +240,7 @@ def test_distributed_metrics_nflat_gradp(
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
+    *,
     experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)

@@ -98,6 +98,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         next_rho: np.ndarray,
         next_exner: np.ndarray,
         next_theta_v: np.ndarray,
+        *,
         dynamical_vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels: np.ndarray,
         exner_dynamical_increment: np.ndarray,

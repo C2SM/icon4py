@@ -28,6 +28,7 @@ def update_dynamical_exner_time_increment_numpy(
     ddt_exner_phy: np.ndarray,
     exner_dyn_incr: np.ndarray,
     ndyn_substeps_var: float,
+    *,
     dtime: float,
 ) -> np.ndarray:
     exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
@@ -45,6 +46,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         ddt_exner_phy: np.ndarray,
         exner_dyn_incr: np.ndarray,
         ndyn_substeps_var: float,
+        *,
         dtime: float,
         **kwargs: Any,
     ) -> dict:

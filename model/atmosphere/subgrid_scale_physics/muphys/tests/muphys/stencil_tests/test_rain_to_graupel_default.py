@@ -26,6 +26,7 @@ class TestRainToGraupelDefault(StencilTest):
         rho: np.ndarray,
         qc: np.ndarray,
         qr: np.ndarray,
+        *,
         qi: np.ndarray,
         qs: np.ndarray,
         mi: np.ndarray,

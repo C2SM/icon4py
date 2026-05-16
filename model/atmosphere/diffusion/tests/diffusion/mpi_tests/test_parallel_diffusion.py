@@ -47,6 +47,7 @@ def test_parallel_diffusion(
     step_date_exit: str,
     linit: bool,
     ndyn_substeps: int,
+    *,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,

@@ -157,6 +157,7 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
+    *,
     level: int,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)

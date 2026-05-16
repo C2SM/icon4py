@@ -63,6 +63,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         mass_flux_at_edges_on_model_levels: np.ndarray,
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         substep_and_spatially_averaged_vn: np.ndarray,
+        *,
         substep_averaged_mass_flux: np.ndarray,
         e_flx_avg: np.ndarray,
         vn: np.ndarray,

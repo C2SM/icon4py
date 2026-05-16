@@ -29,6 +29,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         vn: np.ndarray,
         e_bln_c_s: np.ndarray,
         geofac_div: np.ndarray,
+        *,
         diff_multfac_smag: np.ndarray,
         **kwargs,
     ) -> dict:

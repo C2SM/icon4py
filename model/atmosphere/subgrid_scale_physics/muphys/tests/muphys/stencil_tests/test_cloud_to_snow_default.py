@@ -26,6 +26,7 @@ class TestCloudToSnowDefault(StencilTest):
         qc: np.ndarray,
         qs: np.ndarray,
         ns: np.ndarray,
+        *,
         lam: np.ndarray,
         **kwargs,
     ) -> dict:

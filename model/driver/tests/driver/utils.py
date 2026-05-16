@@ -68,6 +68,7 @@ def construct_icon4pyrun_config(
     date_exit: str,
     diffusion_linit_init: bool,
     backend: gtx_typing.Backend,
+    *,
     ndyn_substeps: int = 5,
 ):
     if experiment == definitions.Experiments.MCH_CH_R04B09:

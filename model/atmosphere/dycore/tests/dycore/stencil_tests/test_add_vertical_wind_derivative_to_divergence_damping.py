@@ -27,6 +27,7 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     scalfac_dd3d: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     z_dwdz_dd: np.ndarray,
+    *,
     z_graddiv_vn: np.ndarray,
 ) -> np.ndarray:
     scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
@@ -55,6 +56,7 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         scalfac_dd3d: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         z_dwdz_dd: np.ndarray,
+        *,
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:

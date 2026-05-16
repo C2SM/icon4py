@@ -45,6 +45,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
         z_graddiv2_vn: np.ndarray,
         vn: np.ndarray,
         divdamp_order: gtx.int32,
+        *,
         mean_cell_area: float,
         second_order_divdamp_factor: float,
         **kwargs: Any,

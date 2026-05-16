@@ -43,6 +43,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         lsq_pseudoinv_1: np.ndarray,
         lsq_pseudoinv_2: np.ndarray,
         lsq_pseudoinv_3: np.ndarray,
+        *,
         lsq_pseudoinv_4: np.ndarray,
         lsq_pseudoinv_5: np.ndarray,
         lsq_pseudoinv_6: np.ndarray,

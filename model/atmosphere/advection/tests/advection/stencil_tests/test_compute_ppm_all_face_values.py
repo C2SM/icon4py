@@ -32,6 +32,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_cellhgt_mc_now: np.ndarray,
         p_face_in: np.ndarray,
         slev: gtx.int32,
+        *,
         elev: gtx.int32,
         slevp1: gtx.int32,
         elevp1: gtx.int32,

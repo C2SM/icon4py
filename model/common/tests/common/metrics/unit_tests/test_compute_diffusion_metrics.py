@@ -54,6 +54,7 @@ def test_compute_diffusion_mask_and_coeff(
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
+    *,
     backend: gtx_typing.Backend,
 ) -> None:
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -137,6 +138,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
+    *,
     backend: gtx_typing.Backend,
 ) -> None:
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)

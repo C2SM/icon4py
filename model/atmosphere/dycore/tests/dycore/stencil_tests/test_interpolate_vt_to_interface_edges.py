@@ -41,6 +41,7 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
         vt: np.ndarray,
         z_vt_ie: np.ndarray,
         horizontal_start: gtx.int32,
+        *,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,

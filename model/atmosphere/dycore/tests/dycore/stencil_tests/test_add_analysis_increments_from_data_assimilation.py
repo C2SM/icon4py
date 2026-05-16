@@ -27,6 +27,7 @@ def add_analysis_increments_from_data_assimilation_numpy(
     rho_incr: np.ndarray,
     z_exner_expl: np.ndarray,
     exner_incr: np.ndarray,
+    *,
     iau_wgt_dyn: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
@@ -45,6 +46,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         rho_incr: np.ndarray,
         z_exner_expl: np.ndarray,
         exner_incr: np.ndarray,
+        *,
         iau_wgt_dyn: float,
         **kwargs: Any,
     ) -> dict:

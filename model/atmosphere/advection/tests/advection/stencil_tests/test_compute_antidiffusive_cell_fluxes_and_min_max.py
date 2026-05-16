@@ -35,6 +35,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         p_rhodz_now: np.ndarray,
         p_rhodz_new: np.ndarray,
         z_mflx_low: np.ndarray,
+        *,
         z_anti: np.ndarray,
         p_cc: np.ndarray,
         p_dtime: float,

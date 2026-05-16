@@ -218,6 +218,7 @@ def test_benchmark_solve_nonhydro(
     at_first_substep: bool,
     at_last_substep: bool,
     backend_like: model_backends.BackendLike,
+    *,
     benchmark: Any,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)

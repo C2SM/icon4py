@@ -26,6 +26,7 @@ class TestRainToVapor(StencilTest):
         rho: np.ndarray,
         qc: np.ndarray,
         qr: np.ndarray,
+        *,
         dvsw: np.ndarray,
         dt: wpfloat,
         **kwargs,

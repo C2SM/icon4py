@@ -47,6 +47,7 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
         nudgecoeff_e: np.ndarray,
         z_graddiv2_vn: np.ndarray,
         vn: np.ndarray,
+        *,
         divdamp_order: gtx.int32,
         mean_cell_area: float,
         second_order_divdamp_factor: float,

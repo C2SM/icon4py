@@ -51,6 +51,7 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
         z_rth_pr: np.ndarray,
         theta_ref_ic: np.ndarray,
         z_theta_v_pr_ic: np.ndarray,
+        *,
         theta_v_ic: np.ndarray,
         **kwargs: Any,
     ) -> dict:

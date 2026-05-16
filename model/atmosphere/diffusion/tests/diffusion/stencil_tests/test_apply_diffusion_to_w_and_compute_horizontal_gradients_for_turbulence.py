@@ -61,6 +61,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         geofac_n2s,
         geofac_grg_x,
         geofac_grg_y,
+        *,
         w_old,
         type_shear,
         dwdx,

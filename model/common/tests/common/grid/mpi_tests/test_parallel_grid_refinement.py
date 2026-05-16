@@ -63,6 +63,7 @@ def test_compute_domain_bounds(
     domain: h_grid.Domain,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
+    *,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> None:

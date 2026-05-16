@@ -70,6 +70,7 @@ def test_decomposition_info_masked(
     total: int,
     caplog: Any,
     download_ser_data: Any,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
@@ -126,6 +127,7 @@ def test_decomposition_info_local_index(
     total: int,
     caplog: Any,
     decomposition_info: decomp_defs.DecompositionInfo,
+    *,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ):
@@ -313,6 +315,7 @@ def test_halo_exchange_for_sparse_field(
     process_props: decomp_defs.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
 ):
     edge_length = grid_savepoint.primal_edge_length()

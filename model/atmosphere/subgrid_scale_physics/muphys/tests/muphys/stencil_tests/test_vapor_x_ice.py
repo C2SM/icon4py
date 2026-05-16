@@ -26,6 +26,7 @@ class TestVaporXIceDefault(StencilTest):
         mi: np.ndarray,
         eta: np.ndarray,
         dvsi: np.ndarray,
+        *,
         rho: np.ndarray,
         dt: wpfloat,
         **kwargs,

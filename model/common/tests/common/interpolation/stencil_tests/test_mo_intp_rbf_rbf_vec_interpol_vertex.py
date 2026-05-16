@@ -46,6 +46,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
         horizontal_start: int,
+        *,
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:

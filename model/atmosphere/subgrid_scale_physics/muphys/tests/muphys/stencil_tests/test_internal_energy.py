@@ -26,6 +26,7 @@ class TestInternalEnergy(StencilTest):
         qv: np.ndarray,
         qliq: np.ndarray,
         qice: np.ndarray,
+        *,
         rho: np.ndarray,
         dz: np.ndarray,
         **kwargs,

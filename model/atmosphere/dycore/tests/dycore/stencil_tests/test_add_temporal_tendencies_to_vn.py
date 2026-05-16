@@ -28,6 +28,7 @@ def add_temporal_tendencies_to_vn_numpy(
     ddt_vn_phy: np.ndarray,
     z_theta_v_e: np.ndarray,
     z_gradh_exner: np.ndarray,
+    *,
     dtime: float,
 ) -> np.ndarray:
     vn_nnew = vn_nnow + dtime * (
@@ -47,6 +48,7 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         ddt_vn_apc_ntl1: np.ndarray,
         ddt_vn_phy: np.ndarray,
         z_theta_v_e: np.ndarray,
+        *,
         z_gradh_exner: np.ndarray,
         dtime: float,
         **kwargs: Any,

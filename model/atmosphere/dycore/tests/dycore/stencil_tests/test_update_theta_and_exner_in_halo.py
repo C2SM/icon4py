@@ -36,6 +36,7 @@ class TestUpdateThetaV(StencilTest):
         rho_now: np.ndarray,
         rho_new: np.ndarray,
         theta_v_now: np.ndarray,
+        *,
         theta_v_new: np.ndarray,
         exner_now: np.ndarray,
         exner_new: np.ndarray,

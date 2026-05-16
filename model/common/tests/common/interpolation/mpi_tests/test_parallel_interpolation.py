@@ -67,6 +67,7 @@ def test_distributed_interpolation_with_custom_tolerance(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
@@ -106,6 +107,7 @@ def test_distributed_interpolation_fields(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
@@ -129,6 +131,7 @@ def test_distributed_interpolation_grg(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
@@ -163,6 +166,7 @@ def test_distributed_interpolation_geofac_rot(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
@@ -199,6 +203,7 @@ def test_distributed_interpolation_rbf(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
@@ -225,6 +230,7 @@ def test_distributed_interpolation_lsq_pseudoinv(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:

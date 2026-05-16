@@ -26,6 +26,7 @@ class TestIceToGraupel(StencilTest):
         qr: np.ndarray,
         qg: np.ndarray,
         qi: np.ndarray,
+        *,
         sticking_eff: np.ndarray,
         **kwargs,
     ) -> dict:

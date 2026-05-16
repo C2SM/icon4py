@@ -145,6 +145,7 @@ def verify_advection_fields(
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_tracer_new_ref: fa.CellKField[ta.wpfloat],
+    *,
     even_timestep: bool,
 ):
     # cell indices

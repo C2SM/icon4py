@@ -40,6 +40,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         div: np.ndarray,
         kh_c: np.ndarray,
         div_ic: np.ndarray,
+        *,
         hdef_ic: np.ndarray,
     ) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(

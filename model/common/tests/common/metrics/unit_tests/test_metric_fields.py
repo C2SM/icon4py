@@ -288,6 +288,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     experiment: definitions.Experiment,
+    *,
     backend: gtx_typing.Backend,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()

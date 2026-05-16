@@ -68,6 +68,7 @@ def run_test_case(
     function,
     library_name,
     samples_path,
+    *,
     fortran_driver,
     test_temp_dir,
     compiler="gfortran",  # TODO(havogt): don't use hard-coded compiler, see gt4py.cartesian setuptools approach
@@ -105,6 +106,7 @@ def compile_and_run_fortran(
     fortran_driver,
     compiler,
     extra_compiler_flags,
+    *,
     expected_error_code,
     env_vars,
 ):
@@ -140,6 +142,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
     samples_path,
     square_wrapper_module,
     extra_flags,
+    *,
     test_temp_dir,
     fortran_subprocess_env,
 ):
@@ -193,6 +196,7 @@ def test_py2fgen_compilation_and_execution_gpu(
     library_name,
     test_name,
     samples_path,
+    *,
     square_wrapper_module,
     extra_flags,
     test_temp_dir,
@@ -224,6 +228,7 @@ def test_py2fgen_compilation_and_profiling(
     square_wrapper_module,
     extra_flags,
     test_temp_dir,
+    *,
     tmp_path,
     fortran_subprocess_env,
 ):

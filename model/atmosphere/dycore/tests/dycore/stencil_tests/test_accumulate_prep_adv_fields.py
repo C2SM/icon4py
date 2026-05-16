@@ -47,6 +47,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
         mass_fl_e: np.ndarray,
         vn_traj: np.ndarray,
         mass_flx_me: np.ndarray,
+        *,
         r_nsubsteps: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:

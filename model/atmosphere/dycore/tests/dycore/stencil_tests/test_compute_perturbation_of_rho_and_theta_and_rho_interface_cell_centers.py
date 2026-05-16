@@ -50,6 +50,7 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
         rho: np.ndarray,
         rho_ref_mc: np.ndarray,
         theta_v: np.ndarray,
+        *,
         theta_ref_mc: np.ndarray,
         **kwargs: Any,
     ) -> dict:

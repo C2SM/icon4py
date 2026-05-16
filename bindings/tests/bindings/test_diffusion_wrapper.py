@@ -44,6 +44,7 @@ def test_diffusion_wrapper_granule_inputs(
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
+    *,
     grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
@@ -298,6 +299,7 @@ def test_diffusion_wrapper_single_step(
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
+    *,
     grid_init,  # initializes the grid as side-effect
     experiment,
     ndyn_substeps,

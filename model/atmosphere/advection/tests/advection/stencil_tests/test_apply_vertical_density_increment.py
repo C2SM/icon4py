@@ -37,6 +37,7 @@ class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
         p_mflx_contra_v: np.ndarray,
         deepatmo_divzl: np.ndarray,
         deepatmo_divzu: np.ndarray,
+        *,
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:

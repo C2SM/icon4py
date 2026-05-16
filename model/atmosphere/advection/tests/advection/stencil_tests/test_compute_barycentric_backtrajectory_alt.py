@@ -29,6 +29,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
         p_vt: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
         pos_on_tplane_e_2: np.ndarray,
+        *,
         primal_normal_cell_1: np.ndarray,
         dual_normal_cell_1: np.ndarray,
         primal_normal_cell_2: np.ndarray,

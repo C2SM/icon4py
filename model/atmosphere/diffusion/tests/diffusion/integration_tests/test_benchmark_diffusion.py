@@ -45,6 +45,7 @@ def test_diffusion_benchmark(
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend_like: model_backends.BackendLike,
+    *,
     benchmark: Any,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)

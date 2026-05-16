@@ -31,6 +31,7 @@ class TestDiagnoseTemperature(stencil_tests.StencilTest):
         qc: np.ndarray,
         qi: np.ndarray,
         qr: np.ndarray,
+        *,
         qs: np.ndarray,
         qg: np.ndarray,
         theta_v: np.ndarray,

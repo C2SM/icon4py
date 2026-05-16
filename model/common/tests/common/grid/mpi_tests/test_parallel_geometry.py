@@ -74,6 +74,7 @@ def test_distributed_geometry_attrs(
     decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
+    *,
     grid_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
@@ -101,6 +102,7 @@ def test_distributed_geometry_attrs_for_inverse(
     decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
+    *,
     grid_name: str,
     lb_domain: h_grid.Domain,
 ) -> None:
@@ -145,6 +147,7 @@ def test_geometry_attr_no_halos(
     decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
+    *,
     grid_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
@@ -173,6 +176,7 @@ def test_cartesian_geometry_attr_no_halos(
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
+    *,
     x: str,
     y: str,
     z: str,

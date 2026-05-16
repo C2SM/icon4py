@@ -32,6 +32,7 @@ class TestUpdateDensityExnerWind(StencilTest):
         grf_tend_rho: np.ndarray,
         theta_v_now: np.ndarray,
         grf_tend_thv: np.ndarray,
+        *,
         w_now: np.ndarray,
         grf_tend_w: np.ndarray,
         dtime: ta.wpfloat,

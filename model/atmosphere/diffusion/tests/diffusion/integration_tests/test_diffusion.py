@@ -157,6 +157,7 @@ def test_diffusion_init(
     metric_state: diffusion_states.DiffusionMetricState,
     experiment,
     step_date_init,
+    *,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -428,6 +429,7 @@ def test_run_diffusion_initial_step(
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
+    *,
     damping_height,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -502,7 +504,7 @@ def test_run_diffusion_initial_step(
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
+    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, *, backend
 ):
     savepoint = savepoint_diffusion_init
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)

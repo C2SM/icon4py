@@ -44,6 +44,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         tangent_orientation: np.ndarray,
         inv_primal_edge_length: np.ndarray,
         inv_vert_vert_length: np.ndarray,
+        *,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
         primal_normal_vert_x: np.ndarray,

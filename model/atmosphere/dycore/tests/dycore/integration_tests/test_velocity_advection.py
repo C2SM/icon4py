@@ -47,6 +47,7 @@ def _compare_cfl(
     icon_result_max_vcfl_dyn: float,
     horizontal_start: int,
     horizontal_end: int,
+    *,
     vertical_start: int,
     vertical_end: int,
 ) -> None:
@@ -82,6 +83,7 @@ def test_verify_velocity_init_against_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     metrics_savepoint: serialbox.MetricSavepoint,
+    *,
     lowest_layer_thickness: ta.wpfloat,
     model_top_height: ta.wpfloat,
     stretch_factor: ta.wpfloat,
@@ -129,6 +131,7 @@ def test_scale_factors_by_dtime(
     experiment,
     step_date_init,
     savepoint_velocity_init,
+    *,
     icon_grid,
     grid_savepoint,
     lowest_layer_thickness,

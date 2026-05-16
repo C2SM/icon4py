@@ -26,6 +26,7 @@ class TestGraupelToRain(StencilTest):
         p: np.ndarray,
         rho: np.ndarray,
         dvsw0: np.ndarray,
+        *,
         qg: np.ndarray,
         **kwargs,
     ) -> dict:

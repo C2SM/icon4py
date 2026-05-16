@@ -26,6 +26,7 @@ class TestVaporXSnowDefault(StencilTest):
         p: np.ndarray,
         rho: np.ndarray,
         qs: np.ndarray,
+        *,
         ns: np.ndarray,
         lam: np.ndarray,
         eta: np.ndarray,

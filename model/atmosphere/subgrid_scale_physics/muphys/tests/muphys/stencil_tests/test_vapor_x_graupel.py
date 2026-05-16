@@ -26,6 +26,7 @@ class TestVaporXGraupel(StencilTest):
         p: np.ndarray,
         rho: np.ndarray,
         qg: np.ndarray,
+        *,
         dvsw: np.ndarray,
         dvsi: np.ndarray,
         dvsw0: np.ndarray,

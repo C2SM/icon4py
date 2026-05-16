@@ -36,6 +36,7 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
         geofac_div: np.ndarray,
         z_rhofluxdiv_c: np.ndarray,
         z_tracer_mflx: np.ndarray,
+        *,
         z_rho_now: np.ndarray,
         z_tracer_now: np.ndarray,
         z_dtsub: float,
