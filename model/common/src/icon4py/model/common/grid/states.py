@@ -20,6 +20,7 @@ class EdgeParams:
         primal_edge_lengths=None,
         inverse_primal_edge_lengths=None,
         dual_edge_lengths=None,
+        *,
         inverse_dual_edge_lengths=None,
         inverse_vertex_vertex_lengths=None,
         primal_normal_vert_x=None,

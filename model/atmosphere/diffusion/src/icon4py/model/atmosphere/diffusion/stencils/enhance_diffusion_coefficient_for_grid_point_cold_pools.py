@@ -29,6 +29,7 @@ def enhance_diffusion_coefficient_for_grid_point_cold_pools(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
+    *,
     vertical_end: gtx.int32,
 ) -> None:
     _enhance_diffusion_coefficient_for_grid_point_cold_pools(

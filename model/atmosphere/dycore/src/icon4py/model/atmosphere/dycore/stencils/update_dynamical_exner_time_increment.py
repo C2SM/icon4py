@@ -34,6 +34,7 @@ def update_dynamical_exner_time_increment(
     exner_dyn_incr: fa.CellKField[vpfloat],
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

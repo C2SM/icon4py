@@ -29,6 +29,7 @@ def compute_vn_on_lateral_boundary(
     vn_new: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

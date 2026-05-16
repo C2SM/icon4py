@@ -561,6 +561,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
+    *,
     nflatlev: int,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,
@@ -638,6 +639,7 @@ def _check_and_correct_layer_thickness(
     SLEVE_minimum_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
+    *,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
 ) -> data_alloc.NDArray:
@@ -739,6 +741,7 @@ def compute_vertical_coordinate(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
+    *,
     nflatlev: int,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,

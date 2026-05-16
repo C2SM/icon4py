@@ -35,6 +35,7 @@ def compute_dwdz_for_divergence_damping(
     w_concorr_c: fa.CellKField[vpfloat],
     z_dwdz_dd: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

@@ -21,6 +21,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
+    *,
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_20."""
@@ -59,6 +60,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
+    *,
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,

@@ -23,6 +23,7 @@ def _integrate_tracer_vertically_a(
     p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
+    *,
     rhodz_new: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
@@ -41,6 +42,7 @@ def _integrate_tracer_vertically(
     p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
+    *,
     rhodz_new: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     p_dtime: ta.wpfloat,
@@ -75,6 +77,7 @@ def integrate_tracer_vertically(
     p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
+    *,
     rhodz_new: fa.CellKField[ta.wpfloat],
     tracer_new: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],

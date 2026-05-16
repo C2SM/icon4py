@@ -33,6 +33,7 @@ def interpolate_vt_to_interface_edges(
     z_vt_ie: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

@@ -36,6 +36,7 @@ def calculate_nabla2_for_theta(
     theta_v: fa.CellKField[float],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], float],
     z_temp: fa.CellKField[float],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

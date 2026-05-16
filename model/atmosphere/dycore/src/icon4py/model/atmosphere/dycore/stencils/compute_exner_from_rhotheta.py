@@ -32,6 +32,7 @@ def compute_exner_from_rhotheta(
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

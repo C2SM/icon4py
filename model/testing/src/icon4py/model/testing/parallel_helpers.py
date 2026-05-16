@@ -80,6 +80,7 @@ def check_local_global_field(
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
+    *,
     check_halos: bool,
     atol: float,
     rtol: float = 0.0,

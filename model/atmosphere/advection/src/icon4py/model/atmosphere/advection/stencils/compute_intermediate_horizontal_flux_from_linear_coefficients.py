@@ -24,6 +24,7 @@ def _compute_intermediate_horizontal_flux_from_linear_coefficients(
     z_lsq_coeff_3_dsl: fa.CellKField[ta.wpfloat],
     distv_bary_1: fa.EdgeKField[ta.vpfloat],
     distv_bary_2: fa.EdgeKField[ta.vpfloat],
+    *,
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
 ) -> fa.EdgeKField[ta.wpfloat]:
@@ -57,6 +58,7 @@ def compute_intermediate_horizontal_flux_from_linear_coefficients(
     z_lsq_coeff_3_dsl: fa.CellKField[ta.wpfloat],
     distv_bary_1: fa.EdgeKField[ta.vpfloat],
     distv_bary_2: fa.EdgeKField[ta.vpfloat],
+    *,
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
     z_tracer_mflx_dsl: fa.EdgeKField[ta.wpfloat],

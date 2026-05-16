@@ -28,6 +28,7 @@ def compute_ffsl_backtrajectory_counterclockwise_indicator(
     lvn_sys_pos: fa.EdgeKField[bool],
     lcounterclock: bool,
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

@@ -43,6 +43,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_typing.Backend | None,
+    *,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,

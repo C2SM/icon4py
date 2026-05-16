@@ -29,6 +29,7 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_vert_out: fa.VertexKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

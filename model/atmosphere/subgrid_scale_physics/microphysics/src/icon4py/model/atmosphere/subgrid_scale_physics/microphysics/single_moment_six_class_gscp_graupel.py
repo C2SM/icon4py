@@ -98,6 +98,7 @@ class SingleMomentSixClassIconGraupel:
         grid: icon_grid.IconGrid,
         metric_state: MetricStateIconGraupel,
         vertical_params: v_grid.VerticalGrid,
+        *,
         backend: gtx_typing.Backend | None,
     ):
         self.config = graupel_config
@@ -344,6 +345,7 @@ class SingleMomentSixClassIconGraupel:
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],
         pressure: fa.CellKField[ta.wpfloat],
+        *,
         qv: fa.CellKField[ta.wpfloat],
         qc: fa.CellKField[ta.wpfloat],
         qr: fa.CellKField[ta.wpfloat],

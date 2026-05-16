@@ -55,6 +55,7 @@ def diff_on_edges_torus_numpy(
     cc_cell_x: float,
     cc_cell_y: float,
     domain_length: float,
+    *,
     domain_height: float,
 ) -> tuple[float, float]:
     if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:

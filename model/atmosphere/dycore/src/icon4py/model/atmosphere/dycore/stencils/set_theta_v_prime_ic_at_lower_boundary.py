@@ -32,6 +32,7 @@ def set_theta_v_prime_ic_at_lower_boundary(
     theta_ref_ic: fa.CellKField[vpfloat],
     z_theta_v_pr_ic: fa.CellKField[vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

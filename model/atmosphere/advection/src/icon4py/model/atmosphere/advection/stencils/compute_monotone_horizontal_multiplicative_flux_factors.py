@@ -40,6 +40,7 @@ def _compute_monotone_horizontal_multiplicative_flux_factors_p_m(
     z_tracer_new_low: fa.CellKField[ta.wpfloat],
     z_max: fa.CellKField[ta.vpfloat],
     z_min: fa.CellKField[ta.vpfloat],
+    *,
     dbl_eps: ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     r_p = (astype(z_max, wpfloat) - z_tracer_new_low) / (astype(z_mflx_anti_in, wpfloat) + dbl_eps)
@@ -55,6 +56,7 @@ def _compute_monotone_horizontal_multiplicative_flux_factors(
     z_mflx_anti_in: fa.CellKField[ta.vpfloat],
     z_mflx_anti_out: fa.CellKField[ta.vpfloat],
     z_tracer_new_low: fa.CellKField[ta.wpfloat],
+    *,
     beta_fct: ta.wpfloat,
     r_beta_fct: ta.wpfloat,
     dbl_eps: ta.wpfloat,
@@ -81,6 +83,7 @@ def compute_monotone_horizontal_multiplicative_flux_factors(
     z_mflx_anti_in: fa.CellKField[ta.vpfloat],
     z_mflx_anti_out: fa.CellKField[ta.vpfloat],
     z_tracer_new_low: fa.CellKField[ta.wpfloat],
+    *,
     r_p: fa.CellKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],
     beta_fct: ta.wpfloat,

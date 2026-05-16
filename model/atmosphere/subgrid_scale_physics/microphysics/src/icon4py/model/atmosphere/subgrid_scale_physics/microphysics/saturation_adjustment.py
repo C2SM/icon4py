@@ -100,6 +100,7 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
+        *,
         backend: gtx_typing.Backend | None,
     ):
         self._backend = backend
@@ -219,6 +220,7 @@ class SaturationAdjustment:
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],
         qv: fa.CellKField[ta.wpfloat],
+        *,
         qc: fa.CellKField[ta.wpfloat],
         temperature_tendency: fa.CellKField[ta.wpfloat],
         qv_tendency: fa.CellKField[ta.wpfloat],

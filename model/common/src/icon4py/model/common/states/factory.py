@@ -139,6 +139,7 @@ class FieldProvider(Protocol):
         field_src: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        *,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | state_utils.ScalarType: ...
 
@@ -305,6 +306,7 @@ class PrecomputedFieldProvider(FieldProvider):
         field_src: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        *,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType:
         return self.fields[field_name]
@@ -335,6 +337,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
+        *,  # keyword arg to (field_operator, field_name) need: src
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType]
         | None = None,  # keyword arg to (field_operator, field_name)
@@ -372,6 +375,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        *,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
@@ -502,6 +506,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
         deps: dict[str, str],
+        *,
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
@@ -593,6 +598,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         factory: FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
+        *,
         exchange: decomposition.ExchangeRuntime,
     ):
         if any([f is None for f in self.fields.values()]):
@@ -657,6 +663,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         domain: Sequence[gtx.Dimension],
         fields: Sequence[str],
         deps: dict[str, str],
+        *,
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
         do_exchange: bool = False,
@@ -677,6 +684,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         factory: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        *,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):

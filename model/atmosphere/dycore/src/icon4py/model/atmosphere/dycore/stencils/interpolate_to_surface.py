@@ -33,6 +33,7 @@ def interpolate_to_surface(
     interpolation_to_surface: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

@@ -117,6 +117,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
+        *,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
         profiling: driver_config.ProfilingConfig | None = None,
@@ -204,6 +205,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
+        *,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
@@ -273,6 +275,7 @@ class TimeLoop:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
+        *,
         do_prep_adv: bool,
     ):
         # TODO(OngChia): compute airmass for prognostic_state here
@@ -344,6 +347,7 @@ def initialize(
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
     grid_file: pathlib.Path,
+    *,
     backend_like: model_backends.BackendLike,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
@@ -545,6 +549,7 @@ def icon4py_driver(
     mpi,
     serialization_type,
     experiment_type,
+    *,
     grid_file,
     enable_output,
     enable_profiling,

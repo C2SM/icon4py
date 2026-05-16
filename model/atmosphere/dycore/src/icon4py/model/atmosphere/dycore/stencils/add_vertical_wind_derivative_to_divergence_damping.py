@@ -41,6 +41,7 @@ def add_vertical_wind_derivative_to_divergence_damping(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_dwdz_dd: fa.CellKField[vpfloat],
     z_graddiv_vn: fa.EdgeKField[vpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

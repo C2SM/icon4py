@@ -50,6 +50,7 @@ class Icon4pyDriver:
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
+        *,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
@@ -166,6 +167,7 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
+        *,
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState,
@@ -557,6 +559,7 @@ def initialize_driver(
     log_level: str,
     backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
+    *,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """

@@ -20,6 +20,7 @@ def _calculate_nabla4(
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
+    *,
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
 ) -> fa.EdgeKField[vpfloat]:
@@ -60,6 +61,7 @@ def calculate_nabla4(
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
+    *,
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],

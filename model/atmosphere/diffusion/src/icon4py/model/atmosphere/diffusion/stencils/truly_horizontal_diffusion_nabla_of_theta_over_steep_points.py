@@ -21,6 +21,7 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
     vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
+    *,
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -58,6 +59,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
     vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
+    *,
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,

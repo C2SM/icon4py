@@ -19,6 +19,7 @@ def compute_difference_on_cell_k(
     output_field: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

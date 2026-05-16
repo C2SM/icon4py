@@ -32,6 +32,7 @@ def compute_graddiv2_of_vn(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

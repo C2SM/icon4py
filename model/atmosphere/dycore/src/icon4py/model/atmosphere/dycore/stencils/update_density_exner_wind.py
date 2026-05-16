@@ -19,6 +19,7 @@ def _update_density_exner_wind(
     theta_v_now: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
     w_now: fa.CellKField[wpfloat],
+    *,
     grf_tend_w: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ) -> tuple[
@@ -40,6 +41,7 @@ def update_density_exner_wind(
     theta_v_now: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
     w_now: fa.CellKField[wpfloat],
+    *,
     grf_tend_w: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],

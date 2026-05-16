@@ -39,6 +39,7 @@ def compute_advective_vertical_wind_tendency(
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

@@ -29,6 +29,7 @@ def apply_interpolated_tracer_time_tendency(
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

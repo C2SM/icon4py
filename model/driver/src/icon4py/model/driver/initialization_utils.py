@@ -232,6 +232,7 @@ def read_initial_state(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_typing.Backend,
+    *,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -327,6 +328,7 @@ def read_geometry_fields(
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
     rank: int = 0,
+    *,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
     grid_states.EdgeParams,

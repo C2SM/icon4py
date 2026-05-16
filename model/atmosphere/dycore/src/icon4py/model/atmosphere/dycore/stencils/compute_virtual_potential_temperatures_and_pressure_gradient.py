@@ -26,6 +26,7 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     theta_v: fa.CellKField[ta.wpfloat],
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     exner_pr: fa.CellKField[ta.wpfloat],
+    *,
     d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
 ) -> tuple[
@@ -55,6 +56,7 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
     theta_v: fa.CellKField[ta.wpfloat],
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     exner_pr: fa.CellKField[ta.wpfloat],
+    *,
     d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     z_theta_v_pr_ic: fa.CellKField[ta.vpfloat],
@@ -106,6 +108,7 @@ def _compute_pressure_gradient(
     z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
     exner_pr: fa.CellKField[ta.wpfloat],
     d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
+    *,
     ddqz_z_half: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.vpfloat]:
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)

@@ -33,6 +33,7 @@ def apply_horizontal_density_increment(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_ast2: fa.CellKField[ta.wpfloat],
+    *,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

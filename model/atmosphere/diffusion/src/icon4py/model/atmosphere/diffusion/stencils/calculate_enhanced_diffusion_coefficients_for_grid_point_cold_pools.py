@@ -42,6 +42,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
     kh_smag_e: fa.EdgeKField[vpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

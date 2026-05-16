@@ -32,6 +32,7 @@ def accumulate_prep_adv_fields(
     vn_traj: fa.EdgeKField[wpfloat],
     mass_flx_me: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

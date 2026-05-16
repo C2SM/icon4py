@@ -200,6 +200,7 @@ class SemiLagrangianTracerFlux(ABC):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        *,
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -283,6 +284,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        *,
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -339,6 +341,7 @@ class HorizontalAdvection(ABC):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        *,
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -396,6 +399,7 @@ class NoAdvection(HorizontalAdvection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        *,
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -421,6 +425,7 @@ class FiniteVolume(HorizontalAdvection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        *,
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -453,6 +458,7 @@ class FiniteVolume(HorizontalAdvection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        *,
         dtime: ta.wpfloat,
     ) -> None: ...
 
@@ -463,6 +469,7 @@ class FiniteVolume(HorizontalAdvection):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
+        *,
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None: ...
@@ -477,6 +484,7 @@ class SemiLagrangian(FiniteVolume):
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
         metric_state: advection_states.AdvectionMetricState,
+        *,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
@@ -586,6 +594,7 @@ class SemiLagrangian(FiniteVolume):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        *,
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal numerical flux computation - start")
@@ -631,6 +640,7 @@ class SemiLagrangian(FiniteVolume):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
+        *,
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:

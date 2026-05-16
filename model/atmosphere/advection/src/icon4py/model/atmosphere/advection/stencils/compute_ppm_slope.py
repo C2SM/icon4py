@@ -68,6 +68,7 @@ def compute_ppm_slope(
     z_slope: fa.CellKField[ta.wpfloat],
     elev: gtx.int32,
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

@@ -59,6 +59,7 @@ def _muphys_step_separate(
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
+    *,  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
     q_in: common.Q,
     q_out: common.Q,

@@ -20,6 +20,7 @@ def _postprocess_antidiffusive_cell_fluxes_and_min_max(
     z_tracer_new_low: fa.CellKField[ta.wpfloat],
     z_tracer_max: fa.CellKField[ta.vpfloat],
     z_tracer_min: fa.CellKField[ta.vpfloat],
+    *,
     lo_bound: gtx.int32,
     hi_bound: gtx.int32,
 ) -> tuple[
@@ -51,6 +52,7 @@ def postprocess_antidiffusive_cell_fluxes_and_min_max(
     z_tracer_new_low: fa.CellKField[ta.wpfloat],
     z_tracer_max: fa.CellKField[ta.vpfloat],
     z_tracer_min: fa.CellKField[ta.vpfloat],
+    *,
     z_tracer_new_low_out: fa.CellKField[ta.wpfloat],
     z_tracer_max_out: fa.CellKField[ta.vpfloat],
     z_tracer_min_out: fa.CellKField[ta.vpfloat],

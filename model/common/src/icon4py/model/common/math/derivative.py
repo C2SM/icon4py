@@ -31,6 +31,7 @@ def compute_first_vertical_derivative_at_cells(
     first_vertical_derivative: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

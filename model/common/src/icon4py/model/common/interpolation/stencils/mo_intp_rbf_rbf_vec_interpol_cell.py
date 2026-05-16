@@ -31,6 +31,7 @@ def mo_intp_rbf_rbf_vec_interpol_cell(
     ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, C2EDim], wpfloat],
     p_u_out: fa.CellKField[wpfloat],
     p_v_out: fa.CellKField[wpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

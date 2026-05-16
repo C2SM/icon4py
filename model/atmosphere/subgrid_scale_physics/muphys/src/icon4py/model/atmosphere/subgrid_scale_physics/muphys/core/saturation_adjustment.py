@@ -81,6 +81,7 @@ def saturation_adjustment(
     q_in: Q,  # Class with humidity, cloud, rain, snow, ice and graupel water
     te_out: fa.CellKField[ta.wpfloat],  # Temperature
     qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
+    *,  # Specific humidity
     qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

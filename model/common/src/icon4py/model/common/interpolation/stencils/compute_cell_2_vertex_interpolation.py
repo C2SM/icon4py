@@ -29,6 +29,7 @@ def compute_cell_2_vertex_interpolation(
     vert_out: fa.VertexKField[types.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

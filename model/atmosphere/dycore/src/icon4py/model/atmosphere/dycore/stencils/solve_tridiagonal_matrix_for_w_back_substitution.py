@@ -27,6 +27,7 @@ def solve_tridiagonal_matrix_for_w_back_substitution(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
+    *,
     vertical_end: gtx.int32,
 ) -> None:
     _solve_tridiagonal_matrix_for_w_back_substitution_scan(

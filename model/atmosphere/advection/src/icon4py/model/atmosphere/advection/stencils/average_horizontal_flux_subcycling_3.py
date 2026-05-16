@@ -28,6 +28,7 @@ def average_horizontal_flux_subcycling_3(
     z_tracer_mflx_3_dsl: fa.EdgeKField[ta.wpfloat],
     p_out_e: fa.EdgeKField[ta.wpfloat],
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

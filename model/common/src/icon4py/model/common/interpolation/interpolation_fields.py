@@ -103,6 +103,7 @@ def compute_geofac_n2s(
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
+    *,
     horizontal_start: gtx.int32,
 ) -> data_alloc.NDArray:
     """
@@ -158,6 +159,7 @@ def compute_geofac_grg(
     owner_mask: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
+    *,
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
@@ -209,6 +211,7 @@ def compute_geofac_grdiv(
     owner_mask: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
+    *,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
 ) -> data_alloc.NDArray:
@@ -425,6 +428,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
+    *,
     horizontal_start: gtx.int32,
     exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     niter: int = 1000,
@@ -601,6 +605,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     lon: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
+    *,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
@@ -633,6 +638,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
+    *,
     horizontal_start_level_3: gtx.int32,
     exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
 ) -> data_alloc.NDArray:
@@ -712,6 +718,7 @@ def compute_e_flx_avg(
     owner_mask: data_alloc.NDArray,
     primal_cart_normal_x: data_alloc.NDArray,
     primal_cart_normal_y: data_alloc.NDArray,
+    *,
     primal_cart_normal_z: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
@@ -880,6 +887,7 @@ def compute_cells_aw_verts(
     edge_cell_length: data_alloc.NDArray,
     v2e: data_alloc.NDArray,
     e2v: data_alloc.NDArray,
+    *,
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
@@ -970,6 +978,7 @@ def compute_e_bln_c_s(
     cells_lon: data_alloc.NDArray,
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
+    *,
     weighting_factor: float,
 ) -> data_alloc.NDArray:
     """
@@ -1035,6 +1044,7 @@ def compute_pos_on_tplane_e_x_y(
     primal_normal_v2: data_alloc.NDArray,
     dual_normal_v1: data_alloc.NDArray,
     dual_normal_v2: data_alloc.NDArray,
+    *,
     cells_lon: data_alloc.NDArray,
     cells_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
@@ -1174,6 +1184,7 @@ def compute_lsq_pseudoinv(
     lsq_weights_c: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
+    *,
     lsq_dim_unk: int,
     lsq_dim_c: int,
 ) -> data_alloc.NDArray:
@@ -1228,6 +1239,7 @@ def compute_z_lsq_mat_c(
     z_dist_g: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
+    *,
     lsq_dim_unk: int,
     lsq_dim_c: int,
 ) -> data_alloc.NDArray:
@@ -1256,6 +1268,7 @@ def compute_lsq_coeffs(
     cell_lat: data_alloc.NDArray,
     cell_lon: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
+    *,
     cell_owner_mask: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,

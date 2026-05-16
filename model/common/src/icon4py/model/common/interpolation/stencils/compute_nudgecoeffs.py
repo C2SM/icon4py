@@ -35,6 +35,7 @@ def compute_nudgecoeffs(
     grf_nudge_start_e: gtx.int32,
     max_nudging_coefficient: wpfloat,
     nudge_efold_width: wpfloat,
+    *,
     nudge_zone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

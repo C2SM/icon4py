@@ -39,6 +39,7 @@ def compute_upwind_and_antidiffusive_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     z_mflx_low: fa.EdgeKField[ta.wpfloat],
     z_anti: fa.EdgeKField[ta.wpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

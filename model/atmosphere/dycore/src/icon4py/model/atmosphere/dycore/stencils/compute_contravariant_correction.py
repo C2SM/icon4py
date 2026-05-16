@@ -33,6 +33,7 @@ def compute_contravariant_correction(
     ddxt_z_full: fa.EdgeKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

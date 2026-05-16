@@ -45,6 +45,7 @@ def edge_2_cell_vector_rbf_interpolation(
     ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat],
     p_u_out: fa.CellKField[ta.wpfloat],
     p_v_out: fa.CellKField[ta.wpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

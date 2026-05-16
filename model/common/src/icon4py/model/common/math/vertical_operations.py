@@ -81,6 +81,7 @@ def average_two_vertical_levels_downwards_on_edges(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
+    *,
     vertical_end: gtx.int32,
 ):
     average_level_plus1_on_edges(
@@ -100,6 +101,7 @@ def average_two_vertical_levels_downwards_on_cells(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
+    *,
     vertical_end: gtx.int32,
 ) -> None:
     average_level_plus1_on_cells(

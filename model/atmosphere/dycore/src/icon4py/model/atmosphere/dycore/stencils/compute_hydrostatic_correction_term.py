@@ -21,6 +21,7 @@ def _compute_hydrostatic_correction_term(
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
+    *,
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
 ) -> fa.EdgeKField[vpfloat]:
@@ -69,6 +70,7 @@ def compute_hydrostatic_correction_term(
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
+    *,
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
     z_hydro_corr: fa.EdgeKField[vpfloat],

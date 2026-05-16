@@ -26,6 +26,7 @@ def graupel_run(
     ivend: gtx.int32,
     kstart: gtx.int32,
     dt: ta.wpfloat,
+    *,
     dz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     t: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],

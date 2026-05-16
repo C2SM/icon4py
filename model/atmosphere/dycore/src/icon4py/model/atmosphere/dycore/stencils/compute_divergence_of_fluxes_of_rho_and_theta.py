@@ -32,6 +32,7 @@ def compute_divergence_of_fluxes_of_rho_and_theta(
     z_theta_v_fl_e: fa.EdgeKField[wpfloat],
     z_flxdiv_mass: fa.CellKField[vpfloat],
     z_flxdiv_theta: fa.CellKField[vpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

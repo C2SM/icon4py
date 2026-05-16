@@ -24,6 +24,7 @@ def print_grid_decomp_info(
     decomposition_info: definitions.DecompositionInfo,
     num_cells: int,
     num_edges: int,
+    *,
     num_verts: int,
 ) -> None:
     logger.info(

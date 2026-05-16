@@ -58,6 +58,7 @@ def main(
     library_name: str,
     output_path: pathlib.Path,
     rpath: str,
+    *,
     regenerate: bool,
     skip_compilation: bool,
 ) -> None:

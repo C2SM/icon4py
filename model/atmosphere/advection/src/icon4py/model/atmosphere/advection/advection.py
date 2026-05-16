@@ -144,6 +144,7 @@ class Advection(ABC):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
+        *,
         dtime: ta.wpfloat,
     ) -> None:
         """
@@ -202,6 +203,7 @@ class NoAdvection(Advection):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
+        *,
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("advection run - start")
@@ -231,6 +233,7 @@ class GodunovSplittingAdvection(Advection):
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
+        *,
         backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
         even_timestep: bool = False,
@@ -310,6 +313,7 @@ class GodunovSplittingAdvection(Advection):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
+        *,
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("advection run - start")
@@ -421,6 +425,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     interpolation_state: advection_states.AdvectionInterpolationState,
     least_squares_state: advection_states.AdvectionLeastSquaresState,
     metric_state: advection_states.AdvectionMetricState,
+    *,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
@@ -508,6 +513,7 @@ def convert_config_to_advection(
     interpolation_state: advection_states.AdvectionInterpolationState,
     least_squares_state: advection_states.AdvectionLeastSquaresState,
     metric_state: advection_states.AdvectionMetricState,
+    *,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,

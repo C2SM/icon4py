@@ -21,6 +21,7 @@ def _update_theta_and_exner_in_halo(
     rho_new: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
     exner_now: fa.CellKField[wpfloat],
+    *,
     exner_new: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     #
@@ -59,6 +60,7 @@ def update_theta_and_exner_in_halo(
     rho_new: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
     theta_v_new: fa.CellKField[wpfloat],
+    *,
     exner_new: fa.CellKField[wpfloat],
     exner_now: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,

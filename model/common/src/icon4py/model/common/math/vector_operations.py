@@ -26,6 +26,7 @@ def dot_product_on_edges(
     y1: fa.EdgeField[ta.wpfloat],
     y2: fa.EdgeField[ta.wpfloat],
     z1: fa.EdgeField[ta.wpfloat],
+    *,
     z2: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeField[ta.wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
@@ -39,6 +40,7 @@ def dot_product_on_cells(
     y1: fa.CellField[ta.wpfloat],
     y2: fa.CellField[ta.wpfloat],
     z1: fa.CellField[ta.wpfloat],
+    *,
     z2: fa.CellField[ta.wpfloat],
 ) -> fa.CellField[ta.wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
@@ -52,6 +54,7 @@ def dot_product_on_vertices(
     y1: fa.VertexField[ta.wpfloat],
     y2: fa.VertexField[ta.wpfloat],
     z1: fa.VertexField[ta.wpfloat],
+    *,
     z2: fa.VertexField[ta.wpfloat],
 ) -> fa.VertexField[ta.wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
@@ -65,6 +68,7 @@ def cross_product_on_edges(
     y1: fa.EdgeField[ta.wpfloat],
     y2: fa.EdgeField[ta.wpfloat],
     z1: fa.EdgeField[ta.wpfloat],
+    *,
     z2: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """Compute cross product of cartesian vectors (x1, y1, z1) x (x2, y2, z2)"""

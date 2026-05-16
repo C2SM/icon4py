@@ -160,6 +160,7 @@ class IconGridSavepoint(IconSavepoint):
         ser: serialbox.Serializer,
         grid_id: str,
         size: dict,
+        *,
         global_grid_params: icon.GlobalGridParams,
         backend: gtx_typing.Backend | None,
     ):
@@ -1965,6 +1966,7 @@ class IconSerialDataProvider:
         fname_prefix,
         path=".",
         do_print=False,
+        *,
         mpi_rank=0,
     ):
         self.rank = mpi_rank

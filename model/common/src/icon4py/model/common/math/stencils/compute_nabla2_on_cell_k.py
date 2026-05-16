@@ -19,6 +19,7 @@ def compute_nabla2_on_cell_k(
     nabla2_psi_c: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

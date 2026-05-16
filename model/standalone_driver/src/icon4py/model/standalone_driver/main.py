@@ -46,6 +46,7 @@ def main(
             help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
         ),
     ] = False,
+    *,
     force_serial_run: Annotated[
         bool,
         typer.Option(

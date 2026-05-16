@@ -31,6 +31,7 @@ def smooth_topography(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     exchange: decomposition.ExchangeRuntime,
+    *,
     num_iterations: int = 25,
 ) -> data_alloc.NDArray:
     """

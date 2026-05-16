@@ -32,6 +32,7 @@ def calculate_nabla2_for_z(
     theta_v: fa.CellKField[wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

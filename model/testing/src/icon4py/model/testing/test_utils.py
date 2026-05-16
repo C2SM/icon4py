@@ -39,6 +39,7 @@ def assert_dallclose(
     rtol: float = 1.0e-12,
     atol: float = 0.0,
     equal_nan: bool = False,
+    *,
     err_msg: str = "",
     verbose: bool = True,
 ) -> None:

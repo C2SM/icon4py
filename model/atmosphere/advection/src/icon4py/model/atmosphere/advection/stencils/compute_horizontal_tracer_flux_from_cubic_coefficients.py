@@ -31,6 +31,7 @@ def compute_horizontal_tracer_flux_from_cubic_coefficients(
     z_dreg_area: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

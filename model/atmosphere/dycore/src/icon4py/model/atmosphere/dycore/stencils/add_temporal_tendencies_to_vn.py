@@ -20,6 +20,7 @@ def _add_temporal_tendencies_to_vn(
     ddt_vn_phy: fa.EdgeKField[vpfloat],
     z_theta_v_e: fa.EdgeKField[wpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
+    *,
     dtime: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_24."""
@@ -40,6 +41,7 @@ def add_temporal_tendencies_to_vn(
     ddt_vn_phy: fa.EdgeKField[vpfloat],
     z_theta_v_e: fa.EdgeKField[wpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
+    *,
     vn_nnew: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
     horizontal_start: gtx.int32,

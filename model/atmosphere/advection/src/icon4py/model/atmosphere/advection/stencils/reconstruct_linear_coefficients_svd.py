@@ -40,6 +40,7 @@ def reconstruct_linear_coefficients_svd(
     lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     p_coeff_1_dsl: fa.CellKField[ta.wpfloat],
     p_coeff_2_dsl: fa.CellKField[ta.wpfloat],
+    *,
     p_coeff_3_dsl: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

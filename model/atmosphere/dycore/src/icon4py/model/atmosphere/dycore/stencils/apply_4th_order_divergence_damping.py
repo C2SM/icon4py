@@ -23,6 +23,7 @@ def _apply_4th_order_divergence_damping(
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
+    *,
     second_order_divdamp_factor: float,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_4th_order_divdamp."""
@@ -44,6 +45,7 @@ def apply_4th_order_divergence_damping(
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
+    *,
     second_order_divdamp_factor: float,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

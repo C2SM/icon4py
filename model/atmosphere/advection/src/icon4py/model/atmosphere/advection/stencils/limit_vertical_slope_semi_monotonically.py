@@ -34,6 +34,7 @@ def limit_vertical_slope_semi_monotonically(
     k: fa.KField[gtx.int32],
     elev: gtx.int32,
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

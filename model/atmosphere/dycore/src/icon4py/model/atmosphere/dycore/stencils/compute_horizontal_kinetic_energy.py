@@ -37,6 +37,7 @@ def compute_horizontal_kinetic_energy(
     vn_ie: fa.EdgeKField[vpfloat],
     z_vt_ie: fa.EdgeKField[vpfloat],
     z_kin_hor_e: fa.EdgeKField[vpfloat],
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

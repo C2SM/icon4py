@@ -21,6 +21,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     p_rhodz_new: fa.CellKField[ta.wpfloat],
     z_mflx_low: fa.EdgeKField[ta.wpfloat],
     z_anti: fa.EdgeKField[ta.wpfloat],
+    *,
     p_cc: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> tuple[
@@ -64,6 +65,7 @@ def compute_antidiffusive_cell_fluxes_and_min_max(
     p_rhodz_new: fa.CellKField[ta.wpfloat],
     z_mflx_low: fa.EdgeKField[ta.wpfloat],
     z_anti: fa.EdgeKField[ta.wpfloat],
+    *,
     p_cc: fa.CellKField[ta.wpfloat],
     z_mflx_anti_in: fa.CellKField[ta.vpfloat],
     z_mflx_anti_out: fa.CellKField[ta.vpfloat],

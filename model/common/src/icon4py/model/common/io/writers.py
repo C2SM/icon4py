@@ -93,6 +93,7 @@ class NETCDFWriter:
         vertical: v_grid.VerticalGrid,
         horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
+        *,
         global_attrs: GlobalFileAttributes,
         process_properties: decomposition.ProcessProperties = process_properties,
     ):

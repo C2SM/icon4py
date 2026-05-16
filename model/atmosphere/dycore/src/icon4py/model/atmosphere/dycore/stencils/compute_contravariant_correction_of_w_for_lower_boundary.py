@@ -49,6 +49,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
     wgtfacq_c: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
+    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

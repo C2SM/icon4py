@@ -164,6 +164,7 @@ def proxy(
     verbose: Annotated[
         bool, typer.Option("--verbose", "-v", help="Enable verbose output.")
     ] = False,
+    *,
     packages: Annotated[
         list[str] | None,
         typer.Argument(

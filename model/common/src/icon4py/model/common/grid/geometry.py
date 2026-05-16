@@ -86,6 +86,7 @@ class GridGeometry(factory.FieldSource):
         decomposition_info: decomposition.DecompositionInfo,
         backend: gtx_typing.Backend | None,
         coordinates: gm.CoordinateDict,
+        *,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
@@ -789,6 +790,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
+        *,
         do_exchange: bool,
     ):
         assert len(target_dims) == 2
@@ -805,6 +807,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         field_src: factory.FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid: factory.GridProvider,
+        *,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
@@ -862,6 +865,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
+    *,
     allocator: gtx_typing.Allocator | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],

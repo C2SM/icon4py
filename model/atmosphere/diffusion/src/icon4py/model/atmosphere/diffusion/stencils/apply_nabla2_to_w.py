@@ -36,6 +36,7 @@ def apply_nabla2_to_w(
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
     w: fa.CellKField[wpfloat],
     diff_multfac_w: wpfloat,
+    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

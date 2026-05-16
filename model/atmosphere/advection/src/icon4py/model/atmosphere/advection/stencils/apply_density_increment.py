@@ -23,6 +23,7 @@ def _apply_density_increment(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     p_dtime: ta.wpfloat,
+    *,
     even_timestep: bool,
 ) -> fa.CellKField[ta.wpfloat]:
     even = broadcast(even_timestep, (dims.CellDim, dims.KDim))
@@ -40,6 +41,7 @@ def apply_density_increment(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_out: fa.CellKField[ta.wpfloat],
+    *,
     p_dtime: ta.wpfloat,
     even_timestep: bool,
     horizontal_start: gtx.int32,
