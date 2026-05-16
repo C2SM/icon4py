@@ -101,10 +101,10 @@ build_distributed:
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
-        SLURM_TIMELIMIT: '00:10:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
-        SLURM_TIMELIMIT: '00:30:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - if: $COMPONENT == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
       variables:
         # TODO(msimberg): Decrease this when enabling dace_gpu above, if possible.
@@ -114,13 +114,13 @@ build_distributed:
         SLURM_PARTITION: "normal"
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
-        SLURM_TIMELIMIT: '00:15:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - if: $COMPONENT == 'standalone_driver'
       variables:
-        SLURM_TIMELIMIT: '00:50:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:45:00'
+        SLURM_TIMELIMIT: '01:00:00'
   artifacts:
     when: always
     paths:
