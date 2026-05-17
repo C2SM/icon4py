@@ -20,7 +20,6 @@ def _integrate_tracer_horizontally(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    *,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
@@ -41,7 +40,6 @@ def integrate_tracer_horizontally(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    *,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     tracer_new_hor: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,

@@ -23,7 +23,6 @@ def _T_from_internal_energy(
     qliq: fa.CellKField[ta.wpfloat],
     qice: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
-    *,
     dz: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
@@ -61,7 +60,6 @@ def T_from_internal_energy(
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
     qice: fa.CellKField[ta.wpfloat],  # Specific mass of solid phases
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    *,  # Ambient density
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     temperature: fa.CellKField[ta.wpfloat],  # output
 ):
@@ -75,7 +73,6 @@ def _T_from_internal_energy_scalar(
     qliq: ta.wpfloat,
     qice: ta.wpfloat,
     rho: ta.wpfloat,
-    *,
     dz: ta.wpfloat,
 ) -> ta.wpfloat:
     """
@@ -113,7 +110,6 @@ def T_from_internal_energy_scalar(
     qliq: ta.wpfloat,  # Specific mass of liquid phases
     qice: ta.wpfloat,  # Specific mass of solid phases
     rho: ta.wpfloat,  # Ambient density
-    *,  # Ambient density
     dz: ta.wpfloat,  # Extent of grid cell
     temperature: ta.wpfloat,  # output
 ):
@@ -127,7 +123,6 @@ def _internal_energy(
     qliq: fa.CellKField[ta.wpfloat],
     qice: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
-    *,
     dz: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
@@ -161,7 +156,6 @@ def _internal_energy_scalar(
     qliq: ta.wpfloat,
     qice: ta.wpfloat,
     rho: ta.wpfloat,
-    *,
     dz: ta.wpfloat,
 ) -> ta.wpfloat:
     """
@@ -195,7 +189,6 @@ def internal_energy(
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
     qice: fa.CellKField[ta.wpfloat],  # Specific mass of solid phases
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    *,  # Ambient density
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     energy: fa.CellKField[ta.wpfloat],  # output
 ):
@@ -382,7 +375,6 @@ def _newton_raphson(
     qve: fa.CellKField[ta.wpfloat],
     qce: fa.CellKField[ta.wpfloat],
     cvc: fa.CellKField[ta.wpfloat],
-    *,
     ue: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """

@@ -106,7 +106,7 @@ def test_io_monitor_create_output_path(test_path):
         vertical_params,
         test_io_utils.simple_grid.config.horizontal_config,
         test_io_utils.grid_file,
-        test_io_utils.simple_grid.id,
+        grid_id=test_io_utils.simple_grid.id,
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -129,7 +129,7 @@ def test_io_monitor_write_ugrid_file(test_path):
         vertical_params,
         test_io_utils.simple_grid.config.horizontal_config,
         test_io_utils.grid_file,
-        "simple_grid",
+        grid_id="simple_grid",
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
@@ -172,7 +172,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         vertical_params,
         grid.config.horizontal_config,
         test_io_utils.grid_file,
-        grid.id,
+        grid_id=grid.id,
     )
     start_time = dt.datetime.fromisoformat(configured_output_start)
     monitor.store(state, start_time)

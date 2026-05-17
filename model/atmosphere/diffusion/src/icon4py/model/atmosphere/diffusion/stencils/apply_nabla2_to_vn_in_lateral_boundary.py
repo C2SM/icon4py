@@ -29,7 +29,6 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     vn: fa.EdgeKField[wpfloat],
     fac_bdydiff_v: wpfloat,
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

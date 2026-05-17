@@ -32,7 +32,6 @@ def compute_mass_flux(
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
     z_theta_v_e: fa.EdgeKField[wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],
-    *,
     z_theta_v_fl_e: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

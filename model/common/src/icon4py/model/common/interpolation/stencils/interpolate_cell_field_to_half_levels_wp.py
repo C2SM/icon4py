@@ -41,7 +41,6 @@ def interpolate_cell_field_to_half_levels_wp(
     interpolation_to_half_levels_wp: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

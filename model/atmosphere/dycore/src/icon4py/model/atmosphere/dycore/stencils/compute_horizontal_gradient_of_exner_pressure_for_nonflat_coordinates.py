@@ -37,7 +37,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     ddxn_z_full: fa.EdgeKField[vpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], wpfloat],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
-    *,
     z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

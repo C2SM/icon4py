@@ -33,7 +33,6 @@ def compute_ffsl_backtrajectory_length_indicator(
     edge_cell_length: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     opt_famask_dsl: fa.EdgeKField[gtx.int32],
     p_dt: ta.wpfloat,
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

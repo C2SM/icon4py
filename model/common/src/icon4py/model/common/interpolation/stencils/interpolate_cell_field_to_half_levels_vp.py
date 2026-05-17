@@ -41,7 +41,6 @@ def interpolate_cell_field_to_half_levels_vp(
     interpolation_to_half_levels_vp: fa.CellKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

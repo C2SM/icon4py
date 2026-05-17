@@ -43,7 +43,6 @@ def limit_vertical_parabola_semi_monotonically(
     p_cc: fa.CellKField[ta.wpfloat],
     p_face_up: fa.CellKField[ta.wpfloat],
     p_face_low: fa.CellKField[ta.wpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

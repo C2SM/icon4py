@@ -36,7 +36,6 @@ def apply_positive_definite_horizontal_multiplicative_flux_factor(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
-    *,
     vertical_end: gtx.int32,
 ) -> None:
     _apply_positive_definite_horizontal_multiplicative_flux_factor(

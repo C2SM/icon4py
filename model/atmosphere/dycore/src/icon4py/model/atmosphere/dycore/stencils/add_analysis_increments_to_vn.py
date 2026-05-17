@@ -32,7 +32,6 @@ def add_analysis_increments_to_vn(
     iau_wgt_dyn: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

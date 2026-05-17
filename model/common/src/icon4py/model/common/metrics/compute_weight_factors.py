@@ -64,7 +64,6 @@ def compute_wgtfac_c(
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
@@ -123,7 +122,6 @@ def compute_wgtfacq_e_dsl(
     c_lin_e: data_alloc.NDArray,
     wgtfacq_c_dsl: data_alloc.NDArray,
     n_edges: int,
-    *,
     nlev: int,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:

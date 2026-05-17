@@ -21,7 +21,6 @@ def _compute_horizontal_tracer_flux_from_linear_coefficients_alt(
     z_lsq_coeff_3: fa.CellKField[ta.wpfloat],
     distv_bary_1: fa.EdgeKField[ta.vpfloat],
     distv_bary_2: fa.EdgeKField[ta.vpfloat],
-    *,
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
@@ -45,7 +44,6 @@ def compute_horizontal_tracer_flux_from_linear_coefficients_alt(
     z_lsq_coeff_3: fa.CellKField[ta.wpfloat],
     distv_bary_1: fa.EdgeKField[ta.vpfloat],
     distv_bary_2: fa.EdgeKField[ta.vpfloat],
-    *,
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_out_e: fa.EdgeKField[ta.wpfloat],

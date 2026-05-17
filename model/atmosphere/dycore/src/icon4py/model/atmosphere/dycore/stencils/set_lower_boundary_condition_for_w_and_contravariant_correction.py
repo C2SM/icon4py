@@ -34,7 +34,6 @@ def set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_concorr_c: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

@@ -33,7 +33,6 @@ def spatially_average_flux_or_velocity(
     spatially_averaged_flux_or_velocity: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

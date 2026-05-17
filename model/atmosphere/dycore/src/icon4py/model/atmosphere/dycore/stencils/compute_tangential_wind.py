@@ -30,7 +30,6 @@ def compute_tangential_wind(
     vt: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

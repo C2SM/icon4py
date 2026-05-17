@@ -29,7 +29,6 @@ def update_wind(
     w_new: fa.CellKField[wpfloat],
     dtime: wpfloat,
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

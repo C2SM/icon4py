@@ -36,7 +36,6 @@ def extrapolate_temporally_exner_pressure(
     exner_ref_mc: fa.CellKField[vpfloat],
     exner_pr: fa.CellKField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

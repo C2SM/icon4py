@@ -33,7 +33,6 @@ def compute_edge_tangential(
     p_vt_out: fa.EdgeKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

@@ -30,7 +30,6 @@ def compute_ppm4gpu_parabola_coefficients(
     p_cc: fa.CellKField[ta.wpfloat],
     z_delta_q: fa.CellKField[ta.wpfloat],
     z_a1: fa.CellKField[ta.wpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

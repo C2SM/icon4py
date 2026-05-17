@@ -157,7 +157,6 @@ def _ice_deposition_nucleation(
     qi: fa.CellKField[ta.wpfloat],
     ni: fa.CellKField[ta.wpfloat],
     dvsi: fa.CellKField[ta.wpfloat],
-    *,
     dt: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:  # Rate of vapor deposition for new ice
     """
@@ -190,7 +189,6 @@ def ice_deposition_nucleation(
     qi: fa.CellKField[ta.wpfloat],  # Specific humidity of ice
     ni: fa.CellKField[ta.wpfloat],  # Ice crystal number
     dvsi: fa.CellKField[ta.wpfloat],  # Vapor excess with respect to ice sat
-    *,  # Vapor excess with respect to ice sat
     dt: ta.wpfloat,  # Time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat],  # output
 ):

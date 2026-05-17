@@ -87,7 +87,6 @@ def precip_qx_level_update(
     prefactor: ta.wpfloat,  # param[0] of fall_speed
     exponent: ta.wpfloat,  # param[1] of fall_speed
     offset: ta.wpfloat,  # param[1] of fall_speed
-    *,  # param[1] of fall_speed
     zeta: ta.wpfloat,  # dt/(2dz)
     vc: ta.wpfloat,  # state dependent fall speed correction
     q: ta.wpfloat,  # specific mass of hydrometeor
@@ -129,7 +128,6 @@ def _temperature_update(
     t_kp1: ta.wpfloat,
     pr: ta.wpfloat,  # precipitable rain
     pflx_tot: ta.wpfloat,  # total precipitation flux
-    *,  # total precipitation flux
     q: Q_scalar,
     qliq: ta.wpfloat,
     qice: ta.wpfloat,
@@ -193,7 +191,6 @@ def _precip_and_t(
     t_kp1: ta.wpfloat,
     rho: ta.wpfloat,  # density
     q: Q_scalar,
-    *,
     mask_r: bool,
     mask_s: bool,
     mask_i: bool,
@@ -348,7 +345,6 @@ def _q_t_update(
     rho: fa.CellKField[ta.wpfloat],
     q: Q,
     dt: ta.wpfloat,
-    *,
     qnc: ta.wpfloat,
     enable_masking: bool,
 ) -> tuple[
@@ -494,7 +490,6 @@ def _precipitation_effects(
     kmin_i: fa.CellKField[bool],  # ice minimum level
     kmin_s: fa.CellKField[bool],  # snow minimum level
     kmin_g: fa.CellKField[bool],  # graupel minimum level
-    *,  # graupel minimum level
     q_in: Q,
     t: fa.CellKField[ta.wpfloat],  # temperature,
     rho: fa.CellKField[ta.wpfloat],  # density
@@ -551,7 +546,6 @@ def graupel(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    *,  # Density containing dry air and water constituents
     q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
@@ -590,7 +584,6 @@ def graupel_run(
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
     q_in: Q,
-    *,
     dt: ta.wpfloat,  # Time step
     qnc: ta.wpfloat,
     q_out: Q,

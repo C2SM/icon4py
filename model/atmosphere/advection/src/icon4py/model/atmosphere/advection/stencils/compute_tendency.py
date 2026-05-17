@@ -31,7 +31,6 @@ def compute_tendency(
     opt_ddt_tracer_adv: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

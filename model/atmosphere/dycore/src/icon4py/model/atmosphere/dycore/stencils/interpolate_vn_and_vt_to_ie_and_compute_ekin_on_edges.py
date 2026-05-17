@@ -41,7 +41,6 @@ def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     vt: fa.EdgeKField[ta.vpfloat],
     vn_ie: fa.EdgeKField[ta.vpfloat],
     z_vt_ie: fa.EdgeKField[ta.vpfloat],
-    *,
     z_kin_hor_e: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

@@ -27,7 +27,6 @@ def compute_airmass(
     deepatmo_t1mc_in: fa.KField[wpfloat],
     airmass_out: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

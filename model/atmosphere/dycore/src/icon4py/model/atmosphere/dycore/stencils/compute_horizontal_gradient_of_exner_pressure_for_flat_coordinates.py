@@ -32,7 +32,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

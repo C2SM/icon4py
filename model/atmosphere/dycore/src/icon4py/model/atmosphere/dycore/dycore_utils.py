@@ -69,7 +69,6 @@ def _calculate_divdamp_fields(
     mean_cell_area: float,
     second_order_divdamp_factor: float,
     max_nudging_coefficient: float,
-    *,
     dbl_eps: float,
 ) -> tuple[fa.KField[float], fa.KField[float]]:
     fourth_order_divdamp_scaling_coeff = _calculate_fourth_order_divdamp_scaling_coeff(
@@ -93,7 +92,6 @@ def calculate_divdamp_fields(
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[float],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
-    *,
     second_order_divdamp_factor: float,
     max_nudging_coefficient: float,
     dbl_eps: float,

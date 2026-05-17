@@ -35,7 +35,6 @@ def add_analysis_increments_from_data_assimilation(
     rho_incr: fa.CellKField[vpfloat],
     exner_incr: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

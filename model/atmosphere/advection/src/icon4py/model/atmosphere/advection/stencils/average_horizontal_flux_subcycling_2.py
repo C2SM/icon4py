@@ -27,7 +27,6 @@ def average_horizontal_flux_subcycling_2(
     p_out_e: fa.EdgeKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

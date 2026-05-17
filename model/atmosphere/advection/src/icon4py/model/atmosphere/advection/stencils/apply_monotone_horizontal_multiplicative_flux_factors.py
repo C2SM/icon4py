@@ -38,7 +38,6 @@ def apply_monotone_horizontal_multiplicative_flux_factors(
     r_p: fa.CellKField[ta.wpfloat],
     z_mflx_low: fa.EdgeKField[ta.wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

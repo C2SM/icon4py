@@ -23,7 +23,6 @@ def _muphys(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    *,  # Density containing dry air and water constituents
     q_in: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
@@ -71,7 +70,6 @@ def muphys_run(
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
     q_in: Q,
-    *,
     dt: ta.wpfloat,  # Time step
     qnc: ta.wpfloat,
     q_out: Q,

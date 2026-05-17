@@ -31,7 +31,6 @@ def calculate_horizontal_gradients_for_turbulence(
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
     dwdx: fa.CellKField[vpfloat],
     dwdy: fa.CellKField[vpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

@@ -35,7 +35,6 @@ def cell_2_edge_interpolation(
     out_field: fa.EdgeKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

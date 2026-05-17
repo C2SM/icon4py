@@ -206,7 +206,6 @@ def cartesian_coordinates_edge_tangent_and_normal_torus(
     edge_x: fa.EdgeField[ta.wpfloat],
     edge_y: fa.EdgeField[ta.wpfloat],
     edge_orientation: fa.EdgeField[ta.wpfloat],
-    *,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
 ) -> tuple[
@@ -260,7 +259,6 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
     edge_orientation: fa.EdgeField[ta.wpfloat],
-    *,
     tangent_x: fa.EdgeField[ta.wpfloat],
     tangent_y: fa.EdgeField[ta.wpfloat],
     tangent_z: fa.EdgeField[ta.wpfloat],
@@ -288,7 +286,6 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(
     edge_x: fa.EdgeField[ta.wpfloat],
     edge_y: fa.EdgeField[ta.wpfloat],
     edge_orientation: fa.EdgeField[ta.wpfloat],
-    *,
     tangent_x: fa.EdgeField[ta.wpfloat],
     tangent_y: fa.EdgeField[ta.wpfloat],
     tangent_z: fa.EdgeField[ta.wpfloat],
@@ -406,7 +403,6 @@ def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
     x: fa.EdgeField[ta.wpfloat],
     y: fa.EdgeField[ta.wpfloat],
     z: fa.EdgeField[ta.wpfloat],
-    *,
     u_vertex_1: fa.EdgeField[ta.wpfloat],
     v_vertex_1: fa.EdgeField[ta.wpfloat],
     u_vertex_2: fa.EdgeField[ta.wpfloat],
@@ -491,7 +487,6 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
     x: fa.EdgeField[ta.wpfloat],
     y: fa.EdgeField[ta.wpfloat],
     z: fa.EdgeField[ta.wpfloat],
-    *,
     u_cell_1: fa.EdgeField[ta.wpfloat],
     v_cell_1: fa.EdgeField[ta.wpfloat],
     u_cell_2: fa.EdgeField[ta.wpfloat],
@@ -662,7 +657,6 @@ def compute_edge_length(
     radius: ta.wpfloat,
     length: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
 ):
     edge_length(
@@ -681,7 +675,6 @@ def compute_cell_center_arc_distance(
     edge_neighbor_1_lat: fa.EdgeField[ta.wpfloat],
     edge_neighbor_1_lon: fa.EdgeField[ta.wpfloat],
     radius: ta.wpfloat,
-    *,
     dual_edge_length: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -704,7 +697,6 @@ def compute_arc_distance_of_far_edges_in_diamond(
     radius: ta.wpfloat,
     far_vertex_distance: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
 ):
     arc_distance_of_far_edges_in_diamond(
@@ -723,7 +715,6 @@ def compute_distance_of_far_edges_in_diamond_torus(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     far_vertex_distance: fa.EdgeField[ta.wpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
@@ -764,7 +755,6 @@ def compute_edge_area(
     dual_edge_length: fa.EdgeField[ta.wpfloat],
     area: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
 ):
     edge_area(

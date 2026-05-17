@@ -45,7 +45,6 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     rho_ref_mc: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
-    *,
     rho_ic: fa.CellKField[wpfloat],
     z_rth_pr_1: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],

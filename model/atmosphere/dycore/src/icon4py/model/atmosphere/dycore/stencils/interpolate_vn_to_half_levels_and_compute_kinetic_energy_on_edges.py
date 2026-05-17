@@ -41,7 +41,6 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
     vt: fa.EdgeKField[ta.vpfloat],
     vn_ie: fa.EdgeKField[ta.vpfloat],
     z_kin_hor_e: fa.EdgeKField[ta.vpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

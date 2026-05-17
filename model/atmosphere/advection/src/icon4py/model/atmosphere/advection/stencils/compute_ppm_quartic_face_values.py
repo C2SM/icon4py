@@ -53,7 +53,6 @@ def compute_ppm_quartic_face_values(
     z_slope: fa.CellKField[ta.wpfloat],
     p_face: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

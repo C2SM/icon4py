@@ -65,7 +65,6 @@ def _compute_ppm4gpu_integer_flux(
     z_cfl: fa.CellKField[ta.wpfloat],
     p_upflux: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    *,
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
@@ -95,7 +94,6 @@ def compute_ppm4gpu_integer_flux(
     z_cfl: fa.CellKField[ta.wpfloat],
     p_upflux: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    *,
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,

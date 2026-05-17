@@ -35,7 +35,6 @@ def temporary_fields_for_turbulence_diagnostics(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    *,
     kh_c: fa.CellKField[vpfloat],
     div: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,

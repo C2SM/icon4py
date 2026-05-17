@@ -32,7 +32,6 @@ def arc_length_on_edges(
     y0: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
     z0: fa.EdgeField[ta.wpfloat],
-    *,
     z1: fa.EdgeField[ta.wpfloat],
     radius: ta.wpfloat,
 ):
@@ -64,7 +63,6 @@ def diff_on_edges_torus(
     y0: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
     domain_length: ta.wpfloat,
-    *,
     domain_height: ta.wpfloat,
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """
@@ -107,7 +105,6 @@ def distance_on_edges_torus(
     y0: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
     domain_length: ta.wpfloat,
-    *,
     domain_height: ta.wpfloat,
 ) -> fa.EdgeField[ta.wpfloat]:
     """

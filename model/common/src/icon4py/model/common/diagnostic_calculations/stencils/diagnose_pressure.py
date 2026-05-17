@@ -60,7 +60,6 @@ def diagnose_pressure(
     surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
     pressure_ifc: fa.CellKField[ta.wpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

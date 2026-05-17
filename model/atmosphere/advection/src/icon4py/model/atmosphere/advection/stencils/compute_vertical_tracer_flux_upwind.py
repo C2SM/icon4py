@@ -29,7 +29,6 @@ def compute_vertical_tracer_flux_upwind(
     p_upflux: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

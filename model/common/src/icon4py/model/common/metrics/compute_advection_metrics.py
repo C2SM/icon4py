@@ -60,7 +60,6 @@ def compute_advection_deepatmo_fields(
     deepatmo_divh: fa.KField[ta.wpfloat],
     deepatmo_divzL: fa.KField[ta.wpfloat],
     deepatmo_divzU: fa.KField[ta.wpfloat],
-    *,
     grid_sphere_radius: float,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

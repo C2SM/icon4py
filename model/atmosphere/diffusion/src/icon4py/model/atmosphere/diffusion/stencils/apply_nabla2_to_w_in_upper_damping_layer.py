@@ -33,7 +33,6 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     cell_area: fa.CellField[wpfloat],
     z_nabla2_c: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

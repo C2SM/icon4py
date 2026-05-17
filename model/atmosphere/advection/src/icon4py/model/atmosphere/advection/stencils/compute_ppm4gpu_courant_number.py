@@ -24,7 +24,6 @@ def _compute_courant_number_below(
     z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    *,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     z_mass_pos = z_mass > 0.0
@@ -76,7 +75,6 @@ def _compute_courant_number_above(
     z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
-    *,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     z_mass_neg = z_mass <= 0.0
@@ -130,7 +128,6 @@ def _compute_ppm4gpu_courant_number(
     z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
-    *,
     nlev: gtx.int32,
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
@@ -152,7 +149,6 @@ def compute_ppm4gpu_courant_number(
     z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
-    *,
     nlev: gtx.int32,
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,

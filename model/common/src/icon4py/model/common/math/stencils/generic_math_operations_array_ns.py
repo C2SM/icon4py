@@ -15,7 +15,6 @@ def compute_directional_derivative_on_edges(
     inv_dual_edge_length: data_alloc.NDArray,
     lb_e: int,
     ub_e: int,
-    *,
     num_edges: int,
 ) -> data_alloc.NDArray:
     """
@@ -36,7 +35,6 @@ def interpolate_edges_to_cell(
     e2c: data_alloc.NDArray,
     edge_cell_length: data_alloc.NDArray,
     primal_edge_length: data_alloc.NDArray,
-    *,
     cell_area: data_alloc.NDArray,
     ub_c: int,
     num_cells: int,

@@ -57,7 +57,6 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     cfl_clipping: fa.CellKField[bool],
     vcfl: fa.CellKField[vpfloat],
     cfl_w_limit: vpfloat,
-    *,
     dtime: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

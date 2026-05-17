@@ -28,7 +28,6 @@ def calculate_nabla2_for_w(
     z_nabla2_c: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

@@ -38,7 +38,6 @@ def diagnose_surface_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     surface_pressure: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
-    *,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

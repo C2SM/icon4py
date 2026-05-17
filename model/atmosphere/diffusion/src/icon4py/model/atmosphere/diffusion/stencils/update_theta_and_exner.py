@@ -35,7 +35,6 @@ def update_theta_and_exner(
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

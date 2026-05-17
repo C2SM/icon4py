@@ -34,7 +34,6 @@ def compute_approx_of_2nd_vertical_derivative_of_exner(
     d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

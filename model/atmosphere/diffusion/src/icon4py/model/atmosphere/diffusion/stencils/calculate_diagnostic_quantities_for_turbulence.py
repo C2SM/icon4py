@@ -24,7 +24,6 @@ def _calculate_diagnostic_quantities_for_turbulence(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    *,
     wgtfac_c: fa.CellKField[vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
@@ -41,7 +40,6 @@ def calculate_diagnostic_quantities_for_turbulence(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    *,
     wgtfac_c: fa.CellKField[vpfloat],
     div_ic: fa.CellKField[vpfloat],
     hdef_ic: fa.CellKField[vpfloat],

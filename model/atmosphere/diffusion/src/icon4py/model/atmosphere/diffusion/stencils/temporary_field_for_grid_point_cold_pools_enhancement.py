@@ -42,7 +42,6 @@ def temporary_field_for_grid_point_cold_pools_enhancement(
     enh_diffu_3d: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

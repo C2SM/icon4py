@@ -28,7 +28,6 @@ def init_constant_cell_kdim_field(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
-    *,
     vertical_end: gtx.int32,
 ) -> None:
     _init_constant_cell_kdim_field(

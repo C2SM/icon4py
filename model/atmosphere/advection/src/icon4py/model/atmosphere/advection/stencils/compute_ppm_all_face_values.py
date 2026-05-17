@@ -27,7 +27,6 @@ def _compute_ppm_all_face_values(
     p_face_in: fa.CellKField[ta.wpfloat],
     slev: gtx.int32,
     elev: gtx.int32,
-    *,
     slevp1: gtx.int32,
     elevp1: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
@@ -51,7 +50,6 @@ def compute_ppm_all_face_values(
     p_face_in: fa.CellKField[ta.wpfloat],
     p_face: fa.CellKField[ta.wpfloat],
     slev: gtx.int32,
-    *,
     elev: gtx.int32,
     slevp1: gtx.int32,
     elevp1: gtx.int32,

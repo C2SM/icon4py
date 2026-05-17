@@ -34,7 +34,6 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
     ptr_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, V2EDim], wpfloat],
     p_u_out: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], wpfloat],
     p_v_out: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], wpfloat],
-    *,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

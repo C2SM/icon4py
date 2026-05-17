@@ -32,7 +32,6 @@ def apply_2nd_order_divergence_damping(
     scal_divdamp_o2: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

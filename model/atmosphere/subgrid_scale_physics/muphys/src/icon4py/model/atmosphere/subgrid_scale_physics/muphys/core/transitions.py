@@ -148,7 +148,6 @@ def cloud_to_snow(
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     ns: fa.CellKField[ta.wpfloat],  # Snow number
     lam: fa.CellKField[ta.wpfloat],  # Snow slope parameter
-    *,  # Snow slope parameter
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
 ):
     _cloud_to_snow(t, qc, qs, ns, lam, out=riming_snow_rate)
@@ -237,7 +236,6 @@ def graupel_to_rain(
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
     qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
-    *,  # Graupel specific mass
     rain_rate: fa.CellKField[ta.wpfloat],  # output
 ):
     _graupel_to_rain(t, p, rho, dvsw0, qg, out=rain_rate)
@@ -288,7 +286,6 @@ def ice_to_graupel(
     qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
     qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
     sticking_eff: fa.CellKField[ta.wpfloat],  # Sticking efficiency
-    *,  # Sticking efficiency
     aggregation: fa.CellKField[ta.wpfloat],  # output
 ):
     _ice_to_graupel(rho, qr, qg, qi, sticking_eff, out=aggregation)
@@ -343,7 +340,6 @@ def _rain_to_graupel(
     qc: fa.CellKField[ta.wpfloat],
     qr: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
-    *,
     qs: fa.CellKField[ta.wpfloat],
     mi: fa.CellKField[ta.wpfloat],
     dvsw: fa.CellKField[ta.wpfloat],
@@ -400,7 +396,6 @@ def rain_to_graupel(
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
     qr: fa.CellKField[ta.wpfloat],  # Specific humidity of rain
     qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
-    *,  # Ice specific mass
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     mi: fa.CellKField[ta.wpfloat],  # Ice crystal mass
     dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water (T)
@@ -417,7 +412,6 @@ def _rain_to_vapor(
     qc: fa.CellKField[ta.wpfloat],
     qr: fa.CellKField[ta.wpfloat],
     dvsw: fa.CellKField[ta.wpfloat],
-    *,
     dt: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
@@ -463,7 +457,6 @@ def rain_to_vapor(
     qc: fa.CellKField[ta.wpfloat],  # Cloud-specific humidity
     qr: fa.CellKField[ta.wpfloat],  # Rain-specific humidity
     dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water (T)
-    *,  # qv-qsat_water (T)
     dt: ta.wpfloat,  # time step
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
 ):
@@ -557,7 +550,6 @@ def snow_to_rain(
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-    *,  # Snow specific mass
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
 ):
     _snow_to_rain(t, p, rho, dvsw0, qs, out=conversion_rate)
@@ -570,7 +562,6 @@ def _vapor_x_graupel(
     rho: fa.CellKField[ta.wpfloat],
     qg: fa.CellKField[ta.wpfloat],
     dvsw: fa.CellKField[ta.wpfloat],
-    *,
     dvsi: fa.CellKField[ta.wpfloat],
     dvsw0: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
@@ -619,7 +610,6 @@ def vapor_x_graupel(
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
     dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T)
-    *,  # qv-qsat_water(T)
     dvsi: fa.CellKField[ta.wpfloat],  # qv-qsat_ice(T)
     dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
     dt: ta.wpfloat,  # time step
@@ -635,7 +625,6 @@ def _vapor_x_ice(
     eta: fa.CellKField[ta.wpfloat],
     dvsi: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
-    *,
     dt: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
@@ -674,7 +663,6 @@ def vapor_x_ice(
     eta: fa.CellKField[ta.wpfloat],  # Deposition factor
     dvsi: fa.CellKField[ta.wpfloat],  # Vapor excess qv-qsat_ice(T)
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    *,  # Ambient density
     dt: ta.wpfloat,  # time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat],  # output
 ):
@@ -688,7 +676,6 @@ def _vapor_x_snow(
     rho: fa.CellKField[ta.wpfloat],
     qs: fa.CellKField[ta.wpfloat],
     ns: fa.CellKField[ta.wpfloat],
-    *,
     lam: fa.CellKField[ta.wpfloat],
     eta: fa.CellKField[ta.wpfloat],
     ice_dep: fa.CellKField[ta.wpfloat],
@@ -769,7 +756,6 @@ def vapor_x_snow(
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     ns: fa.CellKField[ta.wpfloat],  # Snow number
-    *,  # Snow number
     lam: fa.CellKField[ta.wpfloat],  # Slope parameter (lambda) snow
     eta: fa.CellKField[ta.wpfloat],  # Deposition factor
     ice_dep: fa.CellKField[ta.wpfloat],  # Limiter for vapor dep on snow

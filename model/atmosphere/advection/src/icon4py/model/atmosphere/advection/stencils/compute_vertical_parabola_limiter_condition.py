@@ -33,7 +33,6 @@ def compute_vertical_parabola_limiter_condition(
     l_limit: fa.CellKField[gtx.int32],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-    *,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

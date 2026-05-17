@@ -18,7 +18,6 @@ def _update_mass_volume_flux(
     vwind_impl_wgt: fa.CellField[wpfloat],
     w: fa.CellKField[wpfloat],
     mass_flx_ic: fa.CellKField[wpfloat],
-    *,
     vol_flx_ic: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
@@ -36,7 +35,6 @@ def update_mass_volume_flux(
     vwind_impl_wgt: fa.CellField[wpfloat],
     w: fa.CellKField[wpfloat],
     mass_flx_ic: fa.CellKField[wpfloat],
-    *,
     vol_flx_ic: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: gtx.int32,

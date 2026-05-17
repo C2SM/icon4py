@@ -20,7 +20,6 @@ def _compute_horizontal_advection_term_for_vertical_velocity(
     w: fa.CellKField[wpfloat],
     z_vt_ie: fa.EdgeKField[vpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
-    *,
     tangent_orientation: fa.EdgeField[wpfloat],
     z_w_v: fa.VertexKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
@@ -42,7 +41,6 @@ def compute_horizontal_advection_term_for_vertical_velocity(
     w: fa.CellKField[wpfloat],
     z_vt_ie: fa.EdgeKField[vpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
-    *,
     tangent_orientation: fa.EdgeField[wpfloat],
     z_w_v: fa.VertexKField[vpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],

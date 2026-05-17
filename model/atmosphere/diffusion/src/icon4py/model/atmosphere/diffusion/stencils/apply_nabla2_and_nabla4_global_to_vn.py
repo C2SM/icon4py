@@ -19,7 +19,6 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
-    *,
     vn: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
@@ -37,7 +36,6 @@ def apply_nabla2_and_nabla4_global_to_vn(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
-    *,
     vn: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

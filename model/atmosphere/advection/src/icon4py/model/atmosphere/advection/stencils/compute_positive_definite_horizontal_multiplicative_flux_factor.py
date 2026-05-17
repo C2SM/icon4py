@@ -20,7 +20,6 @@ def _compute_positive_definite_horizontal_multiplicative_flux_factor(
     p_rhodz_now: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
-    *,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     p_m = neighbor_sum(maximum(0.0, p_mflx_tracer_h(C2E) * geofac_div * p_dtime), axis=C2EDim)
@@ -35,7 +34,6 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor(
     p_rhodz_now: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],
-    *,
     p_dtime: ta.wpfloat,
     dbl_eps: ta.wpfloat,
     horizontal_start: gtx.int32,

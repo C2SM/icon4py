@@ -28,7 +28,6 @@ def interpolate_contravariant_vertical_velocity_to_full_levels(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
-    *,
     vertical_end: gtx.int32,
 ) -> None:
     # TODO(): this should use a generic stencil
