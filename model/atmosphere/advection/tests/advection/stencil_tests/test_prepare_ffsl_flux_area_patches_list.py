@@ -911,17 +911,17 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         tangent_orientation_dsl = np.expand_dims(tangent_orientation_dsl, axis=-1)
 
         result_tuple = cls._generate_flux_area_geometry(
-            dreg_patch0_1_lon_dsl,
-            dreg_patch0_1_lat_dsl,
-            dreg_patch0_2_lon_dsl,
-            dreg_patch0_2_lat_dsl,
-            dreg_patch0_3_lon_dsl,
-            dreg_patch0_3_lat_dsl,
-            dreg_patch0_4_lon_dsl,
-            dreg_patch0_4_lat_dsl,
-            p_vn,
-            ptr_v3_lon_e,
-            ptr_v3_lat_e,
+            dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+            dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+            dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+            dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+            dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+            dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+            dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+            dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
+            p_vn=p_vn,
+            ptr_v3_lon_e=ptr_v3_lon_e,
+            ptr_v3_lat_e=ptr_v3_lat_e,
         )
 
         (
