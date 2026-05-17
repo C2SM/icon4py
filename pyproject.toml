@@ -353,16 +353,16 @@ max-complexity = 15
 # Avoid messing up conditions in gt4py stencils
 # Stencil parameters referenced in domain specs must remain positional; PLR0917 excluded
 "**/model/**/stencils/*.py" = ["SIM300", "PLR0917"]
-# GT4Py-decorated non-stencil files with domain-spec parameters
-"**/model/common/src/icon4py/model/common/math/*.py" = ["PLR0917"]
-"**/model/common/src/icon4py/model/common/metrics/*.py" = ["PLR0917"]
-"**/model/common/src/icon4py/model/common/grid/geometry_stencils.py" = ["PLR0917"]
-"**/model/common/src/icon4py/model/common/interpolation/interpolation_fields.py" = ["PLR0917"]
 "**/model/atmosphere/diffusion/src/**/diffusion_utils.py" = ["PLR0917"]
 "**/model/atmosphere/dycore/src/**/dycore_utils.py" = ["PLR0917"]
 "**/model/atmosphere/dycore/src/**/solve_nonhydro_stencils.py" = ["PLR0917"]
 "**/model/atmosphere/subgrid_scale_physics/muphys/src/**/core/*.py" = ["PLR0917"]
 "**/model/atmosphere/subgrid_scale_physics/muphys/src/**/implementations/*.py" = ["PLR0917"]
+"**/model/common/src/icon4py/model/common/grid/geometry_stencils.py" = ["PLR0917"]
+"**/model/common/src/icon4py/model/common/interpolation/interpolation_fields.py" = ["PLR0917"]
+# GT4Py-decorated non-stencil files with domain-spec parameters
+"**/model/common/src/icon4py/model/common/math/*.py" = ["PLR0917"]
+"**/model/common/src/icon4py/model/common/metrics/*.py" = ["PLR0917"]
 "**/model/driver/src/**/testcases/utils.py" = ["PLR0917"]
 # Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
