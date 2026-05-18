@@ -21,7 +21,6 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
-    base,
     geometry_attributes as attrs,
     geometry_stencils as stencils,
     grid_manager as gm,
@@ -109,7 +108,7 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._exchange = exchange
         self._global_reductions = global_reductions
@@ -126,7 +125,7 @@ class GridGeometry(factory.FieldSource):
             attrs.VERTEX_LON: coordinates[dims.VertexDim]["lon"],
             attrs.VERTEX_LAT: coordinates[dims.VertexDim]["lat"],
         }
-        if self._geometry_type == base.GeometryType.TORUS:
+        if self._geometry_type == icon.GeometryType.TORUS:
             coordinates_[attrs.CELL_CENTER_X] = coordinates[dims.CellDim]["x"]
             coordinates_[attrs.CELL_CENTER_Y] = coordinates[dims.CellDim]["y"]
             coordinates_[attrs.CELL_CENTER_Z] = coordinates[dims.CellDim]["z"]
@@ -214,7 +213,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(inverse_dual_edge_length)
 
         match self._geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
+            case icon.GeometryType.ICOSAHEDRON:
                 self._register_cartesian_coordinates_icosahedron()
 
                 vertex_vertex_distance = factory.ProgramFieldProvider(
@@ -230,7 +229,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lat": attrs.VERTEX_LAT,
                         "vertex_lon": attrs.VERTEX_LON,
                     },
-                    params={"radius": self._grid.global_properties.radius},
+                    params={"radius": self._grid.grid_params.radius},
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
@@ -252,7 +251,7 @@ class GridGeometry(factory.FieldSource):
 
                 self._register_normals_and_tangents_icosahedron()
 
-            case base.GeometryType.TORUS:
+            case icon.GeometryType.TORUS:
                 vertex_vertex_distance = factory.ProgramFieldProvider(
                     func=stencils.compute_distance_of_far_edges_in_diamond_torus,
                     domain={
@@ -267,8 +266,8 @@ class GridGeometry(factory.FieldSource):
                         "vertex_y": attrs.VERTEX_Y,
                     },
                     params={
-                        "domain_length": self._grid.global_properties.domain_length,
-                        "domain_height": self._grid.global_properties.domain_height,
+                        "domain_length": self._grid.grid_params.domain_length,
+                        "domain_height": self._grid.grid_params.domain_height,
                     },
                     do_exchange=True,
                 )
@@ -616,8 +615,8 @@ class GridGeometry(factory.FieldSource):
                 )
             },
             params={
-                "domain_length": self._grid.global_properties.domain_length,
-                "domain_height": self._grid.global_properties.domain_height,
+                "domain_length": self._grid.grid_params.domain_length,
+                "domain_height": self._grid.grid_params.domain_height,
             },
             do_exchange=False,
         )
