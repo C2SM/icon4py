@@ -212,6 +212,10 @@ def create_experiment_configuration(
     )
 
     # *** VerticalGridConfig ***
+    rayleigh_damping_height = nonhydrostatic_nml["damp_height"][0]
+    if isinstance(nonhydrostatic_nml["damp_height"], list):
+        rayleigh_damping_height = rayleigh_damping_height[0]
+
     vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=experiment.num_levels,
         maximal_layer_thickness=sleve_nml["max_lay_thckn"],
@@ -220,11 +224,7 @@ def create_experiment_configuration(
         model_top_height=sleve_nml["top_height"],
         flat_height=sleve_nml["flat_height"],
         stretch_factor=sleve_nml["stretch_fac"],
-        rayleigh_damping_height=(
-            nonhydrostatic_nml["damp_height"][0]
-            if isinstance(nonhydrostatic_nml["damp_height"], list)
-            else nonhydrostatic_nml["damp_height"]
-        ),
+        rayleigh_damping_height=rayleigh_damping_height,
         htop_moist_proc=nonhydrostatic_nml["htop_moist_proc"],
         SLEVE_decay_scale_1=sleve_nml["decay_scale_1"],
         SLEVE_decay_scale_2=sleve_nml["decay_scale_2"],
