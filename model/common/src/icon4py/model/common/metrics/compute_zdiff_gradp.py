@@ -42,6 +42,10 @@ def compute_zdiff_gradp(
     )
     vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
 
+    z_ifc_asc = z_ifc[:, ::-1]
+    e2c_0 = e2c[:, 0]
+    e2c_1 = e2c[:, 1]
+
     for je in range(horizontal_start, nedges):
         fi = int(flat_idx[je])
         njk = nlev - fi - 1
@@ -49,13 +53,21 @@ def compute_zdiff_gradp(
             continue
 
         jk_slice = slice(fi + 1, nlev)
-        for side in range(2):
-            ci = e2c[je, side]
-            z_ifc_rev = z_ifc[ci, fi : nlev + 1][::-1]
-            pos = np.searchsorted(z_ifc_rev, z_me[je, jk_slice])
-            jk1_arr = np.clip(nlev - pos, fi, nlev - 1)
-            zdiff_gradp[je, side, jk_slice] = z_me[je, jk_slice] - z_mc[ci, jk1_arr]
-            vertoffset_gradp[je, side, jk_slice] = jk1_arr - jk_field[jk_slice]
+        z_me_slice = z_me[je, jk_slice]
+        n_prefix = nlev - fi
+        jk_field_slice = jk_field[jk_slice]
+
+        ci0 = e2c_0[je]
+        pos0 = np.searchsorted(z_ifc_asc[ci0, :n_prefix], z_me_slice)
+        jk1_0 = np.clip(nlev - pos0, fi, nlev - 1)
+        zdiff_gradp[je, 0, jk_slice] = z_me_slice - z_mc[ci0, jk1_0]
+        vertoffset_gradp[je, 0, jk_slice] = jk1_0 - jk_field_slice
+
+        ci1 = e2c_1[je]
+        pos1 = np.searchsorted(z_ifc_asc[ci1, :n_prefix], z_me_slice)
+        jk1_1 = np.clip(nlev - pos1, fi, nlev - 1)
+        zdiff_gradp[je, 1, jk_slice] = z_me_slice - z_mc[ci1, jk1_1]
+        vertoffset_gradp[je, 1, jk_slice] = jk1_1 - jk_field_slice
 
     for je in range(horizontal_start_1, nedges):
         fi = int(flat_idx[je])
@@ -68,13 +80,20 @@ def compute_zdiff_gradp(
         if not mask.any():
             continue
 
-        for side in range(2):
-            ci = e2c[je, side]
-            z_ifc_rev = z_ifc[ci, fi : nlev + 1][::-1]
-            pos = np.searchsorted(z_ifc_rev, z_aux2[je])
-            jk1_aux = np.clip(nlev - pos, fi, nlev - 1)
-            zdiff_gradp[je, side, je_slice][mask] = z_aux2[je] - z_mc[ci, jk1_aux]
-            vertoffset_gradp[je, side, je_slice][mask] = jk1_aux - jk_field[je_slice][mask]
+        n_prefix = nlev - fi
+        jk_field_slice = jk_field[je_slice]
+
+        ci0 = e2c_0[je]
+        pos0 = np.searchsorted(z_ifc_asc[ci0, :n_prefix], z_aux2[je])
+        jk1_0 = np.clip(nlev - pos0, fi, nlev - 1)
+        zdiff_gradp[je, 0, je_slice][mask] = z_aux2[je] - z_mc[ci0, jk1_0]
+        vertoffset_gradp[je, 0, je_slice][mask] = jk1_0 - jk_field_slice[mask]
+
+        ci1 = e2c_1[je]
+        pos1 = np.searchsorted(z_ifc_asc[ci1, :n_prefix], z_aux2[je])
+        jk1_1 = np.clip(nlev - pos1, fi, nlev - 1)
+        zdiff_gradp[je, 1, je_slice][mask] = z_aux2[je] - z_mc[ci1, jk1_1]
+        vertoffset_gradp[je, 1, je_slice][mask] = jk1_1 - jk_field_slice[mask]
 
     exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 0, :], stream=decomposition.BLOCK)
     exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 1, :], stream=decomposition.BLOCK)
