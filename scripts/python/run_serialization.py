@@ -514,12 +514,6 @@ def run_experiment(
         raise
 
 
-def require_cli(command_name) -> None:
-    if shutil.which(command_name) is None:
-        typer.echo(f"Error: '{command_name}' is not installed or not on PATH.")
-        raise typer.Exit(code=1)
-
-
 @cli.command()
 def run_serialization() -> None:
     """Run the serialization experiment series."""
@@ -531,8 +525,6 @@ def run_serialization() -> None:
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
-
-    require_cli("f90nml")
 
     total_tasks = len(settings.experiments) * len(settings.comm_sizes)
     log_status(
