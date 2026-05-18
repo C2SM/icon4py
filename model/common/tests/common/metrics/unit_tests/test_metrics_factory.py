@@ -484,7 +484,6 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.cpu_only  # TODO(halungge): slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(
     grid_savepoint: serialbox.IconGridSavepoint,
