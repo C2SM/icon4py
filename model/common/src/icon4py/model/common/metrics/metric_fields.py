@@ -30,6 +30,7 @@ from gt4py.next import (
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -213,13 +214,13 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == 1:  # RayleighType.CLASSIC
+    if rayleigh_type == RayleighType.CLASSIC.value:
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == 2:  # RayleighType.KLEMP
+    elif rayleigh_type ==RayleighType.KLEMP.value:
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
