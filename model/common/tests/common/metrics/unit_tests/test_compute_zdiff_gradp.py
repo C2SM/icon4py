@@ -80,7 +80,6 @@ def test_compute_zdiff_gradp(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        exchange=decomposition.single_node_exchange,
     )
 
     assert test_utils.dallclose(

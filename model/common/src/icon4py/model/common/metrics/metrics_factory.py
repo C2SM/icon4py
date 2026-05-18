@@ -756,10 +756,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
         compute_zdiff_gradp_np = factory.NumpyDataProvider(
-            func=functools.partial(
-                compute_zdiff_gradp.compute_zdiff_gradp,
-                exchange=self._exchange,
-            ),
+            func=compute_zdiff_gradp.compute_zdiff_gradp,
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
