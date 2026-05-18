@@ -75,7 +75,16 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         z_temp: np.ndarray,
         **kwargs,
     ) -> dict:
-        z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(connectivities=connectivities, zd_vertoffset=zd_vertoffset, zd_diffcoef=zd_diffcoef, geofac_n2s_c=geofac_n2s_c, geofac_n2s_nbh=geofac_n2s_nbh, vcoef=vcoef, theta_v=theta_v, z_temp=z_temp)
+        z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+            connectivities=connectivities,
+            zd_vertoffset=zd_vertoffset,
+            zd_diffcoef=zd_diffcoef,
+            geofac_n2s_c=geofac_n2s_c,
+            geofac_n2s_nbh=geofac_n2s_nbh,
+            vcoef=vcoef,
+            theta_v=theta_v,
+            z_temp=z_temp,
+        )
         return dict(z_temp=z_temp)
 
     @pytest.fixture
