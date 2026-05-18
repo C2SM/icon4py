@@ -352,14 +352,13 @@ def test_gridmanager_given_file_not_found_then_abort(
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
-    with pytest.raises(FileNotFoundError) as error:
+    with pytest.raises(FileNotFoundError):
         manager = gm.GridManager(
             grid_file=fname,
             config=v_grid.VerticalGridConfig(num_levels=80),
             offset_transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
-        assert error.value == 1
 
 
 @pytest.mark.parametrize("size", [100, 1500, 20000])
