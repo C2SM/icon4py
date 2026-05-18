@@ -40,12 +40,7 @@ def compute_zdiff_gradp(
         array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
         - z_mc[e2c][horizontal_start:, :, :]
     )
-    vertidx_gradp = array_ns.expand_dims(
-        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
-    ).repeat(nedges, axis=0)
-    vertoffset_gradp = array_ns.expand_dims(
-        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
-    ).repeat(nedges, axis=0)
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
 
     for je in range(horizontal_start, nedges):
         fi = int(flat_idx[je])
@@ -53,13 +48,14 @@ def compute_zdiff_gradp(
         if njk <= 0:
             continue
 
+        jk_slice = slice(fi + 1, nlev)
         for side in range(2):
             ci = e2c[je, side]
             z_ifc_rev = z_ifc[ci, fi : nlev + 1][::-1]
-            pos = np.searchsorted(z_ifc_rev, z_me[je, fi + 1 : nlev])
+            pos = np.searchsorted(z_ifc_rev, z_me[je, jk_slice])
             jk1_arr = np.clip(nlev - pos, fi, nlev - 1)
-            vertidx_gradp[je, side, fi + 1 : nlev] = jk1_arr
-            zdiff_gradp[je, side, fi + 1 : nlev] = z_me[je, fi + 1 : nlev] - z_mc[ci, jk1_arr]
+            zdiff_gradp[je, side, jk_slice] = z_me[je, jk_slice] - z_mc[ci, jk1_arr]
+            vertoffset_gradp[je, side, jk_slice] = jk1_arr - jk_field[jk_slice]
 
     for je in range(horizontal_start_1, nedges):
         fi = int(flat_idx[je])
@@ -77,10 +73,8 @@ def compute_zdiff_gradp(
             z_ifc_rev = z_ifc[ci, fi : nlev + 1][::-1]
             pos = np.searchsorted(z_ifc_rev, z_aux2[je])
             jk1_aux = np.clip(nlev - pos, fi, nlev - 1)
-            vertidx_gradp[je, side, je_slice][mask] = jk1_aux
             zdiff_gradp[je, side, je_slice][mask] = z_aux2[je] - z_mc[ci, jk1_aux]
-
-    vertoffset_gradp = vertidx_gradp - vertoffset_gradp
+            vertoffset_gradp[je, side, je_slice][mask] = jk1_aux - jk_field[je_slice][mask]
 
     exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 0, :], stream=decomposition.BLOCK)
     exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 1, :], stream=decomposition.BLOCK)
