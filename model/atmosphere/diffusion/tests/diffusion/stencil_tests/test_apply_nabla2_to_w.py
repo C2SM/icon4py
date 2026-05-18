@@ -50,7 +50,7 @@ class TestMoApplyNabla2ToW(StencilTest):
         diff_multfac_w: float,
         **kwargs,
     ) -> dict:
-        w = apply_nabla2_to_w_numpy(connectivities, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
+        w = apply_nabla2_to_w_numpy(connectivities=connectivities, area=area, z_nabla2_c=z_nabla2_c, geofac_n2s=geofac_n2s, w=w, diff_multfac_w=diff_multfac_w)
         return dict(w=w)
 
     @pytest.fixture

@@ -72,14 +72,14 @@ class TestApplyDiffusionToVn(StencilTest):
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(
-            connectivities,
-            u_vert,
-            v_vert,
-            primal_normal_vert_v1,
-            primal_normal_vert_v2,
-            z_nabla2_e,
-            inv_vert_vert_length,
-            inv_primal_edge_length,
+            connectivities=connectivities,
+            u_vert=u_vert,
+            v_vert=v_vert,
+            primal_normal_vert_v1=primal_normal_vert_v1,
+            primal_normal_vert_v2=primal_normal_vert_v2,
+            z_nabla2_e=z_nabla2_e,
+            inv_vert_vert_length=inv_vert_vert_length,
+            inv_primal_edge_length=inv_primal_edge_length,
         )
 
         condition = start_2nd_nudge_line_idx_e <= edge[:, np.newaxis]
@@ -88,14 +88,14 @@ class TestApplyDiffusionToVn(StencilTest):
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_to_vn_numpy(
-                    area_edge,
-                    kh_smag_e,
-                    z_nabla2_e,
-                    z_nabla4_e2,
-                    diff_multfac_vn,
-                    nudgecoeff_e,
-                    vn,
-                    nudgezone_diff,
+                    area_edge=area_edge,
+                    kh_smag_e=kh_smag_e,
+                    z_nabla2_e=z_nabla2_e,
+                    z_nabla4_e2=z_nabla4_e2,
+                    diff_multfac_vn=diff_multfac_vn,
+                    nudgecoeff_e=nudgecoeff_e,
+                    vn=vn,
+                    nudgezone_diff=nudgezone_diff,
                 ),
                 apply_nabla2_to_vn_in_lateral_boundary_numpy(
                     z_nabla2_e, area_edge, vn, fac_bdydiff_v
@@ -105,7 +105,8 @@ class TestApplyDiffusionToVn(StencilTest):
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_global_to_vn_numpy(
-                    area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+                    area_edge=area_edge, kh_smag_e=kh_smag_e, z_nabla2_e=z_nabla2_e,
+                    z_nabla4_e2=z_nabla4_e2, diff_multfac_vn=diff_multfac_vn, vn=vn
                 ),
                 vn,
             )

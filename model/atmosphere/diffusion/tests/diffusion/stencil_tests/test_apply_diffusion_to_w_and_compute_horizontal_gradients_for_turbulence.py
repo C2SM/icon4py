@@ -100,7 +100,12 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         w = np.where(
             (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
             apply_nabla2_to_w_numpy(
-                connectivities, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w
+                connectivities=connectivities,
+                area=area,
+                z_nabla2_c=z_nabla2_c,
+                geofac_n2s=geofac_n2s,
+                w=w_old,
+                diff_multfac_w=diff_multfac_w,
             ),
             w_old,
         )
