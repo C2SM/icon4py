@@ -258,13 +258,13 @@ def create_experiment_configuration(
     )
 
     # *** DiffusionConfig ***
-    lhdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
-    if isinstance(lhdiff_smag_w, list):
-        hdiff_smag_w = lhdiff_smag_w[0]
+    hdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
+    if isinstance(hdiff_smag_w, list):
+        hdiff_smag_w = hdiff_smag_w[0]
 
-    lsmag_3d = diffusion_nml["lsmag_3d"]
-    if isinstance(lsmag_3d, list):
-        smag_3d = lsmag_3d[0]
+    smag_3d = diffusion_nml["lsmag_3d"]
+    if isinstance(smag_3d, list):
+        smag_3d = smag_3d[0]
 
     diffusion_config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType(diffusion_nml["hdiff_order"]),
