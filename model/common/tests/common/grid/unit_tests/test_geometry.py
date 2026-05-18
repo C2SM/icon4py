@@ -49,10 +49,8 @@ def test_geometry_raises_for_unknown_field(
     backend: gtx_typing.Backend, experiment: definitions.Experiment
 ) -> None:
     geometry = grid_utils.get_grid_geometry(backend, experiment)
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
         geometry.get("foo")
-        assert "'foo'" in e.value  # type: ignore[operator]
-        assert "'GridGeometry'" in e.value  # type: ignore[operator]
 
 
 @pytest.mark.parametrize(

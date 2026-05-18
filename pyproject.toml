@@ -39,6 +39,7 @@ scripts = [
   "lazy-loader>=0.5",
   "rich>=13.0.0",
   "typer>=0.15",
+  "f90nml>=1.5",
   {include-group = "build"},
   {include-group = "test"}
 ]
@@ -252,6 +253,7 @@ markers = [
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
   "bindings",
+  "model/atmosphere/advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
