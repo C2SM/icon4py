@@ -93,8 +93,7 @@ build_distributed:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
-      - COMPONENT: [standalone_driver]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
         # TODO(msimberg): Enable dace_gpu when compilation doesn't take as long
         # or when we can cache across CI jobs.
         BACKEND: [embedded, gtfn_cpu, dace_cpu, gtfn_gpu]
