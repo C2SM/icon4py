@@ -29,7 +29,10 @@ dependencies = [
   # workspace members
   'icon4py-common[io]~=0.1.0',
   # external dependencies
-  "filelock>=3.18.0",
+  # TODO(msimberg): https://github.com/tox-dev/filelock/pull/408 added in 3.20.4
+  # and 3.21.0 seems to lead to hangs in CI. Investigate if other lock types are
+  # safe or if this is a bug in filelock.
+  "filelock>=3.18.0,<3.20",
   "gt4py==1.1.9",
   "numpy>=1.23.3",
   'packaging>=20.0',
