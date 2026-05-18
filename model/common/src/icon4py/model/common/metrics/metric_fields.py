@@ -214,13 +214,13 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == RayleighType.CLASSIC.value:
+    if rayleigh_type == 1:
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == RayleighType.KLEMP.value:
+    elif rayleigh_type == 2:
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )

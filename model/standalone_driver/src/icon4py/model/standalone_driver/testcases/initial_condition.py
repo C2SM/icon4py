@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
 import math
 
@@ -613,24 +612,21 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     log.info("Computations of Weisman-Klemp background fields completed.")
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
-        grid,
-        c2e=grid.get_connectivity(dims.C2E).ndarray,
-        e2c=grid.get_connectivity(dims.E2C).ndarray,
+        grid=grid,
         z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
         inv_dual_edge_length=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
         ).ndarray,
-        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+        edge_cell_distance=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
         primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
         cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vertical_grid._vct_b.ndarray,  # type: ignore[union-attr]
         nlev=num_levels,
-        array_ns=xp,
     )
     log.info("W initialization completed.")
 
-    functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
+    testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
         exner=exner_ndarray,
         theta_v=theta_v_ndarray,
@@ -646,7 +642,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     domain_length = grid.global_properties.domain_length
     domain_height = grid.global_properties.domain_height
-    functools.partial(testcases_utils.init_bubble, array_ns=xp)(
+    testcases_utils.init_bubble(
         theta_v_ndarray=theta_v_ndarray,
         rho_ndarray=rho_ndarray,
         qv_ndarray=qv_ndarray,
