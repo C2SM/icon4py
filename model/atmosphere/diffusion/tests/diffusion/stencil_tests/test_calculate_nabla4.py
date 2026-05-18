@@ -87,16 +87,7 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length: np.ndarray,
         **kwargs,
     ) -> dict:
-        z_nabla4_e2 = calculate_nabla4_numpy(
-            connectivities,
-            u_vert,
-            v_vert,
-            primal_normal_vert_v1,
-            primal_normal_vert_v2,
-            z_nabla2_e,
-            inv_vert_vert_length,
-            inv_primal_edge_length,
-        )
+        z_nabla4_e2 = calculate_nabla4_numpy(connectivities=connectivities, u_vert=u_vert, v_vert=v_vert, primal_normal_vert_v1=primal_normal_vert_v1, primal_normal_vert_v2=primal_normal_vert_v2, z_nabla2_e=z_nabla2_e, inv_vert_vert_length=inv_vert_vert_length, inv_primal_edge_length=inv_primal_edge_length)
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @pytest.fixture

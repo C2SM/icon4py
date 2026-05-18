@@ -68,9 +68,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
         vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
-            area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
-        )
+        vn = apply_nabla2_and_nabla4_global_to_vn_numpy(area_edge=area_edge, kh_smag_e=kh_smag_e, z_nabla2_e=z_nabla2_e, z_nabla4_e2=z_nabla4_e2, diff_multfac_vn=diff_multfac_vn, vn=vn)
         return dict(
             vn=vn,
         )
