@@ -32,12 +32,12 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 }
 
 
-class InterpolationKernel(enum.Enum):
-    GAUSSIAN: int = 1
-    INVERSE_MULTIQUADRATIC: int = 3
+class InterpolationKernel(enum.IntEnum):
+    GAUSSIAN = 1
+    INVERSE_MULTIQUADRATIC = 3
 
 
-DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
+DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
     RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
     RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
     RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
