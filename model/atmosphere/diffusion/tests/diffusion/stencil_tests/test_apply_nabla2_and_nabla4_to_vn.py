@@ -83,5 +83,14 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
         nudgezone_diff: np.ndarray,
         **kwargs,
     ) -> dict:
-        vn = apply_nabla2_and_nabla4_to_vn_numpy(area_edge=area_edge, kh_smag_e=kh_smag_e, z_nabla2_e=z_nabla2_e, z_nabla4_e2=z_nabla4_e2, diff_multfac_vn=diff_multfac_vn, nudgecoeff_e=nudgecoeff_e, vn=vn, nudgezone_diff=nudgezone_diff)
+        vn = apply_nabla2_and_nabla4_to_vn_numpy(
+            area_edge=area_edge,
+            kh_smag_e=kh_smag_e,
+            z_nabla2_e=z_nabla2_e,
+            z_nabla4_e2=z_nabla4_e2,
+            diff_multfac_vn=diff_multfac_vn,
+            nudgecoeff_e=nudgecoeff_e,
+            vn=vn,
+            nudgezone_diff=nudgezone_diff,
+        )
         return dict(vn=vn)

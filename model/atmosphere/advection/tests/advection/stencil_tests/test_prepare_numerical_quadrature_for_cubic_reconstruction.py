@@ -416,7 +416,32 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
             z_gauss_pts_3_y,
             z_gauss_pts_4_x,
             z_gauss_pts_4_y,
-        ) = cls._compute_z_gauss_points(p_coords_dreg_v_1_x=p_coords_dreg_v_1_x, p_coords_dreg_v_2_x=p_coords_dreg_v_2_x, p_coords_dreg_v_3_x=p_coords_dreg_v_3_x, p_coords_dreg_v_4_x=p_coords_dreg_v_4_x, p_coords_dreg_v_1_y=p_coords_dreg_v_1_y, p_coords_dreg_v_2_y=p_coords_dreg_v_2_y, p_coords_dreg_v_3_y=p_coords_dreg_v_3_y, p_coords_dreg_v_4_y=p_coords_dreg_v_4_y, shape_func_1_1=shape_func_1_1, shape_func_2_1=shape_func_2_1, shape_func_3_1=shape_func_3_1, shape_func_4_1=shape_func_4_1, shape_func_1_2=shape_func_1_2, shape_func_2_2=shape_func_2_2, shape_func_3_2=shape_func_3_2, shape_func_4_2=shape_func_4_2, shape_func_1_3=shape_func_1_3, shape_func_2_3=shape_func_2_3, shape_func_3_3=shape_func_3_3, shape_func_4_3=shape_func_4_3, shape_func_1_4=shape_func_1_4, shape_func_2_4=shape_func_2_4, shape_func_3_4=shape_func_3_4, shape_func_4_4=shape_func_4_4)
+        ) = cls._compute_z_gauss_points(
+            p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,
+            p_coords_dreg_v_2_x=p_coords_dreg_v_2_x,
+            p_coords_dreg_v_3_x=p_coords_dreg_v_3_x,
+            p_coords_dreg_v_4_x=p_coords_dreg_v_4_x,
+            p_coords_dreg_v_1_y=p_coords_dreg_v_1_y,
+            p_coords_dreg_v_2_y=p_coords_dreg_v_2_y,
+            p_coords_dreg_v_3_y=p_coords_dreg_v_3_y,
+            p_coords_dreg_v_4_y=p_coords_dreg_v_4_y,
+            shape_func_1_1=shape_func_1_1,
+            shape_func_2_1=shape_func_2_1,
+            shape_func_3_1=shape_func_3_1,
+            shape_func_4_1=shape_func_4_1,
+            shape_func_1_2=shape_func_1_2,
+            shape_func_2_2=shape_func_2_2,
+            shape_func_3_2=shape_func_3_2,
+            shape_func_4_2=shape_func_4_2,
+            shape_func_1_3=shape_func_1_3,
+            shape_func_2_3=shape_func_2_3,
+            shape_func_3_3=shape_func_3_3,
+            shape_func_4_3=shape_func_4_3,
+            shape_func_1_4=shape_func_1_4,
+            shape_func_2_4=shape_func_2_4,
+            shape_func_3_4=shape_func_3_4,
+            shape_func_4_4=shape_func_4_4,
+        )
 
         (
             p_quad_vector_sum_1,
@@ -429,7 +454,20 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
             p_quad_vector_sum_8,
             p_quad_vector_sum_9,
             p_quad_vector_sum_10,
-        ) = cls._compute_vector_sums(wgt_t_detjac_1=wgt_t_detjac_1, wgt_t_detjac_2=wgt_t_detjac_2, wgt_t_detjac_3=wgt_t_detjac_3, wgt_t_detjac_4=wgt_t_detjac_4, z_gauss_pts_1_x=z_gauss_pts_1_x, z_gauss_pts_1_y=z_gauss_pts_1_y, z_gauss_pts_2_x=z_gauss_pts_2_x, z_gauss_pts_2_y=z_gauss_pts_2_y, z_gauss_pts_3_x=z_gauss_pts_3_x, z_gauss_pts_3_y=z_gauss_pts_3_y, z_gauss_pts_4_x=z_gauss_pts_4_x, z_gauss_pts_4_y=z_gauss_pts_4_y)
+        ) = cls._compute_vector_sums(
+            wgt_t_detjac_1=wgt_t_detjac_1,
+            wgt_t_detjac_2=wgt_t_detjac_2,
+            wgt_t_detjac_3=wgt_t_detjac_3,
+            wgt_t_detjac_4=wgt_t_detjac_4,
+            z_gauss_pts_1_x=z_gauss_pts_1_x,
+            z_gauss_pts_1_y=z_gauss_pts_1_y,
+            z_gauss_pts_2_x=z_gauss_pts_2_x,
+            z_gauss_pts_2_y=z_gauss_pts_2_y,
+            z_gauss_pts_3_x=z_gauss_pts_3_x,
+            z_gauss_pts_3_y=z_gauss_pts_3_y,
+            z_gauss_pts_4_x=z_gauss_pts_4_x,
+            z_gauss_pts_4_y=z_gauss_pts_4_y,
+        )
 
         z_area = p_quad_vector_sum_1
         p_dreg_area_out = np.where(
