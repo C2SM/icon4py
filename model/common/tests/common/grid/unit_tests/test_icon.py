@@ -76,6 +76,7 @@ LATERAL_BOUNDARY_IDX = {
 NUDGING_IDX = {
     dims.CellDim: [3316, 4104],
     dims.EdgeDim: [4989, 5387, 6176],
+    dims.VertexDim: [1673, 2071],
 }
 HALO_IDX = {
     dims.CellDim: [20896, 20896],
@@ -124,9 +125,8 @@ def test_local(dim: gtx.Dimension, grid: base_grid.Grid) -> None:
 def test_lateral_boundary(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if num > 4 and dim in (dims.VertexDim, dims.CellDim):
-        with pytest.raises(AssertionError) as e:
+        with pytest.raises(AssertionError, match=f"Invalid zone {marker} for dimension"):
             h_grid.domain(dim)(marker)
-            e.match(f"Invalid marker '{marker}' for dimension")
     else:
         domain = h_grid.domain(dim)(marker)
         start_index = grid.start_index(domain)
@@ -148,10 +148,9 @@ def test_end(grid: base_grid.Grid, dim: gtx.Dimension) -> None:
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_nudging(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
-    if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
-        with pytest.raises(AssertionError) as e:
+    if dim in (dims.VertexDim, dims.CellDim) and num > 1:
+        with pytest.raises(AssertionError, match=f"Invalid zone {marker} for dimension"):
             h_grid.domain(dim)(marker)
-            e.match(f"Invalid marker '{marker}' for dimension")
     else:
         domain = h_grid.domain(dim)(marker)
         start_index = grid.start_index(domain)
