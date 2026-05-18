@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import functools
+import math
 from types import ModuleType
 
 import numpy as np

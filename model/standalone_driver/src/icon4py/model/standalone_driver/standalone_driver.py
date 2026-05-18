@@ -490,6 +490,7 @@ class Icon4pyDriver:
 def _read_config(
     output_path: pathlib.Path,
     enable_profiling: bool,
+    experiment_name: str = "Jablonowski_Williamson",
 ) -> tuple[
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
@@ -497,10 +498,19 @@ def _read_config(
     advection.AdvectionConfig,
     solve_nh.NonHydrostaticConfig,
 ]:
-    vertical_grid_config = v_grid.VerticalGridConfig(
-        num_levels=35,
-        rayleigh_damping_height=45000.0,
-    )
+    if experiment_name == "Weisman_Klemp":
+        vertical_grid_config = v_grid.VerticalGridConfig(
+            num_levels=64,
+            lowest_layer_thickness=50.0,
+            model_top_height=23500.0,
+            stretch_factor=1.0,
+            rayleigh_damping_height=8000.0,
+        )
+    else:
+        vertical_grid_config = v_grid.VerticalGridConfig(
+            num_levels=35,
+            rayleigh_damping_height=45000.0,
+        )
 
     diffusion_config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
@@ -531,7 +541,7 @@ def _read_config(
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 
     icon4py_driver_config = driver_config.DriverConfig(
-        experiment_name="Jablonowski_Williamson",
+        experiment_name=experiment_name,
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
         end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
@@ -556,6 +566,7 @@ def initialize_driver(
     grid_file_path: pathlib.Path,
     log_level: str,
     backend_like: model_backends.BackendLike,
+    experiment_name: str = "Jablonowski_Williamson",
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
@@ -573,6 +584,8 @@ def initialize_driver(
         grid_file_path: path of the grid file
         log_level: logging level
         backend_like: backend-like
+        experiment_name: selects the experiment config to build
+            ("Jablonowski_Williamson" or "Weisman_Klemp")
     Returns:
         Driver: driver object
     """
@@ -624,6 +637,7 @@ def initialize_driver(
         _read_config(
             output_path=output_path,
             enable_profiling=False,
+            experiment_name=experiment_name,
         )
     )
 

@@ -100,6 +100,7 @@ def test_weisman_klemp_initial_condition(
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_like=backend_like,
+        experiment_name="Weisman_Klemp",
     )
 
     ds = initial_condition.weisman_klemp(
