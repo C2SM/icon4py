@@ -963,7 +963,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("at_initial_timestep", [(True)])
+@pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [

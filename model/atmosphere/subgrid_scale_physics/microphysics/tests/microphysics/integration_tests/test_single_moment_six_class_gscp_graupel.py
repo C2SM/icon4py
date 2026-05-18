@@ -39,9 +39,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
-    [
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS),
-    ],
+    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
