@@ -15,7 +15,6 @@ import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgec
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
-    base,
     geometry,
     geometry_attributes as geometry_attrs,
     grid_refinement as refinement,
@@ -58,8 +57,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
-        domain_length = self.grid.global_properties.domain_length
-        domain_height = self.grid.global_properties.domain_height
+        domain_length = self.grid.grid_params.domain_length
+        domain_height = self.grid.grid_params.domain_height
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
@@ -197,7 +196,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
             fields=(attrs.RBF_SCALE_CELL,),
         )
@@ -211,7 +210,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
             fields=(attrs.RBF_SCALE_EDGE,),
         )
@@ -225,7 +224,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
             fields=(attrs.RBF_SCALE_VERTEX,),
         )
@@ -258,13 +257,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "min_rlcell_int": self.grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2)),
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
         )
         self.register_provider(lsq_pseudoinv)
 
-        match self.grid.global_properties.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
+        match self.grid.grid_params.geometry_type:
+            case icon.GeometryType.ICOSAHEDRON:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
@@ -336,7 +335,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
 
-            case base.GeometryType.TORUS:
+            case icon.GeometryType.TORUS:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight_torus,
@@ -506,16 +505,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_cell"].value,
-                "geometry_type": self._grid.global_properties.geometry_type.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
-                "domain_length": self._grid.global_properties.domain_length
-                if self._grid.global_properties.domain_length
+                "domain_length": self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length
                 else -1.0,
-                "domain_height": self._grid.global_properties.domain_height
-                if self._grid.global_properties.domain_height
+                "domain_height": self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height
                 else -1.0,
             },
             do_exchange=True,
@@ -542,16 +541,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_edge"].value,
-                "geometry_type": self._grid.global_properties.geometry_type.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
-                "domain_length": self._grid.global_properties.domain_length
-                if self._grid.global_properties.domain_length
+                "domain_length": self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length
                 else -1.0,
-                "domain_height": self._grid.global_properties.domain_height
-                if self._grid.global_properties.domain_height
+                "domain_height": self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height
                 else -1.0,
             },
             do_exchange=True,
@@ -579,16 +578,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.V2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_vertex"].value,
-                "geometry_type": self._grid.global_properties.geometry_type.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL)),
-                "domain_length": self._grid.global_properties.domain_length
-                if self._grid.global_properties.domain_length
+                "domain_length": self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length
                 else -1.0,
-                "domain_height": self._grid.global_properties.domain_height
-                if self._grid.global_properties.domain_height
+                "domain_height": self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height
                 else -1.0,
             },
             do_exchange=True,

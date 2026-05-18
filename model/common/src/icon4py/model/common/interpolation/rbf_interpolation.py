@@ -13,7 +13,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -53,8 +53,8 @@ def compute_default_rbf_scale_cell(
     """Compute the default RBF scale factor for cells. This assumes that the Gaussian
     kernel is used."""
 
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.5
             c1 = 1.8
             c2 = 3.75
@@ -65,7 +65,7 @@ def compute_default_rbf_scale_cell(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -77,8 +77,8 @@ def compute_default_rbf_scale_edge(
     """Compute the default RBF scale factor for edges. This assumes that the inverse multiquadratic
     kernel is used."""
 
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.0
             c1 = 0.4
             c2 = 2.0
@@ -89,7 +89,7 @@ def compute_default_rbf_scale_edge(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -101,8 +101,8 @@ def compute_default_rbf_scale_vertex(
     """Compute the default RBF scale factor for vertices. This assumes that the Gaussian
     kernel is used."""
 
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.0
             c1 = 1.8
             c2 = 3.0
@@ -113,7 +113,7 @@ def compute_default_rbf_scale_vertex(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -153,7 +153,7 @@ def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.N
 
 
 def _compute_distance_pairwise(
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     v: data_alloc.NDArray,
@@ -170,7 +170,7 @@ def _compute_distance_pairwise(
     """
     array_ns = data_alloc.array_namespace(v)
     match geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
             # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
             # Compute all pairs of dot products
@@ -184,7 +184,7 @@ def _compute_distance_pairwise(
             # inaccuracies)
             array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
             return array_ns.arccos(arc_lengths)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2), taking into account the periodic boundaries noqa: ERA001
             diff = array_ns.abs(v[:, :, array_ns.newaxis, :] - v[:, array_ns.newaxis, :, :])
@@ -196,7 +196,7 @@ def _compute_distance_pairwise(
 
 
 def _compute_distance_vector_matrix(
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     v1: data_alloc.NDArray,
@@ -217,7 +217,7 @@ def _compute_distance_vector_matrix(
     """
     array_ns = data_alloc.array_namespace(v1)
     match geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
             # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
             # Compute all pairs of dot products
@@ -231,7 +231,7 @@ def _compute_distance_vector_matrix(
             # inaccuracies)
             array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
             return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2) noqa: ERA001
             diff = array_ns.abs(v1 - v2)
@@ -272,7 +272,7 @@ def _kernel(
 
 
 def _cartesian_coordinates_from_zonal_and_meridional_components(
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     u: data_alloc.NDArray,
@@ -280,7 +280,7 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(lat)
     match geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             cos_lat = array_ns.cos(lat)
             sin_lat = array_ns.sin(lat)
             cos_lon = array_ns.cos(lon)
@@ -291,7 +291,7 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
             z = cos_lat * v
 
             return x, y, z
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return u, v, array_ns.zeros_like(u)
 
 
@@ -311,7 +311,7 @@ def _compute_rbf_interpolation_coeffs(
     uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: InterpolationKernel,
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -507,7 +507,7 @@ def compute_rbf_interpolation_coeffs_cell(
         ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
-        base_grid.GeometryType(geometry_type),
+        icon_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
         horizontal_end,
@@ -552,7 +552,7 @@ def compute_rbf_interpolation_coeffs_edge(
         ((edge_dual_normal_u, edge_dual_normal_v),),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
-        base_grid.GeometryType(geometry_type),
+        icon_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
         horizontal_end,
@@ -602,7 +602,7 @@ def compute_rbf_interpolation_coeffs_vertex(
         ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
-        base_grid.GeometryType(geometry_type),
+        icon_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
         horizontal_end,

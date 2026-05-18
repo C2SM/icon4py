@@ -286,7 +286,7 @@ def construct_icon_grid(
         neighbor_tables=neighbor_tables,
         start_index=start_index,
         end_index=end_index,
-        global_properties=icon.GlobalGridParams(),
+        grid_params=icon.GridParams(),
     )
 
 

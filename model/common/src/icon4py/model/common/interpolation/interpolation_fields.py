@@ -18,7 +18,7 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
-from icon4py.model.common.grid import base as base_grid, gridfile
+from icon4py.model.common.grid import gridfile, icon as icon_grid
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.math import projection
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -1271,8 +1271,8 @@ def compute_lsq_coeffs(
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
     z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
                 z_dist_g[:, js, :] = array_ns.asarray(
                     projection.gnomonic_proj(
@@ -1285,7 +1285,7 @@ def compute_lsq_coeffs(
 
             z_dist_g *= grid_sphere_radius
 
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
                 cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
