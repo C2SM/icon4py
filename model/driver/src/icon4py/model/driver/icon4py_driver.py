@@ -538,7 +538,7 @@ def initialize(
     "--icon4py_driver_backend",
     "-b",
     required=True,
-    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
+    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_gpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
 )
 def icon4py_driver(
     input_path,
