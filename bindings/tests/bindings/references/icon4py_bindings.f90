@@ -1558,31 +1558,31 @@ contains
                              rc)
       use, intrinsic :: iso_c_binding
 
-      real(c_double), dimension(:, :), target :: theta_ref_mc
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_mc
 
-      real(c_double), dimension(:, :), target :: wgtfac_c
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: wgtfac_c
 
-      real(c_double), dimension(:, :), target :: e_bln_c_s
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: e_bln_c_s
 
-      real(c_double), dimension(:, :), target :: geofac_div
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_div
 
-      real(c_double), dimension(:, :), target :: geofac_grg_x
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_grg_x
 
-      real(c_double), dimension(:, :), target :: geofac_grg_y
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_grg_y
 
-      real(c_double), dimension(:, :), target :: geofac_n2s
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_n2s
 
-      real(c_double), dimension(:), target :: nudgecoeff_e
+      real(c_double), dimension(:), contiguous, intent(inout), target :: nudgecoeff_e
 
-      real(c_double), dimension(:, :, :), target :: rbf_vec_coeff_v
+      real(c_double), dimension(:, :, :), contiguous, intent(inout), target :: rbf_vec_coeff_v
 
-      integer(c_int), dimension(:, :), pointer :: zd_cellidx
+      integer(c_int), dimension(:, :), contiguous, intent(inout), pointer :: zd_cellidx
 
-      integer(c_int), dimension(:, :), pointer :: zd_vertidx
+      integer(c_int), dimension(:, :), contiguous, intent(inout), pointer :: zd_vertidx
 
-      real(c_double), dimension(:, :), pointer :: zd_intcoef
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: zd_intcoef
 
-      real(c_double), dimension(:), pointer :: zd_diffcoef
+      real(c_double), dimension(:), contiguous, intent(inout), pointer :: zd_diffcoef
 
       integer(c_int), value, target :: ndyn_substeps
 
@@ -1871,23 +1871,23 @@ contains
                             rc)
       use, intrinsic :: iso_c_binding
 
-      real(c_double), dimension(:, :), target :: w
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: w
 
-      real(c_double), dimension(:, :), target :: vn
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vn
 
-      real(c_double), dimension(:, :), target :: exner
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner
 
-      real(c_double), dimension(:, :), target :: theta_v
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_v
 
-      real(c_double), dimension(:, :), target :: rho
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho
 
-      real(c_double), dimension(:, :), pointer :: hdef_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: hdef_ic
 
-      real(c_double), dimension(:, :), pointer :: div_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: div_ic
 
-      real(c_double), dimension(:, :), pointer :: dwdx
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: dwdx
 
-      real(c_double), dimension(:, :), pointer :: dwdy
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: dwdy
 
       real(c_double), value, target :: dtime
 
@@ -2105,91 +2105,91 @@ contains
                         rc)
       use, intrinsic :: iso_c_binding
 
-      integer(c_int), dimension(:), target :: cell_starts
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: cell_starts
 
-      integer(c_int), dimension(:), target :: cell_ends
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: cell_ends
 
-      integer(c_int), dimension(:), target :: vertex_starts
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: vertex_starts
 
-      integer(c_int), dimension(:), target :: vertex_ends
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: vertex_ends
 
-      integer(c_int), dimension(:), target :: edge_starts
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: edge_starts
 
-      integer(c_int), dimension(:), target :: edge_ends
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: edge_ends
 
-      integer(c_int), dimension(:, :), target :: c2e
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: c2e
 
-      integer(c_int), dimension(:, :), target :: e2c
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2c
 
-      integer(c_int), dimension(:, :), target :: c2e2c
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: c2e2c
 
-      integer(c_int), dimension(:, :), target :: e2c2e
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2c2e
 
-      integer(c_int), dimension(:, :), target :: e2v
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2v
 
-      integer(c_int), dimension(:, :), target :: v2e
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: v2e
 
-      integer(c_int), dimension(:, :), target :: v2c
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: v2c
 
-      integer(c_int), dimension(:, :), target :: e2c2v
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2c2v
 
-      integer(c_int), dimension(:, :), target :: c2v
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: c2v
 
-      logical(c_bool), dimension(:), target :: c_owner_mask
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: c_owner_mask
 
-      logical(c_bool), dimension(:), target :: e_owner_mask
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: e_owner_mask
 
-      logical(c_bool), dimension(:), target :: v_owner_mask
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: v_owner_mask
 
-      integer(c_int), dimension(:), target :: c_glb_index
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: c_glb_index
 
-      integer(c_int), dimension(:), target :: e_glb_index
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: e_glb_index
 
-      integer(c_int), dimension(:), target :: v_glb_index
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: v_glb_index
 
-      real(c_double), dimension(:), target :: tangent_orientation
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tangent_orientation
 
-      real(c_double), dimension(:), target :: inverse_primal_edge_lengths
+      real(c_double), dimension(:), contiguous, intent(inout), target :: inverse_primal_edge_lengths
 
-      real(c_double), dimension(:), target :: inv_dual_edge_length
+      real(c_double), dimension(:), contiguous, intent(inout), target :: inv_dual_edge_length
 
-      real(c_double), dimension(:), target :: inv_vert_vert_length
+      real(c_double), dimension(:), contiguous, intent(inout), target :: inv_vert_vert_length
 
-      real(c_double), dimension(:), target :: edge_areas
+      real(c_double), dimension(:), contiguous, intent(inout), target :: edge_areas
 
-      real(c_double), dimension(:), target :: f_e
+      real(c_double), dimension(:), contiguous, intent(inout), target :: f_e
 
-      real(c_double), dimension(:), target :: cell_center_lat
+      real(c_double), dimension(:), contiguous, intent(inout), target :: cell_center_lat
 
-      real(c_double), dimension(:), target :: cell_center_lon
+      real(c_double), dimension(:), contiguous, intent(inout), target :: cell_center_lon
 
-      real(c_double), dimension(:), target :: cell_areas
+      real(c_double), dimension(:), contiguous, intent(inout), target :: cell_areas
 
-      real(c_double), dimension(:, :), target :: primal_normal_vert_x
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: primal_normal_vert_x
 
-      real(c_double), dimension(:, :), target :: primal_normal_vert_y
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: primal_normal_vert_y
 
-      real(c_double), dimension(:, :), target :: dual_normal_vert_x
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dual_normal_vert_x
 
-      real(c_double), dimension(:, :), target :: dual_normal_vert_y
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dual_normal_vert_y
 
-      real(c_double), dimension(:, :), target :: primal_normal_cell_x
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: primal_normal_cell_x
 
-      real(c_double), dimension(:, :), target :: primal_normal_cell_y
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: primal_normal_cell_y
 
-      real(c_double), dimension(:, :), target :: dual_normal_cell_x
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dual_normal_cell_x
 
-      real(c_double), dimension(:, :), target :: dual_normal_cell_y
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dual_normal_cell_y
 
-      real(c_double), dimension(:), target :: edge_center_lat
+      real(c_double), dimension(:), contiguous, intent(inout), target :: edge_center_lat
 
-      real(c_double), dimension(:), target :: edge_center_lon
+      real(c_double), dimension(:), contiguous, intent(inout), target :: edge_center_lon
 
-      real(c_double), dimension(:), target :: primal_normal_x
+      real(c_double), dimension(:), contiguous, intent(inout), target :: primal_normal_x
 
-      real(c_double), dimension(:), target :: primal_normal_y
+      real(c_double), dimension(:), contiguous, intent(inout), target :: primal_normal_y
 
-      real(c_double), dimension(:), target :: vct_a
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vct_a
 
       real(c_double), value, target :: lowest_layer_thickness
 
@@ -2708,103 +2708,103 @@ contains
                             rc)
       use, intrinsic :: iso_c_binding
 
-      real(c_double), dimension(:, :), target :: c_lin_e
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: c_lin_e
 
-      real(c_double), dimension(:, :), target :: c_intp
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: c_intp
 
-      real(c_double), dimension(:, :), target :: e_flx_avg
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: e_flx_avg
 
-      real(c_double), dimension(:, :), target :: geofac_grdiv
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_grdiv
 
-      real(c_double), dimension(:, :), target :: geofac_rot
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_rot
 
-      real(c_double), dimension(:, :), target :: pos_on_tplane_e_1
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: pos_on_tplane_e_1
 
-      real(c_double), dimension(:, :), target :: pos_on_tplane_e_2
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: pos_on_tplane_e_2
 
-      real(c_double), dimension(:, :), target :: rbf_vec_coeff_e
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rbf_vec_coeff_e
 
-      real(c_double), dimension(:, :), target :: e_bln_c_s
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: e_bln_c_s
 
-      real(c_double), dimension(:, :, :), target :: rbf_vec_coeff_v
+      real(c_double), dimension(:, :, :), contiguous, intent(inout), target :: rbf_vec_coeff_v
 
-      real(c_double), dimension(:, :), target :: geofac_div
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_div
 
-      real(c_double), dimension(:, :), target :: geofac_n2s
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_n2s
 
-      real(c_double), dimension(:, :), target :: geofac_grg_x
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_grg_x
 
-      real(c_double), dimension(:, :), target :: geofac_grg_y
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: geofac_grg_y
 
-      real(c_double), dimension(:), target :: nudgecoeff_e
+      real(c_double), dimension(:), contiguous, intent(inout), target :: nudgecoeff_e
 
-      logical(c_bool), dimension(:), target :: mask_prog_halo_c
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: mask_prog_halo_c
 
-      real(c_double), dimension(:), target :: rayleigh_w
+      real(c_double), dimension(:), contiguous, intent(inout), target :: rayleigh_w
 
-      real(c_double), dimension(:, :), target :: exner_exfac
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner_exfac
 
-      real(c_double), dimension(:, :), target :: exner_ref_mc
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner_ref_mc
 
-      real(c_double), dimension(:, :), target :: wgtfac_c
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: wgtfac_c
 
-      real(c_double), dimension(:, :), target :: wgtfacq_c
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: wgtfacq_c
 
-      real(c_double), dimension(:, :), target :: inv_ddqz_z_full
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: inv_ddqz_z_full
 
-      real(c_double), dimension(:, :), target :: rho_ref_mc
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho_ref_mc
 
-      real(c_double), dimension(:, :), target :: theta_ref_mc
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_mc
 
-      real(c_double), dimension(:), target :: vwind_expl_wgt
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vwind_expl_wgt
 
-      real(c_double), dimension(:, :), target :: d_exner_dz_ref_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: d_exner_dz_ref_ic
 
-      real(c_double), dimension(:, :), target :: ddqz_z_half
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddqz_z_half
 
-      real(c_double), dimension(:, :), target :: theta_ref_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_ic
 
-      real(c_double), dimension(:, :), target :: d2dexdz2_fac1_mc
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: d2dexdz2_fac1_mc
 
-      real(c_double), dimension(:, :), target :: d2dexdz2_fac2_mc
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: d2dexdz2_fac2_mc
 
-      real(c_double), dimension(:, :), target :: rho_ref_me
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho_ref_me
 
-      real(c_double), dimension(:, :), target :: theta_ref_me
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_me
 
-      real(c_double), dimension(:, :), target :: ddxn_z_full
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddxn_z_full
 
-      real(c_double), dimension(:, :, :), target :: zdiff_gradp
+      real(c_double), dimension(:, :, :), contiguous, intent(inout), target :: zdiff_gradp
 
-      integer(c_int), dimension(:, :, :), target :: vertidx_gradp
+      integer(c_int), dimension(:, :, :), contiguous, intent(inout), target :: vertidx_gradp
 
-      integer(c_int), dimension(:), pointer :: pg_edgeidx
+      integer(c_int), dimension(:), contiguous, intent(inout), pointer :: pg_edgeidx
 
-      integer(c_int), dimension(:), pointer :: pg_vertidx
+      integer(c_int), dimension(:), contiguous, intent(inout), pointer :: pg_vertidx
 
-      real(c_double), dimension(:), pointer :: pg_exdist
+      real(c_double), dimension(:), contiguous, intent(inout), pointer :: pg_exdist
 
-      real(c_double), dimension(:, :), target :: ddqz_z_full_e
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddqz_z_full_e
 
-      real(c_double), dimension(:, :), target :: ddxt_z_full
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddxt_z_full
 
-      real(c_double), dimension(:, :), target :: wgtfac_e
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: wgtfac_e
 
-      real(c_double), dimension(:, :), target :: wgtfacq_e
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: wgtfacq_e
 
-      real(c_double), dimension(:), target :: vwind_impl_wgt
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vwind_impl_wgt
 
-      real(c_double), dimension(:), target :: hmask_dd3d
+      real(c_double), dimension(:), contiguous, intent(inout), target :: hmask_dd3d
 
-      real(c_double), dimension(:), target :: scalfac_dd3d
+      real(c_double), dimension(:), contiguous, intent(inout), target :: scalfac_dd3d
 
-      real(c_double), dimension(:, :), target :: coeff1_dwdz
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: coeff1_dwdz
 
-      real(c_double), dimension(:, :), target :: coeff2_dwdz
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: coeff2_dwdz
 
-      real(c_double), dimension(:, :), target :: coeff_gradekin
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: coeff_gradekin
 
-      logical(c_bool), dimension(:), target :: c_owner_mask
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: c_owner_mask
 
       integer(c_int), value, target :: itime_scheme
 
@@ -3514,79 +3514,79 @@ contains
                            rc)
       use, intrinsic :: iso_c_binding
 
-      real(c_double), dimension(:, :), target :: rho_now
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho_now
 
-      real(c_double), dimension(:, :), target :: rho_new
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho_new
 
-      real(c_double), dimension(:, :), target :: exner_now
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner_now
 
-      real(c_double), dimension(:, :), target :: exner_new
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner_new
 
-      real(c_double), dimension(:, :), target :: w_now
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: w_now
 
-      real(c_double), dimension(:, :), target :: w_new
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: w_new
 
-      real(c_double), dimension(:, :), target :: theta_v_now
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_v_now
 
-      real(c_double), dimension(:, :), target :: theta_v_new
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_v_new
 
-      real(c_double), dimension(:, :), target :: vn_now
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vn_now
 
-      real(c_double), dimension(:, :), target :: vn_new
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vn_new
 
-      real(c_double), dimension(:, :), target :: w_concorr_c
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: w_concorr_c
 
-      real(c_double), dimension(:, :), target :: ddt_vn_apc_ntl1
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddt_vn_apc_ntl1
 
-      real(c_double), dimension(:, :), target :: ddt_vn_apc_ntl2
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddt_vn_apc_ntl2
 
-      real(c_double), dimension(:, :), target :: ddt_w_adv_ntl1
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddt_w_adv_ntl1
 
-      real(c_double), dimension(:, :), target :: ddt_w_adv_ntl2
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddt_w_adv_ntl2
 
-      real(c_double), dimension(:, :), target :: theta_v_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_v_ic
 
-      real(c_double), dimension(:, :), target :: rho_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho_ic
 
-      real(c_double), dimension(:, :), target :: exner_pr
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner_pr
 
-      real(c_double), dimension(:, :), target :: exner_dyn_incr
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner_dyn_incr
 
-      real(c_double), dimension(:, :), target :: ddt_exner_phy
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddt_exner_phy
 
-      real(c_double), dimension(:, :), target :: grf_tend_rho
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: grf_tend_rho
 
-      real(c_double), dimension(:, :), target :: grf_tend_thv
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: grf_tend_thv
 
-      real(c_double), dimension(:, :), target :: grf_tend_w
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: grf_tend_w
 
-      real(c_double), dimension(:, :), target :: mass_fl_e
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: mass_fl_e
 
-      real(c_double), dimension(:, :), target :: ddt_vn_phy
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ddt_vn_phy
 
-      real(c_double), dimension(:, :), target :: grf_tend_vn
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: grf_tend_vn
 
-      real(c_double), dimension(:, :), target :: vn_ie
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vn_ie
 
-      real(c_double), dimension(:, :), target :: vt
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vt
 
-      real(c_double), dimension(:, :), pointer :: vn_incr
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: vn_incr
 
-      real(c_double), dimension(:, :), pointer :: rho_incr
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: rho_incr
 
-      real(c_double), dimension(:, :), pointer :: exner_incr
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: exner_incr
 
-      real(c_double), dimension(:, :), target :: mass_flx_me
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: mass_flx_me
 
-      real(c_double), dimension(:, :), target :: mass_flx_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: mass_flx_ic
 
-      real(c_double), dimension(:, :), target :: vol_flx_ic
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vol_flx_ic
 
-      real(c_double), dimension(:, :), target :: vn_traj
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vn_traj
 
       real(c_double), value, target :: dtime
 
-      real(c_double), dimension(:), target :: max_vcfl_size1_array
+      real(c_double), dimension(:), contiguous, intent(inout), target :: max_vcfl_size1_array
 
       logical(c_bool), value, target :: lprep_adv
 

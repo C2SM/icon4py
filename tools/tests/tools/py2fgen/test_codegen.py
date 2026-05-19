@@ -189,7 +189,7 @@ contains
 
       integer(c_int), value, target :: one
 
-      real(c_double), dimension(:, :), target :: two
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: two
 
       logical(c_bool) :: on_gpu
 
@@ -224,7 +224,7 @@ contains
                   rc)
       use, intrinsic :: iso_c_binding
 
-      real(c_float), dimension(:, :), target :: one
+      real(c_float), dimension(:, :), contiguous, intent(inout), target :: one
 
       integer(c_int), value, target :: two
 
@@ -481,4 +481,4 @@ def test_bool_param_codegen():
 
     interface = generate_f90_interface(plugin)
     assert "logical(c_bool), value, target :: flag" in interface
-    assert "logical(c_bool), dimension(:), target :: mask" in interface
+    assert "logical(c_bool), dimension(:), contiguous, intent(inout), target :: mask" in interface

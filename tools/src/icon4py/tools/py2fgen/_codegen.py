@@ -352,6 +352,9 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     to_iso_c_type(param.dtype),
                     render_fortran_array_dimensions(param, False),
                     as_f90_value(param),
+                    # arrays are passed to C via `c_loc`, which requires contiguity
+                    "contiguous" if is_array(param) else None,
+                    "intent(inout)" if is_array(param) else None,
                     "pointer" if is_array(param) and param.is_optional else "target",
                 ],
             )
