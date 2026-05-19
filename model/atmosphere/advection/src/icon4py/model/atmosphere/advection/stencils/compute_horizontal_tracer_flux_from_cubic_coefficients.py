@@ -34,13 +34,12 @@ def compute_horizontal_tracer_flux_from_cubic_coefficients(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_horizontal_tracer_flux_from_cubic_coefficients(
-        p_out_e_hybrid_2,
-        p_mass_flx_e,
-        z_dreg_area,
-        out=p_out_e_hybrid_2,
+    _compute_horizontal_tracer_flux_from_cubic_coefficients(p_out_e_hybrid_2=p_out_e_hybrid_2, p_mass_flx_e=p_mass_flx_e, z_dreg_area=z_dreg_area, 
+        out=p_out_e_hybrid_2, z_dreg_area=out=p_out_e_hybrid_2, 
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, z_dreg_area=domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

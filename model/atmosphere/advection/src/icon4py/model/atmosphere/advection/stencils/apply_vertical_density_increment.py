@@ -39,15 +39,12 @@ def apply_vertical_density_increment(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_vertical_density_increment(
-        rhodz_ast,
-        p_mflx_contra_v,
-        deepatmo_divzl,
-        deepatmo_divzu,
-        p_dtime,
-        out=rhodz_ast2,
+    _apply_vertical_density_increment(rhodz_ast=rhodz_ast, p_mflx_contra_v=p_mflx_contra_v, deepatmo_divzl=deepatmo_divzl, deepatmo_divzu=deepatmo_divzu, p_dtime=p_dtime, 
+        out=rhodz_ast2, p_dtime=out=rhodz_ast2, 
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, p_dtime=domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

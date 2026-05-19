@@ -32,11 +32,12 @@ def copy_cell_kdim_field_koff_plus1(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _copy_cell_kdim_field_koff_plus1(
-        field_in,
-        out=field_out,
+    _copy_cell_kdim_field_koff_plus1(field_in=field_in, 
+        out=field_out, field_in=out=field_out, 
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, field_in=domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

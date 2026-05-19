@@ -36,12 +36,12 @@ def compute_edge_tangential(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_edge_tangential(
-        p_vn_in,
-        ptr_coeff,
-        out=p_vt_out,
+    _compute_edge_tangential(p_vn_in=p_vn_in, ptr_coeff=ptr_coeff, 
+        out=p_vt_out, ptr_coeff=out=p_vt_out, 
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, ptr_coeff=domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

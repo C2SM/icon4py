@@ -118,26 +118,7 @@ def reconstruct_cubic_coefficients_svd(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _reconstruct_cubic_coefficients_svd(
-        p_cc,
-        lsq_pseudoinv_1,
-        lsq_pseudoinv_2,
-        lsq_pseudoinv_3,
-        lsq_pseudoinv_4,
-        lsq_pseudoinv_5,
-        lsq_pseudoinv_6,
-        lsq_pseudoinv_7,
-        lsq_pseudoinv_8,
-        lsq_pseudoinv_9,
-        lsq_moments_1,
-        lsq_moments_2,
-        lsq_moments_3,
-        lsq_moments_4,
-        lsq_moments_5,
-        lsq_moments_6,
-        lsq_moments_7,
-        lsq_moments_8,
-        lsq_moments_9,
+    _reconstruct_cubic_coefficients_svd(p_cc=p_cc, lsq_pseudoinv_1=lsq_pseudoinv_1, lsq_pseudoinv_2=lsq_pseudoinv_2, lsq_pseudoinv_3=lsq_pseudoinv_3, lsq_pseudoinv_4=lsq_pseudoinv_4, lsq_pseudoinv_5=lsq_pseudoinv_5, lsq_pseudoinv_6=lsq_pseudoinv_6, lsq_pseudoinv_7=lsq_pseudoinv_7, lsq_pseudoinv_8=lsq_pseudoinv_8, lsq_pseudoinv_9=lsq_pseudoinv_9, lsq_moments_1=lsq_moments_1, lsq_moments_2=lsq_moments_2, lsq_moments_3=lsq_moments_3, lsq_moments_4=lsq_moments_4, lsq_moments_5=lsq_moments_5, lsq_moments_6=lsq_moments_6, lsq_moments_7=lsq_moments_7, lsq_moments_8=lsq_moments_8, lsq_moments_9=lsq_moments_9, 
         out=(
             p_coeff_1_dsl,
             p_coeff_2_dsl,
@@ -149,9 +130,22 @@ def reconstruct_cubic_coefficients_svd(
             p_coeff_8_dsl,
             p_coeff_9_dsl,
             p_coeff_10_dsl,
-        ),
+        ), lsq_moments_9=out=(
+            p_coeff_1_dsl,
+            p_coeff_2_dsl,
+            p_coeff_3_dsl,
+            p_coeff_4_dsl,
+            p_coeff_5_dsl,
+            p_coeff_6_dsl,
+            p_coeff_7_dsl,
+            p_coeff_8_dsl,
+            p_coeff_9_dsl,
+            p_coeff_10_dsl,
+        ), 
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, lsq_moments_9=domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

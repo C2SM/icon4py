@@ -57,13 +57,12 @@ def compute_ppm_quartic_face_values(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_ppm_quartic_face_values(
-        p_cc,
-        p_cellhgt_mc_now,
-        z_slope,
-        out=p_face,
+    _compute_ppm_quartic_face_values(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope, 
+        out=p_face, z_slope=out=p_face, 
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, z_slope=domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

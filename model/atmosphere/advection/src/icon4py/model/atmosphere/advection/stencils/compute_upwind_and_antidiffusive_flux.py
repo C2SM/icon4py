@@ -44,13 +44,12 @@ def compute_upwind_and_antidiffusive_flux(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_upwind_and_antidiffusive_flux(
-        p_mflx_tracer_h,
-        p_mass_flx_e,
-        p_cc,
-        out=(z_mflx_low, z_anti),
+    _compute_upwind_and_antidiffusive_flux(p_mflx_tracer_h=p_mflx_tracer_h, p_mass_flx_e=p_mass_flx_e, p_cc=p_cc, 
+        out=(z_mflx_low, z_anti), p_cc=out=(z_mflx_low, z_anti), 
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, p_cc=domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

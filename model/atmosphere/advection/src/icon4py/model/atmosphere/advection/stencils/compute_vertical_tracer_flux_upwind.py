@@ -32,12 +32,12 @@ def compute_vertical_tracer_flux_upwind(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_vertical_tracer_flux_upwind(
-        p_cc,
-        p_mflx_contra_v,
-        out=p_upflux,
+    _compute_vertical_tracer_flux_upwind(p_cc=p_cc, p_mflx_contra_v=p_mflx_contra_v, 
+        out=p_upflux, p_mflx_contra_v=out=p_upflux, 
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, p_mflx_contra_v=domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

@@ -161,25 +161,7 @@ def compute_ffsl_backtrajectory(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_ffsl_backtrajectory(
-        p_vn,
-        p_vt,
-        cell_idx,
-        cell_blk,
-        edge_verts_1_x,
-        edge_verts_2_x,
-        edge_verts_1_y,
-        edge_verts_2_y,
-        pos_on_tplane_e_1_x,
-        pos_on_tplane_e_2_x,
-        pos_on_tplane_e_1_y,
-        pos_on_tplane_e_2_y,
-        primal_normal_cell_x,
-        primal_normal_cell_y,
-        dual_normal_cell_x,
-        dual_normal_cell_y,
-        lvn_sys_pos,
-        p_dt,
+    _compute_ffsl_backtrajectory(p_vn=p_vn, p_vt=p_vt, cell_idx=cell_idx, cell_blk=cell_blk, edge_verts_1_x=edge_verts_1_x, edge_verts_2_x=edge_verts_2_x, edge_verts_1_y=edge_verts_1_y, edge_verts_2_y=edge_verts_2_y, pos_on_tplane_e_1_x=pos_on_tplane_e_1_x, pos_on_tplane_e_2_x=pos_on_tplane_e_2_x, pos_on_tplane_e_1_y=pos_on_tplane_e_1_y, pos_on_tplane_e_2_y=pos_on_tplane_e_2_y, primal_normal_cell_x=primal_normal_cell_x, primal_normal_cell_y=primal_normal_cell_y, dual_normal_cell_x=dual_normal_cell_x, dual_normal_cell_y=dual_normal_cell_y, lvn_sys_pos=lvn_sys_pos, p_dt=p_dt, 
         out=(
             p_cell_idx,
             p_cell_rel_idx_dsl,
@@ -192,9 +174,23 @@ def compute_ffsl_backtrajectory(
             p_coords_dreg_v_2_lat_dsl,
             p_coords_dreg_v_3_lat_dsl,
             p_coords_dreg_v_4_lat_dsl,
-        ),
+        ), p_dt=out=(
+            p_cell_idx,
+            p_cell_rel_idx_dsl,
+            p_cell_blk,
+            p_coords_dreg_v_1_lon_dsl,
+            p_coords_dreg_v_2_lon_dsl,
+            p_coords_dreg_v_3_lon_dsl,
+            p_coords_dreg_v_4_lon_dsl,
+            p_coords_dreg_v_1_lat_dsl,
+            p_coords_dreg_v_2_lat_dsl,
+            p_coords_dreg_v_3_lat_dsl,
+            p_coords_dreg_v_4_lat_dsl,
+        ), 
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, p_dt=domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

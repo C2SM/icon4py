@@ -50,17 +50,12 @@ def compute_horizontal_tracer_flux_from_linear_coefficients(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_horizontal_tracer_flux_from_linear_coefficients(
-        z_lsq_coeff_1,
-        z_lsq_coeff_2,
-        z_lsq_coeff_3,
-        distv_bary_1,
-        distv_bary_2,
-        p_mass_flx_e,
-        cell_rel_idx_dsl,
-        out=p_out_e,
+    _compute_horizontal_tracer_flux_from_linear_coefficients(z_lsq_coeff_1=z_lsq_coeff_1, z_lsq_coeff_2=z_lsq_coeff_2, z_lsq_coeff_3=z_lsq_coeff_3, distv_bary_1=distv_bary_1, distv_bary_2=distv_bary_2, p_mass_flx_e=p_mass_flx_e, cell_rel_idx_dsl=cell_rel_idx_dsl, 
+        out=p_out_e, cell_rel_idx_dsl=out=p_out_e, 
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, cell_rel_idx_dsl=domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })

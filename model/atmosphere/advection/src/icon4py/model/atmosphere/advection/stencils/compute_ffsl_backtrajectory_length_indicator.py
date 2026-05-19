@@ -38,14 +38,12 @@ def compute_ffsl_backtrajectory_length_indicator(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_ffsl_backtrajectory_length_indicator(
-        p_vn,
-        p_vt,
-        edge_cell_length,
-        p_dt,
-        out=opt_famask_dsl,
+    _compute_ffsl_backtrajectory_length_indicator(p_vn=p_vn, p_vt=p_vt, edge_cell_length=edge_cell_length, p_dt=p_dt, 
+        out=opt_famask_dsl, p_dt=out=opt_famask_dsl, 
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        },
-    )
+        }, p_dt=domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        })
