@@ -142,6 +142,14 @@ def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
         return json.load(f)
 
 
+def _list_to_value(obj):
+    # Some parameters are allocated as `max_dom`-sized lists, with one value
+    # per domain. ICON4Py tests (for now) only run on one domain.
+    # Most parameters have the same value for all elements, others (such as
+    # num_levels) have a default value different from domain[0].
+    return obj[0] if isinstance(obj, list) else obj
+
+
 def create_experiment_configuration(
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
@@ -182,9 +190,7 @@ def create_experiment_configuration(
     run_nml = nml_data["run_nml"]
 
     # *** MetricsConfig ***
-    rayleigh_coeff = nonhydrostatic_nml["rayleigh_coeff"]
-    if isinstance(rayleigh_coeff, list):
-        rayleigh_coeff = rayleigh_coeff[0]
+    rayleigh_coeff = _list_to_value(nonhydrostatic_nml["rayleigh_coeff"])
 
     metrics_config = metrics_factory.MetricsConfig(
         exner_expol=nonhydrostatic_nml["exner_expol"],
@@ -212,9 +218,7 @@ def create_experiment_configuration(
     )
 
     # *** VerticalGridConfig ***
-    rayleigh_damping_height = nonhydrostatic_nml["damp_height"][0]
-    if isinstance(nonhydrostatic_nml["damp_height"], list):
-        rayleigh_damping_height = rayleigh_damping_height[0]
+    rayleigh_damping_height = _list_to_value(nonhydrostatic_nml["damp_height"])
 
     vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=experiment.num_levels,
@@ -258,13 +262,8 @@ def create_experiment_configuration(
     )
 
     # *** DiffusionConfig ***
-    hdiff_smag_w = diffusion_nml["lhdiff_smag_w"]
-    if isinstance(hdiff_smag_w, list):
-        hdiff_smag_w = hdiff_smag_w[0]
-
-    smag_3d = diffusion_nml["lsmag_3d"]
-    if isinstance(smag_3d, list):
-        smag_3d = smag_3d[0]
+    hdiff_smag_w = _list_to_value(diffusion_nml["lhdiff_smag_w"])
+    smag_3d = _list_to_value(diffusion_nml["lsmag_3d"])
 
     diffusion_config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType(diffusion_nml["hdiff_order"]),
@@ -304,8 +303,8 @@ def create_experiment_configuration(
         output_path=pathlib.Path(),  # Placeholder
         profiling_stats=None,
         dtime=datetime.timedelta(seconds=run_nml["dtime"]),
-        start_date=datetime.datetime(1, 1, 1, 0, 0, 0),  # Placeholder
-        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),  # Placeholder
+        start_date=datetime.datetime(1, 1, 1, 0, 0, 0),  # TODO (jcanton): Placeholder
+        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),  # # TODO (jcanton): Placeholder
         apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
         vertical_cfl_threshold=nonhydrostatic_nml["vcfl_threshold"],
         ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
