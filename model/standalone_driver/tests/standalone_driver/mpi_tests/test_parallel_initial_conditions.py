@@ -41,7 +41,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11

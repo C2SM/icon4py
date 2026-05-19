@@ -64,9 +64,6 @@ from ...decomposition import utils as decomp_utils
 from .. import utils
 
 
-MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
-
-
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
 
@@ -88,10 +85,9 @@ def test_grid_manager_eval_v2e(
     v2e_table = grid.get_connectivity("V2E").asnumpy()
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
-    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.geometry_type == icon.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -135,10 +131,9 @@ def test_grid_manager_eval_v2c(
     assert not has_invalid_index(serialized_v2c)
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
-    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.geometry_type == icon.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
@@ -328,9 +323,10 @@ def test_grid_manager_grid_size(
     backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert grid_descriptor.params.num_cells == grid.size[dims.CellDim]
-    assert grid_descriptor.params.num_edges == grid.size[dims.EdgeDim]
-    assert grid_descriptor.params.num_vertices == grid.size[dims.VertexDim]
+    ref = utils.GRID_REFERENCE_VALUES[grid_descriptor.name]
+    assert ref["num_cells"] == grid.size[dims.CellDim]
+    assert ref["num_edges"] == grid.size[dims.EdgeDim]
+    assert ref["num_vertices"] == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(
@@ -352,14 +348,13 @@ def test_gridmanager_given_file_not_found_then_abort(
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
-    with pytest.raises(FileNotFoundError) as error:
+    with pytest.raises(FileNotFoundError):
         manager = gm.GridManager(
             grid_file=fname,
             config=v_grid.VerticalGridConfig(num_levels=80),
             offset_transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
-        assert error.value == 1
 
 
 @pytest.mark.parametrize("size", [100, 1500, 20000])
@@ -374,21 +369,25 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, global_num_cells",
+    "grid_descriptor, expected_subdivision",
     [
-        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.params.num_cells),
-        (definitions.Grids.MCH_CH_R04B09_DSL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (
+            definitions.Grids.R02B04_GLOBAL,
+            icon.GridSubdivision(root=2, level=4),
+        ),
+        (
+            definitions.Grids.MCH_CH_R04B09_DSL,
+            icon.GridSubdivision(root=4, level=9),
+        ),
     ],
 )
 def test_grid_manager_grid_level_and_root(
-    grid_descriptor: definitions.GridDescription, global_num_cells: int, backend: gtx_typing.Backend
+    grid_descriptor: definitions.GridDescription,
+    expected_subdivision: icon.GridSubdivision,
+    backend: gtx_typing.Backend,
 ) -> None:
-    assert (
-        global_num_cells
-        == utils.run_grid_manager(
-            grid_descriptor, keep_skip_values=True, backend=backend
-        ).grid.global_properties.global_num_cells
-    )
+    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    assert expected_subdivision == grid.grid_params.subdivision
 
 
 @pytest.mark.datatest
