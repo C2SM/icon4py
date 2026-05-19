@@ -71,16 +71,16 @@ class SerializationSettings:
 
         EXPERIMENTS = [
             definitions.Experiments.MCH_CH_R04B09,
-            definitions.Experiments.JW,
-            definitions.Experiments.EXCLAIM_APE,
-            definitions.Experiments.GAUSS3D,
-            definitions.Experiments.WEISMAN_KLEMP_TORUS,
+            #definitions.Experiments.JW,
+            #definitions.Experiments.EXCLAIM_APE,
+            #definitions.Experiments.GAUSS3D,
+            #definitions.Experiments.WEISMAN_KLEMP_TORUS,
         ]
 
         # Slurm settings
         SBATCH_PARTITION = "normal"
         SBATCH_TIME = "00:15:00"
-        SBATCH_ACCOUNT = "cwd01"
+        SBATCH_ACCOUNT = "cwp03"
         SBATCH_UENV = "icon/25.2:v3"
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
