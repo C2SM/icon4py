@@ -162,7 +162,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(primal_normal_cell_x)
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -426,7 +426,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
     """
@@ -604,7 +604,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:],
@@ -634,7 +634,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:],
@@ -719,7 +719,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute edge flux average.
@@ -1267,7 +1267,7 @@ def compute_lsq_coeffs(
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
     z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))

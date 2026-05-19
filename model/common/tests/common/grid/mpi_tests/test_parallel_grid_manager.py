@@ -122,6 +122,7 @@ def _make_single_rank_geometry(
         decomposition_info=grid_manager.decomposition_info,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        exchange=decomp_defs.single_node_exchange,
     )
     return grid_manager, grid_geometry
 
