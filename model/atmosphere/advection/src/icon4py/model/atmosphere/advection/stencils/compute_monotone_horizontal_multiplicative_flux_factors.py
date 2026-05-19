@@ -60,7 +60,10 @@ def _compute_monotone_horizontal_multiplicative_flux_factors(
     dbl_eps: ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     z_max, z_min = _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
-        z_tracer_max, z_tracer_min, beta_fct, r_beta_fct
+        z_tracer_max=z_tracer_max,
+        z_tracer_min=z_tracer_min,
+        beta_fct=beta_fct,
+        r_beta_fct=r_beta_fct,
     )
 
     r_p, r_m = _compute_monotone_horizontal_multiplicative_flux_factors_p_m(

@@ -81,10 +81,12 @@ def _compute_ppm4gpu_fractional_flux(
 
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
 
-    p_cc_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cc)
-    p_cellmass_now_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cellmass_now)
-    z_delta_q_jks = _sum_neighbor_contributions(mask1, mask2, js, z_delta_q)
-    z_a1_jks = _sum_neighbor_contributions(mask1, mask2, js, z_a1)
+    p_cc_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=p_cc)
+    p_cellmass_now_jks = _sum_neighbor_contributions(
+        mask1=mask1, mask2=mask2, js=js, p_cc=p_cellmass_now
+    )
+    z_delta_q_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=z_delta_q)
+    z_a1_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=z_a1)
 
     z_q_int = (
         p_cc_jks

@@ -134,8 +134,22 @@ def _compute_ppm4gpu_courant_number(
 ) -> fa.CellKField[ta.wpfloat]:
     z_mass = p_dtime * p_mflx_contra_v
 
-    cfl_below = _compute_courant_number_below(p_cellmass_now, z_mass, z_cfl, k, nlev, dbl_eps)
-    cfl_above = _compute_courant_number_above(p_cellmass_now, z_mass, z_cfl, k, slevp1_ti, dbl_eps)
+    cfl_below = _compute_courant_number_below(
+        p_cellmass_now=p_cellmass_now,
+        z_mass=z_mass,
+        z_cfl=z_cfl,
+        k=k,
+        nlev=nlev,
+        dbl_eps=dbl_eps,
+    )
+    cfl_above = _compute_courant_number_above(
+        p_cellmass_now=p_cellmass_now,
+        z_mass=z_mass,
+        z_cfl=z_cfl,
+        k=k,
+        slevp1_ti=slevp1_ti,
+        dbl_eps=dbl_eps,
+    )
 
     z_cfl = cfl_below + cfl_above
 
