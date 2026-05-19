@@ -115,9 +115,9 @@ class GridManager:
             self.open()
 
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
+            geometry_type = icon.GeometryType(geometry_type)
         else:
-            geometry_type = base.GeometryType.ICOSAHEDRON
+            geometry_type = icon.GeometryType.ICOSAHEDRON
 
         self._construct_decomposed_grid(
             allocator=allocator,
@@ -134,7 +134,7 @@ class GridManager:
     def _read_coordinates(
         self,
         allocator: gtx_typing.Allocator,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
@@ -196,7 +196,7 @@ class GridManager:
             },
         }
 
-        if geometry_type == base.GeometryType.TORUS:
+        if geometry_type == icon.GeometryType.TORUS:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),
@@ -389,7 +389,7 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
         decomposer: decomp.Decomposer,
         process_props: decomposition.ProcessProperties,
     ) -> None:
@@ -407,7 +407,7 @@ class GridManager:
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
         global_size = self._read_full_grid_size()
-        global_params = self._construct_global_params(allocator, global_size, geometry_type)
+        global_params = self._construct_grid_params(geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement)
 
         if limited_area and not process_props.is_single_rank():
@@ -468,7 +468,7 @@ class GridManager:
             neighbor_tables=neighbor_tables,
             start_index=start_index,
             end_index=end_index,
-            global_properties=global_params,
+            grid_params=global_params,
             refinement_control=refinement_fields,
         )
 
@@ -487,28 +487,28 @@ class GridManager:
         else:
             return neighbor_tables_global
 
-    def _construct_global_params(
-        self,
-        allocator: gtx_typing.Allocator,
-        global_size: base.HorizontalGridSize,
-        geometry_type: base.GeometryType,
-    ):
+    def _construct_grid_params(self, geometry_type: icon.GeometryType):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-        return icon.GlobalGridParams(
-            grid_shape=icon.GridShape(
-                geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            ),
-            radius=sphere_radius,
-            domain_length=domain_length,
-            domain_height=domain_height,
-            num_cells=global_size.num_cells,
-        )
+        match geometry_type:
+            case icon.GeometryType.ICOSAHEDRON:
+                return icon.GridParams(
+                    icon.IcosahedronParams(
+                        subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+                        radius=sphere_radius,
+                    ),
+                )
+            case icon.GeometryType.TORUS:
+                return icon.GridParams(
+                    icon.TorusParams(
+                        domain_length=domain_length,
+                        domain_height=domain_height,
+                    ),
+                )
 
     def _read_full_grid_size(self) -> base.HorizontalGridSize:
         """

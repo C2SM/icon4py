@@ -111,7 +111,7 @@ class TurbulenceShearForcingType(int, enum.Enum):
 
     VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
-        1  #: as `VERTICAL_ONLY` plus horizontal shar correction
+        1  #: as `VERTICAL_ONLY` plus horizontal shear correction
     )
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
         2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
@@ -284,14 +284,12 @@ class DiffusionConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
+        #: Note: The user can pass the ICON namelist parameter `nudge_max_coeff` as `_nudge_max_coeff` or
         #: the properly scaled one as `max_nudging_coefficient`,
         #: see the comment in mo_interpol_nml.f90
         #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
         if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
-            raise ValueError(
-                "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
-            )
+            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
         elif max_nudging_coefficient is not None:
             self.max_nudging_coefficient: float = max_nudging_coefficient
         elif _nudge_max_coeff is not None:
@@ -427,10 +425,10 @@ class Diffusion:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+        exchange: decomposition.ExchangeRuntime,
     ):
         self._allocator = model_backends.get_allocator(backend)
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
         self.config = config
         self._params = params
         self._grid = grid
@@ -446,7 +444,7 @@ class Diffusion:
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
         )
-        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        #: threshold temperature deviation from neighboring grid points that activates extra diffusion against runaway cooling
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
