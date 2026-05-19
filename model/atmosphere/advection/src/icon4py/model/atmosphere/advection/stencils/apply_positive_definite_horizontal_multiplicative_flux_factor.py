@@ -39,8 +39,8 @@ def apply_positive_definite_horizontal_multiplicative_flux_factor(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_positive_definite_horizontal_multiplicative_flux_factor(
-        r_m=r_m,
-        p_mflx_tracer_h=p_mflx_tracer_h,
+        r_m,
+        p_mflx_tracer_h,
         out=p_mflx_tracer_h,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

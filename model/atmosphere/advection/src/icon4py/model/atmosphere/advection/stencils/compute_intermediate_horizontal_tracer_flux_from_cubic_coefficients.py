@@ -136,12 +136,31 @@ def compute_intermediate_horizontal_tracer_flux_from_cubic_coefficients(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_intermediate_horizontal_tracer_flux_from_cubic_coefficients(z_lsq_coeff_1=z_lsq_coeff_1, z_lsq_coeff_2=z_lsq_coeff_2, z_lsq_coeff_3=z_lsq_coeff_3, z_lsq_coeff_4=z_lsq_coeff_4, z_lsq_coeff_5=z_lsq_coeff_5, z_lsq_coeff_6=z_lsq_coeff_6, z_lsq_coeff_7=z_lsq_coeff_7, z_lsq_coeff_8=z_lsq_coeff_8, z_lsq_coeff_9=z_lsq_coeff_9, z_lsq_coeff_10=z_lsq_coeff_10, z_quad_vector_sum0_1=z_quad_vector_sum0_1, z_quad_vector_sum0_2=z_quad_vector_sum0_2, z_quad_vector_sum0_3=z_quad_vector_sum0_3, z_quad_vector_sum0_4=z_quad_vector_sum0_4, z_quad_vector_sum0_5=z_quad_vector_sum0_5, z_quad_vector_sum0_6=z_quad_vector_sum0_6, z_quad_vector_sum0_7=z_quad_vector_sum0_7, z_quad_vector_sum0_8=z_quad_vector_sum0_8, z_quad_vector_sum0_9=z_quad_vector_sum0_9, z_quad_vector_sum0_10=z_quad_vector_sum0_10, patch0_cell_rel_idx_dsl=patch0_cell_rel_idx_dsl, 
-        out=p_out_e_hybrid_1a, patch0_cell_rel_idx_dsl=out=p_out_e_hybrid_1a, 
+    _compute_intermediate_horizontal_tracer_flux_from_cubic_coefficients(
+        z_lsq_coeff_1=z_lsq_coeff_1,
+        z_lsq_coeff_2=z_lsq_coeff_2,
+        z_lsq_coeff_3=z_lsq_coeff_3,
+        z_lsq_coeff_4=z_lsq_coeff_4,
+        z_lsq_coeff_5=z_lsq_coeff_5,
+        z_lsq_coeff_6=z_lsq_coeff_6,
+        z_lsq_coeff_7=z_lsq_coeff_7,
+        z_lsq_coeff_8=z_lsq_coeff_8,
+        z_lsq_coeff_9=z_lsq_coeff_9,
+        z_lsq_coeff_10=z_lsq_coeff_10,
+        z_quad_vector_sum0_1=z_quad_vector_sum0_1,
+        z_quad_vector_sum0_2=z_quad_vector_sum0_2,
+        z_quad_vector_sum0_3=z_quad_vector_sum0_3,
+        z_quad_vector_sum0_4=z_quad_vector_sum0_4,
+        z_quad_vector_sum0_5=z_quad_vector_sum0_5,
+        z_quad_vector_sum0_6=z_quad_vector_sum0_6,
+        z_quad_vector_sum0_7=z_quad_vector_sum0_7,
+        z_quad_vector_sum0_8=z_quad_vector_sum0_8,
+        z_quad_vector_sum0_9=z_quad_vector_sum0_9,
+        z_quad_vector_sum0_10=z_quad_vector_sum0_10,
+        patch0_cell_rel_idx_dsl=patch0_cell_rel_idx_dsl,
+        out=p_out_e_hybrid_1a,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, patch0_cell_rel_idx_dsl=domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

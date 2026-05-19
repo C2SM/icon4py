@@ -48,12 +48,17 @@ def integrate_tracer_horizontally(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _integrate_tracer_horizontally(p_mflx_tracer_h=p_mflx_tracer_h, deepatmo_divh=deepatmo_divh, tracer_now=tracer_now, rhodz_now=rhodz_now, rhodz_new=rhodz_new, geofac_div=geofac_div, p_dtime=p_dtime, 
-        out=tracer_new_hor, p_dtime=out=tracer_new_hor, 
+    _integrate_tracer_horizontally(
+        p_mflx_tracer_h=p_mflx_tracer_h,
+        deepatmo_divh=deepatmo_divh,
+        tracer_now=tracer_now,
+        rhodz_now=rhodz_now,
+        rhodz_new=rhodz_new,
+        geofac_div=geofac_div,
+        p_dtime=p_dtime,
+        out=tracer_new_hor,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, p_dtime=domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

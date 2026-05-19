@@ -58,12 +58,17 @@ def compute_ppm_all_face_values(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_ppm_all_face_values(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, p_face_in=p_face_in, slev=slev, elev=elev, slevp1=slevp1, elevp1=elevp1, 
-        out=p_face, elevp1=out=p_face, 
+    _compute_ppm_all_face_values(
+        p_cc=p_cc,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        p_face_in=p_face_in,
+        slev=slev,
+        elev=elev,
+        slevp1=slevp1,
+        elevp1=elevp1,
+        out=p_face,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, elevp1=domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

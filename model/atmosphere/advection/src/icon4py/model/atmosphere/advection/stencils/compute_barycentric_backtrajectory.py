@@ -90,22 +90,25 @@ def compute_barycentric_backtrajectory(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_barycentric_backtrajectory(p_vn=p_vn, p_vt=p_vt, cell_idx=cell_idx, pos_on_tplane_e_1=pos_on_tplane_e_1, pos_on_tplane_e_2=pos_on_tplane_e_2, primal_normal_cell_1=primal_normal_cell_1, dual_normal_cell_1=dual_normal_cell_1, primal_normal_cell_2=primal_normal_cell_2, dual_normal_cell_2=dual_normal_cell_2, p_dthalf=p_dthalf, 
+    _compute_barycentric_backtrajectory(
+        p_vn=p_vn,
+        p_vt=p_vt,
+        cell_idx=cell_idx,
+        pos_on_tplane_e_1=pos_on_tplane_e_1,
+        pos_on_tplane_e_2=pos_on_tplane_e_2,
+        primal_normal_cell_1=primal_normal_cell_1,
+        dual_normal_cell_1=dual_normal_cell_1,
+        primal_normal_cell_2=primal_normal_cell_2,
+        dual_normal_cell_2=dual_normal_cell_2,
+        p_dthalf=p_dthalf,
         out=(
             p_cell_idx,
             p_cell_rel_idx_dsl,
             p_distv_bary_1,
             p_distv_bary_2,
-        ), p_dthalf=out=(
-            p_cell_idx,
-            p_cell_rel_idx_dsl,
-            p_distv_bary_1,
-            p_distv_bary_2,
-        ), 
+        ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, p_dthalf=domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

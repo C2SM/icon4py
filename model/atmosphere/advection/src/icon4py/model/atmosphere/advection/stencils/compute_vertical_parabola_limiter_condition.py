@@ -36,12 +36,12 @@ def compute_vertical_parabola_limiter_condition(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_vertical_parabola_limiter_condition(p_face=p_face, p_cc=p_cc, 
-        out=l_limit, p_cc=out=l_limit, 
+    _compute_vertical_parabola_limiter_condition(
+        p_face=p_face,
+        p_cc=p_cc,
+        out=l_limit,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, p_cc=domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

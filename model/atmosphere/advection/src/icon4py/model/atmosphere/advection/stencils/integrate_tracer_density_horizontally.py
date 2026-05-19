@@ -73,12 +73,18 @@ def integrate_tracer_density_horizontally(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _integrate_tracer_density_horizontally(p_mass_flx_e=p_mass_flx_e, geofac_div=geofac_div, z_rhofluxdiv_c=z_rhofluxdiv_c, z_tracer_mflx=z_tracer_mflx, z_rho_now=z_rho_now, z_tracer_now=z_tracer_now, z_dtsub=z_dtsub, nsub=nsub, 
-        out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl), nsub=out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl), 
+    _integrate_tracer_density_horizontally(
+        p_mass_flx_e=p_mass_flx_e,
+        geofac_div=geofac_div,
+        z_rhofluxdiv_c=z_rhofluxdiv_c,
+        z_tracer_mflx=z_tracer_mflx,
+        z_rho_now=z_rho_now,
+        z_tracer_now=z_tracer_now,
+        z_dtsub=z_dtsub,
+        nsub=nsub,
+        out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, nsub=domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

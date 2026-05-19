@@ -32,12 +32,13 @@ def compute_ffsl_backtrajectory_counterclockwise_indicator(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_ffsl_backtrajectory_counterclockwise_indicator(p_vn=p_vn, tangent_orientation=tangent_orientation, lcounterclock=lcounterclock, 
-        out=lvn_sys_pos, lcounterclock=out=lvn_sys_pos, 
+    _compute_ffsl_backtrajectory_counterclockwise_indicator(
+        p_vn=p_vn,
+        tangent_orientation=tangent_orientation,
+        lcounterclock=lcounterclock,
+        out=lvn_sys_pos,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, lcounterclock=domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

@@ -41,12 +41,16 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_positive_definite_horizontal_multiplicative_flux_factor(geofac_div=geofac_div, p_cc=p_cc, p_rhodz_now=p_rhodz_now, p_mflx_tracer_h=p_mflx_tracer_h, p_dtime=p_dtime, dbl_eps=dbl_eps, 
-        out=r_m, dbl_eps=out=r_m, 
+    _compute_positive_definite_horizontal_multiplicative_flux_factor(
+        geofac_div,
+        p_cc,
+        p_rhodz_now,
+        p_mflx_tracer_h,
+        p_dtime,
+        dbl_eps,
+        out=r_m,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, dbl_eps=domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

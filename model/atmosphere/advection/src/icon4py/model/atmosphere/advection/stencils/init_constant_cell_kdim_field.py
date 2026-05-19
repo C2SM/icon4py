@@ -30,12 +30,11 @@ def init_constant_cell_kdim_field(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _init_constant_cell_kdim_field(value=value, 
-        out=field, value=out=field, 
+    _init_constant_cell_kdim_field(
+        value=value,
+        out=field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
-        }, value=domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        })
+        },
+    )
