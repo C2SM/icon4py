@@ -102,13 +102,13 @@ def compute_ppm4gpu_integer_flux(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_integer_flux(
-        p_cc,
-        p_cellmass_now,
-        z_cfl,
-        p_upflux,
-        k,
-        slev,
-        p_dtime,
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
+        z_cfl=z_cfl,
+        p_upflux=p_upflux,
+        k=k,
+        slev=slev,
+        p_dtime=p_dtime,
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

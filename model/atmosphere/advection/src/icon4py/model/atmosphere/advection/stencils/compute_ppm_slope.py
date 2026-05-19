@@ -73,9 +73,9 @@ def compute_ppm_slope(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm_slope(
-        p_cc,
-        p_cellhgt_mc_now,
-        elev,
+        p_cc=p_cc,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        elev=elev,
         out=z_slope,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

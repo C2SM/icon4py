@@ -158,14 +158,14 @@ def compute_ppm4gpu_courant_number(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_courant_number(
-        p_mflx_contra_v,
-        p_cellmass_now,
-        z_cfl,
-        k,
-        slevp1_ti,
-        nlev,
-        dbl_eps,
-        p_dtime,
+        p_mflx_contra_v=p_mflx_contra_v,
+        p_cellmass_now=p_cellmass_now,
+        z_cfl=z_cfl,
+        k=k,
+        slevp1_ti=slevp1_ti,
+        nlev=nlev,
+        dbl_eps=dbl_eps,
+        p_dtime=p_dtime,
         out=z_cfl,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

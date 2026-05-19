@@ -116,14 +116,14 @@ def compute_ppm4gpu_fractional_flux(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_fractional_flux(
-        p_cc,
-        p_cellmass_now,
-        z_cfl,
-        z_delta_q,
-        z_a1,
-        k,
-        slev,
-        p_dtime,
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
+        z_cfl=z_cfl,
+        z_delta_q=z_delta_q,
+        z_a1=z_a1,
+        k=k,
+        slev=slev,
+        p_dtime=p_dtime,
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

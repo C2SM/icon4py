@@ -50,12 +50,12 @@ def lintersect(
     line2_p2_lat: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[bool]:
     intersect1 = ccw(
-        line1_p1_lon,
-        line1_p1_lat,
-        line1_p2_lon,
-        line1_p2_lat,
-        line2_p1_lon,
-        line2_p1_lat,
+        p0_lon=line1_p1_lon,
+        p0_lat=line1_p1_lat,
+        p1_lon=line1_p2_lon,
+        p1_lat=line1_p2_lat,
+        p2_lon=line2_p1_lon,
+        p2_lat=line2_p1_lat,
     ) * ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -184,14 +184,14 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
 
     # Create first mask does departure-line segment intersects with A1V3
     lintersect_line1 = lintersect(
-        fl_line_p1_lon,
-        fl_line_p1_lat,
-        fl_line_p2_lon,
-        fl_line_p2_lat,
-        tri_line1_p1_lon,
-        tri_line1_p1_lat,
-        tri_line1_p2_lon,
-        tri_line1_p2_lat,
+        line1_p1_lon=fl_line_p1_lon,
+        line1_p1_lat=fl_line_p1_lat,
+        line1_p2_lon=fl_line_p2_lon,
+        line1_p2_lat=fl_line_p2_lat,
+        line2_p1_lon=tri_line1_p1_lon,
+        line2_p1_lat=tri_line1_p1_lat,
+        line2_p2_lon=tri_line1_p2_lon,
+        line2_p2_lat=tri_line1_p2_lat,
     )
     # Create first mask does departure-line segment intersects with A2V3
     lintersect_line2 = lintersect(
@@ -210,14 +210,14 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     # ------------------------------------------------- Case 1
     mask_case1 = lintersect_line1 & lintersect_line2 & famask_bool
     ps1_x, ps1_y = line_intersect(
-        fl_line_p1_lon,
-        fl_line_p1_lat,
-        fl_line_p2_lon,
-        fl_line_p2_lat,
-        tri_line1_p1_lon,
-        tri_line1_p1_lat,
-        tri_line1_p2_lon,
-        tri_line1_p2_lat,
+        line1_p1_lon=fl_line_p1_lon,
+        line1_p1_lat=fl_line_p1_lat,
+        line1_p2_lon=fl_line_p2_lon,
+        line1_p2_lat=fl_line_p2_lat,
+        line2_p1_lon=tri_line1_p1_lon,
+        line2_p1_lat=tri_line1_p1_lat,
+        line2_p2_lon=tri_line1_p2_lon,
+        line2_p2_lat=tri_line1_p2_lat,
     )
     ps2_x, ps2_y = line_intersect(
         fl_line_p1_lon,
@@ -633,19 +633,19 @@ def prepare_ffsl_flux_area_patches_list(
     vertical_end: gtx.int32,
 ) -> None:
     _prepare_ffsl_flux_area_patches_list(
-        famask_int,
-        p_vn,
-        ptr_v3_lon,
-        ptr_v3_lat,
-        tangent_orientation_dsl,
-        dreg_patch0_1_lon_dsl,
-        dreg_patch0_1_lat_dsl,
-        dreg_patch0_2_lon_dsl,
-        dreg_patch0_2_lat_dsl,
-        dreg_patch0_3_lon_dsl,
-        dreg_patch0_3_lat_dsl,
-        dreg_patch0_4_lon_dsl,
-        dreg_patch0_4_lat_dsl,
+        famask_int=famask_int,
+        p_vn=p_vn,
+        ptr_v3_lon=ptr_v3_lon,
+        ptr_v3_lat=ptr_v3_lat,
+        tangent_orientation_dsl=tangent_orientation_dsl,
+        dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+        dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+        dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+        dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+        dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+        dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+        dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+        dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
         out=(
             dreg_patch0_1_lon_dsl,
             dreg_patch0_1_lat_dsl,
