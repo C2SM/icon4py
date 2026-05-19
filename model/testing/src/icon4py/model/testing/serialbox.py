@@ -1837,7 +1837,6 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
 
     def tracer_now(self, ntracer: TracerIndex):
         return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
-    #TODO (Yilu)
 
 
 class IconGraupelSavepoint(IconSavepoint):

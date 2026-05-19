@@ -20,7 +20,6 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     process_props,
-    savepoint_nonhydro_init,
 )
 
 
@@ -52,48 +51,42 @@ def test_standalone_driver_initial_condition(
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=icon4py_driver.exchange,
     )
-    jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
+    prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
     assert test_utils.dallclose(
         ds.prognostics.current.rho.asnumpy(),
-        jabw_exit_savepoint.rho().asnumpy(),
+        prognostics_savepoint.rho_now().asnumpy(),
     )
 
     assert test_utils.dallclose(
-        ds.prognostics.current.vn.asnumpy(),
-        jabw_exit_savepoint.vn().asnumpy(),
-        atol=1e-12,
-    )
-
-    assert test_utils.dallclose(
-        ds.prognostics.current.w.asnumpy(),
-        jabw_exit_savepoint.w().asnumpy(),
-        atol=1e-12,
-    )
-
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), jabw_exit_savepoint.exner().asnumpy(), atol=1e-14
+        ds.prognostics.current.exner.asnumpy(),
+        prognostics_savepoint.exner_now().asnumpy(),
+        atol=1e-14,
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
-        jabw_exit_savepoint.theta_v().asnumpy(),
+        prognostics_savepoint.theta_v_now().asnumpy(),
         atol=1e-11,
     )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.vn.asnumpy(),
+        prognostics_savepoint.vn_now().asnumpy(),
+        atol=1e-12,
+    )
+
+    # TODO (Yilu): add w assertion when w_now is available on prognostics initial savepoint
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [(definitions.Experiments.WEISMAN_KLEMP_TORUS)])
-@pytest.mark.parametrize(
-    "istep_init, substep_init, step_date_init", [(1, 1, "2008-09-01T01:59:48.000")]
-)
 @pytest.mark.datatest
 def test_weisman_klemp_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
-    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
 ) -> None:
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=tmp_path / "ci_driver_output",
@@ -111,38 +104,37 @@ def test_weisman_klemp_initial_condition(
         backend=icon4py_driver.backend,
     )
 
+    prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
+    diagnostics_savepoint = data_provider.from_savepoint_diagnostics_initial()
+
     assert test_utils.dallclose(
         ds.prognostics.current.rho.asnumpy(),
-        savepoint_nonhydro_init.rho_now().asnumpy(),
+        prognostics_savepoint.rho_now().asnumpy(),
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.exner.asnumpy(),
-        savepoint_nonhydro_init.exner_now().asnumpy(),
+        prognostics_savepoint.exner_now().asnumpy(),
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
-        savepoint_nonhydro_init.theta_v_now().asnumpy(),
+        prognostics_savepoint.theta_v_now().asnumpy(),
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
-        savepoint_nonhydro_init.vn_now().asnumpy(),
+        prognostics_savepoint.vn_now().asnumpy(),
     )
 
+    # TODO (Yilu): add w assertion when w_now is available on prognostics initial savepoint
+
     assert test_utils.dallclose(
-        ds.prognostics.current.w.asnumpy(),
-        savepoint_nonhydro_init.w_now().asnumpy(),
+        ds.tracers.current.qv.asnumpy(),
+        prognostics_savepoint.tracer_now(sb.QV).asnumpy(),
     )
 
     assert test_utils.dallclose(
         ds.solve_nonhydro_diagnostic.perturbed_exner_at_cells_on_model_levels.asnumpy(),
-        savepoint_nonhydro_init.exner_pr().asnumpy(),
-    )
-
-    prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
-    assert test_utils.dallclose(
-        ds.tracers.current.qv.asnumpy(),
-        prognostics_savepoint.tracer_now(sb.QV).asnumpy(),
+        diagnostics_savepoint.exner_pr().asnumpy(),
     )

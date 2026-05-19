@@ -53,7 +53,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
-        vertical_grid: v_grid.VerticalGrid,
+        vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
@@ -65,7 +65,7 @@ class Icon4pyDriver:
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
-        self.vertical_grid = vertical_grid
+        self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
         self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
@@ -508,7 +508,10 @@ def _read_config(
         )
     else:
         vertical_grid_config = v_grid.VerticalGridConfig(
+            lowest_layer_thickness=50.0,
             num_levels=35,
+            model_top_height=23500.0,
+            stretch_factor=1.0,
             rayleigh_damping_height=45000.0,
         )
 
@@ -705,7 +708,7 @@ def initialize_driver(
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
-        vertical_grid=vertical_grid,
+        vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
         exchange=exchange,
         global_reductions=global_reductions,

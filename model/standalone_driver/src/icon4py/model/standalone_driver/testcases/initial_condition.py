@@ -311,6 +311,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
+    tracer_state_now = tracers.TracerState.zero_field(grid=grid, allocator=allocator)
+    tracer_state_next = tracers.TracerState.from_tracer_state(tracer_state_now, allocator)
+    tracer_states = common_utils.TimeStepPair(tracer_state_now, tracer_state_next)
+
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
         p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
@@ -367,6 +371,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
         diagnostic=diagnostic_state,
+        tracers=tracer_states,
     )
 
     return ds
