@@ -19,7 +19,7 @@ def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
@@ -30,11 +30,15 @@ def _compute_hydrostatic_correction_term(
     theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)]))
     theta_v_1 = theta_v(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)]))
 
-    theta_v_ic_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)]))
-    theta_v_ic_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)]))
+    theta_v_ic_0 = theta_v_at_cells_on_half_levels(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)]))
+    theta_v_ic_1 = theta_v_at_cells_on_half_levels(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)]))
 
-    theta_v_ic_p1_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)] + 1))
-    theta_v_ic_p1_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)] + 1))
+    theta_v_ic_p1_0 = theta_v_at_cells_on_half_levels(E2C[0])(
+        as_offset(Koff, ikoffset[E2CDim(0)] + 1)
+    )
+    theta_v_ic_p1_1 = theta_v_at_cells_on_half_levels(E2C[1])(
+        as_offset(Koff, ikoffset[E2CDim(1)] + 1)
+    )
 
     inv_ddqz_z_full_0_wp = astype(
         inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)])), wpfloat
@@ -67,11 +71,11 @@ def compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
-    z_hydro_corr: fa.EdgeKField[vpfloat],
+    hydrostatic_correction_on_lowest_level: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -81,11 +85,11 @@ def compute_hydrostatic_correction_term(
         theta_v,
         ikoffset,
         zdiff_gradp,
-        theta_v_ic,
+        theta_v_at_cells_on_half_levels,
         inv_ddqz_z_full,
         inv_dual_edge_length,
         grav_o_cpd,
-        out=z_hydro_corr,
+        out=hydrostatic_correction_on_lowest_level,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

@@ -45,9 +45,9 @@ def init_test_fields(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_61_62(
-    rho_now: fa.CellKField[float],
+    current_rho: fa.CellKField[float],
     grf_tend_rho: fa.CellKField[float],
-    theta_v_now: fa.CellKField[float],
+    current_theta_v: fa.CellKField[float],
     grf_tend_thv: fa.CellKField[float],
     w_now: fa.CellKField[float],
     grf_tend_w: fa.CellKField[float],
@@ -61,9 +61,9 @@ def stencils_61_62(
     vertical_end: gtx.int32,
 ) -> None:
     _update_density_exner_wind(
-        rho_now,
+        current_rho,
         grf_tend_rho,
-        theta_v_now,
+        current_theta_v,
         grf_tend_thv,
         w_now,
         grf_tend_w,

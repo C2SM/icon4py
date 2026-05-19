@@ -16,16 +16,22 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
-    z_exner_ex_pr: fa.CellKField[vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], wpfloat],
-    z_dexner_dz_c_1: fa.CellKField[vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_19."""
-    ddxn_z_full_wp, z_dexner_dz_c_1_wp = astype((ddxn_z_full, z_dexner_dz_c_1), wpfloat)
+    ddxn_z_full_wp, z_dexner_dz_c_1_wp = astype(
+        (ddxn_z_full, ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels), wpfloat
+    )
 
     z_gradh_exner_wp = inv_dual_edge_length * (
-        astype(z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]), wpfloat)
+        astype(
+            temporal_extrapolation_of_perturbed_exner(E2C[1])
+            - temporal_extrapolation_of_perturbed_exner(E2C[0]),
+            wpfloat,
+        )
     ) - ddxn_z_full_wp * neighbor_sum(z_dexner_dz_c_1_wp(E2C) * c_lin_e, axis=E2CDim)
     return astype(z_gradh_exner_wp, vpfloat)
 
@@ -33,11 +39,11 @@ def _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
-    z_exner_ex_pr: fa.CellKField[vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], wpfloat],
-    z_dexner_dz_c_1: fa.CellKField[vpfloat],
-    z_gradh_exner: fa.EdgeKField[vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    horizontal_pressure_gradient: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -45,11 +51,11 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
 ) -> None:
     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
         inv_dual_edge_length,
-        z_exner_ex_pr,
+        temporal_extrapolation_of_perturbed_exner,
         ddxn_z_full,
         c_lin_e,
-        z_dexner_dz_c_1,
-        out=z_gradh_exner,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        out=horizontal_pressure_gradient,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

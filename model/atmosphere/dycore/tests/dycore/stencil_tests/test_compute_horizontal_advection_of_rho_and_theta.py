@@ -53,8 +53,8 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
 
 
 def compute_btraj_numpy(
-    p_vn: np.ndarray,
-    p_vt: np.ndarray,
+    current_vn: np.ndarray,
+    tangential_wind: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
     pos_on_tplane_e_2: np.ndarray,
     primal_normal_cell_1: np.ndarray,
@@ -64,7 +64,7 @@ def compute_btraj_numpy(
     p_dthalf: float,
     **kwargs: Any,
 ) -> tuple[np.ndarray, ...]:
-    lvn_pos = np.where(p_vn > 0.0, True, False)
+    lvn_pos = np.where(current_vn > 0.0, True, False)
     pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
     pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
     primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
@@ -73,10 +73,11 @@ def compute_btraj_numpy(
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+        current_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+        tangential_wind * p_dthalf
+        + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 
     p_distv_bary_1 = np.where(
@@ -96,9 +97,9 @@ def compute_btraj_numpy(
 
 def sten_16_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    p_vn: np.ndarray,
-    rho_ref_me: np.ndarray,
-    theta_ref_me: np.ndarray,
+    current_vn: np.ndarray,
+    reference_rho_at_edges_on_model_levels: np.ndarray,
+    reference_theta_at_edges_on_model_levels: np.ndarray,
     p_distv_bary_1: np.ndarray,
     p_distv_bary_2: np.ndarray,
     z_grad_rth_1: np.ndarray,
@@ -106,48 +107,48 @@ def sten_16_numpy(
     z_grad_rth_3: np.ndarray,
     z_grad_rth_4: np.ndarray,
     z_rth_pr_1: np.ndarray,
-    z_rth_pr_2: np.ndarray,
+    perturbed_theta_v_at_cells_on_model_levels_2: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
     e2c = connectivities[dims.E2CDim]
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
-    z_rth_pr_2_e2c = z_rth_pr_2[e2c]
+    z_rth_pr_2_e2c = perturbed_theta_v_at_cells_on_model_levels_2[e2c]
     z_grad_rth_1_e2c = z_grad_rth_1[e2c]
     z_grad_rth_2_e2c = z_grad_rth_2[e2c]
     z_grad_rth_3_e2c = z_grad_rth_3[e2c]
     z_grad_rth_4_e2c = z_grad_rth_4[e2c]
 
     z_rho_e = np.where(
-        p_vn > 0,
-        rho_ref_me
+        current_vn > 0,
+        reference_rho_at_edges_on_model_levels
         + z_rth_pr_1_e2c[:, 0]
         + p_distv_bary_1 * z_grad_rth_1_e2c[:, 0]
         + p_distv_bary_2 * z_grad_rth_2_e2c[:, 0],
-        rho_ref_me
+        reference_rho_at_edges_on_model_levels
         + z_rth_pr_1_e2c[:, 1]
         + p_distv_bary_1 * z_grad_rth_1_e2c[:, 1]
         + p_distv_bary_2 * z_grad_rth_2_e2c[:, 1],
     )
 
-    z_theta_v_e = np.where(
-        p_vn > 0,
-        theta_ref_me
+    theta_v_at_edges_on_model_levels = np.where(
+        current_vn > 0,
+        reference_theta_at_edges_on_model_levels
         + z_rth_pr_2_e2c[:, 0]
         + p_distv_bary_1 * z_grad_rth_3_e2c[:, 0]
         + p_distv_bary_2 * z_grad_rth_4_e2c[:, 0],
-        theta_ref_me
+        reference_theta_at_edges_on_model_levels
         + z_rth_pr_2_e2c[:, 1]
         + p_distv_bary_1 * z_grad_rth_3_e2c[:, 1]
         + p_distv_bary_2 * z_grad_rth_4_e2c[:, 1],
     )
 
-    return z_rho_e, z_theta_v_e
+    return z_rho_e, theta_v_at_edges_on_model_levels
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    p_vn: np.ndarray,
-    p_vt: np.ndarray,
+    current_vn: np.ndarray,
+    tangential_wind: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
     pos_on_tplane_e_2: np.ndarray,
     primal_normal_cell_1: np.ndarray,
@@ -155,8 +156,8 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     primal_normal_cell_2: np.ndarray,
     dual_normal_cell_2: np.ndarray,
     p_dthalf: float,
-    rho_ref_me: np.ndarray,
-    theta_ref_me: np.ndarray,
+    reference_rho_at_edges_on_model_levels: np.ndarray,
+    reference_theta_at_edges_on_model_levels: np.ndarray,
     perturbed_rho_at_cells_on_model_levels: np.ndarray,
     perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
     geofac_grg_x: np.ndarray,
@@ -176,8 +177,8 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     )
 
     p_distv_bary_1, p_distv_bary_2 = compute_btraj_numpy(
-        p_vn,
-        p_vt,
+        current_vn,
+        tangential_wind,
         pos_on_tplane_e_1,
         pos_on_tplane_e_2,
         primal_normal_cell_1,
@@ -187,11 +188,11 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
         p_dthalf,
     )
 
-    z_rho_e, z_theta_v_e = sten_16_numpy(
+    z_rho_e, theta_v_at_edges_on_model_levels = sten_16_numpy(
         connectivities,
-        p_vn,
-        rho_ref_me,
-        theta_ref_me,
+        current_vn,
+        reference_rho_at_edges_on_model_levels,
+        reference_theta_at_edges_on_model_levels,
         p_distv_bary_1,
         p_distv_bary_2,
         z_grad_rth_1,
@@ -202,7 +203,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
         perturbed_theta_v_at_cells_on_model_levels,
     )
 
-    return (z_rho_e, z_theta_v_e)
+    return (z_rho_e, theta_v_at_edges_on_model_levels)
 
 
 @pytest.mark.embedded_remap_error
@@ -214,8 +215,8 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        p_vn: np.ndarray,
-        p_vt: np.ndarray,
+        current_vn: np.ndarray,
+        tangential_wind: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
         pos_on_tplane_e_2: np.ndarray,
         primal_normal_cell_1: np.ndarray,
@@ -223,40 +224,42 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         primal_normal_cell_2: np.ndarray,
         dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
-        rho_ref_me: np.ndarray,
-        theta_ref_me: np.ndarray,
+        reference_rho_at_edges_on_model_levels: np.ndarray,
+        reference_theta_at_edges_on_model_levels: np.ndarray,
         perturbed_rho_at_cells_on_model_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
-            connectivities,
-            p_vn,
-            p_vt,
-            pos_on_tplane_e_1,
-            pos_on_tplane_e_2,
-            primal_normal_cell_1,
-            dual_normal_cell_1,
-            primal_normal_cell_2,
-            dual_normal_cell_2,
-            p_dthalf,
-            rho_ref_me,
-            theta_ref_me,
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-            geofac_grg_x,
-            geofac_grg_y,
+        z_rho_e, theta_v_at_edges_on_model_levels = (
+            compute_horizontal_advection_of_rho_and_theta_numpy(
+                connectivities,
+                current_vn,
+                tangential_wind,
+                pos_on_tplane_e_1,
+                pos_on_tplane_e_2,
+                primal_normal_cell_1,
+                dual_normal_cell_1,
+                primal_normal_cell_2,
+                dual_normal_cell_2,
+                p_dthalf,
+                reference_rho_at_edges_on_model_levels,
+                reference_theta_at_edges_on_model_levels,
+                perturbed_rho_at_cells_on_model_levels,
+                perturbed_theta_v_at_cells_on_model_levels,
+                geofac_grg_x,
+                geofac_grg_y,
+            )
         )
-        return dict(out=(z_rho_e, z_theta_v_e))
+        return dict(out=(z_rho_e, theta_v_at_edges_on_model_levels))
 
     @pytest.fixture
     def input_data(
         self, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         pos_on_tplane_e_1 = data_alloc.random_field(
             grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
@@ -277,8 +280,12 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         )
         p_dthalf = 2.0
 
-        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        reference_rho_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        reference_theta_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
         perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
@@ -288,11 +295,13 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat
+        )
 
         return dict(
-            p_vn=p_vn,
-            p_vt=p_vt,
+            current_vn=current_vn,
+            tangential_wind=tangential_wind,
             pos_on_tplane_e_1=pos_on_tplane_e_1,
             pos_on_tplane_e_2=pos_on_tplane_e_2,
             primal_normal_cell_1=primal_normal_cell_1,
@@ -300,13 +309,13 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
             primal_normal_cell_2=primal_normal_cell_2,
             dual_normal_cell_2=dual_normal_cell_2,
             p_dthalf=p_dthalf,
-            rho_ref_me=rho_ref_me,
-            theta_ref_me=theta_ref_me,
+            reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
+            reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
             perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
-            out=(z_rho_e, z_theta_v_e),
+            out=(z_rho_e, theta_v_at_edges_on_model_levels),
             domain=gtx.domain(
                 {
                     dims.EdgeDim: (0, gtx.int32(grid.num_edges)),

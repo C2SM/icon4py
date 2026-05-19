@@ -23,22 +23,22 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
-    vn_nnow: np.ndarray,
-    ddt_vn_apc_ntl1: np.ndarray,
-    ddt_vn_apc_ntl2: np.ndarray,
-    ddt_vn_phy: np.ndarray,
-    z_theta_v_e: np.ndarray,
-    z_gradh_exner: np.ndarray,
+    current_vn: np.ndarray,
+    predictor_normal_wind_advective_tendency: np.ndarray,
+    corrector_normal_wind_advective_tendency: np.ndarray,
+    normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
+    theta_v_at_edges_on_model_levels: np.ndarray,
+    horizontal_pressure_gradient: np.ndarray,
     dtime: ta.wpfloat,
-    wgt_nnow_vel: ta.wpfloat,
-    wgt_nnew_vel: ta.wpfloat,
+    advection_explicit_weight_parameter: ta.wpfloat,
+    advection_implicit_weight_parameter: ta.wpfloat,
     cpd: ta.wpfloat,
 ) -> np.ndarray:
-    vn_nnew = vn_nnow + dtime * (
-        wgt_nnow_vel * ddt_vn_apc_ntl1
-        + wgt_nnew_vel * ddt_vn_apc_ntl2
-        + ddt_vn_phy
-        - cpd * z_theta_v_e * z_gradh_exner
+    vn_nnew = current_vn + dtime * (
+        advection_explicit_weight_parameter * predictor_normal_wind_advective_tendency
+        + advection_implicit_weight_parameter * corrector_normal_wind_advective_tendency
+        + normal_wind_tendency_due_to_slow_physics_process
+        - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
     )
     return vn_nnew
 
@@ -50,57 +50,65 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vn_nnow: np.ndarray,
-        ddt_vn_apc_ntl1: np.ndarray,
-        ddt_vn_apc_ntl2: np.ndarray,
-        ddt_vn_phy: np.ndarray,
-        z_theta_v_e: np.ndarray,
-        z_gradh_exner: np.ndarray,
+        current_vn: np.ndarray,
+        predictor_normal_wind_advective_tendency: np.ndarray,
+        corrector_normal_wind_advective_tendency: np.ndarray,
+        normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
+        theta_v_at_edges_on_model_levels: np.ndarray,
+        horizontal_pressure_gradient: np.ndarray,
         dtime: ta.wpfloat,
-        wgt_nnow_vel: ta.wpfloat,
-        wgt_nnew_vel: ta.wpfloat,
+        advection_explicit_weight_parameter: ta.wpfloat,
+        advection_implicit_weight_parameter: ta.wpfloat,
         cpd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
-            vn_nnow,
-            ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2,
-            ddt_vn_phy,
-            z_theta_v_e,
-            z_gradh_exner,
+            current_vn,
+            predictor_normal_wind_advective_tendency,
+            corrector_normal_wind_advective_tendency,
+            normal_wind_tendency_due_to_slow_physics_process,
+            theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient,
             dtime,
-            wgt_nnow_vel,
-            wgt_nnew_vel,
+            advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter,
             cpd,
         )
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        ddt_vn_apc_ntl2 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        ddt_vn_phy = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        current_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        predictor_normal_wind_advective_tendency = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        corrector_normal_wind_advective_tendency = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        normal_wind_tendency_due_to_slow_physics_process = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
+        theta_v_at_edges_on_model_levels = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat
+        )
+        horizontal_pressure_gradient = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         vn_nnew = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
-        wgt_nnow_vel = ta.wpfloat("8.0")
-        wgt_nnew_vel = ta.wpfloat("7.0")
+        advection_explicit_weight_parameter = ta.wpfloat("8.0")
+        advection_implicit_weight_parameter = ta.wpfloat("7.0")
         cpd = ta.wpfloat("2.0")
 
         return dict(
-            vn_nnow=vn_nnow,
-            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-            ddt_vn_phy=ddt_vn_phy,
-            z_theta_v_e=z_theta_v_e,
-            z_gradh_exner=z_gradh_exner,
+            current_vn=current_vn,
+            predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
+            corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
+            normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
+            theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+            horizontal_pressure_gradient=horizontal_pressure_gradient,
             vn_nnew=vn_nnew,
             dtime=dtime,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             cpd=cpd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),

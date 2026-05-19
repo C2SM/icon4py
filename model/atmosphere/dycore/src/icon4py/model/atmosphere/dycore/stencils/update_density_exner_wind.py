@@ -14,9 +14,9 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _update_density_exner_wind(
-    rho_now: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
     grf_tend_rho: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
     w_now: fa.CellKField[wpfloat],
     grf_tend_w: fa.CellKField[wpfloat],
@@ -27,17 +27,17 @@ def _update_density_exner_wind(
     fa.CellKField[wpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_61."""
-    rho_new_wp = rho_now + dtime * grf_tend_rho
-    exner_new_wp = theta_v_now + dtime * grf_tend_thv
+    rho_new_wp = current_rho + dtime * grf_tend_rho
+    exner_new_wp = current_theta_v + dtime * grf_tend_thv
     w_new_wp = _update_wind(w_now=w_now, grf_tend_w=grf_tend_w, dtime=dtime)
     return rho_new_wp, exner_new_wp, w_new_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_density_exner_wind(
-    rho_now: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
     grf_tend_rho: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
     w_now: fa.CellKField[wpfloat],
     grf_tend_w: fa.CellKField[wpfloat],
@@ -51,9 +51,9 @@ def update_density_exner_wind(
     vertical_end: gtx.int32,
 ) -> None:
     _update_density_exner_wind(
-        rho_now,
+        current_rho,
         grf_tend_rho,
-        theta_v_now,
+        current_theta_v,
         grf_tend_thv,
         w_now,
         grf_tend_w,

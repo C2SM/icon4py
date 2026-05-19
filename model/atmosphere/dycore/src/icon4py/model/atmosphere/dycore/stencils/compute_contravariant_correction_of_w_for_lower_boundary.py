@@ -47,7 +47,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -57,7 +57,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
         e_bln_c_s,
         z_w_concorr_me,
         wgtfacq_c,
-        out=w_concorr_c,
+        out=contravariant_correction_at_cells_on_half_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

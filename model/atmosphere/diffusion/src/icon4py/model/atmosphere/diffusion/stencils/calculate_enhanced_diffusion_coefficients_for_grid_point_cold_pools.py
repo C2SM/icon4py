@@ -20,14 +20,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
     kh_smag_e: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v,
-        theta_ref_mc,
+        reference_theta_at_cells_on_model_levels,
         thresh_tdiff,
         smallest_vpfloat,
     )
@@ -38,7 +38,7 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
     kh_smag_e: fa.EdgeKField[vpfloat],
@@ -49,7 +49,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
 ) -> None:
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         theta_v,
-        theta_ref_mc,
+        reference_theta_at_cells_on_model_levels,
         thresh_tdiff,
         smallest_vpfloat,
         kh_smag_e,

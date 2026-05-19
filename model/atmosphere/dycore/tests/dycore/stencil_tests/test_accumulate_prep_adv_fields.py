@@ -25,14 +25,14 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 def accumulate_prep_adv_fields_numpy(
     z_vn_avg: np.ndarray,
-    mass_fl_e: np.ndarray,
+    mass_flux_at_edges_on_model_levels: np.ndarray,
     vn_traj: np.ndarray,
     mass_flx_me: np.ndarray,
     r_nsubsteps: ta.wpfloat,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
     vn_traj = vn_traj + r_nsubsteps * z_vn_avg
-    mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
+    mass_flx_me = mass_flx_me + r_nsubsteps * mass_flux_at_edges_on_model_levels
     return vn_traj, mass_flx_me
 
 
@@ -44,7 +44,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_vn_avg: np.ndarray,
-        mass_fl_e: np.ndarray,
+        mass_flux_at_edges_on_model_levels: np.ndarray,
         vn_traj: np.ndarray,
         mass_flx_me: np.ndarray,
         r_nsubsteps: ta.wpfloat,
@@ -52,7 +52,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
     ) -> dict:
         vn_traj, mass_flx_me = accumulate_prep_adv_fields_numpy(
             z_vn_avg,
-            mass_fl_e,
+            mass_flux_at_edges_on_model_levels,
             vn_traj,
             mass_flx_me,
             r_nsubsteps,
@@ -62,7 +62,9 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        mass_flux_at_edges_on_model_levels = random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
+        )
         mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vn_traj = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
@@ -70,7 +72,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
         return dict(
             z_vn_avg=z_vn_avg,
-            mass_fl_e=mass_fl_e,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
             vn_traj=vn_traj,
             mass_flx_me=mass_flx_me,
             r_nsubsteps=r_nsubsteps,

@@ -18,8 +18,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _compute_backward_trajectory_from_edge_center(
-    p_vn: fa.EdgeKField[wpfloat],
-    p_vt: fa.EdgeKField[vpfloat],
+    current_vn: fa.EdgeKField[wpfloat],
+    tangential_wind: fa.EdgeKField[vpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
@@ -28,14 +28,15 @@ def _compute_backward_trajectory_from_edge_center(
     dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
-    lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
+    lvn_pos = where(current_vn >= wpfloat("0.0"), True, False)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
+        current_vn * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
     )
 
     z_ntdistv_bary_2 = -(
-        astype(p_vt, wpfloat) * p_dthalf
+        astype(tangential_wind, wpfloat) * p_dthalf
         + where(lvn_pos, pos_on_tplane_e_2[E2CDim(0)], pos_on_tplane_e_2[E2CDim(1)])
     )
 
@@ -60,9 +61,9 @@ def _compute_backward_trajectory_from_edge_center(
 
 @gtx.field_operator
 def _compute_upwind_values_of_rho_and_theta_v_at_edges(
-    p_vn: fa.EdgeKField[wpfloat],
-    rho_ref_me: fa.EdgeKField[vpfloat],
-    theta_ref_me: fa.EdgeKField[vpfloat],
+    current_vn: fa.EdgeKField[wpfloat],
+    reference_rho_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    reference_theta_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     p_distv_bary_1: fa.EdgeKField[wpfloat],
     p_distv_bary_2: fa.EdgeKField[wpfloat],
     z_grad_rth_1: fa.CellKField[vpfloat],
@@ -70,7 +71,7 @@ def _compute_upwind_values_of_rho_and_theta_v_at_edges(
     z_grad_rth_3: fa.CellKField[vpfloat],
     z_grad_rth_4: fa.CellKField[vpfloat],
     z_rth_pr_1: fa.CellKField[vpfloat],
-    z_rth_pr_2: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels_2: fa.CellKField[vpfloat],
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     (
         theta_ref_me_wp,
@@ -83,20 +84,20 @@ def _compute_upwind_values_of_rho_and_theta_v_at_edges(
         z_rth_pr_2_wp,
     ) = astype(
         (
-            theta_ref_me,
-            rho_ref_me,
+            reference_theta_at_edges_on_model_levels,
+            reference_rho_at_edges_on_model_levels,
             z_grad_rth_1,
             z_grad_rth_2,
             z_grad_rth_3,
             z_grad_rth_4,
             z_rth_pr_1,
-            z_rth_pr_2,
+            perturbed_theta_v_at_cells_on_model_levels_2,
         ),
         wpfloat,
     )
 
     z_rho_e_wp = where(
-        p_vn >= wpfloat("0.0"),
+        current_vn >= wpfloat("0.0"),
         rho_ref_me_wp
         + z_rth_pr_1_wp(E2C[0])
         + p_distv_bary_1 * z_grad_rth_1_wp(E2C[0])
@@ -108,7 +109,7 @@ def _compute_upwind_values_of_rho_and_theta_v_at_edges(
     )
 
     z_theta_v_e_wp = where(
-        p_vn >= wpfloat("0.0"),
+        current_vn >= wpfloat("0.0"),
         theta_ref_me_wp
         + z_rth_pr_2_wp(E2C[0])
         + p_distv_bary_1 * z_grad_rth_3_wp(E2C[0])
@@ -124,8 +125,8 @@ def _compute_upwind_values_of_rho_and_theta_v_at_edges(
 
 @gtx.field_operator
 def _compute_horizontal_advection_of_rho_and_theta(
-    p_vn: fa.EdgeKField[wpfloat],
-    p_vt: fa.EdgeKField[vpfloat],
+    current_vn: fa.EdgeKField[wpfloat],
+    tangential_wind: fa.EdgeKField[vpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
@@ -133,8 +134,8 @@ def _compute_horizontal_advection_of_rho_and_theta(
     primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     p_dthalf: wpfloat,
-    rho_ref_me: fa.EdgeKField[vpfloat],
-    theta_ref_me: fa.EdgeKField[vpfloat],
+    reference_rho_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    reference_theta_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     perturbed_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
     perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -157,8 +158,8 @@ def _compute_horizontal_advection_of_rho_and_theta(
     )
 
     (p_distv_bary_1, p_distv_bary_2) = _compute_backward_trajectory_from_edge_center(
-        p_vn,
-        p_vt,
+        current_vn,
+        tangential_wind,
         pos_on_tplane_e_1,
         pos_on_tplane_e_2,
         primal_normal_cell_1,
@@ -172,9 +173,9 @@ def _compute_horizontal_advection_of_rho_and_theta(
         rho_at_edges_on_model_levels,
         theta_at_edges_on_model_levels,
     ) = _compute_upwind_values_of_rho_and_theta_v_at_edges(
-        p_vn,
-        rho_ref_me,
-        theta_ref_me,
+        current_vn,
+        reference_rho_at_edges_on_model_levels,
+        reference_theta_at_edges_on_model_levels,
         p_distv_bary_1,
         p_distv_bary_2,
         ddx_perturbed_rho,

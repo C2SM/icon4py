@@ -68,7 +68,7 @@ def metric_state(
     metrics_savepoint: sb.MetricSavepoint,
 ) -> diffusion_states.DiffusionMetricState:
     return diffusion_states.DiffusionMetricState(
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),

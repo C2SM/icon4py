@@ -25,52 +25,70 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def extrapolate_temporally_exner_pressure_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner: np.ndarray,
-    exner_ref_mc: np.ndarray,
-    exner_pr: np.ndarray,
-    exner_exfac: np.ndarray,
+    reference_exner_at_cells_on_model_levels: np.ndarray,
+    perturbed_exner_at_cells_on_model_levels: np.ndarray,
+    time_extrapolation_parameter_for_exner: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-    exner_pr = exner - exner_ref_mc
-    return (z_exner_ex_pr, exner_pr)
+    temporal_extrapolation_of_perturbed_exner = (1 + time_extrapolation_parameter_for_exner) * (
+        exner - reference_exner_at_cells_on_model_levels
+    ) - time_extrapolation_parameter_for_exner * perturbed_exner_at_cells_on_model_levels
+    perturbed_exner_at_cells_on_model_levels = exner - reference_exner_at_cells_on_model_levels
+    return (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels)
 
 
 class TestExtrapolateTemporallyExnerPressure(StencilTest):
     PROGRAM = extrapolate_temporally_exner_pressure
-    OUTPUTS = ("z_exner_ex_pr", "exner_pr")
+    OUTPUTS = (
+        "temporal_extrapolation_of_perturbed_exner",
+        "perturbed_exner_at_cells_on_model_levels",
+    )
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
-        exner_ref_mc: np.ndarray,
-        exner_pr: np.ndarray,
-        exner_exfac: np.ndarray,
+        reference_exner_at_cells_on_model_levels: np.ndarray,
+        perturbed_exner_at_cells_on_model_levels: np.ndarray,
+        time_extrapolation_parameter_for_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
-            connectivities,
-            exner=exner,
-            exner_ref_mc=exner_ref_mc,
-            exner_pr=exner_pr,
-            exner_exfac=exner_exfac,
+        (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = (
+            extrapolate_temporally_exner_pressure_numpy(
+                connectivities,
+                exner=exner,
+                reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+                perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+                time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
+            )
         )
 
-        return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
+        return dict(
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_exfac = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_exner_ex_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        reference_exner_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        perturbed_exner_at_cells_on_model_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
+        time_extrapolation_parameter_for_exner = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        temporal_extrapolation_of_perturbed_exner = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
-            exner_exfac=exner_exfac,
+            time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
             exner=exner,
-            exner_ref_mc=exner_ref_mc,
-            exner_pr=exner_pr,
-            z_exner_ex_pr=z_exner_ex_pr,
+            reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

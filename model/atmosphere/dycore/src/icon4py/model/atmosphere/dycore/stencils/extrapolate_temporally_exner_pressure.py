@@ -14,39 +14,41 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _extrapolate_temporally_exner_pressure(
-    exner_exfac: fa.CellKField[vpfloat],
+    time_extrapolation_parameter_for_exner: fa.CellKField[vpfloat],
     exner: fa.CellKField[wpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    exner_pr: fa.CellKField[wpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_02."""
-    exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
+    time_extrapolation_parameter_for_exner_wp, reference_exner_at_cells_on_model_levels_wp = astype(
+        (time_extrapolation_parameter_for_exner, reference_exner_at_cells_on_model_levels), wpfloat
+    )
 
-    z_exner_ex_pr_wp = (wpfloat("1.0") + exner_exfac_wp) * (
-        exner - exner_ref_mc_wp
-    ) - exner_exfac_wp * exner_pr
-    exner_pr_wp = exner - exner_ref_mc_wp
+    z_exner_ex_pr_wp = (wpfloat("1.0") + time_extrapolation_parameter_for_exner_wp) * (
+        exner - reference_exner_at_cells_on_model_levels_wp
+    ) - time_extrapolation_parameter_for_exner_wp * perturbed_exner_at_cells_on_model_levels
+    exner_pr_wp = exner - reference_exner_at_cells_on_model_levels_wp
     return astype(z_exner_ex_pr_wp, vpfloat), exner_pr_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def extrapolate_temporally_exner_pressure(
-    exner_exfac: fa.CellKField[vpfloat],
+    time_extrapolation_parameter_for_exner: fa.CellKField[vpfloat],
     exner: fa.CellKField[wpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    exner_pr: fa.CellKField[wpfloat],
-    z_exner_ex_pr: fa.CellKField[vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
     _extrapolate_temporally_exner_pressure(
-        exner_exfac,
+        time_extrapolation_parameter_for_exner,
         exner,
-        exner_ref_mc,
-        exner_pr,
-        out=(z_exner_ex_pr, exner_pr),
+        reference_exner_at_cells_on_model_levels,
+        perturbed_exner_at_cells_on_model_levels,
+        out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

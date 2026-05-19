@@ -15,44 +15,46 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _add_vertical_wind_derivative_to_divergence_damping(
-    hmask_dd3d: fa.EdgeField[wpfloat],
-    scalfac_dd3d: fa.KField[wpfloat],
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[wpfloat],
+    scaling_factor_for_3d_divdamp: fa.KField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
-    z_dwdz_dd: fa.CellKField[vpfloat],
-    z_graddiv_vn: fa.EdgeKField[vpfloat],
+    dwdz_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_17."""
-    z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
+    z_graddiv_vn_wp = astype(horizontal_gradient_of_normal_wind_divergence, wpfloat)
 
-    scalfac_dd3d = broadcast(scalfac_dd3d, (EdgeDim, KDim))
+    scaling_factor_for_3d_divdamp = broadcast(scaling_factor_for_3d_divdamp, (EdgeDim, KDim))
     z_graddiv_vn_wp = z_graddiv_vn_wp + (
-        hmask_dd3d
-        * scalfac_dd3d
+        horizontal_mask_for_3d_divdamp
+        * scaling_factor_for_3d_divdamp
         * inv_dual_edge_length
-        * astype(z_dwdz_dd(E2C[1]) - z_dwdz_dd(E2C[0]), wpfloat)
+        * astype(
+            dwdz_at_cells_on_model_levels(E2C[1]) - dwdz_at_cells_on_model_levels(E2C[0]), wpfloat
+        )
     )
     return astype(z_graddiv_vn_wp, vpfloat)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_vertical_wind_derivative_to_divergence_damping(
-    hmask_dd3d: fa.EdgeField[wpfloat],
-    scalfac_dd3d: fa.KField[wpfloat],
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[wpfloat],
+    scaling_factor_for_3d_divdamp: fa.KField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
-    z_dwdz_dd: fa.CellKField[vpfloat],
-    z_graddiv_vn: fa.EdgeKField[vpfloat],
+    dwdz_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
     _add_vertical_wind_derivative_to_divergence_damping(
-        hmask_dd3d,
-        scalfac_dd3d,
+        horizontal_mask_for_3d_divdamp,
+        scaling_factor_for_3d_divdamp,
         inv_dual_edge_length,
-        z_dwdz_dd,
-        z_graddiv_vn,
-        out=z_graddiv_vn,
+        dwdz_at_cells_on_model_levels,
+        horizontal_gradient_of_normal_wind_divergence,
+        out=horizontal_gradient_of_normal_wind_divergence,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

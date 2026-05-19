@@ -14,13 +14,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _compute_solver_coefficients_matrix(
-    exner_nnow: fa.CellKField[wpfloat],
-    rho_nnow: fa.CellKField[wpfloat],
-    theta_v_nnow: fa.CellKField[wpfloat],
+    current_exner: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
@@ -28,22 +28,28 @@ def _compute_solver_coefficients_matrix(
     """Formerly known as _mo_solve_nonhydro_stencil_44."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
-    z_beta_wp = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full_wp
-    z_alpha_wp = vwind_impl_wgt * theta_v_ic * rho_ic
+    z_beta_wp = (
+        dtime * rd * current_exner / (cvd * current_rho * current_theta_v) * inv_ddqz_z_full_wp
+    )
+    z_alpha_wp = (
+        exner_w_implicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * rho_at_cells_on_half_levels
+    )
     return astype((z_beta_wp, z_alpha_wp), vpfloat)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_solver_coefficients_matrix(
-    z_beta: fa.CellKField[vpfloat],
-    exner_nnow: fa.CellKField[wpfloat],
-    rho_nnow: fa.CellKField[wpfloat],
-    theta_v_nnow: fa.CellKField[wpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    current_exner: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
@@ -53,17 +59,20 @@ def compute_solver_coefficients_matrix(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_solver_coefficients_matrix(
-        exner_nnow,
-        rho_nnow,
-        theta_v_nnow,
+        current_exner,
+        current_rho,
+        current_theta_v,
         inv_ddqz_z_full,
-        vwind_impl_wgt,
-        theta_v_ic,
-        rho_ic,
+        exner_w_implicit_weight_parameter,
+        theta_v_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels,
         dtime,
         rd,
         cvd,
-        out=(z_beta, z_alpha),
+        out=(
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

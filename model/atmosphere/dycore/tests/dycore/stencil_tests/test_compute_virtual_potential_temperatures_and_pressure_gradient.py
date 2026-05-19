@@ -25,97 +25,115 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     wgtfac_c: np.ndarray,
-    z_rth_pr_2: np.ndarray,
+    perturbed_theta_v_at_cells_on_model_levels_2: np.ndarray,
     theta_v: np.ndarray,
-    vwind_expl_wgt: np.ndarray,
-    exner_pr: np.ndarray,
+    exner_w_explicit_weight_parameter: np.ndarray,
+    perturbed_exner_at_cells_on_model_levels: np.ndarray,
     d_exner_dz_ref_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
+    z_rth_pr_2_offset = np.roll(perturbed_theta_v_at_cells_on_model_levels_2, axis=1, shift=1)
     theta_v_offset = np.roll(theta_v, axis=1, shift=1)
-    exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    exner_pr_offset = np.roll(perturbed_exner_at_cells_on_model_levels, axis=1, shift=1)
+    exner_w_explicit_weight_parameter = np.expand_dims(exner_w_explicit_weight_parameter, axis=-1)
 
-    z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
-    z_theta_v_pr_ic[:, 0] = 0
-    theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
-    theta_v_ic[:, 0] = 0
-    z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
-        + z_theta_v_pr_ic * d_exner_dz_ref_ic
+    perturbed_theta_v_at_cells_on_half_levels = (
+        wgtfac_c * perturbed_theta_v_at_cells_on_model_levels_2
+        + (1.0 - wgtfac_c) * z_rth_pr_2_offset
     )
-    z_th_ddz_exner_c[:, 0] = 0
+    perturbed_theta_v_at_cells_on_half_levels[:, 0] = 0
+    theta_v_at_cells_on_half_levels = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
+    theta_v_at_cells_on_half_levels[:, 0] = 0
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        exner_w_explicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * (exner_pr_offset - perturbed_exner_at_cells_on_model_levels)
+        / ddqz_z_half
+        + perturbed_theta_v_at_cells_on_half_levels * d_exner_dz_ref_ic
+    )
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[:, 0] = 0
 
     return (
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
+        perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
     )
 
 
 class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     PROGRAM = compute_virtual_potential_temperatures_and_pressure_gradient
-    OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
+    OUTPUTS = (
+        "perturbed_theta_v_at_cells_on_half_levels",
+        "theta_v_at_cells_on_half_levels",
+        "ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
+    )
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_c: np.ndarray,
-        z_rth_pr_2: np.ndarray,
+        perturbed_theta_v_at_cells_on_model_levels_2: np.ndarray,
         theta_v: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
-        exner_pr: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
+        perturbed_exner_at_cells_on_model_levels: np.ndarray,
         d_exner_dz_ref_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         (
-            z_theta_v_pr_ic,
-            theta_v_ic,
-            z_th_ddz_exner_c,
+            perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ) = compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
             connectivities=connectivities,
             wgtfac_c=wgtfac_c,
-            z_rth_pr_2=z_rth_pr_2,
+            perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
             theta_v=theta_v,
-            vwind_expl_wgt=vwind_expl_wgt,
-            exner_pr=exner_pr,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
             ddqz_z_half=ddqz_z_half,
         )
 
         return dict(
-            z_theta_v_pr_ic=z_theta_v_pr_ic,
-            theta_v_ic=theta_v_ic,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_model_levels_2 = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_w_explicit_weight_parameter = random_field(grid, dims.CellDim, dtype=wpfloat)
+        perturbed_exner_at_cells_on_model_levels = random_field(
+            grid, dims.CellDim, dims.KDim, dtype=wpfloat
+        )
         d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        perturbed_theta_v_at_cells_on_half_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        theta_v_at_cells_on_half_levels = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             wgtfac_c=wgtfac_c,
-            z_rth_pr_2=z_rth_pr_2,
+            perturbed_theta_v_at_cells_on_model_levels_2=perturbed_theta_v_at_cells_on_model_levels_2,
             theta_v=theta_v,
-            vwind_expl_wgt=vwind_expl_wgt,
-            exner_pr=exner_pr,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
             ddqz_z_half=ddqz_z_half,
-            z_theta_v_pr_ic=z_theta_v_pr_ic,
-            theta_v_ic=theta_v_ic,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=1,

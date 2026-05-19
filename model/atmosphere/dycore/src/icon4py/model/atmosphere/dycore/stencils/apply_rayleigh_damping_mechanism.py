@@ -14,18 +14,18 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _apply_rayleigh_damping_mechanism(
-    z_raylfac: fa.KField[wpfloat],
+    rayleigh_damping_factor: fa.KField[wpfloat],
     w: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_54."""
-    z_raylfac = broadcast(z_raylfac, (dims.CellDim, dims.KDim))
-    w_wp = z_raylfac * w
+    rayleigh_damping_factor = broadcast(rayleigh_damping_factor, (dims.CellDim, dims.KDim))
+    w_wp = rayleigh_damping_factor * w
     return w_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_rayleigh_damping_mechanism(
-    z_raylfac: fa.KField[wpfloat],
+    rayleigh_damping_factor: fa.KField[wpfloat],
     w: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -33,7 +33,7 @@ def apply_rayleigh_damping_mechanism(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_rayleigh_damping_mechanism(
-        z_raylfac,
+        rayleigh_damping_factor,
         w,
         out=w,
         domain={

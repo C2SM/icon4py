@@ -33,11 +33,11 @@ class TestUpdateThetaV(StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         mask_prog_halo_c: np.ndarray,
-        rho_now: np.ndarray,
+        current_rho: np.ndarray,
         rho_new: np.ndarray,
-        theta_v_now: np.ndarray,
+        current_theta_v: np.ndarray,
         theta_v_new: np.ndarray,
-        exner_now: np.ndarray,
+        current_exner: np.ndarray,
         exner_new: np.ndarray,
         **kwargs: Any,
     ) -> dict:
@@ -52,9 +52,9 @@ class TestUpdateThetaV(StencilTest):
 
         theta_v_new = np.where(
             mask_prog_halo_c,
-            rho_now
-            * theta_v_now
-            * ((exner_new / exner_now - 1) * constants.CVD_O_RD + 1.0)
+            current_rho
+            * current_theta_v
+            * ((exner_new / current_exner - 1) * constants.CVD_O_RD + 1.0)
             / rho_new,
             theta_v_new,
         )
@@ -63,20 +63,20 @@ class TestUpdateThetaV(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mask_prog_halo_c = data_alloc.random_mask(grid, dims.CellDim)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_v_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         exner_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,
-            rho_now=rho_now,
+            current_rho=current_rho,
             rho_new=rho_new,
-            theta_v_now=theta_v_now,
+            current_theta_v=current_theta_v,
             theta_v_new=theta_v_new,
-            exner_now=exner_now,
+            current_exner=current_exner,
             exner_new=exner_new,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _apply_weighted_2nd_and_4th_order_divergence_damping(
     interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
-    z_graddiv2_vn: fa.EdgeKField[vpfloat],
+    squared_horizontal_gradient_of_total_divergence: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -38,7 +38,7 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
     bdy_divdamp = _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
         scal_divdamp, max_nudging_coefficient, dbl_eps
     )
-    z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
+    z_graddiv2_vn_wp = astype(squared_horizontal_gradient_of_total_divergence, wpfloat)
     vn_wp = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn_wp
     return vn_wp
 
@@ -47,7 +47,7 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
 def apply_weighted_2nd_and_4th_order_divergence_damping(
     interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
-    z_graddiv2_vn: fa.EdgeKField[vpfloat],
+    squared_horizontal_gradient_of_total_divergence: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -62,7 +62,7 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
     _apply_weighted_2nd_and_4th_order_divergence_damping(
         interpolated_fourth_order_divdamp_factor,
         nudgecoeff_e,
-        z_graddiv2_vn,
+        squared_horizontal_gradient_of_total_divergence,
         vn,
         divdamp_order,
         mean_cell_area,

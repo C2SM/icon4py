@@ -34,18 +34,18 @@ def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
     e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
     z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
     geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-    z_graddiv_vn = np.sum(
+    horizontal_gradient_of_normal_wind_divergence = np.sum(
         np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
     )
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
     vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
-    return z_vn_avg, z_graddiv_vn, vt
+    return z_vn_avg, horizontal_gradient_of_normal_wind_divergence, vt
 
 
 @pytest.mark.embedded_remap_error
 class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
     PROGRAM = compute_avg_vn_and_graddiv_vn_and_vt
-    OUTPUTS = ("z_vn_avg", "z_graddiv_vn", "vt")
+    OUTPUTS = ("z_vn_avg", "horizontal_gradient_of_normal_wind_divergence", "vt")
 
     @staticmethod
     def reference(
@@ -56,14 +56,20 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_vn_avg, z_graddiv_vn, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-            connectivities,
-            e_flx_avg,
-            vn,
-            geofac_grdiv,
-            rbf_vec_coeff_e,
+        z_vn_avg, horizontal_gradient_of_normal_wind_divergence, vt = (
+            compute_avg_vn_and_graddiv_vn_and_vt_numpy(
+                connectivities,
+                e_flx_avg,
+                vn,
+                geofac_grdiv,
+                rbf_vec_coeff_e,
+            )
         )
-        return dict(z_vn_avg=z_vn_avg, z_graddiv_vn=z_graddiv_vn, vt=vt)
+        return dict(
+            z_vn_avg=z_vn_avg,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
+            vt=vt,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -72,7 +78,9 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_graddiv_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        horizontal_gradient_of_normal_wind_divergence = zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
         vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
@@ -81,7 +89,7 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
             geofac_grdiv=geofac_grdiv,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             z_vn_avg=z_vn_avg,
-            z_graddiv_vn=z_graddiv_vn,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
             vt=vt,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),

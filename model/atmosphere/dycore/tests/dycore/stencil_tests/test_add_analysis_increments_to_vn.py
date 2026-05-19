@@ -24,9 +24,9 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_analysis_increments_to_vn_numpy(
-    vn_incr: np.ndarray, vn: np.ndarray, iau_wgt_dyn: ta.wpfloat
+    normal_wind_iau_increment: np.ndarray, vn: np.ndarray, iau_wgt_dyn: ta.wpfloat
 ) -> np.ndarray:
-    vn = vn + (iau_wgt_dyn * vn_incr)
+    vn = vn + (iau_wgt_dyn * normal_wind_iau_increment)
     return vn
 
 
@@ -37,22 +37,22 @@ class TestAddAnalysisIncrementsToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vn_incr: np.ndarray,
+        normal_wind_iau_increment: np.ndarray,
         vn: np.ndarray,
         iau_wgt_dyn: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vn = add_analysis_increments_to_vn_numpy(vn_incr, vn, iau_wgt_dyn)
+        vn = add_analysis_increments_to_vn_numpy(normal_wind_iau_increment, vn, iau_wgt_dyn)
         return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_incr = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        normal_wind_iau_increment = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         iau_wgt_dyn = wpfloat("5.0")
 
         return dict(
-            vn_incr=vn_incr,
+            normal_wind_iau_increment=normal_wind_iau_increment,
             vn=vn,
             iau_wgt_dyn=iau_wgt_dyn,
             horizontal_start=0,

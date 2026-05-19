@@ -44,7 +44,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
-    z_graddiv_vn: fa.EdgeKField[vpfloat],
+    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -56,7 +56,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
         vn,
         geofac_grdiv,
         rbf_vec_coeff_e,
-        out=(z_vn_avg, z_graddiv_vn, vt),
+        out=(z_vn_avg, horizontal_gradient_of_normal_wind_divergence, vt),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

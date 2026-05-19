@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _apply_4th_order_divergence_damping(
     interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
-    z_graddiv2_vn: fa.EdgeKField[vpfloat],
+    squared_horizontal_gradient_of_total_divergence: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -32,7 +32,7 @@ def _apply_4th_order_divergence_damping(
         mean_cell_area,
         second_order_divdamp_factor,
     )
-    z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
+    z_graddiv2_vn_wp = astype(squared_horizontal_gradient_of_total_divergence, wpfloat)
     vn_wp = vn + (scal_divdamp * z_graddiv2_vn_wp)
     return vn_wp
 
@@ -40,7 +40,7 @@ def _apply_4th_order_divergence_damping(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_4th_order_divergence_damping(
     interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
-    z_graddiv2_vn: fa.EdgeKField[vpfloat],
+    squared_horizontal_gradient_of_total_divergence: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -52,7 +52,7 @@ def apply_4th_order_divergence_damping(
 ) -> None:
     _apply_4th_order_divergence_damping(
         interpolated_fourth_order_divdamp_factor,
-        z_graddiv2_vn,
+        squared_horizontal_gradient_of_total_divergence,
         vn,
         divdamp_order,
         mean_cell_area,

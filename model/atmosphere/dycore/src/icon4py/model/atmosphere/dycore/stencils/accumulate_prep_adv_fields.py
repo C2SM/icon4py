@@ -14,21 +14,21 @@ from icon4py.model.common.type_alias import wpfloat
 @gtx.field_operator
 def _accumulate_prep_adv_fields(
     z_vn_avg: fa.EdgeKField[wpfloat],
-    mass_fl_e: fa.EdgeKField[wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
     vn_traj: fa.EdgeKField[wpfloat],
     mass_flx_me: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """Formerly kown as _mo_solve_nonhydro_stencil_34."""
     vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
-    mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
+    mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_flux_at_edges_on_model_levels
     return vn_traj_wp, mass_flx_me_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def accumulate_prep_adv_fields(
     z_vn_avg: fa.EdgeKField[wpfloat],
-    mass_fl_e: fa.EdgeKField[wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[wpfloat],
     vn_traj: fa.EdgeKField[wpfloat],
     mass_flx_me: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
@@ -39,7 +39,7 @@ def accumulate_prep_adv_fields(
 ) -> None:
     _accumulate_prep_adv_fields(
         z_vn_avg,
-        mass_fl_e,
+        mass_flux_at_edges_on_model_levels,
         vn_traj,
         mass_flx_me,
         r_nsubsteps,

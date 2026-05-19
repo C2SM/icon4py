@@ -22,23 +22,29 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-    vwind_impl_wgt: np.ndarray,
-    theta_v_ic: np.ndarray,
+    exner_w_implicit_weight_parameter: np.ndarray,
+    theta_v_at_cells_on_half_levels: np.ndarray,
     ddqz_z_half: np.ndarray,
-    z_alpha: np.ndarray,
-    z_beta: np.ndarray,
-    z_exner_expl: np.ndarray,
-    z_w_expl: np.ndarray,
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: np.ndarray,
+    tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
+    exner_explicit_term: np.ndarray,
+    w_explicit_term: np.ndarray,
     z_q_ref: np.ndarray,
     w_ref: np.ndarray,
     dtime: float,
     cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    z_q = np.copy(z_q_ref)
+    tridiagonal_intermediate_result = np.copy(z_q_ref)
     w = np.copy(w_ref)
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    exner_w_implicit_weight_parameter = np.expand_dims(exner_w_implicit_weight_parameter, axis=-1)
 
-    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+    z_gamma = (
+        dtime
+        * cpd
+        * exner_w_implicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        / ddqz_z_half
+    )
     z_a = np.zeros_like(z_gamma)
     z_b = np.zeros_like(z_gamma)
     z_c = np.zeros_like(z_gamma)
@@ -46,68 +52,91 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
 
     k_size = w.shape[1]
     for k in range(1, k_size):
-        z_a[:, k] = -z_gamma[:, k] * z_beta[:, k - 1] * z_alpha[:, k - 1]
-        z_c[:, k] = -z_gamma[:, k] * z_beta[:, k] * z_alpha[:, k + 1]
-        z_b[:, k] = 1.0 + z_gamma[:, k] * z_alpha[:, k] * (z_beta[:, k - 1] + z_beta[:, k])
-        z_g[:, k] = 1.0 / (z_b[:, k] + z_a[:, k] * z_q[:, k - 1])
-        z_q[:, k] = -z_c[:, k] * z_g[:, k]
+        z_a[:, k] = (
+            -z_gamma[:, k]
+            * tridiagonal_beta_coeff_at_cells_on_model_levels[:, k - 1]
+            * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k - 1]
+        )
+        z_c[:, k] = (
+            -z_gamma[:, k]
+            * tridiagonal_beta_coeff_at_cells_on_model_levels[:, k]
+            * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k + 1]
+        )
+        z_b[:, k] = 1.0 + z_gamma[:, k] * tridiagonal_alpha_coeff_at_cells_on_half_levels[:, k] * (
+            tridiagonal_beta_coeff_at_cells_on_model_levels[:, k - 1]
+            + tridiagonal_beta_coeff_at_cells_on_model_levels[:, k]
+        )
+        z_g[:, k] = 1.0 / (z_b[:, k] + z_a[:, k] * tridiagonal_intermediate_result[:, k - 1])
+        tridiagonal_intermediate_result[:, k] = -z_c[:, k] * z_g[:, k]
 
-        w[:, k] = z_w_expl[:, k] - z_gamma[:, k] * (z_exner_expl[:, k - 1] - z_exner_expl[:, k])
+        w[:, k] = w_explicit_term[:, k] - z_gamma[:, k] * (
+            exner_explicit_term[:, k - 1] - exner_explicit_term[:, k]
+        )
         w[:, k] = (w[:, k] - z_a[:, k] * w[:, k - 1]) * z_g[:, k]
-    return z_q, w
+    return tridiagonal_intermediate_result, w
 
 
 class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_forward_sweep
-    OUTPUTS = ("w", "z_q")
+    OUTPUTS = ("w", "tridiagonal_intermediate_result")
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vwind_impl_wgt: np.ndarray,
-        theta_v_ic: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
+        theta_v_at_cells_on_half_levels: np.ndarray,
         ddqz_z_half: np.ndarray,
-        z_alpha: np.ndarray,
-        z_beta: np.ndarray,
-        z_w_expl: np.ndarray,
-        z_exner_expl: np.ndarray,
-        z_q: np.ndarray,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels: np.ndarray,
+        tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
+        w_explicit_term: np.ndarray,
+        exner_explicit_term: np.ndarray,
+        tridiagonal_intermediate_result: np.ndarray,
         w: np.ndarray,
         dtime: float,
         cpd: float,
         **kwargs: Any,
     ) -> dict:
         z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-            vwind_impl_wgt,
-            theta_v_ic,
+            exner_w_implicit_weight_parameter,
+            theta_v_at_cells_on_half_levels,
             ddqz_z_half,
-            z_alpha,
-            z_beta,
-            z_exner_expl,
-            z_w_expl,
-            z_q,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            exner_explicit_term,
+            w_explicit_term,
+            tridiagonal_intermediate_result,
             w,
             dtime,
             cpd,
         )
-        return dict(z_q=z_q_ref, w=w_ref)
+        return dict(tridiagonal_intermediate_result=z_q_ref, w=w_ref)
 
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(
+            grid, dims.CellDim, dtype=ta.wpfloat
+        )
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_alpha = data_alloc.random_field(
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_w_expl = data_alloc.random_field(
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        exner_explicit_term = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+        )
+        w_explicit_term = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        # z_q first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
-        z_q.asnumpy()[:, 0] = 0.0
+        tridiagonal_intermediate_result = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        # tridiagonal_intermediate_result first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
+        tridiagonal_intermediate_result.asnumpy()[:, 0] = 0.0
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         # w first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
         w.asnumpy()[:, 0] = 0.0
@@ -118,14 +147,14 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         v_end = gtx.int32(grid.num_levels)
 
         return dict(
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
-            z_alpha=z_alpha,
-            z_beta=z_beta,
-            z_w_expl=z_w_expl,
-            z_exner_expl=z_exner_expl,
-            z_q=z_q,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            w_explicit_term=w_explicit_term,
+            exner_explicit_term=exner_explicit_term,
+            tridiagonal_intermediate_result=tridiagonal_intermediate_result,
             w=w,
             dtime=ta.wpfloat("8.0"),
             cpd=ta.wpfloat("7.0"),

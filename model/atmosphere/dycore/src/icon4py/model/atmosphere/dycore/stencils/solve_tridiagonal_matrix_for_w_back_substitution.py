@@ -14,15 +14,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
 def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-    w_state: wpfloat, z_q: vpfloat, w: wpfloat
+    w_state: wpfloat, tridiagonal_intermediate_result: vpfloat, w: wpfloat
 ) -> wpfloat:
     """Formerly known as _mo_solve_nonhydro_stencil_53_scan."""
-    return w + w_state * astype(z_q, wpfloat)
+    return w + w_state * astype(tridiagonal_intermediate_result, wpfloat)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_back_substitution(
-    z_q: fa.CellKField[vpfloat],
+    tridiagonal_intermediate_result: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -30,7 +30,7 @@ def solve_tridiagonal_matrix_for_w_back_substitution(
     vertical_end: gtx.int32,
 ) -> None:
     _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-        z_q,
+        tridiagonal_intermediate_result,
         w,
         out=w,
         domain={

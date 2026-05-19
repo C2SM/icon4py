@@ -13,29 +13,35 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _update_mass_volume_flux(
-    z_contr_w_fl_l: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w: fa.CellKField[wpfloat],
-    mass_flx_ic: fa.CellKField[wpfloat],
-    vol_flx_ic: fa.CellKField[wpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_58."""
-    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
-    mass_flx_ic_wp = mass_flx_ic + z_a
-    vol_flx_ic_wp = vol_flx_ic + z_a / rho_ic
+    z_a = r_nsubsteps * (
+        vertical_mass_flux_at_cells_on_half_levels
+        + rho_at_cells_on_half_levels * exner_w_implicit_weight_parameter * w
+    )
+    mass_flx_ic_wp = dynamical_vertical_mass_flux_at_cells_on_half_levels + z_a
+    vol_flx_ic_wp = (
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels
+        + z_a / rho_at_cells_on_half_levels
+    )
     return mass_flx_ic_wp, vol_flx_ic_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_mass_volume_flux(
-    z_contr_w_fl_l: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
+    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
     w: fa.CellKField[wpfloat],
-    mass_flx_ic: fa.CellKField[wpfloat],
-    vol_flx_ic: fa.CellKField[wpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -43,14 +49,17 @@ def update_mass_volume_flux(
     vertical_end: gtx.int32,
 ) -> None:
     _update_mass_volume_flux(
-        z_contr_w_fl_l,
-        rho_ic,
-        vwind_impl_wgt,
+        vertical_mass_flux_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels,
+        exner_w_implicit_weight_parameter,
         w,
-        mass_flx_ic,
-        vol_flx_ic,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         r_nsubsteps,
-        out=(mass_flx_ic, vol_flx_ic),
+        out=(
+            dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
