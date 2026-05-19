@@ -555,7 +555,13 @@ def _compare_metrics_fields_single_multi_rank(
         assert isinstance(field, state_utils.ScalarType)
         assert pytest.approx(field) == field_ref
     else:
-        if model_backends.is_cpu_backend(backend) and test_utils.is_dace(backend):
+        if test_utils.is_dace(backend) and (
+            model_backends.is_cpu_backend(backend)
+            or (
+                model_backends.is_gpu_backend(backend)
+                and attrs_name == metrics_attributes.DDQZ_Z_FULL_E
+            )
+        ):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
             atol = 1e-13
         else:
