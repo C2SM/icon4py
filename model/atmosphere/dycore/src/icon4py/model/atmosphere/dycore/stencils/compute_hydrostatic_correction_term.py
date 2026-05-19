@@ -78,13 +78,13 @@ def compute_hydrostatic_correction_term(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_hydrostatic_correction_term(
-        theta_v,
-        ikoffset,
-        zdiff_gradp,
-        theta_v_ic,
-        inv_ddqz_z_full,
-        inv_dual_edge_length,
-        grav_o_cpd,
+        theta_v=theta_v,
+        ikoffset=ikoffset,
+        zdiff_gradp=zdiff_gradp,
+        theta_v_ic=theta_v_ic,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        inv_dual_edge_length=inv_dual_edge_length,
+        grav_o_cpd=grav_o_cpd,
         out=z_hydro_corr,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
