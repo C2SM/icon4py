@@ -501,7 +501,6 @@ def get_halo_constructor(
 def global_to_local(
     global_indices: data_alloc.NDArray,
     indices_to_translate: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """Translate an array of global indices into rank-local ones.
 
@@ -510,6 +509,7 @@ def global_to_local(
         indices_to_translate: the array to map to local indices
 
     """
+    array_ns = data_alloc.array_namespace(global_indices)
     sorter = array_ns.argsort(global_indices)
 
     mask = array_ns.isin(indices_to_translate, global_indices)

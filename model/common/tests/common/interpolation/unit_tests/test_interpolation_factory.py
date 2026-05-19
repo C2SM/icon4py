@@ -77,6 +77,7 @@ def _get_interpolation_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=attrs.attrs,
+            exchange=single_node_exchange,
         )
         interpolation_factories[registry_key] = factory
     return factory
@@ -95,10 +96,10 @@ def test_factory_raises_error_on_unknown_field(
         geometry_source=geometry,
         backend=backend,
         metadata=attrs.attrs,
+        exchange=single_node_exchange,
     )
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
         interpolation_source.get("foo", factory.RetrievalType.METADATA)
-        assert "unknown field" in str(error.value)
 
 
 @pytest.mark.level("integration")

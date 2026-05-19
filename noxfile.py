@@ -19,7 +19,7 @@ import nox
 
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["test_model", "test_bindings_and_tools"]
+nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 
 
 # -- Parameter sets --
@@ -162,7 +162,7 @@ def test_model(
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", "basic")
+@nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
 

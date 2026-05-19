@@ -8,17 +8,12 @@
 
 import enum
 import math
-from collections.abc import Callable
-from types import ModuleType
 
 import gt4py.next as gtx
-import numpy as np
-import scipy.linalg as sla
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -37,12 +32,12 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 }
 
 
-class InterpolationKernel(enum.Enum):
-    GAUSSIAN: int = 1
-    INVERSE_MULTIQUADRATIC: int = 3
+class InterpolationKernel(enum.IntEnum):
+    GAUSSIAN = 1
+    INVERSE_MULTIQUADRATIC = 3
 
 
-DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
+DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
     RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
     RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
     RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
@@ -58,8 +53,8 @@ def compute_default_rbf_scale_cell(
     """Compute the default RBF scale factor for cells. This assumes that the Gaussian
     kernel is used."""
 
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.5
             c1 = 1.8
             c2 = 3.75
@@ -70,7 +65,7 @@ def compute_default_rbf_scale_cell(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -82,8 +77,8 @@ def compute_default_rbf_scale_edge(
     """Compute the default RBF scale factor for edges. This assumes that the inverse multiquadratic
     kernel is used."""
 
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.0
             c1 = 0.4
             c2 = 2.0
@@ -94,7 +89,7 @@ def compute_default_rbf_scale_edge(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -106,8 +101,8 @@ def compute_default_rbf_scale_vertex(
     """Compute the default RBF scale factor for vertices. This assumes that the Gaussian
     kernel is used."""
 
-    match base_grid.GeometryType(geometry_type):
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.GeometryType(geometry_type):
+        case icon_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.0
             c1 = 1.8
             c2 = 3.0
@@ -118,7 +113,7 @@ def compute_default_rbf_scale_vertex(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -149,9 +144,8 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     return connectivity
 
 
-def _dot_product(
-    v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
+def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(v1)
     # alias: array_ns.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = array_ns.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
@@ -159,11 +153,10 @@ def _dot_product(
 
 
 def _compute_distance_pairwise(
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     v: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute the distance between points in each row of v.
@@ -174,14 +167,14 @@ def _compute_distance_pairwise(
         v: 3D array of shape (n, m, 3) where n is the number of elements,
            m is the number of points per row (RBF dimension), and 3 is the
            dimension of the points.
-        array_ns: numpy or cupy module to use for computations.
     """
+    array_ns = data_alloc.array_namespace(v)
     match geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
             # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
             # Compute all pairs of dot products
-            arc_lengths = _dot_product(v, v, array_ns=array_ns)
+            arc_lengths = _dot_product(v, v)
             # Use the dot product of the diagonals to get the norm of each point
             norms = array_ns.sqrt(array_ns.diagonal(arc_lengths, axis1=1, axis2=2))
             # Divide the dot products by the broadcasted norms
@@ -191,7 +184,7 @@ def _compute_distance_pairwise(
             # inaccuracies)
             array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
             return array_ns.arccos(arc_lengths)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2), taking into account the periodic boundaries noqa: ERA001
             diff = array_ns.abs(v[:, :, array_ns.newaxis, :] - v[:, array_ns.newaxis, :, :])
@@ -203,12 +196,11 @@ def _compute_distance_pairwise(
 
 
 def _compute_distance_vector_matrix(
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     v1: data_alloc.NDArray,
     v2: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute the distance between each point in v1 and the points in v2 at the
@@ -222,14 +214,14 @@ def _compute_distance_vector_matrix(
         v2: 3D array of shape (n, m, 3) where n is the number of elements,  m is
             the number of points per row (RBF dimension), and 3 is the dimension
             of the points.
-        array_ns: numpy or cupy module to use for computations.
     """
+    array_ns = data_alloc.array_namespace(v1)
     match geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
             # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
             # Compute all pairs of dot products
-            arc_lengths = _dot_product(v1, v2, array_ns=array_ns)
+            arc_lengths = _dot_product(v1, v2)
             v1_norm = array_ns.linalg.norm(v1, axis=-1)
             v2_norm = array_ns.linalg.norm(v2, axis=-1)
             # Divide the dot products by the broadcasted norms
@@ -239,10 +231,10 @@ def _compute_distance_vector_matrix(
             # inaccuracies)
             array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
             return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2) noqa: ERA001
-            diff = np.abs(v1 - v2)
+            diff = array_ns.abs(v1 - v2)
             domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
             domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
@@ -250,9 +242,8 @@ def _compute_distance_vector_matrix(
             return array_ns.linalg.norm(diff, axis=-1)
 
 
-def _gaussian(
-    lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
+def _gaussian(lengths: data_alloc.NDArray, scale: ta.wpfloat) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(lengths)
     val = lengths / scale
     return array_ns.exp(-1.0 * val * val)
 
@@ -260,8 +251,8 @@ def _gaussian(
 def _inverse_multiquadratic(
     distance: data_alloc.NDArray,
     scale: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(distance)
     val = distance / scale
     return 1.0 / array_ns.sqrt(1.0 + val * val)
 
@@ -270,27 +261,26 @@ def _kernel(
     kernel: InterpolationKernel,
     lengths: data_alloc.NDArray,
     scale: ta.wpfloat,
-    array_ns: ModuleType = np,
 ):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
-            return _gaussian(lengths, scale, array_ns=array_ns)
+            return _gaussian(lengths, scale)
         case InterpolationKernel.INVERSE_MULTIQUADRATIC:
-            return _inverse_multiquadratic(lengths, scale, array_ns=array_ns)
+            return _inverse_multiquadratic(lengths, scale)
         case _:
             raise ValueError(f"Unsupported kernel: {kernel}")
 
 
 def _cartesian_coordinates_from_zonal_and_meridional_components(
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     u: data_alloc.NDArray,
     v: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(lat)
     match geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             cos_lat = array_ns.cos(lat)
             sin_lat = array_ns.sin(lat)
             cos_lon = array_ns.cos(lon)
@@ -301,7 +291,7 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
             z = cos_lat * v
 
             return x, y, z
-        case base_grid.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             return u, v, array_ns.zeros_like(u)
 
 
@@ -320,19 +310,17 @@ def _compute_rbf_interpolation_coeffs(
     uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: InterpolationKernel,
-    geometry_type: base_grid.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
+    array_ns = data_alloc.array_namespace(element_center_lat)
     rbf_offset_shape_full = rbf_offset.shape
     assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
-    num_elements = rbf_offset.shape[0]
 
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
@@ -379,10 +367,9 @@ def _compute_rbf_interpolation_coeffs(
         domain_height,
         element_center[:, array_ns.newaxis, :],
         edge_center,
-        array_ns=array_ns,
     )
     assert vector_dist.shape == rbf_offset.shape
-    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor, array_ns=array_ns)
+    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor)
     assert rbf_val.shape == rbf_offset.shape
 
     # Set up right hand side(s) of linear system
@@ -399,19 +386,20 @@ def _compute_rbf_interpolation_coeffs(
             element_center_lon[horizontal_start:horizontal_end],
             uv[i][0][horizontal_start:horizontal_end],
             uv[i][1][horizontal_start:horizontal_end],
-            array_ns=array_ns,
         )
         z_nx.append(array_ns.stack((z_nx_x, z_nx_y, z_nx_z), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
         nxnx.append(
-            array_ns.matmul(z_nx[i][:, array_ns.newaxis], edge_normal.transpose(0, 2, 1)).squeeze()
+            array_ns.matmul(
+                z_nx[i][:, array_ns.newaxis, :], edge_normal.transpose(0, 2, 1)
+            ).squeeze()
         )
         rhs.append(rbf_val * nxnx[i])
         assert rhs[i].shape == rbf_offset.shape
 
     # Compute dot product of normal vectors for RBF interpolation matrix
-    z_nxprod = _dot_product(edge_normal, edge_normal, array_ns=array_ns)
+    z_nxprod = _dot_product(edge_normal, edge_normal)
     assert z_nxprod.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -419,9 +407,7 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _compute_distance_pairwise(
-        geometry_type, domain_length, domain_height, edge_center, array_ns=array_ns
-    )
+    z_dist = _compute_distance_pairwise(geometry_type, domain_length, domain_height, edge_center)
     assert z_dist.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -429,41 +415,52 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Set up RBF interpolation matrix
-    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor, array_ns=array_ns)
+    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor)
     assert z_rbfmat.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
         rbf_offset.shape[1],
     )
 
-    # Solve linear system for coefficients
-    #
-    # Currently always on CPU. At the time of writing cupy does not have
-    # cho_solve with the same interface as scipy, but one has been proposed:
-    # https://github.com/cupy/cupy/pull/9116.
-    rbf_vec_coeff_np = [
-        np.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
+    # Solve linear system for coefficients.
+    rbf_vec_coeff = [
+        array_ns.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
         for _ in range(num_zonal_meridional_components)
     ]
-    rbf_offset_np = data_alloc.as_numpy(rbf_offset)
-    z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
-    rhs_np = [data_alloc.as_numpy(x) for x in rhs]
-    for i in range(num_elements):
-        valid_neighbors = np.where(rbf_offset_np[i, :] >= 0)[0]
-        rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])
-        z_diag_np = sla.cho_factor(rbfmat_np)
+    # Batch solve by grouping elements with the same number of valid neighbors.
+    # ASSUMPTIONS FOR MAKING THE FOLLOWING BATCH SOLVE POSSIBLE:
+    #   (1) In ICON grids, valid entries in connectivity tables are contiguous from the start.
+    #       In other words, those invalid neighbors must be located at the end of the neighbor list.
+    #       Therefore, we cannot compute rbf all the way into halo cells or the first boundary layer
+    #       because the invalid neighbors may appear in the middle the the neighbor list.
+    #   (2) Invalid indices must be a negative.
+    n_valid = (rbf_offset >= 0).sum(axis=1)
+    for nv in (u := array_ns.unique(n_valid))[u != 0]:
+        group_idx = array_ns.where(n_valid == nv)[0]
+        valid_cols = array_ns.arange(nv)
+        mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
-            rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
-                z_diag_np, rhs_np[j][i, valid_neighbors]
-            )
-    rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])
+            rhs_batch = rhs[j][array_ns.ix_(group_idx, valid_cols)]
+            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
+            # rhs_batch (B, nv, 1). The solution of mat_batch x = rhs_batch is sol.
+            # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
+            # batched column vector (core dims (nv,1)) rather than a matrix
+            # (core dims (B, nv)), which would mismatch m=nv from the LHS.
+            # This problem is well explained in https://github.com/numpy/numpy/issues/26598
+            # The RBF matrix is symmetric and positive definite. However,
+            # the Cholesky method is not chosen, as in ICON, simply because scipy
+            # does not support batched solving of the linear equation,
+            # necessitating a Python loop and resulting in poor performance.
+            sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
+            rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
+
+    rbf_vec_coeff = tuple(rbf_vec_coeff)
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
         rbf_vec_coeff[j][horizontal_start:horizontal_end] /= array_ns.sum(
             nxnx[j] * rbf_vec_coeff[j][horizontal_start:horizontal_end], axis=1
         )[:, array_ns.newaxis]
-    exchange(*rbf_vec_coeff, stream=decomposition.BLOCK)
     return rbf_vec_coeff
 
 
@@ -488,9 +485,8 @@ def compute_rbf_interpolation_coeffs_cell(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(cell_center_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
@@ -509,14 +505,12 @@ def compute_rbf_interpolation_coeffs_cell(
         ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
-        base_grid.GeometryType(geometry_type),
+        icon_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
         horizontal_end,
         domain_length,
         domain_height,
-        exchange=exchange,
-        array_ns=array_ns,
     )
 
 
@@ -539,8 +533,6 @@ def compute_rbf_interpolation_coeffs_edge(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     return _compute_rbf_interpolation_coeffs(
         edge_lat,
@@ -557,14 +549,12 @@ def compute_rbf_interpolation_coeffs_edge(
         ((edge_dual_normal_u, edge_dual_normal_v),),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
-        base_grid.GeometryType(geometry_type),
+        icon_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
         horizontal_end,
         domain_length,
         domain_height,
-        exchange=exchange,
-        array_ns=array_ns,
     )[0]
 
 
@@ -588,9 +578,8 @@ def compute_rbf_interpolation_coeffs_vertex(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(vertex_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
@@ -609,12 +598,10 @@ def compute_rbf_interpolation_coeffs_vertex(
         ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
-        base_grid.GeometryType(geometry_type),
+        icon_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
         horizontal_end,
         domain_length,
         domain_height,
-        exchange=exchange,
-        array_ns=array_ns,
     )

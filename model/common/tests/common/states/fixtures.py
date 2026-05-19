@@ -7,9 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
     data_provider,
+    decomposition_info,
     download_ser_data,
     experiment,
+    grid_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
