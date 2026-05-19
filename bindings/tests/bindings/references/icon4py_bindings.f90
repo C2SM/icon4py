@@ -162,13 +162,13 @@ module icon4py_bindings
 
          integer(c_int), value, target :: diffusion_type
 
-         logical(c_int), value, target :: hdiff_w
+         logical(c_bool), value, target :: hdiff_w
 
-         logical(c_int), value, target :: hdiff_vn
+         logical(c_bool), value, target :: hdiff_vn
 
-         logical(c_int), value, target :: hdiff_smag_w
+         logical(c_bool), value, target :: hdiff_smag_w
 
-         logical(c_int), value, target :: zdiffu_t
+         logical(c_bool), value, target :: zdiffu_t
 
          integer(c_int), value, target :: type_t_diffu
 
@@ -194,7 +194,7 @@ module icon4py_bindings
 
          real(c_double), value, target :: smagorinski_scaling_height4
 
-         logical(c_int), value, target :: hdiff_temp
+         logical(c_bool), value, target :: hdiff_temp
 
          real(c_double), value, target :: denom_diffu_v
 
@@ -206,11 +206,11 @@ module icon4py_bindings
 
          real(c_double), value, target :: a_hshr
 
-         logical(c_int), value, target :: loutshs
+         logical(c_bool), value, target :: loutshs
 
          integer(c_int), value, target :: backend
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function diffusion_init_wrapper
 
@@ -303,9 +303,9 @@ module icon4py_bindings
 
          real(c_double), value, target :: dtime
 
-         logical(c_int), value, target :: linit
+         logical(c_bool), value, target :: linit
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function diffusion_run_wrapper
 
@@ -657,11 +657,11 @@ module icon4py_bindings
 
          integer(c_int), value, target :: vertical_size
 
-         logical(c_int), value, target :: limited_area
+         logical(c_bool), value, target :: limited_area
 
          integer(c_int), value, target :: backend
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function grid_init_wrapper
 
@@ -1121,13 +1121,13 @@ module icon4py_bindings
 
          integer(c_int), value, target :: divdamp_type
 
-         logical(c_int), value, target :: l_vert_nested
+         logical(c_bool), value, target :: l_vert_nested
 
-         logical(c_int), value, target :: ldeepatmo
+         logical(c_bool), value, target :: ldeepatmo
 
-         logical(c_int), value, target :: iau_init
+         logical(c_bool), value, target :: iau_init
 
-         logical(c_int), value, target :: extra_diffu
+         logical(c_bool), value, target :: extra_diffu
 
          real(c_double), value, target :: rhotheta_offctr
 
@@ -1155,7 +1155,7 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function solve_nh_init_wrapper
 
@@ -1494,9 +1494,9 @@ module icon4py_bindings
 
          integer(c_int), value :: max_vcfl_size1_array_size_0
 
-         logical(c_int), value, target :: lprep_adv
+         logical(c_bool), value, target :: lprep_adv
 
-         logical(c_int), value, target :: at_initial_timestep
+         logical(c_bool), value, target :: at_initial_timestep
 
          real(c_double), value, target :: divdamp_fac_o2
 
@@ -1504,11 +1504,11 @@ module icon4py_bindings
 
          integer(c_int), value, target :: idyn_timestep
 
-         logical(c_int), value, target :: is_iau_active
+         logical(c_bool), value, target :: is_iau_active
 
          real(c_double), value, target :: iau_wgt_dyn
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function solve_nh_run_wrapper
 
@@ -1588,13 +1588,13 @@ contains
 
       integer(c_int), value, target :: diffusion_type
 
-      logical(c_int), value, target :: hdiff_w
+      logical(c_bool), value, target :: hdiff_w
 
-      logical(c_int), value, target :: hdiff_vn
+      logical(c_bool), value, target :: hdiff_vn
 
-      logical(c_int), value, target :: hdiff_smag_w
+      logical(c_bool), value, target :: hdiff_smag_w
 
-      logical(c_int), value, target :: zdiffu_t
+      logical(c_bool), value, target :: zdiffu_t
 
       integer(c_int), value, target :: type_t_diffu
 
@@ -1620,7 +1620,7 @@ contains
 
       real(c_double), value, target :: smagorinski_scaling_height4
 
-      logical(c_int), value, target :: hdiff_temp
+      logical(c_bool), value, target :: hdiff_temp
 
       real(c_double), value, target :: denom_diffu_v
 
@@ -1632,11 +1632,11 @@ contains
 
       real(c_double), value, target :: a_hshr
 
-      logical(c_int), value, target :: loutshs
+      logical(c_bool), value, target :: loutshs
 
       integer(c_int), value, target :: backend
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: theta_ref_mc_size_0
 
@@ -1891,9 +1891,9 @@ contains
 
       real(c_double), value, target :: dtime
 
-      logical(c_int), value, target :: linit
+      logical(c_bool), value, target :: linit
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: w_size_0
 
@@ -2135,11 +2135,11 @@ contains
 
       integer(c_int), dimension(:, :), target :: c2v
 
-      logical(c_int), dimension(:), target :: c_owner_mask
+      logical(c_bool), dimension(:), target :: c_owner_mask
 
-      logical(c_int), dimension(:), target :: e_owner_mask
+      logical(c_bool), dimension(:), target :: e_owner_mask
 
-      logical(c_int), dimension(:), target :: v_owner_mask
+      logical(c_bool), dimension(:), target :: v_owner_mask
 
       integer(c_int), dimension(:), target :: c_glb_index
 
@@ -2213,11 +2213,11 @@ contains
 
       integer(c_int), value, target :: vertical_size
 
-      logical(c_int), value, target :: limited_area
+      logical(c_bool), value, target :: limited_area
 
       integer(c_int), value, target :: backend
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: cell_starts_size_0
 
@@ -2738,7 +2738,7 @@ contains
 
       real(c_double), dimension(:), target :: nudgecoeff_e
 
-      logical(c_int), dimension(:), target :: mask_prog_halo_c
+      logical(c_bool), dimension(:), target :: mask_prog_halo_c
 
       real(c_double), dimension(:), target :: rayleigh_w
 
@@ -2804,7 +2804,7 @@ contains
 
       real(c_double), dimension(:, :), target :: coeff_gradekin
 
-      logical(c_int), dimension(:), target :: c_owner_mask
+      logical(c_bool), dimension(:), target :: c_owner_mask
 
       integer(c_int), value, target :: itime_scheme
 
@@ -2818,13 +2818,13 @@ contains
 
       integer(c_int), value, target :: divdamp_type
 
-      logical(c_int), value, target :: l_vert_nested
+      logical(c_bool), value, target :: l_vert_nested
 
-      logical(c_int), value, target :: ldeepatmo
+      logical(c_bool), value, target :: ldeepatmo
 
-      logical(c_int), value, target :: iau_init
+      logical(c_bool), value, target :: iau_init
 
-      logical(c_int), value, target :: extra_diffu
+      logical(c_bool), value, target :: extra_diffu
 
       real(c_double), value, target :: rhotheta_offctr
 
@@ -2852,7 +2852,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: c_lin_e_size_0
 
@@ -3588,9 +3588,9 @@ contains
 
       real(c_double), dimension(:), target :: max_vcfl_size1_array
 
-      logical(c_int), value, target :: lprep_adv
+      logical(c_bool), value, target :: lprep_adv
 
-      logical(c_int), value, target :: at_initial_timestep
+      logical(c_bool), value, target :: at_initial_timestep
 
       real(c_double), value, target :: divdamp_fac_o2
 
@@ -3598,11 +3598,11 @@ contains
 
       integer(c_int), value, target :: idyn_timestep
 
-      logical(c_int), value, target :: is_iau_active
+      logical(c_bool), value, target :: is_iau_active
 
       real(c_double), value, target :: iau_wgt_dyn
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: rho_now_size_0
 

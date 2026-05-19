@@ -87,9 +87,6 @@ def array_to_array_info(
     xp = cp if on_gpu else np
     if ffi is None:
         ffi = cffi.FFI()
-    # TODO(havogt): need to move bool handling to Fortran side
-    if arr.dtype == np.bool_:
-        arr = arr.astype(np.int32, copy=True)
     if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
         arr = xp.asfortranarray(arr)
 

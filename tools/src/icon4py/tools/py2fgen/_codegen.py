@@ -26,21 +26,21 @@ CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
     _definitions.FLOAT32: "real(c_float)",
-    _definitions.BOOL: "logical(c_int)",
+    _definitions.BOOL: "logical(c_bool)",
     _definitions.INT32: "integer(c_int)",
     _definitions.INT64: "integer(c_long)",
 }
 BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "double",
     _definitions.FLOAT32: "float",
-    _definitions.BOOL: "int",
+    _definitions.BOOL: "_Bool",
     _definitions.INT32: "int",
     _definitions.INT64: "long",
 }
 BUILTIN_TO_NUMPY_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "xp.float64",
     _definitions.FLOAT32: "xp.float32",
-    _definitions.BOOL: "xp.int32",
+    _definitions.BOOL: "xp.bool_",
     _definitions.INT32: "xp.int32",
     _definitions.INT64: "xp.int64",
 }
@@ -250,7 +250,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
                 params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
-        params.append("int on_gpu")
+        params.append("_Bool on_gpu")
 
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
@@ -296,7 +296,7 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
                     param_declarations.append(_size_param_declaration(size_name))
 
         # on_gpu flag
-        param_declarations.append("logical(c_int), value :: on_gpu")
+        param_declarations.append("logical(c_bool), value :: on_gpu")
         param_names.append("on_gpu")
 
         param_names_str = ", &\n ".join(param_names)
@@ -359,7 +359,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
         ]
 
         # on_gpu flag
-        param_declarations.append("logical(c_int) :: on_gpu")
+        param_declarations.append("logical(c_bool) :: on_gpu")
 
         def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(

@@ -15,16 +15,16 @@ extern int diffusion_init_wrapper(
     int zd_cellidx_size_1, int *zd_vertidx, int zd_vertidx_size_0,
     int zd_vertidx_size_1, double *zd_intcoef, int zd_intcoef_size_0,
     int zd_intcoef_size_1, double *zd_diffcoef, int zd_diffcoef_size_0,
-    int ndyn_substeps, int diffusion_type, int hdiff_w, int hdiff_vn,
-    int hdiff_smag_w, int zdiffu_t, int type_t_diffu, int type_vn_diffu,
+    int ndyn_substeps, int diffusion_type, _Bool hdiff_w, _Bool hdiff_vn,
+    _Bool hdiff_smag_w, _Bool zdiffu_t, int type_t_diffu, int type_vn_diffu,
     double hdiff_efdt_ratio, double hdiff_w_efdt_ratio,
     double smagorinski_scaling_factor, double smagorinski_scaling_factor2,
     double smagorinski_scaling_factor3, double smagorinski_scaling_factor4,
     double smagorinski_scaling_height, double smagorinski_scaling_height2,
     double smagorinski_scaling_height3, double smagorinski_scaling_height4,
-    int hdiff_temp, double denom_diffu_v, double nudge_max_coeff,
-    int itype_sher, int iforcing, double a_hshr, int loutshs, int backend,
-    int on_gpu);
+    _Bool hdiff_temp, double denom_diffu_v, double nudge_max_coeff,
+    int itype_sher, int iforcing, double a_hshr, _Bool loutshs, int backend,
+    _Bool on_gpu);
 extern int diffusion_run_wrapper(
     double *w, int w_size_0, int w_size_1, double *vn, int vn_size_0,
     int vn_size_1, double *exner, int exner_size_0, int exner_size_1,
@@ -32,7 +32,7 @@ extern int diffusion_run_wrapper(
     int rho_size_0, int rho_size_1, double *hdef_ic, int hdef_ic_size_0,
     int hdef_ic_size_1, double *div_ic, int div_ic_size_0, int div_ic_size_1,
     double *dwdx, int dwdx_size_0, int dwdx_size_1, double *dwdy,
-    int dwdy_size_0, int dwdy_size_1, double dtime, int linit, int on_gpu);
+    int dwdy_size_0, int dwdy_size_1, double dtime, _Bool linit, _Bool on_gpu);
 extern int grid_init_wrapper(
     int *cell_starts, int cell_starts_size_0, int *cell_ends,
     int cell_ends_size_0, int *vertex_starts, int vertex_starts_size_0,
@@ -44,8 +44,8 @@ extern int grid_init_wrapper(
     int e2v_size_1, int *v2e, int v2e_size_0, int v2e_size_1, int *v2c,
     int v2c_size_0, int v2c_size_1, int *e2c2v, int e2c2v_size_0,
     int e2c2v_size_1, int *c2v, int c2v_size_0, int c2v_size_1,
-    int *c_owner_mask, int c_owner_mask_size_0, int *e_owner_mask,
-    int e_owner_mask_size_0, int *v_owner_mask, int v_owner_mask_size_0,
+    _Bool *c_owner_mask, int c_owner_mask_size_0, _Bool *e_owner_mask,
+    int e_owner_mask_size_0, _Bool *v_owner_mask, int v_owner_mask_size_0,
     int *c_glb_index, int c_glb_index_size_0, int *e_glb_index,
     int e_glb_index_size_0, int *v_glb_index, int v_glb_index_size_0,
     double *tangent_orientation, int tangent_orientation_size_0,
@@ -75,8 +75,8 @@ extern int grid_init_wrapper(
     double lowest_layer_thickness, double model_top_height,
     double stretch_factor, double flat_height, double rayleigh_damping_height,
     double mean_cell_area, int comm_id, int num_vertices, int num_cells,
-    int num_edges, int vertical_size, int limited_area, int backend,
-    int on_gpu);
+    int num_edges, int vertical_size, _Bool limited_area, int backend,
+    _Bool on_gpu);
 extern int solve_nh_init_wrapper(
     double *c_lin_e, int c_lin_e_size_0, int c_lin_e_size_1, double *c_intp,
     int c_intp_size_0, int c_intp_size_1, double *e_flx_avg,
@@ -94,7 +94,7 @@ extern int solve_nh_init_wrapper(
     int geofac_n2s_size_1, double *geofac_grg_x, int geofac_grg_x_size_0,
     int geofac_grg_x_size_1, double *geofac_grg_y, int geofac_grg_y_size_0,
     int geofac_grg_y_size_1, double *nudgecoeff_e, int nudgecoeff_e_size_0,
-    int *mask_prog_halo_c, int mask_prog_halo_c_size_0, double *rayleigh_w,
+    _Bool *mask_prog_halo_c, int mask_prog_halo_c_size_0, double *rayleigh_w,
     int rayleigh_w_size_0, double *exner_exfac, int exner_exfac_size_0,
     int exner_exfac_size_1, double *exner_ref_mc, int exner_ref_mc_size_0,
     int exner_ref_mc_size_1, double *wgtfac_c, int wgtfac_c_size_0,
@@ -126,14 +126,14 @@ extern int solve_nh_init_wrapper(
     int scalfac_dd3d_size_0, double *coeff1_dwdz, int coeff1_dwdz_size_0,
     int coeff1_dwdz_size_1, double *coeff2_dwdz, int coeff2_dwdz_size_0,
     int coeff2_dwdz_size_1, double *coeff_gradekin, int coeff_gradekin_size_0,
-    int coeff_gradekin_size_1, int *c_owner_mask, int c_owner_mask_size_0,
+    int coeff_gradekin_size_1, _Bool *c_owner_mask, int c_owner_mask_size_0,
     int itime_scheme, int iadv_rhotheta, int igradp_method, int rayleigh_type,
-    int divdamp_order, int divdamp_type, int l_vert_nested, int ldeepatmo,
-    int iau_init, int extra_diffu, double rhotheta_offctr, double veladv_offctr,
-    double nudge_max_coeff, double divdamp_fac, double divdamp_fac2,
-    double divdamp_fac3, double divdamp_fac4, double divdamp_z,
-    double divdamp_z2, double divdamp_z3, double divdamp_z4, int nflat_gradp,
-    int backend, int on_gpu);
+    int divdamp_order, int divdamp_type, _Bool l_vert_nested, _Bool ldeepatmo,
+    _Bool iau_init, _Bool extra_diffu, double rhotheta_offctr,
+    double veladv_offctr, double nudge_max_coeff, double divdamp_fac,
+    double divdamp_fac2, double divdamp_fac3, double divdamp_fac4,
+    double divdamp_z, double divdamp_z2, double divdamp_z3, double divdamp_z4,
+    int nflat_gradp, int backend, _Bool on_gpu);
 extern int solve_nh_run_wrapper(
     double *rho_now, int rho_now_size_0, int rho_now_size_1, double *rho_new,
     int rho_new_size_0, int rho_new_size_1, double *exner_now,
@@ -171,8 +171,8 @@ extern int solve_nh_run_wrapper(
     int vol_flx_ic_size_0, int vol_flx_ic_size_1, double *vn_traj,
     int vn_traj_size_0, int vn_traj_size_1, double dtime,
     double *max_vcfl_size1_array, int max_vcfl_size1_array_size_0,
-    int lprep_adv, int at_initial_timestep, double divdamp_fac_o2,
-    int ndyn_substeps_var, int idyn_timestep, int is_iau_active,
-    double iau_wgt_dyn, int on_gpu);
+    _Bool lprep_adv, _Bool at_initial_timestep, double divdamp_fac_o2,
+    int ndyn_substeps_var, int idyn_timestep, _Bool is_iau_active,
+    double iau_wgt_dyn, _Bool on_gpu);
 
 #endif

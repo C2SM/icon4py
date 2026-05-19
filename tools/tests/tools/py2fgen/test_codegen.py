@@ -83,7 +83,7 @@ def test_cheader_generation_for_single_function():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, int on_gpu);"
+        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, _Bool on_gpu);"
     )
 
 
@@ -93,7 +93,7 @@ def test_cheader_for_pointer_args():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, int on_gpu);"
+        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, _Bool on_gpu);"
     )
 
 
@@ -154,7 +154,7 @@ module libtest_plugin
 
          integer(c_int), value :: two_size_1
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function foo_wrapper
 
@@ -174,7 +174,7 @@ module libtest_plugin
 
          integer(c_int), value, target :: two
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function bar_wrapper
 
@@ -191,7 +191,7 @@ contains
 
       real(c_double), dimension(:, :), target :: two
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: two_size_0
 
@@ -228,7 +228,7 @@ contains
 
       integer(c_int), value, target :: two
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: one_size_0
 
@@ -453,7 +453,32 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, int on_gpu);
-    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, int on_gpu);
+    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, _Bool on_gpu);
+    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, _Bool on_gpu);
     """
     assert compare_ignore_whitespace(interface, expected)
+
+
+def test_bool_param_codegen():
+    bool_func = Func(
+        name="bool_fn",
+        module_name="libtest",
+        args={
+            "flag": py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL),
+            "mask": py2fgen.ArrayParamDescriptor(
+                rank=1,
+                dtype=py2fgen.BOOL,
+                memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+                is_optional=False,
+            ),
+        },
+    )
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[bool_func])
+
+    header = CHeaderGenerator.apply(plugin)
+    assert "_Bool flag" in header
+    assert "_Bool* mask" in header
+
+    interface = generate_f90_interface(plugin)
+    assert "logical(c_bool), value, target :: flag" in interface
+    assert "logical(c_bool), dimension(:), target :: mask" in interface

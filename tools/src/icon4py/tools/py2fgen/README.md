@@ -112,11 +112,11 @@ Additionally, you can enable profiling by setting the environment variable `PY2F
 
 Note that debugging and profiling are not available if Python is set to optimized mode.
 
-### Known problems
+### Booleans
 
-- On the Fortran side we use standard 4-byte logicals to represent Python booleans.
-  Currently, we do not create views of the boolean arrays, but instead copy the data to 1-byte boolean arrays on the Python side.
-  Therefore, these arrays are read-only.
+Booleans are required to be C-interoperable types: `_Bool` in C,
+`logical(kind=c_bool)` in Fortran (both 1 byte), and NumPy `bool_` in Python.
+Callers must declare boolean scalar and array arguments as `logical(kind=c_bool)` (not the default `logical`); converting from a default `logical` is the caller's responsibility.
 
 ### Future improvements
 

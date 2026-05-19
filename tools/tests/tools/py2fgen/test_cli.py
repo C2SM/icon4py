@@ -175,6 +175,21 @@ def test_py2fgen_python_error_propagation_to_fortran(
     )
 
 
+def test_py2fgen_compilation_and_execution_bool_cpu(
+    cli_runner, samples_path, square_wrapper_module, test_temp_dir, fortran_subprocess_env
+):
+    """Tests boolean scalar passing and boolean-array writeback end-to-end."""
+    run_test_case(
+        cli_runner,
+        square_wrapper_module,
+        "fill_mask",
+        "bool_plugin",
+        samples_path,
+        "test_bool",
+        test_temp_dir,
+    )
+
+
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
     "function_name, library_name, test_name, extra_flags",
