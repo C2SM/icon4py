@@ -15,6 +15,7 @@ from icon4py.tools.py2fgen._codegen import (
     BindingsLibrary,
     CHeaderGenerator,
     Func,
+    add_include_guard,
     as_f90_value,
     generate_c_header,
     generate_f90_interface,
@@ -94,6 +95,13 @@ def test_cheader_for_pointer_args():
         header
         == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, int on_gpu);"
     )
+
+
+def test_add_include_guard():
+    guarded = add_include_guard("extern int foo(int a);", "libtest_plugin")
+    assert guarded.startswith("#ifndef LIBTEST_PLUGIN_H\n#define LIBTEST_PLUGIN_H\n")
+    assert guarded.rstrip().endswith("#endif")
+    assert "extern int foo(int a);" in guarded
 
 
 def compare_ignore_whitespace(actual: str, expected: str):

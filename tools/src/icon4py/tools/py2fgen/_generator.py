@@ -6,9 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import contextlib
+import dataclasses
+import io
 import logging
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
 import cffi
 
@@ -39,22 +43,55 @@ def configure_cffi_builder(
     library_name: str,
     c_header: str,
     python_wrapper: str,
-    build_path: Path,
     rpath: str,
 ) -> cffi.FFI:
-    """Write the C header, configure and return a CFFI FFI builder ready for compilation or code emission."""
-    header_file_path = build_path / f"{library_name}.h"
-    with header_file_path.open("w") as f:
-        f.write(c_header)
-
+    """Configure and return a CFFI FFI builder ready for compilation or code emission."""
     builder = cffi.FFI()
     extra_link_args = [f"-Wl,-rpath={rpath}"] if rpath else []
     builder.embedding_api(c_header)
-    builder.set_source(
-        library_name, f'#include "{header_file_path.name}"', extra_link_args=extra_link_args
-    )
+    builder.set_source(library_name, c_header, extra_link_args=extra_link_args)
     builder.embedding_init_code(python_wrapper)
     return builder
+
+
+@dataclasses.dataclass(frozen=True)
+class RenderedSources:
+    """The four bindings artifacts produced by :func:`render`, all as strings."""
+
+    py: str
+    f90: str
+    h: str
+    c: str
+
+
+def render(plugin: _codegen.BindingsLibrary, *, rpath: str = "") -> RenderedSources:
+    """Render every bindings source for ``plugin`` as an in-memory string.
+
+    Args:
+        plugin: The parsed bindings description (from :func:`get_cffi_description`).
+        rpath: Optional runtime library search path to embed in
+            ``extra_link_args``. Only relevant when the rendered ``.c`` is
+            later compiled.
+    """
+    c_header = _codegen.generate_c_header(plugin)
+    python_wrapper = _codegen.generate_python_wrapper(plugin)
+    builder = configure_cffi_builder(plugin.library_name, c_header, python_wrapper, rpath)
+
+    buf = io.StringIO()
+    # CFFI's emit_c_code accepts any writable stream at runtime (long-stable
+    # behavior; the cffi>=1.5 pin in tools/pyproject.toml is well within the
+    # supported range). The type stub only declares ``filename: str``, so we
+    # narrow the suppression to a cast. CFFI also unconditionally prints a
+    # "generating <file>" line; for the in-memory buffer that is just noise.
+    with contextlib.redirect_stdout(io.StringIO()):
+        builder.emit_c_code(cast(Any, buf))
+
+    return RenderedSources(
+        py=python_wrapper,
+        f90=_codegen.generate_f90_interface(plugin),
+        h=_codegen.add_include_guard(c_header, plugin.library_name),
+        c=buf.getvalue(),
+    )
 
 
 def generate_and_compile_cffi_plugin(
@@ -79,7 +116,7 @@ def generate_and_compile_cffi_plugin(
         rpath: Runtime library search path to embed in the shared library.
     """
     try:
-        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, rpath)
         builder.compile(tmpdir=str(build_path), target=f"lib{library_name}.*", verbose=True)
     except Exception as e:
         logging.error(f"Error generating and compiling CFFI plugin: {e}")
@@ -93,9 +130,9 @@ def generate_cffi_source(
     build_path: Path,
     rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
-    """Generate the C source file and header without compiling."""
+    """Generate the C source file without compiling."""
     try:
-        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, rpath)
         builder.emit_c_code(str(build_path / f"{library_name}.c"))
     except Exception as e:
         logging.error(f"Error generating CFFI C source: {e}")

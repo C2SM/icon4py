@@ -498,6 +498,12 @@ def generate_c_header(bindings_library: BindingsLibrary) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
+def add_include_guard(c_header: str, library_name: str) -> str:
+    """Wrap generated C header code in an ``#ifndef`` include guard."""
+    guard = f"{library_name.upper()}_H"
+    return f"#ifndef {guard}\n#define {guard}\n\n{c_header}\n\n#endif\n"
+
+
 def generate_python_wrapper(bindings_library: BindingsLibrary) -> str:
     """
     Generate Python wrapper code.
