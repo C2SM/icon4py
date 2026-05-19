@@ -167,14 +167,14 @@ class NoAdvection(Advection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+        exchange: decomposition.ExchangeRuntime,
     ):
         log.debug("advection class init - start")
 
         # input arguments
         self._grid = grid
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -232,7 +232,7 @@ class GodunovSplittingAdvection(Advection):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+        exchange: decomposition.ExchangeRuntime,
         even_timestep: bool = False,
     ):
         log.debug("advection class init - start")
@@ -243,7 +243,7 @@ class GodunovSplittingAdvection(Advection):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
         # density fields
@@ -424,9 +424,8 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
-    exchange = exchange or decomposition.SingleNodeExchange()
     assert exchange is not None, "Exchange runtime must not be None."
     horizontal_limiter: advection_horizontal.HorizontalFluxLimiter | None
     match config.horizontal_advection_limiter:
@@ -511,17 +510,15 @@ def convert_config_to_advection(
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+    exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
 ) -> Advection:
-    exchange = exchange or decomposition.SingleNodeExchange()
-    assert exchange is not None, "Exchange runtime must not be None."
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
         and config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION
     ):
         # advection is disabled for all tracers
-        return NoAdvection(grid=grid, backend=backend)
+        return NoAdvection(grid=grid, backend=backend, exchange=exchange)
 
     horizontal_advection, vertical_advection = convert_config_to_horizontal_vertical_advection(
         config=config,
