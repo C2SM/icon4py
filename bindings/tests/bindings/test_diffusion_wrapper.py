@@ -46,33 +46,7 @@ def test_diffusion_wrapper_granule_inputs(
     icon_grid,
     experiment,
 ):
-    # Diffusion config values (sourced from experiment namelist)
     cfg = experiment.config.diffusion
-    diffusion_type = cfg.diffusion_type
-    hdiff_w = cfg.apply_to_vertical_wind
-    hdiff_vn = cfg.apply_to_horizontal_wind
-    hdiff_temp = cfg.apply_to_temperature
-    hdiff_smag_w = cfg.apply_smag_diff_to_vertical_wind
-    iforcing = cfg.iforcing
-    a_hshr = cfg.a_hshr
-    loutshs = cfg.loutshs
-    type_t_diffu = cfg.type_t_diffu
-    type_vn_diffu = cfg.type_vn_diffu
-    hdiff_efdt_ratio = cfg.hdiff_efdt_ratio
-    hdiff_w_efdt_ratio = cfg.hdiff_w_efdt_ratio
-    smagorinski_scaling_factor = cfg.smagorinski_scaling_factor
-    smagorinski_scaling_factor2 = cfg.smagorinski_scaling_factor2
-    smagorinski_scaling_factor3 = cfg.smagorinski_scaling_factor3
-    smagorinski_scaling_factor4 = cfg.smagorinski_scaling_factor4
-    smagorinski_scaling_height = cfg.smagorinski_scaling_height
-    smagorinski_scaling_height2 = cfg.smagorinski_scaling_height2
-    smagorinski_scaling_height3 = cfg.smagorinski_scaling_height3
-    smagorinski_scaling_height4 = cfg.smagorinski_scaling_height4
-    zdiffu_t = cfg.apply_zdiffusion_t
-    denom_diffu_v = cfg.velocity_boundary_diffusion_denominator
-    max_nudging_coefficient = cfg.max_nudging_coefficient
-    itype_sher = cfg.shear_type
-    ndyn_substeps = cfg.ndyn_substeps
 
     # --- Extract Metric State Parameters ---
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -179,31 +153,31 @@ def test_diffusion_wrapper_granule_inputs(
             zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
             zd_diffcoef=zd_diffcoef,
-            ndyn_substeps=ndyn_substeps,
-            diffusion_type=diffusion_type,
-            hdiff_w=hdiff_w,
-            hdiff_vn=hdiff_vn,
-            hdiff_smag_w=hdiff_smag_w,
-            zdiffu_t=zdiffu_t,
-            type_t_diffu=type_t_diffu,
-            type_vn_diffu=type_vn_diffu,
-            hdiff_efdt_ratio=hdiff_efdt_ratio,
-            hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
-            smagorinski_scaling_factor=smagorinski_scaling_factor,
-            smagorinski_scaling_factor2=smagorinski_scaling_factor2,
-            smagorinski_scaling_factor3=smagorinski_scaling_factor3,
-            smagorinski_scaling_factor4=smagorinski_scaling_factor4,
-            smagorinski_scaling_height=smagorinski_scaling_height,
-            smagorinski_scaling_height2=smagorinski_scaling_height2,
-            smagorinski_scaling_height3=smagorinski_scaling_height3,
-            smagorinski_scaling_height4=smagorinski_scaling_height4,
-            hdiff_temp=hdiff_temp,
-            denom_diffu_v=denom_diffu_v,
-            nudge_max_coeff=max_nudging_coefficient,
-            itype_sher=itype_sher.value,
-            iforcing=iforcing.value,
-            a_hshr=a_hshr,
-            loutshs=loutshs,
+            ndyn_substeps=cfg.ndyn_substeps,
+            diffusion_type=cfg.diffusion_type,
+            hdiff_w=cfg.apply_to_vertical_wind,
+            hdiff_vn=cfg.apply_to_horizontal_wind,
+            hdiff_smag_w=cfg.apply_smag_diff_to_vertical_wind,
+            zdiffu_t=cfg.apply_zdiffusion_t,
+            type_t_diffu=cfg.type_t_diffu,
+            type_vn_diffu=cfg.type_vn_diffu,
+            hdiff_efdt_ratio=cfg.hdiff_efdt_ratio,
+            hdiff_w_efdt_ratio=cfg.hdiff_w_efdt_ratio,
+            smagorinski_scaling_factor=cfg.smagorinski_scaling_factor,
+            smagorinski_scaling_factor2=cfg.smagorinski_scaling_factor2,
+            smagorinski_scaling_factor3=cfg.smagorinski_scaling_factor3,
+            smagorinski_scaling_factor4=cfg.smagorinski_scaling_factor4,
+            smagorinski_scaling_height=cfg.smagorinski_scaling_height,
+            smagorinski_scaling_height2=cfg.smagorinski_scaling_height2,
+            smagorinski_scaling_height3=cfg.smagorinski_scaling_height3,
+            smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
+            hdiff_temp=cfg.apply_to_temperature,
+            denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
+            nudge_max_coeff=cfg.max_nudging_coefficient,
+            itype_sher=cfg.shear_type.value,
+            iforcing=cfg.iforcing.value,
+            a_hshr=cfg.a_hshr,
+            loutshs=cfg.loutshs,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
@@ -299,33 +273,7 @@ def test_diffusion_wrapper_single_step(
     step_date_init,
     step_date_exit,
 ):
-    # Diffusion config values (sourced from experiment namelist)
     cfg = experiment.config.diffusion
-    diffusion_type = cfg.diffusion_type
-    hdiff_w = cfg.apply_to_vertical_wind
-    hdiff_vn = cfg.apply_to_horizontal_wind
-    hdiff_temp = cfg.apply_to_temperature
-    hdiff_smag_w = cfg.apply_smag_diff_to_vertical_wind
-    iforcing = cfg.iforcing
-    a_hshr = cfg.a_hshr
-    loutshs = cfg.loutshs
-    type_t_diffu = cfg.type_t_diffu
-    type_vn_diffu = cfg.type_vn_diffu
-    hdiff_efdt_ratio = cfg.hdiff_efdt_ratio
-    hdiff_w_efdt_ratio = cfg.hdiff_w_efdt_ratio
-    smagorinski_scaling_factor = cfg.smagorinski_scaling_factor
-    smagorinski_scaling_factor2 = cfg.smagorinski_scaling_factor2
-    smagorinski_scaling_factor3 = cfg.smagorinski_scaling_factor3
-    smagorinski_scaling_factor4 = cfg.smagorinski_scaling_factor4
-    smagorinski_scaling_height = cfg.smagorinski_scaling_height
-    smagorinski_scaling_height2 = cfg.smagorinski_scaling_height2
-    smagorinski_scaling_height3 = cfg.smagorinski_scaling_height3
-    smagorinski_scaling_height4 = cfg.smagorinski_scaling_height4
-    zdiffu_t = cfg.apply_zdiffusion_t
-    denom_diffu_v = cfg.velocity_boundary_diffusion_denominator
-    max_nudging_coefficient = cfg.max_nudging_coefficient
-    itype_sher = cfg.shear_type
-    ndyn_substeps = cfg.ndyn_substeps
 
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -399,31 +347,31 @@ def test_diffusion_wrapper_single_step(
         zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
         zd_diffcoef=zd_diffcoef,
-        ndyn_substeps=ndyn_substeps,
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
-        hdiff_efdt_ratio=hdiff_efdt_ratio,
-        hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
-        smagorinski_scaling_factor=smagorinski_scaling_factor,
-        smagorinski_scaling_factor2=smagorinski_scaling_factor2,
-        smagorinski_scaling_factor3=smagorinski_scaling_factor3,
-        smagorinski_scaling_factor4=smagorinski_scaling_factor4,
-        smagorinski_scaling_height=smagorinski_scaling_height,
-        smagorinski_scaling_height2=smagorinski_scaling_height2,
-        smagorinski_scaling_height3=smagorinski_scaling_height3,
-        smagorinski_scaling_height4=smagorinski_scaling_height4,
-        hdiff_temp=hdiff_temp,
-        denom_diffu_v=denom_diffu_v,
-        nudge_max_coeff=max_nudging_coefficient,
-        itype_sher=itype_sher.value,
-        iforcing=iforcing.value,
-        a_hshr=a_hshr,
-        loutshs=loutshs,
+        ndyn_substeps=cfg.ndyn_substeps,
+        diffusion_type=cfg.diffusion_type,
+        hdiff_w=cfg.apply_to_vertical_wind,
+        hdiff_vn=cfg.apply_to_horizontal_wind,
+        hdiff_smag_w=cfg.apply_smag_diff_to_vertical_wind,
+        zdiffu_t=cfg.apply_zdiffusion_t,
+        type_t_diffu=cfg.type_t_diffu,
+        type_vn_diffu=cfg.type_vn_diffu,
+        hdiff_efdt_ratio=cfg.hdiff_efdt_ratio,
+        hdiff_w_efdt_ratio=cfg.hdiff_w_efdt_ratio,
+        smagorinski_scaling_factor=cfg.smagorinski_scaling_factor,
+        smagorinski_scaling_factor2=cfg.smagorinski_scaling_factor2,
+        smagorinski_scaling_factor3=cfg.smagorinski_scaling_factor3,
+        smagorinski_scaling_factor4=cfg.smagorinski_scaling_factor4,
+        smagorinski_scaling_height=cfg.smagorinski_scaling_height,
+        smagorinski_scaling_height2=cfg.smagorinski_scaling_height2,
+        smagorinski_scaling_height3=cfg.smagorinski_scaling_height3,
+        smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
+        hdiff_temp=cfg.apply_to_temperature,
+        denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
+        nudge_max_coeff=cfg.max_nudging_coefficient,
+        itype_sher=cfg.shear_type.value,
+        iforcing=cfg.iforcing.value,
+        a_hshr=cfg.a_hshr,
+        loutshs=cfg.loutshs,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 

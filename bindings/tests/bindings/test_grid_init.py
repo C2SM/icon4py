@@ -81,13 +81,8 @@ def grid_init(grid_savepoint, experiment):
     primal_normal_x = test_utils.array_to_array_info(grid_savepoint.primal_normal_v1().ndarray)
     primal_normal_y = test_utils.array_to_array_info(grid_savepoint.primal_normal_v2().ndarray)
 
-    # vertical grid (from experiment namelist)
-    vcfg = experiment.config.vertical_grid
-    lowest_layer_thickness = vcfg.lowest_layer_thickness
-    model_top_height = vcfg.model_top_height
-    stretch_factor = vcfg.stretch_factor
-    flat_height = vcfg.flat_height
-    rayleigh_damping_height = vcfg.rayleigh_damping_height
+    # vertical grid config from experiment namelist
+    cfg = experiment.config.vertical_grid
 
     vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
 
@@ -147,11 +142,11 @@ def grid_init(grid_savepoint, experiment):
         primal_normal_x=primal_normal_x,
         primal_normal_y=primal_normal_y,
         vct_a=vct_a,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        flat_height=flat_height,
-        rayleigh_damping_height=rayleigh_damping_height,
+        lowest_layer_thickness=cfg.lowest_layer_thickness,
+        model_top_height=cfg.model_top_height,
+        stretch_factor=cfg.stretch_factor,
+        flat_height=cfg.flat_height,
+        rayleigh_damping_height=cfg.rayleigh_damping_height,
         mean_cell_area=mean_cell_area,
         c_glb_index=c_glb_index,
         e_glb_index=e_glb_index,

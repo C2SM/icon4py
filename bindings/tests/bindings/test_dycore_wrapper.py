@@ -40,27 +40,6 @@ def solve_nh_init(
     experiment,
 ):
     cfg = experiment.config.nonhydrostatic
-    itime_scheme = cfg.itime_scheme
-    iadv_rhotheta = cfg.iadv_rhotheta
-    igradp_method = cfg.igradp_method
-    rayleigh_type = cfg.rayleigh_type
-    divdamp_order = cfg.divdamp_order
-    divdamp_type = cfg.divdamp_type
-    l_vert_nested = cfg.l_vert_nested
-    ldeepatmo = cfg.deepatmos_mode
-    iau_init = cfg.iau_init
-    extra_diffu = cfg.extra_diffu
-    rhotheta_offctr = cfg.rhotheta_offctr
-    veladv_offctr = cfg.veladv_offctr
-    max_nudging_coefficient = cfg.max_nudging_coefficient
-    divdamp_fac = cfg.fourth_order_divdamp_factor
-    divdamp_fac2 = cfg.fourth_order_divdamp_factor2
-    divdamp_fac3 = cfg.fourth_order_divdamp_factor3
-    divdamp_fac4 = cfg.fourth_order_divdamp_factor4
-    divdamp_z = cfg.fourth_order_divdamp_z
-    divdamp_z2 = cfg.fourth_order_divdamp_z2
-    divdamp_z3 = cfg.fourth_order_divdamp_z3
-    divdamp_z4 = cfg.fourth_order_divdamp_z4
 
     # vertical grid params
     nflat_gradp = gtx.int32(
@@ -214,27 +193,27 @@ def solve_nh_init(
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=coeff_gradekin,
         c_owner_mask=c_owner_mask,
-        itime_scheme=itime_scheme,
-        iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method,
-        rayleigh_type=rayleigh_type,
-        divdamp_order=divdamp_order,
-        divdamp_type=divdamp_type,
-        l_vert_nested=l_vert_nested,
-        ldeepatmo=ldeepatmo,
-        iau_init=iau_init,
-        extra_diffu=extra_diffu,
-        rhotheta_offctr=rhotheta_offctr,
-        veladv_offctr=veladv_offctr,
-        nudge_max_coeff=max_nudging_coefficient,
-        divdamp_fac=divdamp_fac,
-        divdamp_fac2=divdamp_fac2,
-        divdamp_fac3=divdamp_fac3,
-        divdamp_fac4=divdamp_fac4,
-        divdamp_z=divdamp_z,
-        divdamp_z2=divdamp_z2,
-        divdamp_z3=divdamp_z3,
-        divdamp_z4=divdamp_z4,
+        itime_scheme=cfg.itime_scheme,
+        iadv_rhotheta=cfg.iadv_rhotheta,
+        igradp_method=cfg.igradp_method,
+        rayleigh_type=cfg.rayleigh_type,
+        divdamp_order=cfg.divdamp_order,
+        divdamp_type=cfg.divdamp_type,
+        l_vert_nested=cfg.l_vert_nested,
+        ldeepatmo=cfg.deepatmos_mode,
+        iau_init=cfg.iau_init,
+        extra_diffu=cfg.extra_diffu,
+        rhotheta_offctr=cfg.rhotheta_offctr,
+        veladv_offctr=cfg.veladv_offctr,
+        nudge_max_coeff=cfg.max_nudging_coefficient,
+        divdamp_fac=cfg.fourth_order_divdamp_factor,
+        divdamp_fac2=cfg.fourth_order_divdamp_factor2,
+        divdamp_fac3=cfg.fourth_order_divdamp_factor3,
+        divdamp_fac4=cfg.fourth_order_divdamp_factor4,
+        divdamp_z=cfg.fourth_order_divdamp_z,
+        divdamp_z2=cfg.fourth_order_divdamp_z2,
+        divdamp_z3=cfg.fourth_order_divdamp_z3,
+        divdamp_z4=cfg.fourth_order_divdamp_z4,
         nflat_gradp=nflat_gradp,
         backend=wrapper_common.BackendIntEnum.GTFN,
     )
@@ -282,7 +261,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Granule input parameters for dycore init
 
-    # non hydrostatic config parameters
+    # non hydrostatic config parameters # TODO (jcanton) fix these too
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
