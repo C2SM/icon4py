@@ -15,14 +15,14 @@ publishers for **every** package on both PyPI and TestPyPI:
 
 1. Go to the package's settings on <https://pypi.org> -> Publishing -> Add a new
    publisher.
-1. Configure the Trusted Publisher:
+2. Configure the Trusted Publisher:
    - **PyPI Project Name**: package name
    - **Owner**: `C2SM`
    - **Repository name**: `icon4py`
    - **Workflow filename**: `pypi-deploy.yml`
    - **PyPI environment name**: `pypi`
-1. Repeat on <https://test.pypi.org> with environment name `testpypi`.
-1. Repeat for all packages on both indexes.
+3. Repeat on <https://test.pypi.org> with environment name `testpypi`.
+4. Repeat for all packages on both indexes.
 
 This has to be repeated if new packages are added.
 
@@ -57,11 +57,11 @@ Once the all PRs for the new release, including the one frome the previous step,
 are merged to main:
 
 1. Go to **Releases -> Draft a new release**.
-1. Create a new tag under **Select Tag** with the name `v<version>`.
-1. Select main as the target for the release, or a more specific commit if latest
+2. Create a new tag under **Select Tag** with the name `v<version>`.
+3. Select main as the target for the release, or a more specific commit if latest
    main already has changes not intended for the release.
-1. Click **Generate release notes**.
-1. Click **Publish release**.
+4. Click **Generate release notes**.
+5. Click **Publish release**.
 
 ### 3. Verify the TestPyPI publish
 
@@ -71,10 +71,10 @@ Publishing the GitHub Release automatically triggers the
 1. Go to **Actions -> Deploy Python Distribution** and wait for the
    `publish-test-pypi` jobs to complete.
 
-1. Verify the packages appear on TestPyPI, e.g.:
+2. Verify the packages appear on TestPyPI, e.g.:
    <https://test.pypi.org/project/icon4py-common/>
 
-1. Optionally test installation:
+3. Optionally test installation:
 
    ```bash
    pip install --index-url https://test.pypi.org/simple/ icon4py==<new_version>
@@ -90,9 +90,9 @@ Publishing the GitHub Release automatically triggers the
 Once TestPyPI is verified, manually trigger the production publish:
 
 1. Go to **Actions -> Deploy Python Distribution**.
-1. Click **Run workflow** on the `main` branch.
-1. Wait for the `publish-pypi` jobs to complete.
-1. Verify on <https://pypi.org/project/icon4py/>.
+2. Click **Run workflow** on the `main` branch.
+3. Wait for the `publish-pypi` jobs to complete.
+4. Verify on <https://pypi.org/project/icon4py/>.
 
 ### 5. Update the release procedure
 
