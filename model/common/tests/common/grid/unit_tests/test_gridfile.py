@@ -25,6 +25,7 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     process_props,
 )
