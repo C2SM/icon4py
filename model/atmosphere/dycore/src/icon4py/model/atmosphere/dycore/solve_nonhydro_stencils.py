@@ -61,13 +61,13 @@ def stencils_61_62(
     vertical_end: gtx.int32,
 ) -> None:
     _update_density_exner_wind(
-        rho_now=rho_now,
-        grf_tend_rho=grf_tend_rho,
-        theta_v_now=theta_v_now,
-        grf_tend_thv=grf_tend_thv,
-        w_now=w_now,
-        grf_tend_w=grf_tend_w,
-        dtime=dtime,
+        rho_now,
+        grf_tend_rho,
+        theta_v_now,
+        grf_tend_thv,
+        w_now,
+        grf_tend_w,
+        dtime,
         out=(rho_new, exner_new, w_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -75,9 +75,9 @@ def stencils_61_62(
         },
     )
     _update_wind(
-        w_now=w_now,
-        grf_tend_w=grf_tend_w,
-        dtime=dtime,
+        w_now,
+        grf_tend_w,
+        dtime,
         out=w_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

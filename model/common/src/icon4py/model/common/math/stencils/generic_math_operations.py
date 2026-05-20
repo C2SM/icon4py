@@ -23,8 +23,8 @@ def compute_difference_on_cell_k(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_difference_on_cell_k(
-        field_a=field_a,
-        field_b=field_b,
+        field_a,
+        field_b,
         out=output_field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

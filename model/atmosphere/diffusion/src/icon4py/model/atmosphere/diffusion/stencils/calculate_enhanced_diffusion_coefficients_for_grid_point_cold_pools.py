@@ -26,10 +26,10 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     kh_smag_e: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
-        theta_v=theta_v,
-        theta_ref_mc=theta_ref_mc,
-        thresh_tdiff=thresh_tdiff,
-        smallest_vpfloat=smallest_vpfloat,
+        theta_v,
+        theta_ref_mc,
+        thresh_tdiff,
+        smallest_vpfloat,
     )
     kh_smag_e_vp = _enhance_diffusion_coefficient_for_grid_point_cold_pools(kh_smag_e, enh_diffu_3d)
     return kh_smag_e_vp

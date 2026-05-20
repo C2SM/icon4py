@@ -23,8 +23,8 @@ def compute_nabla2_on_cell_k(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_nabla2_on_cell_k(
-        psi_c=psi_c,
-        geofac_n2s=geofac_n2s,
+        psi_c,
+        geofac_n2s,
         out=nabla2_psi_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

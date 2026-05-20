@@ -92,13 +92,13 @@ def _compute_diagnostics_from_normal_wind(
     w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
     horizontal_advection_of_w_at_edges_on_half_levels = (
         _compute_horizontal_advection_term_for_vertical_velocity(
-            vn_ie=vn_on_half_levels,
-            inv_dual_edge_length=inv_dual_edge_length,
-            w=w,
-            z_vt_ie=tangential_wind_on_half_levels,
-            inv_primal_edge_length=inv_primal_edge_length,
-            tangent_orientation=tangent_orientation,
-            z_w_v=w_at_vertices,
+            vn_on_half_levels,
+            inv_dual_edge_length,
+            w,
+            tangential_wind_on_half_levels,
+            inv_primal_edge_length,
+            tangent_orientation,
+            w_at_vertices,
         )
         if not skip_compute_predictor_vertical_advection
         else horizontal_advection_of_w_at_edges_on_half_levels
@@ -212,8 +212,8 @@ def compute_diagnostics_from_normal_wind(
         },
     )
     _extrapolate_at_top(
-        wgtfacq_e=wgtfacq_e,
-        vn=vn,
+        wgtfacq_e,
+        vn,
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

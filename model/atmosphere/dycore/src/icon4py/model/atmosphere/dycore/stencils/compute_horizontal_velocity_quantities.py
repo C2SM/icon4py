@@ -206,8 +206,8 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     )
 
     _extrapolate_at_top(
-        wgtfacq_e=wgtfacq_e,
-        vn=vn,
+        wgtfacq_e,
+        vn,
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -252,11 +252,11 @@ def _compute_averaged_vn_and_fluxes(
             (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_flux_at_edges_on_model_levels)
             if at_first_substep
             else _accumulate_prep_adv_fields(
-                z_vn_avg=spatially_averaged_vn,
-                mass_fl_e=mass_flux_at_edges_on_model_levels,
-                vn_traj=substep_and_spatially_averaged_vn,
-                mass_flx_me=substep_averaged_mass_flux,
-                r_nsubsteps=r_nsubsteps,
+                spatially_averaged_vn,
+                mass_flux_at_edges_on_model_levels,
+                substep_and_spatially_averaged_vn,
+                substep_averaged_mass_flux,
+                r_nsubsteps,
             )
         )
 

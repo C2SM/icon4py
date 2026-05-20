@@ -65,13 +65,13 @@ def _compute_horizontal_advection_of_w(
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
         _compute_horizontal_advection_term_for_vertical_velocity(
-            vn_ie=vn_on_half_levels,
-            inv_dual_edge_length=inv_dual_edge_length,
-            w=w,
-            z_vt_ie=tangential_wind_on_half_levels,
-            inv_primal_edge_length=inv_primal_edge_length,
-            tangent_orientation=tangent_orientation,
-            z_w_v=w_at_vertices,
+            vn_on_half_levels,
+            inv_dual_edge_length,
+            w,
+            tangential_wind_on_half_levels,
+            inv_primal_edge_length,
+            tangent_orientation,
+            w_at_vertices,
         )
     )
 
@@ -219,25 +219,25 @@ def _compute_advective_vertical_wind_tendency(
     vertical_wind_advective_tendency = concat_where(
         1 <= dims.KDim,
         _add_interpolated_horizontal_advection_of_w(
-            e_bln_c_s=e_bln_c_s,
-            z_v_grad_w=horizontal_advection_of_w_at_edges_on_half_levels,
-            ddt_w_adv=vertical_wind_advective_tendency,
+            e_bln_c_s,
+            horizontal_advection_of_w_at_edges_on_half_levels,
+            vertical_wind_advective_tendency,
         ),
         vertical_wind_advective_tendency,
     )
 
     vertical_wind_advective_tendency = _add_extra_diffusion_for_w_con_approaching_cfl(
-        cfl_clipping=cfl_clipping,
-        owner_mask=owner_mask,
-        z_w_con_c=contravariant_corrected_w_at_cells_on_half_levels,
-        ddqz_z_half=ddqz_z_half,
-        area=area,
-        geofac_n2s=geofac_n2s,
-        w=w,
-        ddt_w_adv=vertical_wind_advective_tendency,
-        scalfac_exdiff=scalfac_exdiff,
-        cfl_w_limit=cfl_w_limit,
-        dtime=dtime,
+        cfl_clipping,
+        owner_mask,
+        contravariant_corrected_w_at_cells_on_half_levels,
+        ddqz_z_half,
+        area,
+        geofac_n2s,
+        w,
+        vertical_wind_advective_tendency,
+        scalfac_exdiff,
+        cfl_w_limit,
+        dtime,
     )
 
     return vertical_wind_advective_tendency
