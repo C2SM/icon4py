@@ -6,7 +6,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from icon4py_bindings import ffi
-from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -294,7 +294,7 @@ def diffusion_init_wrapper(
                 if logger.isEnabledFor(logging.DEBUG):
 
                     theta_ref_mc_arr = (
-                        _conversion.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, theta_ref_mc)
                         if theta_ref_mc is not None
                         else None
                     )
@@ -310,9 +310,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     wgtfac_c_arr = (
-                        _conversion.as_array(ffi, wgtfac_c, _definitions.FLOAT64)
-                        if wgtfac_c is not None
-                        else None
+                        _conversion.as_array(ffi, wgtfac_c) if wgtfac_c is not None else None
                     )
                     msg = "shape of wgtfac_c after computation = %s" % str(
                         wgtfac_c_arr.shape if wgtfac_c is not None else "None"
@@ -326,9 +324,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     e_bln_c_s_arr = (
-                        _conversion.as_array(ffi, e_bln_c_s, _definitions.FLOAT64)
-                        if e_bln_c_s is not None
-                        else None
+                        _conversion.as_array(ffi, e_bln_c_s) if e_bln_c_s is not None else None
                     )
                     msg = "shape of e_bln_c_s after computation = %s" % str(
                         e_bln_c_s_arr.shape if e_bln_c_s is not None else "None"
@@ -342,9 +338,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     geofac_div_arr = (
-                        _conversion.as_array(ffi, geofac_div, _definitions.FLOAT64)
-                        if geofac_div is not None
-                        else None
+                        _conversion.as_array(ffi, geofac_div) if geofac_div is not None else None
                     )
                     msg = "shape of geofac_div after computation = %s" % str(
                         geofac_div_arr.shape if geofac_div is not None else "None"
@@ -358,7 +352,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     geofac_grg_x_arr = (
-                        _conversion.as_array(ffi, geofac_grg_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, geofac_grg_x)
                         if geofac_grg_x is not None
                         else None
                     )
@@ -374,7 +368,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     geofac_grg_y_arr = (
-                        _conversion.as_array(ffi, geofac_grg_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, geofac_grg_y)
                         if geofac_grg_y is not None
                         else None
                     )
@@ -390,9 +384,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     geofac_n2s_arr = (
-                        _conversion.as_array(ffi, geofac_n2s, _definitions.FLOAT64)
-                        if geofac_n2s is not None
-                        else None
+                        _conversion.as_array(ffi, geofac_n2s) if geofac_n2s is not None else None
                     )
                     msg = "shape of geofac_n2s after computation = %s" % str(
                         geofac_n2s_arr.shape if geofac_n2s is not None else "None"
@@ -406,7 +398,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     nudgecoeff_e_arr = (
-                        _conversion.as_array(ffi, nudgecoeff_e, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, nudgecoeff_e)
                         if nudgecoeff_e is not None
                         else None
                     )
@@ -422,7 +414,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     rbf_vec_coeff_v_arr = (
-                        _conversion.as_array(ffi, rbf_vec_coeff_v, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, rbf_vec_coeff_v)
                         if rbf_vec_coeff_v is not None
                         else None
                     )
@@ -438,9 +430,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     zd_cellidx_arr = (
-                        _conversion.as_array(ffi, zd_cellidx, _definitions.INT32)
-                        if zd_cellidx is not None
-                        else None
+                        _conversion.as_array(ffi, zd_cellidx) if zd_cellidx is not None else None
                     )
                     msg = "shape of zd_cellidx after computation = %s" % str(
                         zd_cellidx_arr.shape if zd_cellidx is not None else "None"
@@ -454,9 +444,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     zd_vertidx_arr = (
-                        _conversion.as_array(ffi, zd_vertidx, _definitions.INT32)
-                        if zd_vertidx is not None
-                        else None
+                        _conversion.as_array(ffi, zd_vertidx) if zd_vertidx is not None else None
                     )
                     msg = "shape of zd_vertidx after computation = %s" % str(
                         zd_vertidx_arr.shape if zd_vertidx is not None else "None"
@@ -470,9 +458,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     zd_intcoef_arr = (
-                        _conversion.as_array(ffi, zd_intcoef, _definitions.FLOAT64)
-                        if zd_intcoef is not None
-                        else None
+                        _conversion.as_array(ffi, zd_intcoef) if zd_intcoef is not None else None
                     )
                     msg = "shape of zd_intcoef after computation = %s" % str(
                         zd_intcoef_arr.shape if zd_intcoef is not None else "None"
@@ -486,9 +472,7 @@ def diffusion_init_wrapper(
                     logger.debug(msg)
 
                     zd_diffcoef_arr = (
-                        _conversion.as_array(ffi, zd_diffcoef, _definitions.FLOAT64)
-                        if zd_diffcoef is not None
-                        else None
+                        _conversion.as_array(ffi, zd_diffcoef) if zd_diffcoef is not None else None
                     )
                     msg = "shape of zd_diffcoef after computation = %s" % str(
                         zd_diffcoef_arr.shape if zd_diffcoef is not None else "None"
@@ -691,11 +675,7 @@ def diffusion_run_wrapper(
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
 
-                    w_arr = (
-                        _conversion.as_array(ffi, w, _definitions.FLOAT64)
-                        if w is not None
-                        else None
-                    )
+                    w_arr = _conversion.as_array(ffi, w) if w is not None else None
                     msg = "shape of w after computation = %s" % str(
                         w_arr.shape if w is not None else "None"
                     )
@@ -703,11 +683,7 @@ def diffusion_run_wrapper(
                     msg = "w after computation: %s" % str(w_arr) if w is not None else "None"
                     logger.debug(msg)
 
-                    vn_arr = (
-                        _conversion.as_array(ffi, vn, _definitions.FLOAT64)
-                        if vn is not None
-                        else None
-                    )
+                    vn_arr = _conversion.as_array(ffi, vn) if vn is not None else None
                     msg = "shape of vn after computation = %s" % str(
                         vn_arr.shape if vn is not None else "None"
                     )
@@ -715,11 +691,7 @@ def diffusion_run_wrapper(
                     msg = "vn after computation: %s" % str(vn_arr) if vn is not None else "None"
                     logger.debug(msg)
 
-                    exner_arr = (
-                        _conversion.as_array(ffi, exner, _definitions.FLOAT64)
-                        if exner is not None
-                        else None
-                    )
+                    exner_arr = _conversion.as_array(ffi, exner) if exner is not None else None
                     msg = "shape of exner after computation = %s" % str(
                         exner_arr.shape if exner is not None else "None"
                     )
@@ -732,9 +704,7 @@ def diffusion_run_wrapper(
                     logger.debug(msg)
 
                     theta_v_arr = (
-                        _conversion.as_array(ffi, theta_v, _definitions.FLOAT64)
-                        if theta_v is not None
-                        else None
+                        _conversion.as_array(ffi, theta_v) if theta_v is not None else None
                     )
                     msg = "shape of theta_v after computation = %s" % str(
                         theta_v_arr.shape if theta_v is not None else "None"
@@ -747,11 +717,7 @@ def diffusion_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    rho_arr = (
-                        _conversion.as_array(ffi, rho, _definitions.FLOAT64)
-                        if rho is not None
-                        else None
-                    )
+                    rho_arr = _conversion.as_array(ffi, rho) if rho is not None else None
                     msg = "shape of rho after computation = %s" % str(
                         rho_arr.shape if rho is not None else "None"
                     )
@@ -760,9 +726,7 @@ def diffusion_run_wrapper(
                     logger.debug(msg)
 
                     hdef_ic_arr = (
-                        _conversion.as_array(ffi, hdef_ic, _definitions.FLOAT64)
-                        if hdef_ic is not None
-                        else None
+                        _conversion.as_array(ffi, hdef_ic) if hdef_ic is not None else None
                     )
                     msg = "shape of hdef_ic after computation = %s" % str(
                         hdef_ic_arr.shape if hdef_ic is not None else "None"
@@ -775,11 +739,7 @@ def diffusion_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    div_ic_arr = (
-                        _conversion.as_array(ffi, div_ic, _definitions.FLOAT64)
-                        if div_ic is not None
-                        else None
-                    )
+                    div_ic_arr = _conversion.as_array(ffi, div_ic) if div_ic is not None else None
                     msg = "shape of div_ic after computation = %s" % str(
                         div_ic_arr.shape if div_ic is not None else "None"
                     )
@@ -791,11 +751,7 @@ def diffusion_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    dwdx_arr = (
-                        _conversion.as_array(ffi, dwdx, _definitions.FLOAT64)
-                        if dwdx is not None
-                        else None
-                    )
+                    dwdx_arr = _conversion.as_array(ffi, dwdx) if dwdx is not None else None
                     msg = "shape of dwdx after computation = %s" % str(
                         dwdx_arr.shape if dwdx is not None else "None"
                     )
@@ -805,11 +761,7 @@ def diffusion_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    dwdy_arr = (
-                        _conversion.as_array(ffi, dwdy, _definitions.FLOAT64)
-                        if dwdy is not None
-                        else None
-                    )
+                    dwdy_arr = _conversion.as_array(ffi, dwdy) if dwdy is not None else None
                     msg = "shape of dwdy after computation = %s" % str(
                         dwdy_arr.shape if dwdy is not None else "None"
                     )
@@ -1294,9 +1246,7 @@ def grid_init_wrapper(
                 if logger.isEnabledFor(logging.DEBUG):
 
                     cell_starts_arr = (
-                        _conversion.as_array(ffi, cell_starts, _definitions.INT32)
-                        if cell_starts is not None
-                        else None
+                        _conversion.as_array(ffi, cell_starts) if cell_starts is not None else None
                     )
                     msg = "shape of cell_starts after computation = %s" % str(
                         cell_starts_arr.shape if cell_starts is not None else "None"
@@ -1310,9 +1260,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     cell_ends_arr = (
-                        _conversion.as_array(ffi, cell_ends, _definitions.INT32)
-                        if cell_ends is not None
-                        else None
+                        _conversion.as_array(ffi, cell_ends) if cell_ends is not None else None
                     )
                     msg = "shape of cell_ends after computation = %s" % str(
                         cell_ends_arr.shape if cell_ends is not None else "None"
@@ -1326,7 +1274,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     vertex_starts_arr = (
-                        _conversion.as_array(ffi, vertex_starts, _definitions.INT32)
+                        _conversion.as_array(ffi, vertex_starts)
                         if vertex_starts is not None
                         else None
                     )
@@ -1342,9 +1290,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     vertex_ends_arr = (
-                        _conversion.as_array(ffi, vertex_ends, _definitions.INT32)
-                        if vertex_ends is not None
-                        else None
+                        _conversion.as_array(ffi, vertex_ends) if vertex_ends is not None else None
                     )
                     msg = "shape of vertex_ends after computation = %s" % str(
                         vertex_ends_arr.shape if vertex_ends is not None else "None"
@@ -1358,9 +1304,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     edge_starts_arr = (
-                        _conversion.as_array(ffi, edge_starts, _definitions.INT32)
-                        if edge_starts is not None
-                        else None
+                        _conversion.as_array(ffi, edge_starts) if edge_starts is not None else None
                     )
                     msg = "shape of edge_starts after computation = %s" % str(
                         edge_starts_arr.shape if edge_starts is not None else "None"
@@ -1374,9 +1318,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     edge_ends_arr = (
-                        _conversion.as_array(ffi, edge_ends, _definitions.INT32)
-                        if edge_ends is not None
-                        else None
+                        _conversion.as_array(ffi, edge_ends) if edge_ends is not None else None
                     )
                     msg = "shape of edge_ends after computation = %s" % str(
                         edge_ends_arr.shape if edge_ends is not None else "None"
@@ -1389,11 +1331,7 @@ def grid_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    c2e_arr = (
-                        _conversion.as_array(ffi, c2e, _definitions.INT32)
-                        if c2e is not None
-                        else None
-                    )
+                    c2e_arr = _conversion.as_array(ffi, c2e) if c2e is not None else None
                     msg = "shape of c2e after computation = %s" % str(
                         c2e_arr.shape if c2e is not None else "None"
                     )
@@ -1401,11 +1339,7 @@ def grid_init_wrapper(
                     msg = "c2e after computation: %s" % str(c2e_arr) if c2e is not None else "None"
                     logger.debug(msg)
 
-                    e2c_arr = (
-                        _conversion.as_array(ffi, e2c, _definitions.INT32)
-                        if e2c is not None
-                        else None
-                    )
+                    e2c_arr = _conversion.as_array(ffi, e2c) if e2c is not None else None
                     msg = "shape of e2c after computation = %s" % str(
                         e2c_arr.shape if e2c is not None else "None"
                     )
@@ -1413,11 +1347,7 @@ def grid_init_wrapper(
                     msg = "e2c after computation: %s" % str(e2c_arr) if e2c is not None else "None"
                     logger.debug(msg)
 
-                    c2e2c_arr = (
-                        _conversion.as_array(ffi, c2e2c, _definitions.INT32)
-                        if c2e2c is not None
-                        else None
-                    )
+                    c2e2c_arr = _conversion.as_array(ffi, c2e2c) if c2e2c is not None else None
                     msg = "shape of c2e2c after computation = %s" % str(
                         c2e2c_arr.shape if c2e2c is not None else "None"
                     )
@@ -1429,11 +1359,7 @@ def grid_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    e2c2e_arr = (
-                        _conversion.as_array(ffi, e2c2e, _definitions.INT32)
-                        if e2c2e is not None
-                        else None
-                    )
+                    e2c2e_arr = _conversion.as_array(ffi, e2c2e) if e2c2e is not None else None
                     msg = "shape of e2c2e after computation = %s" % str(
                         e2c2e_arr.shape if e2c2e is not None else "None"
                     )
@@ -1445,11 +1371,7 @@ def grid_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    e2v_arr = (
-                        _conversion.as_array(ffi, e2v, _definitions.INT32)
-                        if e2v is not None
-                        else None
-                    )
+                    e2v_arr = _conversion.as_array(ffi, e2v) if e2v is not None else None
                     msg = "shape of e2v after computation = %s" % str(
                         e2v_arr.shape if e2v is not None else "None"
                     )
@@ -1457,11 +1379,7 @@ def grid_init_wrapper(
                     msg = "e2v after computation: %s" % str(e2v_arr) if e2v is not None else "None"
                     logger.debug(msg)
 
-                    v2e_arr = (
-                        _conversion.as_array(ffi, v2e, _definitions.INT32)
-                        if v2e is not None
-                        else None
-                    )
+                    v2e_arr = _conversion.as_array(ffi, v2e) if v2e is not None else None
                     msg = "shape of v2e after computation = %s" % str(
                         v2e_arr.shape if v2e is not None else "None"
                     )
@@ -1469,11 +1387,7 @@ def grid_init_wrapper(
                     msg = "v2e after computation: %s" % str(v2e_arr) if v2e is not None else "None"
                     logger.debug(msg)
 
-                    v2c_arr = (
-                        _conversion.as_array(ffi, v2c, _definitions.INT32)
-                        if v2c is not None
-                        else None
-                    )
+                    v2c_arr = _conversion.as_array(ffi, v2c) if v2c is not None else None
                     msg = "shape of v2c after computation = %s" % str(
                         v2c_arr.shape if v2c is not None else "None"
                     )
@@ -1481,11 +1395,7 @@ def grid_init_wrapper(
                     msg = "v2c after computation: %s" % str(v2c_arr) if v2c is not None else "None"
                     logger.debug(msg)
 
-                    e2c2v_arr = (
-                        _conversion.as_array(ffi, e2c2v, _definitions.INT32)
-                        if e2c2v is not None
-                        else None
-                    )
+                    e2c2v_arr = _conversion.as_array(ffi, e2c2v) if e2c2v is not None else None
                     msg = "shape of e2c2v after computation = %s" % str(
                         e2c2v_arr.shape if e2c2v is not None else "None"
                     )
@@ -1497,11 +1407,7 @@ def grid_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    c2v_arr = (
-                        _conversion.as_array(ffi, c2v, _definitions.INT32)
-                        if c2v is not None
-                        else None
-                    )
+                    c2v_arr = _conversion.as_array(ffi, c2v) if c2v is not None else None
                     msg = "shape of c2v after computation = %s" % str(
                         c2v_arr.shape if c2v is not None else "None"
                     )
@@ -1510,7 +1416,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     c_owner_mask_arr = (
-                        _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                        _conversion.as_array(ffi, c_owner_mask)
                         if c_owner_mask is not None
                         else None
                     )
@@ -1526,7 +1432,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     e_owner_mask_arr = (
-                        _conversion.as_array(ffi, e_owner_mask, _definitions.BOOL)
+                        _conversion.as_array(ffi, e_owner_mask)
                         if e_owner_mask is not None
                         else None
                     )
@@ -1542,7 +1448,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     v_owner_mask_arr = (
-                        _conversion.as_array(ffi, v_owner_mask, _definitions.BOOL)
+                        _conversion.as_array(ffi, v_owner_mask)
                         if v_owner_mask is not None
                         else None
                     )
@@ -1558,9 +1464,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     c_glb_index_arr = (
-                        _conversion.as_array(ffi, c_glb_index, _definitions.INT32)
-                        if c_glb_index is not None
-                        else None
+                        _conversion.as_array(ffi, c_glb_index) if c_glb_index is not None else None
                     )
                     msg = "shape of c_glb_index after computation = %s" % str(
                         c_glb_index_arr.shape if c_glb_index is not None else "None"
@@ -1574,9 +1478,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     e_glb_index_arr = (
-                        _conversion.as_array(ffi, e_glb_index, _definitions.INT32)
-                        if e_glb_index is not None
-                        else None
+                        _conversion.as_array(ffi, e_glb_index) if e_glb_index is not None else None
                     )
                     msg = "shape of e_glb_index after computation = %s" % str(
                         e_glb_index_arr.shape if e_glb_index is not None else "None"
@@ -1590,9 +1492,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     v_glb_index_arr = (
-                        _conversion.as_array(ffi, v_glb_index, _definitions.INT32)
-                        if v_glb_index is not None
-                        else None
+                        _conversion.as_array(ffi, v_glb_index) if v_glb_index is not None else None
                     )
                     msg = "shape of v_glb_index after computation = %s" % str(
                         v_glb_index_arr.shape if v_glb_index is not None else "None"
@@ -1606,7 +1506,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     tangent_orientation_arr = (
-                        _conversion.as_array(ffi, tangent_orientation, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, tangent_orientation)
                         if tangent_orientation is not None
                         else None
                     )
@@ -1622,7 +1522,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     inverse_primal_edge_lengths_arr = (
-                        _conversion.as_array(ffi, inverse_primal_edge_lengths, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, inverse_primal_edge_lengths)
                         if inverse_primal_edge_lengths is not None
                         else None
                     )
@@ -1641,7 +1541,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     inv_dual_edge_length_arr = (
-                        _conversion.as_array(ffi, inv_dual_edge_length, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, inv_dual_edge_length)
                         if inv_dual_edge_length is not None
                         else None
                     )
@@ -1659,7 +1559,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     inv_vert_vert_length_arr = (
-                        _conversion.as_array(ffi, inv_vert_vert_length, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, inv_vert_vert_length)
                         if inv_vert_vert_length is not None
                         else None
                     )
@@ -1677,9 +1577,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     edge_areas_arr = (
-                        _conversion.as_array(ffi, edge_areas, _definitions.FLOAT64)
-                        if edge_areas is not None
-                        else None
+                        _conversion.as_array(ffi, edge_areas) if edge_areas is not None else None
                     )
                     msg = "shape of edge_areas after computation = %s" % str(
                         edge_areas_arr.shape if edge_areas is not None else "None"
@@ -1692,11 +1590,7 @@ def grid_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    f_e_arr = (
-                        _conversion.as_array(ffi, f_e, _definitions.FLOAT64)
-                        if f_e is not None
-                        else None
-                    )
+                    f_e_arr = _conversion.as_array(ffi, f_e) if f_e is not None else None
                     msg = "shape of f_e after computation = %s" % str(
                         f_e_arr.shape if f_e is not None else "None"
                     )
@@ -1705,7 +1599,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     cell_center_lat_arr = (
-                        _conversion.as_array(ffi, cell_center_lat, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, cell_center_lat)
                         if cell_center_lat is not None
                         else None
                     )
@@ -1721,7 +1615,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     cell_center_lon_arr = (
-                        _conversion.as_array(ffi, cell_center_lon, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, cell_center_lon)
                         if cell_center_lon is not None
                         else None
                     )
@@ -1737,9 +1631,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     cell_areas_arr = (
-                        _conversion.as_array(ffi, cell_areas, _definitions.FLOAT64)
-                        if cell_areas is not None
-                        else None
+                        _conversion.as_array(ffi, cell_areas) if cell_areas is not None else None
                     )
                     msg = "shape of cell_areas after computation = %s" % str(
                         cell_areas_arr.shape if cell_areas is not None else "None"
@@ -1753,7 +1645,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     primal_normal_vert_x_arr = (
-                        _conversion.as_array(ffi, primal_normal_vert_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, primal_normal_vert_x)
                         if primal_normal_vert_x is not None
                         else None
                     )
@@ -1771,7 +1663,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     primal_normal_vert_y_arr = (
-                        _conversion.as_array(ffi, primal_normal_vert_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, primal_normal_vert_y)
                         if primal_normal_vert_y is not None
                         else None
                     )
@@ -1789,7 +1681,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     dual_normal_vert_x_arr = (
-                        _conversion.as_array(ffi, dual_normal_vert_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, dual_normal_vert_x)
                         if dual_normal_vert_x is not None
                         else None
                     )
@@ -1805,7 +1697,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     dual_normal_vert_y_arr = (
-                        _conversion.as_array(ffi, dual_normal_vert_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, dual_normal_vert_y)
                         if dual_normal_vert_y is not None
                         else None
                     )
@@ -1821,7 +1713,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     primal_normal_cell_x_arr = (
-                        _conversion.as_array(ffi, primal_normal_cell_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, primal_normal_cell_x)
                         if primal_normal_cell_x is not None
                         else None
                     )
@@ -1839,7 +1731,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     primal_normal_cell_y_arr = (
-                        _conversion.as_array(ffi, primal_normal_cell_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, primal_normal_cell_y)
                         if primal_normal_cell_y is not None
                         else None
                     )
@@ -1857,7 +1749,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     dual_normal_cell_x_arr = (
-                        _conversion.as_array(ffi, dual_normal_cell_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, dual_normal_cell_x)
                         if dual_normal_cell_x is not None
                         else None
                     )
@@ -1873,7 +1765,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     dual_normal_cell_y_arr = (
-                        _conversion.as_array(ffi, dual_normal_cell_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, dual_normal_cell_y)
                         if dual_normal_cell_y is not None
                         else None
                     )
@@ -1889,7 +1781,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     edge_center_lat_arr = (
-                        _conversion.as_array(ffi, edge_center_lat, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, edge_center_lat)
                         if edge_center_lat is not None
                         else None
                     )
@@ -1905,7 +1797,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     edge_center_lon_arr = (
-                        _conversion.as_array(ffi, edge_center_lon, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, edge_center_lon)
                         if edge_center_lon is not None
                         else None
                     )
@@ -1921,7 +1813,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     primal_normal_x_arr = (
-                        _conversion.as_array(ffi, primal_normal_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, primal_normal_x)
                         if primal_normal_x is not None
                         else None
                     )
@@ -1937,7 +1829,7 @@ def grid_init_wrapper(
                     logger.debug(msg)
 
                     primal_normal_y_arr = (
-                        _conversion.as_array(ffi, primal_normal_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, primal_normal_y)
                         if primal_normal_y is not None
                         else None
                     )
@@ -1952,11 +1844,7 @@ def grid_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    vct_a_arr = (
-                        _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
-                        if vct_a is not None
-                        else None
-                    )
+                    vct_a_arr = _conversion.as_array(ffi, vct_a) if vct_a is not None else None
                     msg = "shape of vct_a after computation = %s" % str(
                         vct_a_arr.shape if vct_a is not None else "None"
                     )
@@ -2668,9 +2556,7 @@ def solve_nh_init_wrapper(
                 if logger.isEnabledFor(logging.DEBUG):
 
                     c_lin_e_arr = (
-                        _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)
-                        if c_lin_e is not None
-                        else None
+                        _conversion.as_array(ffi, c_lin_e) if c_lin_e is not None else None
                     )
                     msg = "shape of c_lin_e after computation = %s" % str(
                         c_lin_e_arr.shape if c_lin_e is not None else "None"
@@ -2683,11 +2569,7 @@ def solve_nh_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    c_intp_arr = (
-                        _conversion.as_array(ffi, c_intp, _definitions.FLOAT64)
-                        if c_intp is not None
-                        else None
-                    )
+                    c_intp_arr = _conversion.as_array(ffi, c_intp) if c_intp is not None else None
                     msg = "shape of c_intp after computation = %s" % str(
                         c_intp_arr.shape if c_intp is not None else "None"
                     )
@@ -2700,9 +2582,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     e_flx_avg_arr = (
-                        _conversion.as_array(ffi, e_flx_avg, _definitions.FLOAT64)
-                        if e_flx_avg is not None
-                        else None
+                        _conversion.as_array(ffi, e_flx_avg) if e_flx_avg is not None else None
                     )
                     msg = "shape of e_flx_avg after computation = %s" % str(
                         e_flx_avg_arr.shape if e_flx_avg is not None else "None"
@@ -2716,7 +2596,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     geofac_grdiv_arr = (
-                        _conversion.as_array(ffi, geofac_grdiv, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, geofac_grdiv)
                         if geofac_grdiv is not None
                         else None
                     )
@@ -2732,9 +2612,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     geofac_rot_arr = (
-                        _conversion.as_array(ffi, geofac_rot, _definitions.FLOAT64)
-                        if geofac_rot is not None
-                        else None
+                        _conversion.as_array(ffi, geofac_rot) if geofac_rot is not None else None
                     )
                     msg = "shape of geofac_rot after computation = %s" % str(
                         geofac_rot_arr.shape if geofac_rot is not None else "None"
@@ -2748,7 +2626,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     pos_on_tplane_e_1_arr = (
-                        _conversion.as_array(ffi, pos_on_tplane_e_1, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, pos_on_tplane_e_1)
                         if pos_on_tplane_e_1 is not None
                         else None
                     )
@@ -2764,7 +2642,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     pos_on_tplane_e_2_arr = (
-                        _conversion.as_array(ffi, pos_on_tplane_e_2, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, pos_on_tplane_e_2)
                         if pos_on_tplane_e_2 is not None
                         else None
                     )
@@ -2780,7 +2658,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     rbf_vec_coeff_e_arr = (
-                        _conversion.as_array(ffi, rbf_vec_coeff_e, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, rbf_vec_coeff_e)
                         if rbf_vec_coeff_e is not None
                         else None
                     )
@@ -2796,9 +2674,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     e_bln_c_s_arr = (
-                        _conversion.as_array(ffi, e_bln_c_s, _definitions.FLOAT64)
-                        if e_bln_c_s is not None
-                        else None
+                        _conversion.as_array(ffi, e_bln_c_s) if e_bln_c_s is not None else None
                     )
                     msg = "shape of e_bln_c_s after computation = %s" % str(
                         e_bln_c_s_arr.shape if e_bln_c_s is not None else "None"
@@ -2812,7 +2688,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     rbf_vec_coeff_v_arr = (
-                        _conversion.as_array(ffi, rbf_vec_coeff_v, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, rbf_vec_coeff_v)
                         if rbf_vec_coeff_v is not None
                         else None
                     )
@@ -2828,9 +2704,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     geofac_div_arr = (
-                        _conversion.as_array(ffi, geofac_div, _definitions.FLOAT64)
-                        if geofac_div is not None
-                        else None
+                        _conversion.as_array(ffi, geofac_div) if geofac_div is not None else None
                     )
                     msg = "shape of geofac_div after computation = %s" % str(
                         geofac_div_arr.shape if geofac_div is not None else "None"
@@ -2844,9 +2718,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     geofac_n2s_arr = (
-                        _conversion.as_array(ffi, geofac_n2s, _definitions.FLOAT64)
-                        if geofac_n2s is not None
-                        else None
+                        _conversion.as_array(ffi, geofac_n2s) if geofac_n2s is not None else None
                     )
                     msg = "shape of geofac_n2s after computation = %s" % str(
                         geofac_n2s_arr.shape if geofac_n2s is not None else "None"
@@ -2860,7 +2732,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     geofac_grg_x_arr = (
-                        _conversion.as_array(ffi, geofac_grg_x, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, geofac_grg_x)
                         if geofac_grg_x is not None
                         else None
                     )
@@ -2876,7 +2748,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     geofac_grg_y_arr = (
-                        _conversion.as_array(ffi, geofac_grg_y, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, geofac_grg_y)
                         if geofac_grg_y is not None
                         else None
                     )
@@ -2892,7 +2764,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     nudgecoeff_e_arr = (
-                        _conversion.as_array(ffi, nudgecoeff_e, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, nudgecoeff_e)
                         if nudgecoeff_e is not None
                         else None
                     )
@@ -2908,7 +2780,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     mask_prog_halo_c_arr = (
-                        _conversion.as_array(ffi, mask_prog_halo_c, _definitions.BOOL)
+                        _conversion.as_array(ffi, mask_prog_halo_c)
                         if mask_prog_halo_c is not None
                         else None
                     )
@@ -2924,9 +2796,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     rayleigh_w_arr = (
-                        _conversion.as_array(ffi, rayleigh_w, _definitions.FLOAT64)
-                        if rayleigh_w is not None
-                        else None
+                        _conversion.as_array(ffi, rayleigh_w) if rayleigh_w is not None else None
                     )
                     msg = "shape of rayleigh_w after computation = %s" % str(
                         rayleigh_w_arr.shape if rayleigh_w is not None else "None"
@@ -2940,9 +2810,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     exner_exfac_arr = (
-                        _conversion.as_array(ffi, exner_exfac, _definitions.FLOAT64)
-                        if exner_exfac is not None
-                        else None
+                        _conversion.as_array(ffi, exner_exfac) if exner_exfac is not None else None
                     )
                     msg = "shape of exner_exfac after computation = %s" % str(
                         exner_exfac_arr.shape if exner_exfac is not None else "None"
@@ -2956,7 +2824,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     exner_ref_mc_arr = (
-                        _conversion.as_array(ffi, exner_ref_mc, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, exner_ref_mc)
                         if exner_ref_mc is not None
                         else None
                     )
@@ -2972,9 +2840,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     wgtfac_c_arr = (
-                        _conversion.as_array(ffi, wgtfac_c, _definitions.FLOAT64)
-                        if wgtfac_c is not None
-                        else None
+                        _conversion.as_array(ffi, wgtfac_c) if wgtfac_c is not None else None
                     )
                     msg = "shape of wgtfac_c after computation = %s" % str(
                         wgtfac_c_arr.shape if wgtfac_c is not None else "None"
@@ -2988,9 +2854,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     wgtfacq_c_arr = (
-                        _conversion.as_array(ffi, wgtfacq_c, _definitions.FLOAT64)
-                        if wgtfacq_c is not None
-                        else None
+                        _conversion.as_array(ffi, wgtfacq_c) if wgtfacq_c is not None else None
                     )
                     msg = "shape of wgtfacq_c after computation = %s" % str(
                         wgtfacq_c_arr.shape if wgtfacq_c is not None else "None"
@@ -3004,7 +2868,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     inv_ddqz_z_full_arr = (
-                        _conversion.as_array(ffi, inv_ddqz_z_full, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, inv_ddqz_z_full)
                         if inv_ddqz_z_full is not None
                         else None
                     )
@@ -3020,9 +2884,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     rho_ref_mc_arr = (
-                        _conversion.as_array(ffi, rho_ref_mc, _definitions.FLOAT64)
-                        if rho_ref_mc is not None
-                        else None
+                        _conversion.as_array(ffi, rho_ref_mc) if rho_ref_mc is not None else None
                     )
                     msg = "shape of rho_ref_mc after computation = %s" % str(
                         rho_ref_mc_arr.shape if rho_ref_mc is not None else "None"
@@ -3036,7 +2898,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     theta_ref_mc_arr = (
-                        _conversion.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, theta_ref_mc)
                         if theta_ref_mc is not None
                         else None
                     )
@@ -3052,7 +2914,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     vwind_expl_wgt_arr = (
-                        _conversion.as_array(ffi, vwind_expl_wgt, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, vwind_expl_wgt)
                         if vwind_expl_wgt is not None
                         else None
                     )
@@ -3068,7 +2930,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     d_exner_dz_ref_ic_arr = (
-                        _conversion.as_array(ffi, d_exner_dz_ref_ic, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, d_exner_dz_ref_ic)
                         if d_exner_dz_ref_ic is not None
                         else None
                     )
@@ -3084,9 +2946,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     ddqz_z_half_arr = (
-                        _conversion.as_array(ffi, ddqz_z_half, _definitions.FLOAT64)
-                        if ddqz_z_half is not None
-                        else None
+                        _conversion.as_array(ffi, ddqz_z_half) if ddqz_z_half is not None else None
                     )
                     msg = "shape of ddqz_z_half after computation = %s" % str(
                         ddqz_z_half_arr.shape if ddqz_z_half is not None else "None"
@@ -3100,7 +2960,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     theta_ref_ic_arr = (
-                        _conversion.as_array(ffi, theta_ref_ic, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, theta_ref_ic)
                         if theta_ref_ic is not None
                         else None
                     )
@@ -3116,7 +2976,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     d2dexdz2_fac1_mc_arr = (
-                        _conversion.as_array(ffi, d2dexdz2_fac1_mc, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, d2dexdz2_fac1_mc)
                         if d2dexdz2_fac1_mc is not None
                         else None
                     )
@@ -3132,7 +2992,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     d2dexdz2_fac2_mc_arr = (
-                        _conversion.as_array(ffi, d2dexdz2_fac2_mc, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, d2dexdz2_fac2_mc)
                         if d2dexdz2_fac2_mc is not None
                         else None
                     )
@@ -3148,9 +3008,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     rho_ref_me_arr = (
-                        _conversion.as_array(ffi, rho_ref_me, _definitions.FLOAT64)
-                        if rho_ref_me is not None
-                        else None
+                        _conversion.as_array(ffi, rho_ref_me) if rho_ref_me is not None else None
                     )
                     msg = "shape of rho_ref_me after computation = %s" % str(
                         rho_ref_me_arr.shape if rho_ref_me is not None else "None"
@@ -3164,7 +3022,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     theta_ref_me_arr = (
-                        _conversion.as_array(ffi, theta_ref_me, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, theta_ref_me)
                         if theta_ref_me is not None
                         else None
                     )
@@ -3180,9 +3038,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     ddxn_z_full_arr = (
-                        _conversion.as_array(ffi, ddxn_z_full, _definitions.FLOAT64)
-                        if ddxn_z_full is not None
-                        else None
+                        _conversion.as_array(ffi, ddxn_z_full) if ddxn_z_full is not None else None
                     )
                     msg = "shape of ddxn_z_full after computation = %s" % str(
                         ddxn_z_full_arr.shape if ddxn_z_full is not None else "None"
@@ -3196,9 +3052,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     zdiff_gradp_arr = (
-                        _conversion.as_array(ffi, zdiff_gradp, _definitions.FLOAT64)
-                        if zdiff_gradp is not None
-                        else None
+                        _conversion.as_array(ffi, zdiff_gradp) if zdiff_gradp is not None else None
                     )
                     msg = "shape of zdiff_gradp after computation = %s" % str(
                         zdiff_gradp_arr.shape if zdiff_gradp is not None else "None"
@@ -3212,7 +3066,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     vertidx_gradp_arr = (
-                        _conversion.as_array(ffi, vertidx_gradp, _definitions.INT32)
+                        _conversion.as_array(ffi, vertidx_gradp)
                         if vertidx_gradp is not None
                         else None
                     )
@@ -3228,9 +3082,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     pg_edgeidx_arr = (
-                        _conversion.as_array(ffi, pg_edgeidx, _definitions.INT32)
-                        if pg_edgeidx is not None
-                        else None
+                        _conversion.as_array(ffi, pg_edgeidx) if pg_edgeidx is not None else None
                     )
                     msg = "shape of pg_edgeidx after computation = %s" % str(
                         pg_edgeidx_arr.shape if pg_edgeidx is not None else "None"
@@ -3244,9 +3096,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     pg_vertidx_arr = (
-                        _conversion.as_array(ffi, pg_vertidx, _definitions.INT32)
-                        if pg_vertidx is not None
-                        else None
+                        _conversion.as_array(ffi, pg_vertidx) if pg_vertidx is not None else None
                     )
                     msg = "shape of pg_vertidx after computation = %s" % str(
                         pg_vertidx_arr.shape if pg_vertidx is not None else "None"
@@ -3260,9 +3110,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     pg_exdist_arr = (
-                        _conversion.as_array(ffi, pg_exdist, _definitions.FLOAT64)
-                        if pg_exdist is not None
-                        else None
+                        _conversion.as_array(ffi, pg_exdist) if pg_exdist is not None else None
                     )
                     msg = "shape of pg_exdist after computation = %s" % str(
                         pg_exdist_arr.shape if pg_exdist is not None else "None"
@@ -3276,7 +3124,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     ddqz_z_full_e_arr = (
-                        _conversion.as_array(ffi, ddqz_z_full_e, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, ddqz_z_full_e)
                         if ddqz_z_full_e is not None
                         else None
                     )
@@ -3292,9 +3140,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     ddxt_z_full_arr = (
-                        _conversion.as_array(ffi, ddxt_z_full, _definitions.FLOAT64)
-                        if ddxt_z_full is not None
-                        else None
+                        _conversion.as_array(ffi, ddxt_z_full) if ddxt_z_full is not None else None
                     )
                     msg = "shape of ddxt_z_full after computation = %s" % str(
                         ddxt_z_full_arr.shape if ddxt_z_full is not None else "None"
@@ -3308,9 +3154,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     wgtfac_e_arr = (
-                        _conversion.as_array(ffi, wgtfac_e, _definitions.FLOAT64)
-                        if wgtfac_e is not None
-                        else None
+                        _conversion.as_array(ffi, wgtfac_e) if wgtfac_e is not None else None
                     )
                     msg = "shape of wgtfac_e after computation = %s" % str(
                         wgtfac_e_arr.shape if wgtfac_e is not None else "None"
@@ -3324,9 +3168,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     wgtfacq_e_arr = (
-                        _conversion.as_array(ffi, wgtfacq_e, _definitions.FLOAT64)
-                        if wgtfacq_e is not None
-                        else None
+                        _conversion.as_array(ffi, wgtfacq_e) if wgtfacq_e is not None else None
                     )
                     msg = "shape of wgtfacq_e after computation = %s" % str(
                         wgtfacq_e_arr.shape if wgtfacq_e is not None else "None"
@@ -3340,7 +3182,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     vwind_impl_wgt_arr = (
-                        _conversion.as_array(ffi, vwind_impl_wgt, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, vwind_impl_wgt)
                         if vwind_impl_wgt is not None
                         else None
                     )
@@ -3356,9 +3198,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     hmask_dd3d_arr = (
-                        _conversion.as_array(ffi, hmask_dd3d, _definitions.FLOAT64)
-                        if hmask_dd3d is not None
-                        else None
+                        _conversion.as_array(ffi, hmask_dd3d) if hmask_dd3d is not None else None
                     )
                     msg = "shape of hmask_dd3d after computation = %s" % str(
                         hmask_dd3d_arr.shape if hmask_dd3d is not None else "None"
@@ -3372,7 +3212,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     scalfac_dd3d_arr = (
-                        _conversion.as_array(ffi, scalfac_dd3d, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, scalfac_dd3d)
                         if scalfac_dd3d is not None
                         else None
                     )
@@ -3388,9 +3228,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     coeff1_dwdz_arr = (
-                        _conversion.as_array(ffi, coeff1_dwdz, _definitions.FLOAT64)
-                        if coeff1_dwdz is not None
-                        else None
+                        _conversion.as_array(ffi, coeff1_dwdz) if coeff1_dwdz is not None else None
                     )
                     msg = "shape of coeff1_dwdz after computation = %s" % str(
                         coeff1_dwdz_arr.shape if coeff1_dwdz is not None else "None"
@@ -3404,9 +3242,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     coeff2_dwdz_arr = (
-                        _conversion.as_array(ffi, coeff2_dwdz, _definitions.FLOAT64)
-                        if coeff2_dwdz is not None
-                        else None
+                        _conversion.as_array(ffi, coeff2_dwdz) if coeff2_dwdz is not None else None
                     )
                     msg = "shape of coeff2_dwdz after computation = %s" % str(
                         coeff2_dwdz_arr.shape if coeff2_dwdz is not None else "None"
@@ -3420,7 +3256,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     coeff_gradekin_arr = (
-                        _conversion.as_array(ffi, coeff_gradekin, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, coeff_gradekin)
                         if coeff_gradekin is not None
                         else None
                     )
@@ -3436,7 +3272,7 @@ def solve_nh_init_wrapper(
                     logger.debug(msg)
 
                     c_owner_mask_arr = (
-                        _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                        _conversion.as_array(ffi, c_owner_mask)
                         if c_owner_mask is not None
                         else None
                     )
@@ -4028,9 +3864,7 @@ def solve_nh_run_wrapper(
                 if logger.isEnabledFor(logging.DEBUG):
 
                     rho_now_arr = (
-                        _conversion.as_array(ffi, rho_now, _definitions.FLOAT64)
-                        if rho_now is not None
-                        else None
+                        _conversion.as_array(ffi, rho_now) if rho_now is not None else None
                     )
                     msg = "shape of rho_now after computation = %s" % str(
                         rho_now_arr.shape if rho_now is not None else "None"
@@ -4044,9 +3878,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     rho_new_arr = (
-                        _conversion.as_array(ffi, rho_new, _definitions.FLOAT64)
-                        if rho_new is not None
-                        else None
+                        _conversion.as_array(ffi, rho_new) if rho_new is not None else None
                     )
                     msg = "shape of rho_new after computation = %s" % str(
                         rho_new_arr.shape if rho_new is not None else "None"
@@ -4060,9 +3892,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     exner_now_arr = (
-                        _conversion.as_array(ffi, exner_now, _definitions.FLOAT64)
-                        if exner_now is not None
-                        else None
+                        _conversion.as_array(ffi, exner_now) if exner_now is not None else None
                     )
                     msg = "shape of exner_now after computation = %s" % str(
                         exner_now_arr.shape if exner_now is not None else "None"
@@ -4076,9 +3906,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     exner_new_arr = (
-                        _conversion.as_array(ffi, exner_new, _definitions.FLOAT64)
-                        if exner_new is not None
-                        else None
+                        _conversion.as_array(ffi, exner_new) if exner_new is not None else None
                     )
                     msg = "shape of exner_new after computation = %s" % str(
                         exner_new_arr.shape if exner_new is not None else "None"
@@ -4091,11 +3919,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    w_now_arr = (
-                        _conversion.as_array(ffi, w_now, _definitions.FLOAT64)
-                        if w_now is not None
-                        else None
-                    )
+                    w_now_arr = _conversion.as_array(ffi, w_now) if w_now is not None else None
                     msg = "shape of w_now after computation = %s" % str(
                         w_now_arr.shape if w_now is not None else "None"
                     )
@@ -4107,11 +3931,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    w_new_arr = (
-                        _conversion.as_array(ffi, w_new, _definitions.FLOAT64)
-                        if w_new is not None
-                        else None
-                    )
+                    w_new_arr = _conversion.as_array(ffi, w_new) if w_new is not None else None
                     msg = "shape of w_new after computation = %s" % str(
                         w_new_arr.shape if w_new is not None else "None"
                     )
@@ -4124,9 +3944,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     theta_v_now_arr = (
-                        _conversion.as_array(ffi, theta_v_now, _definitions.FLOAT64)
-                        if theta_v_now is not None
-                        else None
+                        _conversion.as_array(ffi, theta_v_now) if theta_v_now is not None else None
                     )
                     msg = "shape of theta_v_now after computation = %s" % str(
                         theta_v_now_arr.shape if theta_v_now is not None else "None"
@@ -4140,9 +3958,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     theta_v_new_arr = (
-                        _conversion.as_array(ffi, theta_v_new, _definitions.FLOAT64)
-                        if theta_v_new is not None
-                        else None
+                        _conversion.as_array(ffi, theta_v_new) if theta_v_new is not None else None
                     )
                     msg = "shape of theta_v_new after computation = %s" % str(
                         theta_v_new_arr.shape if theta_v_new is not None else "None"
@@ -4155,11 +3971,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    vn_now_arr = (
-                        _conversion.as_array(ffi, vn_now, _definitions.FLOAT64)
-                        if vn_now is not None
-                        else None
-                    )
+                    vn_now_arr = _conversion.as_array(ffi, vn_now) if vn_now is not None else None
                     msg = "shape of vn_now after computation = %s" % str(
                         vn_now_arr.shape if vn_now is not None else "None"
                     )
@@ -4171,11 +3983,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    vn_new_arr = (
-                        _conversion.as_array(ffi, vn_new, _definitions.FLOAT64)
-                        if vn_new is not None
-                        else None
-                    )
+                    vn_new_arr = _conversion.as_array(ffi, vn_new) if vn_new is not None else None
                     msg = "shape of vn_new after computation = %s" % str(
                         vn_new_arr.shape if vn_new is not None else "None"
                     )
@@ -4188,9 +3996,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     w_concorr_c_arr = (
-                        _conversion.as_array(ffi, w_concorr_c, _definitions.FLOAT64)
-                        if w_concorr_c is not None
-                        else None
+                        _conversion.as_array(ffi, w_concorr_c) if w_concorr_c is not None else None
                     )
                     msg = "shape of w_concorr_c after computation = %s" % str(
                         w_concorr_c_arr.shape if w_concorr_c is not None else "None"
@@ -4204,7 +4010,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     ddt_vn_apc_ntl1_arr = (
-                        _conversion.as_array(ffi, ddt_vn_apc_ntl1, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, ddt_vn_apc_ntl1)
                         if ddt_vn_apc_ntl1 is not None
                         else None
                     )
@@ -4220,7 +4026,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     ddt_vn_apc_ntl2_arr = (
-                        _conversion.as_array(ffi, ddt_vn_apc_ntl2, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, ddt_vn_apc_ntl2)
                         if ddt_vn_apc_ntl2 is not None
                         else None
                     )
@@ -4236,7 +4042,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     ddt_w_adv_ntl1_arr = (
-                        _conversion.as_array(ffi, ddt_w_adv_ntl1, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, ddt_w_adv_ntl1)
                         if ddt_w_adv_ntl1 is not None
                         else None
                     )
@@ -4252,7 +4058,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     ddt_w_adv_ntl2_arr = (
-                        _conversion.as_array(ffi, ddt_w_adv_ntl2, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, ddt_w_adv_ntl2)
                         if ddt_w_adv_ntl2 is not None
                         else None
                     )
@@ -4268,9 +4074,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     theta_v_ic_arr = (
-                        _conversion.as_array(ffi, theta_v_ic, _definitions.FLOAT64)
-                        if theta_v_ic is not None
-                        else None
+                        _conversion.as_array(ffi, theta_v_ic) if theta_v_ic is not None else None
                     )
                     msg = "shape of theta_v_ic after computation = %s" % str(
                         theta_v_ic_arr.shape if theta_v_ic is not None else "None"
@@ -4283,11 +4087,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    rho_ic_arr = (
-                        _conversion.as_array(ffi, rho_ic, _definitions.FLOAT64)
-                        if rho_ic is not None
-                        else None
-                    )
+                    rho_ic_arr = _conversion.as_array(ffi, rho_ic) if rho_ic is not None else None
                     msg = "shape of rho_ic after computation = %s" % str(
                         rho_ic_arr.shape if rho_ic is not None else "None"
                     )
@@ -4300,9 +4100,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     exner_pr_arr = (
-                        _conversion.as_array(ffi, exner_pr, _definitions.FLOAT64)
-                        if exner_pr is not None
-                        else None
+                        _conversion.as_array(ffi, exner_pr) if exner_pr is not None else None
                     )
                     msg = "shape of exner_pr after computation = %s" % str(
                         exner_pr_arr.shape if exner_pr is not None else "None"
@@ -4316,7 +4114,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     exner_dyn_incr_arr = (
-                        _conversion.as_array(ffi, exner_dyn_incr, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, exner_dyn_incr)
                         if exner_dyn_incr is not None
                         else None
                     )
@@ -4332,7 +4130,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     ddt_exner_phy_arr = (
-                        _conversion.as_array(ffi, ddt_exner_phy, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, ddt_exner_phy)
                         if ddt_exner_phy is not None
                         else None
                     )
@@ -4348,7 +4146,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     grf_tend_rho_arr = (
-                        _conversion.as_array(ffi, grf_tend_rho, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, grf_tend_rho)
                         if grf_tend_rho is not None
                         else None
                     )
@@ -4364,7 +4162,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     grf_tend_thv_arr = (
-                        _conversion.as_array(ffi, grf_tend_thv, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, grf_tend_thv)
                         if grf_tend_thv is not None
                         else None
                     )
@@ -4380,9 +4178,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     grf_tend_w_arr = (
-                        _conversion.as_array(ffi, grf_tend_w, _definitions.FLOAT64)
-                        if grf_tend_w is not None
-                        else None
+                        _conversion.as_array(ffi, grf_tend_w) if grf_tend_w is not None else None
                     )
                     msg = "shape of grf_tend_w after computation = %s" % str(
                         grf_tend_w_arr.shape if grf_tend_w is not None else "None"
@@ -4396,9 +4192,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     mass_fl_e_arr = (
-                        _conversion.as_array(ffi, mass_fl_e, _definitions.FLOAT64)
-                        if mass_fl_e is not None
-                        else None
+                        _conversion.as_array(ffi, mass_fl_e) if mass_fl_e is not None else None
                     )
                     msg = "shape of mass_fl_e after computation = %s" % str(
                         mass_fl_e_arr.shape if mass_fl_e is not None else "None"
@@ -4412,9 +4206,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     ddt_vn_phy_arr = (
-                        _conversion.as_array(ffi, ddt_vn_phy, _definitions.FLOAT64)
-                        if ddt_vn_phy is not None
-                        else None
+                        _conversion.as_array(ffi, ddt_vn_phy) if ddt_vn_phy is not None else None
                     )
                     msg = "shape of ddt_vn_phy after computation = %s" % str(
                         ddt_vn_phy_arr.shape if ddt_vn_phy is not None else "None"
@@ -4428,9 +4220,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     grf_tend_vn_arr = (
-                        _conversion.as_array(ffi, grf_tend_vn, _definitions.FLOAT64)
-                        if grf_tend_vn is not None
-                        else None
+                        _conversion.as_array(ffi, grf_tend_vn) if grf_tend_vn is not None else None
                     )
                     msg = "shape of grf_tend_vn after computation = %s" % str(
                         grf_tend_vn_arr.shape if grf_tend_vn is not None else "None"
@@ -4443,11 +4233,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    vn_ie_arr = (
-                        _conversion.as_array(ffi, vn_ie, _definitions.FLOAT64)
-                        if vn_ie is not None
-                        else None
-                    )
+                    vn_ie_arr = _conversion.as_array(ffi, vn_ie) if vn_ie is not None else None
                     msg = "shape of vn_ie after computation = %s" % str(
                         vn_ie_arr.shape if vn_ie is not None else "None"
                     )
@@ -4459,11 +4245,7 @@ def solve_nh_run_wrapper(
                     )
                     logger.debug(msg)
 
-                    vt_arr = (
-                        _conversion.as_array(ffi, vt, _definitions.FLOAT64)
-                        if vt is not None
-                        else None
-                    )
+                    vt_arr = _conversion.as_array(ffi, vt) if vt is not None else None
                     msg = "shape of vt after computation = %s" % str(
                         vt_arr.shape if vt is not None else "None"
                     )
@@ -4472,9 +4254,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     vn_incr_arr = (
-                        _conversion.as_array(ffi, vn_incr, _definitions.FLOAT64)
-                        if vn_incr is not None
-                        else None
+                        _conversion.as_array(ffi, vn_incr) if vn_incr is not None else None
                     )
                     msg = "shape of vn_incr after computation = %s" % str(
                         vn_incr_arr.shape if vn_incr is not None else "None"
@@ -4488,9 +4268,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     rho_incr_arr = (
-                        _conversion.as_array(ffi, rho_incr, _definitions.FLOAT64)
-                        if rho_incr is not None
-                        else None
+                        _conversion.as_array(ffi, rho_incr) if rho_incr is not None else None
                     )
                     msg = "shape of rho_incr after computation = %s" % str(
                         rho_incr_arr.shape if rho_incr is not None else "None"
@@ -4504,9 +4282,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     exner_incr_arr = (
-                        _conversion.as_array(ffi, exner_incr, _definitions.FLOAT64)
-                        if exner_incr is not None
-                        else None
+                        _conversion.as_array(ffi, exner_incr) if exner_incr is not None else None
                     )
                     msg = "shape of exner_incr after computation = %s" % str(
                         exner_incr_arr.shape if exner_incr is not None else "None"
@@ -4520,9 +4296,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     mass_flx_me_arr = (
-                        _conversion.as_array(ffi, mass_flx_me, _definitions.FLOAT64)
-                        if mass_flx_me is not None
-                        else None
+                        _conversion.as_array(ffi, mass_flx_me) if mass_flx_me is not None else None
                     )
                     msg = "shape of mass_flx_me after computation = %s" % str(
                         mass_flx_me_arr.shape if mass_flx_me is not None else "None"
@@ -4536,9 +4310,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     mass_flx_ic_arr = (
-                        _conversion.as_array(ffi, mass_flx_ic, _definitions.FLOAT64)
-                        if mass_flx_ic is not None
-                        else None
+                        _conversion.as_array(ffi, mass_flx_ic) if mass_flx_ic is not None else None
                     )
                     msg = "shape of mass_flx_ic after computation = %s" % str(
                         mass_flx_ic_arr.shape if mass_flx_ic is not None else "None"
@@ -4552,9 +4324,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     vol_flx_ic_arr = (
-                        _conversion.as_array(ffi, vol_flx_ic, _definitions.FLOAT64)
-                        if vol_flx_ic is not None
-                        else None
+                        _conversion.as_array(ffi, vol_flx_ic) if vol_flx_ic is not None else None
                     )
                     msg = "shape of vol_flx_ic after computation = %s" % str(
                         vol_flx_ic_arr.shape if vol_flx_ic is not None else "None"
@@ -4568,9 +4338,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     vn_traj_arr = (
-                        _conversion.as_array(ffi, vn_traj, _definitions.FLOAT64)
-                        if vn_traj is not None
-                        else None
+                        _conversion.as_array(ffi, vn_traj) if vn_traj is not None else None
                     )
                     msg = "shape of vn_traj after computation = %s" % str(
                         vn_traj_arr.shape if vn_traj is not None else "None"
@@ -4584,7 +4352,7 @@ def solve_nh_run_wrapper(
                     logger.debug(msg)
 
                     max_vcfl_size1_array_arr = (
-                        _conversion.as_array(ffi, max_vcfl_size1_array, _definitions.FLOAT64)
+                        _conversion.as_array(ffi, max_vcfl_size1_array)
                         if max_vcfl_size1_array is not None
                         else None
                     )

@@ -127,18 +127,16 @@ def unpack(
         raise ValueError(f"Unsupported array type: {xp}. Expected Numpy or CuPy.")
 
 
-def as_array(
-    ffi: cffi.FFI, array_info: _definitions.ArrayInfo, dtype: _definitions.ScalarKind
-) -> np.ndarray | None:  # or cupy
+def as_array(ffi: cffi.FFI, array_info: _definitions.ArrayInfo) -> np.ndarray | None:  # or cupy
     """
     Utility function to convert an ArrayInfo to a NumPy or CuPy array.
 
-    The returned array is a direct view of the Fortran-allocated memory.
+    The returned array is a direct view of the Fortran-allocated memory; its
+    element type is taken from the CFFI pointer.
 
     Args:
         ffi:        The CFFI FFI instance.
         array_info: The ArrayInfo object containing the pointer and shape information.
-        dtype:      The data type of the array.
     """
     ptr, shape, on_gpu, is_optional = array_info
     xp = cp if on_gpu else np
@@ -150,13 +148,11 @@ def as_array(
     return unpack(xp, ffi, ptr, *shape)
 
 
-def _as_array_mapping(
-    dtype: _definitions.ScalarKind,
-) -> Callable[[_definitions.ArrayInfo, cffi.FFI], _definitions.NDArray]:
+def _as_array_mapping() -> Callable[[_definitions.ArrayInfo, cffi.FFI], _definitions.NDArray]:
     # since we typically create one mapper per parameter, maxsize=2 is a good default for double buffering
     @functools.lru_cache(maxsize=2)
     def impl(array_info: _definitions.ArrayInfo, *, ffi: cffi.FFI) -> _definitions.NDArray:
-        return as_array(ffi, array_info, dtype)
+        return as_array(ffi, array_info)
 
     return impl
 
@@ -171,5 +167,5 @@ def default_mapping(
     """
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         # ArrayInfos to Numpy/CuPy arrays
-        return _as_array_mapping(param_descriptor.dtype)
+        return _as_array_mapping()
     return None

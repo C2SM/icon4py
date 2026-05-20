@@ -271,7 +271,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from libtest_plugin import ffi
-from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -345,11 +345,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
 
-                    two_arr = (
-                        _conversion.as_array(ffi, two, _definitions.FLOAT64)
-                        if two is not None
-                        else None
-                    )
+                    two_arr = _conversion.as_array(ffi, two) if two is not None else None
                     msg = "shape of two after computation = %s" % str(
                         two_arr.shape if two is not None else "None"
                     )
@@ -425,11 +421,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
 
-                    one_arr = (
-                        _conversion.as_array(ffi, one, _definitions.FLOAT32)
-                        if one is not None
-                        else None
-                    )
+                    one_arr = _conversion.as_array(ffi, one) if one is not None else None
                     msg = "shape of one after computation = %s" % str(
                         one_arr.shape if one is not None else "None"
                     )

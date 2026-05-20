@@ -94,7 +94,7 @@ def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):
         ptr, shape=expected_result.shape, on_gpu=xp != np, is_optional=False
     )
 
-    result = _conversion.as_array(ffi, array_info, test_utils.from_np_dtype(expected_result.dtype))
+    result = _conversion.as_array(ffi, array_info)
 
     assert isinstance(result, xp.ndarray)
     assert xp.array_equal(result, expected_result)

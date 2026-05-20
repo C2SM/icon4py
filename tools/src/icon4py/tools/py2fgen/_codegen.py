@@ -150,7 +150,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -219,7 +219,7 @@ def {{ func.name }}_wrapper(
                 if logger.isEnabledFor(logging.DEBUG):
                     {% for name, arg in func.args.items() %}
                     {% if is_array(arg) %}
-                    {{name}}_arr = _conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else None
+                    {{name}}_arr = _conversion.as_array(ffi, {{ name }}) if {{ name }} is not None else None
                     msg = 'shape of {{ name }} after computation = %s' % str({{ name}}_arr.shape if {{name}} is not None else "None")
                     logger.debug(msg)
                     msg = '{{ name }} after computation: %s' % str({{name}}_arr) if {{ name }} is not None else "None"
@@ -503,6 +503,8 @@ def generate_c_header(bindings_library: BindingsLibrary) -> str:
 
 def add_include_guard(c_header: str, library_name: str) -> str:
     """Wrap generated C header code in an ``#ifndef`` include guard."""
+    # No sanitization needed: `library_name` is also emitted as a Fortran module
+    # name and a Python import, so it is already a valid identifier.
     guard = f"{library_name.upper()}_H"
     return f"#ifndef {guard}\n#define {guard}\n\n{c_header}\n\n#endif\n"
 
