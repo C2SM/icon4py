@@ -61,7 +61,13 @@ def _update_temperature_by_newton_iteration(
 ) -> fa.CellKField[ta.wpfloat]:
     current_temperature = where(
         newton_iteration_mask,
-        _new_temperature_in_newton_iteration(temperature, qv, rho, lwdocvd, next_temperature),
+        _new_temperature_in_newton_iteration(
+            temperature=temperature,
+            qv=qv,
+            rho=rho,
+            lwdocvd=lwdocvd,
+            next_temperature=next_temperature,
+        ),
         next_temperature,
     )
     return current_temperature

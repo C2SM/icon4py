@@ -125,5 +125,7 @@ def distance_on_edges_torus(
         distance
 
     """
-    xdiff, ydiff = diff_on_edges_torus(x0, x1, y0, y1, domain_length, domain_height)
+    xdiff, ydiff = diff_on_edges_torus(
+        x0=x0, x1=x1, y0=y0, y1=y1, domain_length=domain_length, domain_height=domain_height
+    )
     return sqrt(xdiff**2 + ydiff**2)
