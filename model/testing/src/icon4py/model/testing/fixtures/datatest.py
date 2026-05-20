@@ -99,14 +99,14 @@ def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescript
     ],
     ids=lambda r: r.name,
 )
-def experiment_description(request: pytest.FixtureRequest) -> definitions.Experiment:
+def experiment_description(request: pytest.FixtureRequest) -> definitions.ExperimentDescription:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""
     return request.param
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def experiment(
     experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
@@ -114,7 +114,9 @@ def experiment(
 ) -> definitions.Experiment:
     return definitions.Experiment(
         experiment_description=experiment_description,
-        experiment_config=dt_utils.create_experiment_configuration(experiment_description, process_props),
+        experiment_config=dt_utils.create_experiment_configuration(
+            experiment_description, process_props
+        ),
     )
 
 

@@ -365,7 +365,7 @@ def test_run_timeloop_single_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, experiment_type",
+    "experiment_description, experiment_type",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -388,7 +388,7 @@ def test_driver(
     """
     data_path = dt_utils.get_datapath_for_experiment(
         process_props=process_props,
-        experiment=experiment,
+        experiment_description=experiment.description,
     )
     gm = grid_utils.get_grid_manager_from_experiment(
         experiment=experiment,

@@ -146,7 +146,7 @@ def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
         return json.load(f)
 
 
-def _list_to_value(obj: list) -> float | int | str:
+def _list_to_value(obj: list) -> float | int | str | bool:
     # Some parameters are allocated as `max_dom`-sized lists, with one value
     # per domain. ICON4Py tests (for now) only run on one domain.
     # Most parameters have the same value for all elements, others (such as

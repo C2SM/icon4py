@@ -24,6 +24,7 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -197,7 +198,7 @@ def test_grid_index_top(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
@@ -214,7 +215,7 @@ def test_grid_index_damping(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
@@ -231,7 +232,7 @@ def test_grid_index_moist(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
@@ -249,7 +250,7 @@ def test_grid_index_flat(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
 )
 @pytest.mark.parametrize("dim", dims.vertical_dims())
@@ -272,7 +273,7 @@ def test_grid_index_bottom(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
@@ -296,7 +297,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
@@ -365,9 +366,12 @@ def test_compute_vertical_coordinate(
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
     topography = None
-    if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):
+    if experiment.description in (
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.GAUSS3D,
+    ):
         topography = topography_savepoint.topo_c()
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
+    elif experiment.description == definitions.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, allocator=backend, dtype=ta.wpfloat
         )

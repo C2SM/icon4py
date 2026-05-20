@@ -424,7 +424,10 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     for domain in h_grid.get_domains_for_dim(dim):
-        if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
+        if not (
+            experiment.description == definitions.Experiments.EXCLAIM_APE
+            and domain.dim == dims.EdgeDim
+        ):
             # serialized start indices for EdgeDim are all zero
             assert grid.start_index(domain) == serialized_grid.start_index(
                 domain

@@ -18,12 +18,13 @@ from icon4py.model.testing.fixtures.datatest import (
     backend_like,
     data_provider,
     download_ser_data,
+    experiment_description,
     process_props,
 )
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,

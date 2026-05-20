@@ -40,12 +40,6 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-@pytest.fixture(scope="module")
-def experiment() -> definitions.Experiment:
-    """The module uses hard-coded references for the MCH_CH_R04B09 experiment."""
-    return definitions.Experiments.MCH_CH_R04B09
-
-
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(

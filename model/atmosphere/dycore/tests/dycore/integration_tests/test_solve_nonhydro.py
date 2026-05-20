@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint: sb.IconGridSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
@@ -107,7 +107,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, step_date_init, substep_init, at_initial_timestep",
     [
@@ -782,7 +782,7 @@ def test_run_solve_nonhydro_single_step(
 # why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
     [
@@ -950,7 +950,7 @@ def test_run_solve_nonhydro_multi_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)

@@ -43,7 +43,7 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 @dataclasses.dataclass(frozen=True)
 class SerializationSettings:
     comm_sizes: list[int]
-    experiments: list[definitions.Experiment]
+    experiments: list[definitions.ExperimentDescription]
     sbatch_partition: str
     sbatch_time: str
     sbatch_account: str

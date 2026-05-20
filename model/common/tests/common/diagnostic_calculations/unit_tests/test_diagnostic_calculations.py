@@ -29,6 +29,7 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -45,7 +46,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_temperature(
     data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
 ) -> None:
@@ -100,7 +101,7 @@ def test_diagnose_temperature(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
     data_provider: sb.IconSerialDataProvider,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -153,7 +154,7 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_surface_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -192,7 +193,7 @@ def test_diagnose_surface_pressure(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
