@@ -70,7 +70,7 @@ def create_vertical_params(
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init",
+    "experiment_description, step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
@@ -107,7 +107,7 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init",
+    "experiment_description, step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
@@ -146,7 +146,7 @@ def test_scale_factors_by_dtime(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -291,7 +291,7 @@ def test_velocity_predictor_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -414,7 +414,7 @@ def test_velocity_corrector_step(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -545,7 +545,7 @@ def test_compute_diagnostics_from_normal_wind(
 @pytest.mark.datatest
 @pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -695,7 +695,7 @@ def test_compute_advection_in_predictor_vertical_momentum(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -840,7 +840,7 @@ def test_compute_advection_in_corrector_vertical_momentum(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
