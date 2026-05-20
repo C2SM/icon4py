@@ -143,7 +143,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
 @pytest.mark.datatest
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
-    "experiment,step_date_init",
+    "experiment_description,step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
@@ -263,7 +263,7 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment,step_date_init",
+    "experiment_description,step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
@@ -311,7 +311,7 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -449,7 +449,7 @@ def test_run_diffusion_initial_step(
 @pytest.mark.parametrize("linit", [True])
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
-    "experiment,step_date_init",
+    "experiment_description,step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
     ],
