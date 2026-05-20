@@ -983,7 +983,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
     at_initial_timestep,
     backend,
 ):
-
     cfg = experiment.config.nonhydrostatic
 
     # savepoints
