@@ -29,6 +29,8 @@ from icon4py.model.testing.fixtures import (
     process_props,
 )
 
+from .. import utils
+
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
@@ -41,18 +43,10 @@ def test_grid_file_dimension() -> None:
     parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
         parser.open()
-        assert (
-            parser.dimension(gridfile.DynamicDimension.CELL_NAME)
-            == grid_descriptor.params.num_cells
-        )
-        assert (
-            parser.dimension(gridfile.DynamicDimension.VERTEX_NAME)
-            == grid_descriptor.params.num_vertices
-        )
-        assert (
-            parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
-            == grid_descriptor.params.num_edges
-        )
+        ref = utils.GRID_REFERENCE_VALUES[grid_descriptor.name]
+        assert parser.dimension(gridfile.DynamicDimension.CELL_NAME) == ref["num_cells"]
+        assert parser.dimension(gridfile.DynamicDimension.VERTEX_NAME) == ref["num_vertices"]
+        assert parser.dimension(gridfile.DynamicDimension.EDGE_NAME) == ref["num_edges"]
     except Exception:
         pytest.fail()
     finally:
