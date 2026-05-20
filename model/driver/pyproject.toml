@@ -56,8 +56,8 @@ commit = false
 current_version = "0.1.0"
 ignore_missing_version = false
 message = 'Bump icon4py-driver version: {current_version} → {new_version}'
-parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
-serialize = ["{major}.{minor}.{patch}"]
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:(?P<pre_l>a|b|rc)(?P<pre_n>\\d+))?"
+serialize = ["{major}.{minor}.{patch}{pre_l}{pre_n}", "{major}.{minor}.{patch}"]
 tag = false
 
 [[tool.bumpversion.files]]
