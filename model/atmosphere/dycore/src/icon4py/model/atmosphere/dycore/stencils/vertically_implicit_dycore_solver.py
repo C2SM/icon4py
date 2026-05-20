@@ -65,12 +65,12 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
         _compute_contravariant_correction_of_w(
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=contravariant_correction_at_edges_on_model_levels,
-            wgtfac_c=wgtfac_c
+            wgtfac_c=wgtfac_c,
         ),
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=contravariant_correction_at_edges_on_model_levels,
-            wgtfac_c=wgtfacq_c
+            wgtfacq_c=wgtfacq_c,
         ),
     )
     return contravariant_correction_at_cells_on_half_levels
