@@ -181,7 +181,7 @@ def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, global_grid_params=experiment.grid.params
+        grid_id=experiment.name, grid_params=experiment.grid.params
     ).construct_decomposition_info()
 
 

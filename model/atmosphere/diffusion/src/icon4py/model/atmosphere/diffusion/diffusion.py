@@ -426,10 +426,10 @@ class Diffusion:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+        exchange: decomposition.ExchangeRuntime,
     ):
         self._allocator = model_backends.get_allocator(backend)
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
         self.config = config
         self._params = params
         self._grid = grid

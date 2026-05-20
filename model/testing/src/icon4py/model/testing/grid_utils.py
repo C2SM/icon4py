@@ -10,6 +10,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -113,6 +114,7 @@ def get_grid_geometry(
             gm.coordinates,
             gm.geometry_fields,
             geometry_attrs.attrs,
+            exchange=decomposition.single_node_exchange,
         )
 
     if not grid_geometries.get(register_name):
