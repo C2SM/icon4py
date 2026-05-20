@@ -5,10 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from typing import Any
 
 from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
     compute_diagnostics_from_normal_wind,
