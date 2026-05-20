@@ -82,7 +82,7 @@ def compute_results_for_thermodynamic_variables(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_results_for_thermodynamic_variables(
         z_rho_expl,
         vwind_impl_wgt,

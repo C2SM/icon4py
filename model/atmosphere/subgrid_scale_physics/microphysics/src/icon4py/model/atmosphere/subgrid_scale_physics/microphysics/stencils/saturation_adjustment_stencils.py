@@ -312,7 +312,7 @@ def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
         tolerance,
         current_temperature,

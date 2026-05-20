@@ -41,7 +41,7 @@ def compute_horizontal_kinetic_energy(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_horizontal_kinetic_energy(
         vn,
         vt,

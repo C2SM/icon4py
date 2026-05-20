@@ -176,7 +176,7 @@ def calculate_cell_kdim_field_tendency(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_cell_kdim_field_tendency(
         dtime,
         old_field,

@@ -45,7 +45,7 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
         wgtfac_e,
         vn,

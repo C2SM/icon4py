@@ -14,7 +14,7 @@ import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
+from typing import Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
 import numpy as np
@@ -30,7 +30,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 try:
     import ghex  # type: ignore [import-not-found]
-    import mpi4py  # type: ignore [import-not-found]
+    import mpi4py
     from ghex.context import make_context  # type: ignore [import-not-found]
     from ghex.unstructured import (  # type: ignore [import-not-found]
         DomainDescriptor,
@@ -45,12 +45,9 @@ try:
     mpi4py.rc.finalize = True
 
 except ImportError:
-    mpi4py = None
+    mpi4py = None  # type: ignore   [assignment]
     ghex = None
     unstructured = None
-
-if TYPE_CHECKING:
-    import mpi4py.MPI  # type: ignore [import-not-found]
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -109,7 +106,7 @@ def get_multinode_properties(
 
 @dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
-    comm: mpi4py.MPI.Comm = None
+    comm: mpi4py.MPI.Comm
 
     @functools.cached_property
     def rank(self) -> int:  # type: ignore [override]
@@ -124,7 +121,7 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
-class GHexMultiNodeExchange:
+class GHexMultiNodeExchange(definitions.ExchangeRuntime):
     max_num_of_fields_to_communicate_dace: Final[int] = (
         10  # maximum number of fields to perform halo exchange on (DaCe-related)
     )
@@ -139,6 +136,10 @@ class GHexMultiNodeExchange:
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
+        self._field_size: dict[gtx.Dimension, int] = {
+            dim: self._decomposition_info.global_index(dim).shape[0]
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
@@ -209,12 +210,8 @@ class GHexMultiNodeExchange:
         This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
         the granule context where fields otherwise have length nproma.
         """
-        if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices]
-        elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges]
-        elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells]
+        if dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+            return field.ndarray[: self._field_size[dim]]
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
@@ -244,53 +241,45 @@ class GHexMultiNodeExchange:
             assert f.ndim in (1, 2), "Buffers must be 1d or 2d"
             return self._patterns[dim](self._make_field_descriptor(dim, f))
 
-    def exchange(
-        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    def start(
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
+        stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
-        """
-        Exchange method that slices the fields based on the dimension and then performs halo exchange.
-        """
+        """Synchronize with `stream` and start the halo exchange of `*fields`."""
         assert (
             dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
-        # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
-        # otherwise we need an explicit device synchronize here.
-        handle = self._comm.exchange(applied_patterns)
+        if not ghex.__config__["gpu"]:
+            # No GPU support fall back to the regular exchange function.
+            handle = self._comm.exchange(applied_patterns)
+        else:
+            assert stream is not None
+            handle = self._comm.schedule_exchange(
+                patterns=applied_patterns,
+                stream=stream,
+            )
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(
-        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    def exchange(
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
+        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
     ) -> None:
-        res = self.exchange(dim, *fields)
-        res.wait()
+        # Fall back to the default implementation provided by the protocol.
+        super().exchange(dim, *fields, stream=stream)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
-
-    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> MultiNodeResult | None:  # type: ignore[return] # return statment in else condition
-        """Perform a halo exchange operation.
-
-        Args:
-            args: The fields to be exchanged.
-
-        Keyword Args:
-            dim: The dimension along which the exchange is performed.
-            wait: If True, the operation will block until the exchange is completed (default: True).
-        """
-        if dim is None:
-            raise ValueError("Need to define a dimension.")
-
-        res = self.exchange(dim, *args)
-        if wait:
-            res.wait()
-        else:
-            return res
 
     # Implementation of DaCe SDFGConvertible interface
     def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
+        # NOTE: Streams are not supported here.
         if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
             raise ValueError(
                 f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
@@ -307,7 +296,14 @@ class GHexMultiNodeExchange:
         }  # Field name : Data Descriptor
 
         halo_exchange.add_halo_tasklet(
-            sdfg, state, global_buffers, self, dim, id(self), wait, self.num_of_halo_tasklets
+            sdfg,
+            state,
+            global_buffers,
+            self,
+            dim,
+            id(self),
+            full_exchange,
+            self.num_of_halo_tasklets,
         )
 
         sdfg.arg_names.extend(self.__sdfg_signature__()[0])
@@ -332,19 +328,16 @@ class GHexMultiNodeExchange:
 
 
 @dataclass
-class HaloExchangeWait:
-    exchange_object: GHexMultiNodeExchange
-
+class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
     buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
-
-    def __call__(self, communication_handle: MultiNodeResult) -> None:
-        """Wait on the communication handle."""
-        communication_handle.wait()
+    exchange_object: GHexMultiNodeExchange
 
     # Implementation of DaCe SDFGConvertible interface
     def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
+        # Streams are not supported by the orchestrator. This is the reason why they
+        #  do not accept the `stream` argument.
         sdfg = dace.SDFG("_halo_exchange_wait_")
         state = sdfg.add_state()
 
@@ -355,7 +348,7 @@ class HaloExchangeWait:
             "_halo_exchange_wait_",
             inputs=None,
             outputs=None,
-            code=f"h_{id(self.exchange_object)}.wait();\n//__out = 1234;",
+            code=f"h_{id(self.exchange_object)}.wait();",
             language=dace.dtypes.Language.CPP,
             side_effects=False,
         )
@@ -369,33 +362,23 @@ class HaloExchangeWait:
         state.add_edge(
             buffer, None, tasklet, "IN_" + buffer_name, dace.Memlet(buffer_name, subset="0")
         )
-
-        """
-        # noqa: ERA001
-
-        # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-        sdfg.add_scalar(name="__return", dtype=dace.int32)
-        ret = state.add_write("__return")
-        state.add_edge(tasklet, "__out", ret, None, dace.Memlet(data="__return", subset="0"))
-        tasklet.out_connectors["__out"] = dace.int32
-        """
-
         sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-
         return sdfg
 
     def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
         return {}
 
     def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return (
-            [
-                HaloExchangeWait.buffer_name,
-            ],
-            [],
-        )
+        return ([HaloExchangeWait.buffer_name], [])
 
-    __sdfg__ = dace__sdfg__
+    def __call__(
+        self,
+        communication_handle: definitions.ExchangeResult,
+        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
+    ) -> None:
+        communication_handle.finish(stream=stream)
+
+    __sdfg__ = dace__sdfg__  # type: ignore[assignment]
     __sdfg_closure__ = dace__sdfg_closure__
     __sdfg_signature__ = dace__sdfg_signature__
 
@@ -406,13 +389,22 @@ def create_multinode_halo_exchange_wait(runtime: GHexMultiNodeExchange) -> HaloE
 
 
 @dataclass
-class MultiNodeResult:
+class MultiNodeResult(definitions.ExchangeResult):
     handle: Any
     pattern_refs: Any
 
-    def wait(self) -> None:
-        self.handle.wait()
-        del self.pattern_refs
+    def finish(
+        self,
+        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
+    ) -> None:
+        """Finish the initiated halo exchange and either block or schedule completion on `stream`."""
+        if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
+            # No GPU support or blocking wait requested -> use normal `wait()`.
+            self.handle.wait()
+
+        else:
+            # Stream given, perform a scheduled wait.
+            self.handle.schedule_wait(stream)
 
     def is_ready(self) -> bool:
         return self.handle.is_ready()

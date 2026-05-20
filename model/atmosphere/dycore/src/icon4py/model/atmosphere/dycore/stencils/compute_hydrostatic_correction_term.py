@@ -76,7 +76,7 @@ def compute_hydrostatic_correction_term(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_hydrostatic_correction_term(
         theta_v,
         ikoffset,

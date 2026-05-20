@@ -35,7 +35,7 @@ def compute_vertical_parabola_limiter_condition(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_vertical_parabola_limiter_condition(
         p_face,
         p_cc,

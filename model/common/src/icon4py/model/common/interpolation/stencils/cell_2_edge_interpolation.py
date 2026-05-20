@@ -37,7 +37,7 @@ def cell_2_edge_interpolation(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _cell_2_edge_interpolation(
         in_field,
         coeff,

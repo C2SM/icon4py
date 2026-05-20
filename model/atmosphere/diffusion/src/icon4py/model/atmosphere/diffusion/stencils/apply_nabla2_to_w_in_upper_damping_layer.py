@@ -36,7 +36,7 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_to_w_in_upper_damping_layer(
         w,
         diff_multfac_n2w,

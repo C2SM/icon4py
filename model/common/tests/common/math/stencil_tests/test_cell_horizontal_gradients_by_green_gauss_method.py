@@ -67,7 +67,9 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        self, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
         scalar_field = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
         geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

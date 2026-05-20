@@ -28,6 +28,7 @@ from icon4py.model.testing import definitions, grid_utils
 
 
 VALIDATION_GRIDS = (
+    definitions.Grids.R01B01_GLOBAL,
     definitions.Grids.R02B04_GLOBAL,
     definitions.Grids.MCH_CH_R04B09_DSL,
     definitions.Grids.MCH_OPR_R04B07_DOMAIN01,

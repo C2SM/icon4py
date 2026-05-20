@@ -35,7 +35,7 @@ def calculate_horizontal_gradients_for_turbulence(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_horizontal_gradients_for_turbulence(
         w,
         geofac_grg_x,

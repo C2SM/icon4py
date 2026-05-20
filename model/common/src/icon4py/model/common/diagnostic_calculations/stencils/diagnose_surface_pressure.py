@@ -50,7 +50,7 @@ def diagnose_surface_pressure(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _diagnose_surface_pressure(
         exner,
         virtual_temperature,

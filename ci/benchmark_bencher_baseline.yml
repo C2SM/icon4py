@@ -10,14 +10,14 @@ include:
 #     GT4PY_COLLECT_METRICS_LEVEL: 10
 
 benchmark_bencher_stencils_baseline_aarch64:
-  extends: [.benchmark_nox_job, .test_template_aarch64]
+  extends: [.test_template_aarch64, .benchmark_nox_job]
   variables:
     NOX_SESSION: "__bencher_baseline_CI-3.10"
     TEST_SELECTION: "${STENCIL_TEST_SELECTION}"
     GT4PY_COLLECT_METRICS_LEVEL: 10
 
 benchmark_bencher_granules_baseline_aarch64:
-  extends: [.benchmark_nox_job, .test_template_aarch64]
+  extends: [.test_template_aarch64, .benchmark_nox_job]
   variables:
     NOX_SESSION: "__bencher_baseline_CI-3.10"
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"

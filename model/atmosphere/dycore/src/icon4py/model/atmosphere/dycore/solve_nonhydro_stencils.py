@@ -60,7 +60,7 @@ def stencils_61_62(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_density_exner_wind(
         rho_now,
         grf_tend_rho,

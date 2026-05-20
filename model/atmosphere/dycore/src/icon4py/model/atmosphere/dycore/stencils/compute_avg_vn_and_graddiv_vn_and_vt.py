@@ -50,7 +50,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_avg_vn_and_graddiv_vn_and_vt(
         e_flx_avg,
         vn,

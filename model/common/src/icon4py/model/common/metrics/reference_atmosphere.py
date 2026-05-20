@@ -334,7 +334,7 @@ def compute_d2dexdz2_fac_mc(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_d2dexdz2_fac_mc(
         theta_ref_mc=theta_ref_mc,
         inv_ddqz_z_full=inv_ddqz_z_full,

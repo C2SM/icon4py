@@ -30,6 +30,7 @@ from icon4py.model.testing.fixtures import (
     model_top_height,
     ndyn_substeps,
     processor_props,
+    savepoint_diffusion_exit,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
@@ -54,8 +55,8 @@ def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
-        type_t_diffu=2,
-        type_vn_diffu=1,
+        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
@@ -108,21 +109,8 @@ def timeloop_diffusion_savepoint_init(
 
 
 @pytest.fixture
-def timeloop_diffusion_savepoint_exit(
-    data_provider,  # imported fixtures data_provider`
-    step_date_exit,  # imported fixtures step_date_exit`
-    timeloop_diffusion_linit_exit,
-):
-    """
-    Load data from ICON savepoint at exist of diffusion module.
-
-    date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
-    fixture, passing 'step_data=<iso_string>'
-    """
-    sp = data_provider.from_savepoint_diffusion_exit(
-        linit=timeloop_diffusion_linit_exit, date=step_date_exit
-    )
-    return sp
+def linit(timeloop_diffusion_linit_exit: bool) -> bool:
+    return timeloop_diffusion_linit_exit
 
 
 @pytest.fixture

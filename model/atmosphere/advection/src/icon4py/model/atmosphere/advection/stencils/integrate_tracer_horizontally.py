@@ -47,7 +47,7 @@ def integrate_tracer_horizontally(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _integrate_tracer_horizontally(
         p_mflx_tracer_h,
         deepatmo_divh,

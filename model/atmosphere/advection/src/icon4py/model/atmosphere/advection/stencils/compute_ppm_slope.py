@@ -71,7 +71,7 @@ def compute_ppm_slope(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ppm_slope(
         p_cc,
         p_cellhgt_mc_now,

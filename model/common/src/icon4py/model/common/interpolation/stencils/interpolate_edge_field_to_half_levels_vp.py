@@ -43,7 +43,7 @@ def interpolate_edge_field_to_half_levels_vp(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _interpolate_edge_field_to_half_levels_vp(
         wgtfac_e,
         interpolant,

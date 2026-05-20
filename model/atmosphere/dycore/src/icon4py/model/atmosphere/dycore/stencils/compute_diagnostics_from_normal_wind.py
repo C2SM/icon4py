@@ -139,7 +139,7 @@ def compute_diagnostics_from_normal_wind(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_velocity_advection_stencil_1_to_7_predictor.
 

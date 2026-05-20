@@ -265,7 +265,7 @@ def compute_advection_in_horizontal_momentum(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_velocity_advection_stencil_19_to_20.
 

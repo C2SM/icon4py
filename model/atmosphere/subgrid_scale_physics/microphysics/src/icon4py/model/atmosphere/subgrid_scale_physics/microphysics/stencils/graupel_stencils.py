@@ -1287,7 +1287,7 @@ def icon_graupel_flux_above_ground(
     horizontal_end: gtx.int32,
     model_top: gtx.int32,
     ground_level: gtx.int32,
-):
+) -> None:
     _icon_graupel_flux_above_ground(
         do_latent_heat_nudging,
         dtime,

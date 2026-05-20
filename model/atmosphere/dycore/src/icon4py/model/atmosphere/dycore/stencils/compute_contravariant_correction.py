@@ -37,7 +37,7 @@ def compute_contravariant_correction(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_contravariant_correction(
         vn,
         ddxn_z_full,

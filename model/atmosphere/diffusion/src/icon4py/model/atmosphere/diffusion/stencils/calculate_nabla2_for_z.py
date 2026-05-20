@@ -35,7 +35,7 @@ def calculate_nabla2_for_z(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_nabla2_for_z(
         kh_smag_e,
         inv_dual_edge_length,

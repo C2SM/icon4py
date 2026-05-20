@@ -54,7 +54,7 @@ def diagnose_virtual_temperature_and_temperature(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _diagnose_virtual_temperature_and_temperature(
         qv,
         qc,

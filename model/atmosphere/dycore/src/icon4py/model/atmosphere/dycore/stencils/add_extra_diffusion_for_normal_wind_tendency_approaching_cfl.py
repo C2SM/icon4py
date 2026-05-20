@@ -79,7 +79,7 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         levelmask,
         c_lin_e,

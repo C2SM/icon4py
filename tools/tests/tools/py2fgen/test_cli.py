@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
 import os
 import pathlib
 import subprocess
@@ -24,7 +25,7 @@ def cli_runner():
 
 @pytest.fixture
 def square_wrapper_module():
-    return "icon4py.tools.py2fgen.wrappers.simple"
+    return "icon4py.bindings.simple"
 
 
 def compile_fortran_code(
@@ -84,12 +85,15 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module, function, library_name):
+def invoke_cli(cli, module, function, library_name, extra_args=None):
     rpath = utils.get_prefix_lib_path()
 
     cli_args = [module, function, library_name, "-r", rpath]
+    if extra_args:
+        cli_args.extend(extra_args)
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, result.output
+    return result
 
 
 def compile_and_run_fortran(
@@ -219,7 +223,7 @@ def test_py2fgen_compilation_and_profiling(
         test_temp_dir,
         extra_compiler_flags=extra_flags,
         env_vars={
-            "PY2FGEN_EXTRA_CALLABLES": "icon4py.tools.py2fgen.wrappers.viztracer_plugin:init",
+            "PY2FGEN_EXTRA_CALLABLES": "icon4py.bindings.viztracer_plugin:init",
             "ICON4PY_TRACING_RANGE": "0:50",
             "ICON4PY_TRACING_NAMES": "square_from_function",
             "ICON4PY_TRACING_OUTPUT_DIR": str(tmp_path),
@@ -228,59 +232,136 @@ def test_py2fgen_compilation_and_profiling(
     assert (tmp_path / "viztracer.json").exists()
 
 
-@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
-def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
-        "diffusion_init,diffusion_run,profile_enable,profile_disable",
-        "diffusion_plugin",
-        samples_path,
-        "test_diffusion",
-        test_temp_dir,
-        os.environ["NVFORTRAN_COMPILER"],
-        ("-acc", "-Minfo=acc"),
-        env_vars={"ICON4PY_BACKEND": "GPU"},
-    )
+def test_py2fgen_incremental_skips_compilation_when_unchanged(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that running py2fgen twice without changes skips compilation on the second run."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        # First run: should generate and compile
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
+            first_log = caplog.text
+        assert "Compiling CFFI dynamic library" in first_log
+
+        # Second run: all files should be up to date, compilation should be skipped
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
+            second_log = caplog.text
+        assert "Python wrapper is up to date" in second_log
+        assert "Fortran interface is up to date" in second_log
+        assert "Skipping compilation" in second_log
+        assert "Compiling CFFI dynamic library" not in second_log
 
 
-@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
-def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
-        "diffusion_init,diffusion_run,profile_enable,profile_disable",
-        "diffusion_plugin",
-        samples_path,
-        "test_diffusion",
-        test_temp_dir,
-    )
+def test_py2fgen_regenerate_forces_recompilation(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --regenerate forces recompilation even if files are up to date."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        # First run: generate and compile
+        invoke_cli(cli_runner, square_wrapper_module, "square_from_function", "square_plugin")
+
+        # Second run with --regenerate: should recompile
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--regenerate"],
+            )
+            regen_log = caplog.text
+        assert "Force regeneration requested" in regen_log
+        assert "Compiling CFFI dynamic library" in regen_log
+        assert "Skipping compilation" not in regen_log
 
 
-@pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
-def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
-        "solve_nh_init,solve_nh_run,grid_init,profile_enable,profile_disable",
-        "dycore_plugin",
-        samples_path,
-        "test_dycore",
-        test_temp_dir,
-    )
+def test_py2fgen_skip_compilation_generates_c_and_header(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --skip-compilation generates .c, .h, .py, .f90 files but no shared library."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--skip-compilation"],
+            )
+            log = caplog.text
+
+        assert "Generating C source and header files" in log
+        assert "Compiling CFFI dynamic library" not in log
+
+        assert pathlib.Path("square_plugin.py").exists()
+        assert pathlib.Path("square_plugin.f90").exists()
+        assert pathlib.Path("square_plugin.h").exists()
+        assert pathlib.Path("square_plugin.c").exists()
+        assert not pathlib.Path("libsquare_plugin.so").exists()
 
 
-@pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
-def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, test_temp_dir):
-    run_test_case(
-        cli_runner,
-        "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
-        "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
-        "dycore_plugin",
-        samples_path,
-        "test_dycore",
-        test_temp_dir,
-        os.environ["NVFORTRAN_COMPILER"],
-        ("-acc", "-Minfo=acc"),
-        env_vars={"ICON4PY_BACKEND": "GPU"},
-    )
+def test_py2fgen_skip_compilation_skips_when_up_to_date(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --skip-compilation skips regeneration when all files are up to date."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        # First run: generate files
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=["--skip-compilation"],
+        )
+
+        # Second run: should skip
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--skip-compilation"],
+            )
+            second_log = caplog.text
+        assert "Skipping C code generation" in second_log
+        assert "Generating C source and header files" not in second_log
+
+
+def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --skip-compilation regenerates if .c file is missing."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        # First run
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=["--skip-compilation"],
+        )
+        assert pathlib.Path("square_plugin.c").exists()
+
+        # Delete the .c file
+        pathlib.Path("square_plugin.c").unlink()
+
+        # Second run: should regenerate since .c is missing
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--skip-compilation"],
+            )
+            regen_log = caplog.text
+        assert "Generating C source and header files" in regen_log
+        assert pathlib.Path("square_plugin.c").exists()

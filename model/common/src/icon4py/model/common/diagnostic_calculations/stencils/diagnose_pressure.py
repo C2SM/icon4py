@@ -73,7 +73,7 @@ def diagnose_pressure(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _diagnose_pressure(
         ddqz_z_full,
         virtual_temperature,

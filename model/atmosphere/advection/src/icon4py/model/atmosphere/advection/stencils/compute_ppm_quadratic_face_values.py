@@ -33,7 +33,7 @@ def compute_ppm_quadratic_face_values(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ppm_quadratic_face_values(
         p_cc,
         p_cellhgt_mc_now,

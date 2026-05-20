@@ -135,7 +135,7 @@ def compute_intermediate_horizontal_tracer_flux_from_cubic_coefficients(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_intermediate_horizontal_tracer_flux_from_cubic_coefficients(
         z_lsq_coeff_1,
         z_lsq_coeff_2,

@@ -67,7 +67,7 @@ def calculate_nabla4(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_nabla4(
         u_vert,
         v_vert,

@@ -51,7 +51,7 @@ def compute_solver_coefficients_matrix(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_solver_coefficients_matrix(
         exner_nnow,
         rho_nnow,

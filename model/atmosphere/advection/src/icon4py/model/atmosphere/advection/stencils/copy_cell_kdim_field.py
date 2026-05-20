@@ -28,7 +28,7 @@ def copy_cell_kdim_field(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _copy_cell_kdim_field(
         field_in,
         out=field_out,

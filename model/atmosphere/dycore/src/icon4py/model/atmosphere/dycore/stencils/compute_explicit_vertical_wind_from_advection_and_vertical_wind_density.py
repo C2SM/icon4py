@@ -59,7 +59,7 @@ def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
         w_nnow,
         ddt_w_adv_ntl1,

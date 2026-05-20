@@ -32,7 +32,7 @@ def compute_vn_on_lateral_boundary(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_vn_on_lateral_boundary(
         grf_tend_vn,
         vn_now,

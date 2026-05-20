@@ -46,7 +46,7 @@ def update_mass_flux_weighted(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_mass_flux_weighted(
         rho_ic,
         vwind_expl_wgt,

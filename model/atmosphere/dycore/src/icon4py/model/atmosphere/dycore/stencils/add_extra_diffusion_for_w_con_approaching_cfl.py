@@ -68,7 +68,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _add_extra_diffusion_for_w_con_approaching_cfl(
         cfl_clipping,
         owner_mask,

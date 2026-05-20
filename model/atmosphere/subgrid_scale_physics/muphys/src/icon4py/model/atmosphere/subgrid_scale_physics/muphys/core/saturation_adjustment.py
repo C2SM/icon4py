@@ -79,7 +79,7 @@ def saturation_adjustment(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _saturation_adjustment(
         te,
         rho,

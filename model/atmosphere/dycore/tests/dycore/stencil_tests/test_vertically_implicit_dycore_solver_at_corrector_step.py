@@ -299,7 +299,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             next_w[:, :n_lev],
         )
 
-        w_1 = next_w[:, 0]
         if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
@@ -309,7 +308,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
                     z_raylfac=rayleigh_damping_factor,
-                    w_1=w_1,
                     w=next_w[:, :n_lev],
                 ),
                 next_w[:, :n_lev],

@@ -48,7 +48,7 @@ def compute_horizontal_advection_term_for_vertical_velocity(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_horizontal_advection_term_for_vertical_velocity(
         vn_ie,
         inv_dual_edge_length,

@@ -32,7 +32,7 @@ def update_wind(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_wind(
         w_now,
         grf_tend_w,

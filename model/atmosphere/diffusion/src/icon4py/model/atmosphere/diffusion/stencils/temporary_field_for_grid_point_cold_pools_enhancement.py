@@ -46,7 +46,7 @@ def temporary_field_for_grid_point_cold_pools_enhancement(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v,
         theta_ref_mc,
