@@ -504,8 +504,8 @@ def _read_config(
         vertical_grid_config = v_grid.VerticalGridConfig(
             num_levels=64,
             lowest_layer_thickness=50.0,
-            model_top_height=23500.0,
-            stretch_factor=1.0,
+            model_top_height=30000.0,
+            stretch_factor=0.85,
             rayleigh_damping_height=8000.0,
         )
     else:
@@ -665,18 +665,23 @@ def initialize_driver(
         allocator=allocator,
     )
 
-    log.info("initializing the JW topography")
-    cell_topography = topography.jablonowski_williamson(
-        cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
-        u0=35.0,
-    )
+    if experiment_name == "Weisman_Klemp":
+        log.info("initializing flat topography for Weisman-Klemp")
+        xp = data_alloc.import_array_ns(allocator)
+        cell_topography = xp.zeros(grid_manager.grid.num_cells)
+    else:
+        log.info("initializing the JW topography")
+        cell_topography = topography.jablonowski_williamson(
+            cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
+            u0=35.0,
+        )
 
     log.info("initializing the static-field factories")
     static_field_factories = driver_utils.create_static_field_factories(
         grid_manager=grid_manager,
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
-        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
+        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),
         backend=backend,
         exchange=exchange,
         global_reductions=global_reductions,

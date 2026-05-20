@@ -424,7 +424,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     RH_MAX = ta.wpfloat("0.95")
     HREF = ta.wpfloat("3000.0")
     U_INFTY = ta.wpfloat("15.0")  # maximum horizontal wind speed [m s-1]
-    QV_MAX = ta.wpfloat("0.6")  # maximum moisture mixing ratio [kg kg-1]
+    QV_MAX = ta.wpfloat("0.014")  # maximum moisture mixing ratio [kg kg-1]
     bubble_center_x = ta.wpfloat("0.0")
     bubble_center_y = ta.wpfloat("0.0")
     bubble_center_z = ta.wpfloat("1400.0")
@@ -445,7 +445,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         axis=0,
     )
 
-    above_tropopause_levels = xp.flatnonzero(model_level_height[0,:] > H_TROPOPAUSE)
+    above_tropopause_levels = xp.flatnonzero(model_level_height[0, :] > H_TROPOPAUSE)
 
     assert (
         above_tropopause_levels.size > 0
@@ -612,7 +612,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         / theta_v_ndarray[:, :]
     )
     vn_ndarray[:, :] = (
-        U_INFTY * (xp.tanh((model_level_height[0, :] - HMIN) / (HREF - HMIN)) - 0.45) * primal_normal_x[:, xp.newaxis]
+        U_INFTY
+        * (xp.tanh((model_level_height[0, :] - HMIN) / (HREF - HMIN)) - 0.45)
+        * primal_normal_x[:, xp.newaxis]
     )
     log.info("Computations of Weisman-Klemp background fields completed.")
 
@@ -652,8 +654,12 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         rho_ndarray=rho_ndarray,
         qv_ndarray=qv_ndarray,
         exner_ndarray=exner_ndarray,
-        cell_cartesian_x=geometry_field_source.get(geometry_meta.CELL_CENTER_X).ndarray[:, xp.newaxis],
-        cell_cartesian_y=geometry_field_source.get(geometry_meta.CELL_CENTER_Y).ndarray[:, xp.newaxis],
+        cell_cartesian_x=geometry_field_source.get(geometry_meta.CELL_CENTER_X).ndarray[
+            :, xp.newaxis
+        ],
+        cell_cartesian_y=geometry_field_source.get(geometry_meta.CELL_CENTER_Y).ndarray[
+            :, xp.newaxis
+        ],
         z_mc=metrics_field_source.get(metrics_attributes.Z_MC).ndarray,
         bubble_center_x=bubble_center_x,
         bubble_center_y=bubble_center_y,
@@ -661,7 +667,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         bubble_width=bubble_width,
         bubble_height=bubble_height,
         bubble_amplitude=bubble_amplitude,
-        geometry_type=grid.geometry_type,
+        geometry_type=grid.geometry_type,  # type: ignore[arg-type]
         domain_length=domain_length,  # type: ignore[arg-type]
         domain_height=domain_height,  # type: ignore[arg-type]
     )

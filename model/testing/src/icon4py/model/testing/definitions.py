@@ -197,7 +197,7 @@ class Experiments:
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
-        version = 4,
+        version=4,
     )
 
 
@@ -342,8 +342,8 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             thhgtd_zdiffu = 200.0
         case Experiments.WEISMAN_KLEMP_TORUS:
             lowest_layer_thickness = 50.0
-            model_top_height = 23500.0
-            stretch_factor = 1.0
+            model_top_height = 30000.0
+            stretch_factor = 0.85
             damping_height = 8000.0
             rayleigh_coeff = 0.75
             exner_expol = 0.333

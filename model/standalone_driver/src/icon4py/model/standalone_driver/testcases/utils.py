@@ -13,7 +13,7 @@ from types import ModuleType
 import numpy as np
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.grid import base, horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
