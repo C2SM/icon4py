@@ -81,7 +81,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
-            connectivities,
+            connectivities=connectivities,
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
             inv_ddqz_z_full=inv_ddqz_z_full,

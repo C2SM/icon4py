@@ -135,10 +135,10 @@ class Icon4pyDriver:
             self.model_time_variables.next_simulation_date()
 
             self._integrate_one_time_step(
-                diffusion_diagnostic_state,
-                solve_nonhydro_diagnostic_state,
-                tracer_advection_diagnostic_state,
-                prognostic_states,
+                diffusion_diagnostic_state=diffusion_diagnostic_state,
+                solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+                tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
+                prognostic_states=prognostic_states,
                 prep_adv=prep_adv,
                 do_prep_adv=do_prep_adv,
                 tracer_prep_adv=tracer_prep_adv,
@@ -271,8 +271,8 @@ class Icon4pyDriver:
 
             with timer_solve_nh:
                 self.solve_nonhydro.time_step(
-                    solve_nonhydro_diagnostic_state,
-                    prognostic_states,
+                    diagnostic_state_nh=solve_nonhydro_diagnostic_state,
+                    prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
                     dtime=self.model_time_variables.substep_timestep,

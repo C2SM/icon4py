@@ -62,7 +62,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (z_beta, z_alpha) = compute_solver_coefficients_matrix_numpy(
-            connectivities,
+            connectivities=connectivities,
             exner_nnow=exner_nnow,
             rho_nnow=rho_nnow,
             theta_v_nnow=theta_v_nnow,

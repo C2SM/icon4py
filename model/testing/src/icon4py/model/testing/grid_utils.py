@@ -107,10 +107,10 @@ def get_grid_geometry(
             allocator=model_backends.get_allocator(backend),
         )
         return geometry.GridGeometry(
-            gm.grid,
-            gm.decomposition_info,
-            backend,
-            gm.coordinates,
+            grid=gm.grid,
+            decomposition_info=gm.decomposition_info,
+            backend=backend,
+            coordinates=gm.coordinates,
             extra_fields=gm.geometry_fields,
             metadata=geometry_attrs.attrs,
         )

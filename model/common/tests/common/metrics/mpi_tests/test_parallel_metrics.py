@@ -117,7 +117,7 @@ def test_distributed_metrics_attrs(
         field = field[slicer]
         field_ref = field_ref[slicer]
 
-    test_utils.assert_dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)
+    test_utils.assert_dallclose(actual=field, desired=field_ref, rtol=1e-8, atol=1.0e-8)
 
 
 @pytest.mark.datatest

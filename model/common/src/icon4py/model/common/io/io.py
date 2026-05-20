@@ -158,7 +158,7 @@ class IOMonitor(monitor.Monitor):
         self._initialize_output()
         self._group_monitors = [
             FieldGroupMonitor(
-                conf,
+                config=conf,
                 vertical=vertical_size,
                 horizontal=horizontal_size,
                 grid_id=grid_id,
@@ -283,10 +283,10 @@ class FieldGroupMonitor(monitor.Monitor):
         filename = generate_name(self._file_name_pattern, self._file_counter)
         filename_path = self._output_path.joinpath(filename)
         df = writers.NETCDFWriter(
-            filename_path,
-            vertical_params,
-            horizontal_size,
-            self._time_properties,
+            file_name=filename_path,
+            vertical=vertical_params,
+            horizontal=horizontal_size,
+            time_properties=self._time_properties,
             global_attrs=self._global_attrs,
         )
         df.initialize_dataset()

@@ -164,13 +164,13 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
     fields = {"x": "x", "y": "y", "z": "z"}
 
     provider = factory.EmbeddedFieldOperatorProvider(
-        field_op, domain, fields, deps, do_exchange=False
+        func=field_op, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
     provider(
-        "x",
-        cell_coordinate_source,
-        cell_coordinate_source.backend,
-        cell_coordinate_source,
+        field_name="x",
+        field_src=cell_coordinate_source,
+        backend=cell_coordinate_source.backend,
+        grid=cell_coordinate_source,
         exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["x"]
@@ -189,12 +189,14 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         "input_field": "height_coordinate",
     }
     fields = {"average": "output_f"}
-    provider = factory.ProgramFieldProvider(program, domain, fields, deps, do_exchange=False)
+    provider = factory.ProgramFieldProvider(
+        func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
+    )
     provider(
-        "output_f",
-        height_coordinate_source,
-        height_coordinate_source.backend,
-        height_coordinate_source,
+        field_name="output_f",
+        factory=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid_provider=height_coordinate_source,
         exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["output_f"]

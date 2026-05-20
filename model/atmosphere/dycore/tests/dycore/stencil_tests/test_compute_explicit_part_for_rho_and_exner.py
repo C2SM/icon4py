@@ -73,7 +73,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (z_rho_expl, z_exner_expl) = compute_explicit_part_for_rho_and_exner_numpy(
-            connectivities,
+            connectivities=connectivities,
             rho_nnow=rho_nnow,
             inv_ddqz_z_full=inv_ddqz_z_full,
             z_flxdiv_mass=z_flxdiv_mass,
