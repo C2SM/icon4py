@@ -13,12 +13,11 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
 
-from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import base as base_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.standalone_driver import config as driver_config
-from icon4py.model.testing import config, datatest_utils as dt_utils
+from icon4py.model.testing import config
 
 
 if TYPE_CHECKING:
@@ -201,6 +200,8 @@ class Grids:
 class ExperimentDescription:
     name: str
     long_name: str
+    grid: GridDescription
+    version: int = 3
 
 
 @dataclasses.dataclass
@@ -215,69 +216,52 @@ class ExperimentConfig:
 
 @dataclasses.dataclass
 class Experiment:
-    version: int = 3
     description: ExperimentDescription
-    grid: GridDescription
-    config: ExperimentConfig
+    _config: ExperimentConfig
+
+    def __init__(
+        self, experiment_description: ExperimentDescription, experiment_config: ExperimentConfig
+    ) -> None:
+        self.description = experiment_description
+        self._config = experiment_config
 
     @property
     def name(self) -> str:
         return self.description.name
 
-    # TODO (jcanton): _process_props doesn't really belong here. find a better
-    # way. prefer error to default single proc
-    _process_props: decomp_defs.ProcessProperties | None = dataclasses.field(
-        default=None, repr=False, init=False, compare=False
-    )
-    _config: ExperimentConfig | None = dataclasses.field(
-        default=None, repr=False, init=False, compare=False
-    )
+    @property
+    def grid(self) -> GridDescription:
+        return self.description.grid
 
     @property
     def config(self) -> ExperimentConfig:
-        """Lazily load the experiment configuration on first access."""
-        if self._config is None:
-            if self._process_props is None:
-                self._process_props = decomp_defs.SingleNodeProcessProperties()
-            dt_utils.download_experiment(self, self._process_props)
-            self._config = dt_utils.create_experiment_configuration(self, self._process_props)
         # Return a deep copy so that tests cannot mutate the shared cached config.
         return copy.deepcopy(self._config)
 
 
 class Experiments:
-    EXCLAIM_APE: Final = Experiment(
-        description = ExperimentDescription(
-            name="exclaim_ape_R02B04",
-            long_name="EXCLAIM Aquaplanet experiment",
-        ),
+    EXCLAIM_APE: Final = ExperimentDescription(
+        name="exclaim_ape_R02B04",
+        long_name="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
     )
-    MCH_CH_R04B09: Final = Experiment(
-        description = ExperimentDescription(
-            name="exclaim_ch_r04b09_dsl",
-            long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
-        ),
+    MCH_CH_R04B09: Final = ExperimentDescription(
+        name="exclaim_ch_r04b09_dsl",
+        long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
     )
-    JW: Final = Experiment(
-        description = ExperimentDescription(
-            name="exclaim_nh35_tri_jws",
-            long_name="Jablonowski Williamson atmospheric test case",
-        ),
+    JW: Final = ExperimentDescription(
+        name="exclaim_nh35_tri_jws",
+        long_name="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
     )
-    GAUSS3: Final = ExperimentDescription(
-        description = ExperimentDescription(
-            name="exclaim_gauss3d",
-            long_name="Gauss 3d test case",
-        ),
+    GAUSS3D: Final = ExperimentDescription(
+        name="exclaim_gauss3d",
+        long_name="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
     )
-    WEISMAN_KLEMP_TORUS: Final = Experiment(
-        description = ExperimentDescription(
-            name="exclaim_nh_weisman_klemp",
-            long_name="Weisman-Klemp experiment on Torus Grid",
-        ),
+    WEISMAN_KLEMP_TORUS: Final = ExperimentDescription(
+        name="exclaim_nh_weisman_klemp",
+        long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
     )

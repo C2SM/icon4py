@@ -33,21 +33,25 @@ def get_process_properties_for_run(
     return decomposition.get_process_properties(run_instance)
 
 
-def get_experiment_name_with_version(experiment: definitions.Experiment) -> str:
+def get_experiment_name_with_version(
+    experiment_description: definitions.ExperimentDescription,
+) -> str:
     """Generate experiment name with version suffix."""
-    return f"{experiment.name}_v{experiment.version:02d}"
+    return f"{experiment_description.name}_v{experiment_description.version:02d}"
 
 
 def get_ranked_experiment_name_with_version(
-    experiment: definitions.Experiment, comm_size: int
+    experiment_description: definitions.ExperimentDescription, comm_size: int
 ) -> str:
     """Generate ranked experiment name with version suffix."""
-    return f"mpitask{comm_size}_{get_experiment_name_with_version(experiment)}"
+    return f"mpitask{comm_size}_{get_experiment_name_with_version(experiment_description)}"
 
 
-def get_experiment_archive_filename(experiment: definitions.Experiment, comm_size: int) -> str:
+def get_experiment_archive_filename(
+    experiment_description: definitions.ExperimentDescription, comm_size: int
+) -> str:
     """Generate ranked archive filename for an experiment."""
-    return f"{get_ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
+    return f"{get_ranked_experiment_name_with_version(experiment_description, comm_size)}.tar.gz"
 
 
 def get_experiment_archive_url(root_url: str, filepath: str) -> str:
@@ -80,13 +84,13 @@ def get_muphys_archive_url(root_url: str, experiment_type: str, experiment_name:
 
 
 def get_datapath_for_experiment(
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment."""
 
     experiment_dir = get_ranked_experiment_name_with_version(
-        experiment,
+        experiment_description,
         process_props.comm_size,
     )
     return definitions.serialized_data_path().joinpath(
@@ -109,17 +113,17 @@ def create_icon_serial_data_provider(
 
 
 def download_experiment(
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> None:
     """Download data and config for an experiment--if not already present."""
     comm_size = processor_props.comm_size
     try:
         root_url = definitions.TESTDATA_ROOT_URL
-        archive_filename = get_experiment_archive_filename(experiment, comm_size)
+        archive_filename = get_experiment_archive_filename(experiment_description, comm_size)
         archive_path = definitions.EXPERIMENT_DATA_DIR + "/" + archive_filename
         uri = get_experiment_archive_url(root_url, archive_path)
-        destination_path = get_datapath_for_experiment(experiment, processor_props)
+        destination_path = get_datapath_for_experiment(experiment_description, processor_props)
         data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
@@ -142,7 +146,7 @@ def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
         return json.load(f)
 
 
-def _list_to_value(obj):
+def _list_to_value(obj: list) -> float | int | str:
     # Some parameters are allocated as `max_dom`-sized lists, with one value
     # per domain. ICON4Py tests (for now) only run on one domain.
     # Most parameters have the same value for all elements, others (such as
@@ -151,7 +155,7 @@ def _list_to_value(obj):
 
 
 def create_experiment_configuration(
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> definitions.ExperimentConfig:
     """
@@ -170,7 +174,7 @@ def create_experiment_configuration(
     """
 
     experiment_dir = get_ranked_experiment_name_with_version(
-        experiment,
+        experiment_description,
         processor_props.comm_size,
     )
     json_file_path = (
@@ -299,7 +303,7 @@ def create_experiment_configuration(
     # TODO(jcanton): Extract these from the JSON when available
 
     driver_cfg = driver_config.DriverConfig(
-        experiment_name=experiment.name,
+        experiment_name=experiment_description.name,
         output_path=pathlib.Path(),  # Placeholder
         profiling_stats=None,
         dtime=datetime.timedelta(seconds=run_nml["dtime"]),

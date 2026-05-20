@@ -483,7 +483,11 @@ def _compare_metrics_fields_single_multi_rank(
     )
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        file, process_props, backend, allocator, num_levels=experiment.config.vertical_grid.num_levels
+        file,
+        process_props,
+        backend,
+        allocator,
+        num_levels=experiment.config.vertical_grid.num_levels,
     )
     _log.info(
         f"rank = {process_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"
@@ -665,7 +669,11 @@ def test_metrics_mask_prog_halo_c(
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
-        file, process_props, backend, allocator, num_levels=experiment.config.vertical_grid.num_levels
+        file,
+        process_props,
+        backend,
+        allocator,
+        num_levels=experiment.config.vertical_grid.num_levels,
     )
     _log.info(
         f"rank = {process_props.rank} : {multi_rank_gm.decomposition_info.get_horizontal_size()!r}"

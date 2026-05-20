@@ -146,7 +146,9 @@ def height_coordinate_source(
         "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
     }
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels), vct_a, vct_b
+        v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
+        vct_a,
+        vct_b,
     )
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid

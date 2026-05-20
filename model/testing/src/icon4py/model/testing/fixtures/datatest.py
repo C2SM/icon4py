@@ -99,11 +99,23 @@ def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescript
     ],
     ids=lambda r: r.name,
 )
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+def experiment_description(request: pytest.FixtureRequest) -> definitions.Experiment:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""
     return request.param
+
+
+@pytest.fixture(scope="session")
+def experiment(
+    experiment_description: definitions.ExperimentDescription,
+    process_props: decomposition.ProcessProperties,
+    download_ser_data: None,  # downloads data as side-effect
+) -> definitions.Experiment:
+    return definitions.Experiment(
+        description=experiment_description,
+        config=dt_utils.create_experiment_configuration(experiment_description, process_props),
+    )
 
 
 @pytest.fixture(scope="session", params=[False])
@@ -117,7 +129,7 @@ def process_props(request: pytest.FixtureRequest) -> decomposition.ProcessProper
 def download_ser_data(
     request: pytest.FixtureRequest,
     process_props: decomposition.ProcessProperties,
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -129,7 +141,7 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    dt_utils.download_experiment(experiment, process_props)
+    dt_utils.download_experiment(experiment_description, process_props)
 
 
 @pytest.fixture
