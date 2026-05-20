@@ -21,8 +21,8 @@ def _batched_searchsorted(a, v, array_ns):
 
 def compute_zdiff_gradp(
     e2c,
+    z_me: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
-    c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     flat_idx: data_alloc.NDArray,
     topography: data_alloc.NDArray,
@@ -33,7 +33,6 @@ def compute_zdiff_gradp(
     array_ns = data_alloc.array_namespace(z_mc)
 
     nedges = e2c.shape[0]
-    z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
 
     z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0
@@ -48,23 +47,26 @@ def compute_zdiff_gradp(
     e2c_0 = e2c[:, 0].astype(array_ns.int64)
     e2c_1 = e2c[:, 1].astype(array_ns.int64)
 
-    z_ifc_asc = z_ifc[:, ::-1]
+    z_ifc_asc = z_ifc[:, ::-1].copy()
     z_ifc_e0 = z_ifc_asc[e2c_0]
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
-    fill_high = float(array_ns.max(z_ifc)) + 1.0
+    fill_high = float(array_ns.max(z_ifc_e0)) + 1.0
+    fill_low = float(array_ns.min(z_ifc_e0)) - 1.0
 
     z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
         nlev + 1 - fi[:, None]
     )
+    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
 
     z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
     z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
+    z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
 
-    pos_0 = _batched_searchsorted(z_ifc_e0_m, z_me, array_ns)
+    pos_0 = _batched_searchsorted(z_ifc_e0_m, z_me_m, array_ns)
     jk1_0 = array_ns.clip(nlev - pos_0, fi[:, None], nlev - 1)
 
-    pos_1 = _batched_searchsorted(z_ifc_e1_m, z_me, array_ns)
+    pos_1 = _batched_searchsorted(z_ifc_e1_m, z_me_m, array_ns)
     jk1_1 = array_ns.clip(nlev - pos_1, fi[:, None], nlev - 1)
 
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]

@@ -10,11 +10,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -50,10 +50,11 @@ def test_compute_zdiff_gradp(
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     vertoffset_gradp_ref = metrics_savepoint.vertoffset_gradp()
 
-    c_lin_e = interpolation_savepoint.c_lin_e()
+    e2c = icon_grid.get_connectivity("E2C").ndarray
     z_ifc = metrics_savepoint.z_ifc()
     z_ifc_ground_level = z_ifc.ndarray[:, icon_grid.num_levels]
     z_mc = metrics_savepoint.z_mc()
+    c_lin_e = interpolation_savepoint.c_lin_e().ndarray
     k_lev = data_alloc.index_field(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=backend
     )
@@ -61,19 +62,19 @@ def test_compute_zdiff_gradp(
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
 
+    z_me = np.sum(z_mc.ndarray[e2c] * np.expand_dims(c_lin_e, axis=-1), axis=1)
+
     flat_idx_np = compute_flat_max_idx(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
-        z_mc=z_mc.ndarray,
-        c_lin_e=c_lin_e.ndarray,
+        e2c=e2c,
+        z_me=z_me,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
-        exchange=decomposition.single_node_exchange,
     )
 
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
+        e2c=e2c,
+        z_me=z_me,
         z_mc=z_mc.ndarray,
-        c_lin_e=c_lin_e.ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         flat_idx=flat_idx_np,
         topography=z_ifc_ground_level,

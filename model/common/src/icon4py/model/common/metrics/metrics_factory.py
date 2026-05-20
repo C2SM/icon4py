@@ -258,6 +258,24 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(ddqz_full_on_edges)
 
+        z_me_provider = factory.ProgramFieldProvider(
+            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            deps={"in_field": attrs.Z_MC, "coeff": interpolation_attributes.C_LIN_E},
+            domain={
+                dims.EdgeDim: (
+                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.END),
+                ),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"out_field": "z_me"},
+            do_exchange=True,
+        )
+        self.register_provider(z_me_provider)
+
         compute_scaling_factor_for_3d_divdamp = factory.ProgramFieldProvider(
             func=mf.compute_scaling_factor_for_3d_divdamp.with_backend(self._backend),
             domain={
@@ -644,13 +662,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfac_e)
 
         max_flat_index_provider = factory.NumpyDataProvider(
-            func=functools.partial(
-                mf.compute_flat_max_idx,
-                exchange=self._exchange,
-            ),
+            func=mf.compute_flat_max_idx,
             deps={
-                "z_mc": attrs.Z_MC,
-                "c_lin_e": interpolation_attributes.C_LIN_E,
+                "z_me": "z_me",
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "k_lev": "k_lev",
             },
@@ -758,8 +772,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_zdiff_gradp_np = factory.NumpyDataProvider(
             func=compute_zdiff_gradp.compute_zdiff_gradp,
             deps={
+                "z_me": "z_me",
                 "z_mc": attrs.Z_MC,
-                "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "flat_idx": attrs.FLAT_IDX_MAX,
                 "topography": "topography",
@@ -780,6 +794,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             do_exchange=True,
+            exchange_fields=(attrs.ZDIFF_GRADP,),
         )
         self.register_provider(compute_zdiff_gradp_np)
 

@@ -560,17 +560,12 @@ def compute_wgtfac_e(
 
 def compute_flat_max_idx(
     e2c: data_alloc.NDArray,
-    z_mc: data_alloc.NDArray,
-    c_lin_e: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
-    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(e2c)
     k_lev_minus1 = k_lev[:-1]
-    coeff_ = np.expand_dims(c_lin_e, axis=-1)
-    z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
-    exchange.exchange(dims.EdgeDim, z_me, stream=decomposition.BLOCK)
     z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
     z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
     z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]

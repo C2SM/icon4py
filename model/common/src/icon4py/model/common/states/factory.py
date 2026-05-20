@@ -649,6 +649,8 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             function and the value the sparse Dimension of the connectivity field
         params: scalar arguments for the function
         do_exchange: a flag that governs whether or not a halo exchange is needed after the field has been computed. Defaults to False
+        exchange_fields: names of fields that should be exchanged when do_exchange is True.
+            If None, all fields are exchanged. Defaults to None.
     """
 
     def __init__(
@@ -660,6 +662,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
         do_exchange: bool = False,
+        exchange_fields: Sequence[str] | None = None,
     ):
         self._func = func
         self._dims = tuple(map(replace_khalfdim, domain))
@@ -670,6 +673,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
         self._do_exchange = do_exchange
+        self._exchange_fields = set(exchange_fields) if exchange_fields is not None else None
 
     def __call__(
         self,
@@ -683,7 +687,10 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             log.info(f"computing field {field_name}")
             self._compute(factory, backend, grid)
             exchangeable_fields = {
-                name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
+                name: field
+                for name, field in self.fields.items()
+                if isinstance(field, gtx.Field)
+                and (self._exchange_fields is None or name in self._exchange_fields)
             }
             self.exchange(exchangeable_fields, exchange=exchange)
         return self.fields[field_name]
