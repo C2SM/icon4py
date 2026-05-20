@@ -94,8 +94,8 @@ def cartesian_coordinates_of_edge_tangent_torus(
         vertex_x(E2V[1]),
         vertex_y(E2V[0]),
         vertex_y(E2V[1]),
-        domain_length,
-        domain_height,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
     x = edge_orientation * xdiff
     y = edge_orientation * ydiff
@@ -580,7 +580,7 @@ def arc_distance_of_far_edges_in_diamond(
         y(E2C2V[3]),
         z(E2C2V[2]),
         z(E2C2V[3]),
-        radius,
+        radius=radius,
     )
 
 
@@ -611,8 +611,8 @@ def distance_of_far_edges_in_diamond_torus(
         vertex_x(E2C2V[3]),
         vertex_y(E2C2V[2]),
         vertex_y(E2C2V[3]),
-        domain_length,
-        domain_height,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
 
 

@@ -30,10 +30,10 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_27."""
     scal_divdamp = _calculate_fourth_order_divdamp_scaling_coeff(
-        interpolated_fourth_order_divdamp_factor,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
     )
     bdy_divdamp = _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
         scal_divdamp, max_nudging_coefficient, dbl_eps

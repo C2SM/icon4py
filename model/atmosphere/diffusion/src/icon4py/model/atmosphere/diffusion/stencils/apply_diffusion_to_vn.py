@@ -42,13 +42,13 @@ def _apply_diffusion_to_vn(
     limited_area: bool,
 ) -> fa.EdgeKField[wpfloat]:
     z_nabla4_e2 = _calculate_nabla4(
-        u_vert,
-        v_vert,
-        primal_normal_vert_v1,
-        primal_normal_vert_v2,
-        z_nabla2_e,
-        inv_vert_vert_length,
-        inv_primal_edge_length,
+        u_vert=u_vert,
+        v_vert=v_vert,
+        primal_normal_vert_v1=primal_normal_vert_v1,
+        primal_normal_vert_v2=primal_normal_vert_v2,
+        z_nabla2_e=z_nabla2_e,
+        inv_vert_vert_length=inv_vert_vert_length,
+        inv_primal_edge_length=inv_primal_edge_length,
     )
 
     # TODO(): Use if-else statement instead
@@ -56,14 +56,14 @@ def _apply_diffusion_to_vn(
         concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_to_vn(
-                area_edge,
-                kh_smag_e,
-                z_nabla2_e,
-                z_nabla4_e2,
-                diff_multfac_vn,
-                nudgecoeff_e,
-                vn,
-                nudgezone_diff,
+                area_edge=area_edge,
+                kh_smag_e=kh_smag_e,
+                z_nabla2_e=z_nabla2_e,
+                z_nabla4_e2=z_nabla4_e2,
+                diff_multfac_vn=diff_multfac_vn,
+                nudgecoeff_e=nudgecoeff_e,
+                vn=vn,
+                nudgezone_diff=nudgezone_diff,
             ),
             _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
         )
@@ -71,12 +71,12 @@ def _apply_diffusion_to_vn(
         else concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_global_to_vn(
-                area_edge,
-                kh_smag_e,
-                z_nabla2_e,
-                z_nabla4_e2,
-                diff_multfac_vn,
-                vn,
+                area_edge=area_edge,
+                kh_smag_e=kh_smag_e,
+                z_nabla2_e=z_nabla2_e,
+                z_nabla4_e2=z_nabla4_e2,
+                diff_multfac_vn=diff_multfac_vn,
+                vn=vn,
             ),
             vn,
         )

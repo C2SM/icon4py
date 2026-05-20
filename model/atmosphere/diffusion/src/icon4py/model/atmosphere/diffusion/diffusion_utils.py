@@ -93,15 +93,15 @@ def _init_diffusion_local_fields_for_regular_timestep(
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     enh_smag_fac = _en_smag_fac_for_zero_nshift(
-        vect_a,
-        hdiff_smag_fac,
-        hdiff_smag_fac2,
-        hdiff_smag_fac3,
-        hdiff_smag_fac4,
-        hdiff_smag_z,
-        hdiff_smag_z2,
-        hdiff_smag_z3,
-        hdiff_smag_z4,
+        vect_a=vect_a,
+        hdiff_smag_fac=hdiff_smag_fac,
+        hdiff_smag_fac2=hdiff_smag_fac2,
+        hdiff_smag_fac3=hdiff_smag_fac3,
+        hdiff_smag_fac4=hdiff_smag_fac4,
+        hdiff_smag_z=hdiff_smag_z,
+        hdiff_smag_z2=hdiff_smag_z2,
+        hdiff_smag_z3=hdiff_smag_z3,
+        hdiff_smag_z4=hdiff_smag_z4,
     )
     return (
         diff_multfac_vn,
