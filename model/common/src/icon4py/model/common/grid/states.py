@@ -16,11 +16,11 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 class EdgeParams:
     def __init__(
         self,
+        *,
         tangent_orientation=None,
         primal_edge_lengths=None,
         inverse_primal_edge_lengths=None,
         dual_edge_lengths=None,
-        *,
         inverse_dual_edge_lengths=None,
         inverse_vertex_vertex_lengths=None,
         primal_normal_vert_x=None,

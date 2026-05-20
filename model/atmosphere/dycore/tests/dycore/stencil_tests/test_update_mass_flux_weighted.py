@@ -42,12 +42,12 @@ class TestUpdateMassFluxWeighted(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_ic: np.ndarray,
         vwind_expl_wgt: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         w_now: np.ndarray,
-        *,
         w_new: np.ndarray,
         w_concorr_c: np.ndarray,
         mass_flx_ic: np.ndarray,

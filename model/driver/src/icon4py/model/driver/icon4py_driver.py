@@ -113,11 +113,11 @@ class TimeLoop:
 
     def time_integration(
         self,
+        *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        *,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
         profiling: driver_config.ProfilingConfig | None = None,
@@ -201,11 +201,11 @@ class TimeLoop:
 
     def _integrate_one_time_step(
         self,
+        *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        *,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
@@ -271,11 +271,11 @@ class TimeLoop:
 
     def _do_dyn_substepping(
         self,
+        *,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
-        *,
         do_prep_adv: bool,
     ):
         # TODO(OngChia): compute airmass for prognostic_state here
@@ -342,12 +342,12 @@ class DriverParams(NamedTuple):
 
 
 def initialize(
+    *,
     file_path: pathlib.Path,
     process_props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
     grid_file: pathlib.Path,
-    *,
     backend_like: model_backends.BackendLike,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
@@ -544,12 +544,12 @@ def initialize(
     help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_gpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
 )
 def icon4py_driver(
+    *,
     input_path,
     run_path,
     mpi,
     serialization_type,
     experiment_type,
-    *,
     grid_file,
     enable_output,
     enable_profiling,

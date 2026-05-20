@@ -34,12 +34,12 @@ def dallclose(
 
 
 def assert_dallclose(
+    *,
     actual: npt.ArrayLike,
     desired: npt.ArrayLike,
     rtol: float = 1.0e-12,
     atol: float = 0.0,
     equal_nan: bool = False,
-    *,
     err_msg: str = "",
     verbose: bool = True,
 ) -> None:
@@ -68,7 +68,7 @@ def is_sorted(array: np.ndarray) -> bool:
     return bool((array[:-1] <= array[1:]).all())
 
 
-def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
+def fingerprint_buffer(*, buffer: Buffer, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
 
 

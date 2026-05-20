@@ -53,12 +53,12 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
 
 
 def compute_btraj_numpy(
+    *,
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
     pos_on_tplane_e_2: np.ndarray,
     primal_normal_cell_1: np.ndarray,
-    *,
     dual_normal_cell_1: np.ndarray,
     primal_normal_cell_2: np.ndarray,
     dual_normal_cell_2: np.ndarray,
@@ -96,12 +96,12 @@ def compute_btraj_numpy(
 
 
 def sten_16_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     p_vn: np.ndarray,
     rho_ref_me: np.ndarray,
     theta_ref_me: np.ndarray,
     p_distv_bary_1: np.ndarray,
-    *,
     p_distv_bary_2: np.ndarray,
     z_grad_rth_1: np.ndarray,
     z_grad_rth_2: np.ndarray,
@@ -147,12 +147,12 @@ def sten_16_numpy(
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
     pos_on_tplane_e_2: np.ndarray,
-    *,
     primal_normal_cell_1: np.ndarray,
     dual_normal_cell_1: np.ndarray,
     primal_normal_cell_2: np.ndarray,
@@ -216,12 +216,12 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
         pos_on_tplane_e_2: np.ndarray,
-        *,
         primal_normal_cell_1: np.ndarray,
         dual_normal_cell_1: np.ndarray,
         primal_normal_cell_2: np.ndarray,

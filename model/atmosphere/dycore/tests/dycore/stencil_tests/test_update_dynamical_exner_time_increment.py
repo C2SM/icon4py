@@ -23,12 +23,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def update_dynamical_exner_time_increment_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner: np.ndarray,
     ddt_exner_phy: np.ndarray,
     exner_dyn_incr: np.ndarray,
     ndyn_substeps_var: float,
-    *,
     dtime: float,
 ) -> np.ndarray:
     exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
@@ -41,12 +41,12 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
         ddt_exner_phy: np.ndarray,
         exner_dyn_incr: np.ndarray,
         ndyn_substeps_var: float,
-        *,
         dtime: float,
         **kwargs: Any,
     ) -> dict:

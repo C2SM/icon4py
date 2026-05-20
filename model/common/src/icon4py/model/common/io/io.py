@@ -146,11 +146,11 @@ class IOMonitor(monitor.Monitor):
 
     def __init__(
         self,
+        *,
         config: IOConfig,
         vertical_size: v_grid.VerticalGrid,
         horizontal_size: base.HorizontalGridSize,
         grid_file_name: str,
-        *,
         grid_id: uuid.UUID,
     ):
         self.config = config
@@ -222,11 +222,11 @@ class FieldGroupMonitor(monitor.Monitor):
 
     def __init__(
         self,
+        *,
         config: FieldGroupIOConfig,
         vertical: VerticalGrid,
         horizontal: base.HorizontalGridSize,
         grid_id: uuid.UUID,
-        *,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,

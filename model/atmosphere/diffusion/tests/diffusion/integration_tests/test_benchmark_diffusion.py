@@ -40,12 +40,12 @@ from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_diffusion_benchmark(
+    *,
     geometry_field_source: grid_geometry.GridGeometry,
     grid_manager: gm.GridManager,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend_like: model_backends.BackendLike,
-    *,
     benchmark: Any,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)

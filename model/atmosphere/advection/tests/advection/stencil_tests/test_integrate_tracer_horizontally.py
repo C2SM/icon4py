@@ -26,12 +26,12 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_mflx_tracer_h: np.ndarray,
         deepatmo_divh: np.ndarray,
         tracer_now: np.ndarray,
         rhodz_now: np.ndarray,
-        *,
         rhodz_new: np.ndarray,
         geofac_div: np.ndarray,
         p_dtime: float,

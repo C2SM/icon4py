@@ -21,12 +21,12 @@ class TestVaporXIceDefault(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         qi: np.ndarray,
         mi: np.ndarray,
         eta: np.ndarray,
         dvsi: np.ndarray,
-        *,
         rho: np.ndarray,
         dt: wpfloat,
         **kwargs,

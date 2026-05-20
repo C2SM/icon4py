@@ -49,12 +49,12 @@ log = logging.getLogger(__name__)
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
+    *,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx.typing.Backend | None,
-    *,
     lowest_layer_thickness: float,
     model_top_height: float,
     stretch_factor: float,

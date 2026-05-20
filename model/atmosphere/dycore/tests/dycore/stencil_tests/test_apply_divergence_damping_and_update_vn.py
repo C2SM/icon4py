@@ -48,12 +48,12 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         next_vn: np.ndarray,
         current_vn: np.ndarray,
         dwdz_at_cells_on_model_levels: np.ndarray,
-        *,
         predictor_normal_wind_advective_tendency: np.ndarray,
         corrector_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_slow_physics_process: np.ndarray,

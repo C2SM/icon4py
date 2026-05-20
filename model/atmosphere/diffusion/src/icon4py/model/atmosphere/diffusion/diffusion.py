@@ -145,11 +145,11 @@ class DiffusionConfig:
 
     def __init__(
         self,
+        *,
         diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w: bool = True,
         hdiff_vn: bool = True,
         hdiff_temp: bool = True,
-        *,
         hdiff_smag_w: bool = False,
         type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
@@ -414,11 +414,11 @@ class Diffusion:
 
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: DiffusionConfig,
         params: DiffusionParams,
         vertical_grid: v_grid.VerticalGrid,
-        *,
         metric_state: diffusion_states.DiffusionMetricState,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,

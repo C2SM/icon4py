@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilT
 
 
 def compute_hydrostatic_correction_term_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     theta_v: np.ndarray,
     ikoffset: np.ndarray,
     zdiff_gradp: np.ndarray,
     theta_v_ic: np.ndarray,
-    *,
     inv_ddqz_z_full: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     grav_o_cpd: float,
@@ -109,12 +109,12 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         theta_v: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,
         theta_v_ic: np.ndarray,
-        *,
         inv_ddqz_z_full: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         grav_o_cpd: float,

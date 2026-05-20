@@ -22,12 +22,12 @@ from gt4py.next.program_processors.runners.dace import transformations as gtx_tr
 
 
 def _cleanup_local_self_update(
+    *,
     scan_sdfg: dace.SDFG,
     if_stmt_node: dace.sdfg.state.ConditionalBlock,
     if_stmt_conn: str,
     compute_src_node: dace_nodes.AccessNode,
     compute_dst_node: dace_nodes.AccessNode,
-    *,
     update_src_node: dace_nodes.AccessNode,
     update_dst_node: dace_nodes.AccessNode,
     scan_compute_st: dace.SDFGState,
@@ -148,12 +148,12 @@ def _replace_scan_input(
 
 
 def _cleanup_global_self_update(
+    *,
     sdfg: dace.SDFG,
     state: dace.SDFGState,
     if_stmt_node: dace_nodes.NestedSDFG,
     if_stmt_else_state: dace.SDFGState,
     if_stmt_output: str,
-    *,
     scan_node: dace_nodes.NestedSDFG,
     scan_compute_st: dace.SDFGState,
     compute_src_node: dace_nodes.AccessNode,
@@ -255,12 +255,12 @@ def _cleanup_global_self_update(
 
 
 def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915
+    *,
     sdfg: dace.SDFG,
     state: dace.SDFGState,
     scan_node: dace_nodes.NestedSDFG,
     scan_compute_st: dace.SDFGState,
     scan_update_st: dace.SDFGState,
-    *,
     if_stmt_node: dace_nodes.NestedSDFG,
 ) -> None:
     scan_sdfg = scan_node.sdfg

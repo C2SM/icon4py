@@ -103,12 +103,12 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         current_rho: np.ndarray,
         reference_rho_at_cells_on_model_levels: np.ndarray,
         current_theta_v: np.ndarray,
         reference_theta_at_cells_on_model_levels: np.ndarray,
-        *,
         perturbed_rho_at_cells_on_model_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_half_levels: np.ndarray,

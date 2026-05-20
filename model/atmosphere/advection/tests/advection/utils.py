@@ -140,12 +140,12 @@ def log_serialized(
 
 
 def verify_advection_fields(
+    *,
     grid: icon_grid.IconGrid,
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_tracer_new_ref: fa.CellKField[ta.wpfloat],
-    *,
     even_timestep: bool,
 ):
     # cell indices

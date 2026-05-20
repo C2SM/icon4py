@@ -23,12 +23,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     vn_ie: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     w: np.ndarray,
     z_vt_ie: np.ndarray,
-    *,
     inv_primal_edge_length: np.ndarray,
     tangent_orientation: np.ndarray,
     z_w_v: np.ndarray,
@@ -56,12 +56,12 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         vn_ie: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         w: np.ndarray,
         z_vt_ie: np.ndarray,
-        *,
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
         z_w_v: np.ndarray,

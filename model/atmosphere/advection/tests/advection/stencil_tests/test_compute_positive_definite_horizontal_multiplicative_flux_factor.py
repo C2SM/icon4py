@@ -24,12 +24,12 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
-        *,
         p_dtime,
         dbl_eps,
         **kwargs,

@@ -156,11 +156,11 @@ class IconSavepoint:
 class IconGridSavepoint(IconSavepoint):
     def __init__(
         self,
+        *,
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         grid_id: str,
         size: dict,
-        *,
         grid_params: icon.GridParams,
         backend: gtx_typing.Backend | None,
     ):
@@ -1962,11 +1962,11 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
+        *,
         backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
         do_print=False,
-        *,
         mpi_rank=0,
     ):
         self.rank = mpi_rank

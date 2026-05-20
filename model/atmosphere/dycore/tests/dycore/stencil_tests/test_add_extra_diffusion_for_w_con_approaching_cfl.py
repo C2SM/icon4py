@@ -24,12 +24,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     z_w_con_c: np.ndarray,
     ddqz_z_half: np.ndarray,
-    *,
     area: np.ndarray,
     geofac_n2s: np.ndarray,
     w: np.ndarray,
@@ -78,12 +78,12 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         z_w_con_c: np.ndarray,
         ddqz_z_half: np.ndarray,
-        *,
         area: np.ndarray,
         geofac_n2s: np.ndarray,
         w: np.ndarray,

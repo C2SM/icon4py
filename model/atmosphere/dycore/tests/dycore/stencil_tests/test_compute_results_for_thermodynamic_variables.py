@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_results_for_thermodynamic_variables_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
     rho_ic: np.ndarray,
-    *,
     w: np.ndarray,
     z_exner_expl: np.ndarray,
     exner_ref_mc: np.ndarray,
@@ -63,12 +63,12 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_rho_expl: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         rho_ic: np.ndarray,
-        *,
         w: np.ndarray,
         z_exner_expl: np.ndarray,
         exner_ref_mc: np.ndarray,

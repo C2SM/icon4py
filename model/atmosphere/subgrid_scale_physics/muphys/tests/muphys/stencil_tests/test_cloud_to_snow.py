@@ -21,12 +21,12 @@ class TestCloudToSnow(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         t: np.ndarray,
         qc: np.ndarray,
         qs: np.ndarray,
         ns: np.ndarray,
-        *,
         lam: np.ndarray,
         **kwargs,
     ) -> dict:

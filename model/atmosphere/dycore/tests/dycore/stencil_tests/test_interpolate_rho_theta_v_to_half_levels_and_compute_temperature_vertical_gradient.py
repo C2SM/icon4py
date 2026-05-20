@@ -61,12 +61,12 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_at_cells_on_half_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_half_levels: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
         nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
-        *,
         w: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         current_rho: np.ndarray,

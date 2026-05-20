@@ -13,12 +13,12 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def apply_hydrostatic_adjustment_ndarray(
+    *,
     rho: data_alloc.NDArray,
     exner: data_alloc.NDArray,
     theta_v: data_alloc.NDArray,
     exner_ref_mc: data_alloc.NDArray,
     d_exner_dz_ref_ic: data_alloc.NDArray,
-    *,
     theta_ref_mc: data_alloc.NDArray,
     theta_ref_ic: data_alloc.NDArray,
     wgtfac_c: data_alloc.NDArray,
@@ -56,12 +56,12 @@ def apply_hydrostatic_adjustment_ndarray(
 
 
 def hydrostatic_adjustment_constant_thetav_ndarray(
+    *,
     wgtfac_c: data_alloc.NDArray,
     ddqz_z_half: data_alloc.NDArray,
     exner_ref_mc: data_alloc.NDArray,
     d_exner_dz_ref_ic: data_alloc.NDArray,
     theta_ref_mc: data_alloc.NDArray,
-    *,
     theta_ref_ic: data_alloc.NDArray,
     rho: data_alloc.NDArray,
     exner: data_alloc.NDArray,
@@ -97,12 +97,12 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
 
 
 def zonalwind_2_normalwind_ndarray(
+    *,
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_baroclinic_amplitude: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    *,
     edge_lat: data_alloc.NDArray,
     edge_lon: data_alloc.NDArray,
     primal_normal_x: data_alloc.NDArray,
@@ -172,12 +172,12 @@ def zonalwind_2_normalwind_ndarray(
 
 
 def init_w(
+    *,
     grid: icon_grid.IconGrid,
     z_ifc: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     edge_cell_distance: data_alloc.NDArray,
     primal_edge_length: data_alloc.NDArray,
-    *,
     cell_area: data_alloc.NDArray,
     vn: data_alloc.NDArray,
     vct_b: data_alloc.NDArray,

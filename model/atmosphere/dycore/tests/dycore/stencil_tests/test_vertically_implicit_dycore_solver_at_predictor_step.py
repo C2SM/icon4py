@@ -97,12 +97,12 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         next_w: np.ndarray,
         next_rho: np.ndarray,
         next_exner: np.ndarray,
-        *,
         next_theta_v: np.ndarray,
         dwdz_at_cells_on_model_levels: np.ndarray,
         exner_dynamical_increment: np.ndarray,

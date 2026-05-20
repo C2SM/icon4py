@@ -255,12 +255,12 @@ def solve_nh_init(
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_dycore_wrapper_granule_inputs(
+    *,
     grid_init,  # initializes the grid as side-effect
     istep_init,
     istep_exit,
     substep_init,
     substep_exit,
-    *,
     step_date_init,
     step_date_exit,
     experiment,
@@ -825,12 +825,12 @@ def test_dycore_wrapper_granule_inputs(
     ],
 )
 def test_granule_solve_nonhydro_single_step_regional(
+    *,
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     istep_init,
     istep_exit,
     substep_init,
-    *,
     substep_exit,
     step_date_init,
     step_date_exit,
@@ -1010,12 +1010,12 @@ def test_granule_solve_nonhydro_single_step_regional(
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_granule_solve_nonhydro_multi_step_regional(
+    *,
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     step_date_init,
     step_date_exit,
     istep_exit,
-    *,
     substep_init,
     substep_exit,
     icon_grid,

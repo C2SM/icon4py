@@ -21,12 +21,12 @@ class TestGraupelToRainDefault(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         t: np.ndarray,
         p: np.ndarray,
         rho: np.ndarray,
         dvsw0: np.ndarray,
-        *,
         qg: np.ndarray,
         **kwargs,
     ) -> dict:

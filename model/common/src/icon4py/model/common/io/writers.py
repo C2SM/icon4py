@@ -89,11 +89,11 @@ class NETCDFWriter:
 
     def __init__(
         self,
+        *,
         file_name: pathlib.Path | str,
         vertical: v_grid.VerticalGrid,
         horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
-        *,
         global_attrs: GlobalFileAttributes,
         process_properties: decomposition.ProcessProperties = process_properties,
     ):

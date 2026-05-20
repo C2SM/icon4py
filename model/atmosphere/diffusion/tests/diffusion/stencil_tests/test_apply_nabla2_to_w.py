@@ -17,12 +17,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def apply_nabla2_to_w_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     area: np.ndarray,
     z_nabla2_c: np.ndarray,
     geofac_n2s: np.ndarray,
     w: np.ndarray,
-    *,
     diff_multfac_w: float,
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CODim]
@@ -41,12 +41,12 @@ class TestMoApplyNabla2ToW(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         area: np.ndarray,
         z_nabla2_c: np.ndarray,
         geofac_n2s: np.ndarray,
         w: np.ndarray,
-        *,
         diff_multfac_w: float,
         **kwargs,
     ) -> dict:

@@ -148,11 +148,11 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
+        *,
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
-        *,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
         l_vert_nested: bool = False,
@@ -355,11 +355,11 @@ class NonHydrostaticParams:
 class SolveNonhydro:
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
         metric_state_nonhydro: dycore_states.MetricStateNonHydro,
-        *,
         interpolation_state: dycore_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
         edge_geometry: grid_states.EdgeParams,
@@ -993,11 +993,11 @@ class SolveNonhydro:
 
     def time_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
-        *,
         dtime: float,
         ndyn_substeps_var: int,
         at_initial_timestep: bool,
@@ -1077,11 +1077,11 @@ class SolveNonhydro:
 
     def run_predictor_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
-        *,
         at_initial_timestep: bool,
         at_first_substep: bool,
         is_iau_active: bool,
@@ -1253,11 +1253,11 @@ class SolveNonhydro:
 
     def run_corrector_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         second_order_divdamp_factor: float,
-        *,
         prep_adv: dycore_states.PrepAdvection,
         dtime: float,
         ndyn_substeps_var: int,

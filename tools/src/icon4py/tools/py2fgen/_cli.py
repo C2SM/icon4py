@@ -53,12 +53,12 @@ logger = _utils.setup_logger("py2fgen", log_level=logging.INFO)
     help="Generate source files (.py, .f90, .c, .h) without compiling the shared library.",
 )
 def main(
+    *,
     module_import_path: str,
     functions: list[str],
     library_name: str,
     output_path: pathlib.Path,
     rpath: str,
-    *,
     regenerate: bool,
     skip_compilation: bool,
 ) -> None:

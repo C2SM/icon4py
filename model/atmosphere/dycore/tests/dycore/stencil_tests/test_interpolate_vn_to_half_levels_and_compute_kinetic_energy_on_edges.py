@@ -59,12 +59,12 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(stencil_tests.
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_e: np.ndarray,
         vn: np.ndarray,
         vt: np.ndarray,
         vn_ie: np.ndarray,
-        *,
         z_kin_hor_e: np.ndarray,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,

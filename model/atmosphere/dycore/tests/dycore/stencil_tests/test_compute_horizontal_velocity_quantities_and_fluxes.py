@@ -32,12 +32,12 @@ from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_
 
 
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
     tangential_wind_on_half_levels: np.ndarray,
-    *,
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     wgtfac_e: np.ndarray,
     wgtfacq_e: np.ndarray,
@@ -116,12 +116,12 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         spatially_averaged_vn: np.ndarray,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         tangential_wind: np.ndarray,
         mass_flux_at_edges_on_model_levels: np.ndarray,
-        *,
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,

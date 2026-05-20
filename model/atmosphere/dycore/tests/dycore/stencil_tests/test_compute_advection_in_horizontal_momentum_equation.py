@@ -25,12 +25,12 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 
 
 def _compute_advective_normal_wind_tendency_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     coeff_gradekin: np.ndarray,
     horizontal_kinetic_energy_at_cells_on_model_levels: np.ndarray,
     upward_vorticity_at_vertices: np.ndarray,
-    *,
     tangential_wind: np.ndarray,
     coriolis_frequency: np.ndarray,
     c_lin_e: np.ndarray,
@@ -66,12 +66,12 @@ def _compute_advective_normal_wind_tendency_numpy(
 
 
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     c_lin_e: np.ndarray,
     contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
     area_edge: np.ndarray,
-    *,
     tangent_orientation: np.ndarray,
     inv_primal_edge_length: np.ndarray,
     upward_vorticity_at_vertices: np.ndarray,
@@ -161,12 +161,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         normal_wind_advective_tendency: np.ndarray,
         vn: np.ndarray,
         horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
         tangential_wind: np.ndarray,
-        *,
         coriolis_frequency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,

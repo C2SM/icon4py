@@ -50,12 +50,12 @@ def gnomonic_proj(
 
 
 def diff_on_edges_torus_numpy(
+    *,
     cc_cv_x: float,
     cc_cv_y: float,
     cc_cell_x: float,
     cc_cell_y: float,
     domain_length: float,
-    *,
     domain_height: float,
 ) -> tuple[float, float]:
     if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:

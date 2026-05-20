@@ -96,11 +96,11 @@ _SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = di
 class SaturationAdjustment:
     def __init__(
         self,
+        *,
         config: SaturationAdjustmentConfig,
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
-        *,
         backend: gtx_typing.Backend | None,
     ):
         self._backend = backend
@@ -216,11 +216,11 @@ class SaturationAdjustment:
 
     def run(
         self,
+        *,
         dtime: ta.wpfloat,
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],
         qv: fa.CellKField[ta.wpfloat],
-        *,
         qc: fa.CellKField[ta.wpfloat],
         temperature_tendency: fa.CellKField[ta.wpfloat],
         qv_tendency: fa.CellKField[ta.wpfloat],

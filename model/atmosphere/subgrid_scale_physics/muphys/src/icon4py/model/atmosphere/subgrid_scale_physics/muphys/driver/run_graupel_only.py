@@ -57,12 +57,12 @@ def get_args():
 
 
 def setup_graupel(
+    *,
     dt: float,
     qnc: float,
     backend: model_backends.BackendLike,
     horizontal_start: int,
     horizontal_end: int,
-    *,
     vertical_start: int,
     vertical_end: int,
     enable_masking: bool = True,

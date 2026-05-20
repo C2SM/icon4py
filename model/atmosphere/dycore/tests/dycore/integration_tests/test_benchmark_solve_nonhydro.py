@@ -213,12 +213,12 @@ def solve_nonhydro(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_benchmark_solve_nonhydro(
+    *,
     grid_manager: gm.GridManager,
     solve_nonhydro: solve_nh.SolveNonhydro,
     at_first_substep: bool,
     at_last_substep: bool,
     backend_like: model_backends.BackendLike,
-    *,
     benchmark: Any,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)

@@ -40,12 +40,12 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         interpolated_fourth_order_divdamp_factor: np.ndarray,
         z_graddiv2_vn: np.ndarray,
         vn: np.ndarray,
         divdamp_order: gtx.int32,
-        *,
         mean_cell_area: float,
         second_order_divdamp_factor: float,
         **kwargs: Any,

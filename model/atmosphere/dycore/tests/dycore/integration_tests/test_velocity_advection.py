@@ -42,12 +42,12 @@ log = logging.getLogger(__name__)
 
 
 def _compare_cfl(
+    *,
     vertical_cfl: np.ndarray,
     icon_result_cfl_clipping: np.ndarray,
     icon_result_max_vcfl_dyn: float,
     horizontal_start: int,
     horizontal_end: int,
-    *,
     vertical_start: int,
     vertical_end: int,
 ) -> None:
@@ -78,12 +78,12 @@ def create_vertical_params(
     ],
 )
 def test_verify_velocity_init_against_savepoint(
+    *,
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     step_date_init: str,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     metrics_savepoint: serialbox.MetricSavepoint,
-    *,
     lowest_layer_thickness: ta.wpfloat,
     model_top_height: ta.wpfloat,
     stretch_factor: ta.wpfloat,
@@ -126,12 +126,12 @@ def test_verify_velocity_init_against_savepoint(
     ],
 )
 def test_scale_factors_by_dtime(
+    *,
     interpolation_savepoint,
     metrics_savepoint,
     experiment,
     step_date_init,
     savepoint_velocity_init,
-    *,
     icon_grid,
     grid_savepoint,
     lowest_layer_thickness,
@@ -185,10 +185,10 @@ def test_scale_factors_by_dtime(
     ],
 )
 def test_velocity_predictor_step(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -340,12 +340,12 @@ def test_velocity_predictor_step(
     ],
 )
 def test_velocity_corrector_step(
+    *,
     istep_init,
     istep_exit,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -468,10 +468,10 @@ def test_velocity_corrector_step(
     ],
 )
 def test_compute_diagnostics_from_normal_wind(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
@@ -605,12 +605,12 @@ def test_compute_diagnostics_from_normal_wind(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 def test_compute_advection_in_predictor_vertical_momentum(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
     istep_init,
     istep_exit,
-    *,
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
@@ -755,12 +755,12 @@ def test_compute_advection_in_predictor_vertical_momentum(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_advection_in_corrector_vertical_momentum(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
     istep_init,
     istep_exit,
-    *,
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
@@ -895,12 +895,12 @@ def test_compute_advection_in_corrector_vertical_momentum(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
     istep_init,
     istep_exit,
-    *,
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,

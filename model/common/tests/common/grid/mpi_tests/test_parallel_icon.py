@@ -152,12 +152,12 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
 def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
+    *,
     process_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
-    *,
     level: int,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)

@@ -87,12 +87,12 @@ def _get_slice_tuple_from_horizontal_range(
     ],
 )
 def test_distributed_metrics_attrs(
+    *,
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
-    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -149,12 +149,12 @@ def test_distributed_metrics_attrs(
     ],
 )
 def test_distributed_metrics_attrs_no_halo(
+    *,
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
-    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -182,12 +182,12 @@ def test_distributed_metrics_attrs_no_halo(
     ],
 )
 def test_distributed_metrics_attrs_no_halo_regional(
+    *,
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
-    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -212,12 +212,12 @@ def test_distributed_metrics_attrs_no_halo_regional(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_metrics_wgtfacq_e(
+    *,
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
-    *,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -235,12 +235,12 @@ def test_distributed_metrics_wgtfacq_e(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_metrics_nflat_gradp(
+    *,
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
-    *,
     experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)

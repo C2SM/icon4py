@@ -20,12 +20,12 @@ from icon4py.model.testing import stencil_tests
 
 # Check whether lines inters.
 def _ccw_numpy(
+    *,
     p0_lon,
     p0_lat,
     p1_lon,
     p1_lat,
     p2_lon,
-    *,
     p2_lat,
 ):
     dx1 = p1_lon - p0_lon
@@ -44,12 +44,12 @@ def _ccw_numpy(
 
 # Check whether two lines intersect
 def _lintersect_numpy(
+    *,
     line1_p1_lon,
     line1_p1_lat,
     line1_p2_lon,
     line1_p2_lat,
     line2_p1_lon,
-    *,
     line2_p1_lat,
     line2_p2_lon,
     line2_p2_lat,
@@ -91,12 +91,12 @@ def _lintersect_numpy(
 
 # Compute intersection point of two lines in 2D
 def _line_intersect_numpy(
+    *,
     line1_p1_lon,
     line1_p1_lat,
     line1_p2_lon,
     line1_p2_lat,
     line2_p1_lon,
-    *,
     line2_p1_lat,
     line2_p2_lon,
     line2_p2_lat,
@@ -148,12 +148,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _generate_flux_area_geometry(
+        *,
         dreg_patch0_1_lon_dsl,
         dreg_patch0_1_lat_dsl,
         dreg_patch0_2_lon_dsl,
         dreg_patch0_2_lat_dsl,
         dreg_patch0_3_lon_dsl,
-        *,
         dreg_patch0_3_lat_dsl,
         dreg_patch0_4_lon_dsl,
         dreg_patch0_4_lat_dsl,
@@ -228,12 +228,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case1_patch0(
+        *,
         mask_case1,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         arrival_pts_2_lon_dsl,
-        *,
         arrival_pts_2_lat_dsl,
         ps1_x,
         ps1_y,
@@ -282,12 +282,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case1_patch1(
+        *,
         mask_case1,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         depart_pts_1_lon_dsl,
-        *,
         depart_pts_1_lat_dsl,
         ps1_x,
         ps1_y,
@@ -322,12 +322,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case1_patch2(
+        *,
         mask_case1,
         lvn_sys_pos,
         arrival_pts_2_lon_dsl,
         arrival_pts_2_lat_dsl,
         depart_pts_2_lon_dsl,
-        *,
         depart_pts_2_lat_dsl,
         ps2_x,
         ps2_y,
@@ -363,12 +363,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2a_patch0(
+        *,
         mask_case2a,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         arrival_pts_2_lon_dsl,
-        *,
         arrival_pts_2_lat_dsl,
         ps1_x,
         ps1_y,
@@ -421,12 +421,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2a_patch1(
+        *,
         mask_case2a,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         ps1_x,
-        *,
         ps1_y,
         depart_pts_1_lon_dsl,
         depart_pts_1_lat_dsl,
@@ -485,12 +485,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2b_patch0(
+        *,
         mask_case2b,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         arrival_pts_2_lon_dsl,
-        *,
         arrival_pts_2_lat_dsl,
         depart_pts_1_lon_dsl,
         depart_pts_1_lat_dsl,
@@ -543,12 +543,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2b_patch1(
+        *,
         mask_case2b,
         dreg_patch1_1_lon_vmask,
         dreg_patch1_1_lat_vmask,
         dreg_patch1_2_lon_vmask,
         dreg_patch1_2_lat_vmask,
-        *,
         dreg_patch1_3_lon_vmask,
         dreg_patch1_3_lat_vmask,
         dreg_patch1_4_lon_vmask,
@@ -578,12 +578,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2b_patch2(
+        *,
         mask_case2b,
         lvn_sys_pos,
         arrival_pts_2_lon_dsl,
         arrival_pts_2_lat_dsl,
         depart_pts_2_lon_dsl,
-        *,
         depart_pts_2_lat_dsl,
         ps2_x,
         ps2_y,
@@ -642,12 +642,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3a_patch0(
+        *,
         mask_case3a,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         arrival_pts_2_lon_dsl,
         arrival_pts_2_lat_dsl,
-        *,
         depart_pts_1_lon_dsl,
         depart_pts_1_lat_dsl,
         lvn_sys_pos,
@@ -700,12 +700,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3a_patch1(
+        *,
         mask_case3a,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         pi1_x,
-        *,
         pi1_y,
         depart_pts_1_lon_dsl,
         depart_pts_1_lat_dsl,
@@ -766,12 +766,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3b_patch0(
+        *,
         mask_case3b,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
         arrival_pts_2_lon_dsl,
         arrival_pts_2_lat_dsl,
-        *,
         pi2_x,
         pi2_y,
         lvn_sys_pos,
@@ -822,12 +822,12 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3b_patch2(
+        *,
         mask_case3b,
         arrival_pts_2_lon_dsl,
         arrival_pts_2_lat_dsl,
         depart_pts_1_lon_dsl,
         depart_pts_1_lat_dsl,
-        *,
         depart_pts_2_lon_dsl,
         depart_pts_2_lat_dsl,
         pi2_x,
@@ -889,11 +889,11 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @classmethod
     def reference(
         cls,
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         famask_int,
         p_vn,
         ptr_v3_lon,
-        *,
         ptr_v3_lat,
         tangent_orientation_dsl,
         dreg_patch0_1_lon_dsl,

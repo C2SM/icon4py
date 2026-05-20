@@ -172,12 +172,12 @@ def _should_replace_skip_values(
 
 
 def icon_grid(
+    *,
     id_: str,
     allocator: gtx_typing.Allocator | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],
-    *,
     end_index: Callable[[h_grid.Domain], gtx.int32],
     grid_params: GridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,

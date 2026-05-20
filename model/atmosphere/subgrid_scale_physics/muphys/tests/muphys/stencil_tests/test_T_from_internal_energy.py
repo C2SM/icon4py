@@ -21,12 +21,12 @@ class TestTFromInternalEnergy(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         u: np.ndarray,
         qv: np.ndarray,
         qliq: np.ndarray,
         qice: np.ndarray,
-        *,
         rho: np.ndarray,
         dz: np.ndarray,
         **kwargs,

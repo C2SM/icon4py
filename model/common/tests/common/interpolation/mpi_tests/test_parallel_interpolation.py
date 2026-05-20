@@ -62,12 +62,12 @@ if TYPE_CHECKING:
     ],
 )
 def test_distributed_interpolation_with_custom_tolerance(
+    *,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
@@ -102,12 +102,12 @@ def test_distributed_interpolation_with_custom_tolerance(
     ],
 )
 def test_distributed_interpolation_fields(
+    *,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
@@ -126,12 +126,12 @@ def test_distributed_interpolation_fields(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_interpolation_grg(
+    *,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
@@ -161,12 +161,12 @@ def test_distributed_interpolation_grg(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_interpolation_geofac_rot(
+    *,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
@@ -198,12 +198,12 @@ def test_distributed_interpolation_geofac_rot(
     ],
 )
 def test_distributed_interpolation_rbf(
+    *,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
@@ -225,12 +225,12 @@ def test_distributed_interpolation_rbf(
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_distributed_interpolation_lsq_pseudoinv(
+    *,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:

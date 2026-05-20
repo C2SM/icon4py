@@ -102,12 +102,12 @@ def create_vertical_grid(
 
 
 def create_static_field_factories(
+    *,
     grid_manager: gm.GridManager,
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
-    *,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
 ) -> driver_states.StaticFieldFactories:
@@ -156,12 +156,12 @@ def create_static_field_factories(
 
 
 def initialize_granules(
+    *,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
     diffusion_config: diffusion.DiffusionConfig,
     solve_nh_config: solve_nh.NonHydrostaticConfig,
     advection_config: advection.AdvectionConfig,
-    *,
     static_field_factories: driver_states.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],

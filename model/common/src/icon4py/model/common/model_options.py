@@ -116,6 +116,7 @@ def customize_backend(
 
 
 def setup_program(
+    *,
     program: gtx_typing.Program,
     backend: gtx_typing.Backend
     | model_backends.DeviceType
@@ -124,7 +125,6 @@ def setup_program(
     constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
-    *,
     vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: gtx_typing.OffsetProvider | None = None,
 ) -> Callable[..., None]:

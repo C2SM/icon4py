@@ -21,12 +21,12 @@ class TestIceToGraupel(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         rho: np.ndarray,
         qr: np.ndarray,
         qg: np.ndarray,
         qi: np.ndarray,
-        *,
         sticking_eff: np.ndarray,
         **kwargs,
     ) -> dict:

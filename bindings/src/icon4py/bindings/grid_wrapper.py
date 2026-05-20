@@ -64,12 +64,12 @@ NumpyBoolArray1D: TypeAlias = Annotated[
 
 @icon4py_export.export
 def grid_init(
+    *,
     cell_starts: NumpyInt32Array1D,
     cell_ends: NumpyInt32Array1D,
     vertex_starts: NumpyInt32Array1D,
     vertex_ends: NumpyInt32Array1D,
     edge_starts: NumpyInt32Array1D,
-    *,
     edge_ends: NumpyInt32Array1D,
     c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
     e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],

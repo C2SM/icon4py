@@ -109,12 +109,12 @@ from ..utils import (
     ],
 )
 def test_advection_run_single_step(
+    *,
     date,
     even_timestep,
     ntracer,
     horizontal_advection_type,
     horizontal_advection_limiter,
-    *,
     vertical_advection_type,
     vertical_advection_limiter,
     grid_savepoint,

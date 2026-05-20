@@ -23,12 +23,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_temporal_tendencies_to_vn_numpy(
+    *,
     vn_nnow: np.ndarray,
     ddt_vn_apc_ntl1: np.ndarray,
     ddt_vn_phy: np.ndarray,
     z_theta_v_e: np.ndarray,
     z_gradh_exner: np.ndarray,
-    *,
     dtime: float,
 ) -> np.ndarray:
     vn_nnew = vn_nnow + dtime * (
@@ -43,12 +43,12 @@ class TestAddTemporalTendenciesToVn(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         vn_nnow: np.ndarray,
         ddt_vn_apc_ntl1: np.ndarray,
         ddt_vn_phy: np.ndarray,
         z_theta_v_e: np.ndarray,
-        *,
         z_gradh_exner: np.ndarray,
         dtime: float,
         **kwargs: Any,

@@ -250,12 +250,12 @@ def test_diagnose_pressure(
 @pytest.mark.parametrize("location", [("interface-nwp")])
 @pytest.mark.datatest
 def test_diagnostic_update_after_saturation_adjustement(
+    *,  # TODO(havogt): unused?
     location: str,
     date: str,
     model_top_height: float,  # TODO(havogt): unused?
     damping_height: float,  # TODO(havogt): unused?
     stretch_factor: float,  # TODO(havogt): unused?
-    *,  # TODO(havogt): unused?
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,

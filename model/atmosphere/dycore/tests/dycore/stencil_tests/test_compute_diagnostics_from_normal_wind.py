@@ -37,12 +37,12 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def compute_diagnostics_from_normal_wind_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
-    *,
     contravariant_correction_at_edges_on_model_levels: np.ndarray,
     vn: np.ndarray,
     rbf_vec_coeff_e: np.ndarray,
@@ -182,11 +182,11 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
     @classmethod
     def reference(
         cls,
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         tangential_wind: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,
-        *,
         horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
         contravariant_correction_at_edges_on_model_levels: np.ndarray,
         horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,

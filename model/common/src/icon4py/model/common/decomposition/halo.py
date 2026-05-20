@@ -169,11 +169,11 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _update_owner_mask_by_max_rank_convention(
         self,
+        *,
         cell_to_rank: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         all_indices: data_alloc.NDArray,
         indices_on_cutting_line: data_alloc.NDArray,
-        *,
         target_connectivity: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
@@ -210,11 +210,11 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _set_decomposition_info_dimension(
         self,
+        *,
         decomp_info: defs.DecompositionInfo,
         dim: gtx.Dimension,
         all_indices: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
-        *,
         first_halo_level_mask: data_alloc.NDArray,
         second_halo_level_mask: data_alloc.NDArray,
         third_halo_level_mask: data_alloc.NDArray,

@@ -21,12 +21,12 @@ class TestRainToVaporDefault(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         t: np.ndarray,
         rho: np.ndarray,
         qc: np.ndarray,
         qr: np.ndarray,
-        *,
         dvsw: np.ndarray,
         dt: wpfloat,
         **kwargs,

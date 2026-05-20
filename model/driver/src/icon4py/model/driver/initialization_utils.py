@@ -222,12 +222,12 @@ def model_initialization_serialbox(
 
 
 def read_initial_state(
+    *,
     grid: icon_grid.IconGrid,
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_typing.Backend,
-    *,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -318,12 +318,12 @@ def read_initial_state(
 
 
 def read_geometry_fields(
+    *,
     path: pathlib.Path,
     grid_file: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
     rank: int = 0,
-    *,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
     grid_states.EdgeParams,

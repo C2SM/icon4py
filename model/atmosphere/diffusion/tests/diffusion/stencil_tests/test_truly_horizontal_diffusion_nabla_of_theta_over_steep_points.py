@@ -19,12 +19,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     zd_vertoffset: np.ndarray,
     zd_diffcoef: np.ndarray,
     geofac_n2s_c: np.ndarray,
     geofac_n2s_nbh: np.ndarray,
-    *,
     vcoef: np.ndarray,
     theta_v: np.ndarray,
     z_temp: np.ndarray,
@@ -64,12 +64,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,
         geofac_n2s_nbh: np.ndarray,
-        *,
         vcoef: np.ndarray,
         theta_v: np.ndarray,
         z_temp: np.ndarray,

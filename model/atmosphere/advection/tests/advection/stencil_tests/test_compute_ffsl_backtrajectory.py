@@ -36,12 +36,12 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         cell_idx: np.ndarray,
         cell_blk: np.ndarray,
-        *,
         edge_verts_1_x: np.ndarray,
         edge_verts_2_x: np.ndarray,
         edge_verts_1_y: np.ndarray,

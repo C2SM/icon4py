@@ -65,12 +65,12 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
 )
 @pytest.mark.datatest
 def test_decomposition_info_masked(
+    *,
     dim: gtx.Dimension,
     owned: int,
     total: int,
     caplog: Any,
     download_ser_data: Any,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
@@ -122,12 +122,12 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 @pytest.mark.datatest
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(
+    *,
     dim: gtx.Dimension,
     owned: int,
     total: int,
     caplog: Any,
     decomposition_info: decomp_defs.DecompositionInfo,
-    *,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ):
@@ -310,12 +310,12 @@ def test_exchange_on_dummy_data(
 @pytest.mark.embedded_only
 @pytest.mark.parametrize("process_props", [False], indirect=True)
 def test_halo_exchange_for_sparse_field(
+    *,
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
-    *,
     decomposition_info: decomp_defs.DecompositionInfo,
 ):
     edge_length = grid_savepoint.primal_edge_length()

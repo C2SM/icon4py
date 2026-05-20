@@ -23,12 +23,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     wgtfac_c: np.ndarray,
     z_rth_pr_2: np.ndarray,
     theta_v: np.ndarray,
     vwind_expl_wgt: np.ndarray,
-    *,
     exner_pr: np.ndarray,
     d_exner_dz_ref_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
@@ -62,12 +62,12 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_c: np.ndarray,
         z_rth_pr_2: np.ndarray,
         theta_v: np.ndarray,
         vwind_expl_wgt: np.ndarray,
-        *,
         exner_pr: np.ndarray,
         d_exner_dz_ref_ic: np.ndarray,
         ddqz_z_half: np.ndarray,

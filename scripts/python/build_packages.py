@@ -45,9 +45,9 @@ def _get_package_name(member_dir: pathlib.Path) -> str:
 
 
 def _run_uv_build(
+    *,
     source_dir: pathlib.Path,
     output_dir: pathlib.Path,
-    *,
     sdist: bool = True,
     wheel: bool = True,
     verbose: bool = False,
@@ -151,6 +151,7 @@ def build(
 
 @cli.command()
 def proxy(
+    *,
     version: Annotated[
         str,
         typer.Option("--version", "-V", help="Version string for the proxy packages."),
@@ -164,7 +165,6 @@ def proxy(
     verbose: Annotated[
         bool, typer.Option("--verbose", "-v", help="Enable verbose output.")
     ] = False,
-    *,
     packages: Annotated[
         list[str] | None,
         typer.Argument(

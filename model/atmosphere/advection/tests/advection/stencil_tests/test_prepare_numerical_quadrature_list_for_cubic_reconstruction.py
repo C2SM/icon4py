@@ -38,12 +38,12 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
     @staticmethod
     def _compute_wgt_t_detjac(
+        *,
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,
         p_coords_dreg_v_3_x,
         p_coords_dreg_v_4_x,
         p_coords_dreg_v_1_y,
-        *,
         p_coords_dreg_v_2_y,
         p_coords_dreg_v_3_y,
         p_coords_dreg_v_4_y,
@@ -206,12 +206,12 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
     @staticmethod
     def _compute_z_gauss_points(
+        *,
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,
         p_coords_dreg_v_3_x,
         p_coords_dreg_v_4_x,
         p_coords_dreg_v_1_y,
-        *,
         p_coords_dreg_v_2_y,
         p_coords_dreg_v_3_y,
         p_coords_dreg_v_4_y,
@@ -293,12 +293,12 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
     @staticmethod
     def _compute_vector_sums(
+        *,
         wgt_t_detjac_1,
         wgt_t_detjac_2,
         wgt_t_detjac_3,
         wgt_t_detjac_4,
         z_gauss_pts_1_x,
-        *,
         z_gauss_pts_1_y,
         z_gauss_pts_2_x,
         z_gauss_pts_2_y,
@@ -378,11 +378,11 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
     @classmethod
     def reference(
         cls,
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         famask_int: np.ndarray,
         p_coords_dreg_v_1_x: np.ndarray,
         p_coords_dreg_v_2_x: np.ndarray,
-        *,
         p_coords_dreg_v_3_x: np.ndarray,
         p_coords_dreg_v_4_x: np.ndarray,
         p_coords_dreg_v_1_y: np.ndarray,

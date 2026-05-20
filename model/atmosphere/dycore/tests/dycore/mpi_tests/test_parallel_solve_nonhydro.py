@@ -45,12 +45,12 @@ _log = logging.getLogger(__name__)
 )
 @pytest.mark.mpi
 def test_run_solve_nonhydro_single_step(
+    *,
     istep_init: int,
     istep_exit: int,
     step_date_init: str,
     step_date_exit: str,
     substep_init: int,
-    *,
     experiment: test_defs.Experiment,
     ndyn_substeps: int,
     icon_grid: icon.IconGrid,

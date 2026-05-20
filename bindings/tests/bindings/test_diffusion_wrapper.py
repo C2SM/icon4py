@@ -39,12 +39,12 @@ from .test_grid_init import grid_init
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
+    *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    *,
     grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
@@ -294,12 +294,12 @@ def test_diffusion_wrapper_granule_inputs(
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
+    *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    *,
     grid_init,  # initializes the grid as side-effect
     experiment,
     ndyn_substeps,

@@ -156,12 +156,12 @@ def test_time_step_flags(
     ],
 )
 def test_nonhydro_predictor_step(
+    *,
     istep_init,
     istep_exit,
     substep_init,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -489,12 +489,12 @@ def test_nonhydro_predictor_step(
     ],
 )
 def test_nonhydro_corrector_step(
+    *,
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -690,12 +690,12 @@ def test_nonhydro_corrector_step(
     ],
 )
 def test_run_solve_nonhydro_single_step(
+    *,
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     step_date_init,
     step_date_exit,
     experiment,
@@ -825,12 +825,12 @@ def test_run_solve_nonhydro_single_step(
     ],
 )
 def test_run_solve_nonhydro_multi_step(
+    *,
     experiment,
     istep_init,
     substep_init,
     step_date_init,
     istep_exit,
-    *,
     substep_exit,
     step_date_exit,
     at_initial_timestep,
@@ -1025,11 +1025,11 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     ],
 )
 def test_compute_perturbed_quantities_and_interpolation(
+    *,
     at_initial_timestep,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
@@ -1245,12 +1245,12 @@ def test_compute_perturbed_quantities_and_interpolation(
     ],
 )
 def test_compute_interpolation_and_nonhydro_buoy(
+    *,
     at_initial_timestep,
     istep_init,
     istep_exit,
     experiment,
     step_date_init,
-    *,
     step_date_exit,
     ndyn_substeps,
     icon_grid,
@@ -1390,10 +1390,10 @@ def test_compute_interpolation_and_nonhydro_buoy(
     ],
 )
 def test_compute_rho_theta_pgrad_and_update_vn(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -1601,12 +1601,12 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     ],
 )
 def test_apply_divergence_damping_and_update_vn(
+    *,
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     experiment,
-    *,
     step_date_init,
     step_date_exit,
     ndyn_substeps,
@@ -1756,12 +1756,12 @@ def test_apply_divergence_damping_and_update_vn(
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(
+    *,
     istep_init,
     istep_exit,
     substep_init,
     substep_exit,
     step_date_init,
-    *,
     step_date_exit,
     experiment,
     icon_grid,
@@ -1937,12 +1937,12 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     ],
 )
 def test_compute_averaged_vn_and_fluxes(
+    *,
     istep_init,
     istep_exit,
     substep_init,
     substep_exit,
     step_date_init,
-    *,
     step_date_exit,
     experiment,
     icon_grid,
@@ -2055,12 +2055,12 @@ def test_compute_averaged_vn_and_fluxes(
     ],
 )
 def test_vertically_implicit_solver_at_predictor_step(
+    *,
     at_initial_timestep,
     substep_init,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -2257,12 +2257,12 @@ def test_vertically_implicit_solver_at_predictor_step(
     ],
 )
 def test_vertically_implicit_solver_at_corrector_step(
+    *,
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     experiment,
     step_date_init,
     step_date_exit,

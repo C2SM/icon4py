@@ -21,12 +21,12 @@ graupel_program = None
 
 @icon4py_export.export
 def graupel_run(
+    *,
     ke: gtx.int32,
     ivstart: gtx.int32,
     ivend: gtx.int32,
     kstart: gtx.int32,
     dt: ta.wpfloat,
-    *,
     dz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     t: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],

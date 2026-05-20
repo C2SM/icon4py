@@ -14,12 +14,12 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
+    *,
     e2c,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     flat_idx: data_alloc.NDArray,
-    *,
     topography: data_alloc.NDArray,
     nlev: int,
     horizontal_start: gtx.int32,

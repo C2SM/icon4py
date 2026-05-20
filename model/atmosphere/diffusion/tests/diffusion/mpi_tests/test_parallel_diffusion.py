@@ -42,12 +42,12 @@ _log = logging.getLogger(__file__)
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_parallel_diffusion(
+    *,
     experiment: definitions.Experiment,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
     ndyn_substeps: int,
-    *,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,

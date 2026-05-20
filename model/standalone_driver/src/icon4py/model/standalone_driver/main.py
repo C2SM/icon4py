@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 
 def main(
+    *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
@@ -46,7 +47,6 @@ def main(
             help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
         ),
     ] = False,
-    *,
     force_serial_run: Annotated[
         bool,
         typer.Option(

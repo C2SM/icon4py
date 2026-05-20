@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
+    *,
     w: np.ndarray,
     w_concorr_c: np.ndarray,
     ddqz_z_half: np.ndarray,
     rho_now: np.ndarray,
     rho_var: np.ndarray,
-    *,
     theta_now: np.ndarray,
     theta_var: np.ndarray,
     wgtfac_c: np.ndarray,
@@ -82,12 +82,12 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         w: np.ndarray,
         w_concorr_c: np.ndarray,
         ddqz_z_half: np.ndarray,
         rho_now: np.ndarray,
-        *,
         rho_var: np.ndarray,
         theta_now: np.ndarray,
         theta_var: np.ndarray,

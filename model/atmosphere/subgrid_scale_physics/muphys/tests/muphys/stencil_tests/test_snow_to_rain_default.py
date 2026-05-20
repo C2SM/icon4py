@@ -21,12 +21,12 @@ class TestSnowToRainDefault(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         t: np.ndarray,
         p: np.ndarray,
         rho: np.ndarray,
         dvsw0: np.ndarray,
-        *,
         qs: np.ndarray,
         **kwargs,
     ) -> dict:

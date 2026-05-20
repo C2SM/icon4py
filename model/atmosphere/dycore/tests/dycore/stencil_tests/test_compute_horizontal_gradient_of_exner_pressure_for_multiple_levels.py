@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     inv_dual_edge_length: np.ndarray,
     z_exner_ex_pr: np.ndarray,
     zdiff_gradp: np.ndarray,
     ikoffset: np.ndarray,
-    *,
     z_dexner_dz_c_1: np.ndarray,
     z_dexner_dz_c_2: np.ndarray,
 ) -> np.ndarray:
@@ -72,12 +72,12 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         inv_dual_edge_length: np.ndarray,
         z_exner_ex_pr: np.ndarray,
         zdiff_gradp: np.ndarray,
         ikoffset: np.ndarray,
-        *,
         z_dexner_dz_c_1: np.ndarray,
         z_dexner_dz_c_2: np.ndarray,
         **kwargs: Any,

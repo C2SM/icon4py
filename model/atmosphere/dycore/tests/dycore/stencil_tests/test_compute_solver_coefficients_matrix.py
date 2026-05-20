@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_solver_coefficients_matrix_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner_nnow: np.ndarray,
     rho_nnow: np.ndarray,
     theta_v_nnow: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
-    *,
     vwind_impl_wgt: np.ndarray,
     theta_v_ic: np.ndarray,
     rho_ic: np.ndarray,
@@ -47,12 +47,12 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner_nnow: np.ndarray,
         rho_nnow: np.ndarray,
         theta_v_nnow: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
-        *,
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         rho_ic: np.ndarray,

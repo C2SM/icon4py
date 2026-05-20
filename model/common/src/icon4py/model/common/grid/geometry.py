@@ -81,11 +81,11 @@ class GridGeometry(factory.FieldSource):
 
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         backend: gtx_typing.Backend | None,
         coordinates: gm.CoordinateDict,
-        *,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
@@ -785,11 +785,11 @@ class GridGeometry(factory.FieldSource):
 class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
     def __init__(
         self,
+        *,
         field_provider: factory.FieldProvider,
         target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
-        *,
         do_exchange: bool,
     ):
         assert len(target_dims) == 2
@@ -802,11 +802,11 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
 
     def __call__(
         self,
+        *,
         field_name: str,
         field_src: factory.FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid: factory.GridProvider,
-        *,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
@@ -859,12 +859,12 @@ def as_sparse_field(
 
 
 def create_auxiliary_coordinate_arrays_for_orientation(
+    *,
     grid: icon.IconGrid,
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    *,
     allocator: gtx_typing.Allocator | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],

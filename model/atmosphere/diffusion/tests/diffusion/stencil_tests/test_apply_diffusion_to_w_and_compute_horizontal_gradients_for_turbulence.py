@@ -56,12 +56,12 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         area,
         geofac_n2s,
         geofac_grg_x,
         geofac_grg_y,
-        *,
         w_old,
         type_shear,
         dwdx,

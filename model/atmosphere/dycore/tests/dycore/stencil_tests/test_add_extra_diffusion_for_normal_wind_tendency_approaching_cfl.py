@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     levelmask: np.ndarray,
     c_lin_e: np.ndarray,
     z_w_con_c_full: np.ndarray,
     ddqz_z_full_e: np.ndarray,
-    *,
     area_edge: np.ndarray,
     tangent_orientation: np.ndarray,
     inv_primal_edge_length: np.ndarray,
@@ -144,12 +144,12 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         levelmask: np.ndarray,
         c_lin_e: np.ndarray,
         z_w_con_c_full: np.ndarray,
         ddqz_z_full_e: np.ndarray,
-        *,
         area_edge: np.ndarray,
         tangent_orientation: np.ndarray,
         inv_primal_edge_length: np.ndarray,

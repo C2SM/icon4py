@@ -75,12 +75,12 @@ def gather_field(field: np.ndarray, process_props: decomp_defs.ProcessProperties
 
 
 def check_local_global_field(
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,  # F811 # fixture
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
-    *,
     check_halos: bool,
     atol: float,
     rtol: float = 0.0,

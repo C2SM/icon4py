@@ -40,11 +40,11 @@ log = logging.getLogger(__name__)
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
-        *,
         metadata: dict[str, model.FieldMetaData],
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):

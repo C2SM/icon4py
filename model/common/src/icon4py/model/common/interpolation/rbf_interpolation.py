@@ -296,12 +296,12 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
 
 
 def _compute_rbf_interpolation_coeffs(
+    *,
     element_center_lat: data_alloc.NDArray,
     element_center_lon: data_alloc.NDArray,
     element_center_x: data_alloc.NDArray,
     element_center_y: data_alloc.NDArray,
     element_center_z: data_alloc.NDArray,
-    *,
     edge_center_x: data_alloc.NDArray,
     edge_center_y: data_alloc.NDArray,
     edge_center_z: data_alloc.NDArray,
@@ -466,12 +466,12 @@ def _compute_rbf_interpolation_coeffs(
 
 
 def compute_rbf_interpolation_coeffs_cell(
+    *,
     cell_center_lat: data_alloc.NDArray,
     cell_center_lon: data_alloc.NDArray,
     cell_center_x: data_alloc.NDArray,
     cell_center_y: data_alloc.NDArray,
     cell_center_z: data_alloc.NDArray,
-    *,
     edge_center_x: data_alloc.NDArray,
     edge_center_y: data_alloc.NDArray,
     edge_center_z: data_alloc.NDArray,
@@ -517,12 +517,12 @@ def compute_rbf_interpolation_coeffs_cell(
 
 
 def compute_rbf_interpolation_coeffs_edge(
+    *,
     edge_lat: data_alloc.NDArray,
     edge_lon: data_alloc.NDArray,
     edge_center_x: data_alloc.NDArray,
     edge_center_y: data_alloc.NDArray,
     edge_center_z: data_alloc.NDArray,
-    *,
     edge_normal_x: data_alloc.NDArray,
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
@@ -562,12 +562,12 @@ def compute_rbf_interpolation_coeffs_edge(
 
 
 def compute_rbf_interpolation_coeffs_vertex(
+    *,
     vertex_lat: data_alloc.NDArray,
     vertex_lon: data_alloc.NDArray,
     vertex_x: data_alloc.NDArray,
     vertex_y: data_alloc.NDArray,
     vertex_z: data_alloc.NDArray,
-    *,
     edge_center_x: data_alloc.NDArray,
     edge_center_y: data_alloc.NDArray,
     edge_center_z: data_alloc.NDArray,

@@ -40,12 +40,12 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
     contravariant_correction_at_edges_on_model_levels: np.ndarray,
     e_bln_c_s: np.ndarray,
     wgtfac_c: np.ndarray,
-    *,
     nflatlev: int,
     nlev: int,
 ) -> np.ndarray:
@@ -83,12 +83,12 @@ def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
+    *,
     w: np.ndarray,
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
     ddqz_z_half: np.ndarray,
     cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
-    *,
     nlev: int,
     end_index_of_damping_layer: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -127,12 +127,12 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
 
 
 def compute_horizontal_advection_of_w(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     w: np.ndarray,
     tangential_wind_on_half_levels: np.ndarray,
     vn_on_half_levels: np.ndarray,
     c_intp: np.ndarray,
-    *,
     inv_dual_edge_length: np.ndarray,
     inv_primal_edge_length: np.ndarray,
     tangent_orientation: np.ndarray,
@@ -158,12 +158,12 @@ def compute_horizontal_advection_of_w(
 
 
 def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
     ddqz_z_half: np.ndarray,
-    *,
     area: np.ndarray,
     geofac_n2s: np.ndarray,
     w: np.ndarray,
@@ -207,12 +207,12 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
 
 
 def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     vertical_wind_advective_tendency: np.ndarray,
     w: np.ndarray,
     horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
     contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
-    *,
     cfl_clipping: np.ndarray,
     coeff1_dwdz: np.ndarray,
     coeff2_dwdz: np.ndarray,
@@ -300,12 +300,12 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vertical_cfl: np.ndarray,
         w: np.ndarray,
-        *,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
@@ -505,12 +505,12 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vertical_cfl: np.ndarray,
-        *,
         w: np.ndarray,
         horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
         contravariant_correction_at_edges_on_model_levels: np.ndarray,

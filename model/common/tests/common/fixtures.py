@@ -125,12 +125,12 @@ def interpolation_factory_from_savepoint(
 
 @pytest.fixture
 def metrics_factory_from_savepoint(
+    *,
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     decomposition_info: decomposition.DecompositionInfo,
-    *,
     process_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,

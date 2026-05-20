@@ -37,12 +37,12 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         kh_smag_e: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         theta_v_in: np.ndarray,
         geofac_div: np.ndarray,
-        *,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,

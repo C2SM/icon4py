@@ -54,12 +54,12 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 @icon4py_export.export
 def solve_nh_init(
+    *,
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    *,
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     rbf_vec_coeff_e: wrapper_common.Float64Array2D,
@@ -304,12 +304,12 @@ NumpyFloatArray1D: TypeAlias = Annotated[
 
 @icon4py_export.export
 def solve_nh_run(
+    *,
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     w_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    *,
     w_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     theta_v_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     theta_v_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],

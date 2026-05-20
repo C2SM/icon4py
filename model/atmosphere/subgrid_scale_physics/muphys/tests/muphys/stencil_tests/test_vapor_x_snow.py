@@ -21,12 +21,12 @@ class TestVaporXSnow(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         grid,
         t: np.ndarray,
         p: np.ndarray,
         rho: np.ndarray,
         qs: np.ndarray,
-        *,
         ns: np.ndarray,
         lam: np.ndarray,
         eta: np.ndarray,

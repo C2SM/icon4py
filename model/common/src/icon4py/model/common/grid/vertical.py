@@ -556,12 +556,12 @@ def get_vct_a_and_vct_b(
 
 
 def _compute_SLEVE_coordinate_from_vcta_and_topography(
+    *,
     vct_a: data_alloc.NDArray,
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    *,
     nflatlev: int,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,
@@ -634,12 +634,12 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
 
 
 def _check_and_correct_layer_thickness(
+    *,
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     SLEVE_minimum_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
-    *,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
 ) -> data_alloc.NDArray:
@@ -736,12 +736,12 @@ def _check_flatness_of_flat_level(
 
 
 def compute_vertical_coordinate(
+    *,
     vct_a: data_alloc.NDArray,
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    *,
     nflatlev: int,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,

@@ -46,11 +46,11 @@ log = logging.getLogger(__name__)
 class Icon4pyDriver:
     def __init__(
         self,
+        *,
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
-        *,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
@@ -163,11 +163,11 @@ class Icon4pyDriver:
 
     def _integrate_one_time_step(
         self,
+        *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        *,
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState,
@@ -554,12 +554,12 @@ def _read_config(
 
 
 def initialize_driver(
+    *,
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
     backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
-    *,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """

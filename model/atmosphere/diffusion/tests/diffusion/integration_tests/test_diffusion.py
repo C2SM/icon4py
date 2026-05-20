@@ -152,12 +152,12 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     ],
 )
 def test_diffusion_init(
+    *,
     savepoint_diffusion_init,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
     experiment,
     step_date_init,
-    *,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -287,9 +287,9 @@ def _verify_init_values_against_savepoint(
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_savepoint(
+    *,
     experiment,
     step_date_init,
-    *,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
     savepoint_diffusion_init,
@@ -353,10 +353,10 @@ def test_verify_diffusion_init_against_savepoint(
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
 def test_run_diffusion_single_step(
+    *,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
@@ -424,12 +424,12 @@ def test_run_diffusion_single_step(
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(
+    *,
     experiment,
     linit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
-    *,
     damping_height,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -504,7 +504,7 @@ def test_run_diffusion_initial_step(
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, *, backend
+    *, savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)

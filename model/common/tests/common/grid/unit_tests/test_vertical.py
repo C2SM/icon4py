@@ -321,12 +321,12 @@ def test_grid_index_raises_if_index_below_zero(
 
 @pytest.mark.datatest
 def test_vct_a_vct_b_calculation_from_icon_input(
+    *,
     grid_savepoint: sb.IconGridSavepoint,
     maximal_layer_thickness: float,
     top_height_limit_for_maximal_layer_thickness: float,
     lowest_layer_thickness: float,
     model_top_height: float,
-    *,
     flat_height: float,
     stretch_factor: float,
     damping_height: float,
@@ -361,12 +361,12 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     ],
 )
 def test_compute_vertical_coordinate(
+    *,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     topography_savepoint: sb.TopographySavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
-    *,
     experiment: definitions.Experiment,
     model_top_height: float,
     backend: gtx_typing.Backend,

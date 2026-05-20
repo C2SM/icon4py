@@ -22,12 +22,12 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
+    *,
     vwind_impl_wgt: np.ndarray,
     theta_v_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
     z_alpha: np.ndarray,
     z_beta: np.ndarray,
-    *,
     z_exner_expl: np.ndarray,
     z_w_expl: np.ndarray,
     z_q_ref: np.ndarray,
@@ -64,12 +64,12 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
         z_alpha: np.ndarray,
-        *,
         z_beta: np.ndarray,
         z_w_expl: np.ndarray,
         z_exner_expl: np.ndarray,

@@ -41,12 +41,12 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @staticmethod
     def reference(
+        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_e_in: np.ndarray,
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
         horizontal_start: int,
-        *,
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:

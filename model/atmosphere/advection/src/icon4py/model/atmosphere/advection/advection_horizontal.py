@@ -196,11 +196,11 @@ class SemiLagrangianTracerFlux(ABC):
     @abstractmethod
     def compute_tracer_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
-        *,
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -280,11 +280,11 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
     def compute_tracer_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
-        *,
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -337,11 +337,11 @@ class HorizontalAdvection(ABC):
     @abstractmethod
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        *,
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -395,11 +395,11 @@ class NoAdvection(HorizontalAdvection):
 
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        *,
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -421,11 +421,11 @@ class FiniteVolume(HorizontalAdvection):
 
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        *,
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -454,22 +454,22 @@ class FiniteVolume(HorizontalAdvection):
     @abstractmethod
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        *,
         dtime: ta.wpfloat,
     ) -> None: ...
 
     @abstractmethod
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        *,
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None: ...
@@ -480,11 +480,11 @@ class SemiLagrangian(FiniteVolume):
 
     def __init__(
         self,
+        *,
         tracer_flux: SemiLagrangianTracerFlux,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
         metric_state: advection_states.AdvectionMetricState,
-        *,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
@@ -590,11 +590,11 @@ class SemiLagrangian(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        *,
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal numerical flux computation - start")
@@ -636,11 +636,11 @@ class SemiLagrangian(FiniteVolume):
 
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        *,
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:

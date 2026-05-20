@@ -33,12 +33,12 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 def test_jabw_initial_condition(
+    *,
     experiment: definitions.Experiment,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     rank: int,
     data_provider: sb.IconSerialDataProvider,
-    *,
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
 ):

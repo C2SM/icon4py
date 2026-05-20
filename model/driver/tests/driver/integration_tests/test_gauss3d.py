@@ -36,12 +36,12 @@ if TYPE_CHECKING:
     ],
 )
 def test_gauss3d_initial_condition(
+    *,
     experiment: definitions.Experiment,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     rank: int,
     data_provider: sb.IconSerialDataProvider,
-    *,
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
 ) -> None:
