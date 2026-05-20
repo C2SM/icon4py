@@ -56,14 +56,14 @@ def en_smag_fac_for_zero_nshift(
     enh_smag_fac: fa.KField[float],
 ) -> None:
     _en_smag_fac_for_zero_nshift(
-        vect_a,
-        hdiff_smag_fac,
-        hdiff_smag_fac2,
-        hdiff_smag_fac3,
-        hdiff_smag_fac4,
-        hdiff_smag_z,
-        hdiff_smag_z2,
-        hdiff_smag_z3,
-        hdiff_smag_z4,
+        vect_a=vect_a,
+        hdiff_smag_fac=hdiff_smag_fac,
+        hdiff_smag_fac2=hdiff_smag_fac2,
+        hdiff_smag_fac3=hdiff_smag_fac3,
+        hdiff_smag_fac4=hdiff_smag_fac4,
+        hdiff_smag_z=hdiff_smag_z,
+        hdiff_smag_z2=hdiff_smag_z2,
+        hdiff_smag_z3=hdiff_smag_z3,
+        hdiff_smag_z4=hdiff_smag_z4,
         out=enh_smag_fac,
     )

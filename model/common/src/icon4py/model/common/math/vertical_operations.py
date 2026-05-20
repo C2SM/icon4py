@@ -84,7 +84,7 @@ def average_two_vertical_levels_downwards_on_edges(
     vertical_end: gtx.int32,
 ):
     average_level_plus1_on_edges(
-        input_field,
+        half_level_field=input_field,
         out=average,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -103,7 +103,7 @@ def average_two_vertical_levels_downwards_on_cells(
     vertical_end: gtx.int32,
 ) -> None:
     average_level_plus1_on_cells(
-        input_field,
+        half_level_field=input_field,
         out=average,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

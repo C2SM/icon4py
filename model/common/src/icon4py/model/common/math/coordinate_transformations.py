@@ -219,10 +219,10 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
-        edge_lat,
-        edge_lon,
-        u,
-        v,
+        lat=edge_lat,
+        lon=edge_lon,
+        u=u,
+        v=v,
         out=(x, y, z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -273,10 +273,10 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
-        cell_lat,
-        cell_lon,
-        u,
-        v,
+        lat=cell_lat,
+        lon=cell_lon,
+        u=u,
+        v=v,
         out=(x, y, z),
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )

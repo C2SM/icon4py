@@ -68,8 +68,8 @@ def compute_wgtfac_c(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_wgtfac_c(
-        z_ifc,
-        nlev,
+        z_ifc=z_ifc,
+        nlev=nlev,
         out=wgtfac_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
