@@ -42,8 +42,9 @@ if TYPE_CHECKING:
 
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
-    return gridtest_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.MCH_CH_R04B09,
+    return gridtest_utils.get_grid_manager_from_identifier(
+        definitions.Experiments.MCH_CH_R04B09.grid,
+        num_levels=65,
         keep_skip_values=True,
         allocator=model_backends.get_allocator(None),
     ).grid
