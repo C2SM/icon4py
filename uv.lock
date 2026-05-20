@@ -1544,7 +1544,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.9+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_reduce_skip_node#1bbb51b617bde50c96f41738582c2db1f9cd5846" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_reduce_skip_node#8e27917d12facff09b2a3d5c0009c00368a47c9d" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
