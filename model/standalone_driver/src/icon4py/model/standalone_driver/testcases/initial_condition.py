@@ -645,8 +645,8 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    domain_length = grid.global_properties.domain_length
-    domain_height = grid.global_properties.domain_height
+    domain_length = grid.grid_params.domain_length
+    domain_height = grid.grid_params.domain_height
     testcases_utils.init_bubble(
         theta_v_ndarray=theta_v_ndarray,
         rho_ndarray=rho_ndarray,

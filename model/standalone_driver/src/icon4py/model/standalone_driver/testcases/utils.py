@@ -232,17 +232,17 @@ def init_bubble(
     bubble_width: ta.wpfloat,
     bubble_height: ta.wpfloat,
     bubble_amplitude: ta.wpfloat,
-    geometry_type: base.GeometryType,
+    geometry_type: icon_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
 ) -> None:
     array_ns = data_alloc.array_namespace(theta_v_ndarray)
     match geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             raise NotImplementedError(
                 "Bubble initialization not yet implemented on icosahedral grid."
             )
-        case base.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             norm_bubble_x = bubble_center_x / bubble_width
             norm_bubble_y = bubble_center_y / bubble_width
             norm_bubble_z = bubble_center_z / bubble_height
