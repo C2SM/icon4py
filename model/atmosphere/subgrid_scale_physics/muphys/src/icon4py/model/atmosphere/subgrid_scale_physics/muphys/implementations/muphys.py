@@ -87,13 +87,13 @@ def muphys_run(
 ) -> None:
     _muphys(
         vertical_end - 1,
-        dz,
-        te,
-        p,
-        rho,
-        q_in,
-        dt,
-        qnc,
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        q_in=q_in,
+        dt=dt,
+        qnc=qnc,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain=(
             # t_out
