@@ -221,7 +221,7 @@ def create_experiment_configuration(
     rayleigh_damping_height = _list_to_value(nonhydrostatic_nml["damp_height"])
 
     vertical_grid_config = v_grid.VerticalGridConfig(
-        num_levels=experiment.num_levels,
+        num_levels=_list_to_value(run_nml["num_lev"]),
         maximal_layer_thickness=sleve_nml["max_lay_thckn"],
         top_height_limit_for_maximal_layer_thickness=sleve_nml["htop_thcknlimit"],
         lowest_layer_thickness=sleve_nml["min_lay_thckn"],

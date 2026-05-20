@@ -202,7 +202,6 @@ class Experiment:
     name: str
     description: str
     grid: GridDescription
-    num_levels: int
     version: int = 3
     # TODO (jcanton): _process_props doesn't really belong here. find a better
     # way. prefer error to default single proc
@@ -240,29 +239,24 @@ class Experiments:
         name="exclaim_ape_R02B04",
         description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
-        num_levels=60,
     )
     MCH_CH_R04B09: Final = Experiment(
         name="exclaim_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
-        num_levels=65,
     )
     JW: Final = Experiment(
         name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
-        num_levels=35,
     )
     GAUSS3D: Final = Experiment(
         name="exclaim_gauss3d",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
-        num_levels=35,
     )
     WEISMAN_KLEMP_TORUS: Final = Experiment(
         name="exclaim_nh_weisman_klemp",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
-        num_levels=64,
     )

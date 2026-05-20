@@ -99,8 +99,8 @@ def test_grid_size(
         vct_b=grid_savepoint.vct_b(),
     )
 
-    assert experiment.num_levels == vertical_grid.size(dims.KDim)
-    assert experiment.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
+    assert experiment.config.vertical_grid.num_levels == vertical_grid.size(dims.KDim)
+    assert experiment.config.vertical_grid.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
 
 
 @pytest.mark.parametrize(
@@ -262,7 +262,7 @@ def test_grid_index_bottom(
 ) -> None:
     valid_offset = -offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    num_levels = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
+    num_levels = experiment.config.vertical_grid.num_levels if dim == dims.KDim else experiment.config.vertical_grid.num_levels + 1
     domain = v_grid.Domain(dim, v_grid.Zone.BOTTOM, valid_offset)
     assert num_levels + valid_offset == vertical_grid.index(domain)
 
@@ -279,7 +279,7 @@ def test_grid_index_raises_if_index_above_num_levels(
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
-    vertical_size = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
+    vertical_size = experiment.config.vertical_grid.num_levels if dim == dims.KDim else experiment.config.vertical_grid.num_levels + 1
     invalid_offset = vertical_size + 1 + offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
     domain = v_grid.Domain(dim, zone, invalid_offset)
@@ -299,7 +299,7 @@ def test_grid_index_raises_if_index_below_zero(
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
-    vertical_size = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
+    vertical_size = experiment.config.vertical_grid.num_levels if dim == dims.KDim else experiment.config.vertical_grid.num_levels + 1
     invalid_offset = -(vertical_size + 1 + offset)
     vertical_grid = configure_vertical_grid(grid_savepoint)
     with pytest.raises(expected_exception=AssertionError):
