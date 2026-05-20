@@ -122,4 +122,4 @@ RUN set -eux; \
     ldconfig
 
 # Install uv: https://docs.astral.sh/uv/guides/integration/docker
-COPY --from=ghcr.io/astral-sh/uv:0.11.15@sha256:0d4b147d9c7a3d1af91c86b262c6b5b445ed8de927c287fe9b932da7f6b598f1 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.15@sha256:e590846f4776907b254ac0f44b5b380347af5d90d668138ca7938d1b0c2f98d3 /uv /uvx /bin/
