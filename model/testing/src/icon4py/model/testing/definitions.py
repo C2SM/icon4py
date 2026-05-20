@@ -198,11 +198,32 @@ class Grids:
 
 
 @dataclasses.dataclass
-class Experiment:
+class ExperimentDescription:
     name: str
-    description: str
-    grid: GridDescription
+    long_name: str
+
+
+@dataclasses.dataclass
+class ExperimentConfig:
+    driver: driver_config.DriverConfig
+    vertical_grid: v_grid.VerticalGridConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig
+    diffusion: diffusion.DiffusionConfig
+    metrics: metrics_factory.MetricsConfig
+    interpolation: interpolation_factory.InterpolationConfig
+
+
+@dataclasses.dataclass
+class Experiment:
     version: int = 3
+    description: ExperimentDescription
+    grid: GridDescription
+    config: ExperimentConfig
+
+    @property
+    def name(self) -> str:
+        return self.description.name
+
     # TODO (jcanton): _process_props doesn't really belong here. find a better
     # way. prefer error to default single proc
     _process_props: decomp_defs.ProcessProperties | None = dataclasses.field(
@@ -224,39 +245,39 @@ class Experiment:
         return copy.deepcopy(self._config)
 
 
-@dataclasses.dataclass
-class ExperimentConfig:
-    driver: driver_config.DriverConfig
-    vertical_grid: v_grid.VerticalGridConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
-    metrics: metrics_factory.MetricsConfig
-    interpolation: interpolation_factory.InterpolationConfig
-
-
 class Experiments:
     EXCLAIM_APE: Final = Experiment(
-        name="exclaim_ape_R02B04",
-        description="EXCLAIM Aquaplanet experiment",
+        description = ExperimentDescription(
+            name="exclaim_ape_R02B04",
+            long_name="EXCLAIM Aquaplanet experiment",
+        ),
         grid=Grids.R02B04_GLOBAL,
     )
     MCH_CH_R04B09: Final = Experiment(
-        name="exclaim_ch_r04b09_dsl",
-        description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
+        description = ExperimentDescription(
+            name="exclaim_ch_r04b09_dsl",
+            long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
+        ),
         grid=Grids.MCH_CH_R04B09_DSL,
     )
     JW: Final = Experiment(
-        name="exclaim_nh35_tri_jws",
-        description="Jablonowski Williamson atmospheric test case",
+        description = ExperimentDescription(
+            name="exclaim_nh35_tri_jws",
+            long_name="Jablonowski Williamson atmospheric test case",
+        ),
         grid=Grids.R02B04_GLOBAL,
     )
-    GAUSS3D: Final = Experiment(
-        name="exclaim_gauss3d",
-        description="Gauss 3d test case",
+    GAUSS3: Final = ExperimentDescription(
+        description = ExperimentDescription(
+            name="exclaim_gauss3d",
+            long_name="Gauss 3d test case",
+        ),
         grid=Grids.TORUS_50000x5000,
     )
     WEISMAN_KLEMP_TORUS: Final = Experiment(
-        name="exclaim_nh_weisman_klemp",
-        description="Weisman-Klemp experiment on Torus Grid",
+        description = ExperimentDescription(
+            name="exclaim_nh_weisman_klemp",
+            long_name="Weisman-Klemp experiment on Torus Grid",
+        ),
         grid=Grids.TORUS_50000x5000,
     )
