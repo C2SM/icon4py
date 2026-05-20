@@ -1544,7 +1544,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.9+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_reduce_skip_node#308cfc7e320ae7966210dbbec5702876ddbbf63f" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_reduce_skip_node#0dd1c02dc6aca9fe7b01428ad906757a23fb8996" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1554,6 +1554,7 @@ dependencies = [
     { name = "click" },
     { name = "cmake" },
     { name = "cytoolz" },
+    { name = "dace" },
     { name = "deepdiff" },
     { name = "devtools" },
     { name = "factory-boy" },
