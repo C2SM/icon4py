@@ -678,7 +678,7 @@ def test_decomposition_size(
     ranks: int,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.description == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
