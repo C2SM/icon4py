@@ -1541,8 +1541,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.9.post28+76c1e3e0"
-source = { git = "https://github.com/GridTools/gt4py?branch=main#76c1e3e09da73b10c3a1c05ac040e42efbdf511a" }
+version = "1.1.9.post29+664a88fc"
+source = { git = "https://github.com/GridTools/gt4py?branch=main#664a88fc78ebd427dd6e2504b97da2769056f933" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -2256,7 +2256,7 @@ requires-dist = [
     { name = "packaging", specifier = ">=20.0" },
     { name = "pooch", specifier = ">=1.7.0" },
     { name = "pytest", specifier = ">=8.0.1" },
-    { name = "serialbox4py", specifier = ">=2.6.2", index = "https://test.pypi.org/simple/" },
+    { name = "serialbox4py", specifier = ">=2.6.2" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
 ]
 
@@ -4544,27 +4544,19 @@ wheels = [
 
 [[package]]
 name = "serialbox4py"
-version = "2.6.2"
-source = { registry = "https://test.pypi.org/simple/" }
+version = "2.6.3"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
     { name = "packaging" },
 ]
-sdist = { url = "https://test-files.pythonhosted.org/packages/91/57/7a3f8f7a9b41ae6900f540e43bdff0ee3c4d58d5104e92469a30671f1bf4/serialbox4py-2.6.2.tar.gz", hash = "sha256:79bc3b1b4448cdd309a83f397b0e68a5d43c6363112412aa1d4c150f838adc4c", size = 3106032, upload-time = "2024-12-18T20:26:17.626Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/a0/20451f14f0354cefde49b824722a5870257db710c13e64f3a0f39b38d60a/serialbox4py-2.6.3.tar.gz", hash = "sha256:fbe21c83fb383e0a4ea6d1e10cb7e164c86af281c8b592aafdd0cd83d7566f60", size = 3106117, upload-time = "2026-05-20T14:24:04.619Z" }
 wheels = [
-    { url = "https://test-files.pythonhosted.org/packages/75/73/874dd7e7d7e24bb685d400bc68e35c4691a001ee2922f9dce5f35dda449b/serialbox4py-2.6.2-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:fca2b3af27873be26777790911cf4f7223c605ca8c9154bbf8ca532e85741b51", size = 1739107, upload-time = "2024-12-18T20:25:41.317Z" },
-    { url = "https://test-files.pythonhosted.org/packages/67/c5/aea35756db72cb70ac2d24daa998631aa2873b36cdbde54b5b15b903a465/serialbox4py-2.6.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:aa8614fc34d3b3e9ed755a0f613e484a7ae7e380e74ed1adc41c4c6b08f74e22", size = 1634294, upload-time = "2024-12-18T20:25:43.769Z" },
-    { url = "https://test-files.pythonhosted.org/packages/5a/18/79f38d0be01a4b400f2fb52df96a5e2fea40329fe22299c3f67a07acd9d7/serialbox4py-2.6.2-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3c1715b27aef1dfbbfd45b7204fdcf26e7b470db70b44f3dfd2377cb2628aa72", size = 2514308, upload-time = "2024-12-18T20:25:45.731Z" },
-    { url = "https://test-files.pythonhosted.org/packages/c6/a9/9eb15e998c4a37844ea93f8fe946dec7ca4d7536204864ed049cce45f297/serialbox4py-2.6.2-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:36da376497eaf266eb5dea143f2d7e64709b8dfb5d46cf65a1e0b166dd49470f", size = 1739107, upload-time = "2024-12-18T20:25:48.422Z" },
-    { url = "https://test-files.pythonhosted.org/packages/ed/82/8a7ec9575763eb0f05812896d769a7e595b4ba596063427ba936a300963f/serialbox4py-2.6.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:3d39ea8bf11d3fb0000359cd0f1cf26e22b87b95543d0509f4163b6c883f95d4", size = 1634286, upload-time = "2024-12-18T20:25:50.611Z" },
-    { url = "https://test-files.pythonhosted.org/packages/15/fd/00257e4868084ec79f2dae8d8bebe8e22efcf3230a4443a4aceedab0c20f/serialbox4py-2.6.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:fca6a0a40f7b66447dab3352998d5698efb6b162ee34a690b4ce44b7f7b1bbb1", size = 2514304, upload-time = "2024-12-18T20:25:52.288Z" },
-    { url = "https://test-files.pythonhosted.org/packages/9d/1b/1e37ac61349e1975453876f6976120b776bd66c8a11ccba0fa2fd32470d8/serialbox4py-2.6.2-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:2e73a7f42aa1546ba879fb90ce9aad72286066741a50f7f653e0d57c552f30b7", size = 1739087, upload-time = "2024-12-18T20:25:54.54Z" },
-    { url = "https://test-files.pythonhosted.org/packages/6d/1b/1650b0d46fc11d24f9505de018da69bd748680c16a12f9556afeb252f9f4/serialbox4py-2.6.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:9791a42b28485fc7fd179a8bfb3dc4495ccb6e76649d9e9755c46eed66bdb8eb", size = 1634296, upload-time = "2024-12-18T20:25:56.811Z" },
-    { url = "https://test-files.pythonhosted.org/packages/5f/8b/4dc70aa2fafd2d89418045c5e6c7bba7e3e8021ee68bd2170586480a6056/serialbox4py-2.6.2-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:af652392294dd72a7bf9a32b917bf99c6610636470f61c1cb1e90ba90b90e800", size = 2514309, upload-time = "2024-12-18T20:25:59.086Z" },
-    { url = "https://test-files.pythonhosted.org/packages/b6/c2/b7d4338d368287c851f601b77b6f96b20c44dfefefe00f605a58f234c447/serialbox4py-2.6.2-cp313-cp313-macosx_10_15_x86_64.whl", hash = "sha256:456a5ba3fff4b724248bcd101e429522a5ffca9d912691c8fee679c835bfd35e", size = 1739106, upload-time = "2024-12-18T20:26:00.94Z" },
-    { url = "https://test-files.pythonhosted.org/packages/da/49/9ad43c6205407bc9528c8386a9a2ac1bd88b2e0b6131abf7e380544035f4/serialbox4py-2.6.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:d49e60f16c8c9ac2cb6ada7550b6caedbec98fa47126c1c0cfc6ef9a48c61809", size = 1634292, upload-time = "2024-12-18T20:26:03.111Z" },
-    { url = "https://test-files.pythonhosted.org/packages/0c/f3/915f83c1e6ea5e7aaaec0c66abb34788b5aa05045e30aceec833d2f2bae9/serialbox4py-2.6.2-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:99119e78f09c594c99334e46525d006d94713933d3faf2713750bc7e486aba1a", size = 2514314, upload-time = "2024-12-18T20:26:04.718Z" },
+    { url = "https://files.pythonhosted.org/packages/55/68/13c6871a9123ab306f5e69957a19cedd96a7a2678a54eb63cf3bcc3d9d87/serialbox4py-2.6.3-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:375978b1565d900ee417d828928b47a97dfd4ba39648a76b33c7c3447c6be0c9", size = 1650866, upload-time = "2026-05-20T14:23:55.024Z" },
+    { url = "https://files.pythonhosted.org/packages/23/2d/38295757639969e50e5ee0c25341e08ed6203146f0cf84d7653c740e96be/serialbox4py-2.6.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:e59852940c78c0d7edcd73e0ce12305c6eeac362dfb0e0b5b1ac8bd9edd5b946", size = 1558261, upload-time = "2026-05-20T14:23:57.86Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/54/7f78d376bc7cea17b10176ec0b42d87f2c6a0924dd31938a08f1caea5bf2/serialbox4py-2.6.3-py3-none-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:3ace62792fbd890d4f8be8e3ee6034c845d6b9f701b4c81ed6273db8095b81de", size = 2402971, upload-time = "2026-05-20T14:23:59.945Z" },
+    { url = "https://files.pythonhosted.org/packages/8e/9f/9133e79683075d5217b83b595b2f2f2bfcbc58d5ef1ccac8fe5516e7eaf5/serialbox4py-2.6.3-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5182a4926ca2d5e437532e27b239d5d5a080f2fd421019eef2a901a08bd9b1bb", size = 2516014, upload-time = "2026-05-20T14:24:02.232Z" },
 ]
 
 [[package]]

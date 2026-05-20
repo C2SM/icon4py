@@ -403,7 +403,6 @@ icon4py-driver = {workspace = true}
 icon4py-standalone_driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
-serialbox4py = {index = "test.pypi"}
 
 [tool.uv.workspace]
 members = [
