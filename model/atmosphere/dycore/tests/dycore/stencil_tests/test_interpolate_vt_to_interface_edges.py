@@ -45,6 +45,7 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
+        **kwargs: Any,
     ) -> dict:
         subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
         z_vt_ie = z_vt_ie.copy()

@@ -8,6 +8,7 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from typing import Any
 
 from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
     compute_diagnostics_from_normal_wind,
@@ -207,6 +208,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
+        **kwargs: Any,
     ) -> dict:
         initial_tangential_wind = tangential_wind.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
