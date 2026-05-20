@@ -1441,12 +1441,12 @@ wheels = [
 [[package]]
 name = "ghex"
 version = "0.6.0"
-source = { registry = "https://test.pypi.org/simple/" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
 ]
-sdist = { url = "https://test-files.pythonhosted.org/packages/e7/d4/b8a94021a958327b721553b5e63248d0c10bd08204ce494b9bfe994ef987/ghex-0.6.0.tar.gz", hash = "sha256:c0c89d1a2759883fac3f1d9726b13534a3386cc53f73ddfdb666803a7d8e61d6", size = 8912739, upload-time = "2026-05-20T07:24:17.116Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/d4/b8a94021a958327b721553b5e63248d0c10bd08204ce494b9bfe994ef987/ghex-0.6.0.tar.gz", hash = "sha256:c0c89d1a2759883fac3f1d9726b13534a3386cc53f73ddfdb666803a7d8e61d6", size = 8912739, upload-time = "2026-05-20T11:43:30.562Z" }
 
 [[package]]
 name = "gitdb"
@@ -2084,7 +2084,7 @@ requires-dist = [
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
-    { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1", index = "https://test.pypi.org/simple/" },
+    { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
     { name = "gt4py", specifier = "==1.1.9" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
