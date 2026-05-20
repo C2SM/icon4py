@@ -63,7 +63,7 @@ def T_from_internal_energy(
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     temperature: fa.CellKField[ta.wpfloat],  # output
 ):
-    _T_from_internal_energy(u, qv, qliq, qice, rho, dz, out=temperature)
+    _T_from_internal_energy(u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature)
 
 
 @gtx.field_operator
@@ -113,7 +113,9 @@ def T_from_internal_energy_scalar(
     dz: ta.wpfloat,  # Extent of grid cell
     temperature: ta.wpfloat,  # output
 ):
-    _T_from_internal_energy_scalar(u, qv, qliq, qice, rho, dz, out=temperature)
+    _T_from_internal_energy_scalar(
+        u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature
+    )
 
 
 @gtx.field_operator
@@ -192,7 +194,7 @@ def internal_energy(
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     energy: fa.CellKField[ta.wpfloat],  # output
 ):
-    _internal_energy(t, qv, qliq, qice, rho, dz, out=energy)
+    _internal_energy(t=t, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=energy)
 
 
 @gtx.field_operator
@@ -224,7 +226,7 @@ def qsat_ice_rho(
     rho: fa.CellKField[ta.wpfloat],  # Density
     pressure: fa.CellKField[ta.wpfloat],  # output
 ):
-    _qsat_ice_rho(t, rho, out=pressure)
+    _qsat_ice_rho(t=t, rho=rho, out=pressure)
 
 
 @gtx.field_operator
@@ -256,7 +258,7 @@ def qsat_rho(
     rho: fa.CellKField[ta.wpfloat],  # Density
     pressure: fa.CellKField[ta.wpfloat],  # output
 ):
-    _qsat_rho(t, rho, out=pressure)
+    _qsat_rho(t=t, rho=rho, out=pressure)
 
 
 @gtx.field_operator
@@ -281,7 +283,7 @@ def qsat_rho_tmelt(
     rho: fa.CellKField[ta.wpfloat],  # Density
     pressure: fa.CellKField[ta.wpfloat],  # output
 ):
-    _qsat_rho_tmelt(rho, out=pressure)
+    _qsat_rho_tmelt(rho=rho, out=pressure)
 
 
 @gtx.field_operator
@@ -311,7 +313,7 @@ def dqsatdT_rho(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     derivative: fa.CellKField[ta.wpfloat],  # output
 ):
-    _dqsatdT_rho(qs, t, out=derivative)
+    _dqsatdT_rho(qs=qs, t=t, out=derivative)
 
 
 @gtx.field_operator
@@ -338,7 +340,7 @@ def sat_pres_ice(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     pressure: fa.CellKField[ta.wpfloat],  # output
 ):
-    _sat_pres_ice(t, out=pressure)
+    _sat_pres_ice(t=t, out=pressure)
 
 
 @gtx.field_operator
@@ -365,7 +367,7 @@ def sat_pres_water(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     pressure: fa.CellKField[ta.wpfloat],  # output
 ) -> None:
-    _sat_pres_water(t, out=pressure)
+    _sat_pres_water(t=t, out=pressure)
 
 
 @gtx.field_operator
