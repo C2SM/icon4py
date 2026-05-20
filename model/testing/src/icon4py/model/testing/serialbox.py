@@ -2004,8 +2004,8 @@ class IconSerialDataProvider:
     def from_savepoint_grid(self, grid_id: str, grid_params: icon.GridParams) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
-            savepoint,
-            self.serializer,
+            sp=savepoint,
+            ser=self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
             grid_params=grid_params,
