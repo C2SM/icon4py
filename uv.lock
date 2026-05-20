@@ -1627,7 +1627,7 @@ wheels = [
 
 [[package]]
 name = "icon4py"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "icon4py-atmosphere-advection" },
@@ -1900,7 +1900,7 @@ typing-distributed = [
 
 [[package]]
 name = "icon4py-atmosphere-advection"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/atmosphere/advection" }
 dependencies = [
     { name = "gt4py" },
@@ -1917,7 +1917,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-diffusion"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/atmosphere/diffusion" }
 dependencies = [
     { name = "gt4py" },
@@ -1934,7 +1934,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-dycore"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/atmosphere/dycore" }
 dependencies = [
     { name = "gt4py" },
@@ -1951,7 +1951,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-microphysics"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/atmosphere/subgrid_scale_physics/microphysics" }
 dependencies = [
     { name = "gt4py" },
@@ -1968,7 +1968,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-muphys"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
@@ -1987,7 +1987,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-bindings"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "bindings" }
 dependencies = [
     { name = "cffi" },
@@ -2037,7 +2037,7 @@ provides-extras = ["cuda11", "cuda12", "profiling"]
 
 [[package]]
 name = "icon4py-common"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/common" }
 dependencies = [
     { name = "array-api-compat" },
@@ -2120,7 +2120,7 @@ provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
 
 [[package]]
 name = "icon4py-driver"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/driver" }
 dependencies = [
     { name = "click" },
@@ -2149,7 +2149,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-standalone-driver"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/standalone_driver" }
 dependencies = [
     { name = "devtools" },
@@ -2176,7 +2176,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-testing"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "model/testing" }
 dependencies = [
     { name = "filelock" },
@@ -2205,7 +2205,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-tools"
-version = "0.1.0"
+version = "0.2.0rc1"
 source = { editable = "tools" }
 dependencies = [
     { name = "cffi" },
