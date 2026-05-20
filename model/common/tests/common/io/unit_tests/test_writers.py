@@ -56,7 +56,9 @@ def initialized_writer(
         file_name=fname,
         vertical=vertical_params,
         horizontal=horizontal,
-        time_properties=writers.TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
     )
     writer.initialize_dataset()
