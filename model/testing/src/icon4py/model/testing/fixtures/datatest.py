@@ -113,8 +113,8 @@ def experiment(
     download_ser_data: None,  # downloads data as side-effect
 ) -> definitions.Experiment:
     return definitions.Experiment(
-        description=experiment_description,
-        config=dt_utils.create_experiment_configuration(experiment_description, process_props),
+        experiment_description=experiment_description,
+        experiment_config=dt_utils.create_experiment_configuration(experiment_description, process_props),
     )
 
 
@@ -151,7 +151,7 @@ def data_provider(
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    data_path = dt_utils.get_datapath_for_experiment(experiment, process_props)
+    data_path = dt_utils.get_datapath_for_experiment(experiment.description, process_props)
     return dt_utils.create_icon_serial_data_provider(data_path, process_props.rank, backend)
 
 
