@@ -170,7 +170,13 @@ def compute_zonal_and_meridional_components_on_edges(
     horizontal_end: gtx.int32,
 ):
     zonal_and_meridional_components_on_edges(
-        lat, lon, x, y, z, out=(u, v), domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
+        lat=lat,
+        lon=lon,
+        x=x,
+        y=y,
+        z=z,
+        out=(u, v),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 

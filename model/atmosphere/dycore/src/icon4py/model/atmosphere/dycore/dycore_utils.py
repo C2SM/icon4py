@@ -97,12 +97,12 @@ def calculate_divdamp_fields(
     dbl_eps: float,
 ):
     _calculate_divdamp_fields(
-        interpolated_fourth_order_divdamp_factor,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
-        max_nudging_coefficient,
-        dbl_eps,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        dbl_eps=dbl_eps,
         out=(
             fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary,

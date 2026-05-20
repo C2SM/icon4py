@@ -770,5 +770,17 @@ def vapor_x_snow(
     vapor_deposition_rate: fa.CellKField[ta.wpfloat],  # output
 ) -> None:
     _vapor_x_snow(
-        t, p, rho, qs, ns, lam, eta, ice_dep, dvsw, dvsi, dvsw0, dt, out=vapor_deposition_rate
+        t=t,
+        p=p,
+        rho=rho,
+        qs=qs,
+        ns=ns,
+        lam=lam,
+        eta=eta,
+        ice_dep=ice_dep,
+        dvsw=dvsw,
+        dvsi=dvsi,
+        dvsw0=dvsw0,
+        dt=dt,
+        out=vapor_deposition_rate,
     )
