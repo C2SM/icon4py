@@ -57,6 +57,7 @@ jobs:
         if: steps.grid-cache.outputs.cache-hit != 'true'
         env:
           ICON4PY_ENABLE_GRID_DOWNLOAD: true
+          ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
         run: |
           ./scripts/python/validation_grid_utils.py download
 

@@ -39,6 +39,15 @@ def get_validation_grids() -> list[definitions.GridDescription]:
         definitions.Grids.TORUS_50000x5000,
     ]  # change to MCH_OPR_R04B07_DOMAIN01
 
+def get_validation_experiments() -> list[definitions.ExperimentDescription]:
+    from icon4py.model.testing import definitions  # Import here to reduce startup time of the CLI
+
+    return [
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.EXCLAIM_APE,
+        definitions.Experiments.GAUSS3D,
+    ]
+
 
 @cli.command(name="cache-key")
 def cache_key() -> None:
@@ -55,13 +64,20 @@ def cache_key() -> None:
 
 
 @cli.command(name="download")
-def download_validation_grids() -> None:
+def download_validation_data() -> None:
     """Effectively download the validation grid files."""
     from icon4py.model.testing import grid_utils
+    from icon4py.model.testing import datatest_utils as dt_utils
+    from icon4py.model.common.decomposition import definitions as decomposition
 
     for grid in get_validation_grids():
         print(f"downloading and unpacking {grid.name}")
         fname = grid_utils._download_grid_file(grid)
+        print(f"done - downloaded {fname}")
+
+    for exp in get_validation_experiments():
+        print(f"downloading and unpacking {exp.name}")
+        fname = dt_utils.download_experiment(exp, dt_utils.get_process_properties_for_run(decomposition.get_runtype(False)))
         print(f"done - downloaded {fname}")
 
 
