@@ -260,6 +260,7 @@ def test_dycore_wrapper_granule_inputs(
     # --- Granule input parameters for dycore init
 
     cfg = experiment.config.nonhydrostatic
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # vertical grid params
     nflat_gradp = gtx.int32(
@@ -536,7 +537,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_dtime = sp.get_metadata("dtime").get("dtime")
     expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     expected_at_first_substep = substep_init == 1
-    expected_at_last_substep = substep_init == cfg.ndyn_substeps
+    expected_at_last_substep = substep_init == ndyn_substeps
 
     ffi = cffi.FFI()
 
