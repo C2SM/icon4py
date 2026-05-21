@@ -57,7 +57,7 @@ def test_jabw_initial_condition(
         icon_grid,
         cell_geometry,
         edge_geometry,
-        dt_utils.get_datapath_for_experiment(experiment, process_props),
+        dt_utils.get_datapath_for_experiment(experiment.description, process_props),
         backend,
         rank,
     )
