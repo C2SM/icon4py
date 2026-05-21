@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, rank",
+    "experiment_description, rank",
     [
         (definitions.Experiments.GAUSS3D, 0),
     ],

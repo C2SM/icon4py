@@ -394,7 +394,7 @@ def test_grid_manager_grid_level_and_root(
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [definitions.Experiments.JW],
 )
 def test_grid_manager_eval_c2e2c2e(

@@ -141,7 +141,7 @@ def configure_vertical_grid(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, expected_moist_level",
+    "experiment_description, expected_moist_level",
     [(definitions.Experiments.MCH_CH_R04B09, 0), (definitions.Experiments.EXCLAIM_APE, 25)],
 )
 def test_moist_level_calculation(
@@ -336,7 +336,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.GAUSS3D,

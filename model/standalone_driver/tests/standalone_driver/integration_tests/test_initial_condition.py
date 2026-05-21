@@ -18,6 +18,7 @@ from icon4py.model.testing.fixtures.datatest import (
     backend_like,
     data_provider,
     download_ser_data,
+    experiment,
     experiment_description,
     process_props,
 )
