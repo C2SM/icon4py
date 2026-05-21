@@ -51,11 +51,6 @@ def _extract_workspace_dep_names(
     return workspace_deps
 
 
-def _topological_sort(graph: dict[str, set[str]], all_nodes: set[str]) -> list[str]:
-    sorter = graphlib.TopologicalSorter(graph)
-    return list(sorter.static_order())
-
-
 def _discover(repo_root: pathlib.Path | None = None) -> list[dict[str, str]]:
     """Discover all workspace packages in dependency order.
 
@@ -89,7 +84,7 @@ def _discover(repo_root: pathlib.Path | None = None) -> list[dict[str, str]]:
         deps = _get_all_dependencies(pkg_pyproject)
         dep_graph[name] = _extract_workspace_dep_names(deps, known_names, name)
 
-    ordered_names = _topological_sort(dep_graph, known_names)
+    ordered_names = list(graphlib.TopologicalSorter(dep_graph).static_order())
     return [packages[name] for name in ordered_names]
 
 
