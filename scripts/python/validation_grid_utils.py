@@ -63,22 +63,42 @@ def cache_key() -> None:
     print(hexdigest)
 
 
+@cli.command(name="experiment-cache-key")
+def experiment_cache_key() -> None:
+    """Generate a cache key for the GitHub action cache based on experiment names and versions."""
+
+    from icon4py.model.testing import definitions
+
+    d = "_".join(
+        exp.name + str(exp.version)
+        for exp in get_validation_experiments()
+    )
+    hexdigest = hashlib.md5(d.encode()).hexdigest()
+    print(hexdigest)
+
+
 @cli.command(name="download")
-def download_validation_data() -> None:
-    """Effectively download the validation grid files."""
+def download_validation_grids() -> None:
+    """Download the validation grid files."""
     from icon4py.model.testing import grid_utils
-    from icon4py.model.testing import datatest_utils as dt_utils
-    from icon4py.model.common.decomposition import definitions as decomposition
 
     for grid in get_validation_grids():
         print(f"downloading and unpacking {grid.name}")
         fname = grid_utils._download_grid_file(grid)
         print(f"done - downloaded {fname}")
 
+
+@cli.command(name="download-experiments")
+def download_validation_experiments() -> None:
+    """Download the serialized experiment data."""
+    from icon4py.model.common.decomposition import definitions as decomposition
+    from icon4py.model.testing import datatest_utils as dt_utils
+
+    process_props = dt_utils.get_process_properties_for_run(decomposition.get_runtype(False))
     for exp in get_validation_experiments():
         print(f"downloading and unpacking {exp.name}")
-        fname = dt_utils.download_experiment(exp, dt_utils.get_process_properties_for_run(decomposition.get_runtype(False)))
-        print(f"done - downloaded {fname}")
+        dt_utils.download_experiment(exp, process_props)
+        print(f"done - downloaded {exp.name}")
 
 
 if __name__ == "__main__":
