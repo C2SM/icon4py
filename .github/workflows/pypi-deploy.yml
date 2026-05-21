@@ -1,0 +1,95 @@
+name: Deploy Python Distribution
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  discover:
+    name: Discover workspace packages
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.discover.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - name: Discover packages
+        id: discover
+        run: |
+          PACKAGES=$(./scripts/run discover-packages --format json)
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.package.name }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.discover.outputs.packages) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - name: Build sdist and wheel
+        run: uv build --sdist --wheel --out-dir dist/
+        working-directory: ${{ matrix.package.dir }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.package.name }}-dist
+          path: ${{ matrix.package.dir }}/dist/
+
+  publish-test-pypi:
+    name: Publish ${{ matrix.package.name }} to TestPyPI
+    needs: [discover, build]
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/${{ matrix.package.name }}/
+    permissions:
+      id-token: write
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.discover.outputs.packages) }}
+      fail-fast: false
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.package.name }}-dist
+          path: dist
+      - name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  publish-pypi:
+    name: Publish ${{ matrix.package.name }} to PyPI
+    needs: [discover, build]
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/${{ matrix.package.name }}/
+    permissions:
+      id-token: write
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.discover.outputs.packages) }}
+      fail-fast: false
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.package.name }}-dist
+          path: dist
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

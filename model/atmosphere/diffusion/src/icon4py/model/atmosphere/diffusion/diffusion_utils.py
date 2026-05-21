@@ -78,7 +78,7 @@ def setup_fields_for_initial_step(
 
 
 @gtx.field_operator
-def _init_diffusion_local_fields_for_regular_timestemp(
+def _init_diffusion_local_fields_for_regular_timestep(
     k4: wpfloat,
     dyn_substeps: wpfloat,
     hdiff_smag_fac: wpfloat,
@@ -128,7 +128,7 @@ def init_diffusion_local_fields_for_regular_timestep(
     smag_limit: fa.KField[wpfloat],
     enh_smag_fac: fa.KField[wpfloat],
 ):
-    _init_diffusion_local_fields_for_regular_timestemp(
+    _init_diffusion_local_fields_for_regular_timestep(
         k4,
         dyn_substeps,
         hdiff_smag_fac,

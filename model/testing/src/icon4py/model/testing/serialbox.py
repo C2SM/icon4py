@@ -172,12 +172,12 @@ class IconGridSavepoint(IconSavepoint):
         ser: serialbox.Serializer,
         grid_id: str,
         size: dict,
-        global_grid_params: icon.GlobalGridParams,
+        grid_params: icon.GridParams,
         backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = global_grid_params
+        self.grid_params = grid_params
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -336,7 +336,7 @@ class IconGridSavepoint(IconSavepoint):
             dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
         }
 
-        if self.global_grid_params.geometry_type == base.GeometryType.TORUS:
+        if self.grid_params.geometry_type == icon.GeometryType.TORUS:
             coords[dims.CellDim]["x"] = self.cell_center_cart_x()
             coords[dims.CellDim]["y"] = self.cell_center_cart_y()
             coords[dims.CellDim]["z"] = self.cell_center_cart_z()
@@ -610,7 +610,7 @@ class IconGridSavepoint(IconSavepoint):
             allocator=backend,
             config=config,
             neighbor_tables=neighbor_tables,
-            global_properties=self.global_grid_params,
+            grid_params=self.grid_params,
             start_index=start_index,
             end_index=end_index,
             refinement_control={
@@ -2013,16 +2013,14 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(
-        self, grid_id: str, global_grid_params: icon.GlobalGridParams
-    ) -> IconGridSavepoint:
+    def from_savepoint_grid(self, grid_id: str, grid_params: icon.GridParams) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
             savepoint,
             self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
-            global_grid_params=global_grid_params,
+            grid_params=grid_params,
             backend=self.backend,
         )
 

@@ -16,6 +16,7 @@ import pytest
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -200,6 +201,7 @@ def test_diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
+        exchange=decomp_defs.single_node_exchange,
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -328,6 +330,7 @@ def test_verify_diffusion_init_against_savepoint(
         edge_params,
         cell_params,
         backend=backend,
+        exchange=decomp_defs.single_node_exchange,
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
@@ -408,6 +411,7 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        exchange=decomp_defs.single_node_exchange,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -473,6 +477,7 @@ def test_run_diffusion_initial_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        exchange=decomp_defs.single_node_exchange,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v

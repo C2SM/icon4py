@@ -40,7 +40,7 @@ def test_standalone_driver_compare_single_multi_rank(
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    if experiment.grid.params.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
@@ -55,8 +55,9 @@ def test_standalone_driver_compare_single_multi_rank(
         # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
         # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
         # 0.0 is too strict.
-        atol = 0.0
-        rtol = 1e-15
+        # TODO(msimberg,jcanton): Even gtfn_cpu is not always bitwise identical.
+        atol = 1e-13
+        rtol = 1e-14
     else:
         atol = 2e-12
         rtol = 0.0

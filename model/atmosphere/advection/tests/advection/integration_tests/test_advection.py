@@ -150,8 +150,8 @@ def test_advection_run_single_step(
         cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        domain_length=geometry.grid.global_properties.domain_length,
-        domain_height=geometry.grid.global_properties.domain_height,
+        domain_length=geometry.grid.grid_params.domain_length,
+        domain_height=geometry.grid.grid_params.domain_height,
         grid_sphere_radius=constants.EARTH_RADIUS,
         lsq_dim_unk=2,
         lsq_dim_c=3,
@@ -161,7 +161,7 @@ def test_advection_run_single_step(
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.geometry_type,
+        geometry_type=icon_grid.grid_params.geometry_type,
         exchange=decomposition.single_node_exchange,
     )
 
@@ -181,6 +181,7 @@ def test_advection_run_single_step(
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     diagnostic_state = construct_diagnostic_init_state(
@@ -246,8 +247,8 @@ def test_compute_lsq_coeffs(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
     cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
-    domain_length = gm.grid.global_properties.domain_length
-    domain_height = gm.grid.global_properties.domain_height
+    domain_length = gm.grid.grid_params.domain_length
+    domain_height = gm.grid.grid_params.domain_height
     lsq_dim_stencil = 3
 
     coordinates = gm.coordinates
@@ -269,7 +270,7 @@ def test_compute_lsq_coeffs(
         lsq_dim_stencil,
         start_idx,
         min_rlcell_int,
-        icon_grid.geometry_type,
+        icon_grid.grid_params.geometry_type,
         exchange=decomposition.single_node_exchange,
     )
 

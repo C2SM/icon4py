@@ -61,6 +61,7 @@ class SimpleFieldSource(factory.FieldSource):
         self._vertical_grid = vertical_grid
         self._metadata = {}
         self._initial_data = data_
+        self._exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
 
         for key, value in data_.items():
             self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
@@ -216,9 +217,8 @@ def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFiel
     provider = factory.ProgramFieldProvider(
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError, match="Missing dependency: 'height_coordinate'"):
         cell_coordinate_source.register_provider(provider)
-        assert "not provided by source " in err.value  # type: ignore[operator]
 
 
 @pytest.mark.datatest
@@ -300,9 +300,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
     composite = factory.CompositeSource(
         test_source, (cell_coordinate_source, height_coordinate_source)
     )
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError, match="Field 'alice' not provided by the source"):
         composite.get("alice")
-        assert "not provided by source " in err.value  # type: ignore[operator]
 
 
 def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:

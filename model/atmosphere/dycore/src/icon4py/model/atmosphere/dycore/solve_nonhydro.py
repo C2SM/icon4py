@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: B008
 
 import dataclasses
 import logging
@@ -252,14 +251,12 @@ class NonHydrostaticConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
+        #: Note: The user can pass the ICON namelist parameter `nudge_max_coeff` as `_nudge_max_coeff` or
         #: the properly scaled one as `max_nudging_coefficient`,
         #: see the comment in mo_interpol_nml.f90
         #: TODO: This code is duplicated in `diffusion.py`, clean this up when implementing proper configuration handling.
         if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
-            raise ValueError(
-                "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
-            )
+            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
         elif max_nudging_coefficient is not None:
             self.max_nudging_coefficient: wpfloat = wpfloat(max_nudging_coefficient)
         elif _nudge_max_coeff is not None:
