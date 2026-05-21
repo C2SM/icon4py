@@ -26,7 +26,7 @@ from .test_grid_init import grid_init
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -252,7 +252,7 @@ def test_diffusion_wrapper_granule_inputs(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
