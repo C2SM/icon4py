@@ -90,8 +90,8 @@ def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.B
     return grid_functionality[experiment.name].get(name)
 
 
-def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
-    config = experiment.config.diffusion
+def test_diffusion_coefficients_with_hdiff_efdt_ratio():
+    config = diffusion.DiffusionConfig()
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -103,8 +103,8 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
     assert pytest.approx(1.0 / 72.0, abs=1e-12) == params.K4W
 
 
-def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
-    config = experiment.config.diffusion
+def test_diffusion_coefficients_without_hdiff_efdt_ratio():
+    config = diffusion.DiffusionConfig()
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -116,10 +116,8 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
     assert params.K4W == 0.0
 
 
-def test_smagorinski_heights_diffusion_type_5_are_consistent(
-    experiment,
-):
-    config = experiment.config.diffusion
+def test_smagorinski_heights_diffusion_type_5_are_consistent():
+    config = diffusion.DiffusionConfig()
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -133,8 +131,8 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
-def test_smagorinski_factor_diffusion_type_5(experiment):
-    params = diffusion.DiffusionParams(experiment.config.diffusion)
+def test_smagorinski_factor_diffusion_type_5():
+    params = diffusion.DiffusionParams(diffusion.DiffusionConfig())
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert all(p >= 0 for p in params.smagorinski_factor)
