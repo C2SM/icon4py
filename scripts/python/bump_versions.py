@@ -41,7 +41,7 @@ def _find_versioned_package_dirs() -> list[pathlib.Path]:
 #: Pattern matching versioned icon4py cross-package dependency constraints, e.g.
 #: ``icon4py-common>=0.0.6``, ``icon4py-common~=0.0.6``, or ``icon4py-tools~=0.0.6``.
 _ICON4PY_DEP_CONSTRAINT_RE: Final = re.compile(
-    r"(icon4py-[\w-]+(?:\[[\w,]+\])?)(~=|>=)([\d]+\.[\d]+\.[\d]+)"
+    r"(icon4py-[\w-]+(?:\[[\w,]+\])?)(~=|>=)([\d]+\.[\d]+\.[\d]+(?:(?:a|b|rc)\d+)?)"
 )
 
 
@@ -53,7 +53,11 @@ def _detect_current_version(pkg_dirs: list[pathlib.Path]) -> str:
     for pkg_dir in pkg_dirs:
         pyproject = pkg_dir / "pyproject.toml"
         text = pyproject.read_text()
-        m = re.search(r"^# managed by bump-my-version:\nversion = \"([\d.]+)\"", text, re.MULTILINE)
+        m = re.search(
+            r"^# managed by bump-my-version:\nversion = \"([\d.]+(?:(?:a|b|rc)\d+)?)\"",
+            text,
+            re.MULTILINE,
+        )
         if m:
             return m.group(1)
     raise RuntimeError("Could not detect current version from any namespace package.")
