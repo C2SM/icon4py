@@ -540,7 +540,6 @@ class Diffusion:
                 "geofac_grg_x": self._interpolation_state.geofac_grg_x,
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
-                "diff_multfac_w": self.diff_multfac_w,
                 "type_shear": self.config.shear_type,
             },
             horizontal_sizes={
