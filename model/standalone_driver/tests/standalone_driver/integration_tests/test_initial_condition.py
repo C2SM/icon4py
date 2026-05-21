@@ -26,7 +26,7 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [(definitions.Experiments.JW)])
 @pytest.mark.datatest
-def test_standalone_driver_initial_condition(
+def test_jablonowski_williamson_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiment,
@@ -76,7 +76,11 @@ def test_standalone_driver_initial_condition(
         atol=1e-12,
     )
 
-    # TODO (Yilu): add w assertion when w_now is available on prognostics initial savepoint
+    assert test_utils.dallclose(
+        ds.prognostics.current.w.asnumpy(),
+        prognostics_savepoint.w_now().asnumpy(),
+        atol=1e-12,
+    )
 
 
 @pytest.mark.embedded_remap_error
@@ -127,7 +131,10 @@ def test_weisman_klemp_initial_condition(
         prognostics_savepoint.vn_now().asnumpy(),
     )
 
-    # TODO (Yilu): add w assertion when w_now is available on prognostics initial savepoint
+    assert test_utils.dallclose(
+        ds.prognostics.current.w.asnumpy(),
+        prognostics_savepoint.w_now().asnumpy(),
+    )
 
     assert test_utils.dallclose(
         ds.tracers.current.qv.asnumpy(),
