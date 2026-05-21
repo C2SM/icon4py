@@ -55,8 +55,7 @@ from icon4py.model.testing.fixtures import (
     cpu_allocator,
     data_provider,
     download_ser_data,
-    experiment,
-    experiment_description,
+    grid_description,
     grid_savepoint,
     process_props,
 )
@@ -676,13 +675,13 @@ def test_local_connectivity(
 @pytest.mark.parametrize("ranks", (2, 3, 4))
 def test_decomposition_size(
     ranks: int,
-    experiment: test_defs.Experiment,
+    grid_description: test_defs.GridDescription,
 ) -> None:
-    if experiment.description == test_defs.Experiments.MCH_CH_R04B09:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = dt_utils.get_grid_filepath(experiment.grid)
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]
