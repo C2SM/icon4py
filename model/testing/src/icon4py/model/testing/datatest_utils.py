@@ -194,8 +194,8 @@ def create_experiment_configuration(
     diffusion_nml = nml_data["diffusion_nml"]
     turbdiff_nml = nml_data["turbdiff_nml"]
     run_nml = nml_data["run_nml"]
-    nwp_phy_nml = nml_data["nwp_phy_nml"]
-    nwp_tuning_nml = nml_data["nwp_tuning_nml"]
+    nwp_phy_nml = nml_data.get("nwp_phy_nml")
+    nwp_tuning_nml = nml_data.get("nwp_tuning_nml")
 
     # *** MetricsConfig ***
     rayleigh_coeff = _list_to_value(nonhydrostatic_nml["rayleigh_coeff"])
@@ -317,18 +317,21 @@ def create_experiment_configuration(
     )
 
     # *** GraupelConfig ***
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        do_latent_heat_nudging=run_nml["ldass_lhn"],
-        # ithermo_water == 0 means constant latent heat (docstring in class definition).
-        use_constant_latent_heat=_list_to_value(nwp_phy_nml["ithermo_water"]) == 0,
-        ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
-        power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
-        exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
-        power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
-        rain_mu=nwp_phy_nml["mu_rain"],
-        rain_n0=nwp_phy_nml["rain_n0_factor"],
-        snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
-    )
+    if nwp_phy_nml is not None and nwp_tuning_nml is not None:
+        graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
+            do_latent_heat_nudging=run_nml["ldass_lhn"],
+            # ithermo_water == 0 means constant latent heat (docstring in class definition).
+            use_constant_latent_heat=_list_to_value(nwp_phy_nml["ithermo_water"]) == 0,
+            ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
+            power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
+            exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
+            power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
+            rain_mu=nwp_phy_nml["mu_rain"],
+            rain_n0=nwp_phy_nml["rain_n0_factor"],
+            snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
+        )
+    else:
+        graupel_config = graupel.SingleMomentSixClassIconGraupelConfig()
 
     return definitions.ExperimentConfig(
         driver=driver_cfg,
