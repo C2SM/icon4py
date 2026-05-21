@@ -17,7 +17,7 @@ from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin, g
 
 
 def test_parse_functions_on_wrapper():
-    from tests.tools.py2fgen.wrappers import simple
+    from tests.tools.py2fgen.wrappers import simple  # noqa: PLC0415 [import-outside-top-level]
 
     plugin = get_cffi_description(
         [simple.square_from_function, simple.square_error], "square_plugin"
@@ -57,9 +57,9 @@ def test_compile_and_run_cffi_plugin_from_C():
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created
-            assert (
-                compiled_library_path.exists()
-            ), f"Compiled library {compiled_library_path} does not exist."
+            assert compiled_library_path.exists(), (
+                f"Compiled library {compiled_library_path} does not exist."
+            )
             assert compiled_library_path.stat().st_size > 0, "Compiled library is empty."
 
             # Write the main C program to a file

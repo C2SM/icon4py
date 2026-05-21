@@ -520,8 +520,8 @@ def run_serialization() -> None:
 
     # Import here to reduce startup time for the CLI
     global dt_utils, definitions  # noqa: PLW0603 [global-statement]
-    import icon4py.model.testing.datatest_utils as dt_utils
-    from icon4py.model.testing import definitions
+    import icon4py.model.testing.datatest_utils as dt_utils  # noqa: PLC0415 [import-outside-top-level]
+    from icon4py.model.testing import definitions  # noqa: PLC0415 [import-outside-top-level]
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
