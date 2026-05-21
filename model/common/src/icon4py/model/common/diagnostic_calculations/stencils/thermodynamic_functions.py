@@ -7,8 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from types import ModuleType
 
-import numpy as np
-
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -32,9 +30,7 @@ def calculate_specific_humidity(
     return specific_humidity
 
 
-def calculate_saturation_presssure_water(
-    temperature: data_alloc.NDArray, xp: ModuleType = np
-) -> data_alloc.NDArray:
+def calculate_saturation_presssure_water(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
     """
     Compute saturation water vapour pressure by the Tetens formula.
         psat = p0 exp( aw (T-T0)/(T-bw)) )  [Tetens formula]
@@ -44,7 +40,8 @@ def calculate_saturation_presssure_water(
     Returns:
         saturation water vapour pressure [Pa]
     """
-    return phy_const.TETENS_P0 * xp.exp(
+    array_ns = data_alloc.array_namespace(temperature)
+    return phy_const.TETENS_P0 * array_ns.exp(
         phy_const.TETENS_AW
         * (temperature - phy_const.MELTING_TEMPERATURE)
         / (temperature - phy_const.TETENS_BW)
