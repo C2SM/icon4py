@@ -224,7 +224,7 @@ def solve_nh_init(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -772,7 +772,7 @@ def test_dycore_wrapper_granule_inputs(
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "experiment_description,step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
