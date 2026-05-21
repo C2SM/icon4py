@@ -459,6 +459,7 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
+        self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
             backend=backend,
@@ -541,9 +542,8 @@ class Diffusion:
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
                 "diff_multfac_w": self.diff_multfac_w,
-                "type_shear": gtx.int32(
-                    self.config.shear_type.value
-                ),  # DaCe parser peculiarity (does not work as gtx.int32)
+                "diff_multfac_n2w": self.diff_multfac_n2w,
+                "type_shear": self.config.shear_type,
             },
             horizontal_sizes={
                 "horizontal_start": self._horizontal_start_index_w_diffusion,
@@ -554,7 +554,7 @@ class Diffusion:
             vertical_sizes={
                 "vertical_start": 0,
                 "vertical_end": self._grid.num_levels,
-                "nrdmax": gtx.int32(  # DaCe parser peculiarity (does not work as gtx.int32)
+                "nrdmax": gtx.int32(
                     self._vertical_grid.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
             },
@@ -615,8 +615,6 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        self._allocate_local_fields(model_backends.get_allocator(backend))
-
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
             config.substep_as_float,
@@ -645,10 +643,6 @@ class Diffusion:
                 ].item(),
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
-
-        # TODO(edopao): we should call gtx.common.offset_provider_to_type()
-        #   but this requires some changes in gt4py domain inference.
-        self.compile_time_connectivities = self._grid.connectivities
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
