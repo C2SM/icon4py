@@ -317,15 +317,12 @@ def test_grid_manager_eval_c2v(
     assert np.allclose(c2v, data_alloc.as_numpy(grid_savepoint.c2v()))
 
 
-@pytest.mark.parametrize(
-    "grid_descriptor", [definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL]
-)
 @pytest.mark.with_netcdf
 def test_grid_manager_grid_size(
-    backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
+    backend: gtx_typing.Backend, grid_description: definitions.GridDescription
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    ref = utils.GRID_REFERENCE_VALUES[grid_descriptor.name]
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
+    ref = utils.GRID_REFERENCE_VALUES[grid_description.name]
     assert ref["num_cells"] == grid.size[dims.CellDim]
     assert ref["num_edges"] == grid.size[dims.EdgeDim]
     assert ref["num_vertices"] == grid.size[dims.VertexDim]
@@ -371,7 +368,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, expected_subdivision",
+    "grid_description, expected_subdivision",
     [
         (
             definitions.Grids.R02B04_GLOBAL,
@@ -384,11 +381,11 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
     ],
 )
 def test_grid_manager_grid_level_and_root(
-    grid_descriptor: definitions.GridDescription,
+    grid_description: definitions.GridDescription,
     expected_subdivision: icon.GridSubdivision,
     backend: gtx_typing.Backend,
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
     assert expected_subdivision == grid.grid_params.subdivision
 
 
@@ -561,14 +558,14 @@ def test_edge_vertex_distance(
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, expected",
+    "grid_description, expected",
     [
         (definitions.Grids.MCH_CH_R04B09_DSL, True),
         (definitions.Grids.R02B04_GLOBAL, False),
     ],
 )
-def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expected: bool) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=None).grid
+def test_limited_area_on_grid(grid_description: definitions.GridDescription, expected: bool) -> None:
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
 
 

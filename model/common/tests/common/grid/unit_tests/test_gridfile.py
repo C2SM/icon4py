@@ -40,12 +40,12 @@ if TYPE_CHECKING:
 
 @pytest.mark.with_netcdf
 def test_grid_file_dimension() -> None:
-    grid_descriptor = definitions.Grids.R02B04_GLOBAL
-    global_grid_file = str(dt_utils.get_grid_filepath(grid_descriptor))
+    grid_description = definitions.Grids.R02B04_GLOBAL
+    global_grid_file = str(dt_utils.get_grid_filepath(grid_description))
     parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
         parser.open()
-        ref = utils.GRID_REFERENCE_VALUES[grid_descriptor.name]
+        ref = utils.GRID_REFERENCE_VALUES[grid_description.name]
         assert parser.dimension(gridfile.DynamicDimension.CELL_NAME) == ref["num_cells"]
         assert parser.dimension(gridfile.DynamicDimension.VERTEX_NAME) == ref["num_vertices"]
         assert parser.dimension(gridfile.DynamicDimension.EDGE_NAME) == ref["num_edges"]
