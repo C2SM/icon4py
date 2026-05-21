@@ -459,27 +459,17 @@ def test_diffusion_wrapper_single_step(
     dwdx_ = savepoint_diffusion_exit.dwdx()
     dwdy_ = savepoint_diffusion_exit.dwdy()
 
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, w), w_.asnumpy(), atol=1e-12)
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, vn), vn_.asnumpy(), atol=1e-12)
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, exner), exner_.asnumpy(), atol=1e-12)
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, theta_v), theta_v_.asnumpy(), atol=1e-12
     )
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, hdef_ic), hdef_ic_.asnumpy(), atol=1e-12
     )
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, div_ic), div_ic_.asnumpy(), atol=1e-12
     )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
-    )
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, dwdx), dwdx_.asnumpy(), atol=1e-12)
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, dwdy), dwdy_.asnumpy(), atol=1e-12)
