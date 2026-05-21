@@ -42,6 +42,7 @@ from icon4py.model.testing import (
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     experiment,
+    experiment_description,
     grid_description,
     process_props,
     topography_savepoint,

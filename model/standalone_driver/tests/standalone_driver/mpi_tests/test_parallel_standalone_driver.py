@@ -17,6 +17,7 @@ from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
+    download_ser_data,
     experiment,
     experiment_description,
     process_props,

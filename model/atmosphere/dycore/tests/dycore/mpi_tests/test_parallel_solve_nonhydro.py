@@ -30,7 +30,7 @@ _log = logging.getLogger(__name__)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
+    "experiment_description, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
     [
         (
             test_defs.Experiments.MCH_CH_R04B09,
