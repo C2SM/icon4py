@@ -55,6 +55,8 @@ from icon4py.model.testing.fixtures import (
     cpu_allocator,
     data_provider,
     download_ser_data,
+    experiment,
+    experiment_description,
     grid_description,
     grid_savepoint,
     process_props,
