@@ -73,14 +73,14 @@ def main(
 
     # write_if_changed avoids touching mtimes (and triggering downstream
     # rebuilds) when the rendered content matches what is already on disk.
-    if output_py is not None:
-        py2fgen.write_if_changed(sources.py, output_py)
-    if output_f90 is not None:
-        py2fgen.write_if_changed(sources.f90, output_f90)
-    if output_c is not None:
-        py2fgen.write_if_changed(sources.c, output_c)
-    if output_h is not None:
-        py2fgen.write_if_changed(sources.h, output_h)
+    for content, path in [
+        (sources.py, output_py),
+        (sources.f90, output_f90),
+        (sources.c, output_c),
+        (sources.h, output_h),
+    ]:
+        if path is not None:
+            py2fgen.write_if_changed(content, path)
 
 
 if __name__ == "__main__":

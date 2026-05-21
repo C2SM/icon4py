@@ -37,13 +37,6 @@ BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.INT32: "int",
     _definitions.INT64: "long",
 }
-BUILTIN_TO_NUMPY_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
-    _definitions.FLOAT64: "xp.float64",
-    _definitions.FLOAT32: "xp.float32",
-    _definitions.BOOL: "xp.bool_",
-    _definitions.INT32: "xp.int32",
-    _definitions.INT64: "xp.int64",
-}
 
 
 def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.ArrayParamDescriptor]:
@@ -64,11 +57,6 @@ class BindingsLibrary(Node):
 def to_c_type(scalar_type: _definitions.ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
-
-
-def to_np_type(scalar_type: _definitions.ScalarKind) -> str:
-    """Convert a scalar type to its corresponding numpy type."""
-    return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 
 def to_iso_c_type(scalar_type: _definitions.ScalarKind) -> str:
