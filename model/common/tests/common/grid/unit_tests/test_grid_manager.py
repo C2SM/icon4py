@@ -564,7 +564,9 @@ def test_edge_vertex_distance(
         (definitions.Grids.R02B04_GLOBAL, False),
     ],
 )
-def test_limited_area_on_grid(grid_description: definitions.GridDescription, expected: bool) -> None:
+def test_limited_area_on_grid(
+    grid_description: definitions.GridDescription, expected: bool
+) -> None:
     grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
 

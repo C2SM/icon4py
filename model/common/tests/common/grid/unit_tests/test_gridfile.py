@@ -104,7 +104,9 @@ _index_selection: Iterable[list[int]] = [
     "selection",
     _index_selection,
 )
-def test_index_read_for_1d_fields(grid_description: definitions.GridDescription, selection: list[int]) -> None:
+def test_index_read_for_1d_fields(
+    grid_description: definitions.GridDescription, selection: list[int]
+) -> None:
     file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
