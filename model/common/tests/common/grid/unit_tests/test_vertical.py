@@ -24,7 +24,6 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
-    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -44,17 +43,17 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    "max_h,damping_height,delta",
-    [(60000, 34000, 612), (12000, 10000, 100), (109050, 45000, 123)],
+    "max_h,damping_height,delta,flat_height",
+    [(60000, 34000, 612, 50000), (12000, 10000, 100, 11000), (109050, 45000, 123, 80000)],
 )
 def test_damping_layer_calculation(
-    max_h: float, damping_height: float, delta: float, experiment: definitions.Experiment
+    max_h: float, damping_height: float, delta: float, flat_height: float
 ) -> None:
     vct_a = np.arange(0, max_h, delta)
     vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=1000,
-        flat_height=experiment.config.vertical_grid.flat_height,
+        flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
     vertical_params = v_grid.VerticalGrid(
