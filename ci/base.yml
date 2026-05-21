@@ -29,11 +29,6 @@ variables:
     DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION"]'
     KUBERNETES_MEMORY_REQUEST: 128Gi
     KUBERNETES_MEMORY_LIMIT: 128Gi
-# build_baseimage_x86_64:
-#   extends: [.container-builder-cscs-zen2, .build_baseimage]
-#   variables:
-#     HPC_SDK_VERSION: 22.11
-#     HPC_SDK_NAME: "nvhpc_2022_2211_Linux_${ARCH}_cuda_11.8"
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
@@ -47,9 +42,6 @@ build_baseimage_aarch64:
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
     DOCKERFILE: ci/docker/checkout.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-# build_image_x86_64:
-#   extends: [.container-builder-cscs-zen2, .build_image]
-#   needs: [build_baseimage_x86_64]
 build_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_image]
   needs: [build_baseimage_aarch64]
@@ -85,13 +77,6 @@ build_image_aarch64:
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
     PYTEST_ADDOPTS: "--durations=0"
-# .test_template_x86_64:
-#   extends: [.container-runner-daint-gpu-f7t, .test_template]
-#   needs: [build_image_x86_64]
-#   variables:
-#     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
-#     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
-#     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
   needs: [build_image_aarch64]
