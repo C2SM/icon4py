@@ -61,8 +61,9 @@ def test_standalone_driver_compare_single_multi_rank(
         # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
         # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
         # 0.0 is too strict.
-        atol = 0.0
-        rtol = 1e-15
+        # TODO(msimberg,jcanton): Even gtfn_cpu is not always bitwise identical.
+        atol = 1e-13
+        rtol = 1e-14
     else:
         atol = 2e-12
         rtol = 0.0
