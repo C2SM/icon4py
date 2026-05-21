@@ -719,7 +719,7 @@ def test_dycore_wrapper_granule_inputs(
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
-            ndyn_substeps_var=cfg.ndyn_substeps,
+            ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=substep,
             is_iau_active=False,
             iau_wgt_dyn=0.0,
@@ -802,7 +802,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 ):
     caplog.set_level(logging.DEBUG)
 
-    cfg = experiment.config.nonhydrostatic
+    ndyn_substeps = experiment.config.nonhydrostatic.ndyn_substeps
 
     # savepoints
     sp = savepoint_nonhydro_init
@@ -916,7 +916,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
-        ndyn_substeps_var=cfg.ndyn_substeps,
+        ndyn_substeps_var=ndyn_substeps,
         idyn_timestep=substep,
         is_iau_active=False,
         iau_wgt_dyn=0.0,
@@ -984,7 +984,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     at_initial_timestep,
     backend,
 ):
-    cfg = experiment.config.nonhydrostatic
+    ndyn_substeps = experiment.config.nonhydrostatic.ndyn_substeps
 
     # savepoints
     sp = savepoint_nonhydro_init
@@ -1058,7 +1058,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     ffi = cffi.FFI()
     # use fortran indices in the driving loop to compute i_substep
-    for i_substep in range(1, cfg.ndyn_substeps + 1):
+    for i_substep in range(1, ndyn_substeps + 1):
         if not (at_initial_timestep and i_substep == 1):
             ddt_w_adv_ntl1, ddt_w_adv_ntl2 = ddt_w_adv_ntl2, ddt_w_adv_ntl1
         if i_substep != 1:
@@ -1107,7 +1107,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
-            ndyn_substeps_var=cfg.ndyn_substeps,
+            ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=i_substep,
             is_iau_active=False,
             iau_wgt_dyn=0.0,
