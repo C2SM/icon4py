@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
 
-from .test_interpolate_to_surface import interpolate_to_surface_numpy
+from .test_extrapolate_quadratically_to_surface import extrapolate_quadratically_to_surface_numpy
 
 
 def set_theta_v_prime_ic_at_lower_boundary_numpy(
@@ -31,7 +31,7 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
     z_theta_v_pr_ic: np.ndarray,
     theta_v_ic: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    z_theta_v_pr_ic = interpolate_to_surface_numpy(
+    z_theta_v_pr_ic = extrapolate_quadratically_to_surface_numpy(
         wgtfacq_c=wgtfacq_c,
         interpolant=z_rth_pr,
         interpolation_to_surface=z_theta_v_pr_ic,

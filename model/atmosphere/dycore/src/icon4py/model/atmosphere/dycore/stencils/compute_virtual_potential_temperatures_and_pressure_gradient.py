@@ -10,10 +10,8 @@ from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_vp,
-)
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_wp import (
     _interpolate_cell_field_to_half_levels_wp,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat

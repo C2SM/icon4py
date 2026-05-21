@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_vp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
