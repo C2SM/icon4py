@@ -44,14 +44,13 @@ def pytest_configure(config):
     if m_option := config.getoption("-m", []):
         m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
     if config.getoption("--datatest-only"):
-        config.option.markexpr = " and ".join(["datatest", *m_option])
-
+        m_option.append("datatest")
     if config.getoption("--datatest-skip"):
-        config.option.markexpr = " and ".join(["not datatest", *m_option])
-
+        m_option.append("not datatest")
     if os.environ.get("FLOAT_PRECISION", "double").lower() == "single":
         # if precision is set to single per env variable, only run tests marked as single_precision_ready
-        config.option.markexpr = " and ".join(["single_precision_ready", *m_option])
+        m_option.append("single_precision_ready")
+    config.option.markexpr = " and ".join(m_option[::-1])
     
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
