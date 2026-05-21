@@ -55,7 +55,7 @@ def test_geometry_raises_for_unknown_field(
 
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment_description, rtol",
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-7),
         (definitions.Experiments.EXCLAIM_APE, 3e-12),
@@ -143,7 +143,7 @@ def test_compute_inverse_dual_edge_length(
 
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment_description, rtol",
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
