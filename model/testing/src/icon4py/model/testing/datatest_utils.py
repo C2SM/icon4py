@@ -216,7 +216,7 @@ def create_experiment_configuration(
     # *** InterpolationConfig ***
     interpolation_config = interpolation_factory.InterpolationConfig(
         divergence_averaging_central_cell_weight=nml_data["dynamics_nml"]["divavg_cntrwgt"],
-        max_nudging_coefficient=interpol_nml["nudge_max_coeff"],
+        _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
         nudge_efold_width=interpol_nml["nudge_efold_width"],
         nudge_zone_width=interpol_nml["nudge_zone_width"],
         rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
@@ -243,6 +243,11 @@ def create_experiment_configuration(
         SLEVE_decay_exponent=sleve_nml["decay_exp"],
     )
 
+    # Compute scaled max_nudging_coefficient once (formerly duplicated in
+    # DiffusionConfig and NonHydrostaticConfig, now sourced here from the
+    # interpolation namelist where nudge_max_coeff originates).
+    max_nudging = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * interpol_nml["nudge_max_coeff"]
+
     # *** NonHydrostaticConfig ***
     nonhydro_config = solve_nh.NonHydrostaticConfig(
         itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
@@ -258,7 +263,7 @@ def create_experiment_configuration(
         extra_diffu=nonhydrostatic_nml["lextra_diffu"],
         rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
         veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
-        _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+        max_nudging_coefficient=max_nudging,
         fourth_order_divdamp_factor=nonhydrostatic_nml["divdamp_fac"],
         fourth_order_divdamp_factor2=nonhydrostatic_nml["divdamp_fac2"],
         fourth_order_divdamp_factor3=nonhydrostatic_nml["divdamp_fac3"],
@@ -296,7 +301,7 @@ def create_experiment_configuration(
         zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
         velocity_boundary_diffusion_denom=gridref_nml["denom_diffu_v"],
         temperature_boundary_diffusion_denom=gridref_nml["denom_diffu_t"],
-        _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+        max_nudging_coefficient=max_nudging,
         shear_type=diffusion.TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
         iforcing=diffusion.ForcingType(run_nml["iforcing"]),
         a_hshr=turbdiff_nml["a_hshr"],

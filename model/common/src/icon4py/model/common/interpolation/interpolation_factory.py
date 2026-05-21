@@ -46,10 +46,14 @@ class InterpolationConfig:
     Central-cell weight used in divergence averaging.
     """
 
-    max_nudging_coefficient: float = 0.375
+    max_nudging_coefficient: float | None = None  # default: 0.375, set in __post_init__
     """
     Maximum nudging coefficient applied in the lateral nudging zone.
     """
+
+    #: Raw namelist value (nudge_max_coeff in mo_interpol_nml.f90), scaled to
+    #: max_nudging_coefficient in __post_init__ if provided.
+    _nudge_max_coeff: float | None = None
 
     nudge_efold_width: float = 2.0
     """
@@ -98,6 +102,18 @@ class InterpolationConfig:
     """
     Stencil size used for least-squares reconstruction.
     """
+
+    def __post_init__(self):
+        if self._nudge_max_coeff is not None and self.max_nudging_coefficient is not None:
+            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
+        elif self.max_nudging_coefficient is not None:
+            pass
+        elif self._nudge_max_coeff is not None:
+            self.max_nudging_coefficient = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * self._nudge_max_coeff
+            )
+        else:  # default value in ICON
+            self.max_nudging_coefficient = 0.375
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
