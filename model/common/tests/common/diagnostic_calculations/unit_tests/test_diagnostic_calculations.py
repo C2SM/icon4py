@@ -29,6 +29,7 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     experiment_description,
     grid_savepoint,
     icon_grid,
@@ -242,7 +243,7 @@ def test_diagnose_pressure(
 
 
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [definitions.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(

@@ -35,6 +35,7 @@ from icon4py.model.testing import (
 from icon4py.model.testing.fixtures import backend, data_provider, decomposition_info, experiment
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
+    experiment_description,
     interpolation_savepoint,
     process_props,
 )
