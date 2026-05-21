@@ -802,7 +802,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 ):
     caplog.set_level(logging.DEBUG)
 
-    ndyn_substeps = experiment.config.nonhydrostatic.ndyn_substeps
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # savepoints
     sp = savepoint_nonhydro_init
@@ -984,7 +984,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     at_initial_timestep,
     backend,
 ):
-    ndyn_substeps = experiment.config.nonhydrostatic.ndyn_substeps
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # savepoints
     sp = savepoint_nonhydro_init
