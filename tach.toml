@@ -33,6 +33,7 @@ exclude = [
     "cftime",
     "viztracer",
     "clang_format",
+    "numpy",
 ]
 rename = ["serialbox:serialbox4py"]
 

@@ -2875,8 +2875,6 @@ dependencies = [
     { name = "icon4py-atmosphere-dycore" },
     { name = "icon4py-common" },
     { name = "icon4py-testing" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
-    { name = "numpy", version = "2.4.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
     { name = "packaging" },
     { name = "typer" },
 ]
@@ -2889,7 +2887,6 @@ requires-dist = [
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-testing", editable = "model/testing" },
-    { name = "numpy", specifier = ">=1.22" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
