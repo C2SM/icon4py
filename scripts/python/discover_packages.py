@@ -18,11 +18,13 @@ and outputs a JSON array suitable for use as a GitHub Actions matrix.
 
 from __future__ import annotations
 
+import graphlib
 import json
 import pathlib
 import sys
 from typing import Annotated
 
+import packaging.requirements
 import typer
 from helpers import common, pyproject
 
@@ -43,45 +45,15 @@ def _extract_workspace_dep_names(
 ) -> set[str]:
     workspace_deps = set()
     for dep in deps:
-        base = (
-            dep.split(">=")[0]
-            .split("~=")[0]
-            .split("==")[0]
-            .split("<")[0]
-            .split(">")[0]
-            .split("[")[0]
-            .strip()
-        )
-        if base in known_names and base != self_name:
-            workspace_deps.add(base)
+        req = packaging.requirements.Requirement(dep)
+        if req.name in known_names and req.name != self_name:
+            workspace_deps.add(req.name)
     return workspace_deps
 
 
 def _topological_sort(graph: dict[str, set[str]], all_nodes: set[str]) -> list[str]:
-    in_degree: dict[str, int] = {node: 0 for node in all_nodes}
-    reverse_graph: dict[str, list[str]] = {node: [] for node in all_nodes}
-    for node, deps in graph.items():
-        for dep in deps:
-            if dep in all_nodes:
-                in_degree[node] += 1
-                reverse_graph[dep].append(node)
-
-    queue = sorted(node for node in all_nodes if in_degree[node] == 0)
-    result: list[str] = []
-    while queue:
-        node = queue.pop(0)
-        result.append(node)
-        for dependent in sorted(reverse_graph.get(node, [])):
-            in_degree[dependent] -= 1
-            if in_degree[dependent] == 0:
-                queue.append(dependent)
-                queue.sort()
-
-    if len(result) != len(all_nodes):
-        remaining = all_nodes - set(result)
-        raise RuntimeError(f"Circular dependency detected among: {remaining}")
-
-    return result
+    sorter = graphlib.TopologicalSorter(graph)
+    return list(sorter.static_order())
 
 
 def _discover(repo_root: pathlib.Path | None = None) -> list[dict[str, str]]:

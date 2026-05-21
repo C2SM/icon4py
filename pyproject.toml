@@ -37,6 +37,7 @@ lint = [
 ]
 scripts = [
   "lazy-loader>=0.5",
+  "packaging>=24.0",
   "rich>=13.0.0",
   "typer>=0.15",
   "f90nml>=1.5",
