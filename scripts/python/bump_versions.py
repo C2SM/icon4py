@@ -104,9 +104,11 @@ def _update_cross_package_constraints(
             continue
         text = pyproject.read_text()
         new_text = _ICON4PY_DEP_CONSTRAINT_RE.sub(
-            lambda m: f"{m.group(1)}{m.group(2)}{new_version}"
-            if m.group(3) == current_version
-            else m.group(0),
+            lambda m: (
+                f"{m.group(1)}{m.group(2)}{new_version}"
+                if m.group(3) == current_version
+                else m.group(0)
+            ),
             text,
         )
         if new_text != text:
