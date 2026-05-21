@@ -8,7 +8,10 @@
 import gt4py.next as gtx
 from gt4py.next import exp
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    GraupelConsts,
+    ThermodynamicConsts,
+)
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
 
@@ -37,12 +40,17 @@ def _T_from_internal_energy(
     """
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
-        (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice)
+        (
+            ThermodynamicConsts.cvd * (wpfloat(1.0) - qtot)
+            + ThermodynamicConsts.cvv * qv
+            + ThermodynamicConsts.clw * qliq
+            + GraupelConsts.ci * qice
+        )
         * rho
         * dz
     )  # Moist isometric specific heat
 
-    return (u + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
+    return (u + rho * dz * (qliq * GraupelConsts.lvc + qice * GraupelConsts.lsc)) / cv
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -82,12 +90,17 @@ def _T_from_internal_energy_scalar(
     """
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
-        (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice)
+        (
+            ThermodynamicConsts.cvd * (wpfloat(1.0) - qtot)
+            + ThermodynamicConsts.cvv * qv
+            + ThermodynamicConsts.clw * qliq
+            + GraupelConsts.ci * qice
+        )
         * rho
         * dz
     )  # Moist isometric specific heat
 
-    return (u + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
+    return (u + rho * dz * (qliq * GraupelConsts.lvc + qice * GraupelConsts.lsc)) / cv
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -126,9 +139,14 @@ def _internal_energy(
     Result:                Internal energy
     """
     qtot = qliq + qice + qv
-    cv = t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
+    cv = (
+        ThermodynamicConsts.cvd * (wpfloat(1.0) - qtot)
+        + ThermodynamicConsts.cvv * qv
+        + ThermodynamicConsts.clw * qliq
+        + GraupelConsts.ci * qice
+    )
 
-    return rho * dz * (cv * t - qliq * g_ct.lvc - qice * g_ct.lsc)
+    return rho * dz * (cv * t - qliq * GraupelConsts.lvc - qice * GraupelConsts.lsc)
 
 
 @gtx.field_operator
@@ -154,9 +172,14 @@ def _internal_energy_scalar(
     Result:                Internal energy
     """
     qtot = qliq + qice + qv
-    cv = t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
+    cv = (
+        ThermodynamicConsts.cvd * (wpfloat(1.0) - qtot)
+        + ThermodynamicConsts.cvv * qv
+        + ThermodynamicConsts.clw * qliq
+        + GraupelConsts.ci * qice
+    )
 
-    return rho * dz * (cv * t - qliq * g_ct.lvc - qice * g_ct.lsc)
+    return rho * dz * (cv * t - qliq * GraupelConsts.lvc - qice * GraupelConsts.lsc)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -190,7 +213,9 @@ def _qsat_ice_rho(
     C3IES = wpfloat(21.875)
     C4IES = wpfloat(7.66)
 
-    return (C1ES * exp(C3IES * (t - t_d.tmelt) / (t - C4IES))) / (rho * t_d.rv * t)
+    return (C1ES * exp(C3IES * (t - ThermodynamicConsts.tmelt) / (t - C4IES))) / (
+        rho * ThermodynamicConsts.rv * t
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -220,7 +245,9 @@ def _qsat_rho(
     C3LES = wpfloat(17.269)
     C4LES = wpfloat(35.86)
 
-    return (C1ES * exp(C3LES * (t - t_d.tmelt) / (t - C4LES))) / (rho * t_d.rv * t)
+    return (C1ES * exp(C3LES * (t - ThermodynamicConsts.tmelt) / (t - C4LES))) / (
+        rho * ThermodynamicConsts.rv * t
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -246,7 +273,7 @@ def _qsat_rho_tmelt(
     """
     C1ES = wpfloat(610.78)
 
-    return C1ES / (rho * t_d.rv * t_d.tmelt)
+    return C1ES / (rho * ThermodynamicConsts.rv * ThermodynamicConsts.tmelt)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -273,7 +300,7 @@ def _dqsatdT_rho(
     """
     C3LES = wpfloat(17.269)
     C4LES = wpfloat(35.86)
-    C5LES = C3LES * (t_d.tmelt - C4LES)
+    C5LES = C3LES * (ThermodynamicConsts.tmelt - C4LES)
 
     return qs * (C5LES / ((t - C4LES) * (t - C4LES)) - wpfloat(1.0) / t)
 
@@ -303,7 +330,7 @@ def _sat_pres_ice(
     C3IES = wpfloat(21.875)
     C4IES = wpfloat(7.66)
 
-    return C1ES * exp(C3IES * (t - t_d.tmelt) / (t - C4IES))
+    return C1ES * exp(C3IES * (t - ThermodynamicConsts.tmelt) / (t - C4IES))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -330,7 +357,7 @@ def _sat_pres_water(
     C3LES = wpfloat(17.269)
     C4LES = wpfloat(35.86)
 
-    return C1ES * exp(C3LES * (t - t_d.tmelt) / (t - C4LES))
+    return C1ES * exp(C3LES * (t - ThermodynamicConsts.tmelt) / (t - C4LES))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -366,8 +393,8 @@ def _newton_raphson(
     qx = _qsat_rho(Tx, rho)
     dqx = _dqsatdT_rho(qx, Tx)
     qcx = qve + qce - qx
-    cv = cvc + t_d.cvv * qx + t_d.clw * qcx
-    ux = cv * Tx - qcx * g_ct.lvc
-    dux = cv + dqx * (g_ct.lvc + (t_d.cvv - t_d.clw) * Tx)
+    cv = cvc + ThermodynamicConsts.cvv * qx + ThermodynamicConsts.clw * qcx
+    ux = cv * Tx - qcx * GraupelConsts.lvc
+    dux = cv + dqx * (GraupelConsts.lvc + (ThermodynamicConsts.cvv - ThermodynamicConsts.clw) * Tx)
     Tx = Tx - (ux - ue) / dux
     return Tx

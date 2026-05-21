@@ -6,9 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import enum
 from typing import Final
-
-from gt4py.eve import utils as eve_utils
 from numpy import finfo as float_info
 
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -118,7 +117,7 @@ VP_EPS = float_info(vpfloat).eps
 DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[wpfloat] = wpfloat(5.0)
 
 
-class PhysicsConstants(eve_utils.FrozenNamespace[wpfloat]):
+class PhysicsConstants(wpfloat, enum.Enum):
     """
     Constants used in gt4py stencils.
     """
@@ -149,7 +148,7 @@ class PhysicsConstants(eve_utils.FrozenNamespace[wpfloat]):
     eps = WP_EPS
 
 
-class RayleighType(eve_utils.FrozenNamespace[int]):
+class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
     #: Klemp (2008) type Rayleigh damping

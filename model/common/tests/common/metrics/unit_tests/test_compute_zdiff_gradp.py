@@ -14,10 +14,11 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, exchange_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -27,7 +28,7 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    processor_props,
+    process_props,
 )
 
 
@@ -46,7 +47,6 @@ def test_compute_zdiff_gradp(
     interpolation_savepoint: sb.InterpolationSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     vertoffset_gradp_ref = metrics_savepoint.vertoffset_gradp()
 
@@ -67,8 +67,7 @@ def test_compute_zdiff_gradp(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
+        exchange=decomposition.single_node_exchange,
     )
 
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp(
@@ -81,8 +80,7 @@ def test_compute_zdiff_gradp(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
+        exchange=decomposition.single_node_exchange,
     )
 
     assert test_utils.dallclose(

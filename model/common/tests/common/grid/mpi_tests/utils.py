@@ -31,7 +31,7 @@ def run_grid_manager_for_single_rank(
     manager = _grid_manager(file, num_levels)
     manager(
         keep_skip_values=True,
-        run_properties=decomp_defs.SingleNodeProcessProperties(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
         decomposer=decomp.SingleNodeDecomposer(),
         allocator=allocator,
     )
@@ -40,7 +40,7 @@ def run_grid_manager_for_single_rank(
 
 def run_grid_manager_for_multi_rank(
     file: pathlib.Path,
-    run_properties: decomp_defs.ProcessProperties,
+    process_props: decomp_defs.ProcessProperties,
     decomposer: decomp.Decomposer,
     allocator: gtx.typing.Allocator,
     num_levels: int = NUM_LEVELS,
@@ -49,7 +49,7 @@ def run_grid_manager_for_multi_rank(
     manager(
         keep_skip_values=True,
         allocator=allocator,
-        run_properties=run_properties,
+        process_props=process_props,
         decomposer=decomposer,
     )
     return manager

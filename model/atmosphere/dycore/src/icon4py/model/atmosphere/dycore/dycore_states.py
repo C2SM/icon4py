@@ -14,7 +14,6 @@ import logging
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
-from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
     dimension as dims,
@@ -53,7 +52,7 @@ class DivergenceDampingType(enum.IntEnum):
     COMBINED = 32
 
 
-class DivergenceDampingOrder(FrozenNamespace[int]):
+class DivergenceDampingOrder(gtx.int32, enum.Enum):
     #: 2nd order divergence damping
     SECOND_ORDER = 2
     #: 4th order divergence damping
@@ -62,7 +61,7 @@ class DivergenceDampingOrder(FrozenNamespace[int]):
     COMBINED = 24
 
 
-class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
+class HorizontalPressureDiscretizationType(gtx.int32, enum.Enum):
     """Parameter called igradp_method in ICON namelist."""
 
     #: conventional discretization with metric correction term
@@ -77,7 +76,7 @@ class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
     POLYNOMIAL_HYDRO = 5
 
 
-class RhoThetaAdvectionType(FrozenNamespace[int]):
+class RhoThetaAdvectionType(gtx.int32, enum.Enum):
     """Parameter called iadv_rhotheta in ICON namelist."""
 
     #: simple 2nd order upwind-biased scheme

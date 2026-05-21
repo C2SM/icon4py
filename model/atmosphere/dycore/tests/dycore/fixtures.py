@@ -29,7 +29,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
+    process_props,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_dycore_30_to_38_exit,

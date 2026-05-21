@@ -11,8 +11,6 @@ import functools
 import logging
 import math
 import pathlib
-from collections.abc import Callable
-from types import ModuleType
 from typing import Final
 
 import gt4py.next as gtx
@@ -21,6 +19,7 @@ import numpy as np
 
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -85,40 +84,40 @@ class VerticalGridConfig:
     #: Number of full levels.
     num_levels: int
     #: Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
-    maximal_layer_thickness: Final[wpfloat] = 25000.0
+    maximal_layer_thickness: Final[wpfloat] = wpfloat(25000.0)
     #: Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height below which thickness of grid cells must not exceed maximal_layer_thickness.
-    top_height_limit_for_maximal_layer_thickness: Final[wpfloat] = 15000.0
+    top_height_limit_for_maximal_layer_thickness: Final[wpfloat] = wpfloat(15000.0)
     #: Defined as min_lay_thckn in ICON namelist mo_sleve_nml. Thickness of lowest level grid cells.
-    lowest_layer_thickness: Final[wpfloat] = 50.0
+    lowest_layer_thickness: Final[wpfloat] = wpfloat(50.0)
     #: Model top height in ICON namelist mo_sleve_nml.
-    model_top_height: Final[wpfloat] = 23500.0
+    model_top_height: Final[wpfloat] = wpfloat(23500.0)
     #: Defined in ICON namelist mo_sleve_nml. Height above which coordinate surfaces are flat
-    flat_height: Final[wpfloat] = 16000.0
+    flat_height: Final[wpfloat] = wpfloat(16000.0)
     #: Defined as stretch_fac in ICON namelist mo_sleve_nml. Scaling factor for stretching/squeezing the model layer distribution.
-    stretch_factor: Final[wpfloat] = 1.0
+    stretch_factor: Final[wpfloat] = wpfloat(1.0)
     #: Defined as damp_height in ICON namelist nonhydrostatic_nml. Height [m] at which Rayleigh damping of vertical wind starts.
-    rayleigh_damping_height: Final[wpfloat] = 45000.0
+    rayleigh_damping_height: Final[wpfloat] = wpfloat(45000.0)
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
-    htop_moist_proc: Final[wpfloat] = 22500.0
+    htop_moist_proc: Final[wpfloat] = wpfloat(22500.0)
     #: file name containing vct_a and vct_b table
     file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
     #: Decay scale for large-scale topography component
-    SLEVE_decay_scale_1: Final[wpfloat] = 4000.0
+    SLEVE_decay_scale_1: Final[wpfloat] = wpfloat(4000.0)
     #: Decay scale for small-scale topography component
-    SLEVE_decay_scale_2: Final[wpfloat] = 2500.0
+    SLEVE_decay_scale_2: Final[wpfloat] = wpfloat(2500.0)
     #: Exponent for decay function
-    SLEVE_decay_exponent: Final[wpfloat] = 1.2
+    SLEVE_decay_exponent: Final[wpfloat] = wpfloat(1.2)
     #: minimum absolute layer thickness 1 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_1: Final[wpfloat] = 100.0
+    SLEVE_minimum_layer_thickness_1: Final[wpfloat] = wpfloat(100.0)
     #: minimum absolute layer thickness 2 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_2: Final[wpfloat] = 500.0
+    SLEVE_minimum_layer_thickness_2: Final[wpfloat] = wpfloat(500.0)
     #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
-    SLEVE_minimum_relative_layer_thickness_1: Final[wpfloat] = 1.0 / 3.0
+    SLEVE_minimum_relative_layer_thickness_1: Final[wpfloat] = wpfloat(1.0 / 3.0)
     #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
-    SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = 0.5
+    SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = wpfloat(0.5)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -564,8 +563,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: wpfloat,
     SLEVE_decay_exponent: wpfloat,
     SLEVE_decay_scale_2: wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute the 3D vertical coordinate field using the SLEVE coordinate
@@ -576,6 +574,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     blends smothly into the surface layer at num_lev + 1 which is the
     topography.
     """
+    array_ns = data_alloc.array_namespace(vct_a)
     num_cells = cell_areas.shape[0]
     num_levels = vct_a.shape[0] - 1
 
@@ -638,8 +637,8 @@ def _check_and_correct_layer_thickness(
     SLEVE_minimum_layer_thickness_2: wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: wpfloat,
     lowest_layer_thickness: wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(vertical_coordinate)
     num_cells = vertical_coordinate.shape[0]
     num_levels = vertical_coordinate.shape[1] - 1
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=int)
@@ -725,12 +724,9 @@ def _check_flatness_of_flat_level(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     nflatlev: int,
-    array_ns: ModuleType = np,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not array_ns.all(
-        vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]
-    ):
+    if not (vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]).all():
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 
@@ -750,8 +746,7 @@ def compute_vertical_coordinate(
     SLEVE_minimum_layer_thickness_2: wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: wpfloat,
     lowest_layer_thickness: wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
-    array_ns: ModuleType = np,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute the (Cell, K) vertical coordinate field starting from the
@@ -785,7 +780,6 @@ def compute_vertical_coordinate(
         SLEVE_decay_scale_1=SLEVE_decay_scale_1,
         SLEVE_decay_exponent=SLEVE_decay_exponent,
         SLEVE_decay_scale_2=SLEVE_decay_scale_2,
-        array_ns=array_ns,
         exchange=exchange,
     )
 
@@ -797,14 +791,12 @@ def compute_vertical_coordinate(
         SLEVE_minimum_layer_thickness_2=SLEVE_minimum_layer_thickness_2,
         SLEVE_minimum_relative_layer_thickness_2=SLEVE_minimum_relative_layer_thickness_2,
         lowest_layer_thickness=lowest_layer_thickness,
-        array_ns=array_ns,
     )
 
     _check_flatness_of_flat_level(
         vertical_coordinate=vertical_coordinates_on_half_levels,
         vct_a=vct_a,
         nflatlev=nflatlev,
-        array_ns=array_ns,
     )
 
     return vertical_coordinate

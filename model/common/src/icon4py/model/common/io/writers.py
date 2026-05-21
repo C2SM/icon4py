@@ -33,7 +33,7 @@ MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
-processor_properties = decomposition.SingleNodeProcessProperties()
+process_properties = decomposition.SingleNodeProcessProperties()
 
 
 class GlobalFileAttributes(TypedDict, total=False):
@@ -94,7 +94,7 @@ class NETCDFWriter:
         horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: GlobalFileAttributes,
-        process_properties: decomposition.ProcessProperties = processor_properties,
+        process_properties: decomposition.ProcessProperties = process_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties

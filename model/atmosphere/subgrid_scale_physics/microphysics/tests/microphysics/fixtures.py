@@ -23,7 +23,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
+    process_props,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
 )

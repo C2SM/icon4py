@@ -509,6 +509,7 @@ module dycore
                                      l_vert_nested, &
                                      ldeepatmo, &
                                      iau_init, &
+                                     extra_diffu, &
                                      rhotheta_offctr, &
                                      veladv_offctr, &
                                      nudge_max_coeff, &
@@ -821,6 +822,8 @@ module dycore
          logical(c_int), value, target :: ldeepatmo
 
          logical(c_int), value, target :: iau_init
+
+         logical(c_int), value, target :: extra_diffu
 
          real(c_double), value, target :: rhotheta_offctr
 
@@ -1519,6 +1522,7 @@ contains
                             l_vert_nested, &
                             ldeepatmo, &
                             iau_init, &
+                            extra_diffu, &
                             rhotheta_offctr, &
                             veladv_offctr, &
                             nudge_max_coeff, &
@@ -1650,6 +1654,8 @@ contains
       logical(c_int), value, target :: ldeepatmo
 
       logical(c_int), value, target :: iau_init
+
+      logical(c_int), value, target :: extra_diffu
 
       real(c_double), value, target :: rhotheta_offctr
 
@@ -2226,6 +2232,7 @@ contains
                                  l_vert_nested=l_vert_nested, &
                                  ldeepatmo=ldeepatmo, &
                                  iau_init=iau_init, &
+                                 extra_diffu=extra_diffu, &
                                  rhotheta_offctr=rhotheta_offctr, &
                                  veladv_offctr=veladv_offctr, &
                                  nudge_max_coeff=nudge_max_coeff, &

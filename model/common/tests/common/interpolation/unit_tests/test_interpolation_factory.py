@@ -36,7 +36,7 @@ from icon4py.model.testing.fixtures import backend, data_provider, decomposition
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     interpolation_savepoint,
-    processor_props,
+    process_props,
 )
 
 from .test_rbf_interpolation import RBF_TOLERANCES

@@ -53,12 +53,10 @@ def test_saturation_adjustement(
 ) -> None:
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
+    entry_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date)
 
-    config = satad.SaturationAdjustmentConfig(
-        tolerance=1e-3,
-        max_iter=10,
-    )
-    dtime = 2.0
+    config = satad.SaturationAdjustmentConfig()
+    dtime = entry_savepoint.dtime()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,

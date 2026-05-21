@@ -5,11 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+#
 
-from typing import Any
+from __future__ import annotations
 
-from icon4py.model.common.utils import data_allocation as data_alloc
+import lazy_loader as lazy
 
 
-def dummy_exchange_with_bound_dim(*field: data_alloc.NDArray, stream: Any = None) -> None:
-    return None
+submodules = ["common"]
+
+__getattr__, __dir__, _ = lazy.attach(__name__, submodules)

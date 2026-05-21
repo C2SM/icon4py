@@ -266,7 +266,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dtype=ta.wpfloat,
     ),
     EDGE_TANGENT_Z: dict(
-        standard_name=EDGE_NORMAL_Z,
+        standard_name=EDGE_TANGENT_Z,
         long_name=EDGE_TANGENT_Z,
         units="m",
         dims=(dims.EdgeDim,),

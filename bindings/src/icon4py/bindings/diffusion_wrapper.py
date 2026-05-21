@@ -34,6 +34,7 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    ForcingType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -84,11 +85,20 @@ def diffusion_init(
     hdiff_efdt_ratio: gtx.float64,
     hdiff_w_efdt_ratio: gtx.float64,
     smagorinski_scaling_factor: gtx.float64,
+    smagorinski_scaling_factor2: gtx.float64,
+    smagorinski_scaling_factor3: gtx.float64,
+    smagorinski_scaling_factor4: gtx.float64,
+    smagorinski_scaling_height: gtx.float64,
+    smagorinski_scaling_height2: gtx.float64,
+    smagorinski_scaling_height3: gtx.float64,
+    smagorinski_scaling_height4: gtx.float64,
     hdiff_temp: bool,
     denom_diffu_v: float,
     nudge_max_coeff: float,  # note: this is the scaled ICON value, i.e. not the namelist value
     itype_sher: gtx.int32,
-    ltkeshs: bool,
+    iforcing: gtx.int32,
+    a_hshr: gtx.float64,
+    loutshs: bool,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -117,12 +127,21 @@ def diffusion_init(
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
+        smagorinski_scaling_factor2=smagorinski_scaling_factor2,
+        smagorinski_scaling_factor3=smagorinski_scaling_factor3,
+        smagorinski_scaling_factor4=smagorinski_scaling_factor4,
+        smagorinski_scaling_height=smagorinski_scaling_height,
+        smagorinski_scaling_height2=smagorinski_scaling_height2,
+        smagorinski_scaling_height3=smagorinski_scaling_height3,
+        smagorinski_scaling_height4=smagorinski_scaling_height4,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
-        ltkeshs=ltkeshs,
+        iforcing=ForcingType(iforcing),
+        a_hshr=a_hshr,
+        loutshs=loutshs,
     )
 
     diffusion_params = DiffusionParams(config)
@@ -281,13 +300,9 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    if linit:
-        granule.diffusion.initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
-        )
-    else:
-        granule.diffusion.run(
-            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
-        )
+    granule.diffusion.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
+        initial_run=linit,
+    )

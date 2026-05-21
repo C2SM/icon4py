@@ -52,6 +52,20 @@ def pytest_configure(config):
     if os.environ.get("FLOAT_PRECISION", "double").lower() == "single":
         # if precision is set to single per env variable, only run tests marked as single_precision_ready
         config.option.markexpr = " and ".join(["single_precision_ready", *m_option])
+    
+    with_mpi = config.getoption("--with-mpi", default=False)
+    only_mpi = config.getoption("--only-mpi", default=False)
+    if with_mpi or only_mpi:
+        from icon4py.model.common.decomposition.mpi_decomposition import import_error, mpi4py
+
+        if mpi4py is None:
+            raise pytest.UsageError(
+                f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
+            )
+
+        from icon4py.model.common.decomposition.mpi_decomposition import init_mpi
+
+        init_mpi()
 
 
 def pytest_addoption(parser: pytest.Parser):

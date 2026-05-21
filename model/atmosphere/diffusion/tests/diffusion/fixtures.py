@@ -35,7 +35,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    processor_props,
+    process_props,
     rayleigh_coeff,
     rayleigh_type,
     savepoint_diffusion_exit,

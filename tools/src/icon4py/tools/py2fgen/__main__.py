@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
-import pathlib
-from typing import Final
+from icon4py.tools.py2fgen._cli import main
 
 
-REPO_ROOT: Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.resolve().absolute()
+if __name__ == "__main__":
+    main()
