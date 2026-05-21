@@ -288,8 +288,8 @@ def calculate_distance_to_a_point_on_cartesian_plane(
     point_z: ta.wpfloat,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(cartesian_x)
     dx = array_ns.abs(cartesian_x - point_x)
     dy = array_ns.abs(cartesian_y - point_y)
     dx = array_ns.where(dx <= 0.5 * domain_length, dx, domain_length - dx)
