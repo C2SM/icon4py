@@ -39,6 +39,7 @@ def get_validation_grids() -> list[definitions.GridDescription]:
         definitions.Grids.TORUS_50000x5000,
     ]  # change to MCH_OPR_R04B07_DOMAIN01
 
+
 def get_validation_experiments() -> list[definitions.ExperimentDescription]:
     from icon4py.model.testing import definitions  # Import here to reduce startup time of the CLI
 
@@ -67,12 +68,7 @@ def cache_key() -> None:
 def experiment_cache_key() -> None:
     """Generate a cache key for the GitHub action cache based on experiment names and versions."""
 
-    from icon4py.model.testing import definitions
-
-    d = "_".join(
-        exp.name + str(exp.version)
-        for exp in get_validation_experiments()
-    )
+    d = "_".join(exp.name + str(exp.version) for exp in get_validation_experiments())
     hexdigest = hashlib.md5(d.encode()).hexdigest()
     print(hexdigest)
 

@@ -123,7 +123,9 @@ def test_run_timeloop_single_step(
         end_date=datetime.fromisoformat(timeloop_date_exit),
         n_substeps=experiment.config.diffusion.ndyn_substeps,
         apply_initial_stabilization=timeloop_diffusion_linit_init,
-        restart_mode=False if experiment.description == definitions.Experiments.JW else (not timeloop_diffusion_linit_init),
+        restart_mode=False
+        if experiment.description == definitions.Experiments.JW
+        else (not timeloop_diffusion_linit_init),
         backend=backend,
     )
 
