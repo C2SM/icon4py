@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import functools
 import math
-from types import ModuleType
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
@@ -247,9 +245,7 @@ def init_bubble(
             norm_cell_cartesian_x = cell_cartesian_x / bubble_width
             norm_cell_cartesian_y = cell_cartesian_y / bubble_width
             norm_z_mc = z_mc / bubble_height
-            bubble_distance = functools.partial(
-                calculate_distance_to_a_point_on_cartesian_plane, array_ns=array_ns
-            )(
+            bubble_distance = calculate_distance_to_a_point_on_cartesian_plane(
                 cartesian_x=norm_cell_cartesian_x,
                 cartesian_y=norm_cell_cartesian_y,
                 cartesian_z=norm_z_mc,

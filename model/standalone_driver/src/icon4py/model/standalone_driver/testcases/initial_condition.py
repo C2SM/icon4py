@@ -447,9 +447,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     above_tropopause_levels = xp.flatnonzero(model_level_height[0, :] > H_TROPOPAUSE)
 
-    assert (
-        above_tropopause_levels.size > 0
-    ), f"model top height ({model_level_height[0]}) must be higher than the tropopaus height ({H_TROPOPAUSE}) in weisman klemp experiment."
+    assert above_tropopause_levels.size > 0, (
+        f"model top height ({model_level_height[0]}) must be higher than the tropopaus height ({H_TROPOPAUSE}) in weisman klemp experiment."
+    )
     k_tropopause = above_tropopause_levels[-1]
 
     # Initialize prognostic state, diagnostic state, and tracer state
