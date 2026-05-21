@@ -459,6 +459,7 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
+        self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
             backend=backend,
@@ -540,6 +541,8 @@ class Diffusion:
                 "geofac_grg_x": self._interpolation_state.geofac_grg_x,
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
+                "diff_multfac_w": self.diff_multfac_w,
+                "diff_multfac_n2w": self.diff_multfac_n2w,
                 "type_shear": self.config.shear_type,
             },
             horizontal_sizes={
@@ -611,8 +614,6 @@ class Diffusion:
             program=init_diffusion_local_fields_for_regular_timestep,
             offset_provider={"Koff": dims.KDim},
         )
-
-        self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
