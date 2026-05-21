@@ -60,25 +60,6 @@ jobs:
         run: |
           ./scripts/python/validation_grid_utils.py download
 
-      - name: experiment cache key
-        id: experiment-cache-key
-        run: |
-          echo "key=$(./scripts/python/validation_grid_utils.py experiment-cache-key)" >> $GITHUB_OUTPUT
-
-      - name: experiment data cache
-        id: experiment-cache
-        uses: actions/cache@v5
-        with:
-          path: testdata/ser_icondata
-          key: ${{ steps.experiment-cache-key.outputs.key }}
-
-      - name: download experiment data
-        if: steps.experiment-cache.outputs.cache-hit != 'true'
-        env:
-          ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
-        run: |
-          ./scripts/python/validation_grid_utils.py download-experiments
-
       - name: set GT4Py cache directory
         # Note that this assumes that each backend gets a separate job in CI.
         # Mixing e.g. dace_cpu and dace_gpu in the same cache directory may not
