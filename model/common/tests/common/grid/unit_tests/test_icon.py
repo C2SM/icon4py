@@ -23,6 +23,8 @@ from icon4py.model.testing.fixtures import (
     cpu_allocator,
     data_provider,
     download_ser_data,
+    experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     process_props,
@@ -82,6 +84,16 @@ INTERIOR_IDX = {
     dims.EdgeDim: [6176, HALO_IDX[dims.EdgeDim][0]],
     dims.VertexDim: [2071, HALO_IDX[dims.VertexDim][0]],
 }
+
+
+@pytest.fixture(
+    params=[definitions.Experiments.MCH_CH_R04B09],
+    ids=lambda r: r.name,
+)
+def experiment_description(
+    request: pytest.FixtureRequest,
+) -> definitions.ExperimentDescription:
+    return request.param
 
 
 @pytest.fixture(params=["serialbox", "file"])
