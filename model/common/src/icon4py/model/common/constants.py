@@ -119,9 +119,6 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 #: default dynamics to physics time step ratio
 DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
 
-#: average earth radius in [m]
-EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
-
 #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
 TETENS_P0 = 610.78
 #: aw in Tetens formula for saturation water pressure. Originally expressed as c3les in ICON.
