@@ -19,6 +19,9 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+    single_moment_six_class_gscp_graupel as graupel,
+)
 from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
@@ -191,6 +194,8 @@ def create_experiment_configuration(
     diffusion_nml = nml_data["diffusion_nml"]
     turbdiff_nml = nml_data["turbdiff_nml"]
     run_nml = nml_data["run_nml"]
+    nwp_phy_nml = nml_data["nwp_phy_nml"]
+    nwp_tuning_nml = nml_data["nwp_tuning_nml"]
 
     # *** MetricsConfig ***
     rayleigh_coeff = _list_to_value(nonhydrostatic_nml["rayleigh_coeff"])
@@ -298,20 +303,31 @@ def create_experiment_configuration(
     )
 
     # *** DriverConfig ***
-    # (using defaults for now, as these are not in the JSON)
-    # TODO(jcanton): Extract these from the JSON when available
-
     driver_cfg = driver_config.DriverConfig(
         experiment_name=experiment_description.name,
-        output_path=pathlib.Path(),  # Placeholder
+        output_path=pathlib.Path(),  # TODO (jcanton): Placeholder
         profiling_stats=None,
         dtime=datetime.timedelta(seconds=run_nml["dtime"]),
         start_date=datetime.datetime(1, 1, 1, 0, 0, 0),  # TODO (jcanton): Placeholder
-        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),  # # TODO (jcanton): Placeholder
+        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),  # TODO (jcanton): Placeholder
         apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
         vertical_cfl_threshold=nonhydrostatic_nml["vcfl_threshold"],
         ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
         enable_statistics_output=False,
+    )
+
+    # *** GraupelConfig ***
+    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
+        do_latent_heat_nudging=run_nml["ldass_lhn"],
+        # ithermo_water == 0 means constant latent heat (docstring in class definition).
+        use_constant_latent_heat=_list_to_value(nwp_phy_nml["ithermo_water"]) == 0,
+        ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
+        power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
+        exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
+        power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
+        rain_mu=nwp_phy_nml["mu_rain"],
+        rain_n0=nwp_phy_nml["rain_n0_factor"],
+        snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
     )
 
     return definitions.ExperimentConfig(
@@ -321,4 +337,5 @@ def create_experiment_configuration(
         diffusion=diffusion_config,
         metrics=metrics_config,
         interpolation=interpolation_config,
+        graupel=graupel_config,
     )

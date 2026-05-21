@@ -13,6 +13,9 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
 
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+    single_moment_six_class_gscp_graupel as graupel,
+)
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
@@ -175,6 +178,7 @@ class ExperimentConfig:
     diffusion: diffusion.DiffusionConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig
 
 
 @dataclasses.dataclass
