@@ -26,6 +26,7 @@ from icon4py.model.testing.fixtures import (
     download_ser_data,
     experiment,
     experiment_description,
+    grid_description,
     grid_savepoint,
     process_props,
 )
@@ -79,8 +80,8 @@ def test_grid_file_vertex_cell_edge_dimensions(
 
 
 @pytest.mark.parametrize("apply_offset", (True, False))
-def test_int_variable(experiment: definitions.Experiment, apply_offset: bool) -> None:
-    file = dt_utils.get_grid_filepath(experiment.grid)
+def test_int_variable(grid_description: definitions.GridDescription, apply_offset: bool) -> None:
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
@@ -103,8 +104,8 @@ _index_selection: Iterable[list[int]] = [
     "selection",
     _index_selection,
 )
-def test_index_read_for_1d_fields(experiment: definitions.Experiment, selection: list[int]) -> None:
-    file = dt_utils.get_grid_filepath(experiment.grid)
+def test_index_read_for_1d_fields(grid_description: definitions.GridDescription, selection: list[int]) -> None:
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.variable(gridfile.CoordinateName.CELL_LATITUDE)
@@ -128,12 +129,12 @@ def test_index_read_for_1d_fields(experiment: definitions.Experiment, selection:
 )
 @pytest.mark.parametrize("apply_offset", (True, False))
 def test_index_read_for_2d_connectivity(
-    experiment: definitions.Experiment,
+    grid_description: definitions.GridDescription,
     selection: list[int],
     field: gridfile.FieldName,
     apply_offset: bool,
 ) -> None:
-    file = dt_utils.get_grid_filepath(experiment.grid)
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.int_variable(field, transpose=True, apply_offset=apply_offset)
