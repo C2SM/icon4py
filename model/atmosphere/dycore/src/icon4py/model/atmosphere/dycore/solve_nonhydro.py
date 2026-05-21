@@ -159,7 +159,8 @@ class NonHydrostaticConfig:
         extra_diffu: bool = True,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        max_nudging_coefficient: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
+        * 0.02,
         fourth_order_divdamp_factor: float = 0.0025,
         fourth_order_divdamp_factor2: float = 0.004,
         fourth_order_divdamp_factor3: float = 0.004,
@@ -250,12 +251,7 @@ class NonHydrostaticConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        if max_nudging_coefficient is not None:
-            self.max_nudging_coefficient: float = max_nudging_coefficient
-        else:  # default value in ICON
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
-            )
+        self.max_nudging_coefficient: float = max_nudging_coefficient
 
         #: from mo_run_nml.f90 (namelist key: lvert_nest).
         #: use vertical nesting
