@@ -4,7 +4,7 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 ## Monorepo structure
 
-uv workspace with 11 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
+uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
 
 ```
 model/
@@ -16,7 +16,6 @@ model/
       microphysics/     # icon4py.model.atmosphere.subgrid_scale_physics.microphysics
       muphys/           # icon4py.model.atmosphere.subgrid_scale_physics.muphys
   common/               # icon4py.model.common  ← shared code, all model packages depend on this
-  driver/               # icon4py.model.driver  ← depends on diffusion, dycore, common, testing
   standalone_driver/    # icon4py.model.standalone_driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model

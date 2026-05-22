@@ -18,7 +18,7 @@ include:
         SLURM_TIMELIMIT: '00:05:00'
   parallel:
     matrix:
-      - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
+      - COMPONENT: [diffusion, dycore, microphysics, muphys, common]
         BACKEND: [gtfn_gpu]
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
@@ -43,8 +43,7 @@ test_tools_datatests_aarch64:
   rules:
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'common'
       when: never  # run only in daily CI, to save compute resources
-    - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'driver'
-      when: never  # run only in daily CI, to save compute resources
+
     - if: $COMPONENT == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
@@ -52,7 +51,7 @@ test_tools_datatests_aarch64:
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '00:40:00'
-    - if: $COMPONENT == 'driver' || $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
+    - if: $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
@@ -60,7 +59,7 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:15:00'
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, standalone_driver]
         BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:

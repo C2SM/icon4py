@@ -23,7 +23,6 @@ members = [
     "icon4py-atmosphere-muphys",
     "icon4py-bindings",
     "icon4py-common",
-    "icon4py-driver",
     "icon4py-standalone-driver",
     "icon4py-testing",
     "icon4py-tools",
@@ -1626,7 +1625,6 @@ dependencies = [
     { name = "icon4py-atmosphere-microphysics" },
     { name = "icon4py-atmosphere-muphys" },
     { name = "icon4py-common" },
-    { name = "icon4py-driver" },
     { name = "icon4py-standalone-driver" },
 ]
 
@@ -1778,7 +1776,6 @@ requires-dist = [
     { name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common" },
     { name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common" },
     { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
-    { name = "icon4py-driver", editable = "model/driver" },
     { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
@@ -2103,35 +2100,6 @@ requires-dist = [
     { name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0" },
 ]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
-
-[[package]]
-name = "icon4py-driver"
-version = "0.1.0"
-source = { editable = "model/driver" }
-dependencies = [
-    { name = "click" },
-    { name = "devtools" },
-    { name = "gt4py" },
-    { name = "icon4py-atmosphere-diffusion" },
-    { name = "icon4py-atmosphere-dycore" },
-    { name = "icon4py-common" },
-    { name = "icon4py-testing" },
-    { name = "numpy" },
-    { name = "packaging" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.0.1" },
-    { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.9" },
-    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
-    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
-    { name = "icon4py-common", editable = "model/common" },
-    { name = "icon4py-testing", editable = "model/testing" },
-    { name = "numpy", specifier = ">=1.23.3" },
-    { name = "packaging", specifier = ">=20.0" },
-]
 
 [[package]]
 name = "icon4py-standalone-driver"
