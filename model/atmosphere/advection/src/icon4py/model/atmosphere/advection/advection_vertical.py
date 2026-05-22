@@ -410,14 +410,12 @@ class NoAdvection(VerticalAdvection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("vertical advection class init - start")
 
         # input arguments
         self._grid = grid
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -558,7 +556,6 @@ class FirstOrderUpwind(FiniteVolume):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -698,7 +695,6 @@ class PiecewiseParabolicMethod(FiniteVolume):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("vertical advection class init - start")
 
@@ -708,7 +704,6 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)

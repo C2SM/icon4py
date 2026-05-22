@@ -216,13 +216,11 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         backend: gtx.typing.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
-        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
         self._backend = backend
         self._horizontal_limiter = horizontal_limiter or NoLimiter()
-        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -369,7 +367,6 @@ class NoAdvection(HorizontalAdvection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("horizontal advection class init - start")
 
@@ -380,7 +377,6 @@ class NoAdvection(HorizontalAdvection):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # stencils
         self._copy_cell_kdim_field = model_options.setup_program(
@@ -487,7 +483,6 @@ class SemiLagrangian(FiniteVolume):
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime,
     ):
         log.debug("horizontal advection class init - start")
 
@@ -499,7 +494,6 @@ class SemiLagrangian(FiniteVolume):
         self._edge_params = edge_params
         self._cell_params = cell_params
         self._backend = backend
-        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
