@@ -29,6 +29,8 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -45,7 +47,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_temperature(
     data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
 ) -> None:
@@ -100,7 +102,7 @@ def test_diagnose_temperature(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
     data_provider: sb.IconSerialDataProvider,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -153,7 +155,7 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_surface_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -192,7 +194,7 @@ def test_diagnose_surface_pressure(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_diagnose_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -241,20 +243,18 @@ def test_diagnose_pressure(
 
 
 @pytest.mark.parametrize(
-    "experiment, model_top_height, damping_height, stretch_factor",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
+    "experiment_description",
+    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
-@pytest.mark.parametrize("location", [("interface-nwp")])
+@pytest.mark.parametrize("location", ["interface-nwp"])
 @pytest.mark.datatest
 def test_diagnostic_update_after_saturation_adjustement(
     location: str,
     date: str,
-    model_top_height: float,  # TODO(havogt): unused?
-    damping_height: float,  # TODO(havogt): unused?
-    stretch_factor: float,  # TODO(havogt): unused?
+    experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,

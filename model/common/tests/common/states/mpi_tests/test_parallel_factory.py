@@ -62,7 +62,7 @@ def test_program_provider_exchange(
     grid_description: test_defs.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    if grid_description.params.limited_area:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     parallel_helpers.check_comm_size(process_props, sizes=(2, 4))
@@ -129,7 +129,7 @@ def test_numpy_provider_exchange(
     grid_description: test_defs.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    if grid_description.params.limited_area:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     parallel_helpers.check_comm_size(process_props, sizes=(2, 4))
