@@ -54,7 +54,7 @@ def get_args():
 
 
 def _muphys_step_separate(
-    *,  # Pressure
+    *,
     graupel_program: Callable,
     saturation_adjustment_program: Callable,
     dz: fa.CellKField[ta.wpfloat],
