@@ -32,13 +32,13 @@ ICON4Py uses the [`uv`](https://docs.astral.sh/uv/) project manager for developm
 $ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
 
-Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated C++ code.
-
 ### ICON4Py Development Environment
 
 Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment.
 
 **Important**: the `uv sync` command should always be executed from the **root folder** of the repository, to make sure it installs all the workspace dependencies and not only the dependencies of a subproject.
+
+The `--extra distributed` option installs mpi4py and ghex, which require Boost headers and an MPI implementation (e.g. OpenMPI) to be available on the system.
 
 ```bash
 # Clone the repository
@@ -116,6 +116,67 @@ To avoid all ranks writing their test output to stdout, use the helper script `c
 
 ```bash
 mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
+```
+
+#### Distributed runs on Alps
+
+##### Compiling
+
+On Alps with Cray MPICH and GH200 or A100 GPUs, install mpi4py and GHEX as follows:
+
+```bash
+export GHEX_USE_GPU=ON
+export GHEX_GPU_TYPE=NVIDIA
+export GHEX_GPU_ARCH="80;90"
+export GHEX_TRANSPORT_BACKEND=MPI
+export MPICH_CXX=$(which g++)
+export MPICH_CC=$(which gcc)
+uv sync --no-binary-package mpi4py --extra all --extra distributed --extra cuda12 --python $(which python) --refresh
+```
+
+If you already have a broken GHEX, mpi4py, or other package in the uv cache, run the command with `--no-cache` after either uninstalling the broken package or wiping the virtualenv.
+
+`--no-binary-package mpi4py` is required because Cray MPICH is not ABI compatible with the MPI used to build mpi4py binary wheels. If you don't do this you may get an error like:
+
+```
+ImportError: libmpi.so.12: cannot open shared object file: No such file or directory
+```
+
+when importing mpi4py. The `GHEX_*` options tell GHEX to build with GPU support. If you don't, you may see errors like:
+
+```
+AttributeError: module 'ghex.pyghex' has no attribute 'unstructured__data_descriptor_gpu_int_int_double_'
+```
+
+when GHEX tries to perform halo exchanges. The `MPICH_*` options make sure mpi4py gets built with GCC instead of NVHPC. mpi4py assumes that it can set certain compiler flags that GCC supports, but NVHPC does not support. The error message will typically look like:
+
+```
+      [stderr]
+      nvc-Error-Unknown switch: -fwrapv
+      error: Cannot compile MPI programs. Check your configuration!!!
+      Installing mpi4py requires a working MPI implementation.
+      If you are running on a supercomputer or cluster, check with
+      the system administrator or refer to the system user guide.
+      Otherwise, if you are running on a laptop or desktop computer,
+      your may be missing the MPICH or Open MPI development package:
+```
+
+##### Running
+
+When running make sure to
+
+```bash
+export MPICH_GPU_SUPPORT_ENABLED=1
+export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
+```
+
+Cray MPICH will otherwise segfault when communicating GPU buffers. Also see the [CSCS Cray MPICH documentation](https://docs.cscs.ch/software/communication/cray-mpich/) for more details.
+The `UNIT_STRIDE` variable is necessary when using the DaCe backend, which otherwise fails (see [PR1130](https://github.com/C2SM/icon4py/pull/1130)).
+
+When performance is important you may want to
+
+```bash
+export PYTHONOPTIMIZE=2
 ```
 
 ### Benchmarking

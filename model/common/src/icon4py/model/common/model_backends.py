@@ -33,6 +33,22 @@ def is_backend_descriptor(
     return False
 
 
+def is_cpu_backend(
+    backend: BackendLike,
+) -> bool:
+    if isinstance(backend, gtx_backend.Backend):
+        return backend.allocator.device_type == CPU
+    return get_allocator(backend).device_type == CPU
+
+
+def is_gpu_backend(
+    backend: BackendLike,
+) -> bool:
+    if isinstance(backend, gtx_backend.Backend):
+        return backend.allocator.device_type == GPU
+    return get_allocator(backend).device_type == GPU
+
+
 def get_allocator(
     backend: BackendLike,
 ) -> gtx_typing.Backend:
@@ -46,7 +62,7 @@ def get_allocator(
 
     if is_backend_descriptor(backend):
         backend = backend["device"]
-    if isinstance(backend, DeviceType):
+    if isinstance(backend, gtx.DeviceType):
         return gtx_allocators.device_allocators[backend]
     raise ValueError(f"Cannot get allocator from {backend}")
 

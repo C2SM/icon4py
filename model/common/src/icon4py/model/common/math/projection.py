@@ -5,10 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from types import ModuleType
-
-import numpy as np
-
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -17,7 +13,6 @@ def gnomonic_proj(
     lat_c: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     lat: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute gnomonic projection.
@@ -39,6 +34,7 @@ def gnomonic_proj(
     TODO:
         replace this with a suitable library call
     """
+    array_ns = data_alloc.array_namespace(lon_c)
     cosc = array_ns.sin(lat_c) * array_ns.sin(lat) + array_ns.cos(lat_c) * array_ns.cos(
         lat
     ) * array_ns.cos(lon - lon_c)

@@ -10,6 +10,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -18,7 +19,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import config, data_handling, definitions
+from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
@@ -31,7 +32,7 @@ def get_grid_manager_from_experiment(
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
-        num_levels=experiment.num_levels,
+        num_levels=experiment.config.vertical_grid.num_levels,
         keep_skip_values=keep_skip_values,
         allocator=allocator,
     )
@@ -73,17 +74,14 @@ def get_grid_manager(
     return manager
 
 
-def resolve_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid.name, grid.file_name)
-
-
 def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
-    full_name = resolve_full_grid_file_name(grid)
+    full_name = dt_utils.get_grid_filepath(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
+        uri = dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
         data_handling.download_and_extract(
-            grid.uri,
+            uri,
             grid_directory,
         )
     else:
@@ -105,7 +103,7 @@ def get_grid_geometry(
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
             experiment.grid,
-            num_levels=experiment.num_levels,
+            num_levels=experiment.config.vertical_grid.num_levels,
             keep_skip_values=True,
             allocator=model_backends.get_allocator(backend),
         )
@@ -116,6 +114,7 @@ def get_grid_geometry(
             gm.coordinates,
             gm.geometry_fields,
             geometry_attrs.attrs,
+            exchange=decomposition.single_node_exchange,
         )
 
     if not grid_geometries.get(register_name):

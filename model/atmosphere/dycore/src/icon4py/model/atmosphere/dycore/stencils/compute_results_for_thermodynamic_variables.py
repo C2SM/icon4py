@@ -5,17 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-dycore_consts: Final = constants.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -54,7 +51,7 @@ def _compute_results_for_thermodynamic_variables(
     theta_v_new_wp = (
         rho_now
         * theta_v_now
-        * ((exner_new_wp / exner_now - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
+        * ((exner_new_wp / exner_now - wpfloat("1.0")) * PhysicsConstants.cvd_o_rd + wpfloat("1.0"))
         / rho_new_wp
     )
     return rho_new_wp, exner_new_wp, theta_v_new_wp

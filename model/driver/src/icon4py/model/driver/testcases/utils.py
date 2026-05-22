@@ -5,11 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from types import ModuleType
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -32,8 +30,8 @@ def hydrostatic_adjustment_ndarray(
     exner: data_alloc.NDArray,
     theta_v: data_alloc.NDArray,
     num_levels: int,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(wgtfac_c)
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -112,7 +110,6 @@ def zonalwind_2_normalwind_ndarray(
     edge_lon: data_alloc.NDArray,
     primal_normal_x: data_alloc.NDArray,
     eta_v_e: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
@@ -130,6 +127,7 @@ def zonalwind_2_normalwind_ndarray(
     Returns: normal wind
     """
     # TODO(OngChia): this function needs a test
+    array_ns = data_alloc.array_namespace(edge_lat)
 
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
@@ -247,7 +245,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
     temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
-    virutal_temperature = gtx.as_field(
+    virtual_temperature = gtx.as_field(
         (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
     )
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
@@ -277,7 +275,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
         rho_next,
         theta_v_next,
         temperature,
-        virutal_temperature,
+        virtual_temperature,
         pressure,
         pressure_ifc,
         u,

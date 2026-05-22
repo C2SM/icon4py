@@ -44,7 +44,7 @@ ScalarLikeArray: TypeAlias = (
 
 
 def is_ndarray(obj: Any) -> TypeGuard[NDArray]:
-    return isinstance(obj, (np.ndarray, xp.ndarray))
+    return isinstance(obj, np.ndarray | xp.ndarray)
 
 
 def is_rank0_ndarray(obj: Any) -> TypeGuard[ScalarLikeArray]:
@@ -61,7 +61,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
     elif isinstance(array, gtx.Field):
         return array.asnumpy()
     else:
-        import cupy as cp
+        import cupy as cp  # noqa: PLC0415 [import-outside-top-level]
 
         return cp.asnumpy(array)
 
@@ -69,12 +69,12 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
 def array_ns(try_cupy: bool) -> ModuleType:
     if try_cupy:
         try:
-            import cupy as cp
+            import cupy as cp  # noqa: PLC0415 [import-outside-top-level]
 
             return cp
         except ImportError:
             log.warning("No cupy installed, falling back to numpy for array_ns")
-    import numpy as np
+    import numpy as np  # noqa: PLC0415 [import-outside-top-level]
 
     return np
 
@@ -174,7 +174,7 @@ def constant_field(
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        np.full(shape=tuple(map(lambda x: grid.size[x], dims)), fill_value=value, dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
         allocator=allocator,
     )
 

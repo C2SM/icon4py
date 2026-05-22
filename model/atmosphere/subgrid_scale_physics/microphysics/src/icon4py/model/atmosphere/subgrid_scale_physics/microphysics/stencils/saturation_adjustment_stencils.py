@@ -6,27 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.eve import utils as eve_utils
 from gt4py.next import abs, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import microphysics_constants
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphyiscal_processes import (
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphysical_processes import (
     dqsatdT_rho,
     latent_heat_vaporization,
     qsat_rho,
 )
-from icon4py.model.common import (
-    constants as physics_constants,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
-
-
-_phy_const: eve_utils.FrozenNamespace[ta.wpfloat] = physics_constants.PhysicsConstants()
-_microphy_const: eve_utils.FrozenNamespace[ta.wpfloat] = (
-    microphysics_constants.MicrophysicsConstants()
-)
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 
 
 @gtx.field_operator
@@ -219,14 +208,14 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
         mask for Newton iteration case
     """
     temperature_after_all_qc_evaporated = (
-        temperature - latent_heat_vaporization(temperature) / _phy_const.cvd * qc
+        temperature - latent_heat_vaporization(temperature) / PhysicsConstants.cvd * qc
     )
 
     # Check, which points will still be subsaturated even after evaporating all cloud water.
     subsaturated_mask = qv + qc <= qsat_rho(temperature_after_all_qc_evaporated, rho)
 
     # Remains const. during iteration
-    lwdocvd = latent_heat_vaporization(temperature) / _phy_const.cvd
+    lwdocvd = latent_heat_vaporization(temperature) / PhysicsConstants.cvd
 
     current_temperature = where(
         subsaturated_mask,

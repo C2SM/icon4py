@@ -16,30 +16,22 @@ from icon4py.model.common.grid import geometry, geometry_attributes, gridfile, v
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.testing import serialbox
-from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
-    damping_height,
     data_provider,
     decomposition,
     decomposition_info,
     definitions,
     download_ser_data,
     experiment,
-    flat_height,
+    experiment_description,
     grid_savepoint,
-    htop_moist_proc,
     icon_grid,
     interpolation_savepoint,
     linit,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
     metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
     process_props,
-    stretch_factor,
     topography_savepoint,
 )
 
@@ -88,7 +80,7 @@ def geometry_from_savepoint(
     }
 
     exchange = decomposition.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(process_props)
+    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     grid_geometry = geometry.GridGeometry(
         grid=grid,
         decomposition_info=decomposition_info,
@@ -104,6 +96,7 @@ def geometry_from_savepoint(
 
 @pytest.fixture
 def interpolation_factory_from_savepoint(
+    experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
@@ -116,6 +109,7 @@ def interpolation_factory_from_savepoint(
         grid=geometry_source.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_source,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=exchange,
@@ -125,39 +119,21 @@ def interpolation_factory_from_savepoint(
 
 @pytest.fixture
 def metrics_factory_from_savepoint(
+    experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
     decomposition_info: decomposition.DecompositionInfo,
     process_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory]:
     exchange = decomposition.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(process_props)
+    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()
-    (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
-    ) = construct_metrics_config(experiment)
-    vertical_config = vertical.VerticalGridConfig(
-        geometry_source.grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_grid = vertical.VerticalGrid(
         vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
     )
@@ -168,14 +144,9 @@ def metrics_factory_from_savepoint(
         geometry_source=geometry_source,
         topography=topography,
         interpolation_source=interpolation_field_source,
+        config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=exchange,
         global_reductions=global_reductions,
     )

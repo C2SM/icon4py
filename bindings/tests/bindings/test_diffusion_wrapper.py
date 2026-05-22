@@ -26,7 +26,7 @@ from .test_grid_init import grid_init
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -35,7 +35,6 @@ from .test_grid_init import grid_init
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
@@ -46,26 +45,8 @@ def test_diffusion_wrapper_granule_inputs(
     grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
-    ndyn_substeps,
 ):
-    # --- Define Diffusion Configuration ---
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
-    hdiff_w = True
-    hdiff_vn = True
-    hdiff_temp = True
-    hdiff_smag_w = False
-    ltkeshs = True
-    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
-    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
-    hdiff_efdt_ratio = 24.0
-    hdiff_w_efdt_ratio = 15.0
-    smagorinski_scaling_factor = 0.025
-    zdiffu_t = True
-    denom_diffu_v = 150.0
-    max_nudging_coefficient = 0.375
-    itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
-    )
+    cfg = experiment.config.diffusion
 
     # --- Extract Metric State Parameters ---
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -149,7 +130,7 @@ def test_diffusion_wrapper_granule_inputs(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    expected_config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    expected_config = experiment.config.diffusion
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Mock and Test Diffusion.init ---
@@ -172,22 +153,31 @@ def test_diffusion_wrapper_granule_inputs(
             zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
             zd_diffcoef=zd_diffcoef,
-            ndyn_substeps=ndyn_substeps,
-            diffusion_type=diffusion_type,
-            hdiff_w=hdiff_w,
-            hdiff_vn=hdiff_vn,
-            hdiff_smag_w=hdiff_smag_w,
-            zdiffu_t=zdiffu_t,
-            type_t_diffu=type_t_diffu,
-            type_vn_diffu=type_vn_diffu,
-            hdiff_efdt_ratio=hdiff_efdt_ratio,
-            hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
-            smagorinski_scaling_factor=smagorinski_scaling_factor,
-            hdiff_temp=hdiff_temp,
-            denom_diffu_v=denom_diffu_v,
-            nudge_max_coeff=max_nudging_coefficient,
-            itype_sher=itype_sher.value,
-            ltkeshs=ltkeshs,
+            ndyn_substeps=cfg.ndyn_substeps,
+            diffusion_type=cfg.diffusion_type,
+            hdiff_w=cfg.apply_to_vertical_wind,
+            hdiff_vn=cfg.apply_to_horizontal_wind,
+            hdiff_smag_w=cfg.apply_smag_diff_to_vertical_wind,
+            zdiffu_t=cfg.apply_zdiffusion_t,
+            type_t_diffu=cfg.type_t_diffu,
+            type_vn_diffu=cfg.type_vn_diffu,
+            hdiff_efdt_ratio=cfg.hdiff_efdt_ratio,
+            hdiff_w_efdt_ratio=cfg.hdiff_w_efdt_ratio,
+            smagorinski_scaling_factor=cfg.smagorinski_scaling_factor,
+            smagorinski_scaling_factor2=cfg.smagorinski_scaling_factor2,
+            smagorinski_scaling_factor3=cfg.smagorinski_scaling_factor3,
+            smagorinski_scaling_factor4=cfg.smagorinski_scaling_factor4,
+            smagorinski_scaling_height=cfg.smagorinski_scaling_height,
+            smagorinski_scaling_height2=cfg.smagorinski_scaling_height2,
+            smagorinski_scaling_height3=cfg.smagorinski_scaling_height3,
+            smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
+            hdiff_temp=cfg.apply_to_temperature,
+            denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
+            nudge_max_coeff=cfg.max_nudging_coefficient,
+            itype_sher=cfg.shear_type.value,
+            iforcing=cfg.iforcing.value,
+            a_hshr=cfg.a_hshr,
+            loutshs=cfg.loutshs,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
@@ -262,7 +252,7 @@ def test_diffusion_wrapper_granule_inputs(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -271,7 +261,6 @@ def test_diffusion_wrapper_granule_inputs(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
@@ -281,28 +270,10 @@ def test_diffusion_wrapper_single_step(
     grid_savepoint,
     grid_init,  # initializes the grid as side-effect
     experiment,
-    ndyn_substeps,
     step_date_init,
     step_date_exit,
 ):
-    # Hardcoded DiffusionConfig parameters
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
-    hdiff_w = True
-    hdiff_vn = True
-    hdiff_temp = True
-    hdiff_smag_w = False
-    ltkeshs = True
-    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
-    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
-    hdiff_efdt_ratio = 24.0
-    hdiff_w_efdt_ratio = 15.0
-    smagorinski_scaling_factor = 0.025
-    zdiffu_t = True
-    denom_diffu_v = 150.0
-    max_nudging_coefficient = 0.375
-    itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
-    )
+    cfg = experiment.config.diffusion
 
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -376,22 +347,31 @@ def test_diffusion_wrapper_single_step(
         zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
         zd_diffcoef=zd_diffcoef,
-        ndyn_substeps=ndyn_substeps,
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
-        hdiff_efdt_ratio=hdiff_efdt_ratio,
-        hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
-        smagorinski_scaling_factor=smagorinski_scaling_factor,
-        hdiff_temp=hdiff_temp,
-        denom_diffu_v=denom_diffu_v,
-        nudge_max_coeff=max_nudging_coefficient,
-        itype_sher=itype_sher.value,
-        ltkeshs=ltkeshs,
+        ndyn_substeps=cfg.ndyn_substeps,
+        diffusion_type=cfg.diffusion_type,
+        hdiff_w=cfg.apply_to_vertical_wind,
+        hdiff_vn=cfg.apply_to_horizontal_wind,
+        hdiff_smag_w=cfg.apply_smag_diff_to_vertical_wind,
+        zdiffu_t=cfg.apply_zdiffusion_t,
+        type_t_diffu=cfg.type_t_diffu,
+        type_vn_diffu=cfg.type_vn_diffu,
+        hdiff_efdt_ratio=cfg.hdiff_efdt_ratio,
+        hdiff_w_efdt_ratio=cfg.hdiff_w_efdt_ratio,
+        smagorinski_scaling_factor=cfg.smagorinski_scaling_factor,
+        smagorinski_scaling_factor2=cfg.smagorinski_scaling_factor2,
+        smagorinski_scaling_factor3=cfg.smagorinski_scaling_factor3,
+        smagorinski_scaling_factor4=cfg.smagorinski_scaling_factor4,
+        smagorinski_scaling_height=cfg.smagorinski_scaling_height,
+        smagorinski_scaling_height2=cfg.smagorinski_scaling_height2,
+        smagorinski_scaling_height3=cfg.smagorinski_scaling_height3,
+        smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
+        hdiff_temp=cfg.apply_to_temperature,
+        denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
+        nudge_max_coeff=cfg.max_nudging_coefficient,
+        itype_sher=cfg.shear_type.value,
+        iforcing=cfg.iforcing.value,
+        a_hshr=cfg.a_hshr,
+        loutshs=cfg.loutshs,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 

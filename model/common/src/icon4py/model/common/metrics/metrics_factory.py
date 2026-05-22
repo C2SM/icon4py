@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+import dataclasses
 import functools
 import logging
 import math
@@ -12,7 +14,6 @@ import math
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import (
     constants,
@@ -32,6 +33,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.math import vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_advection_metrics,
     compute_coeff_gradekin,
@@ -54,6 +56,72 @@ vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class MetricsConfig:
+    exner_expol: float = 1.0 / 3.0
+    """
+    Temporal extrapolation (fraction of dt) of Exner function for computation
+    of horizontal pressure gradient. This damps horizontally propagating sound
+    waves.
+    """
+
+    vwind_offctr: float = 0.15
+    """
+    Oﬀ-centering in vertical wind solver. Higher values may be needed for R2B5
+    or coarser grids when the model top is above 50 km. Negative values are not
+    allowed.
+    """
+
+    thslp_zdiffu: float = 0.025
+    """
+    Slope threshold above which truly horizontal temperature diﬀusion is
+    activated.
+    """
+
+    thhgtd_zdiffu: float = 200.0
+    """
+    Threshold of height diﬀerence between neighboring grid points above which
+    truly horizontal temperature diﬀusion is activated (alternative criterion
+    to thslp_zdiﬀu).
+    """
+
+    # TODO (jcanton): move to vertical_grid.config
+    rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP
+    """
+    Type of Rayleigh damping to be applied in the upper part of the model
+    domain. Only KLEMP type is supported.
+    """
+
+    # TODO (jcanton): move to vertical_grid.config
+    rayleigh_coeff: float = 0.05
+    """
+    Rayleigh damping coeﬃcient 1/tau_0 (Klemp, Dudhia, Hassiotis: MWR136,
+    pp.3987-4004)
+    """
+
+    divdamp_trans_start: float = 12500.0
+    """
+    Lower bound of transition zone between 2D and 3D divergence damping.
+    """
+
+    divdamp_trans_end: float = 17500.0
+    """
+    Upper bound of transition zone between 2D and 3D divergence damping.
+    """
+
+    divdamp_type: int = 3
+    """Type of divergence damping."""
+
+    igradp_method: int = 3
+    """Method for computing the horizontal pressure gradient."""
+
+    def __post_init__(self):
+        if self.rayleigh_type != constants.RayleighType.KLEMP:
+            raise NotImplementedError(
+                f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
+            )
+
+
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
@@ -65,12 +133,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        rayleigh_type: int,
-        rayleigh_coeff: float,
-        exner_expol: float,
-        vwind_offctr: float,
-        thslp_zdiffu: float,
-        thhgtd_zdiffu: float,
+        config: MetricsConfig,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
@@ -90,22 +153,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
-        vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
-        self._config = {
-            "divdamp_trans_start": 12500.0,
-            "divdamp_trans_end": 17500.0,
-            "divdamp_type": 3,
-            "damping_height": vertical_grid.config.rayleigh_damping_height,
-            "rayleigh_type": rayleigh_type,
-            "rayleigh_coeff": rayleigh_coeff,
-            "exner_expol": exner_expol,
-            "vwind_offctr": vwind_offctr,
-            "igradp_method": 3,
-            "igradp_constant": 3,
-            "thslp_zdiffu": thslp_zdiffu,
-            "thhgtd_zdiffu": thhgtd_zdiffu,
-            "vct_a_1": vct_a_1,
-        }
+        self._config = config
+        self._vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
+        self._damping_height = vertical_grid.config.rayleigh_damping_height
 
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
@@ -157,10 +207,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_coordinates_on_half_levels = factory.NumpyDataProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
-                array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
             domain=(dims.CellDim, dims.KHalfDim),
@@ -177,17 +224,17 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "SLEVE_decay_scale_1": self.vertical_grid.config.SLEVE_decay_scale_1,
                 "SLEVE_decay_exponent": self._vertical_grid.config.SLEVE_decay_exponent,
                 "SLEVE_decay_scale_2": self._vertical_grid.config.SLEVE_decay_scale_2,
-                "SLEVE_minimum_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_layer_thickness_1,
-                "SLEVE_minimum_relative_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_1,
-                "SLEVE_minimum_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_layer_thickness_2,
-                "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
+                "SLEVE_minimum_layer_thickness_1": self._vertical_grid.config._SLEVE_minimum_layer_thickness_1,
+                "SLEVE_minimum_relative_layer_thickness_1": self._vertical_grid.config._SLEVE_minimum_relative_layer_thickness_1,
+                "SLEVE_minimum_layer_thickness_2": self._vertical_grid.config._SLEVE_minimum_layer_thickness_2,
+                "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config._SLEVE_minimum_relative_layer_thickness_2,
                 "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
             },
         )
         self.register_provider(vertical_coordinates_on_half_levels)
 
         height = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
+            func=vertical_ops.average_two_vertical_levels_downwards_on_cells.with_backend(
                 self._backend
             ),
             domain={
@@ -272,9 +319,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"scaling_factor_for_3d_divdamp": attrs.SCALING_FACTOR_FOR_3D_DIVDAMP},
             deps={"vct_a": "vct_a"},
             params={
-                "divdamp_trans_start": self._config["divdamp_trans_start"],
-                "divdamp_trans_end": self._config["divdamp_trans_end"],
-                "divdamp_type": self._config["divdamp_type"],
+                "divdamp_trans_start": self._config.divdamp_trans_start,
+                "divdamp_trans_end": self._config.divdamp_trans_end,
+                "divdamp_type": self._config.divdamp_type,
             },
             do_exchange=False,
         )
@@ -291,10 +338,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"rayleigh_w": attrs.RAYLEIGH_W},
             params={
-                "damping_height": self._config["damping_height"],
-                "rayleigh_type": self._config["rayleigh_type"],
-                "rayleigh_coeff": self._config["rayleigh_coeff"],
-                "vct_a_1": self._config["vct_a_1"],
+                "damping_height": self._damping_height,
+                "rayleigh_type": self._config.rayleigh_type,
+                "rayleigh_coeff": self._config.rayleigh_coeff,
+                "vct_a_1": self._vct_a_1,
                 "pi_const": math.pi,
             },
             do_exchange=False,
@@ -499,7 +546,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         # ddxn_z_full is dependent only on attrs.DDXN_Z_HALF_E, which has halo exchange. That's why halo_exchange is set to True
         compute_ddxn_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
+            func=vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
             deps={
@@ -521,7 +568,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_full)
 
         compute_ddxt_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
+            func=vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
             deps={
@@ -543,7 +590,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxt_z_full)
 
         compute_exner_w_implicit_weight_parameter_np = factory.NumpyDataProvider(
-            func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
+            func=mf.compute_exner_w_implicit_weight_parameter,
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
             fields=(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,),
@@ -555,7 +602,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
             },
             params={
-                "vwind_offctr": self._config["vwind_offctr"],
+                "vwind_offctr": self._config.vwind_offctr,
                 "nlev": self._grid.num_levels,
                 "horizontal_start_cell": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -598,7 +645,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.EXNER_EXFAC: attrs.EXNER_EXFAC},
             params={
-                "exner_expol": self._config["exner_expol"],
+                "exner_expol": self._config.exner_expol,
                 "lateral_boundary_level_2": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -642,17 +689,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"wgtfac_e": attrs.WGTFAC_E},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_wgtfac_e)
 
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_flat_max_idx,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
+                exchange=self._exchange,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -674,7 +718,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         nflat_gradp_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_nflat_gradp,
-                array_ns=self._xp,
                 min_reduction=self._global_reductions.min,
             ),
             domain=(),
@@ -765,10 +808,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_zdiff_gradp_np = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_zdiff_gradp.compute_zdiff_gradp,
-                array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -796,13 +836,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_zdiff_gradp_np)
 
         coeff_gradekin = factory.NumpyDataProvider(
-            func=functools.partial(
-                compute_coeff_gradekin.compute_coeff_gradekin,
-                array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
-            ),
+            func=compute_coeff_gradekin.compute_coeff_gradekin,
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
             deps={
@@ -814,11 +848,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(coeff_gradekin)
 
         compute_wgtfacq_c = factory.NumpyDataProvider(
-            func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
+            func=weight_factors.compute_wgtfacq_c_dsl,
             domain=gtx.domain(
                 {
                     dims.CellDim: (0, self._grid.num_cells),
@@ -835,10 +870,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_wgtfacq_e = factory.NumpyDataProvider(
             func=functools.partial(
                 weight_factors.compute_wgtfacq_e_dsl,
-                array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
+                exchange=self._exchange,
             ),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -902,13 +934,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
         compute_max_nbhgt = factory.NumpyDataProvider(
-            func=functools.partial(
-                compute_diffusion_metrics.compute_max_nbhgt_array_ns,
-                array_ns=self._xp,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
-            ),
+            func=compute_diffusion_metrics.compute_max_nbhgt_array_ns,
             deps={
                 "z_mc": attrs.Z_MC,
             },
@@ -918,13 +944,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "nlev": self._grid.num_levels,
             },
+            do_exchange=True,
         )
         self.register_provider(compute_max_nbhgt)
 
         compute_diffusion_mask_and_coef = factory.NumpyDataProvider(
-            func=functools.partial(
-                compute_diffusion_metrics.compute_diffusion_mask_and_coef, array_ns=self._xp
-            ),
+            func=compute_diffusion_metrics.compute_diffusion_mask_and_coef,
             deps={
                 "z_mc": attrs.Z_MC,
                 "max_nbhgt": attrs.MAX_NBHGT,
@@ -936,8 +961,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.ZD_DIFFCOEF,),
             params={
-                "thslp_zdiffu": self._config["thslp_zdiffu"],
-                "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
+                "thslp_zdiffu": self._config.thslp_zdiffu,
+                "thhgtd_zdiffu": self._config.thhgtd_zdiffu,
                 "cell_nudging": self._grid.start_index(
                     h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING)
                 ),
@@ -948,10 +973,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_diffusion_mask_and_coef)
 
         compute_diffusion_intcoef_and_vertoffset = factory.NumpyDataProvider(
-            func=functools.partial(
-                compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
-                array_ns=self._xp,
-            ),
+            func=compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
             deps={
                 "z_mc": attrs.Z_MC,
                 "max_nbhgt": attrs.MAX_NBHGT,
@@ -966,8 +988,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 attrs.ZD_VERTOFFSET,
             ),
             params={
-                "thslp_zdiffu": self._config["thslp_zdiffu"],
-                "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
+                "thslp_zdiffu": self._config.thslp_zdiffu,
+                "thhgtd_zdiffu": self._config.thhgtd_zdiffu,
                 "cell_nudging": self._grid.start_index(
                     h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING)
                 ),
