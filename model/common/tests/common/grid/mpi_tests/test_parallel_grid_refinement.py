@@ -27,6 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     process_props,
 )
@@ -68,7 +69,7 @@ def test_compute_domain_bounds(
 ) -> None:
     if (
         process_props.is_single_rank()
-        and experiment == definitions.Experiments.EXCLAIM_APE
+        and experiment.description == definitions.Experiments.EXCLAIM_APE
         and dim == dims.EdgeDim
     ):
         pytest.xfail(
@@ -84,7 +85,7 @@ def test_compute_domain_bounds(
         decomposition_info,
     )
     if (
-        experiment == definitions.Experiments.GAUSS3D
+        experiment.description == definitions.Experiments.GAUSS3D
         and dim == dims.EdgeDim
         and zone in (h_grid.Zone.LOCAL, h_grid.Zone.INTERIOR, h_grid.Zone.HALO)
     ):

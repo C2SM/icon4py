@@ -27,6 +27,7 @@ from ...fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     process_props,
@@ -75,7 +76,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
@@ -145,7 +146,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
