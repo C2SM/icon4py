@@ -143,6 +143,7 @@ def _cloud_to_snow(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cloud_to_snow(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
@@ -231,6 +232,7 @@ def _graupel_to_rain(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def graupel_to_rain(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Ambient temperature
     p: fa.CellKField[ta.wpfloat],  # Ambient pressue
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
@@ -281,6 +283,7 @@ def _ice_to_graupel(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_to_graupel(
+    *,
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qr: fa.CellKField[ta.wpfloat],  # Rain specific mass
     qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
@@ -335,6 +338,7 @@ def ice_to_snow(
 
 @gtx.field_operator
 def _rain_to_graupel(
+    *,
     t: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -391,6 +395,7 @@ def _rain_to_graupel(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def rain_to_graupel(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
@@ -409,6 +414,7 @@ def rain_to_graupel(
 
 @gtx.field_operator
 def _rain_to_vapor(
+    *,
     t: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -454,6 +460,7 @@ def _rain_to_vapor(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def rain_to_vapor(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qc: fa.CellKField[ta.wpfloat],  # Cloud-specific humidity
@@ -547,6 +554,7 @@ def _snow_to_rain(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_to_rain(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Ambient pressure
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
@@ -559,6 +567,7 @@ def snow_to_rain(
 
 @gtx.field_operator
 def _vapor_x_graupel(
+    *,
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -607,6 +616,7 @@ def _vapor_x_graupel(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def vapor_x_graupel(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Ambient pressure
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
@@ -624,6 +634,7 @@ def vapor_x_graupel(
 
 @gtx.field_operator
 def _vapor_x_ice(
+    *,
     qi: fa.CellKField[ta.wpfloat],
     mi: fa.CellKField[ta.wpfloat],
     eta: fa.CellKField[ta.wpfloat],
@@ -662,6 +673,7 @@ def _vapor_x_ice(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def vapor_x_ice(
+    *,
     qi: fa.CellKField[ta.wpfloat],  # Specific humidity of ice
     mi: fa.CellKField[ta.wpfloat],  # Ice crystal mass
     eta: fa.CellKField[ta.wpfloat],  # Deposition factor
@@ -675,6 +687,7 @@ def vapor_x_ice(
 
 @gtx.field_operator
 def _vapor_x_snow(
+    *,
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -755,6 +768,7 @@ def _vapor_x_snow(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def vapor_x_snow(
+    *,
     t: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Ambient pressure
     rho: fa.CellKField[ta.wpfloat],  # Ambient density

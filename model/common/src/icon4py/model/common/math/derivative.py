@@ -26,6 +26,7 @@ def _compute_first_vertical_derivative_at_cells(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_first_vertical_derivative_at_cells(
+    *,
     cell_kdim_field: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     first_vertical_derivative: fa.CellKField[vpfloat],

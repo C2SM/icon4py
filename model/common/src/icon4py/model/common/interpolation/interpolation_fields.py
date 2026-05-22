@@ -98,6 +98,7 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
+    *,
     dual_edge_length: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
@@ -153,6 +154,7 @@ def compute_geofac_n2s(
 
 
 def compute_geofac_grg(
+    *,
     primal_normal_cell_x: data_alloc.NDArray,
     primal_normal_cell_y: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
@@ -204,6 +206,7 @@ def compute_geofac_grg(
 
 
 def compute_geofac_grdiv(
+    *,
     geofac_div: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
@@ -420,6 +423,7 @@ def _compute_c_bln_avg(
 
 
 def _force_mass_conservation_to_c_bln_avg(
+    *,
     c2e2c0: data_alloc.NDArray,
     c_bln_avg: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
@@ -596,6 +600,7 @@ def _compute_uniform_c_bln_avg(
 
 
 def compute_mass_conserving_bilinear_cell_average_weight(
+    *,
     c2e2c0: data_alloc.NDArray,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
@@ -628,6 +633,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
 
 
 def compute_mass_conserving_bilinear_cell_average_weight_torus(
+    *,
     c2e2c0: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
@@ -707,6 +713,7 @@ def _create_inverse_neighbor_index(
 
 
 def compute_e_flx_avg(
+    *,
     c_bln_avg: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
@@ -875,6 +882,7 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
+    *,
     dual_area: data_alloc.NDArray,
     edge_vert_length: data_alloc.NDArray,
     edge_cell_length: data_alloc.NDArray,
@@ -965,6 +973,7 @@ def compute_cells_aw_verts(
 
 
 def compute_e_bln_c_s(
+    *,
     c2e: data_alloc.NDArray,
     cells_lat: data_alloc.NDArray,
     cells_lon: data_alloc.NDArray,
@@ -1030,6 +1039,7 @@ def compute_e_bln_c_s_torus(
 
 
 def compute_pos_on_tplane_e_x_y(
+    *,
     grid_sphere_radius: ta.wpfloat,
     primal_normal_v1: data_alloc.NDArray,
     primal_normal_v2: data_alloc.NDArray,
@@ -1169,6 +1179,7 @@ def compute_pos_on_tplane_e_x_y_torus(
 
 
 def compute_lsq_pseudoinv(
+    *,
     cell_owner_mask: data_alloc.NDArray,
     z_lsq_mat_c: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
@@ -1223,6 +1234,7 @@ def compute_lsq_weights_c(
 
 
 def compute_z_lsq_mat_c(
+    *,
     cell_owner_mask: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
     z_dist_g: data_alloc.NDArray,
@@ -1251,6 +1263,7 @@ def compute_z_lsq_mat_c(
 
 
 def compute_lsq_coeffs(
+    *,
     cell_center_x: data_alloc.NDArray,
     cell_center_y: data_alloc.NDArray,
     cell_lat: data_alloc.NDArray,

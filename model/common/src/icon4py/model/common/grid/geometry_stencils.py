@@ -201,6 +201,7 @@ def cartesian_coordinates_edge_tangent_and_normal(
 
 @gtx.field_operator
 def cartesian_coordinates_edge_tangent_and_normal_torus(
+    *,
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     edge_x: fa.EdgeField[ta.wpfloat],
@@ -254,6 +255,7 @@ def cartesian_coordinates_edge_tangent_and_normal_torus(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_of_edge_tangent_and_normal(
+    *,
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -281,6 +283,7 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(
+    *,
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     edge_x: fa.EdgeField[ta.wpfloat],
@@ -398,6 +401,7 @@ def zonal_and_meridional_component_of_edge_field_at_vertex(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
+    *,
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -482,6 +486,7 @@ def zonal_and_meridional_component_of_edge_field_at_cell_center(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
+    *,
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -652,6 +657,7 @@ def edge_length(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_edge_length(
+    *,
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
@@ -670,6 +676,7 @@ def compute_edge_length(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cell_center_arc_distance(
+    *,
     edge_neighbor_0_lat: fa.EdgeField[ta.wpfloat],
     edge_neighbor_0_lon: fa.EdgeField[ta.wpfloat],
     edge_neighbor_1_lat: fa.EdgeField[ta.wpfloat],
@@ -692,6 +699,7 @@ def compute_cell_center_arc_distance(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_arc_distance_of_far_edges_in_diamond(
+    *,
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
@@ -710,6 +718,7 @@ def compute_arc_distance_of_far_edges_in_diamond(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_distance_of_far_edges_in_diamond_torus(
+    *,
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     domain_length: ta.wpfloat,
@@ -750,6 +759,7 @@ def edge_area(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_edge_area(
+    *,
     owner_mask: fa.EdgeField[bool],
     primal_edge_length: fa.EdgeField[ta.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],

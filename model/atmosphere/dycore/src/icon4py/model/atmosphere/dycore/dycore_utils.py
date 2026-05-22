@@ -64,6 +64,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 
 @gtx.field_operator
 def _calculate_divdamp_fields(
+    *,
     interpolated_fourth_order_divdamp_factor: fa.KField[float],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -87,6 +88,7 @@ def _calculate_divdamp_fields(
 
 @gtx.program
 def calculate_divdamp_fields(
+    *,
     interpolated_fourth_order_divdamp_factor: fa.KField[float],
     fourth_order_divdamp_scaling_coeff: fa.KField[float],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[float],

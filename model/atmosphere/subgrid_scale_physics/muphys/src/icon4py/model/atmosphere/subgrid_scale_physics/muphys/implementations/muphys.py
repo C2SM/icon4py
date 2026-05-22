@@ -18,6 +18,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 
 @gtx.field_operator
 def _muphys(
+    *,
     last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -65,6 +66,7 @@ def _muphys(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def muphys_run(
+    *,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure

@@ -190,11 +190,11 @@ def test_compute_geofac_grg(
     geofac_grg_0, geofac_grg_1 = functools.partial(
         compute_geofac_grg, exchange=decomposition.single_node_exchange
     )(
-        primal_normal_cell_x,
-        primal_normal_cell_y,
-        owner_mask,
-        geofac_div,
-        c_lin_e,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        owner_mask=owner_mask,
+        geofac_div=geofac_div,
+        c_lin_e=c_lin_e,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -313,11 +313,11 @@ def test_compute_e_flx_avg(
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
     e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.single_node_exchange)(
-        c_bln_avg,
-        geofac_div,
-        owner_mask,
-        primal_cart_normal_x,
-        primal_cart_normal_y,
+        c_bln_avg=c_bln_avg,
+        geofac_div=geofac_div,
+        owner_mask=owner_mask,
+        primal_cart_normal_x=primal_cart_normal_x,
+        primal_cart_normal_y=primal_cart_normal_y,
         primal_cart_normal_z=primal_cart_normal_z,
         e2c=e2c,
         c2e=c2e,

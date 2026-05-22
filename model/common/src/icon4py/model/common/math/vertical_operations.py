@@ -76,6 +76,7 @@ def difference_level_plus1_on_cells(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_edges(
+    *,
     input_field: fa.EdgeKField[wpfloat],
     average: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
@@ -95,6 +96,7 @@ def average_two_vertical_levels_downwards_on_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_cells(
+    *,
     input_field: fa.CellKField[wpfloat],
     average: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,

@@ -59,6 +59,7 @@ def _compute_wgtfac_c(
 # TODO(halungge): missing test?
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_wgtfac_c(
+    *,
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
     nlev: gtx.int32,
@@ -117,6 +118,7 @@ def compute_wgtfacq_c_dsl(
 
 
 def compute_wgtfacq_e_dsl(
+    *,
     e2c: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,

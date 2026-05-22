@@ -82,6 +82,7 @@ class IntegrationState(NamedTuple):
 
 @gtx.field_operator
 def precip_qx_level_update(
+    *,
     previous_level_q: PrecipStateQx,
     previous_level_rho: ta.wpfloat,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
@@ -123,6 +124,7 @@ def precip_qx_level_update(
 
 @gtx.field_operator
 def _temperature_update(
+    *,
     previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -186,6 +188,7 @@ def _temperature_update(
     ),
 )
 def _precip_and_t(
+    *,
     previous_level: IntegrationState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -340,6 +343,7 @@ def sink_saturation(
 
 @gtx.field_operator
 def _q_t_update(
+    *,
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -485,6 +489,7 @@ def _q_t_update(
 
 @gtx.field_operator
 def _precipitation_effects(
+    *,
     last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],  # rain minimum level
     kmin_i: fa.CellKField[bool],  # ice minimum level
@@ -541,6 +546,7 @@ def _precipitation_effects(
 
 @gtx.field_operator
 def graupel(
+    *,
     last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -579,6 +585,7 @@ def graupel(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def graupel_run(
+    *,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure

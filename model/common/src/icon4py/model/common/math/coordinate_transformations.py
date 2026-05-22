@@ -159,6 +159,7 @@ def zonal_and_meridional_components_on_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_components_on_edges(
+    *,
     lat: fa.EdgeField[ta.wpfloat],
     lon: fa.EdgeField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -214,6 +215,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
+    *,
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
     u: fa.EdgeField[ta.wpfloat],
@@ -268,6 +270,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
+    *,
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     u: fa.CellField[ta.wpfloat],
