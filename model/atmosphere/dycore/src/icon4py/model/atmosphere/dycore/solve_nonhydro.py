@@ -780,12 +780,12 @@ class SolveNonhydro:
         )
 
         self.velocity_advection = VelocityAdvection(
-            grid,
-            metric_state_nonhydro,
-            interpolation_state,
-            vertical_params,
-            edge_geometry,
-            owner_mask,
+            grid=grid,
+            metric_state=metric_state_nonhydro,
+            interpolation_state=interpolation_state,
+            vertical_params=vertical_params,
+            edge_params=edge_geometry,
+            owner_mask=owner_mask,
             backend=backend,
         )
         self._allocate_local_fields(model_backends.get_allocator(backend))
