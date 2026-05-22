@@ -15,7 +15,7 @@ from gt4py import next as gtx
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import definitions
-from icon4py.model.testing.fixtures import experiment
+from icon4py.model.testing.fixtures import download_ser_data, experiment, experiment_description
 
 from ...fixtures import *  # noqa: F403
 from .. import utils
