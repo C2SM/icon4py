@@ -65,7 +65,6 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -547,7 +546,6 @@ class FirstOrderUpwind(FiniteVolume):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         log.debug("vertical advection class init - start")
 
