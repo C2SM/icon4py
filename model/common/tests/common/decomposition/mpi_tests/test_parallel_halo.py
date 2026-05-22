@@ -13,21 +13,13 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import (
-    definitions as decomposition_defs,
-    halo,
-    mpi_decomposition,
-)
+from icon4py.model.common.decomposition import definitions as decomp_defs, halo
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import parallel_helpers
 from icon4py.model.testing.fixtures import process_props
 
 from .. import utils
 from ..fixtures import simple_neighbor_tables
-
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 _log = logging.getLogger(__name__)
@@ -40,7 +32,7 @@ def global_indices(dim: gtx.Dimension) -> np.ndarray:
     return np.arange(mesh.size[dim], dtype=gtx.int32)
 
 
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_element_ownership_is_unique(
@@ -57,9 +49,7 @@ def test_element_ownership_is_unique(
     )
 
     decomposition_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
-    owned = decomposition_info.global_index(
-        dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
-    )
+    owned = decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
     _log.info(f"\nrank {process_props.rank} owns {dim} : {owned} ")
     # assert that each cell is only owned by one rank
     comm = process_props.comm

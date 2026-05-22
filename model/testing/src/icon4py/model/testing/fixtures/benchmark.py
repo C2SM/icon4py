@@ -14,7 +14,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.constants import RayleighType
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -24,7 +24,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @pytest.fixture(
@@ -44,6 +43,7 @@ def geometry_field_source(
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
         decomposition_info=decomposition_info,
+        exchange=decomposition.single_node_exchange,
         backend=generic_concrete_backend,
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
@@ -66,8 +66,10 @@ def interpolation_field_source(
     decomposition_info = grid_manager.decomposition_info
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
+        config=interpolation_factory.InterpolationConfig(),
         grid=mesh,
         decomposition_info=decomposition_info,
+        exchange=decomposition.single_node_exchange,
         geometry_source=geometry_field_source,
         backend=generic_concrete_backend,
         metadata=interpolation_attributes.attrs,
@@ -108,23 +110,18 @@ def metrics_field_source(
     topo_c = topography.jablonowski_williamson(
         cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
-        array_ns=data_alloc.import_array_ns(allocator),
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
         grid=mesh,
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
+        exchange=decomposition.single_node_exchange,
         geometry_source=geometry_field_source,
         topography=gtx.as_field((dims.CellDim,), data=topo_c),  # type: ignore[arg-type]  # NDArrayObject is not exported from gt4py
         interpolation_source=interpolation_field_source,
+        config=metrics_factory.MetricsConfig(),
         backend=generic_concrete_backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
-        rayleigh_coeff=5.0,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
     )
     yield metrics_field_source

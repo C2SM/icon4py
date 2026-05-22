@@ -15,9 +15,8 @@ import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
 
 if TYPE_CHECKING:
@@ -100,11 +99,25 @@ def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescript
     ],
     ids=lambda r: r.name,
 )
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+def experiment_description(request: pytest.FixtureRequest) -> definitions.ExperimentDescription:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""
     return request.param
+
+
+@pytest.fixture
+def experiment(
+    experiment_description: definitions.ExperimentDescription,
+    process_props: decomposition.ProcessProperties,
+    download_ser_data: None,  # downloads data as side-effect
+) -> definitions.Experiment:
+    return definitions.Experiment(
+        experiment_description=experiment_description,
+        experiment_config=dt_utils.create_experiment_configuration(
+            experiment_description, process_props
+        ),
+    )
 
 
 @pytest.fixture(scope="session", params=[False])
@@ -114,30 +127,11 @@ def process_props(request: pytest.FixtureRequest) -> decomposition.ProcessProper
     return decomposition.get_process_properties(runtype)
 
 
-def _download_ser_data(
-    _experiment: definitions.Experiment,
-    process_props: decomposition.ProcessProperties,
-) -> None:
-    # not a fixture to be able to use this function outside of pytest
-    comm_size = process_props.comm_size
-    try:
-        root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
-        archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
-        archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
-        uri = dt_utils.get_serialized_data_url(root_url, archive_path)
-        destination_path = dt_utils.get_datapath_for_experiment(_experiment, process_props)
-        data_handling.download_test_data(destination_path.parent, uri)
-    except KeyError as err:
-        raise RuntimeError(
-            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
-        ) from err
-
-
 @pytest.fixture
 def download_ser_data(
     request: pytest.FixtureRequest,
     process_props: decomposition.ProcessProperties,
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -149,7 +143,7 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    _download_ser_data(experiment, process_props)
+    dt_utils.download_experiment(experiment_description, process_props)
 
 
 @pytest.fixture
@@ -159,7 +153,7 @@ def data_provider(
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    data_path = dt_utils.get_datapath_for_experiment(experiment, process_props)
+    data_path = dt_utils.get_datapath_for_experiment(experiment.description, process_props)
     return dt_utils.create_icon_serial_data_provider(data_path, process_props.rank, backend)
 
 
@@ -187,22 +181,8 @@ def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, global_grid_params=experiment.grid.params
+        grid_id=experiment.name, grid_params=experiment.grid.params
     ).construct_decomposition_info()
-
-
-@pytest.fixture
-def ndyn_substeps(experiment: definitions.Experiment) -> int:
-    """
-    Return number of dynamical substeps.
-
-    Serialized data of global and regional experiments uses a reduced number
-    (2 instead of the default 5) in order to reduce the amount of data generated.
-    """
-    if experiment == definitions.Experiments.GAUSS3D:
-        return 5
-    else:
-        return 2
 
 
 @pytest.fixture
@@ -510,93 +490,6 @@ def istep_init() -> int:
 @pytest.fixture
 def istep_exit() -> int:
     return 1
-
-
-@pytest.fixture
-def lowest_layer_thickness(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 20.0
-    else:
-        return 50.0
-
-
-@pytest.fixture
-def model_top_height(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 23000.0
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
-        return 75000.0
-    else:
-        return 23500.0
-
-
-@pytest.fixture
-def flat_height() -> float:
-    return 16000.0
-
-
-@pytest.fixture
-def stretch_factor(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 0.65
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.9
-    else:
-        return 1.0
-
-
-@pytest.fixture
-def damping_height(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 12500.0
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
-        return 50000.0
-    else:
-        return 45000.0
-
-
-@pytest.fixture
-def htop_moist_proc() -> float:
-    return 22500.0
-
-
-@pytest.fixture
-def maximal_layer_thickness() -> float:
-    return 25000.0
-
-
-@pytest.fixture
-def rayleigh_coeff(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.1
-    else:
-        return 5.0
-
-
-@pytest.fixture
-def exner_expol(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.3333333333333
-    else:
-        return 0.333
-
-
-@pytest.fixture
-def vwind_offctr(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.15
-    else:
-        return 0.2
-
-
-@pytest.fixture
-def rayleigh_type() -> int:
-    return RayleighType.KLEMP
-
-
-@pytest.fixture
-def top_height_limit_for_maximal_layer_thickness() -> float:
-    return 15000.0
 
 
 @pytest.fixture

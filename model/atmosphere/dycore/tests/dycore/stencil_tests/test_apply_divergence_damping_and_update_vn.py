@@ -23,9 +23,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from . import test_dycore_utils
 
 
-divergence_damp_order = DivergenceDampingOrder()
-
-
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
@@ -245,13 +242,13 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         second_order_divdamp_factor = request.param["second_order_divdamp_factor"]
         divdamp_order = request.param["divdamp_order"]
         second_order_divdamp_scaling_coeff = 34497.62082646618  # for icon-ch1(_medium)
-        apply_2nd_order_divergence_damping = (divdamp_order == divergence_damp_order.COMBINED) and (
-            second_order_divdamp_scaling_coeff > 1.0e-6
-        )
+        apply_2nd_order_divergence_damping = (
+            divdamp_order == DivergenceDampingOrder.COMBINED
+        ) and (second_order_divdamp_scaling_coeff > 1.0e-6)
         apply_4th_order_divergence_damping = (
-            divdamp_order == divergence_damp_order.FOURTH_ORDER
+            divdamp_order == DivergenceDampingOrder.FOURTH_ORDER
         ) or (
-            (divdamp_order == divergence_damp_order.COMBINED)
+            (divdamp_order == DivergenceDampingOrder.COMBINED)
             and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
         )
 

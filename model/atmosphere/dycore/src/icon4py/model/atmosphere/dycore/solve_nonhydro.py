@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: B008
 
 import dataclasses
 import logging
@@ -160,8 +159,8 @@ class NonHydrostaticConfig:
         extra_diffu: bool = True,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        _nudge_max_coeff: float | None = None,  # default is set in __init__
-        max_nudging_coefficient: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
+        * 0.02,
         fourth_order_divdamp_factor: float = 0.0025,
         fourth_order_divdamp_factor2: float = 0.004,
         fourth_order_divdamp_factor3: float = 0.004,
@@ -180,7 +179,7 @@ class NonHydrostaticConfig:
         #: stability without heavy orography smoothing
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
-        #: type of Rayleigh damping
+        #: type of Rayleigh damping (namelist key: rayleigh_type)
         self.rayleigh_type: constants.RayleighType = rayleigh_type
 
         #: order of divergence damping
@@ -252,34 +251,17 @@ class NonHydrostaticConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
-        #: the properly scaled one as `max_nudging_coefficient`,
-        #: see the comment in mo_interpol_nml.f90
-        #: TODO: This code is duplicated in `diffusion.py`, clean this up when implementing proper configuration handling.
-        if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
-            raise ValueError(
-                "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
-            )
-        elif max_nudging_coefficient is not None:
-            self.max_nudging_coefficient: float = max_nudging_coefficient
-        elif _nudge_max_coeff is not None:
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
-            )
-        else:  # default value in ICON
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
-            )
+        self.max_nudging_coefficient: float = max_nudging_coefficient
 
-        #: from mo_run_nml.f90
+        #: from mo_run_nml.f90 (namelist key: lvert_nest).
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
 
-        #: from dynamics_nml.f90
+        #: from dynamics_nml.f90 (namelist key: ldeepatmo).
         #: deep atmosphere mode, originally defined as ldeepatmo in ICON
         self.deepatmos_mode: bool = deepatmos_mode
 
-        #: incremental analysis init mode, defined as one of the ICON init modes
+        #: incremental analysis init mode, set to init_mode == MODE_IAU (5) in Fortran.
         self.iau_init: bool = iau_init
 
         #: Apply additional diffusion at grid points close to CFL limit
@@ -369,7 +351,7 @@ class SolveNonhydro:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime,
     ):
         self._exchange = exchange
 

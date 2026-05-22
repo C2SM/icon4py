@@ -62,7 +62,7 @@ def get_allocator(
 
     if is_backend_descriptor(backend):
         backend = backend["device"]
-    if isinstance(backend, DeviceType):
+    if isinstance(backend, gtx.DeviceType):
         return gtx_allocators.device_allocators[backend]
     raise ValueError(f"Cannot get allocator from {backend}")
 
