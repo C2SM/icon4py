@@ -725,13 +725,13 @@ def test_compute_advection_in_predictor_vertical_momentum(
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
-        vertical_cfl.asnumpy(),
-        icon_result_cfl_clipping.asnumpy(),
-        icon_result_max_vcfl_dyn,
-        horizontal_start,
-        horizontal_end,
-        max(2, end_index_of_damping_layer - 2),
-        icon_grid.num_levels - 3,
+        vertical_cfl=vertical_cfl.asnumpy(),
+        icon_result_cfl_clipping=icon_result_cfl_clipping.asnumpy(),
+        icon_result_max_vcfl_dyn=icon_result_max_vcfl_dyn,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=max(2, end_index_of_damping_layer - 2),
+        vertical_end=icon_grid.num_levels - 3,
     )
 
 
@@ -870,13 +870,13 @@ def test_compute_advection_in_corrector_vertical_momentum(
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
-        vertical_cfl.asnumpy(),
-        icon_result_cfl_clipping.asnumpy(),
-        icon_result_max_vcfl_dyn,
-        horizontal_start,
-        horizontal_end,
-        max(2, end_index_of_damping_layer - 2),
-        icon_grid.num_levels - 3,
+        vertical_cfl=vertical_cfl.asnumpy(),
+        icon_result_cfl_clipping=icon_result_cfl_clipping.asnumpy(),
+        icon_result_max_vcfl_dyn=icon_result_max_vcfl_dyn,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=max(2, end_index_of_damping_layer - 2),
+        vertical_end=icon_grid.num_levels - 3,
     )
 
 

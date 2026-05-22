@@ -470,7 +470,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         normal_vert_wrapper = SparseFieldProviderWrapper(
-            normal_vert,
+            field_provider=normal_vert,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
@@ -505,7 +505,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         normal_cell_wrapper = SparseFieldProviderWrapper(
-            normal_cell,
+            field_provider=normal_cell,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
@@ -542,7 +542,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         tangent_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_vert,
+            field_provider=tangent_vert,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
@@ -577,7 +577,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         tangent_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_cell,
+            field_provider=tangent_cell,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
@@ -625,7 +625,7 @@ class GridGeometry(factory.FieldSource):
 
         # primal_normal_vert, primal_normal_cell
         normal_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
@@ -647,7 +647,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(normal_vert_wrapper)
 
         normal_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(
@@ -660,7 +660,7 @@ class GridGeometry(factory.FieldSource):
 
         # dual normals: the dual normals are the edge tangents
         tangent_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
@@ -682,7 +682,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(tangent_vert_wrapper)
 
         tangent_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(
