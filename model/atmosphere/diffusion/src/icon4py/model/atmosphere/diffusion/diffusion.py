@@ -170,8 +170,8 @@ class DiffusionConfig:
         zdiffu_t: bool = True,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
-        _nudge_max_coeff: float | None = None,  # default is set in __init__
-        max_nudging_coefficient: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
+        * 0.02,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         iforcing: ForcingType = ForcingType.NO_FORCING,
         a_hshr: float = 1.0,
@@ -284,25 +284,10 @@ class DiffusionConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        #: Note: The user can pass the ICON namelist parameter `nudge_max_coeff` as `_nudge_max_coeff` or
-        #: the properly scaled one as `max_nudging_coefficient`,
-        #: see the comment in mo_interpol_nml.f90
-        #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
-        if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
-            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
-        elif max_nudging_coefficient is not None:
-            self.max_nudging_coefficient: float = max_nudging_coefficient
-        elif _nudge_max_coeff is not None:
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
-            )
-        else:  # default value in ICON
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
-            )
+        self.max_nudging_coefficient: float = max_nudging_coefficient
 
         #: Type of shear forcing used in turbulence
-        #: Called 'itype_shear' in mo_turbdiff_nml.f90
+        #: Called 'itype_sher' in mo_turbdiff_nml.f90
         self.shear_type = shear_type
 
         #: Type of physics forcing
@@ -315,6 +300,7 @@ class DiffusionConfig:
 
         #: Output flag for horizontal shear
         #: Called 'loutshs' in mo_turbdiff_nml.f90
+        #: not a namelist parameter: its default is FALSE and only set to true in fortran `IF (.NOT. ldynamics)`
         self.loutshs: bool = loutshs
 
         self._validate()

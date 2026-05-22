@@ -35,6 +35,7 @@ from icon4py.model.testing import (
 from icon4py.model.testing.fixtures import backend, data_provider, decomposition_info, experiment
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
+    experiment_description,
     interpolation_savepoint,
     process_props,
 )
@@ -75,6 +76,7 @@ def _get_interpolation_factory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
+            config=experiment.config.interpolation,
             backend=backend,
             metadata=attrs.attrs,
             exchange=single_node_exchange,
@@ -94,6 +96,7 @@ def test_factory_raises_error_on_unknown_field(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=attrs.attrs,
         exchange=single_node_exchange,
@@ -230,7 +233,7 @@ def test_e_flx_avg(
 
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment_description, rtol",
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),

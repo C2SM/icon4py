@@ -122,6 +122,7 @@ def create_static_field_factories(
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
+        config=interpolation_factory.InterpolationConfig(),
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
@@ -139,12 +140,14 @@ def create_static_field_factories(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=constants.RayleighType.KLEMP,
-        rayleigh_coeff=0.1,
-        exner_expol=1.0 / 3.0,
-        vwind_offctr=0.15,
-        thslp_zdiffu=0.025,
-        thhgtd_zdiffu=200.0,
+        config=metrics_factory.MetricsConfig(
+            rayleigh_type=constants.RayleighType.KLEMP,
+            rayleigh_coeff=0.1,
+            exner_expol=1.0 / 3.0,
+            vwind_offctr=0.15,
+            thslp_zdiffu=0.025,
+            thhgtd_zdiffu=200.0,
+        ),
         exchange=exchange,
         global_reductions=global_reductions,
     )

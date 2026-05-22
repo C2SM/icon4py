@@ -70,7 +70,7 @@ def create_vertical_params(
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init",
+    "experiment_description, step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
@@ -82,22 +82,12 @@ def test_verify_velocity_init_against_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     metrics_savepoint: serialbox.MetricSavepoint,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -117,7 +107,7 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init",
+    "experiment_description, step_date_init",
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
@@ -131,22 +121,12 @@ def test_scale_factors_by_dtime(
     savepoint_velocity_init,
     icon_grid,
     grid_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     backend,
 ):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -166,7 +146,7 @@ def test_scale_factors_by_dtime(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -186,10 +166,6 @@ def test_velocity_predictor_step(
     step_date_init,
     step_date_exit,
     *,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     icon_grid,
     grid_savepoint,
     savepoint_velocity_init,
@@ -243,13 +219,7 @@ def test_velocity_predictor_step(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -321,7 +291,7 @@ def test_velocity_predictor_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -343,10 +313,6 @@ def test_velocity_corrector_step(
     step_date_init,
     step_date_exit,
     *,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     icon_grid,
     grid_savepoint,
     savepoint_velocity_init,
@@ -402,13 +368,7 @@ def test_velocity_corrector_step(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
@@ -454,7 +414,7 @@ def test_velocity_corrector_step(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -585,7 +545,7 @@ def test_compute_diagnostics_from_normal_wind(
 @pytest.mark.datatest
 @pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -735,7 +695,7 @@ def test_compute_advection_in_predictor_vertical_momentum(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -880,7 +840,7 @@ def test_compute_advection_in_corrector_vertical_momentum(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,

@@ -970,7 +970,6 @@ def compute_e_bln_c_s(
     cells_lon: data_alloc.NDArray,
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
-    weighting_factor: float,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -999,12 +998,15 @@ def compute_e_bln_c_s(
         ytemp[i] = edges_lat[c2e[llb:, i]]
         xtemp[i] = edges_lon[c2e[llb:, i]]
 
+    # wgt_loc is hardcoded to 0.0 (actually completely missing) in the Fortran
+    # e_bln_c_s code path (mo_intp_coeffs_lsq_bln.f90:2453-2462); contrast with
+    # c_bln_avg which uses wgt_loc = divavg_cntrwgt (mo_intp_coeffs.f90:181).
     wgt = _weighting_factors(
         ytemp,
         xtemp,
         yloc,
         xloc,
-        weighting_factor,
+        0.0,
     )
 
     e_bln_c_s[:, 0] = wgt[0]
