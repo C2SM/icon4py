@@ -400,13 +400,13 @@ class GodunovSplittingAdvection(Advection):
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
-        log.debug("communication of advection cell field: p_tracer_new - start")
+        log.debug("communication of tracer advection field: p_tracer_new - start")
         self._exchange.exchange(
             dims.CellDim,
             p_tracer_new,
             stream=decomposition.DEFAULT_STREAM,
         )
-        log.debug("communication of advection cell field: p_tracer_new - end")
+        log.debug("communication of tracer advection field: p_tracer_new - end")
 
         # finalize step
         self._even_timestep = not self._even_timestep

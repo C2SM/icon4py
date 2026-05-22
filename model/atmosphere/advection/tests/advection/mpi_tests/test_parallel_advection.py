@@ -32,6 +32,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -60,9 +61,9 @@ except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
@@ -193,42 +194,20 @@ def test_advection_run_single_step(
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
-    cell_domain = h_grid.domain(dims.CellDim)
-    start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
-    start_cell_lateral_boundary_level_2 = icon_grid.start_index(
-        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-    end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
-
-    edge_domain = h_grid.domain(dims.EdgeDim)
-    start_edge_lateral_boundary_level_5 = icon_grid.start_index(
-        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
-    )
-    end_edge_halo = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
-
-    hfl_tracer_range = slice(start_edge_lateral_boundary_level_5, end_edge_halo)
-    vfl_tracer_range = slice(
-        start_cell_lateral_boundary_level_2 if even_timestep else start_cell_nudging,
-        end_cell_end if even_timestep else end_cell_local,
-    )
-    p_tracer_new_range = slice(start_cell_lateral_boundary, end_cell_local)
-
     assert test_helpers.dallclose(
-        diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state.hfl_tracer.asnumpy(),
+        diagnostic_state_ref.hfl_tracer.asnumpy(),
         atol=1e-11,
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
-        diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state.vfl_tracer.asnumpy(),
+        diagnostic_state_ref.vfl_tracer.asnumpy(),
         rtol=1e-10,
     )
 
     assert test_helpers.dallclose(
-        p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
-        p_tracer_new.asnumpy()[p_tracer_new_range, :],
+        p_tracer_new_ref.asnumpy(),
+        p_tracer_new.asnumpy(),
         atol=1e-16,
     )
