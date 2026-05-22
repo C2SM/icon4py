@@ -137,12 +137,12 @@ class GridGeometry(factory.FieldSource):
             coordinates_[attrs.VERTEX_Y] = coordinates[dims.VertexDim]["y"]
             coordinates_[attrs.VERTEX_Z] = coordinates[dims.VertexDim]["z"]
 
-        coordinate_provider = factory.PrecomputedFieldProvider(coordinates_)
+        coordinate_provider = factory.PrecomputedFieldProvider(fields=coordinates_)
         self.register_provider(coordinate_provider)
 
         # Setup input fields
         input_fields_provider = factory.PrecomputedFieldProvider(
-            {
+            fields={
                 # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
                 attrs.EDGE_LENGTH: extra_fields[gridfile.GeometryName.EDGE_LENGTH],
                 attrs.DUAL_EDGE_LENGTH: extra_fields[gridfile.GeometryName.DUAL_EDGE_LENGTH],
@@ -275,7 +275,7 @@ class GridGeometry(factory.FieldSource):
                 self.register_provider(vertex_vertex_distance)
 
                 coriolis_param = factory.PrecomputedFieldProvider(
-                    {
+                    fields={
                         # TODO(jcanton): this constant (0.0) should eventually
                         # come from the config
                         "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(

@@ -264,7 +264,7 @@ class FieldSource(GridProvider, Protocol):
 
 
 class CompositeSource(FieldSource):
-    def __init__(self, me: FieldSource, others: tuple[FieldSource, ...]):
+    def __init__(self, *, me: FieldSource, others: tuple[FieldSource, ...]):
         self._backend = me.backend
         self._grid = me.grid
         self._vertical_grid = me.vertical_grid
@@ -293,7 +293,7 @@ class PrecomputedFieldProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction
     and returns it upon provider.get(field_name)."""
 
-    def __init__(self, fields: dict[str, state_utils.GTXFieldType]):
+    def __init__(self, *, fields: dict[str, state_utils.GTXFieldType]):
         self._fields = fields
 
     @property

@@ -127,7 +127,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
         self.register_provider(
             factory.PrecomputedFieldProvider(
-                {
+                fields={
                     "topography": topography,
                     "vct_a": self._vertical_grid.interface_physical_height,
                     "height_u": self._vertical_grid.interface_physical_height[
@@ -152,7 +152,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
+        return factory.CompositeSource(me=self, others=(self._geometry, self._interpolation_source))
 
     def _register_computed_fields(self) -> None:  # noqa: PLR0915 [too-many-statements]
         vertical_coordinates_on_half_levels = factory.NumpyDataProvider(

@@ -83,7 +83,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
-                {
+                fields={
                     "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
                 }
             )
@@ -96,7 +96,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry,))
+        return factory.CompositeSource(me=self, others=(self._geometry,))
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
