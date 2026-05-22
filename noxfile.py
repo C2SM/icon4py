@@ -42,6 +42,9 @@ ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
+SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
 #: is not guaranteed to be available in the venv where `nox` is running.
@@ -51,7 +54,7 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks."""
     _install_session_venv(session, extras=["io", "testing"], groups=["test"])
@@ -68,7 +71,7 @@ def benchmark_model(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_model-{python}"])
 def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -103,7 +106,7 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_model-{python}"])
 def __bencher_feature_branch_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -142,7 +145,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 # Model test sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(
@@ -161,7 +164,7 @@ def test_model(
         )
 
 
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
@@ -169,7 +172,7 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 
 # Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize(
     "datatest",
     [

@@ -14,7 +14,6 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -67,6 +66,7 @@ def interpolation_field_source(
     decomposition_info = grid_manager.decomposition_info
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
+        config=interpolation_factory.InterpolationConfig(),
         grid=mesh,
         decomposition_info=decomposition_info,
         exchange=decomposition.single_node_exchange,
@@ -120,13 +120,8 @@ def metrics_field_source(
         geometry_source=geometry_field_source,
         topography=gtx.as_field((dims.CellDim,), data=topo_c),  # type: ignore[arg-type]  # NDArrayObject is not exported from gt4py
         interpolation_source=interpolation_field_source,
+        config=metrics_factory.MetricsConfig(),
         backend=generic_concrete_backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
-        rayleigh_coeff=5.0,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
     )
     yield metrics_field_source

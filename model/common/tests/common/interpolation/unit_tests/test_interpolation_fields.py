@@ -39,6 +39,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -379,7 +380,7 @@ def test_compute_e_bln_c_s(
 
     match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
-            e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0)
+            e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon)
         case icon.GeometryType.TORUS:
             e_bln_c_s = compute_e_bln_c_s_torus(c2e)
     assert test_helpers.dallclose(
