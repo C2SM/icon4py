@@ -77,8 +77,7 @@ def setup_fields_for_initial_step(
 
 
 @gtx.field_operator
-def _init_diffusion_local_fields_for_regular_timestep(
-    *,
+def _init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917
     k4: float,
     dyn_substeps: float,
     hdiff_smag_fac: float,
@@ -112,8 +111,7 @@ def _init_diffusion_local_fields_for_regular_timestep(
 
 
 @gtx.program
-def init_diffusion_local_fields_for_regular_timestep(
-    *,
+def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917
     k4: float,
     dyn_substeps: float,
     hdiff_smag_fac: float,
@@ -169,8 +167,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
 
 
 @gtx.program
-def init_nabla2_factor_in_upper_damping_zone(
-    *,
+def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917
     physical_heights: fa.KField[float],
     diff_multfac_n2w: fa.KField[float],
     end_index_of_damping_layer: gtx.int32,

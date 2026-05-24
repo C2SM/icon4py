@@ -17,8 +17,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _T_from_internal_energy(
-    *,
+def _T_from_internal_energy(  # noqa: PLR0917
     u: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -55,8 +54,7 @@ def _T_from_internal_energy(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def T_from_internal_energy(
-    *,
+def T_from_internal_energy(  # noqa: PLR0917
     u: fa.CellKField[ta.wpfloat],  # Internal energy (extensive)
     qv: fa.CellKField[ta.wpfloat],  # Water vapor specific humidity
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
@@ -69,8 +67,7 @@ def T_from_internal_energy(
 
 
 @gtx.field_operator
-def _T_from_internal_energy_scalar(
-    *,
+def _T_from_internal_energy_scalar(  # noqa: PLR0917
     u: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
@@ -107,8 +104,7 @@ def _T_from_internal_energy_scalar(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def T_from_internal_energy_scalar(
-    *,
+def T_from_internal_energy_scalar(  # noqa: PLR0917
     u: ta.wpfloat,  # Internal energy (extensive)
     qv: ta.wpfloat,  # Water vapor specific humidity
     qliq: ta.wpfloat,  # Specific mass of liquid phases
@@ -123,8 +119,7 @@ def T_from_internal_energy_scalar(
 
 
 @gtx.field_operator
-def _internal_energy(
-    *,
+def _internal_energy(  # noqa: PLR0917
     t: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -157,8 +152,7 @@ def _internal_energy(
 
 
 @gtx.field_operator
-def _internal_energy_scalar(
-    *,
+def _internal_energy_scalar(  # noqa: PLR0917
     t: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
@@ -191,8 +185,7 @@ def _internal_energy_scalar(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def internal_energy(
-    *,
+def internal_energy(  # noqa: PLR0917
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qv: fa.CellKField[ta.wpfloat],  # Specific mass of vapor
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
@@ -378,8 +371,7 @@ def sat_pres_water(
 
 
 @gtx.field_operator
-def _newton_raphson(
-    *,
+def _newton_raphson(  # noqa: PLR0917
     Tx: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     qve: fa.CellKField[ta.wpfloat],

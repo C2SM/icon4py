@@ -75,8 +75,7 @@ def _saturation_adjustment(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def saturation_adjustment(
-    *,
+def saturation_adjustment(  # noqa: PLR0917
     te: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
     q_in: Q,  # Class with humidity, cloud, rain, snow, ice and graupel water

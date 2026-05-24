@@ -54,8 +54,7 @@ def _compute_advection_deepatmo_fields(
 
 
 @gtx.program
-def compute_advection_deepatmo_fields(
-    *,
+def compute_advection_deepatmo_fields(  # noqa: PLR0917
     height_u: fa.KField[ta.wpfloat],
     height_l: fa.KField[ta.wpfloat],
     deepatmo_divh: fa.KField[ta.wpfloat],
