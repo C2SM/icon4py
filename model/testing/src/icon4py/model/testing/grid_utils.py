@@ -32,7 +32,7 @@ def get_grid_manager_from_experiment(
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
-        num_levels=experiment.num_levels,
+        num_levels=experiment.config.vertical_grid.num_levels,
         keep_skip_values=keep_skip_values,
         allocator=allocator,
     )
@@ -103,7 +103,7 @@ def get_grid_geometry(
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
             experiment.grid,
-            num_levels=experiment.num_levels,
+            num_levels=experiment.config.vertical_grid.num_levels,
             keep_skip_values=True,
             allocator=model_backends.get_allocator(backend),
         )

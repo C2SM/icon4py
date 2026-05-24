@@ -37,6 +37,7 @@ lint = [
 ]
 scripts = [
   "lazy-loader>=0.5",
+  "packaging>=24.0",
   "rich>=13.0.0",
   "typer>=0.15",
   "f90nml>=1.5",
@@ -45,7 +46,7 @@ scripts = [
 ]
 test = [
   # workspace members
-  "icon4py-testing~=0.1.0",
+  "icon4py-testing~=0.2.0rc1",
   # external dependencies
   "coverage[toml]>=7.5.0",
   "nox>=2025.5.1",
@@ -79,20 +80,23 @@ classifiers = [
   'Programming Language :: Python :: 3 :: Only',
   'Programming Language :: Python :: 3.10',
   'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: 3.13',
+  'Programming Language :: Python :: 3.14',
   'Programming Language :: Python :: Implementation :: CPython',
   'Topic :: Scientific/Engineering :: Atmospheric Science',
   'Topic :: Scientific/Engineering :: Mathematics',
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  "icon4py-atmosphere-advection~=0.1.0",
-  "icon4py-atmosphere-diffusion~=0.1.0",
-  "icon4py-atmosphere-dycore~=0.1.0",
-  "icon4py-atmosphere-microphysics~=0.1.0",
-  "icon4py-atmosphere-muphys~=0.1.0",
-  "icon4py-common~=0.1.0",
-  "icon4py-driver~=0.1.0",
-  "icon4py-standalone_driver~=0.1.0"
+  "icon4py-atmosphere-advection~=0.2.0rc1",
+  "icon4py-atmosphere-diffusion~=0.2.0rc1",
+  "icon4py-atmosphere-dycore~=0.2.0rc1",
+  "icon4py-atmosphere-microphysics~=0.2.0rc1",
+  "icon4py-atmosphere-muphys~=0.2.0rc1",
+  "icon4py-common~=0.2.0rc1",
+  "icon4py-driver~=0.2.0rc1",
+  "icon4py-standalone_driver~=0.2.0rc1"
 ]
 description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
@@ -100,14 +104,14 @@ name = "icon4py"
 readme = "README.md"
 requires-python = ">=3.10"
 # managed by bump-my-version:
-version = "0.1.0"
+version = "0.2.0rc1"
 
 [project.optional-dependencies]
 all = ["icon4py[distributed,fortran,io,testing,profiling]"]
 cuda12 = ["icon4py-common[cuda12]"]
 cuda13 = ["icon4py-common[cuda13]"]
 distributed = ["icon4py-common[distributed]"]
-fortran = ["icon4py-bindings~=0.1.0"]
+fortran = ["icon4py-bindings~=0.2.0rc1"]
 io = ["icon4py-common[io]"]
 profiling = ['viztracer>=1.1.0']
 rocm7 = ["icon4py-common[rocm7]"]
@@ -120,11 +124,11 @@ Homepage = 'https://github.com/C2SM/icon4py'
 [tool.bumpversion]
 allow_dirty = false
 commit = false
-current_version = "0.1.0"
+current_version = "0.2.0rc1"
 ignore_missing_version = false
 message = 'Bump icon4py version: {current_version} → {new_version}'
-parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
-serialize = ["{major}.{minor}.{patch}"]
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:(?P<pre_l>a|b|rc)(?P<pre_n>\\d+))?"
+serialize = ["{major}.{minor}.{patch}{pre_l}{pre_n}", "{major}.{minor}.{patch}"]
 tag = false
 
 [[tool.bumpversion.files]]
@@ -286,8 +290,7 @@ ignore = [
   'PLR2004',  # [magic-value-comparison]  # TODO(egparedes): activate when possible
   'PLR5501',  # [collapsible-else-if]  # TODO(egparedes): rediscuss in future
   'SIM102',  # [collapsible-if]  # TODO(egparedes): rediscuss in future
-  'TD003',  # [missing-todo-link]
-  'UP038'  # [non-pep604-isinstance]
+  'TD003'  # [missing-todo-link]
 ]
 preview = true  # use only with explicit-preview-rules=true
 select = [

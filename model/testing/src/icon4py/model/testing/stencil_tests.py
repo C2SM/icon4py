@@ -152,13 +152,13 @@ def test_and_benchmark(
             )
             gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
             assert metrics_key is not None, "Metrics key could not be recovered during run."
-            assert metrics_key.startswith(
-                _configured_program.__name__
-            ), f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
+            assert metrics_key.startswith(_configured_program.__name__), (
+                f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
+            )
 
-            assert (
-                len(_configured_program._compiled_programs.compiled_programs) == 1
-            ), "Multiple compiled programs found, cannot extract metrics."
+            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (
+                "Multiple compiled programs found, cannot extract metrics."
+            )
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
             # exclude:
@@ -169,9 +169,9 @@ def test_and_benchmark(
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
                 2 if skip_stenciltest_verification else 3
             )
-            assert (
-                len(compute_samples) > initial_program_iterations_to_skip
-            ), "Not enough samples collected to compute metrics."
+            assert len(compute_samples) > initial_program_iterations_to_skip, (
+                "Not enough samples collected to compute metrics."
+            )
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
@@ -304,7 +304,7 @@ class StencilTest:
         # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
-            cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
+            cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign] # we override with a non-parametrized function
         else:
             cls.static_variant = staticmethod(  # type: ignore[method-assign]
                 pytest.fixture(params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0])(

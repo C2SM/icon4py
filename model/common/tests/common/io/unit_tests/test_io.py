@@ -80,7 +80,7 @@ def test_generate_name(name, expected):
 
 
 def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
-    import uxarray as ux
+    import uxarray as ux  # noqa: PLC0415 [import-outside-top-level]
 
     grid = ux.open_grid(file)
     try:
@@ -145,8 +145,11 @@ def test_io_monitor_write_ugrid_file(test_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, allocator=backend
+    grid = grid_utils.get_grid_manager_from_identifier(
+        definitions.Experiments.EXCLAIM_APE.grid,
+        num_levels=60,
+        keep_skip_values=True,
+        allocator=backend,
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -197,8 +200,11 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
-    grid = grid_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.EXCLAIM_APE, True, backend
+    grid = grid_utils.get_grid_manager_from_identifier(
+        definitions.Experiments.EXCLAIM_APE.grid,
+        num_levels=60,
+        keep_skip_values=True,
+        allocator=backend,
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(

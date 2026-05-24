@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, rank",
+    "experiment_description, rank",
     [
         (definitions.Experiments.GAUSS3D, 0),
     ],
@@ -58,7 +58,7 @@ def test_gauss3d_initial_condition(
     ) = gauss3d.model_initialization_gauss3d(
         icon_grid,
         edge_geometry,
-        dt_utils.get_datapath_for_experiment(experiment, process_props),
+        dt_utils.get_datapath_for_experiment(experiment.description, process_props),
         backend,
         rank,
     )

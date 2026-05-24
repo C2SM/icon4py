@@ -38,31 +38,23 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, model_top_height",
-    [
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0),
-    ],
+    "experiment_description",
+    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
     experiment: definitions.Experiment,
-    model_top_height: ta.wpfloat,
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     icon_grid: icon_grid.IconGrid,
-    lowest_layer_thickness: ta.wpfloat,
     backend: gtx_typing.Backend,
 ):
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
@@ -98,10 +90,7 @@ def test_graupel(
         v=None,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-        ice_stickeff_min=0.075,
-    )
+    graupel_config = experiment.config.graupel
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
         graupel_config=graupel_config,

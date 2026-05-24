@@ -19,29 +19,13 @@ import tempfile
 import textwrap
 from typing import Annotated
 
-import tomllib
 import typer
-from helpers import common
+from helpers import common, pyproject
 
 
 cli = typer.Typer(
     name=__name__.split(".")[-1].replace("_", "-"), no_args_is_help=True, help=__doc__
 )
-
-
-def _read_pyproject(project_root: pathlib.Path) -> dict:
-    with pathlib.Path.open(project_root / "pyproject.toml", "rb") as f:
-        return tomllib.load(f)
-
-
-def _get_workspace_members(pyproject: dict) -> list[str]:
-    return pyproject.get("tool", {}).get("uv", {}).get("workspace", {}).get("members", [])
-
-
-def _get_package_name(member_dir: pathlib.Path) -> str:
-    """Read the package name from a member's pyproject.toml."""
-    data = _read_pyproject(member_dir)
-    return data.get("project", {}).get("name", member_dir.name)
 
 
 def _run_uv_build(
@@ -66,8 +50,8 @@ def _collect_targets(
     packages: list[str] | None,
 ) -> list[tuple[pathlib.Path, str]]:
     """Resolve build targets from optional member paths."""
-    pyproject = _read_pyproject(common.REPO_ROOT)
-    workspace_members = _get_workspace_members(pyproject)
+    root_pyproject = pyproject.read_pyproject(common.REPO_ROOT)
+    workspace_members = pyproject.get_workspace_members(root_pyproject)
 
     if packages:
         member_paths: list[str] = []
@@ -87,9 +71,9 @@ def _collect_targets(
         if normalized_path in seen_paths:
             continue
         seen_paths.add(normalized_path)
-        targets.append((target_path, _get_package_name(target_path)))
+        targets.append((target_path, pyproject.get_package_name(target_path)))
 
-    root_name = pyproject.get("project", {}).get("name", "icon4py")
+    root_name = root_pyproject.get("project", {}).get("name", "icon4py")
     root_path = common.REPO_ROOT
     normalized_root_path = root_path.resolve()
     if normalized_root_path not in seen_paths:
