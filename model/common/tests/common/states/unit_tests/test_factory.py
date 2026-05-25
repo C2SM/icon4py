@@ -198,9 +198,9 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     )
     provider(
         field_name="output_f",
-        factory=height_coordinate_source,
+        field_src=height_coordinate_source,
         backend=height_coordinate_source.backend,
-        grid_provider=height_coordinate_source,
+        grid=height_coordinate_source,
         exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["output_f"]

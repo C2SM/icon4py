@@ -622,12 +622,12 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     exchange.exchange(dims.CellDim, c_bln_avg, stream=decomposition.BLOCK)
 
     return _force_mass_conservation_to_c_bln_avg(
-        c2e2c0,
-        c_bln_avg,
-        cell_areas,
-        cell_owner_mask,
-        divergence_averaging_central_cell_weight,
-        horizontal_start_level_3,
+        c2e2c0=c2e2c0,
+        c_bln_avg=c_bln_avg,
+        cell_areas=cell_areas,
+        cell_owner_mask=cell_owner_mask,
+        divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+        horizontal_start=horizontal_start_level_3,
         exchange=exchange,
     )
 
@@ -651,12 +651,12 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error
     # with the the following. Is it needed?
     return _force_mass_conservation_to_c_bln_avg(
-        c2e2c0,
-        c_bln_avg,
-        cell_areas,
-        cell_owner_mask,
-        divergence_averaging_central_cell_weight,
-        horizontal_start_level_3,
+        c2e2c0=c2e2c0,
+        c_bln_avg=c_bln_avg,
+        cell_areas=cell_areas,
+        cell_owner_mask=cell_owner_mask,
+        divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+        horizontal_start=horizontal_start_level_3,
         exchange=exchange,
     )
 
@@ -1309,12 +1309,12 @@ def compute_lsq_coeffs(
                 for js in range(lsq_dim_stencil):
                     cc_cell[js, :] = array_ns.asarray(
                         projection.diff_on_edges_torus_numpy(
-                            cell_center_x[jc],
-                            cell_center_y[jc],
-                            cell_center_x[ilc_s][js],
-                            cell_center_y[ilc_s][js],
-                            domain_length,
-                            domain_height,
+                            cc_cv_x=cell_center_x[jc],
+                            cc_cv_y=cell_center_y[jc],
+                            cc_cell_x=cell_center_x[ilc_s][js],
+                            cc_cell_y=cell_center_y[ilc_s][js],
+                            domain_length=domain_length,
+                            domain_height=domain_height,
                         )
                     )
                 z_dist_g[jc, :, :] = cc_cell - cc_cv
@@ -1322,25 +1322,25 @@ def compute_lsq_coeffs(
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_dim_stencil, lsq_wgt_exp)
 
     z_lsq_mat_c = compute_z_lsq_mat_c(
-        cell_owner_mask,
-        lsq_weights_c,
-        z_dist_g,
-        start_idx,
-        min_rlcell_int,
-        lsq_dim_unk,
-        lsq_dim_c,
+        cell_owner_mask=cell_owner_mask,
+        lsq_weights_c=lsq_weights_c,
+        z_dist_g=z_dist_g,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        lsq_dim_unk=lsq_dim_unk,
+        lsq_dim_c=lsq_dim_c,
     )
 
     exchange.exchange(dims.CellDim, lsq_weights_c, stream=decomposition.BLOCK)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
-        cell_owner_mask,
-        z_lsq_mat_c,
-        lsq_weights_c,
-        start_idx,
-        min_rlcell_int,
-        lsq_dim_unk,
-        lsq_dim_c,
+        cell_owner_mask=cell_owner_mask,
+        z_lsq_mat_c=z_lsq_mat_c,
+        lsq_weights_c=lsq_weights_c,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        lsq_dim_unk=lsq_dim_unk,
+        lsq_dim_c=lsq_dim_c,
     )
     exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 0, :], stream=decomposition.BLOCK)
     exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 1, :], stream=decomposition.BLOCK)

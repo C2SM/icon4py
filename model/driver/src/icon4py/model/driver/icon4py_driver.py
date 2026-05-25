@@ -174,12 +174,12 @@ class TimeLoop:
 
             timer.start()
             self._integrate_one_time_step(
-                diffusion_diagnostic_state,
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
-                prep_adv,
-                second_order_divdamp_factor,
-                do_prep_adv,
+                diffusion_diagnostic_state=diffusion_diagnostic_state,
+                solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+                prognostic_states=prognostic_states,
+                prep_adv=prep_adv,
+                second_order_divdamp_factor=second_order_divdamp_factor,
+                do_prep_adv=do_prep_adv,
             )
             device_utils.sync(self._allocator)
             timer.capture()
@@ -212,11 +212,11 @@ class TimeLoop:
         # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
-            solve_nonhydro_diagnostic_state,
-            prognostic_states,
-            prep_adv,
-            second_order_divdamp_factor,
-            do_prep_adv,
+            solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+            prognostic_states=prognostic_states,
+            prep_adv=prep_adv,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            do_prep_adv=do_prep_adv,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
@@ -293,8 +293,8 @@ class TimeLoop:
             )
 
             self.solve_nonhydro.time_step(
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
+                diagnostic_state_nh=solve_nonhydro_diagnostic_state,
+                prognostic_states=prognostic_states,
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
@@ -591,12 +591,12 @@ def icon4py_driver(
     ds: DriverStates
     dp: DriverParams
     time_loop, ds, dp = initialize(
-        pathlib.Path(input_path),
-        process_props,
-        serialization_type,
-        experiment_type,
-        pathlib.Path(grid_file),
-        backend_like,
+        file_path=pathlib.Path(input_path),
+        process_props=process_props,
+        serialization_type=serialization_type,
+        experiment_type=experiment_type,
+        grid_file=pathlib.Path(grid_file),
+        backend_like=backend_like,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(
@@ -609,11 +609,11 @@ def icon4py_driver(
     log.info("time loop: START")
 
     time_loop.time_integration(
-        ds.diffusion_diagnostic,
-        ds.solve_nonhydro_diagnostic,
-        ds.prognostics,
-        ds.prep_advection_prognostic,
-        dp.second_order_divdamp_factor,
+        diffusion_diagnostic_state=ds.diffusion_diagnostic,
+        solve_nonhydro_diagnostic_state=ds.solve_nonhydro_diagnostic,
+        prognostic_states=ds.prognostics,
+        prep_adv=ds.prep_advection_prognostic,
+        second_order_divdamp_factor=dp.second_order_divdamp_factor,
         do_prep_adv=False,
         profiling=driver_config.ProfilingConfig() if enable_profiling else None,
     )

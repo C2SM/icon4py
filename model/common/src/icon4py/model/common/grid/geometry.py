@@ -814,7 +814,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
             input_fields = []
             for p in self._pairs:
                 t = tuple(
-                    [self._wrapped_provider(name, field_src, backend, grid, exchange) for name in p]
+                    [
+                        self._wrapped_provider(
+                            field_name=name,
+                            field_src=field_src,
+                            backend=backend,
+                            grid=grid,
+                            exchange=exchange,
+                        )
+                        for name in p
+                    ]
                 )
                 input_fields.append(t)
             sparse_fields = self.func(input_fields, backend=backend)

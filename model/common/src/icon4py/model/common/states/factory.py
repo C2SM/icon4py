@@ -240,7 +240,13 @@ class FieldSource(GridProvider, Protocol):
                         f"Field {field_name} not provided by f{provider.func.__name__}."
                     )
 
-                buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
+                buffer = provider(
+                    field_name=field_name,
+                    field_src=self._sources,
+                    backend=self.backend,
+                    grid=self,
+                    exchange=self._exchange,
+                )
                 return (
                     buffer
                     if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
@@ -597,13 +603,13 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         self,
         *,
         field_name: str,
-        factory: FieldSource | None,
+        field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
-        grid_provider: GridProvider,
+        grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ):
         if any([f is None for f in self.fields.values()]):
-            self._compute(factory, backend, grid_provider)
+            self._compute(field_src, backend, grid)
             self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
 
@@ -683,14 +689,14 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self,
         *,
         field_name: str,
-        factory: FieldSource,
+        field_src: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             log.info(f"computing field {field_name}")
-            self._compute(factory, backend, grid)
+            self._compute(field_src, backend, grid)
             exchangeable_fields = {
                 name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
             }

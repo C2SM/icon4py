@@ -467,7 +467,12 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
     ]
     for if_stmt_node in if_stmt_nodes:
         _graupel_run_self_copy_removal_inside_if_stmt(
-            sdfg, st, scan_nsdfg_node, scan_compute_st, scan_update_st, if_stmt_node
+            sdfg=sdfg,
+            state=st,
+            scan_node=scan_nsdfg_node,
+            scan_compute_st=scan_compute_st,
+            scan_update_st=scan_update_st,
+            if_stmt_node=if_stmt_node,
         )
 
     for input_access_nodes in ["te", "q_in_2", "q_in_3", "q_in_4", "q_in_5"]:
