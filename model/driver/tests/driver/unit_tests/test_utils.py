@@ -40,16 +40,16 @@ def test_hydrostatic_adjustment_ndarray(backend):
 
     # Call the function
     r_rho, r_exner, r_theta_v = functools.partial(utils.hydrostatic_adjustment_ndarray)(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho,
-        exner,
-        theta_v,
-        num_levels,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        rho=rho,
+        exner=exner,
+        theta_v=theta_v,
+        num_levels=num_levels,
     )
 
     assert r_rho.shape == (num_cells, num_levels)
@@ -97,16 +97,16 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
 
     # Call the function
     r_rho, r_exner = utils.hydrostatic_adjustment_constant_thetav_ndarray(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho,
-        exner,
-        theta_v,
-        num_levels,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        rho=rho,
+        exner=exner,
+        theta_v=theta_v,
+        num_levels=num_levels,
     )
 
     assert r_rho.shape == (num_cells, num_levels)
