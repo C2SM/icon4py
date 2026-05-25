@@ -55,12 +55,12 @@ def test_jabw_initial_condition(
         prognostic_state_now,
         _,
     ) = jabw.model_initialization_jabw(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        dt_utils.get_datapath_for_experiment(experiment.description, process_props),
-        backend,
-        rank,
+        grid=icon_grid,
+        cell_param=cell_geometry,
+        edge_param=edge_geometry,
+        path=dt_utils.get_datapath_for_experiment(experiment.description, process_props),
+        backend=backend,
+        rank=rank,
     )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion

@@ -324,12 +324,12 @@ def test_run_timeloop_single_step(
     prognostic_states = common_utils.TimeStepPair(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
-        diffusion_diagnostic_state,
-        nonhydro_diagnostic_state,
-        prognostic_states,
-        prep_adv,
-        sp.divdamp_fac_o2(),
-        do_prep_adv,
+        diffusion_diagnostic_state=diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state=nonhydro_diagnostic_state,
+        prognostic_states=prognostic_states,
+        prep_adv=prep_adv,
+        second_order_divdamp_factor=sp.divdamp_fac_o2(),
+        do_prep_adv=do_prep_adv,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

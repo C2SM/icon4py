@@ -428,14 +428,14 @@ def initialize(
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(process_props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        grid,
-        config.diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        edge_geometry,
-        cell_geometry,
+        grid=grid,
+        config=config.diffusion_config,
+        params=diffusion_params,
+        vertical_grid=vertical_geometry,
+        metric_state=diffusion_metric_state,
+        interpolation_state=diffusion_interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
         exchange=exchange,
         backend=backend_like,
     )
