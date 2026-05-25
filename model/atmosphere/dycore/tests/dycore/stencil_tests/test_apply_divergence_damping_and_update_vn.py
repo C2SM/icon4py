@@ -86,7 +86,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
-        **kwargs,
+        **kwargs: object,
     ) -> dict:
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 

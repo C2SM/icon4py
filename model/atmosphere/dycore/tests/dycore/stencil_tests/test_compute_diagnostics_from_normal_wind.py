@@ -209,7 +209,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
-        **kwargs,
+        **kwargs: object,
     ) -> dict:
         initial_tangential_wind = tangential_wind.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
