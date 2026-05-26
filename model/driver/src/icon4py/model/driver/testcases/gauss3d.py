@@ -68,7 +68,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
 
     allocator = model_backends.get_allocator(backend)
     data_provider = sb.IconSerialDataProvider(
-        backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+        backend=backend, fname_prefix="icon_pydycore", path=str(path.absolute()), do_print=False, mpi_rank=rank
     )
 
     xp = data_alloc.import_array_ns(allocator)
