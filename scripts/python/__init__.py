@@ -5,11 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+#
 
-from typing import Any
-
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-def dummy_exchange_with_bound_dim(*field: data_alloc.NDArray, stream: Any = None) -> None:
-    return None
+"""Python dev-scripts package."""

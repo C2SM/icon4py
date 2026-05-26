@@ -12,7 +12,6 @@ import logging
 import pathlib
 import sys
 import time
-from types import ModuleType
 from typing import Any, Literal
 
 import gt4py.next as gtx
@@ -43,6 +42,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 from icon4py.model.testing import config as testing_config
 
@@ -122,6 +122,7 @@ def create_static_field_factories(
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
+        config=interpolation_factory.InterpolationConfig(),
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
@@ -139,12 +140,14 @@ def create_static_field_factories(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=constants.RayleighType.KLEMP,
-        rayleigh_coeff=0.1,
-        exner_expol=1.0 / 3.0,
-        vwind_offctr=0.15,
-        thslp_zdiffu=0.025,
-        thhgtd_zdiffu=200.0,
+        config=metrics_factory.MetricsConfig(
+            rayleigh_type=constants.RayleighType.KLEMP,
+            rayleigh_coeff=0.1,
+            exner_expol=1.0 / 3.0,
+            vwind_offctr=0.15,
+            thslp_zdiffu=0.025,
+            thhgtd_zdiffu=200.0,
+        ),
         exchange=exchange,
         global_reductions=global_reductions,
     )
@@ -282,7 +285,7 @@ def initialize_granules(
             metrics_attributes.THETA_REF_IC
         ),
         d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC2_MC),
         reference_rho_at_edges_on_model_levels=metrics_field_source.get(
             metrics_attributes.RHO_REF_ME
         ),
@@ -382,8 +385,9 @@ def initialize_granules(
 
 
 def find_maximum_from_field(
-    input_field: gtx.Field, array_ns: ModuleType
+    input_field: gtx.Field,
 ) -> tuple[tuple[int, ...], float]:
+    array_ns = data_alloc.array_namespace(input_field.ndarray)
     max_indices = array_ns.unravel_index(
         array_ns.abs(input_field.ndarray).argmax(),
         input_field.ndarray.shape,

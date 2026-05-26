@@ -14,7 +14,7 @@ from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import icon, vertical as v_grid
 from icon4py.model.testing import definitions, parallel_helpers, serialbox
 
@@ -22,16 +22,13 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 _log = logging.getLogger(__file__)
 
 
 @pytest.mark.mpi
 @pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -42,26 +39,20 @@ _log = logging.getLogger(__file__)
         (definitions.Experiments.JW, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_parallel_diffusion(
     experiment: definitions.Experiment,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
-    ndyn_substeps: int,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,
     savepoint_diffusion_init: serialbox.IconDiffusionInitSavepoint,
     savepoint_diffusion_exit: serialbox.IconDiffusionExitSavepoint,
     grid_savepoint: serialbox.IconGridSavepoint,
     metric_state: diffusion_states.DiffusionMetricState,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     caplog: Any,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -71,9 +62,9 @@ def test_parallel_diffusion(
         f"rank={process_props.rank}/{process_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
     )
     _log.info(
-        f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
-        f"local edges = {decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
-        f"local vertices = {decomposition_info.global_index(dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL).shape}"
+        f"local cells = {decomposition_info.global_index(dims.CellDim, decomp_defs.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(dims.VertexDim, decomp_defs.DecompositionInfo.EntryType.ALL).shape}"
     )
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}:  GHEX context setup: from {process_props.comm_name} with {process_props.comm_size} nodes"
@@ -82,23 +73,17 @@ def test_parallel_diffusion(
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = experiment.config.diffusion
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}:  setup: using {process_props.comm_name} with {process_props.comm_size} nodes"
     )
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
 
     diffusion_params = diffusion_.DiffusionParams(config)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    exchange = decomposition.create_exchange(process_props, decomposition_info)
+    exchange = decomp_defs.create_exchange(process_props, decomposition_info)
     diffusion = diffusion_.Diffusion(
         grid=icon_grid,
         config=config,

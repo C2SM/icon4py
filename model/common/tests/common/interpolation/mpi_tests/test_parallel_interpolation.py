@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -27,6 +27,7 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_description,
     geometry_from_savepoint,
     grid_savepoint,
     interpolation_factory_from_savepoint,
@@ -40,9 +41,6 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 @pytest.mark.level("integration")
@@ -69,8 +67,8 @@ def test_distributed_interpolation_with_custom_tolerance(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -82,9 +80,9 @@ def test_distributed_interpolation_with_custom_tolerance(
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(
-        field, field_ref, atol=atol, rtol=rtol
-    ), f"comparison of {attrs_name} failed"
+    assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
+        f"comparison of {attrs_name} failed"
+    )
 
 
 # attrs.E_FLX_AVG should work here
@@ -108,8 +106,8 @@ def test_distributed_interpolation_fields(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -131,8 +129,8 @@ def test_distributed_interpolation_grg(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
@@ -165,8 +163,8 @@ def test_distributed_interpolation_geofac_rot(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
@@ -178,9 +176,9 @@ def test_distributed_interpolation_geofac_rot(
     )
     field_ref = interpolation_savepoint.geofac_rot().asnumpy()
     field = factory.get(attrs.GEOFAC_ROT).asnumpy()
-    assert test_utils.dallclose(
-        field[horizontal_start:, :], field_ref[horizontal_start:, :]
-    ), f"comparison of {attrs.GEOFAC_ROT} failed"
+    assert test_utils.dallclose(field[horizontal_start:, :], field_ref[horizontal_start:, :]), (
+        f"comparison of {attrs.GEOFAC_ROT} failed"
+    )
 
 
 @pytest.mark.datatest
@@ -201,8 +199,8 @@ def test_distributed_interpolation_rbf(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -227,8 +225,8 @@ def test_distributed_interpolation_lsq_pseudoinv(
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)

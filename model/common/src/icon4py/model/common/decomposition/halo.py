@@ -108,9 +108,9 @@ class IconLikeHaloConstructor(HaloConstructor):
             dims.V2E,
         ]
         for d in relevant_dimension:
-            assert (
-                d.value in self._connectivities
-            ), f"Table for {d} is missing from the neighbor table array."
+            assert d.value in self._connectivities, (
+                f"Table for {d} is missing from the neighbor table array."
+            )
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
@@ -197,12 +197,12 @@ class IconLikeHaloConstructor(HaloConstructor):
             # avoid including cells that may not be neighbors.
             neighbors = neighbors[neighbors >= 0]
             owning_ranks = cell_to_rank[neighbors]
-            assert (
-                self._xp.unique(owning_ranks).size > 1
-            ), f"rank {self._process_props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
-            assert (
-                self._process_props.rank in owning_ranks
-            ), f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
+            assert self._xp.unique(owning_ranks).size > 1, (
+                f"rank {self._process_props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
+            )
+            assert self._process_props.rank in owning_ranks, (
+                f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
+            )
             # assign the index to the rank with the higher rank
             updated_owner_mask[local_index] = max(owning_ranks) <= self._process_props.rank
         return updated_owner_mask
@@ -501,7 +501,6 @@ def get_halo_constructor(
 def global_to_local(
     global_indices: data_alloc.NDArray,
     indices_to_translate: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """Translate an array of global indices into rank-local ones.
 
@@ -510,6 +509,7 @@ def global_to_local(
         indices_to_translate: the array to map to local indices
 
     """
+    array_ns = data_alloc.array_namespace(global_indices)
     sorter = array_ns.argsort(global_indices)
 
     mask = array_ns.isin(indices_to_translate, global_indices)
