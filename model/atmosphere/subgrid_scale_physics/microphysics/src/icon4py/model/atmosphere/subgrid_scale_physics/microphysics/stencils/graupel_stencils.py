@@ -356,7 +356,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
             * exp(power_law_exponent_for_rain_mean_fall_speed * log(rhoqr))
             * crho1o2
         )
-        # Prevent terminal fall speed of snow from being zero at the surface level
+        # Prevent terminal fall speed of rain from being zero at the surface level
         if is_surface:
             terminal_velocity = maximum(
                 terminal_velocity, MicrophysicsConstants.MINIMUM_RAIN_FALL_SPEED
@@ -377,7 +377,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
             * exp(MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED * log(rhoqg))
             * crho1o2
         )
-        # Prevent terminal fall speed of snow from being zero at the surface level
+        # Prevent terminal fall speed of graupel from being zero at the surface level
         if is_surface:
             terminal_velocity = maximum(
                 terminal_velocity, MicrophysicsConstants.MINIMUM_GRAUPEL_FALL_SPEED

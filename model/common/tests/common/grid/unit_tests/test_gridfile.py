@@ -25,9 +25,13 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
+    grid_description,
     grid_savepoint,
     process_props,
 )
+
+from .. import utils
 
 
 if TYPE_CHECKING:
@@ -36,23 +40,15 @@ if TYPE_CHECKING:
 
 @pytest.mark.with_netcdf
 def test_grid_file_dimension() -> None:
-    grid_descriptor = definitions.Grids.R02B04_GLOBAL
-    global_grid_file = str(dt_utils.get_grid_filepath(grid_descriptor))
+    grid_description = definitions.Grids.R02B04_GLOBAL
+    global_grid_file = str(dt_utils.get_grid_filepath(grid_description))
     parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
         parser.open()
-        assert (
-            parser.dimension(gridfile.DynamicDimension.CELL_NAME)
-            == grid_descriptor.params.num_cells
-        )
-        assert (
-            parser.dimension(gridfile.DynamicDimension.VERTEX_NAME)
-            == grid_descriptor.params.num_vertices
-        )
-        assert (
-            parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
-            == grid_descriptor.params.num_edges
-        )
+        ref = utils.GRID_REFERENCE_VALUES[grid_description.name]
+        assert parser.dimension(gridfile.DynamicDimension.CELL_NAME) == ref["num_cells"]
+        assert parser.dimension(gridfile.DynamicDimension.VERTEX_NAME) == ref["num_vertices"]
+        assert parser.dimension(gridfile.DynamicDimension.EDGE_NAME) == ref["num_edges"]
     except Exception:
         pytest.fail()
     finally:
@@ -84,8 +80,8 @@ def test_grid_file_vertex_cell_edge_dimensions(
 
 
 @pytest.mark.parametrize("apply_offset", (True, False))
-def test_int_variable(experiment: definitions.Experiment, apply_offset: bool) -> None:
-    file = dt_utils.get_grid_filepath(experiment.grid)
+def test_int_variable(grid_description: definitions.GridDescription, apply_offset: bool) -> None:
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
@@ -108,8 +104,10 @@ _index_selection: Iterable[list[int]] = [
     "selection",
     _index_selection,
 )
-def test_index_read_for_1d_fields(experiment: definitions.Experiment, selection: list[int]) -> None:
-    file = dt_utils.get_grid_filepath(experiment.grid)
+def test_index_read_for_1d_fields(
+    grid_description: definitions.GridDescription, selection: list[int]
+) -> None:
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.variable(gridfile.CoordinateName.CELL_LATITUDE)
@@ -133,12 +131,12 @@ def test_index_read_for_1d_fields(experiment: definitions.Experiment, selection:
 )
 @pytest.mark.parametrize("apply_offset", (True, False))
 def test_index_read_for_2d_connectivity(
-    experiment: definitions.Experiment,
+    grid_description: definitions.GridDescription,
     selection: list[int],
     field: gridfile.FieldName,
     apply_offset: bool,
 ) -> None:
-    file = dt_utils.get_grid_filepath(experiment.grid)
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.int_variable(field, transpose=True, apply_offset=apply_offset)
