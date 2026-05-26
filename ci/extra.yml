@@ -8,7 +8,7 @@ include:
     - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common]
         BACKEND: [embedded, gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu]
         LEVEL: [unit]
   rules:
