@@ -70,7 +70,11 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         variables (now and next).
     """
     data_provider = sb.IconSerialDataProvider(
-        backend=backend, fname_prefix="icon_pydycore", path=str(path.absolute()), do_print=False, mpi_rank=rank
+        backend=backend,
+        fname_prefix="icon_pydycore",
+        path=str(path.absolute()),
+        do_print=False,
+        mpi_rank=rank,
     )
 
     allocator = model_backends.get_allocator(backend)
