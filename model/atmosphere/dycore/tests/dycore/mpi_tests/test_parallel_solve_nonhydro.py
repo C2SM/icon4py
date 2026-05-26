@@ -168,12 +168,13 @@ def test_run_solve_nonhydro_single_step(
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_states.next.vn.asnumpy(),
+        atol=1e-14,
         rtol=1e-10,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_states.next.w.asnumpy(),
-        atol=8e-14,
+        atol=1e-14,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
