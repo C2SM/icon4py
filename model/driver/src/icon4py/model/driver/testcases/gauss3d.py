@@ -160,16 +160,16 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     # Compute hydrostatically balanced exner, by integrating the (discretized!)
     # 3rd equation of motion under the assumption thetav=const.
     rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho_ndarray,
-        exner_ndarray,
-        theta_v_ndarray,
-        num_levels,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        rho=rho_ndarray,
+        exner=exner_ndarray,
+        theta_v=theta_v_ndarray,
+        num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
@@ -206,14 +206,14 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         u,
         v,
     ) = testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
-        vn_ndarray,
-        w_ndarray,
-        exner_ndarray,
-        rho_ndarray,
-        theta_v_ndarray,
-        temperature_ndarray,
-        pressure_ndarray,
-        pressure_ifc_ndarray,
+        vn_ndarray=vn_ndarray,
+        w_ndarray=w_ndarray,
+        exner_ndarray=exner_ndarray,
+        rho_ndarray=rho_ndarray,
+        theta_v_ndarray=theta_v_ndarray,
+        temperature_ndarray=temperature_ndarray,
+        pressure_ndarray=pressure_ndarray,
+        pressure_ifc_ndarray=pressure_ifc_ndarray,
         grid=grid,
         allocator=allocator,
     )
