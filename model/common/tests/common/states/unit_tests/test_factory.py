@@ -30,6 +30,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     metrics_savepoint,
     process_props,
@@ -61,6 +62,7 @@ class SimpleFieldSource(factory.FieldSource):
         self._vertical_grid = vertical_grid
         self._metadata = {}
         self._initial_data = data_
+        self._exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
 
         for key, value in data_.items():
             self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
@@ -146,7 +148,9 @@ def height_coordinate_source(
         "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
     }
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=experiment.num_levels), vct_a, vct_b
+        v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
+        vct_a,
+        vct_b,
     )
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid
@@ -216,9 +220,8 @@ def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFiel
     provider = factory.ProgramFieldProvider(
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError, match="Missing dependency: 'height_coordinate'"):
         cell_coordinate_source.register_provider(provider)
-        assert "not provided by source " in err.value  # type: ignore[operator]
 
 
 @pytest.mark.datatest
@@ -300,9 +303,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
     composite = factory.CompositeSource(
         test_source, (cell_coordinate_source, height_coordinate_source)
     )
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError, match="Field 'alice' not provided by the source"):
         composite.get("alice")
-        assert "not provided by source " in err.value  # type: ignore[operator]
 
 
 def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:

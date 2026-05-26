@@ -13,7 +13,16 @@ import abc
 import copy
 import functools
 from collections.abc import Callable, Generator
-from typing import ClassVar, Concatenate, Final, ParamSpec, Protocol, TypeVar, runtime_checkable
+from typing import (
+    ClassVar,
+    Concatenate,
+    Final,
+    Generic,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 
 @runtime_checkable
@@ -91,7 +100,7 @@ class named_property[C, T](property):
         return result
 
 
-class Pair[T]:
+class Pair(Generic[T]):  # noqa: PLW1641 [eq-without-hash]
     """
     Generic class representing a pair of values.
 
@@ -232,7 +241,7 @@ class TimeStepPair(Pair[T]):
 P = ParamSpec("P")
 
 
-def chainable[T, **P](
+def chainable(
     method_fn: Callable[Concatenate[T, P], None],
 ) -> Callable[Concatenate[T, P], T]:
     """

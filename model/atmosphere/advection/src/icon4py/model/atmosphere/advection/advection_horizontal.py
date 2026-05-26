@@ -53,7 +53,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 
-class HorizontalFluxLimiter:
+class HorizontalFluxLimiter(ABC):
     """Class that limits the horizontal finite volume numerical flux."""
 
     @abstractmethod
@@ -86,12 +86,12 @@ class PositiveDefinite(HorizontalFluxLimiter):
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+        exchange: decomposition.ExchangeRuntime,
     ):
         self._grid = grid
         self._interpolation_state = interpolation_state
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -480,7 +480,7 @@ class SemiLagrangian(FiniteVolume):
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_exchange,
+        exchange: decomposition.ExchangeRuntime,
     ):
         log.debug("horizontal advection class init - start")
 
@@ -492,7 +492,7 @@ class SemiLagrangian(FiniteVolume):
         self._edge_params = edge_params
         self._cell_params = cell_params
         self._backend = backend
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
