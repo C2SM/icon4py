@@ -300,7 +300,7 @@ class PrecomputedFieldProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction
     and returns it upon provider.get(field_name)."""
 
-    def __init__(self, *, fields: dict[str, state_utils.GTXFieldType]):
+    def __init__(self, fields: dict[str, state_utils.GTXFieldType]):
         self._fields = fields
 
     @property
