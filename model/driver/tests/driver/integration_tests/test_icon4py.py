@@ -347,7 +347,7 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=9e-14,
+        atol=1e-13,
     )
 
     assert test_utils.dallclose(

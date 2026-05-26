@@ -396,7 +396,7 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
-dace = {index = "gridtools"}
+# dace = {index = "gridtools"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
@@ -410,7 +410,6 @@ icon4py-driver = {workspace = true}
 icon4py-standalone_driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
-serialbox4py = {index = "test.pypi"}
 
 [tool.uv.workspace]
 members = [
