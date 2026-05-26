@@ -21,19 +21,20 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.math.vector_operations import dot_product_on_edges
 
 
 @gtx.field_operator
 def arc_length_on_edges(
-    x0: fa.EdgeField[ta.wpfloat],
-    x1: fa.EdgeField[ta.wpfloat],
-    y0: fa.EdgeField[ta.wpfloat],
-    y1: fa.EdgeField[ta.wpfloat],
-    z0: fa.EdgeField[ta.wpfloat],
-    z1: fa.EdgeField[ta.wpfloat],
-    radius: ta.wpfloat,
+    x0: fa.EdgeField[wpfloat],
+    x1: fa.EdgeField[wpfloat],
+    y0: fa.EdgeField[wpfloat],
+    y1: fa.EdgeField[wpfloat],
+    z0: fa.EdgeField[wpfloat],
+    z1: fa.EdgeField[wpfloat],
+    radius: wpfloat,
 ):
     """
     Compute the arc length between two points on the sphere.
@@ -58,13 +59,13 @@ def arc_length_on_edges(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def diff_on_edges_torus(
-    x0: fa.EdgeField[ta.wpfloat],
-    x1: fa.EdgeField[ta.wpfloat],
-    y0: fa.EdgeField[ta.wpfloat],
-    y1: fa.EdgeField[ta.wpfloat],
-    domain_length: ta.wpfloat,
-    domain_height: ta.wpfloat,
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    x0: fa.EdgeField[wpfloat],
+    x1: fa.EdgeField[wpfloat],
+    y0: fa.EdgeField[wpfloat],
+    y1: fa.EdgeField[wpfloat],
+    domain_length: wpfloat,
+    domain_height: wpfloat,
+) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
     """
     Compute the difference between two points on the torus.
 
@@ -100,13 +101,13 @@ def diff_on_edges_torus(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def distance_on_edges_torus(
-    x0: fa.EdgeField[ta.wpfloat],
-    x1: fa.EdgeField[ta.wpfloat],
-    y0: fa.EdgeField[ta.wpfloat],
-    y1: fa.EdgeField[ta.wpfloat],
-    domain_length: ta.wpfloat,
-    domain_height: ta.wpfloat,
-) -> fa.EdgeField[ta.wpfloat]:
+    x0: fa.EdgeField[wpfloat],
+    x1: fa.EdgeField[wpfloat],
+    y0: fa.EdgeField[wpfloat],
+    y1: fa.EdgeField[wpfloat],
+    domain_length: wpfloat,
+    domain_height: wpfloat,
+) -> fa.EdgeField[wpfloat]:
     """
     Compute the distance between two points on the torus.
 

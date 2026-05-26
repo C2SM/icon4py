@@ -20,6 +20,7 @@ from gt4py import next as gtx
 from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 def compute_sqrt(
@@ -33,7 +34,7 @@ def compute_sqrt(
 
 
 @gtx.field_operator
-def invert_edge_field(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
+def invert_edge_field(f: fa.EdgeField[wpfloat]) -> fa.EdgeField[wpfloat]:
     """
     Invert values.
     Args:
@@ -42,13 +43,13 @@ def invert_edge_field(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     Returns:
         1/f where f is not zero.
     """
-    return where(f != ta.wpfloat(0.0), ta.wpfloat(1.0) / f, f)
+    return where(f != wpfloat(0.0), wpfloat(1.0) / f, f)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_inverse_on_edges(
-    f: fa.EdgeField[ta.wpfloat],
-    f_inverse: fa.EdgeField[ta.wpfloat],
+    f: fa.EdgeField[wpfloat],
+    f_inverse: fa.EdgeField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):

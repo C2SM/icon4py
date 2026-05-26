@@ -26,7 +26,7 @@ def main(
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
     icon4py_backend: Annotated[
-        str | model_backends.BackendLike,
+        str,
         typer.Option(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
         ),

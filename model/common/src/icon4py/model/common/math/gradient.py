@@ -15,7 +15,7 @@ finite difference approximations.
 
 from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_aliases as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2V
 
 
