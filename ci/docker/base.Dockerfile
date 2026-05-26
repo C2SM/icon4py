@@ -38,27 +38,29 @@ RUN rustc --version && which rustc && cargo --version && which cargo
 
 # Install Bencher for performance monitoring
 # Update the following comment to trigger a rebuild  to update the CLI:
-# last update: 2025-11-25
+# last update: 2026-5-11
 # This is necessary because the cloud version and the CLI version have to match
 # but obviously, version changes do not register in the Dockerfile hash.
 RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
 RUN bencher --version && which bencher
 
 # Install NVIDIA HPC SDK for nvfortran
+ARG ARCH=aarch64
 ARG HPC_SDK_VERSION=24.11
-ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_aarch64_cuda_12.6
+ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6
 ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
+ENV NVHPC_SILENT=true
+ENV NVHPC_INSTALL_DIR=/opt/nvidia/hpc_sdk
+ENV NVHPC_INSTALL_TYPE=single
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     mkdir -p /opt/nvidia && \
     tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
-    rm /tmp/nvhpc.tar.gz
-
-ENV NVHPC_SILENT=1
-RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
+    rm /tmp/nvhpc.tar.gz && \
+    cd /opt/nvidia/${HPC_SDK_NAME} && ./install && \
+    rm -rf /opt/nvidia/${HPC_SDK_NAME}
 
 # Set environment variables
-ARG ARCH=aarch64
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
 # The variable CUDA_PATH is used by cupy to find the cuda toolchain
 ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
@@ -93,5 +95,6 @@ RUN pyenv update && \
     pyenv global ${PYVERSION}
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
+ENV PYENV_VERSION=${PYVERSION}
 
 RUN pip install --upgrade pip setuptools wheel uv nox clang-format

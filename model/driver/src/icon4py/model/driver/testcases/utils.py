@@ -245,7 +245,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
     temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
-    virutal_temperature = gtx.as_field(
+    virtual_temperature = gtx.as_field(
         (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
     )
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
@@ -275,7 +275,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
         rho_next,
         theta_v_next,
         temperature,
-        virutal_temperature,
+        virtual_temperature,
         pressure,
         pressure_ifc,
         u,

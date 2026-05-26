@@ -12,14 +12,16 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import exchange_utils, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -87,7 +89,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        exchange=decomposition.single_node_exchange,
     )
 
     assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_ref.asnumpy())
