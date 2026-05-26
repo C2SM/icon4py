@@ -73,22 +73,22 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
 
         dvt_tang = (
             -(
-                u_vert_e2c2v[:, 0] * dual_normal_vert_x
-                + v_vert_e2c2v[:, 0] * dual_normal_vert_y
+                u_vert_e2c2v[:, 0] * dual_normal_vert_x[:, 0]
+                + v_vert_e2c2v[:, 0] * dual_normal_vert_y[:, 0]
             )
         ) + (
-            u_vert_e2c2v[:, 1] * dual_normal_vert_x
-            + v_vert_e2c2v[:, 1] * dual_normal_vert_y
+            u_vert_e2c2v[:, 1] * dual_normal_vert_x[:, 1]
+            + v_vert_e2c2v[:, 1] * dual_normal_vert_y[:, 1]
         )
 
         dvt_norm = (
             -(
-                u_vert_e2c2v[:, 2] * dual_normal_vert_x
-                + v_vert_e2c2v[:, 2] * dual_normal_vert_y
+                u_vert_e2c2v[:, 2] * dual_normal_vert_x[:, 2]
+                + v_vert_e2c2v[:, 2] * dual_normal_vert_y[:, 2]
             )
         ) + (
-            u_vert_e2c2v[:, 3] * dual_normal_vert_x
-            + v_vert_e2c2v[:, 3] * dual_normal_vert_y
+            u_vert_e2c2v[:, 3] * dual_normal_vert_x[:, 3]
+            + v_vert_e2c2v[:, 3] * dual_normal_vert_y[:, 3]
         )
 
         kh_smag_1 = (
@@ -192,10 +192,10 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
             grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
         dual_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dtype=ta.wpfloat
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
         dual_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dtype=ta.wpfloat
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
 
         z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
