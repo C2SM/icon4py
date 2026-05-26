@@ -29,7 +29,7 @@ dependencies = [
   # workspace members
   "icon4py-common~=0.2.0rc1",
   # external dependencies
-  "gt4py==1.1.9",
+  "gt4py==1.1.10",
   'packaging>=20.0'
 ]
 description = "ICON dynamical core."
