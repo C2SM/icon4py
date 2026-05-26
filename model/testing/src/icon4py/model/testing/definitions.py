@@ -13,6 +13,8 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
 
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
@@ -24,8 +26,6 @@ from icon4py.model.testing import config
 
 
 if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
     from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
         microphysics_options as mphy_options,
         single_moment_six_class_gscp_graupel as graupel,
@@ -258,8 +258,6 @@ def construct_graupel_config(
 def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
 ) -> diffusion.DiffusionConfig:
-    from icon4py.model.atmosphere.diffusion import diffusion
-
     if experiment == Experiments.MCH_CH_R04B09:
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
@@ -317,8 +315,6 @@ def construct_diffusion_config(
 
 
 def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
-    from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-
     if experiment == Experiments.MCH_CH_R04B09:
         return solve_nh.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,

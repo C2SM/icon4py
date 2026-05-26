@@ -17,7 +17,6 @@ from typing import (
     ClassVar,
     Concatenate,
     Final,
-    Generic,
     ParamSpec,
     Protocol,
     TypeVar,
@@ -100,7 +99,7 @@ class named_property[C, T](property):
         return result
 
 
-class Pair(Generic[T]):  # noqa: PLW1641 [eq-without-hash]
+class Pair[T]:  # noqa: PLW1641 [eq-without-hash]
     """
     Generic class representing a pair of values.
 
@@ -238,10 +237,7 @@ class TimeStepPair(Pair[T]):
     next: named_property = Pair.frozen_second
 
 
-P = ParamSpec("P")
-
-
-def chainable(
+def chainable[T, **P](
     method_fn: Callable[Concatenate[T, P], None],
 ) -> Callable[Concatenate[T, P], T]:
     """
