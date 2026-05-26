@@ -13,8 +13,6 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
 
-from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
@@ -26,10 +24,8 @@ from icon4py.model.testing import config
 
 
 if TYPE_CHECKING:
-    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
-        microphysics_options as mphy_options,
-        single_moment_six_class_gscp_graupel as graupel,
-    )
+    from icon4py.model.atmosphere.diffusion import diffusion
+    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
@@ -172,7 +168,6 @@ class ExperimentDescription:
     long_name: str
     grid: GridDescription
     version: int = 3
-    num_levels: int | None = None
 
 
 @dataclasses.dataclass
@@ -236,165 +231,4 @@ class Experiments:
         name="exclaim_nh_weisman_klemp",
         long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
-        num_levels=64,
-    )
-
-
-def construct_graupel_config(
-    experiment: Experiment,
-) -> graupel.SingleMomentSixClassIconGraupelConfig:
-    if experiment == Experiments.WEISMAN_KLEMP_TORUS:
-        return graupel.SingleMomentSixClassIconGraupelConfig(
-            liquid_autoconversion_option=mphy_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-            ice_stickeff_min=0.075,
-        )
-    else:
-        raise NotImplementedError(
-            f"SingleMomentSixClassIconGraupelConfig for experiment {experiment.name} not implemented."
-        )
-
-
-# TODO(havogt): the following configs should be part of the serialized experiment
-def construct_diffusion_config(
-    experiment: Experiment, ndyn_substeps: int = 5
-) -> diffusion.DiffusionConfig:
-    if experiment == Experiments.MCH_CH_R04B09:
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-            hdiff_efdt_ratio=24.0,
-            hdiff_w_efdt_ratio=15.0,
-            smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
-            velocity_boundary_diffusion_denom=150.0,
-            max_nudging_coefficient=0.375,
-            n_substeps=ndyn_substeps,
-            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-            iforcing=diffusion.ForcingType.NWP,
-        )
-    elif experiment == Experiments.EXCLAIM_APE:
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            zdiffu_t=False,
-            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-            hdiff_efdt_ratio=24.0,
-            smagorinski_scaling_factor=0.025,
-            hdiff_temp=True,
-            n_substeps=ndyn_substeps,
-            iforcing=diffusion.ForcingType.AES,
-        )
-    elif experiment == Experiments.GAUSS3D:
-        return diffusion.DiffusionConfig(
-            n_substeps=ndyn_substeps,
-        )
-    elif experiment == Experiments.JW:
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            hdiff_temp=False,
-            n_substeps=5,
-            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-            hdiff_efdt_ratio=10.0,
-            hdiff_w_efdt_ratio=15.0,
-            smagorinski_scaling_factor=0.025,
-            zdiffu_t=False,
-            velocity_boundary_diffusion_denom=200.0,
-        )
-    else:
-        raise NotImplementedError(
-            f"DiffusionConfig for experiment {experiment.name} not implemented."
-        )
-
-
-def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
-    if experiment == Experiments.MCH_CH_R04B09:
-        return solve_nh.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-            fourth_order_divdamp_factor=0.004,
-            max_nudging_coefficient=0.375,
-        )
-    elif experiment == Experiments.EXCLAIM_APE:
-        return solve_nh.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-        )
-    elif experiment == Experiments.GAUSS3D:
-        return solve_nh.NonHydrostaticConfig(
-            fourth_order_divdamp_factor=0.0025,
-        )
-    else:
-        raise NotImplementedError(
-            f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
-        )
-
-
-def construct_metrics_config(experiment: Experiment) -> tuple:
-    match experiment:
-        case Experiments.MCH_CH_R04B09:
-            lowest_layer_thickness = 20.0
-            model_top_height = 23000.0
-            stretch_factor = 0.65
-            damping_height = 12500.0
-            rayleigh_coeff = 5.0
-            exner_expol = 0.333
-            vwind_offctr = 0.2
-            rayleigh_type = 2
-            thslp_zdiffu = 0.02
-            thhgtd_zdiffu = 125.0
-        case Experiments.EXCLAIM_APE:
-            lowest_layer_thickness = 50.0
-            model_top_height = 75000.0
-            stretch_factor = 0.9
-            damping_height = 50000.0
-            rayleigh_coeff = 0.1
-            exner_expol = 0.3333333333333
-            vwind_offctr = 0.15
-            rayleigh_type = 2
-            thslp_zdiffu = 0.02
-            thhgtd_zdiffu = 125.0
-        case Experiments.GAUSS3D:
-            lowest_layer_thickness = 50.0
-            model_top_height = 23500.0
-            stretch_factor = 1.0
-            damping_height = 45000.0
-            rayleigh_coeff = 0.1
-            exner_expol = 1.0 / 3.0
-            vwind_offctr = 0.15
-            rayleigh_type = 2
-            thslp_zdiffu = 0.025
-            thhgtd_zdiffu = 200.0
-        case Experiments.WEISMAN_KLEMP_TORUS:
-            lowest_layer_thickness = 50.0
-            model_top_height = 23500.0
-            stretch_factor = 1.0
-            damping_height = 8000.0
-            rayleigh_coeff = 0.75
-            exner_expol = 0.333
-            vwind_offctr = 0.15
-            rayleigh_type = 2
-            thslp_zdiffu = 0.025
-            thhgtd_zdiffu = 125.0
-        case _:
-            raise NotImplementedError(
-                f"Metrics config for experiment {experiment.name} not implemented."
-            )
-
-    return (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-        thslp_zdiffu,
-        thhgtd_zdiffu,
     )
