@@ -2208,8 +2208,7 @@ dependencies = [
   {name = "array-api-compat"},
   {name = "gt4py"},
   {name = "numpy"},
-  {name = "packaging"},
-  {name = "typing-extensions"}
+  {name = "packaging"}
 ]
 name = "icon4py-common"
 source = {editable = "model/common"}
@@ -2237,7 +2236,6 @@ requires-dist = [
   {name = "packaging", specifier = ">=20.0"},
   {name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1"},
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
-  {name = "typing-extensions", specifier = ">=4.11.0"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
   {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0,<2026.4"}
 ]

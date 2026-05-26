@@ -172,6 +172,7 @@ class ExperimentDescription:
     long_name: str
     grid: GridDescription
     version: int = 3
+    num_levels: int | None = None
 
 
 @dataclasses.dataclass

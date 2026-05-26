@@ -17,7 +17,6 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-import tomllib
 from typing import Annotated
 
 import typer

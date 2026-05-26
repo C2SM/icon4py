@@ -65,7 +65,7 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, np.dtype(c_type))
 
     # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore[call-overload]
+    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(
         sizes, order="F"
     )
     return arr
