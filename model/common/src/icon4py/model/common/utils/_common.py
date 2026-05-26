@@ -13,15 +13,7 @@ import abc
 import copy
 import functools
 from collections.abc import Callable, Generator
-from typing import (
-    ClassVar,
-    Concatenate,
-    Final,
-    ParamSpec,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import ClassVar, Concatenate, Final, Protocol, TypeVar, runtime_checkable
 
 
 @runtime_checkable
