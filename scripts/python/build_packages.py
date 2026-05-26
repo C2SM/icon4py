@@ -29,9 +29,9 @@ cli = typer.Typer(
 
 
 def _run_uv_build(
-    *,
     source_dir: pathlib.Path,
     output_dir: pathlib.Path,
+    *,
     sdist: bool = True,
     wheel: bool = True,
     verbose: bool = False,

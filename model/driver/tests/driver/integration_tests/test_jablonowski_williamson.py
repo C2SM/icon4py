@@ -32,8 +32,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description, rank", [(definitions.Experiments.JW, 0)])
-def test_jabw_initial_condition(
-    *,
+def test_jabw_initial_condition(  # noqa: PLR0917
     experiment: definitions.Experiment,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,

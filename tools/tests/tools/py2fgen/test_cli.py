@@ -140,8 +140,7 @@ def compile_and_run_fortran(
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
     ],
 )
-def test_py2fgen_compilation_and_execution_square_cpu(
-    *,
+def test_py2fgen_compilation_and_execution_square_cpu(  # noqa: PLR0917
     cli_runner,
     run_backend,
     samples_path,
@@ -194,8 +193,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
         ),
     ],
 )
-def test_py2fgen_compilation_and_execution_gpu(
-    *,
+def test_py2fgen_compilation_and_execution_gpu(  # noqa: PLR0917
     cli_runner,
     function_name,
     library_name,
@@ -226,8 +224,7 @@ def test_py2fgen_compilation_and_execution_gpu(
         ("-DPROFILE_SQUARE_FROM_FUNCTION",),
     ],
 )
-def test_py2fgen_compilation_and_profiling(
-    *,
+def test_py2fgen_compilation_and_profiling(  # noqa: PLR0917
     cli_runner,
     samples_path,
     square_wrapper_module,

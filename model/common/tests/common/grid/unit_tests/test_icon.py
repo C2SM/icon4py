@@ -351,8 +351,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
         ),
     ],
 )
-def test_grid_params_from_grid_manager(
-    *,
+def test_grid_params_from_grid_manager(  # noqa: PLR0917
     grid_description: definitions.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: icon.GeometryType,

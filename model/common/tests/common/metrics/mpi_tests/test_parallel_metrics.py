@@ -87,8 +87,7 @@ def _get_slice_tuple_from_horizontal_range(
         (attrs.COEFF_GRADEKIN, "coeff_gradekin", None),
     ],
 )
-def test_distributed_metrics_attrs(
-    *,
+def test_distributed_metrics_attrs(  # noqa: PLR0917
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -149,8 +148,7 @@ def test_distributed_metrics_attrs(
         (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
-def test_distributed_metrics_attrs_no_halo(
-    *,
+def test_distributed_metrics_attrs_no_halo(  # noqa: PLR0917
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -182,8 +180,7 @@ def test_distributed_metrics_attrs_no_halo(
         (attrs.ZD_VERTOFFSET, "zd_vertoffset"),
     ],
 )
-def test_distributed_metrics_attrs_no_halo_regional(
-    *,
+def test_distributed_metrics_attrs_no_halo_regional(  # noqa: PLR0917
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -212,8 +209,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_metrics_wgtfacq_e(
-    *,
+def test_distributed_metrics_wgtfacq_e(  # noqa: PLR0917
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -235,8 +231,7 @@ def test_distributed_metrics_wgtfacq_e(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_metrics_nflat_gradp(
-    *,
+def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,

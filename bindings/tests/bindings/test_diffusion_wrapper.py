@@ -36,8 +36,7 @@ from .test_grid_init import grid_init
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_diffusion_wrapper_granule_inputs(
-    *,
+def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
@@ -263,8 +262,7 @@ def test_diffusion_wrapper_granule_inputs(
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_diffusion_wrapper_single_step(
-    *,
+def test_diffusion_wrapper_single_step(  # noqa: PLR0917
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,

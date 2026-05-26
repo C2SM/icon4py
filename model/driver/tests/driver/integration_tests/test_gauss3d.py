@@ -35,8 +35,7 @@ if TYPE_CHECKING:
         (definitions.Experiments.GAUSS3D, 0),
     ],
 )
-def test_gauss3d_initial_condition(
-    *,
+def test_gauss3d_initial_condition(  # noqa: PLR0917
     experiment: definitions.Experiment,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,

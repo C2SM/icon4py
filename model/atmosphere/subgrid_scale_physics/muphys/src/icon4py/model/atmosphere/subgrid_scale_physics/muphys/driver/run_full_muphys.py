@@ -109,11 +109,11 @@ def _muphys_step_separate(
 
 
 def setup_muphys(
-    *,
     inp: common.GraupelInput,
     dt: float,
     qnc: float,
     backend: model_backends.BackendLike,
+    *,
     single_program: bool = False,
 ):
     if single_program:

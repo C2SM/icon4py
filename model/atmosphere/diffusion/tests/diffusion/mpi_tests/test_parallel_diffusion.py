@@ -40,8 +40,7 @@ _log = logging.getLogger(__file__)
     ],
 )
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_parallel_diffusion(
-    *,
+def test_parallel_diffusion(  # noqa: PLR0917
     experiment: definitions.Experiment,
     step_date_init: str,
     step_date_exit: str,

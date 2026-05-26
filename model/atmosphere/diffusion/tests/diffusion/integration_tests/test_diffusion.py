@@ -148,8 +148,7 @@ def test_smagorinski_factor_diffusion_type_5():
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
     ],
 )
-def test_diffusion_init(
-    *,
+def test_diffusion_init(  # noqa: PLR0917
     savepoint_diffusion_init,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
@@ -272,8 +271,7 @@ def _verify_init_values_against_savepoint(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
-def test_verify_diffusion_init_against_savepoint(
-    *,
+def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917
     experiment,
     step_date_init,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
@@ -327,8 +325,7 @@ def test_verify_diffusion_init_against_savepoint(
         ),
     ],
 )
-def test_run_diffusion_single_step(
-    *,
+def test_run_diffusion_single_step(  # noqa: PLR0917
     experiment,
     step_date_init,
     step_date_exit,
@@ -388,8 +385,7 @@ def test_run_diffusion_single_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
-def test_run_diffusion_initial_step(
-    *,
+def test_run_diffusion_initial_step(  # noqa: PLR0917
     experiment,
     linit,
     savepoint_diffusion_init,
@@ -460,7 +456,7 @@ def test_run_diffusion_initial_step(
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    *, savepoint_diffusion_init, experiment, icon_grid, linit, backend
+    savepoint_diffusion_init, experiment, icon_grid, linit, backend
 ):
     savepoint = savepoint_diffusion_init
     config = experiment.config.diffusion

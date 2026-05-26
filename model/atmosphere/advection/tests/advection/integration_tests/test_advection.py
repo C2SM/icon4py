@@ -109,8 +109,7 @@ from ..utils import (
         ),
     ],
 )
-def test_advection_run_single_step(
-    *,
+def test_advection_run_single_step(  # noqa: PLR0917
     date,
     even_timestep,
     ntracer,
@@ -118,6 +117,7 @@ def test_advection_run_single_step(
     horizontal_advection_limiter,
     vertical_advection_type,
     vertical_advection_limiter,
+    *,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
