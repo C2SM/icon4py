@@ -10,6 +10,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -31,7 +32,7 @@ def get_grid_manager_from_experiment(
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
-        num_levels=experiment.num_levels,
+        num_levels=experiment.config.vertical_grid.num_levels,
         keep_skip_values=keep_skip_values,
         allocator=allocator,
     )
@@ -102,7 +103,7 @@ def get_grid_geometry(
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
             experiment.grid,
-            num_levels=experiment.num_levels,
+            num_levels=experiment.config.vertical_grid.num_levels,
             keep_skip_values=True,
             allocator=model_backends.get_allocator(backend),
         )
@@ -113,6 +114,7 @@ def get_grid_geometry(
             gm.coordinates,
             gm.geometry_fields,
             geometry_attrs.attrs,
+            exchange=decomposition.single_node_exchange,
         )
 
     if not grid_geometries.get(register_name):

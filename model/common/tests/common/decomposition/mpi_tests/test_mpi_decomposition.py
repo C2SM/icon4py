@@ -28,6 +28,7 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -49,7 +50,7 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
 
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
@@ -105,7 +106,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
