@@ -24,6 +24,7 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_description,
     geometry_from_savepoint,
     grid_savepoint,
     icon_grid,
@@ -193,7 +194,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
-    if experiment == test_defs.Experiments.EXCLAIM_APE:
+    if experiment.description == test_defs.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)

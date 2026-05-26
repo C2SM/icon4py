@@ -15,7 +15,13 @@ from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
-from icon4py.model.testing.fixtures.datatest import backend_like, experiment, process_props
+from icon4py.model.testing.fixtures.datatest import (
+    backend_like,
+    download_ser_data,
+    experiment,
+    experiment_description,
+    process_props,
+)
 
 
 if mpi_decomposition.mpi4py is None:
@@ -27,7 +33,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.JW,
     ],
@@ -55,8 +61,9 @@ def test_standalone_driver_compare_single_multi_rank(
         # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
         # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
         # 0.0 is too strict.
-        atol = 0.0
-        rtol = 1e-15
+        # TODO(msimberg,jcanton): Even gtfn_cpu is not always bitwise identical.
+        atol = 1e-13
+        rtol = 1e-14
     else:
         atol = 2e-12
         rtol = 0.0

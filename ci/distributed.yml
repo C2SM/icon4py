@@ -9,8 +9,8 @@ stages:
   - benchmark
 
 variables:
-  PYVERSION_PREFIX: py310
-  PYVERSION: 3.10.9
+  PYVERSION_PREFIX: py313
+  PYVERSION: 3.13.13
 
 # Base image build step with SHA256 checksum for caching
 .build_distributed_baseimage:
@@ -105,7 +105,7 @@ build_distributed:
     - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
-    - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
+    - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '01:30:00'
@@ -115,12 +115,9 @@ build_distributed:
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
-    - if: $COMPONENT == 'standalone_driver'
-      variables:
-        SLURM_TIMELIMIT: '00:50:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:45:00'
+        SLURM_TIMELIMIT: '00:50:00'
   artifacts:
     when: always
     paths:

@@ -62,7 +62,7 @@ def get_allocator(
 
     if is_backend_descriptor(backend):
         backend = backend["device"]
-    if isinstance(backend, DeviceType):
+    if isinstance(backend, gtx.DeviceType):
         return gtx_allocators.device_allocators[backend]
     raise ValueError(f"Cannot get allocator from {backend}")
 
@@ -84,7 +84,7 @@ def make_custom_dace_backend(
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
-    use_max_domain_range_on_unstructured_shift: bool | None = True,
+    use_max_domain_range_on_unstructured_shift: bool | None = None,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -102,9 +102,6 @@ def make_custom_dace_backend(
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
             expressions everywhere. Otherwise, when all connectivities are given
             at compile time, infer the minimal domain of all `as_fieldop` statically.
-
-    TODO(edopao): We should use the default `use_max_domain_range_on_unstructured_shift=None`
-        once the minimal static domain produces the correct result.
 
     Returns:
         A dace backend with custom configuration for the target device.
