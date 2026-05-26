@@ -48,7 +48,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     # for the diffusion stencil (https://doi.org/10.1002%2Fqj.2378).
     nabla2_of_vn = wpfloat("4.0") * nabla2_of_vn
 
-    v_t = u_vert_wp(E2C2V) * dual_normal_vert_x(E2C2V) + v_vert_wp(E2C2V) * dual_normal_vert_y(E2C2V)
+    v_t = u_vert_wp(E2C2V) * dual_normal_vert_x + v_vert_wp(E2C2V) * dual_normal_vert_y
     l_p = tangent_orientation * inv_primal_edge_length
     l_vv = inv_vert_vert_length
 
