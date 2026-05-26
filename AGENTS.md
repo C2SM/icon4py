@@ -119,7 +119,7 @@ uv run --group test --frozen pytest --datatest-skip model/<component>/
 uv run --group test --frozen pytest --datatest-only model/<component>/
 
 # MPI tests (requires mpi4py, distributed extra; always use -n0 for sequential):
-mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
 #   --with-mpi: enables MPI test mode (from pytest-mpi plugin)
 #   -k mpi_tests: selects tests by directory/class name convention
 #   ci-mpi-wrapper.sh: suppresses stdout from non-zero ranks
