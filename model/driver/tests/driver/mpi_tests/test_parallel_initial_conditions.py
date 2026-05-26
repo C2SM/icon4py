@@ -13,8 +13,8 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import driver_states, standalone_driver
-from icon4py.model.standalone_driver.testcases import initial_condition
+from icon4py.model.driver import driver, driver_states
+from icon4py.model.driver.testcases import initial_condition
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
@@ -78,14 +78,12 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
-    single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
-        standalone_driver.initialize_driver(
-            output_path=tmp_path / "ci_driver_output_for_backend_serial_rank0",
-            grid_file_path=grid_file_path,
-            log_level="info",
-            backend_like=backend_like,
-            force_serial_run=True,
-        )
+    single_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
+        output_path=tmp_path / "ci_driver_output_for_backend_serial_rank0",
+        grid_file_path=grid_file_path,
+        log_level="info",
+        backend_like=backend_like,
+        force_serial_run=True,
     )
 
     single_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
@@ -101,13 +99,11 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         exchange=single_rank_icon4py_driver.exchange,
     )
 
-    multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
-        standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            grid_file_path=grid_file_path,
-            log_level="info",
-            backend_like=backend_like,
-        )
+    multi_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
+        grid_file_path=grid_file_path,
+        log_level="info",
+        backend_like=backend_like,
     )
 
     multi_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(

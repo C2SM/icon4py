@@ -27,7 +27,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory, rbf_interpolation as rbf
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 

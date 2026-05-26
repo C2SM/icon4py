@@ -32,7 +32,7 @@ from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.standalone_driver import (
+from icon4py.model.driver import (
     config as driver_config,
     driver_constants,
     driver_states,

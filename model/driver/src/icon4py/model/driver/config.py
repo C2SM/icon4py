@@ -25,7 +25,7 @@ class ProfilingStats:
 @dataclasses.dataclass(frozen=True)
 class DriverConfig:
     """
-    Standalone driver configuration.
+    Driver configuration.
 
     Default values should correspond to default values in ICON.
     """

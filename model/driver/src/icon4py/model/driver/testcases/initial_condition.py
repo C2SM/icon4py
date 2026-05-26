@@ -41,8 +41,8 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states
-from icon4py.model.standalone_driver.testcases import utils as testcases_utils
+from icon4py.model.driver import driver_states
+from icon4py.model.driver.testcases import utils as testcases_utils
 
 
 log = logging.getLogger(__name__)

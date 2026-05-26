@@ -10,7 +10,7 @@ import pathlib
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import main
+from icon4py.model.driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
@@ -34,7 +34,7 @@ from ..fixtures import *  # noqa: F403
         ),
     ],
 )
-def test_standalone_driver(
+def test_driver(
     experiment: test_defs.Experiment,
     timeloop_date_init: str,
     timeloop_date_exit: str,

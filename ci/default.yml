@@ -38,7 +38,7 @@ test_tools_datatests_aarch64:
     - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
 
-    - if: $COMPONENT == 'standalone_driver'
+    - if: $COMPONENT == 'driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
@@ -53,7 +53,7 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:15:00'
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, standalone_driver]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 test_model_datatests_aarch64:

@@ -28,7 +28,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 
 
 log = logging.getLogger(__name__)

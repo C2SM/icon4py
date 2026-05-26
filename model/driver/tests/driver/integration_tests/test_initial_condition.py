@@ -10,8 +10,8 @@ import pathlib
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import driver_utils, standalone_driver
-from icon4py.model.standalone_driver.testcases import initial_condition
+from icon4py.model.driver import driver, driver_utils
+from icon4py.model.driver.testcases import initial_condition
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -27,13 +27,13 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 @pytest.mark.datatest
-def test_standalone_driver_initial_condition(
+def test_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
 ) -> None:
-    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+    icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
         output_path=tmp_path / "ci_driver_output",
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),

@@ -43,7 +43,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.driver import config as driver_config, driver_states
 from icon4py.model.testing import config as testing_config
 
 

@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 from icon4py.model.testing import config
 
 

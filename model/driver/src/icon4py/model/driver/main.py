@@ -13,8 +13,8 @@ import typer
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
-from icon4py.model.standalone_driver.testcases import initial_condition
+from icon4py.model.driver import driver, driver_states, driver_utils
+from icon4py.model.driver.testcases import initial_condition
 
 
 log = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def main(
 
     icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
 
-    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+    icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,

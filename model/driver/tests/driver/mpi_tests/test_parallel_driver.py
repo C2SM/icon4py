@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import main
+from icon4py.model.driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
@@ -40,7 +40,7 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_standalone_driver_compare_single_multi_rank(
+def test_driver_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
