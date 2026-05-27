@@ -2176,8 +2176,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post769+e599d194"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#e599d1940e28a3a88dcc2d4fc896a17bd0923117" }
+version = "1.0.4.post774+2cf71af6"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#2cf71af6e4f9c66f48bb19db9de8d33e33673512" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
