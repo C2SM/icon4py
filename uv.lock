@@ -1565,8 +1565,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "2.3.6"
-source = { git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev#54580a05aafb467b3c556cab1219bf07a20209f7" }
+version = "2.3.7"
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev#896ec9295298d60e956f31834957b863b4fd9a7b" }
 dependencies = [
     { name = "astunparse" },
     { name = "dill" },
@@ -2599,7 +2599,7 @@ typing-distributed = [
 
 [[package]]
 name = "icon4py-atmosphere-advection"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/atmosphere/advection" }
 dependencies = [
     { name = "gt4py" },
@@ -2616,7 +2616,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-diffusion"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/atmosphere/diffusion" }
 dependencies = [
     { name = "gt4py" },
@@ -2633,7 +2633,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-dycore"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/atmosphere/dycore" }
 dependencies = [
     { name = "gt4py" },
@@ -2650,7 +2650,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-microphysics"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/atmosphere/subgrid_scale_physics/microphysics" }
 dependencies = [
     { name = "gt4py" },
@@ -2667,7 +2667,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-muphys"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
@@ -2687,7 +2687,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-bindings"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "bindings" }
 dependencies = [
     { name = "cffi" },
@@ -2738,11 +2738,10 @@ provides-extras = ["cuda11", "cuda12", "profiling"]
 
 [[package]]
 name = "icon4py-common"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/common" }
 dependencies = [
     { name = "array-api-compat" },
-    { name = "dace" },
     { name = "gt4py" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
     { name = "numpy", version = "2.4.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
@@ -2806,7 +2805,6 @@ requires-dist = [
     { name = "cartopy", marker = "extra == 'io'", specifier = ">=0.22.0" },
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1" },
     { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen" },
@@ -2830,7 +2828,7 @@ provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
 
 [[package]]
 name = "icon4py-driver"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/driver" }
 dependencies = [
     { name = "click" },
@@ -2860,7 +2858,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-standalone-driver"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/standalone_driver" }
 dependencies = [
     { name = "devtools" },
@@ -2887,7 +2885,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-testing"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "model/testing" }
 dependencies = [
     { name = "filelock" },
@@ -2917,7 +2915,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-tools"
-version = "0.2.0rc1"
+version = "0.2.0rc2"
 source = { editable = "tools" }
 dependencies = [
     { name = "cffi" },
