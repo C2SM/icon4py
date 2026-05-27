@@ -483,10 +483,10 @@ def test_create_auxiliary_orientation_coordinates(
         assert test_utils.dallclose(lon_0.asnumpy(), cell_lon.asnumpy()[connectivity[:, 0]])
         assert test_utils.dallclose(lon_1.asnumpy(), cell_lon.asnumpy()[connectivity[:, 1]])
 
-    edge_coordinates_0 = np.where(connectivity[:, 0] < 0)
-    edge_coordinates_1 = np.where(connectivity[:, 1] < 0)
-    cell_coordinates_0 = np.where(connectivity[:, 0] >= 0)
-    cell_coordinates_1 = np.where(connectivity[:, 1] >= 0)
+    edge_coordinates_0 = np.nonzero(connectivity[:, 0] < 0)
+    edge_coordinates_1 = np.nonzero(connectivity[:, 1] < 0)
+    cell_coordinates_0 = np.nonzero(connectivity[:, 0] >= 0)
+    cell_coordinates_1 = np.nonzero(connectivity[:, 1] >= 0)
     assert test_utils.dallclose(
         lat_0.asnumpy()[edge_coordinates_0], edge_lat.asnumpy()[edge_coordinates_0]
     )

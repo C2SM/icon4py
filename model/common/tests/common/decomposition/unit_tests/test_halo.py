@@ -89,7 +89,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
         "All indices should have a defined DecompositionFlag"
     )
 
-    assert np.where(my_halo_levels == definitions.DecompositionFlag.OWNED)[0].size == len(
+    assert np.nonzero(my_halo_levels == definitions.DecompositionFlag.OWNED)[0].size == len(
         utils.OWNED[dim][process_props.rank]
     )
     owned_local_indices = decomp_info.local_index(
@@ -98,7 +98,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     assert np.all(my_halo_levels[owned_local_indices] == definitions.DecompositionFlag.OWNED), (
         "owned local indices should have DecompositionFlag.OWNED"
     )
-    first_halo_level_local_index = np.where(
+    first_halo_level_local_index = np.nonzero(
         my_halo_levels == definitions.DecompositionFlag.FIRST_HALO_LEVEL
     )[0]
     first_halo_level_global_index = decomp_info.global_index(
@@ -107,7 +107,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     utils.assert_same_entries(
         dim, first_halo_level_global_index, utils.FIRST_HALO_LINE, process_props.rank
     )
-    second_halo_level_local_index = np.where(
+    second_halo_level_local_index = np.nonzero(
         my_halo_levels == definitions.DecompositionFlag.SECOND_HALO_LEVEL
     )[0]
     second_halo_level_global_index = decomp_info.global_index(
@@ -116,7 +116,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     utils.assert_same_entries(
         dim, second_halo_level_global_index, utils.SECOND_HALO_LINE, process_props.rank
     )
-    third_halo_level_index = np.where(
+    third_halo_level_index = np.nonzero(
         my_halo_levels == definitions.DecompositionFlag.THIRD_HALO_LEVEL
     )[0]
     third_halo_level_global_index = decomp_info.global_index(
@@ -197,7 +197,7 @@ def test_owned_halo_mask_contiguous(rank):
 
     for dim in dims.horizontal_dims():
         owner_mask = decomp_info.owner_mask(dim)
-        owned_indices = np.where(owner_mask)[0]
+        owned_indices = np.nonzero(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are
         # supported for icon4py domain decomposition.
         assert test_utils.is_sorted(decomp_info.halo_levels(dim)), (
