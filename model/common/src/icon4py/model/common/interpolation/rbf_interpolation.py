@@ -235,7 +235,7 @@ def _compute_distance_vector_matrix(
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2) noqa: ERA001
             diff = array_ns.abs(v1 - v2)
-            domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
+            domain_size = array_ns.asarray([domain_length, domain_height, array_ns.float64(0.0)])
             domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
             diff = array_ns.minimum(diff, inverted_diff, out=diff)
@@ -318,6 +318,27 @@ def _compute_rbf_interpolation_coeffs(
     domain_height: ta.wpfloat,
 ) -> tuple[data_alloc.NDArray, ...]:
     array_ns = data_alloc.array_namespace(element_center_lat)
+    float_dtype = array_ns.float64
+
+    def as_float64(values: data_alloc.NDArray) -> data_alloc.NDArray:
+        return array_ns.asarray(values, dtype=float_dtype)
+
+    element_center_lat = as_float64(element_center_lat)
+    element_center_lon = as_float64(element_center_lon)
+    element_center_x = as_float64(element_center_x)
+    element_center_y = as_float64(element_center_y)
+    element_center_z = as_float64(element_center_z)
+    edge_center_x = as_float64(edge_center_x)
+    edge_center_y = as_float64(edge_center_y)
+    edge_center_z = as_float64(edge_center_z)
+    edge_normal_x = as_float64(edge_normal_x)
+    edge_normal_y = as_float64(edge_normal_y)
+    edge_normal_z = as_float64(edge_normal_z)
+    uv = tuple((as_float64(u), as_float64(v)) for u, v in uv)
+    scale_factor = float_dtype(scale_factor)
+    domain_length = float_dtype(domain_length)
+    domain_height = float_dtype(domain_height)
+
     rbf_offset_shape_full = rbf_offset.shape
     assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
@@ -424,7 +445,7 @@ def _compute_rbf_interpolation_coeffs(
 
     # Solve linear system for coefficients.
     rbf_vec_coeff = [
-        array_ns.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
+        array_ns.zeros(rbf_offset_shape_full, dtype=float_dtype)
         for _ in range(num_zonal_meridional_components)
     ]
     # Batch solve by grouping elements with the same number of valid neighbors.
@@ -461,7 +482,7 @@ def _compute_rbf_interpolation_coeffs(
         rbf_vec_coeff[j][horizontal_start:horizontal_end] /= array_ns.sum(
             nxnx[j] * rbf_vec_coeff[j][horizontal_start:horizontal_end], axis=1
         )[:, array_ns.newaxis]
-    return rbf_vec_coeff
+    return tuple(coeff.astype(ta.wpfloat, copy=False) for coeff in rbf_vec_coeff)
 
 
 def compute_rbf_interpolation_coeffs_cell(
@@ -487,8 +508,8 @@ def compute_rbf_interpolation_coeffs_cell(
     domain_height: ta.wpfloat,
 ) -> tuple[data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(cell_center_lat)
-    zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
-    ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
+    zeros = array_ns.zeros(rbf_offset.shape[0], dtype=array_ns.float64)
+    ones = array_ns.ones(rbf_offset.shape[0], dtype=array_ns.float64)
 
     return _compute_rbf_interpolation_coeffs(
         cell_center_lat,
@@ -580,8 +601,8 @@ def compute_rbf_interpolation_coeffs_vertex(
     domain_height: ta.wpfloat,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(vertex_lat)
-    zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
-    ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
+    zeros = array_ns.zeros(rbf_offset.shape[0], dtype=array_ns.float64)
+    ones = array_ns.ones(rbf_offset.shape[0], dtype=array_ns.float64)
 
     return _compute_rbf_interpolation_coeffs(
         vertex_lat,

@@ -11,12 +11,18 @@ import functools
 import logging
 import pathlib
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import netCDF4 as nc4
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+    utils as common_utils,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
@@ -47,6 +53,15 @@ class ExperimentType(str, enum.Enum):
     """initial condition of Gauss 3D test"""
     ANY = "any"
     """any test with initial conditions read from serialized data (remember to set correct SIMULATION_START_DATE)"""
+
+
+def _as_wpfloat_field(
+    field: gtx.Field,
+    backend: gtx_typing.Backend,
+) -> gtx.Field:
+    array_ns = data_alloc.import_array_ns(backend)
+    data = array_ns.asarray(field.ndarray, dtype=ta.wpfloat)
+    return gtx.as_field(field.domain, data=data, allocator=backend)
 
 
 def read_icon_grid(
@@ -439,16 +454,32 @@ def read_static_fields(
 
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
         metrics_savepoint = data_provider.from_metrics_savepoint()
-        grg = interpolation_savepoint.geofac_grg()
+        geofac_grg = interpolation_savepoint.geofac_grg()
+        e_bln_c_s = _as_wpfloat_field(interpolation_savepoint.e_bln_c_s(), backend)
+        rbf_coeff_1 = _as_wpfloat_field(interpolation_savepoint.rbf_vec_coeff_v1(), backend)
+        rbf_coeff_2 = _as_wpfloat_field(interpolation_savepoint.rbf_vec_coeff_v2(), backend)
+        geofac_div = _as_wpfloat_field(interpolation_savepoint.geofac_div(), backend)
+        geofac_n2s = _as_wpfloat_field(interpolation_savepoint.geofac_n2s(), backend)
+        geofac_grg_x = _as_wpfloat_field(geofac_grg[0], backend)
+        geofac_grg_y = _as_wpfloat_field(geofac_grg[1], backend)
+        nudgecoeff_e = _as_wpfloat_field(interpolation_savepoint.nudgecoeff_e(), backend)
+        c_lin_e = _as_wpfloat_field(interpolation_savepoint.c_lin_e(), backend)
+        c_intp = _as_wpfloat_field(interpolation_savepoint.c_intp(), backend)
+        e_flx_avg = _as_wpfloat_field(interpolation_savepoint.e_flx_avg(), backend)
+        geofac_grdiv = _as_wpfloat_field(interpolation_savepoint.geofac_grdiv(), backend)
+        geofac_rot = _as_wpfloat_field(interpolation_savepoint.geofac_rot(), backend)
+        pos_on_tplane_e_1 = _as_wpfloat_field(interpolation_savepoint.pos_on_tplane_e_x(), backend)
+        pos_on_tplane_e_2 = _as_wpfloat_field(interpolation_savepoint.pos_on_tplane_e_y(), backend)
+        rbf_vec_coeff_e = _as_wpfloat_field(interpolation_savepoint.rbf_vec_coeff_e(), backend)
         diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
-            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
-            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=interpolation_savepoint.geofac_div(),
-            geofac_n2s=interpolation_savepoint.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+            e_bln_c_s=e_bln_c_s,
+            rbf_coeff_1=rbf_coeff_1,
+            rbf_coeff_2=rbf_coeff_2,
+            geofac_div=geofac_div,
+            geofac_n2s=geofac_n2s,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            nudgecoeff_e=nudgecoeff_e,
         )
         diffusion_metric_state = diffusion_states.DiffusionMetricState(
             theta_ref_mc=metrics_savepoint.theta_ref_mc(),
@@ -458,22 +489,22 @@ def read_static_fields(
             zd_diffcoef=metrics_savepoint.zd_diffcoef(),
         )
         solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
-            c_lin_e=interpolation_savepoint.c_lin_e(),
-            c_intp=interpolation_savepoint.c_intp(),
-            e_flx_avg=interpolation_savepoint.e_flx_avg(),
-            geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
-            geofac_rot=interpolation_savepoint.geofac_rot(),
-            pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
-            pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
-            rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
-            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=interpolation_savepoint.geofac_div(),
-            geofac_n2s=interpolation_savepoint.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+            c_lin_e=c_lin_e,
+            c_intp=c_intp,
+            e_flx_avg=e_flx_avg,
+            geofac_grdiv=geofac_grdiv,
+            geofac_rot=geofac_rot,
+            pos_on_tplane_e_1=pos_on_tplane_e_1,
+            pos_on_tplane_e_2=pos_on_tplane_e_2,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            e_bln_c_s=e_bln_c_s,
+            rbf_coeff_1=rbf_coeff_1,
+            rbf_coeff_2=rbf_coeff_2,
+            geofac_div=geofac_div,
+            geofac_n2s=geofac_n2s,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            nudgecoeff_e=nudgecoeff_e,
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
         grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
@@ -512,10 +543,16 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
+        rbf_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
+        rbf_vec_coeff_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
         diagnostic_metric_state = diagnostics.DiagnosticMetricState(
             ddqz_z_full=metrics_savepoint.ddqz_z_full(),
-            rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
-            rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
+            rbf_vec_coeff_c1=_as_wpfloat_field(rbf_vec_coeff_c1, backend)
+            if rbf_vec_coeff_c1 is not None
+            else None,
+            rbf_vec_coeff_c2=_as_wpfloat_field(rbf_vec_coeff_c2, backend)
+            if rbf_vec_coeff_c2 is not None
+            else None,
         )
 
         return (
