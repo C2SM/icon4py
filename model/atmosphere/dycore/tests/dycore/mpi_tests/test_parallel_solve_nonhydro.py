@@ -30,7 +30,7 @@ _log = logging.getLogger(__name__)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
+    "experiment_description, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
     [
         (
             test_defs.Experiments.MCH_CH_R04B09,
@@ -51,13 +51,8 @@ def test_run_solve_nonhydro_single_step(
     step_date_exit: str,
     substep_init: int,
     experiment: test_defs.Experiment,
-    ndyn_substeps: int,
     icon_grid: icon.IconGrid,
     savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     is_iau_active: bool,
     iau_wgt_dyn: ta.wpfloat,
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -96,15 +91,9 @@ def test_run_solve_nonhydro_single_step(
         f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = test_defs.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     nonhydro_params = nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
     lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
@@ -154,11 +143,11 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
+        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == ndyn_substeps),
+        at_last_substep=(substep_init == experiment.config.diffusion.ndyn_substeps),
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )

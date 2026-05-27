@@ -23,8 +23,11 @@ UNLIMITED = None
 simple_grid = simple.simple_grid()
 
 grid_file = dt_utils.get_grid_filepath(definitions.Grids.R02B04_GLOBAL)
-global_grid = grid_utils.get_grid_manager_from_experiment(
-    definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, allocator=backend
+global_grid = grid_utils.get_grid_manager_from_identifier(
+    definitions.Experiments.EXCLAIM_APE.grid,
+    num_levels=60,
+    keep_skip_values=True,
+    allocator=backend,
 ).grid
 
 
