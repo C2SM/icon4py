@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import json
 import os
 import pathlib
@@ -422,12 +423,16 @@ def copy_ser_data(
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
     # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / definitions.NAMELIST_ICON_FNAME)
-    with (dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")).open("w") as f:
+    nml = f90nml.read(exp_dir / definitions.NAMELIST_ATM_FNAME)
+    with (dest_dir / (definitions.NAMELIST_ATM_FNAME + ".json")).open("w") as f:
+        json.dump(nml.todict(), f, indent=4)
+    # same for icon_master.namelist
+    nml = f90nml.read(exp_dir / definitions.NAMELIST_MASTER_FNAME)
+    with (dest_dir / (definitions.NAMELIST_MASTER_FNAME + ".json")).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files
-    namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
+    namelist_files = sorted(itertools.chain(exp_dir.glob("NAMELIST_*"), exp_dir.glob("*.namelist")))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
