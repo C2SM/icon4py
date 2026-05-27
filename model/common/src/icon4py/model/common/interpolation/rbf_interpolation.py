@@ -482,6 +482,7 @@ def _compute_rbf_interpolation_coeffs(
         rbf_vec_coeff[j][horizontal_start:horizontal_end] /= array_ns.sum(
             nxnx[j] * rbf_vec_coeff[j][horizontal_start:horizontal_end], axis=1
         )[:, array_ns.newaxis]
+    # Return in wpfloat for downstream consumers, regardless of internal solve precision.
     return tuple(coeff.astype(ta.wpfloat, copy=False) for coeff in rbf_vec_coeff)
 
 

@@ -41,7 +41,9 @@ def _compute_edge_coefficients(dtype: type[np.floating]) -> np.ndarray:
     ("precision", "expected_dtype"),
     [("double", np.float64), ("single", np.float32)],
 )
-def test_compute_rbf_interpolation_coeffs_returns_wpfloat(precision: str, expected_dtype: np.dtype) -> None:
+def test_compute_rbf_interpolation_coeffs_returns_wpfloat(
+    precision: str, expected_dtype: type[np.floating]
+) -> None:
     previous_precision = ta.precision
     try:
         ta.set_precision(precision)
@@ -51,7 +53,9 @@ def test_compute_rbf_interpolation_coeffs_returns_wpfloat(precision: str, expect
         ta.set_precision(previous_precision)
 
 
-def test_compute_rbf_interpolation_coeffs_solves_in_float64(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_compute_rbf_interpolation_coeffs_solves_in_float64_under_single_precision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     previous_precision = ta.precision
     solve_argument_dtypes: list[tuple[np.dtype, np.dtype]] = []
     array_ns = rbf.data_alloc.array_namespace(np.asarray([0.0], dtype=np.float32))

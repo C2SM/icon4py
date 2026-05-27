@@ -59,6 +59,7 @@ def _as_wpfloat_field(
     field: gtx.Field,
     backend: gtx_typing.Backend,
 ) -> gtx.Field:
+    """Convert a field to wpfloat while preserving domain and allocator (no-op if already wpfloat)."""
     array_ns = data_alloc.import_array_ns(backend)
     data = array_ns.asarray(field.ndarray, dtype=ta.wpfloat)
     return gtx.as_field(field.domain, data=data, allocator=backend)
