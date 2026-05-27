@@ -56,6 +56,8 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
+    grid_description,
     grid_savepoint,
     process_props,
 )
@@ -315,15 +317,12 @@ def test_grid_manager_eval_c2v(
     assert np.allclose(c2v, data_alloc.as_numpy(grid_savepoint.c2v()))
 
 
-@pytest.mark.parametrize(
-    "grid_descriptor", [definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL]
-)
 @pytest.mark.with_netcdf
 def test_grid_manager_grid_size(
-    backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
+    backend: gtx_typing.Backend, grid_description: definitions.GridDescription
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    ref = utils.GRID_REFERENCE_VALUES[grid_descriptor.name]
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
+    ref = utils.GRID_REFERENCE_VALUES[grid_description.name]
     assert ref["num_cells"] == grid.size[dims.CellDim]
     assert ref["num_edges"] == grid.size[dims.EdgeDim]
     assert ref["num_vertices"] == grid.size[dims.VertexDim]
@@ -369,7 +368,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, expected_subdivision",
+    "grid_description, expected_subdivision",
     [
         (
             definitions.Grids.R02B04_GLOBAL,
@@ -382,18 +381,18 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
     ],
 )
 def test_grid_manager_grid_level_and_root(
-    grid_descriptor: definitions.GridDescription,
+    grid_description: definitions.GridDescription,
     expected_subdivision: icon.GridSubdivision,
     backend: gtx_typing.Backend,
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
     assert expected_subdivision == grid.grid_params.subdivision
 
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [definitions.Experiments.JW],
 )
 def test_grid_manager_eval_c2e2c2e(
@@ -424,7 +423,10 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     for domain in h_grid.get_domains_for_dim(dim):
-        if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
+        if not (
+            experiment.description == definitions.Experiments.EXCLAIM_APE
+            and domain.dim == dims.EdgeDim
+        ):
             # serialized start indices for EdgeDim are all zero
             assert grid.start_index(domain) == serialized_grid.start_index(domain), (
                 f"start index wrong for domain {domain}"
@@ -556,14 +558,16 @@ def test_edge_vertex_distance(
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, expected",
+    "grid_description, expected",
     [
         (definitions.Grids.MCH_CH_R04B09_DSL, True),
         (definitions.Grids.R02B04_GLOBAL, False),
     ],
 )
-def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expected: bool) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=None).grid
+def test_limited_area_on_grid(
+    grid_description: definitions.GridDescription, expected: bool
+) -> None:
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
 
 
@@ -672,13 +676,13 @@ def test_local_connectivity(
 @pytest.mark.parametrize("ranks", (2, 3, 4))
 def test_decomposition_size(
     ranks: int,
-    experiment: test_defs.Experiment,
+    grid_description: test_defs.GridDescription,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = dt_utils.get_grid_filepath(experiment.grid)
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]

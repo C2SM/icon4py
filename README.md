@@ -167,11 +167,9 @@ When running make sure to
 
 ```bash
 export MPICH_GPU_SUPPORT_ENABLED=1
-export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
 ```
 
 Cray MPICH will otherwise segfault when communicating GPU buffers. Also see the [CSCS Cray MPICH documentation](https://docs.cscs.ch/software/communication/cray-mpich/) for more details.
-The `UNIT_STRIDE` variable is necessary when using the DaCe backend, which otherwise fails (see [PR1130](https://github.com/C2SM/icon4py/pull/1130)).
 
 When performance is important you may want to
 
