@@ -107,9 +107,12 @@ class NeedsExchange(Protocol):
     ) -> None:
         log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
         if self.needs_exchange():
+            exchange_fields = getattr(self, "_exchange_fields", None)
             # ghex assumes all fields to in one call to have the same `dtype`, this is not the case for all producer functions in icon4py,
             # hence as a simple workaround we loop over the fields
             for name, field in fields.items():
+                if exchange_fields is not None and name not in exchange_fields:
+                    continue
                 log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
                 assert first_dim.kind == gtx.DimensionKind.HORIZONTAL, (
@@ -334,11 +337,11 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         self,
         func: gtx_typing.FieldOperator,
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
-        fields: dict[str, str],  # keyword arg to (field_operator, field_name)
-        deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
+        fields: dict[str, str],
+        deps: dict[str, str],
         do_exchange: bool,
-        params: dict[str, state_utils.ScalarType]
-        | None = None,  # keyword arg to (field_operator, field_name)
+        params: dict[str, state_utils.ScalarType] | None = None,
+        exchange_fields: Sequence[str] | None = None,
     ):
         self._func = func
         self._dims: (
@@ -351,6 +354,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             name: None for name in fields.values()
         }
         self._do_exchange = do_exchange
+        self._exchange_fields = set(exchange_fields) if exchange_fields is not None else None
 
     def needs_exchange(self) -> bool:
         return self._do_exchange
@@ -495,6 +499,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             the key is the variable name used in the `gtx.program` and the value the name
             of the field it depends on.
         params: scalar parameters used in the program
+        exchange_fields: names of fields that should be exchanged when do_exchange is True.
+            If None, all fields are exchanged. Defaults to None.
     """
 
     def __init__(
@@ -505,6 +511,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps: dict[str, str],
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
+        exchange_fields: Sequence[str] | None = None,
     ):
         self._func = func
         self._compute_domain = domain
@@ -517,6 +524,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             name: None for name in fields.values()
         }
         self._do_exchange = do_exchange
+        self._exchange_fields = set(exchange_fields) if exchange_fields is not None else None
 
     def _allocate(
         self,
@@ -650,6 +658,8 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             function and the value the sparse Dimension of the connectivity field
         params: scalar arguments for the function
         do_exchange: a flag that governs whether or not a halo exchange is needed after the field has been computed. Defaults to False
+        exchange_fields: names of fields that should be exchanged when do_exchange is True.
+            If None, all fields are exchanged. Defaults to None.
     """
 
     def __init__(
@@ -661,6 +671,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
         do_exchange: bool = False,
+        exchange_fields: Sequence[str] | None = None,
     ):
         self._func = func
         self._dims = tuple(map(replace_khalfdim, domain))
@@ -671,6 +682,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
         self._do_exchange = do_exchange
+        self._exchange_fields = set(exchange_fields) if exchange_fields is not None else None
 
     def __call__(
         self,

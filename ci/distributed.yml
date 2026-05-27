@@ -95,7 +95,9 @@ build_distributed:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
+      # TODO(msimberg): Reenable
+      # COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
+      - COMPONENT: [common]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
   rules:

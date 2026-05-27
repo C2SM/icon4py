@@ -11,10 +11,10 @@ import math
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -393,13 +393,14 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
 
+    e2c = icon_grid.get_connectivity("E2C").ndarray
+    z_me = np.sum(z_mc.ndarray[e2c] * np.expand_dims(c_lin_e.ndarray, axis=-1), axis=1)
+
     flat_idx_max = mf.compute_flat_max_idx(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
-        z_mc=z_mc.ndarray,
-        c_lin_e=c_lin_e.ndarray,
+        e2c=e2c,
+        z_me=z_me,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=decomposition.single_node_exchange,
     )
     # TODO (nfarabullini): fix type ignore
     flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]

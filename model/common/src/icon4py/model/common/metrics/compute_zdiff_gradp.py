@@ -8,127 +8,129 @@
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
+def _batched_searchsorted(a, v, array_ns):
+    m, n = a.shape
+    max_num = max(float(a.max() - a.min()), float(v.max() - v.min())) + 1
+    r = max_num * array_ns.arange(m, dtype=a.dtype)[:, None]
+    p = array_ns.searchsorted((a + r).ravel(), (v + r).ravel()).reshape(v.shape)
+    return p - n * array_ns.arange(m, dtype=p.dtype)[:, None]
+
+
+def compute_zdiff_gradp(
     e2c,
+    z_me: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
-    c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     flat_idx: data_alloc.NDArray,
     topography: data_alloc.NDArray,
     nlev: int,
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
-    exchange: decomposition.ExchangeRuntime,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(z_mc)
-    nedges = e2c.shape[0]
-    z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
 
-    exchange.exchange(dims.EdgeDim, z_me, stream=decomposition.BLOCK)
+    nedges = e2c.shape[0]
 
     z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
-    z_aux2 = z_aux1 - 5.0  # extrapol_dist
+    z_aux2 = z_aux1 - 5.0
     zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
-    jk_field = array_ns.arange(nlev, dtype=gtx.int32)
     zdiff_gradp[horizontal_start:, :, :] = (
         array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
         - z_mc[e2c][horizontal_start:, :, :]
     )
-    vertidx_gradp = array_ns.expand_dims(
-        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
-    ).repeat(nedges, axis=0)
-    vertoffset_gradp = array_ns.expand_dims(
-        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
-    ).repeat(nedges, axis=0)
-    """
-    First part for loop implementation with gt4py code
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
 
-    >>> z_ifc_off_koff = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
-    >>> z_ifc_off = as_field((EdgeDim, KDim,), z_ifc[e2c[:, 0], :])
-    >>> _compute_z_ifc_off_koff(
-    >>>     z_ifc_off=z_ifc_off,
-    >>>     domain={EdgeDim: (horizontal_start, nedges), KDim: (0, nlev)},
-    >>>     out=z_ifc_off_koff,
-    >>>     offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
-    >>> )
-    """
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
 
-    for je in range(horizontal_start, nedges):
-        for jk in range(int(flat_idx[je]) + 1, nlev):
-            """
-            Second part for loop implementation with gt4py code
-            >>> param_2 = as_field((KDim,), array_ns.asarray([False] * nlev))
-            >>> param_3 = as_field((KDim,), array_ns.arange(nlev))
-            >>> z_ifc_off_e = as_field((KDim,), z_ifc[e2c[je, 0], :])
-            >>> _compute_param.with_backend(backend)(
-            >>>     z_me_jk=z_me[je, jk],
-            >>>     z_ifc_off=z_ifc_off_e,
-            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.ndarray[je, :]),
-            >>>     lower=int(flat_idx[je]),
-            >>>     nlev=nlev - 1,
-            >>>     out=(param_3, param_2),
-            >>>     offset_provider={}
-            >>> )
-            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param_2.ndarray)[0][0]]
-            """
+    z_ifc_asc = z_ifc[:, ::-1].copy()
+    z_ifc_e0 = z_ifc_asc[e2c_0]
+    z_ifc_e1 = z_ifc_asc[e2c_1]
 
-            param = array_ns.zeros((nlev,), dtype=bool)
-            for jk1 in range(int(flat_idx[je]), nlev):
-                if jk1 == nlev - 1 or (
-                    z_me[je, jk] <= z_ifc[e2c[je, 0], jk1]
-                    and z_me[je, jk] >= z_ifc[e2c[je, 0], jk1 + 1]
-                ):
-                    param[jk1] = True
-            vertidx_gradp[je, 0, jk] = array_ns.where(param)[0][0]
-            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param)[0][0]]
+    fill_high = float(array_ns.max(z_ifc_e0)) + 1.0
+    fill_low = float(array_ns.min(z_ifc_e0)) - 1.0
 
-        jk_start = int(flat_idx[je])
-        for jk in range(int(flat_idx[je]) + 1, nlev):
-            for jk1 in range(jk_start, nlev):
-                if jk1 == nlev - 1 or (
-                    z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
-                    and z_me[je, jk] >= z_ifc[e2c[je, 1], jk1 + 1]
-                ):
-                    vertidx_gradp[je, 1, jk] = jk1
-                    zdiff_gradp[je, 1, jk] = z_me[je, jk] - z_mc[e2c[je, 1], jk1]
-                    jk_start = jk1
-                    break
+    z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+        nlev + 1 - fi[:, None]
+    )
+    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
 
-    for je in range(horizontal_start_1, nedges):
-        jk_start = int(flat_idx[je])
-        for jk in range(int(flat_idx[je]) + 1, nlev):
-            if z_me[je, jk] < z_aux2[je]:
-                for jk1 in range(jk_start, nlev):
-                    if jk1 == nlev - 1 or (
-                        z_aux2[je] <= z_ifc[e2c[je, 0], jk1]
-                        and z_aux2[je] >= z_ifc[e2c[je, 0], jk1 + 1]
-                    ):
-                        vertidx_gradp[je, 0, jk] = jk1
-                        zdiff_gradp[je, 0, jk] = z_aux2[je] - z_mc[e2c[je, 0], jk1]
-                        jk_start = jk1
-                        break
+    z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
+    z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
+    z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
 
-        jk_start = int(flat_idx[je])
-        for jk in range(int(flat_idx[je]) + 1, nlev):
-            if z_me[je, jk] < z_aux2[je]:
-                for jk1 in range(jk_start, nlev):
-                    if jk1 == nlev - 1 or (
-                        z_aux2[je] <= z_ifc[e2c[je, 1], jk1]
-                        and z_aux2[je] >= z_ifc[e2c[je, 1], jk1 + 1]
-                    ):
-                        vertidx_gradp[je, 1, jk] = jk1
-                        zdiff_gradp[je, 1, jk] = z_aux2[je] - z_mc[e2c[je, 1], jk1]
-                        jk_start = jk1
-                        break
+    pos_0 = _batched_searchsorted(z_ifc_e0_m, z_me_m, array_ns)
+    jk1_0 = array_ns.clip(nlev - pos_0, fi[:, None], nlev - 1)
 
-    vertoffset_gradp = vertidx_gradp - vertoffset_gradp
+    pos_1 = _batched_searchsorted(z_ifc_e1_m, z_me_m, array_ns)
+    jk1_1 = array_ns.clip(nlev - pos_1, fi[:, None], nlev - 1)
 
-    exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 0, :], stream=decomposition.BLOCK)
-    exchange.exchange(dims.EdgeDim, zdiff_gradp[:, 1, :], stream=decomposition.BLOCK)
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    boundary = array_ns.arange(nedges, dtype=array_ns.int64) >= horizontal_start
+    valid_jk = (jk_idx > fi[:, None]) & boundary[:, None]
+    z_mc_e0 = z_mc[e2c_0]
+    z_mc_e1 = z_mc[e2c_1]
+
+    zdiff_gradp[:, 0, :] = array_ns.where(
+        valid_jk,
+        z_me - array_ns.take_along_axis(z_mc_e0, jk1_0.astype(array_ns.int64), axis=1),
+        zdiff_gradp[:, 0, :],
+    )
+    zdiff_gradp[:, 1, :] = array_ns.where(
+        valid_jk,
+        z_me - array_ns.take_along_axis(z_mc_e1, jk1_1.astype(array_ns.int64), axis=1),
+        zdiff_gradp[:, 1, :],
+    )
+
+    vertoffset_gradp[:, 0, :] = array_ns.where(
+        valid_jk,
+        (jk1_0 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[:, 0, :],
+    )
+    vertoffset_gradp[:, 1, :] = array_ns.where(
+        valid_jk,
+        (jk1_1 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[:, 1, :],
+    )
+
+    nudging = array_ns.arange(nedges, dtype=array_ns.int64) >= horizontal_start_1
+    if nudging.any():
+        z_aux2_vec = z_aux2[:, None]
+
+        pos_aux_0 = _batched_searchsorted(z_ifc_e0_m, z_aux2_vec, array_ns)
+        jk1_aux_0 = array_ns.clip(nlev - pos_aux_0[:, 0], fi, nlev - 1)
+
+        pos_aux_1 = _batched_searchsorted(z_ifc_e1_m, z_aux2_vec, array_ns)
+        jk1_aux_1 = array_ns.clip(nlev - pos_aux_1[:, 0], fi, nlev - 1)
+
+        phase2_mask = valid_jk & (z_me < z_aux2[:, None]) & nudging[:, None]
+
+        zdiff_gradp[:, 0, :] = array_ns.where(
+            phase2_mask,
+            z_aux2_vec
+            - array_ns.take_along_axis(z_mc_e0, jk1_aux_0[:, None].astype(array_ns.int64), axis=1),
+            zdiff_gradp[:, 0, :],
+        )
+        zdiff_gradp[:, 1, :] = array_ns.where(
+            phase2_mask,
+            z_aux2_vec
+            - array_ns.take_along_axis(z_mc_e1, jk1_aux_1[:, None].astype(array_ns.int64), axis=1),
+            zdiff_gradp[:, 1, :],
+        )
+
+        vertoffset_gradp[:, 0, :] = array_ns.where(
+            phase2_mask,
+            (jk1_aux_0[:, None] - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[:, 0, :],
+        )
+        vertoffset_gradp[:, 1, :] = array_ns.where(
+            phase2_mask,
+            (jk1_aux_1[:, None] - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[:, 1, :],
+        )
 
     return zdiff_gradp, vertoffset_gradp
