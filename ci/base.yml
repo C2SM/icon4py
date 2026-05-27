@@ -26,14 +26,11 @@ variables:
     DOCKERFILE: ci/docker/base.Dockerfile
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
-    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION"]'
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
     KUBERNETES_MEMORY_REQUEST: 128Gi
     KUBERNETES_MEMORY_LIMIT: 128Gi
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
-  variables:
-    HPC_SDK_VERSION: 24.11
-    HPC_SDK_NAME: "nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6"
 
 .build_image:
   stage: image
@@ -66,7 +63,6 @@ build_image_aarch64:
     CUDA_DEVICE_MAX_CONNECTIONS: 8
     CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
     NUM_PROCESSES: auto
-    VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
@@ -74,8 +70,8 @@ build_image_aarch64:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PY2F_GPU_TESTS: 1
-    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
-    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    CUDACXX: "/usr/bin/nvcc"
+    GT4PY_BUILD_JOBS: 8
     PYTEST_ADDOPTS: "--durations=0"
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
@@ -84,7 +80,6 @@ build_image_aarch64:
     RUNNER: "ci-runner"
     SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Creating more pytest workers does speeds up testing, but pytest startup
