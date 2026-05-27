@@ -98,7 +98,7 @@ build_distributed:
       # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
       - COMPONENT: [common]
       #   BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        BACKEND: [embedded, dace_cpu]
+        BACKEND: [embedded, dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
