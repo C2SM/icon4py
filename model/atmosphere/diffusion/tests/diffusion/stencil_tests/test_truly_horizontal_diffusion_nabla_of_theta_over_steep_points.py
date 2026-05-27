@@ -64,8 +64,8 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,

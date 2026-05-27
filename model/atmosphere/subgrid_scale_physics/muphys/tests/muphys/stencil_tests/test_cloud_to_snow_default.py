@@ -21,8 +21,8 @@ class TestCloudToSnowDefault(StencilTest):
 
     @staticmethod
     def reference(
+        connectivities,
         *,
-        grid,
         t: np.ndarray,
         qc: np.ndarray,
         qs: np.ndarray,

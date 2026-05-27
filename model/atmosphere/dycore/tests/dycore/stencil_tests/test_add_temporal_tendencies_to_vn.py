@@ -43,8 +43,8 @@ class TestAddTemporalTendenciesToVn(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vn_nnow: np.ndarray,
         ddt_vn_apc_ntl1: np.ndarray,
         ddt_vn_phy: np.ndarray,

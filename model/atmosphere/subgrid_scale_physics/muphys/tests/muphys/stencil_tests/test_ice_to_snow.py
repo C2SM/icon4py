@@ -21,7 +21,13 @@ class TestIceToSnow(StencilTest):
 
     @staticmethod
     def reference(
-        grid, qi: np.ndarray, ns: np.ndarray, lam: np.ndarray, sticking_eff: np.ndarray, **kwargs
+        connectivities,
+        *,
+        qi: np.ndarray,
+        ns: np.ndarray,
+        lam: np.ndarray,
+        sticking_eff: np.ndarray,
+        **kwargs,
     ) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 3.3262745200740486e-11))
 

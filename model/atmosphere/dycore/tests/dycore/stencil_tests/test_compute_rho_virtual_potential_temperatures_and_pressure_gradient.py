@@ -82,8 +82,8 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         w: np.ndarray,
         w_concorr_c: np.ndarray,
         ddqz_z_half: np.ndarray,

@@ -26,8 +26,8 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(stencil_tests.Stenci
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_lsq_coeff_1: np.ndarray,
         z_lsq_coeff_2: np.ndarray,
         z_lsq_coeff_3: np.ndarray,

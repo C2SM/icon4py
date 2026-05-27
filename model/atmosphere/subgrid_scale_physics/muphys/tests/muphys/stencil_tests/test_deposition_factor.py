@@ -20,7 +20,13 @@ class TestDepositionFactor(StencilTest):
     OUTPUTS = ("deposition_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, qvsi: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities,
+        *,
+        t: np.ndarray,
+        qvsi: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(deposition_rate=np.full(t.shape, 1.3234329478493952e-05))
 
     @pytest.fixture

@@ -21,8 +21,8 @@ class TestIceToGraupel(StencilTest):
 
     @staticmethod
     def reference(
+        connectivities,
         *,
-        grid,
         rho: np.ndarray,
         qr: np.ndarray,
         qg: np.ndarray,

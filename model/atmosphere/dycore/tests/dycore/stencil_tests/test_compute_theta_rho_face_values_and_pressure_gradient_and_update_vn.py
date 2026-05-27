@@ -155,8 +155,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_at_edges_on_model_levels: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
         horizontal_pressure_gradient: np.ndarray,

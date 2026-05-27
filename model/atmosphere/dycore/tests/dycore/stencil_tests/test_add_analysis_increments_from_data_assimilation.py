@@ -41,8 +41,8 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_rho_expl: np.ndarray,
         rho_incr: np.ndarray,
         z_exner_expl: np.ndarray,

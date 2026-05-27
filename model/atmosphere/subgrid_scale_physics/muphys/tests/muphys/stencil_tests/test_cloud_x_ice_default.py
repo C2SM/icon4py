@@ -21,7 +21,13 @@ class TestCloudXIceDefault(StencilTest):
 
     @staticmethod
     def reference(
-        grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, dt: wpfloat, **kwargs
+        connectivities,
+        *,
+        t: np.ndarray,
+        qc: np.ndarray,
+        qi: np.ndarray,
+        dt: wpfloat,
+        **kwargs,
     ) -> dict:
         return dict(freezing_rate=np.full(t.shape, 0.0))
 

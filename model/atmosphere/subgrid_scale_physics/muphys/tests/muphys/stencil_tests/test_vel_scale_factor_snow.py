@@ -23,7 +23,13 @@ class TestVelScaleFactorSnow(StencilTest):
 
     @staticmethod
     def reference(
-        grid, xrho: np.ndarray, rho: np.ndarray, t: np.ndarray, qs: np.ndarray, **kwargs
+        connectivities,
+        *,
+        xrho: np.ndarray,
+        rho: np.ndarray,
+        t: np.ndarray,
+        qs: np.ndarray,
+        **kwargs,
     ) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642))
 

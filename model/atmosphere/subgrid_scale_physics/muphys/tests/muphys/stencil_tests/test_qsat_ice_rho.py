@@ -20,7 +20,13 @@ class TestQsatIceRho(StencilTest):
     OUTPUTS = ("pressure",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, rho: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities,
+        *,
+        t: np.ndarray,
+        rho: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(pressure=np.full(t.shape, 0.0074981245870634101))
 
     @pytest.fixture

@@ -72,8 +72,8 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         inv_dual_edge_length: np.ndarray,
         z_exner_ex_pr: np.ndarray,
         zdiff_gradp: np.ndarray,

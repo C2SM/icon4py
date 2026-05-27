@@ -24,8 +24,8 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         kh_smag_ec: np.ndarray,
         vn: np.ndarray,
         e_bln_c_s: np.ndarray,

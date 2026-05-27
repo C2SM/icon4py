@@ -31,8 +31,8 @@ class TestUpdateThetaV(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         mask_prog_halo_c: np.ndarray,
         rho_now: np.ndarray,
         rho_new: np.ndarray,

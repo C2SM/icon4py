@@ -63,8 +63,8 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_rho_expl: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         inv_ddqz_z_full: np.ndarray,

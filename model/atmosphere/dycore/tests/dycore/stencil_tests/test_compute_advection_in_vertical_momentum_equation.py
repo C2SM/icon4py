@@ -300,8 +300,8 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vertical_cfl: np.ndarray,
@@ -505,8 +505,8 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,

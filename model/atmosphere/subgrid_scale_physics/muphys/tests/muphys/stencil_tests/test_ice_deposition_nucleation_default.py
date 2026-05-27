@@ -23,8 +23,8 @@ class TestIceDepositionNucleationDefault(StencilTest):
 
     @staticmethod
     def reference(
+        connectivities,
         *,
-        grid,
         t: np.ndarray,
         qc: np.ndarray,
         qi: np.ndarray,

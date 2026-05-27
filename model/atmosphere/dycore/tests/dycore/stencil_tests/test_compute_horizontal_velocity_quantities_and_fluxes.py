@@ -116,8 +116,8 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         spatially_averaged_vn: np.ndarray,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         tangential_wind: np.ndarray,

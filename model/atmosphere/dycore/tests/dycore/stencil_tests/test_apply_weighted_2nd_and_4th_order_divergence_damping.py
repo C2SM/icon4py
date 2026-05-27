@@ -42,8 +42,8 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         interpolated_fourth_order_divdamp_factor: np.ndarray,
         nudgecoeff_e: np.ndarray,
         z_graddiv2_vn: np.ndarray,

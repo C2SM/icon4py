@@ -21,7 +21,13 @@ class TestCloudToGraupelDefault(StencilTest):
 
     @staticmethod
     def reference(
-        grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qg: np.ndarray, **kwargs
+        connectivities,
+        *,
+        t: np.ndarray,
+        rho: np.ndarray,
+        qc: np.ndarray,
+        qg: np.ndarray,
+        **kwargs,
     ) -> dict:
         return dict(riming_graupel_rate=np.full(t.shape, 0.0))
 

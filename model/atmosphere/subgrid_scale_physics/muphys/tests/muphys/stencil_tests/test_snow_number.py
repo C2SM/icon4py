@@ -20,7 +20,14 @@ class TestSnowNumber(StencilTest):
     OUTPUTS = ("number",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, rho: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities,
+        *,
+        t: np.ndarray,
+        rho: np.ndarray,
+        qs: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(number=np.full(t.shape, 3813750.0))
 
     @pytest.fixture

@@ -144,8 +144,8 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         levelmask: np.ndarray,
         c_lin_e: np.ndarray,
         z_w_con_c_full: np.ndarray,

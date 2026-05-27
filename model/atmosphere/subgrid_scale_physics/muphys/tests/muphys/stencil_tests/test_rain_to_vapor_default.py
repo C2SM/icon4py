@@ -21,8 +21,8 @@ class TestRainToVaporDefault(StencilTest):
 
     @staticmethod
     def reference(
+        connectivities,
         *,
-        grid,
         t: np.ndarray,
         rho: np.ndarray,
         qc: np.ndarray,

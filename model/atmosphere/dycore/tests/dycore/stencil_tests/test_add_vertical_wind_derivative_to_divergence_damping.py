@@ -51,8 +51,8 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         hmask_dd3d: np.ndarray,
         scalfac_dd3d: np.ndarray,
         inv_dual_edge_length: np.ndarray,

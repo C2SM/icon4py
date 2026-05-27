@@ -46,8 +46,8 @@ class TestUpdateMassVolumeFlux(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_contr_w_fl_l: np.ndarray,
         rho_ic: np.ndarray,
         vwind_impl_wgt: np.ndarray,

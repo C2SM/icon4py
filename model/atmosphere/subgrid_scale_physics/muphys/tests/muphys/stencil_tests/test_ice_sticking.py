@@ -20,7 +20,12 @@ class TestIceSticking(StencilTest):
     OUTPUTS = ("sticking_factor",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities,
+        *,
+        t: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(sticking_factor=np.full(t.shape, 0.8697930232044021))
 
     @pytest.fixture

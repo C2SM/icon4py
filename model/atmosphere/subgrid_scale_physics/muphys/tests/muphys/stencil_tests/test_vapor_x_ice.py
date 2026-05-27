@@ -21,8 +21,8 @@ class TestVaporXIceDefault(StencilTest):
 
     @staticmethod
     def reference(
+        connectivities,
         *,
-        grid,
         qi: np.ndarray,
         mi: np.ndarray,
         eta: np.ndarray,

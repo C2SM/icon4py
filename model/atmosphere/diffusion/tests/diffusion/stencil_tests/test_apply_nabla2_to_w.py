@@ -41,8 +41,8 @@ class TestMoApplyNabla2ToW(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         area: np.ndarray,
         z_nabla2_c: np.ndarray,
         geofac_n2s: np.ndarray,

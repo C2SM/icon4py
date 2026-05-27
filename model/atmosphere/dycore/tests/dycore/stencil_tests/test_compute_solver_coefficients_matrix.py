@@ -47,8 +47,8 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         exner_nnow: np.ndarray,
         rho_nnow: np.ndarray,
         theta_v_nnow: np.ndarray,

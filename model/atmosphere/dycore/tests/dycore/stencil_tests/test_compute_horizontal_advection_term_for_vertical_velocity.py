@@ -56,8 +56,8 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vn_ie: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         w: np.ndarray,

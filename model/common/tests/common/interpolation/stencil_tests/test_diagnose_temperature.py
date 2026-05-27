@@ -26,8 +26,8 @@ class TestDiagnoseTemperature(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         qv: np.ndarray,
         qc: np.ndarray,
         qi: np.ndarray,

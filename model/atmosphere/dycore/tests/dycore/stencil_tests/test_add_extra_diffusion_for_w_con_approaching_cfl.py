@@ -78,8 +78,8 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         z_w_con_c: np.ndarray,

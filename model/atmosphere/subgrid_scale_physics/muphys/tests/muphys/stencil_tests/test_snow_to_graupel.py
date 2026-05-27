@@ -21,7 +21,13 @@ class TestSnowToGraupel(StencilTest):
 
     @staticmethod
     def reference(
-        grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qs: np.ndarray, **kwargs
+        connectivities,
+        *,
+        t: np.ndarray,
+        rho: np.ndarray,
+        qc: np.ndarray,
+        qs: np.ndarray,
+        **kwargs,
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 6.2696154545048011e-10))
 

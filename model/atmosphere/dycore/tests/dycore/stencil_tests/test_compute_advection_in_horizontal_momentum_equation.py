@@ -161,8 +161,8 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         normal_wind_advective_tendency: np.ndarray,
         vn: np.ndarray,
         horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,

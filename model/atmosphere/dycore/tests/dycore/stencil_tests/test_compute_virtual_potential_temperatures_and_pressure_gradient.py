@@ -62,8 +62,8 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         wgtfac_c: np.ndarray,
         z_rth_pr_2: np.ndarray,
         theta_v: np.ndarray,

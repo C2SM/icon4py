@@ -37,8 +37,8 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         wgtfac_c: np.ndarray,
         div: np.ndarray,
         kh_c: np.ndarray,

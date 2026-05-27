@@ -22,7 +22,14 @@ class TestDepositionAutoConversionDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, qi: np.ndarray, m_ice: np.ndarray, ice_dep: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities,
+        *,
+        qi: np.ndarray,
+        m_ice: np.ndarray,
+        ice_dep: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 0.0))
 
     @pytest.fixture

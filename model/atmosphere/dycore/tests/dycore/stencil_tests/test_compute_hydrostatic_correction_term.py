@@ -109,8 +109,8 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         theta_v: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,

@@ -184,8 +184,8 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
     @classmethod
     def reference(
         cls,
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         tangential_wind: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,

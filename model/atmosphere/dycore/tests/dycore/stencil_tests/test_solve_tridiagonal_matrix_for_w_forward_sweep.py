@@ -64,8 +64,8 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         ddqz_z_half: np.ndarray,

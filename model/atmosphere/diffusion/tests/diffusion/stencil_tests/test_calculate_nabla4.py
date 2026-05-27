@@ -76,8 +76,8 @@ class TestCalculateNabla4(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
         primal_normal_vert_v1: np.ndarray,

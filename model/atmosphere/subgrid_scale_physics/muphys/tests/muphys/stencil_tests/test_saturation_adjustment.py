@@ -32,7 +32,8 @@ class TestSaturationAdjustment(StencilTest):
 
     @staticmethod
     def reference(
-        grid: base_grid.Grid,
+        connectivities: base_grid.Grid,
+        *,
         te: np.ndarray,
         **kwargs,
     ) -> dict:

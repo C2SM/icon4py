@@ -889,8 +889,8 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @classmethod
     def reference(
         cls,
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         famask_int,
         p_vn,
         ptr_v3_lon,

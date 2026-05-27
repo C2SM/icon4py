@@ -341,8 +341,8 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
     @classmethod
     def reference(
         cls,
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_coords_dreg_v_1_x: np.ndarray,
         p_coords_dreg_v_2_x: np.ndarray,
         p_coords_dreg_v_3_x: np.ndarray,

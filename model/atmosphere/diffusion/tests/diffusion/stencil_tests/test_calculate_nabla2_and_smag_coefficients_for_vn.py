@@ -39,8 +39,8 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         diff_multfac_smag: np.ndarray,
         tangent_orientation: np.ndarray,
         inv_primal_edge_length: np.ndarray,

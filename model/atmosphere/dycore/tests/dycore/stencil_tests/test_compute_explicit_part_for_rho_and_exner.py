@@ -58,8 +58,8 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        *,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_nnow: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         z_flxdiv_mass: np.ndarray,

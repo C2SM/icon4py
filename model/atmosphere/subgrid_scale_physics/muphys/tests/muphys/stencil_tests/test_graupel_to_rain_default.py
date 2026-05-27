@@ -21,8 +21,8 @@ class TestGraupelToRainDefault(StencilTest):
 
     @staticmethod
     def reference(
+        connectivities,
         *,
-        grid,
         t: np.ndarray,
         p: np.ndarray,
         rho: np.ndarray,
