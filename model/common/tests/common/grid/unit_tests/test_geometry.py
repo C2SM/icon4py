@@ -72,7 +72,7 @@ def test_edge_control_area(
     expected = grid_savepoint.edge_areas()
     geometry_source = grid_utils.get_grid_geometry(backend, experiment)
     result = geometry_source.get(attrs.EDGE_AREA)
-    assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol)
+    assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.datatest
