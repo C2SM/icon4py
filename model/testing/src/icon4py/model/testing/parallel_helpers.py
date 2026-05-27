@@ -86,7 +86,7 @@ def check_local_global_field(
     rtol: float = 0.0,
 ) -> None:
     if dim == dims.KDim:
-        test_utils.assert_dallclose(actual=global_reference_field, desired=local_field)
+        test_utils.assert_dallclose(global_reference_field, local_field)
         return
 
     _log.info(
@@ -116,7 +116,7 @@ def check_local_global_field(
             if actual.shape[0] > 0 and desired.shape[0] > 0:
                 # abuse err_msg to print the domain region
                 test_utils.assert_dallclose(
-                    actual=actual, desired=desired, atol=atol, rtol=rtol, err_msg=entry_type.name
+                    actual, desired, atol=atol, rtol=rtol, err_msg=entry_type.name
                 )
 
     # Compare owned local field, excluding halos, against global reference
@@ -156,5 +156,5 @@ def check_local_global_field(
 
         # abuse err_msg to print the domain region
         test_utils.assert_dallclose(
-            actual=sorted_, desired=global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
+            sorted_, global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
         )

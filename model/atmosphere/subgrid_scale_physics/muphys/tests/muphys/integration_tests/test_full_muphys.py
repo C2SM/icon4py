@@ -115,23 +115,23 @@ def test_full_muphys(
     atol = 1e-16
 
     test_utils.assert_dallclose(
-        actual=ref.qv.asnumpy(), desired=out.qv.asnumpy(), atol=atol, rtol=rtol
+        ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol
     )
     test_utils.assert_dallclose(
-        actual=ref.qc.asnumpy(), desired=out.qc.asnumpy(), atol=atol, rtol=rtol
+        ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol
     )
     test_utils.assert_dallclose(
-        actual=ref.qi.asnumpy(), desired=out.qi.asnumpy(), atol=atol, rtol=rtol
+        ref.qi.asnumpy(), out.qi.asnumpy(), atol=atol, rtol=rtol
     )
     test_utils.assert_dallclose(
-        actual=ref.qr.asnumpy(), desired=out.qr.asnumpy(), atol=atol, rtol=rtol
+        ref.qr.asnumpy(), out.qr.asnumpy(), atol=atol, rtol=rtol
     )
     test_utils.assert_dallclose(
-        actual=ref.qs.asnumpy(), desired=out.qs.asnumpy(), atol=atol, rtol=rtol
+        ref.qs.asnumpy(), out.qs.asnumpy(), atol=atol, rtol=rtol
     )
     test_utils.assert_dallclose(
-        actual=ref.qg.asnumpy(), desired=out.qg.asnumpy(), atol=atol, rtol=rtol
+        ref.qg.asnumpy(), out.qg.asnumpy(), atol=atol, rtol=rtol
     )
     test_utils.assert_dallclose(
-        actual=ref.t.asnumpy(), desired=out.t.asnumpy(), atol=atol, rtol=rtol
+        ref.t.asnumpy(), out.t.asnumpy(), atol=atol, rtol=rtol
     )

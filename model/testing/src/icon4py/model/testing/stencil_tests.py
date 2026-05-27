@@ -266,8 +266,8 @@ class StencilTest:
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
                     test_utils.assert_dallclose(
-                        actual=out_field.asnumpy()[gtslice],
-                        desired=reference_outputs[name][i_out_field][refslice],
+                        out_field.asnumpy()[gtslice],
+                        reference_outputs[name][i_out_field][refslice],
                         equal_nan=True,
                         err_msg=f"Verification failed for '{name}[{i_out_field}]'",
                         rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
@@ -276,8 +276,8 @@ class StencilTest:
                 reference_outputs_name = reference_outputs[name]  # for mypy
                 assert isinstance(reference_outputs_name, np.ndarray)
                 test_utils.assert_dallclose(
-                    actual=input_data_name.asnumpy()[gtslice],
-                    desired=reference_outputs_name[refslice],
+                    input_data_name.asnumpy()[gtslice],
+                    reference_outputs_name[refslice],
                     equal_nan=True,
                     err_msg=f"Verification failed for '{name}'",
                     rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment

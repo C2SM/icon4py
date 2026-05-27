@@ -506,8 +506,8 @@ def test_factory_zdiff_gradp(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     test_helpers.assert_dallclose(
-        actual=zdiff_gradp_ref.asnumpy()[start_lat_level2:, :, :],
-        desired=field_1.asnumpy()[start_lat_level2:, :, :],
+        zdiff_gradp_ref.asnumpy()[start_lat_level2:, :, :],
+        field_1.asnumpy()[start_lat_level2:, :, :],
         atol=1.0e-10,
         rtol=1e-9,
     )
