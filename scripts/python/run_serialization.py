@@ -15,7 +15,6 @@ from __future__ import annotations
 import dataclasses
 import itertools
 import json
-import os
 import pathlib
 import re
 import shutil
@@ -86,10 +85,12 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Directories (adjust if needed)
-        ROOT_PROJECT_DIR = pathlib.Path(os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
+        # Directories (derived from this script's location in icon4py/)
+        _THIS_FILE = pathlib.Path(__file__).resolve()
+        ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
+        assert ICON4PY_REPO_DIR.name == "icon4py", f"Expected icon4py repo dir, got {ICON4PY_REPO_DIR}"
+        ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
-        ICON4PY_REPO_DIR = ROOT_PROJECT_DIR / "icon4py"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
         RUNSCRIPTS_DIR = BUILD_DIR / "run"
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
