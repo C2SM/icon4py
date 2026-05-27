@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -32,7 +33,7 @@ class TestSaturationAdjustment(StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: base_grid.Grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         te: np.ndarray,
         **kwargs,
