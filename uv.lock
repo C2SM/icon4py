@@ -2176,8 +2176,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post765+038d47a2"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#038d47a27300d4b185f8eaab15e45dd427662712" }
+version = "1.0.4.post769+e599d194"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#e599d1940e28a3a88dcc2d4fc896a17bd0923117" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -2187,6 +2187,7 @@ dependencies = [
     { name = "click" },
     { name = "cmake" },
     { name = "cytoolz" },
+    { name = "dace" },
     { name = "deepdiff" },
     { name = "devtools" },
     { name = "factory-boy" },
