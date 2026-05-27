@@ -8,7 +8,6 @@
 import logging
 from typing import Final
 
-import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
@@ -302,7 +301,7 @@ def convert_to_non_nested_refinement_values(
     """
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
     array_ns = data_alloc.array_namespace(field)
-    return array_ns.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
+    return array_ns.where(field == _UNORDERED[dim][1], 0, array_ns.where(field < 0, -field, field))
 
 
 def is_limited_area_grid(
