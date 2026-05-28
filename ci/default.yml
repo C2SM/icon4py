@@ -171,10 +171,11 @@ test_stencils_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
-    SELECTION_PATTERN: "/(^|:)stencils(:|$)/"
-    COMPONENT_PATTERN: "/(^|:)${COMPONENT}(:|$)/"
-    BACKEND_PATTERN: "/(^|:)${BACKEND}(:|$)/"
-    GRID_PATTERN: "/(^|:)${GRID}(:|$)/"
+    SLASH: "/"
+    SELECTION_PATTERN: "${SLASH}(^|:)stencils(:|$)${SLASH}"
+    COMPONENT_PATTERN: "${SLASH}(^|:)${COMPONENT}(:|$)${SLASH}"
+    BACKEND_PATTERN: "${SLASH}(^|:)${BACKEND}(:|$)${SLASH}"
+    GRID_PATTERN: "${SLASH}(^|:)${GRID}(:|$)${SLASH}"
   script:
     - nox -s "test_model-3.13(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
