@@ -7,7 +7,7 @@ variables:
   # pipeline. The are meant to be overridden with with e.g.
   #
   # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;COMPONENTS=common:standalone_driver
-  COMPONENTS: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver:atmosphere/diffusion:atmosphere/dycore"
+  COMPONENTS: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver:atmosphere-diffusion:atmosphere-dycore"
   BACKENDS: "dace_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
@@ -51,8 +51,8 @@ variables:
   - standalone_driver
 
 .mpi_components: &mpi_components
-  - atmosphere/diffusion
-  - atmosphere/dycore
+  - atmosphere-diffusion
+  - atmosphere-dycore
   - common
   - standalone_driver
 
@@ -81,7 +81,7 @@ build_mpi_baseimage_aarch64:
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
 
-build_mpi_image:
+build_mpi_image_aarch64:
   stage: image
   extends: [.container-builder-cscs-gh200, .build_mpi_image]
   needs: [build_mpi_baseimage_aarch64]
@@ -134,7 +134,7 @@ build_mpi_image:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
   extends: .container-runner-santis-gh200
-  needs: [build_mpi_image]
+  needs: [build_mpi_image_aarch64]
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
@@ -253,7 +253,8 @@ test_datatests_mpi_aarch64:
   variables:
     SELECTION_TAG: "mpi"
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+    - COMPONENT_PATH=$(echo "$COMPONENT" | tr '-' '/')
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT_PATH --level=$LEVEL
   parallel:
     matrix:
       - COMPONENT: *mpi_components
@@ -268,17 +269,17 @@ test_datatests_mpi_aarch64:
       when: never
     - if: '$LEVELS != "" && $LEVELS !~ /(^|:)${LEVEL}(:|$)/'
       when: never
-    - if: $COMPONENT == 'atmosphere/diffusion'
+    - if: $COMPONENT == 'atmosphere-diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
+    - if: $COMPONENT == 'atmosphere-dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '01:30:00'
         SLURM_PARTITION: "normal"
-    - if: $COMPONENT == 'atmosphere/dycore'
+    - if: $COMPONENT == 'atmosphere-dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
