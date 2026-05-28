@@ -58,7 +58,7 @@ test = [
   "pytest-mpi>=0.6",
   "pytest-unused-fixtures>=0.2.0",
   "pytest-xdist[psutil]>=3.5.0",
-  "tach>=0.23.0",
+  "tach>=0.23.0"
 ]
 typing = [
   "mypy[faster-cache]>=1.13.0",
