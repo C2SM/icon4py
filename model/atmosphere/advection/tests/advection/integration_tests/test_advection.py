@@ -32,6 +32,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -66,7 +67,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [

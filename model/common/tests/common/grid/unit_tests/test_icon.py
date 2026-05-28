@@ -23,6 +23,7 @@ from icon4py.model.testing.fixtures import (
     cpu_allocator,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     process_props,
@@ -39,16 +40,11 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-@pytest.fixture(scope="module")
-def experiment() -> definitions.Experiment:
-    """The module uses hard-coded references for the MCH_CH_R04B09 experiment."""
-    return definitions.Experiments.MCH_CH_R04B09
-
-
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
-    return gridtest_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.MCH_CH_R04B09,
+    return gridtest_utils.get_grid_manager_from_identifier(
+        definitions.Experiments.MCH_CH_R04B09.grid,
+        num_levels=65,
         keep_skip_values=True,
         allocator=model_backends.get_allocator(None),
     ).grid
@@ -87,6 +83,16 @@ INTERIOR_IDX = {
     dims.EdgeDim: [6176, HALO_IDX[dims.EdgeDim][0]],
     dims.VertexDim: [2071, HALO_IDX[dims.VertexDim][0]],
 }
+
+
+@pytest.fixture(
+    params=[definitions.Experiments.MCH_CH_R04B09],
+    ids=lambda r: r.name,
+)
+def experiment_description(
+    request: pytest.FixtureRequest,
+) -> definitions.ExperimentDescription:
+    return request.param
 
 
 @pytest.fixture(params=["serialbox", "file"])
@@ -176,16 +182,16 @@ def test_grid_size(icon_grid: base_grid.Grid) -> None:
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor",
+    "grid_description",
     (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
 def test_when_keep_skip_value_then_neighbor_table_matches_config(
-    grid_descriptor: definitions.GridDescription,
+    grid_description: definitions.GridDescription,
     offset: gtx.FieldOffset,
     backend: gtx_typing.Backend,
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
     connectivity = grid.get_connectivity(offset)
 
     assert (
@@ -194,18 +200,18 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
     if not icon._has_skip_values(offset, grid.config.limited_area):
         assert connectivity.skip_value is None, f"skip value for offset {offset} should be None"
     else:
-        assert (
-            connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
-        ), f"skip for offset {offset} value should be {gridfile.GridFile.INVALID_INDEX}"
+        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX, (
+            f"skip for offset {offset} value should be {gridfile.GridFile.INVALID_INDEX}"
+        )
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor",
+    "grid_description",
     (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("dim", (dims.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
-    grid_descriptor: definitions.GridDescription,
+    grid_description: definitions.GridDescription,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -213,17 +219,17 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
     if dim in (dims.LsqCDim, dims.LsqUnkDim):
         pytest.skip("LsqCDim and LsqUnkDim are not offset dimensions.")
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
-        assert np.any(
-            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
-        ).item(), f"Connectivity {dim.value} for {grid_descriptor.name} should have skip values."
+        assert np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
+            f"Connectivity {dim.value} for {grid_description.name} should have skip values."
+        )
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
     else:
-        assert not np.any(
-            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
-        ).item(), f"Connectivity {dim.value} for {grid_descriptor.name} contains skip values, but none are expected."
+        assert not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
+            f"Connectivity {dim.value} for {grid_description.name} contains skip values, but none are expected."
+        )
         assert connectivity.skip_value is None
 
 
@@ -287,7 +293,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_descriptor, geometry_type, subdivision, radius, domain_length, domain_height, num_cells",
+    "grid_description, geometry_type, subdivision, radius, domain_length, domain_height, num_cells",
     [
         (
             definitions.Grids.R02B04_GLOBAL,
@@ -346,7 +352,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
     ],
 )
 def test_grid_params_from_grid_manager(
-    grid_descriptor: definitions.GridDescription,
+    grid_description: definitions.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: icon.GeometryType,
     subdivision: icon.GridSubdivision,
@@ -355,7 +361,7 @@ def test_grid_params_from_grid_manager(
     domain_height: float,
     num_cells: int,
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
     params = grid.grid_params
     assert params is not None
     assert params.geometry_type == geometry_type
