@@ -28,6 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Fetch base branch for tach impact analysis
+        run: git fetch origin main:main
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
