@@ -49,7 +49,7 @@ def advection_exit_savepoint(data_provider, date):
 
 
 @pytest.fixture
-def advection_lsq_state(
+def construct_advection_lsq_state(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
 ) -> advection_states.AdvectionLeastSquaresState:
     return advection_states.AdvectionLeastSquaresState(

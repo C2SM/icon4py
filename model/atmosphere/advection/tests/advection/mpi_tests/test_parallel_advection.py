@@ -124,7 +124,7 @@ def test_advection_run_single_step(
     experiment: test_defs.Experiment,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
-    advection_lsq_state,
+    construct_advection_lsq_state,
 ):
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
@@ -163,7 +163,7 @@ def test_advection_run_single_step(
         config=config,
         grid=icon_grid,
         interpolation_state=interpolation_state,
-        least_squares_state=advection_lsq_state,
+        least_squares_state=construct_advection_lsq_state,
         metric_state=metric_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
