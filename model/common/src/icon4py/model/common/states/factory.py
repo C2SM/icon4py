@@ -340,7 +340,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
 
     def __init__(
         self,
-        *,  # keyword arg to (field_operator, field_name) need: src
+        *,
         func: gtx_typing.FieldOperator,
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
