@@ -42,7 +42,6 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from ..fixtures import *  # noqa: F403
 from ..utils import (
-    construct_config,
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
     construct_interpolation_state,
@@ -142,16 +141,20 @@ def test_advection_run_single_step(
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    config = construct_config(
+    config = advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
         vertical_advection_limiter=vertical_advection_limiter,
     )
 
-    interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
+    interpolation_state = construct_interpolation_state(
+        savepoint=interpolation_savepoint, backend=backend
+    )
 
-    metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
+    metric_state = construct_metric_state(
+        icon_grid=icon_grid, savepoint=metrics_savepoint, backend=backend
+    )
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
     exchange_runtime = definitions.create_exchange(process_props, decomposition_info)
@@ -170,7 +173,7 @@ def test_advection_run_single_step(
     )
 
     diagnostic_state = construct_diagnostic_init_state(
-        icon_grid, advection_init_savepoint, ntracer, backend=backend
+        icon_grid=icon_grid, savepoint=advection_init_savepoint, ntracer=ntracer, backend=backend
     )
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
@@ -189,12 +192,11 @@ def test_advection_run_single_step(
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid, advection_exit_savepoint, ntracer, backend=backend
-    diagnostic_state_ref = construct_diagnostic_exit_state(
         icon_grid=icon_grid,
         advection_exit_savepoint=advection_exit_savepoint,
         ntracer=ntracer,
-        backend=backend
+        backend=backend,
+    )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     test_helpers.assert_dallclose(

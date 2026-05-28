@@ -42,7 +42,6 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
-    construct_config,
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
     construct_interpolation_state,
@@ -136,12 +135,13 @@ def test_advection_run_single_step(
         pytest.xfail(
             "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
-    config = construct_config(
+    config = advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
         vertical_advection_limiter=vertical_advection_limiter,
     )
+
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     least_squares_coeffs = compute_lsq_coeffs(
