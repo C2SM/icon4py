@@ -194,19 +194,19 @@ def test_advection_run_single_step(
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
-    assert test_helpers.dallclose(
+    test_helpers.assert_dallclose(
         diagnostic_state.hfl_tracer.asnumpy(),
         diagnostic_state_ref.hfl_tracer.asnumpy(),
         atol=1e-11,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.vfl_tracer.asnumpy(),
         diagnostic_state_ref.vfl_tracer.asnumpy(),
         rtol=1e-10,
     )
 
-    assert test_helpers.dallclose(
+    test_helpers.assert_dallclose(
         p_tracer_new_ref.asnumpy(),
         p_tracer_new.asnumpy(),
         atol=1e-16,
