@@ -43,14 +43,14 @@ def _muphys(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
     t, q, pflx, pr, ps, pi, pg, pre = graupel(
-        last_level,
-        dz,
-        te,
-        p,
-        rho,
-        Q(v=qve, c=qce, r=q_in.r, s=q_in.s, i=q_in.i, g=q_in.g),
-        dt,
-        qnc,
+        last_level=last_level,
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        q=Q(v=qve, c=qce, r=q_in.r, s=q_in.s, i=q_in.i, g=q_in.g),
+        dt=dt,
+        qnc=qnc,
         enable_masking=True,  # TODO(havogt): expose this option when optimizing full muphys
     )
 
@@ -86,7 +86,7 @@ def muphys_run(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_end: gtx.int32,
 ) -> None:
     _muphys(
-        vertical_end - 1,
+        last_level=vertical_end - 1,
         dz=dz,
         te=te,
         p=p,
