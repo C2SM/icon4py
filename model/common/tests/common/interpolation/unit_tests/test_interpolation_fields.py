@@ -272,10 +272,10 @@ def test_compute_c_bln_avg(
                 lon=lon,
                 cell_areas=cell_areas,
                 cell_owner_mask=cell_owner_mask,
-                exchange=decomposition.single_node_exchange,
                 divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
                 horizontal_start_level_3=horizontal_start_p2,
+                exchange=decomposition.single_node_exchange,
             )
         case icon.GeometryType.TORUS:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
@@ -284,8 +284,8 @@ def test_compute_c_bln_avg(
                 cell_owner_mask=cell_owner_mask,
                 divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
-                exchange=decomposition.single_node_exchange,
                 horizontal_start_level_3=horizontal_start_p2,
+                exchange=decomposition.single_node_exchange,
             )
 
     assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
