@@ -167,7 +167,7 @@ build_mpi_image:
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
 
-.test_stencils:
+test_stencils_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
@@ -200,7 +200,7 @@ build_mpi_image:
         SLURM_TIMELIMIT: '00:15:00'
 
 
-.test_datatests_serial:
+test_datatests_serial_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
@@ -235,7 +235,7 @@ build_mpi_image:
       variables:
         SLURM_TIMELIMIT: '00:30:00'
 
-.test_tools:
+test_tools_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
@@ -247,7 +247,7 @@ build_mpi_image:
       when: never
     - when: on_success
 
-.test_datatests_mpi:
+test_datatests_mpi_aarch64:
   stage: test
   extends: [.test_runner_mpi, .test_prep_mpi]
   variables:
@@ -288,17 +288,3 @@ build_mpi_image:
     when: always
     paths:
       - pytest-log-rank-*.txt
-
-# ==============================================================================
-
-test_stencils_aarch64:
-  extends: .test_stencils
-
-test_datatests_serial_aarch64:
-  extends: .test_datatests_serial
-
-test_tools_aarch64:
-  extends: .test_tools
-
-test_datatests_mpi_aarch64:
-  extends: .test_datatests_mpi
