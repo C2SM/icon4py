@@ -20,7 +20,7 @@ export PYTHONOPTIMIZE=2
 # export GT4PY_ADD_GPU_TRACE_MARKERS="1"
 # export HIPFLAGS="-std=c++17 -fPIC -O3 -march=native -Wno-unused-parameter -save-temps -Rpass-analysis=kernel-resource-usage"
 
-export ICON_GRID="icon_grid_0021_R02B06_G.nc" #"icon_grid_0021_R02B06_G.nc" #"icon_grid_0013_R02B04_R.nc" #"icon_grid_0023_R02B07_G.nc"
+export ICON_GRID="icon_grid_0013_R02B04_R.nc" #"icon_grid_0021_R02B06_G.nc" #"icon_grid_0013_R02B04_R.nc" #"icon_grid_0023_R02B07_G.nc"
 SUFFIX=""
 if [[ "$ICON_GRID" == *"R02B04"* ]]; then
     SUFFIX="R02B04"
@@ -29,8 +29,8 @@ elif [[ "$ICON_GRID" == *"R02B06"* ]]; then
 elif [[ "$ICON_GRID" == *"R02B07"* ]]; then
     SUFFIX="R02B07"
 fi
-SUFFIX="${SUFFIX}_TBDEFAULT"
-export GT4PY_BUILD_CACHE_DIR="amd_profiling_JW_${SUFFIX}_persistent"
+SUFFIX="${SUFFIX}_latest"
+export GT4PY_BUILD_CACHE_DIR="amd_profiling_JW_${SUFFIX}"
 
 export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 # /capstor/scratch/cscs/ioannmag/NSYS_20262/nsight_systems_2026_2/target-linux-sbsa-armv8/nsys profile --trace=cuda,nvtx,osrt \
