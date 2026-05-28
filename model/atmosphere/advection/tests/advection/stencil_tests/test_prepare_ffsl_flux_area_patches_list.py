@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.testing import stencil_tests
 
 
-# Check whether lines inters.
 def _ccw_numpy(
     *,
     p0_lon,
@@ -28,6 +27,12 @@ def _ccw_numpy(
     p2_lon,
     p2_lat,
 ):
+    """
+    Counter-clockwise test.
+    Given three points P0, P1, P2, it computes the sign of the cross product of vectors (P1-P0) and (P2-P0):
+    cross = dx1*dy2 - dy1*dx2
+    If cross > 0, the three points are in counter-clockwise order (returns 1), otherwise clockwise (returns -1).
+    """
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -38,11 +43,10 @@ def _ccw_numpy(
     dy1dx2 = dy1 * dx2
 
     lccw = np.where(dx1dy2 > dy1dx2, True, False)
-    ccw_out = np.where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
+    ccw_out = np.where(lccw, 1, -1)  # 1: counterclockwise, -1: clockwise
     return ccw_out
 
 
-# Check whether two lines intersect
 def _lintersect_numpy(
     *,
     line1_p1_lon,
@@ -54,6 +58,13 @@ def _lintersect_numpy(
     line2_p2_lon,
     line2_p2_lat,
 ):
+    """
+    Line segment intersection test.
+    Uses the CCW-based intersection test: two line segments AB and CD intersect if and only if:
+    - A, B separate C and D (i.e. CCW(A,B,C) and CCW(A,B,D) have opposite signs → product = -1)
+    - C, D separate A and B (i.e. CCW(C,D,A) and CCW(C,D,B) have opposite signs → product = -1)
+    Both products must equal -1 simultaneously (sum = -2) for an intersection to occur.
+    """
     intersect1 = _ccw_numpy(
         p0_lon=line1_p1_lon,
         p0_lat=line1_p1_lat,

@@ -20,7 +20,6 @@ sys.setrecursionlimit(5500)
 
 
 # FUNCTIONS
-# Checking turn when travelling along three points, used to check whether lines inters.
 @gtx.field_operator
 def ccw(
     p0_lon: fa.EdgeKField[ta.wpfloat],
@@ -30,14 +29,19 @@ def ccw(
     p2_lon: fa.EdgeKField[ta.wpfloat],
     p2_lat: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[gtx.int32]:
+    """
+    Counter-clockwise test.
+    Given three points P0, P1, P2, it computes the sign of the cross product of vectors (P1-P0) and (P2-P0):
+    cross = dx1*dy2 - dy1*dx2
+    If cross > 0, the three points are in counter-clockwise order (returns 1), otherwise clockwise (returns -1).
+    """
     dx1dy2 = (p1_lon - p0_lon) * (p2_lat - p0_lat)
     dy1dx2 = (p1_lat - p0_lat) * (p2_lon - p0_lon)
     lccw = dx1dy2 > dy1dx2
-    ccw_out = where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
+    ccw_out = where(lccw, 1, -1)  # 1: counterclockwise, -1: clockwise
     return ccw_out
 
 
-# Checks whether two lines intersect
 @gtx.field_operator
 def lintersect(
     line1_p1_lon: fa.EdgeKField[ta.wpfloat],
@@ -49,6 +53,13 @@ def lintersect(
     line2_p2_lon: fa.EdgeKField[ta.wpfloat],
     line2_p2_lat: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[bool]:
+    """
+    Line segment intersection test.
+    Uses the CCW-based intersection test: two line segments AB and CD intersect if and only if:
+    - A, B separate C and D (i.e. CCW(A,B,C) and CCW(A,B,D) have opposite signs → product = -1)
+    - C, D separate A and B (i.e. CCW(C,D,A) and CCW(C,D,B) have opposite signs → product = -1)
+    Both products must equal -1 simultaneously (sum = -2) for an intersection to occur.
+    """
     intersect1 = ccw(
         p0_lon=line1_p1_lon,
         p0_lat=line1_p1_lat,
