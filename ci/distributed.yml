@@ -3,6 +3,7 @@ include:
 
 stages:
   - baseimage
+  - venv
   - image
   - build
   - test
@@ -33,11 +34,31 @@ build_distributed_baseimage_aarch64:
   variables:
     DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "PYVERSION=$PYVERSION"]'
 
+.build_distributed_venv:
+  stage: venv
+  before_script:
+    - VENV_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS $(cat uv.lock)" | sha256sum | head -c 16`
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-venv:$VENV_TAG-$PYVERSION-mpi
+    - echo "VENV_IMAGE_MPI=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    DOCKERFILE: ci/docker/venv_mpi.Dockerfile
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
+    CSCS_REBUILD_POLICY: if-not-exists
+    UV_PROJECT_ENVIRONMENT: venv_dist
+
+build_distributed_venv_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_distributed_venv]
+  needs: [build_distributed_baseimage_aarch64]
+
 .build_distributed_template:
   variables:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
+    DOCKER_BUILD_ARGS: '["VENV_IMAGE=${VENV_IMAGE_MPI}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+    CSCS_REBUILD_POLICY: if-not-exists
 
 .build_distributed:
   extends: [.build_distributed_template]
@@ -47,7 +68,7 @@ build_distributed_baseimage_aarch64:
 build_distributed:
   stage: image
   extends: [.container-builder-cscs-gh200, .build_distributed]
-  needs: [build_distributed_baseimage_aarch64]
+  needs: [build_distributed_venv_aarch64]
 
 .test_template_distributed:
   timeout: 8h
