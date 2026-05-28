@@ -1,11 +1,144 @@
 include:
   - local: 'ci/base.yml'
 
-.test_model_stencils:
+variables:
+  # Filter what runs. Comma-separated lists. Empty = run everything.
+  COMPONENTS: ""
+  BACKENDS: ""
+  LEVELS: ""
+  GRIDS: ""
+
+.build_mpi_baseimage:
+  stage: baseimage
+  variables:
+    PYVERSION_PREFIX: py313_mpi
+  before_script:
+    - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION-mpi
+    - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    DOCKERFILE: ci/docker/base_mpi.Dockerfile
+    CSCS_REBUILD_POLICY: if-not-exists
+
+build_mpi_baseimage_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_mpi_baseimage]
+  variables:
+    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "PYVERSION=$PYVERSION"]'
+
+.build_mpi_image:
+  stage: image
+  variables:
+    PYVERSION_PREFIX: py313_mpi
+    DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+
+build_mpi_image:
+  stage: image
+  extends: [.container-builder-cscs-gh200, .build_mpi_image]
+  needs: [build_mpi_baseimage_aarch64]
+  variables:
+    UV_PROJECT_ENVIRONMENT: venv_dist
+
+.test_runner_serial:
+  timeout: 8h
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  extends: .container-runner-santis-gh200
+  needs: [build_image_aarch64]
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_GPUS_PER_NODE: 1
+    SLURM_PARTITION: "shared"
+    SLURM_CPU_BIND: "verbose"
+    SLURM_MPI_TYPE: "pmix"
+    CUDA_DEVICE_MAX_CONNECTIONS: 8
+    CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
+    VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
+    ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
+    ICON4PY_ENABLE_GRID_DOWNLOAD: true
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
+    ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
+    ICON4PY_DRIVER_LOGGING_LEVEL: critical
+    PY2F_GPU_TESTS: 1
+    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    PYTEST_ADDOPTS: "--durations=0"
+    RUNNER: "ci-runner"
+    SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
+    CUDAARCHS: "90"
+    NUM_PROCESSES: 32
+    GT4PY_BUILD_JOBS: 8
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
+
+.test_prep_serial:
+  before_script:
+    - cd /icon4py
+    - ls "${ICON4PY_TEST_DATA_PATH}"
+    - source ci/scripts/start-cuda-mps.sh
+    - source ci/scripts/gt4py-cache.sh
+
+.test_runner_mpi:
+  timeout: 8h
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+  extends: .container-runner-santis-gh200
+  needs: [build_mpi_image]
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_GPUS_PER_NODE: 1
+    SLURM_PARTITION: "shared"
+    SLURM_CPU_BIND: "verbose"
+    SLURM_NTASKS: 4
+    USE_MPI: NO
+    SLURM_MPI_TYPE: pmix
+    PMIX_MCA_psec: native
+    FI_PROVIDER: cxi
+    OMPI_MCA_pml: cm
+    OMPI_MCA_mtl: ofi
+    ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
+    ICON4PY_ENABLE_GRID_DOWNLOAD: true
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
+    ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
+    ICON4PY_DRIVER_LOGGING_LEVEL: critical
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
+    PYTEST_ADDOPTS: "--durations=0"
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
+    UV_PROJECT_ENVIRONMENT: venv_dist
+
+.test_prep_mpi:
+  before_script:
+    - cd /icon4py
+    - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
+    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - echo "running with $(python --version)"
+    - source ci/scripts/start-cuda-mps.sh
+    - source ci/scripts/gt4py-cache.sh
+
+.test_stencils:
   stage: test
+  extends: [.test_runner_serial, .test_prep_serial]
   script:
     - nox -s "test_model-3.13(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+  parallel:
+    matrix:
+      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
+        BACKEND: [dace_cpu, dace_gpu, gtfn_gpu]
+        GRID: [simple, icon_regional]
   rules:
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)$COMPONENT($|,)/'
+      when: never
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)$BACKEND($|,)/'
+      when: never
+    - if: '$GRIDS != "" && $GRIDS !~ /(^|,)$GRID($|,)/'
+      when: never
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
@@ -15,45 +148,94 @@ include:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:05:00'
-  parallel:
-    matrix:
-      - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
-        BACKEND: [dace_gpu, gtfn_gpu]
-        GRID: [simple, icon_regional]
-test_model_stencils_aarch64:
-  extends: [.test_model_stencils, .test_template_aarch64]
+        SLURM_TIMELIMIT: '00:15:00'
 
 
-.test_tools_datatests:
+.test_datatests_serial:
   stage: test
-  script:
-    - nox -s 'test_tools_and_bindings-3.13(datatest)'
-test_tools_datatests_aarch64:
-  extends: [.test_tools_datatests, .test_template_aarch64]
-
-.test_model_datatests:
-  stage: test
+  extends: [.test_runner_serial, .test_prep_serial]
   script:
     - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+  parallel:
+    matrix:
+      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
+        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        LEVEL: [unit, integration]
   rules:
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)$COMPONENT($|,)/'
+      when: never
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)$BACKEND($|,)/'
+      when: never
+    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)$LEVEL($|,)/'
+      when: never
     - if: $COMPONENT == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
-        SLURM_TIMELIMIT: '00:40:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - if: $COMPONENT == 'driver' || $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:15:00'
+        SLURM_TIMELIMIT: '00:30:00'
+
+.test_tools:
+  stage: test
+  extends: [.test_runner_serial, .test_prep_serial]
+  script:
+    - nox -s 'test_tools_and_bindings-3.13(datatest)'
+
+.test_datatests_mpi:
+  stage: test
+  extends: [.test_runner_mpi, .test_prep_mpi]
+  script:
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
-test_model_datatests_aarch64:
-  extends: [.test_model_datatests, .test_template_aarch64]
+  rules:
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)$COMPONENT($|,)/'
+      when: never
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)$BACKEND($|,)/'
+      when: never
+    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)$LEVEL($|,)/'
+      when: never
+    - if: $COMPONENT == 'atmosphere/diffusion'
+      variables:
+        SLURM_TIMELIMIT: '00:10:00'
+    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
+      variables:
+        SLURM_TIMELIMIT: '01:30:00'
+        SLURM_PARTITION: "normal"
+    - if: $COMPONENT == 'atmosphere/dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:50:00'
+  artifacts:
+    when: always
+    paths:
+      - pytest-log-rank-*.txt
+
+# ==============================================================================
+
+test_stencils_aarch64:
+  extends: .test_stencils
+
+test_datatests_serial_aarch64:
+  extends: .test_datatests_serial
+
+test_tools_aarch64:
+  extends: .test_tools
+
+test_datatests_mpi_aarch64:
+  extends: .test_datatests_mpi
