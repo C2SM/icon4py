@@ -343,7 +343,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
         definitions.Experiments.EXCLAIM_APE,
     ],
 )
-def test_compute_vertical_coordinate(  # noqa: PLR0917
+def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     topography_savepoint: sb.TopographySavepoint,

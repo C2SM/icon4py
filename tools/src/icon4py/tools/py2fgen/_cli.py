@@ -52,7 +52,7 @@ logger = _utils.setup_logger("py2fgen", log_level=logging.INFO)
     default=False,
     help="Generate source files (.py, .f90, .c, .h) without compiling the shared library.",
 )
-def main(  # noqa: PLR0917
+def main(  # noqa: PLR0917 [too-many-positional-arguments]
     module_import_path: str,
     functions: list[str],
     library_name: str,

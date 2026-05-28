@@ -16,7 +16,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _compute_reference_atmosphere_edge_fields(  # noqa: PLR0917
+def _compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     z_mc: fa.CellKField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     p0ref: wpfloat,
@@ -41,7 +41,7 @@ def _compute_reference_atmosphere_edge_fields(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_reference_atmosphere_edge_fields(  # noqa: PLR0917
+def compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     z_mc: fa.CellKField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     rho_ref_me: fa.EdgeKField[wpfloat],
@@ -91,7 +91,7 @@ def compute_z_temp(
 
 
 @gtx.field_operator
-def compute_z_aux1_cell(  # noqa: PLR0917
+def compute_z_aux1_cell(  # noqa: PLR0917 [too-many-positional-arguments]
     z_mc: fa.CellKField[wpfloat],
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -106,7 +106,7 @@ def compute_z_aux1_cell(  # noqa: PLR0917
 
 
 @gtx.field_operator
-def _compute_reference_atmosphere_cell_fields(  # noqa: PLR0917
+def _compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     z_mc: fa.CellKField[wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
@@ -144,7 +144,7 @@ def _compute_reference_atmosphere_cell_fields(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917
+def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     z_height: fa.CellKField[wpfloat],
     exner_ref_mc: fa.CellKField[wpfloat],
     rho_ref_mc: fa.CellKField[wpfloat],
@@ -202,7 +202,7 @@ def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917
 
 
 @gtx.field_operator
-def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917
+def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
@@ -232,7 +232,7 @@ def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917
 
 
 @gtx.field_operator
-def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917
+def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     exner_ref_mc: fa.CellKField[vpfloat],
@@ -281,7 +281,7 @@ def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917
+def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKField[wpfloat],
     d_exner_dz_ref_ic: fa.CellKField[wpfloat],
     theta_ref_ic: fa.CellKField[wpfloat],
@@ -319,7 +319,7 @@ def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_d2dexdz2_fac_mc(  # noqa: PLR0917
+def compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     exner_ref_mc: fa.CellKField[vpfloat],

@@ -153,7 +153,7 @@ def fall_speed(
 
 
 @gtx.field_operator
-def _ice_deposition_nucleation(  # noqa: PLR0917
+def _ice_deposition_nucleation(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -185,7 +185,7 @@ def _ice_deposition_nucleation(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def ice_deposition_nucleation(  # noqa: PLR0917
+def ice_deposition_nucleation(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qc: fa.CellKField[ta.wpfloat],  # Specific humidity of cloud
     qi: fa.CellKField[ta.wpfloat],  # Specific humidity of ice

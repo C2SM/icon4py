@@ -58,7 +58,7 @@ def _compute_wgtfac_c(
 
 # TODO(halungge): missing test?
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_wgtfac_c(  # noqa: PLR0917
+def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
     nlev: gtx.int32,

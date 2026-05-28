@@ -200,7 +200,7 @@ def cartesian_coordinates_edge_tangent_and_normal(
 
 
 @gtx.field_operator
-def cartesian_coordinates_edge_tangent_and_normal_torus(  # noqa: PLR0917
+def cartesian_coordinates_edge_tangent_and_normal_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     edge_x: fa.EdgeField[ta.wpfloat],
@@ -253,7 +253,7 @@ def cartesian_coordinates_edge_tangent_and_normal_torus(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cartesian_coordinates_of_edge_tangent_and_normal(  # noqa: PLR0917
+def compute_cartesian_coordinates_of_edge_tangent_and_normal(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -280,7 +280,7 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(  # noqa: PLR0917
+def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     edge_x: fa.EdgeField[ta.wpfloat],
@@ -397,7 +397,7 @@ def zonal_and_meridional_component_of_edge_field_at_vertex(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_component_of_edge_field_at_vertex(  # noqa: PLR0917
+def compute_zonal_and_meridional_component_of_edge_field_at_vertex(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -481,7 +481,7 @@ def zonal_and_meridional_component_of_edge_field_at_cell_center(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(  # noqa: PLR0917
+def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -651,7 +651,7 @@ def edge_length(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_length(  # noqa: PLR0917
+def compute_edge_length(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
@@ -669,7 +669,7 @@ def compute_edge_length(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cell_center_arc_distance(  # noqa: PLR0917
+def compute_cell_center_arc_distance(  # noqa: PLR0917 [too-many-positional-arguments]
     edge_neighbor_0_lat: fa.EdgeField[ta.wpfloat],
     edge_neighbor_0_lon: fa.EdgeField[ta.wpfloat],
     edge_neighbor_1_lat: fa.EdgeField[ta.wpfloat],
@@ -691,7 +691,7 @@ def compute_cell_center_arc_distance(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_arc_distance_of_far_edges_in_diamond(  # noqa: PLR0917
+def compute_arc_distance_of_far_edges_in_diamond(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
@@ -709,7 +709,7 @@ def compute_arc_distance_of_far_edges_in_diamond(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_distance_of_far_edges_in_diamond_torus(  # noqa: PLR0917
+def compute_distance_of_far_edges_in_diamond_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     domain_length: ta.wpfloat,
@@ -749,7 +749,7 @@ def edge_area(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_area(  # noqa: PLR0917
+def compute_edge_area(  # noqa: PLR0917 [too-many-positional-arguments]
     owner_mask: fa.EdgeField[bool],
     primal_edge_length: fa.EdgeField[ta.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],

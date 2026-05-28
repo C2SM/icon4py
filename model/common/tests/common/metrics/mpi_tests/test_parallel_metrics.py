@@ -87,7 +87,7 @@ def _get_slice_tuple_from_horizontal_range(
         (attrs.COEFF_GRADEKIN, "coeff_gradekin", None),
     ],
 )
-def test_distributed_metrics_attrs(  # noqa: PLR0917
+def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -148,7 +148,7 @@ def test_distributed_metrics_attrs(  # noqa: PLR0917
         (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
-def test_distributed_metrics_attrs_no_halo(  # noqa: PLR0917
+def test_distributed_metrics_attrs_no_halo(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -180,7 +180,7 @@ def test_distributed_metrics_attrs_no_halo(  # noqa: PLR0917
         (attrs.ZD_VERTOFFSET, "zd_vertoffset"),
     ],
 )
-def test_distributed_metrics_attrs_no_halo_regional(  # noqa: PLR0917
+def test_distributed_metrics_attrs_no_halo_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -209,7 +209,7 @@ def test_distributed_metrics_attrs_no_halo_regional(  # noqa: PLR0917
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_metrics_wgtfacq_e(  # noqa: PLR0917
+def test_distributed_metrics_wgtfacq_e(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -231,7 +231,7 @@ def test_distributed_metrics_wgtfacq_e(  # noqa: PLR0917
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917
+def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,

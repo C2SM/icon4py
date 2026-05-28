@@ -13,7 +13,7 @@ from icon4py.model.common.dimension import KDim, Koff
 
 
 @gtx.field_operator
-def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917
+def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
@@ -43,7 +43,7 @@ def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917
 
 
 @gtx.program
-def en_smag_fac_for_zero_nshift(  # noqa: PLR0917
+def en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,

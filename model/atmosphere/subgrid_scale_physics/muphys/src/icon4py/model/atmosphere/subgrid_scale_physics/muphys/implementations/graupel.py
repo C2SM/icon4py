@@ -81,7 +81,7 @@ class IntegrationState(NamedTuple):
 
 
 @gtx.field_operator
-def precip_qx_level_update(  # noqa: PLR0917
+def precip_qx_level_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level_q: PrecipStateQx,
     previous_level_rho: ta.wpfloat,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
@@ -122,7 +122,7 @@ def precip_qx_level_update(  # noqa: PLR0917
 
 
 @gtx.field_operator
-def _temperature_update(  # noqa: PLR0917
+def _temperature_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -185,7 +185,7 @@ def _temperature_update(  # noqa: PLR0917
         pflx_tot=0.0,
     ),
 )
-def _precip_and_t(  # noqa: PLR0917
+def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level: IntegrationState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -339,7 +339,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(  # noqa: PLR0917
+def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -484,7 +484,7 @@ def _q_t_update(  # noqa: PLR0917
 
 
 @gtx.field_operator
-def _precipitation_effects(  # noqa: PLR0917
+def _precipitation_effects(  # noqa: PLR0917 [too-many-positional-arguments]
     last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],  # rain minimum level
     kmin_i: fa.CellKField[bool],  # ice minimum level
@@ -540,7 +540,7 @@ def _precipitation_effects(  # noqa: PLR0917
 
 
 @gtx.field_operator
-def graupel(  # noqa: PLR0917
+def graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -578,7 +578,7 @@ def graupel(  # noqa: PLR0917
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def graupel_run(  # noqa: PLR0917
+def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure

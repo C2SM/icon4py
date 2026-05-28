@@ -109,7 +109,7 @@ from ..utils import (
         ),
     ],
 )
-def test_advection_run_single_step(  # noqa: PLR0917
+def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,

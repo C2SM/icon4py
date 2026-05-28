@@ -26,7 +26,7 @@ from icon4py.model.common.math.vector_operations import dot_product_on_edges
 
 
 @gtx.field_operator
-def arc_length_on_edges(  # noqa: PLR0917
+def arc_length_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],
@@ -57,7 +57,7 @@ def arc_length_on_edges(  # noqa: PLR0917
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def diff_on_edges_torus(  # noqa: PLR0917
+def diff_on_edges_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],
@@ -99,7 +99,7 @@ def diff_on_edges_torus(  # noqa: PLR0917
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def distance_on_edges_torus(  # noqa: PLR0917
+def distance_on_edges_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],

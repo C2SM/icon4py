@@ -40,7 +40,7 @@ from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_diffusion_benchmark(  # noqa: PLR0917
+def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     geometry_field_source: grid_geometry.GridGeometry,
     grid_manager: gm.GridManager,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,

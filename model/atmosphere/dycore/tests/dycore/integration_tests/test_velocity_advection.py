@@ -77,7 +77,7 @@ def create_vertical_params(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917
+def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     step_date_init: str,
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -114,7 +114,7 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_scale_factors_by_dtime(  # noqa: PLR0917
+def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_savepoint,
     metrics_savepoint,
     experiment,
@@ -162,7 +162,7 @@ def test_scale_factors_by_dtime(  # noqa: PLR0917
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-def test_velocity_predictor_step(  # noqa: PLR0917
+def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
@@ -306,7 +306,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-def test_velocity_corrector_step(  # noqa: PLR0917
+def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     istep_exit,
     experiment,
@@ -423,7 +423,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917
+def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
@@ -559,7 +559,7 @@ def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
-def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917
+def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
@@ -708,7 +708,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
-def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917
+def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
@@ -847,7 +847,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
-def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917
+def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,

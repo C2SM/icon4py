@@ -58,7 +58,7 @@ def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_compute_domain_bounds(  # noqa: PLR0917
+def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     domain: h_grid.Domain,
