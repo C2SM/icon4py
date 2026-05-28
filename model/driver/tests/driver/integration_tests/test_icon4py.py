@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
@@ -367,7 +366,6 @@ def test_run_timeloop_single_step(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, experiment_type",

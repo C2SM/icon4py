@@ -37,7 +37,6 @@ _log = logging.getLogger(__file__)
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description",
     [
