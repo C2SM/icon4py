@@ -6,12 +6,12 @@ variables:
   # GRIDS only applies to stencil tests). These are the defaults for the
   # pipeline. The are meant to be overridden with with e.g.
   #
-  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;COMPONENTS=common,standalone_driver
-  COMPONENTS: "advection,diffusion,dycore,microphysics,muphys,common,driver,standalone_driver,atmosphere/diffusion,atmosphere/dycore"
+  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;COMPONENTS=common:standalone_driver
+  COMPONENTS: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver:atmosphere/diffusion:atmosphere/dycore"
   BACKENDS: "dace_gpu"
   LEVELS: "integration"
-  GRIDS: "simple,icon_regional"
-  SELECTION: "stencils,datatest,mpi,tools"
+  GRIDS: "simple:icon_regional"
+  SELECTION: "stencils:datatest:mpi:tools"
 
 .all_backends: &all_backends
   - embedded
@@ -180,13 +180,13 @@ test_stencils_aarch64:
         BACKEND: *all_backends
         GRID: *all_grids
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
       when: never
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)${COMPONENT}(,|$)/'
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|:)${COMPONENT}(:|$)/'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)${BACKEND}(,|$)/'
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|:)${BACKEND}(:|$)/'
       when: never
-    - if: '$GRIDS != "" && $GRIDS !~ /(^|,)${GRID}(,|$)/'
+    - if: '$GRIDS != "" && $GRIDS !~ /(^|:)${GRID}(:|$)/'
       when: never
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
@@ -213,13 +213,13 @@ test_datatests_serial_aarch64:
         BACKEND: *all_backends
         LEVEL: *all_levels
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
       when: never
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)${COMPONENT}(,|$)/'
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|:)${COMPONENT}(:|$)/'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)${BACKEND}(,|$)/'
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|:)${BACKEND}(:|$)/'
       when: never
-    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)${LEVEL}(,|$)/'
+    - if: '$LEVELS != "" && $LEVELS !~ /(^|:)${LEVEL}(:|$)/'
       when: never
     - if: $COMPONENT == 'standalone_driver'
       variables:
@@ -243,7 +243,7 @@ test_tools_aarch64:
   script:
     - nox -s 'test_tools_and_bindings-3.13(datatest)'
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
       when: never
     - when: on_success
 
@@ -260,13 +260,13 @@ test_datatests_mpi_aarch64:
         BACKEND: *all_backends
         LEVEL: *integration_level
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
       when: never
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)${COMPONENT}(,|$)/'
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|:)${COMPONENT}(:|$)/'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)${BACKEND}(,|$)/'
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|:)${BACKEND}(:|$)/'
       when: never
-    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)${LEVEL}(,|$)/'
+    - if: '$LEVELS != "" && $LEVELS !~ /(^|:)${LEVEL}(:|$)/'
       when: never
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
