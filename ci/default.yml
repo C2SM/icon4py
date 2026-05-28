@@ -180,14 +180,6 @@ test_stencils_aarch64:
         BACKEND: *all_backends
         GRID: *all_grids
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
-      when: never
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|:)${COMPONENT}(:|$)/'
-      when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|:)${BACKEND}(:|$)/'
-      when: never
-    - if: '$GRIDS != "" && $GRIDS !~ /(^|:)${GRID}(:|$)/'
-      when: never
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
