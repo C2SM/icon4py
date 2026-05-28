@@ -14,7 +14,7 @@ env:
   NUM_PROCESSES: auto
   ICON4PY_ENABLE_GRID_DOWNLOAD: false
   ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
-  PYTEST_ADDOPTS: "--durations=0"
+  PYTEST_ADDOPTS: "--durations=0 --tach"
 
 jobs:
   test-model:
