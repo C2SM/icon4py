@@ -13,7 +13,6 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import (
     abs,  # noqa: A004
     astype,
@@ -30,7 +29,6 @@ from gt4py.next import (
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -214,13 +212,13 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == RayleighType.CLASSIC:
+    if rayleigh_type == 1:  # RayleighType.CLASSIC
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == RayleighType.KLEMP:
+    elif rayleigh_type == 2:  # RayleighType.KLEMP
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
@@ -568,8 +566,8 @@ def compute_flat_max_idx(
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(e2c)
     k_lev_minus1 = k_lev[:-1]
-    coeff_ = np.expand_dims(c_lin_e, axis=-1)
-    z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
+    coeff_ = array_ns.expand_dims(c_lin_e, axis=-1)
+    z_me = array_ns.sum(z_mc[e2c] * coeff_, axis=1)
     exchange.exchange(dims.EdgeDim, z_me, stream=decomposition.BLOCK)
     z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
     z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
@@ -929,7 +927,7 @@ def compute_exner_w_implicit_weight_parameter(
     maxslope = 0.425 * array_ns.amax(stacked, axis=1) ** (0.75)
     diff = array_ns.minimum(
         0.25,
-        0.00025 * (np.amax(np.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0),
+        0.00025 * (array_ns.amax(array_ns.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0),
     )
     offctr = array_ns.minimum(
         factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
@@ -942,8 +940,8 @@ def compute_exner_w_implicit_weight_parameter(
 
     for jk in range(k_start, nlev):
         zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
-        index_for_k = np.where(zdiff2_sliced < 0.6)[0]
-        max_value_k = np.maximum(
+        index_for_k = array_ns.nonzero(zdiff2_sliced < 0.6)[0]
+        max_value_k = array_ns.maximum(
             1.2 - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
         )
         exner_w_implicit_weight_parameter[index_for_k + horizontal_start_cell] = max_value_k[

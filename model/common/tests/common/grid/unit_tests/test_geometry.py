@@ -19,6 +19,7 @@ from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
+    icon as icon_grid,
     simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
@@ -30,6 +31,7 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     process_props,
 )
@@ -53,7 +55,7 @@ def test_geometry_raises_for_unknown_field(
 
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment_description, rtol",
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-7),
         (definitions.Experiments.EXCLAIM_APE, 3e-12),
@@ -141,7 +143,7 @@ def test_compute_inverse_dual_edge_length(
 
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment_description, rtol",
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
@@ -159,7 +161,7 @@ def test_compute_inverse_vertex_vertex_length(
 
     expected = grid_savepoint.inv_vert_vert_length().asnumpy()
     result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
-    if grid_geometry.grid.geometry_type == base.GeometryType.TORUS:
+    if grid_geometry.grid.geometry_type == icon_grid.GeometryType.TORUS:
         # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
         # for torus grids. Fix submitted upstream. The following can be removed
         # when fixed serialized data is available.
@@ -341,17 +343,17 @@ def test_cartesian_centers_edge(
     assert test_utils.dallclose(z.asnumpy(), ser_z.asnumpy(), atol=1e-15)
 
     match grid.geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, allocator=backend)
             vector_ops.norm2_on_edges(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
-        case base.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x.asnumpy() >= 0.0)
-            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(x.asnumpy() <= grid.grid_params.domain_length)
             assert all(y.asnumpy() >= 0.0)
-            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(y.asnumpy() <= grid.grid_params.domain_height)
             assert all(z.asnumpy() == 0.0)
 
 
@@ -380,17 +382,17 @@ def test_cartesian_centers_cell(
     assert test_utils.dallclose(z.asnumpy(), ser_z.asnumpy(), atol=1e-15)
 
     match grid.geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, allocator=backend)
             vector_ops.norm2_on_cells(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
-        case base.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x.asnumpy() >= 0.0)
-            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(x.asnumpy() <= grid.grid_params.domain_length)
             assert all(y.asnumpy() >= 0.0)
-            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(y.asnumpy() <= grid.grid_params.domain_height)
             assert all(z.asnumpy() == 0.0)
 
 
@@ -419,17 +421,17 @@ def test_vertex(
     assert test_utils.dallclose(z.asnumpy(), ser_z.asnumpy(), atol=1e-15)
 
     match grid.geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
+        case icon_grid.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, allocator=backend)
             vector_ops.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
-        case base.GeometryType.TORUS:
+        case icon_grid.GeometryType.TORUS:
             # on a torus coordinates should be within the domain
             assert all(x.asnumpy() >= 0.0)
-            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(x.asnumpy() <= grid.grid_params.domain_length)
             assert all(y.asnumpy() >= 0.0)
-            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(y.asnumpy() <= grid.grid_params.domain_height)
             assert all(z.asnumpy() == 0.0)
 
 
@@ -476,10 +478,10 @@ def test_create_auxiliary_orientation_coordinates(
         assert test_utils.dallclose(lon_0.asnumpy(), cell_lon.asnumpy()[connectivity[:, 0]])
         assert test_utils.dallclose(lon_1.asnumpy(), cell_lon.asnumpy()[connectivity[:, 1]])
 
-    edge_coordinates_0 = np.where(connectivity[:, 0] < 0)
-    edge_coordinates_1 = np.where(connectivity[:, 1] < 0)
-    cell_coordinates_0 = np.where(connectivity[:, 0] >= 0)
-    cell_coordinates_1 = np.where(connectivity[:, 1] >= 0)
+    edge_coordinates_0 = np.nonzero(connectivity[:, 0] < 0)
+    edge_coordinates_1 = np.nonzero(connectivity[:, 1] < 0)
+    cell_coordinates_0 = np.nonzero(connectivity[:, 0] >= 0)
+    cell_coordinates_1 = np.nonzero(connectivity[:, 1] >= 0)
     assert test_utils.dallclose(
         lat_0.asnumpy()[edge_coordinates_0], edge_lat.asnumpy()[edge_coordinates_0]
     )
@@ -518,8 +520,7 @@ def test_geometry_mean_fields(
     experiment: definitions.Experiment,
     attr_name: str,
 ) -> None:
-    assert hasattr(experiment, "name")
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
-    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
     value = grid_geometry.get(attr_name)
     assert value == pytest.approx(value_ref)

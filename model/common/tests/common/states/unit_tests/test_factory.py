@@ -30,6 +30,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     metrics_savepoint,
     process_props,
@@ -61,6 +62,7 @@ class SimpleFieldSource(factory.FieldSource):
         self._vertical_grid = vertical_grid
         self._metadata = {}
         self._initial_data = data_
+        self._exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
 
         for key, value in data_.items():
             self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
@@ -146,7 +148,9 @@ def height_coordinate_source(
         "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
     }
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=experiment.num_levels), vct_a, vct_b
+        v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
+        vct_a,
+        vct_b,
     )
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid
