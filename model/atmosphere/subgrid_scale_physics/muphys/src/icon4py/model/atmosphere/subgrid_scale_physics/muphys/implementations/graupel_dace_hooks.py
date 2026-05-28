@@ -254,7 +254,7 @@ def _cleanup_global_self_update(
     )
 
 
-def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915
+def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912 [too-many-branches], PLR0915 [too-many-statements]
     *,
     sdfg: dace.SDFG,
     state: dace.SDFGState,
