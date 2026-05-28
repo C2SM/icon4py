@@ -519,7 +519,7 @@ class FiniteVolume(VerticalAdvection):
     @abc.abstractmethod
     def _compute_numerical_flux(
         self,
-        *,  # TODO(dastrm): should be KHalfDim
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -625,7 +625,7 @@ class FirstOrderUpwind(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
-        *,  # TODO(dastrm): should be KHalfDim
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -903,7 +903,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
-        *,  # TODO(dastrm): should be KHalfDim
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
