@@ -317,7 +317,7 @@ select = [
   'PLC',  # Pylint-Convention
   'PLE',  # Pylint-Error
   'PLR',  # Pylint-Refactor
-  'PLR0917',  # [too-many-positional-arguments]
+  'PLR0917',  # [too-many-positional-arguments]  # TODO(egparedes): remove when not longer in preview
   'PLW',  # Pylint-Warning
   'PTH',  # flake8-use-pathlib
   'Q',  # flake8-quotes

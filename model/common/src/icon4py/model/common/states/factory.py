@@ -343,11 +343,10 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         *,
         func: gtx_typing.FieldOperator,
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
-        fields: dict[str, str],  # keyword arg to (field_operator, field_name)
-        deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
+        fields: dict[str, str],
+        deps: dict[str, str],
         do_exchange: bool,
-        params: dict[str, state_utils.ScalarType]
-        | None = None,  # keyword arg to (field_operator, field_name)
+        params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
         self._dims: (
