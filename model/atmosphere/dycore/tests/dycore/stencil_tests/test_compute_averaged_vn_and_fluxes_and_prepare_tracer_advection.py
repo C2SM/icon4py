@@ -25,7 +25,6 @@ from .test_compute_mass_flux import compute_mass_flux_numpy
 from .test_spatially_average_flux_or_velocity import spatially_average_flux_or_velocity_numpy
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.StencilTest):
     PROGRAM = compute_averaged_vn_and_fluxes

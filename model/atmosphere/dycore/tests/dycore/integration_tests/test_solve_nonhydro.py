@@ -138,7 +138,6 @@ def test_time_step_flags(
     assert linit == (at_initial_timestep and (substep_init == 1))
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
@@ -458,7 +457,6 @@ def test_nonhydro_predictor_step(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(2, 1, 2, 1, True)]
@@ -649,7 +647,6 @@ def test_nonhydro_corrector_step(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
@@ -784,7 +781,6 @@ def test_run_solve_nonhydro_single_step(
 
 
 # why is this not run for APE?
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
@@ -966,7 +962,6 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     assert params.rhotheta_explicit_weight_parameter == savepoint_nonhydro_init.wgt_nnow_rth()
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
@@ -1175,7 +1170,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("at_initial_timestep, istep_init, istep_exit", [(True, 2, 2)])
 @pytest.mark.parametrize(
@@ -1315,7 +1309,6 @@ def test_compute_interpolation_and_nonhydro_buoy(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.uses_as_offset
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -1512,7 +1505,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit",
@@ -1666,7 +1658,6 @@ def test_apply_divergence_damping_and_update_vn(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
@@ -1834,7 +1825,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("at_first_substep, istep_init, istep_exit", [(True, 2, 2)])
 @pytest.mark.parametrize(
@@ -1950,7 +1940,6 @@ def test_compute_averaged_vn_and_fluxes(
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("at_initial_timestep, substep_init", [(True, 1)])
 @pytest.mark.parametrize(
@@ -2139,7 +2128,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     assert test_utils.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(2, 1, 2, 1, True)]

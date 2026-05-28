@@ -33,7 +33,6 @@ def calculate_horizontal_gradients_for_turbulence_numpy(
     return dwdx, dwdy
 
 
-@pytest.mark.embedded_remap_error
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")

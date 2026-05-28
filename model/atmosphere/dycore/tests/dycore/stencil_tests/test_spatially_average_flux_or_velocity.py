@@ -35,7 +35,6 @@ def spatially_average_flux_or_velocity_numpy(
     return spatially_averaged_flux_or_velocity
 
 
-@pytest.mark.embedded_remap_error
 class TestSpatiallyAverageFluxOrVelocity(StencilTest):
     PROGRAM = spatially_average_flux_or_velocity
     OUTPUTS = ("spatially_averaged_flux_or_velocity",)

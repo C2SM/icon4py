@@ -143,7 +143,6 @@ def test_scale_factors_by_dtime(
     assert scalfac_exdiff == savepoint_velocity_init.scalfac_exdiff()
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
@@ -287,7 +286,6 @@ def test_velocity_predictor_step(
     assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
@@ -412,7 +410,6 @@ def test_velocity_corrector_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
     [
@@ -693,7 +690,6 @@ def test_compute_advection_in_predictor_vertical_momentum(
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
     [
@@ -838,7 +834,6 @@ def test_compute_advection_in_corrector_vertical_momentum(
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
     [

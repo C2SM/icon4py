@@ -24,7 +24,6 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(

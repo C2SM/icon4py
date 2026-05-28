@@ -65,7 +65,6 @@ from ..utils import (
 # ------------------------------------
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(

@@ -47,7 +47,6 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.level("unit")
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_diffusion_mask_and_coeff(
     metrics_savepoint: sb.MetricSavepoint,
@@ -129,7 +128,6 @@ def test_compute_diffusion_mask_and_coeff(
 
 
 @pytest.mark.level("unit")
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_diffusion_intcoef_and_vertoffset(
     metrics_savepoint: sb.MetricSavepoint,
