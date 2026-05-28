@@ -10,8 +10,6 @@ variables:
 
 .build_mpi_baseimage:
   stage: baseimage
-  variables:
-    PYVERSION_PREFIX: py313_mpi
   before_script:
     - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
     - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION-mpi
@@ -31,7 +29,6 @@ build_mpi_baseimage_aarch64:
 .build_mpi_image:
   stage: image
   variables:
-    PYVERSION_PREFIX: py313_mpi
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
