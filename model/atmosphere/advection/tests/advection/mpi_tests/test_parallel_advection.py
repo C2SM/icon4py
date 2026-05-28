@@ -125,7 +125,7 @@ def test_advection_run_single_step(
     advection_exit_savepoint,
     experiment: test_defs.Experiment,
     process_props: definitions.ProcessProperties,
-    decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
+    decomposition_info: definitions.DecompositionInfo,
     advection_lsq_state,
 ):
     if test_utils.is_embedded(backend):
