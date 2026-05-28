@@ -1,0 +1,14 @@
+include:
+  - local: 'ci/base_distributed.yml'
+
+test_extended_distributed:
+  stage: test
+  extends: [.test_distributed_aarch64]
+  variables:
+    SLURM_TIMELIMIT: '02:00:00'
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
+  parallel:
+    matrix:
+      - COMPONENT: [standalone_driver]
+        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        LEVEL: [extended]

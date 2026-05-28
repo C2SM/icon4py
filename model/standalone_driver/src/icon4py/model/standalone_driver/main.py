@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import datetime
 import logging
 import pathlib
 from typing import Annotated
@@ -31,6 +32,10 @@ def main(
         typer.Option(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
         ),
+    ],
+    end_date: Annotated[
+        datetime.datetime,
+        typer.Option(help="Simulation end date."),
     ],
     output_path: Annotated[
         pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
@@ -73,6 +78,7 @@ def main(
         print_distributed_debug_msg=print_distributed_debug_msg,
         backend_like=icon4py_backend,
         force_serial_run=force_serial_run,
+        end_date=end_date,
     )
 
     log.info("Generating the initial condition")

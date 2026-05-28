@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import datetime
 import logging
 import pathlib
 
@@ -40,11 +41,54 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.level("integration")
 def test_standalone_driver_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+) -> None:
+    _run_standalone_driver_compare_single_multi_rank(
+        experiment=experiment,
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend_like=backend_like,
+        end_date=datetime.datetime(2008, 9, 1, 0, 5, 0),
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_defs.Experiments.JW,
+    ],
+)
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.level("extended")
+def test_standalone_driver_compare_single_multi_rank_extended(
+    experiment: test_defs.Experiment,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+) -> None:
+    _run_standalone_driver_compare_single_multi_rank(
+        experiment=experiment,
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend_like=backend_like,
+        end_date=datetime.datetime(2008, 9, 8, 0, 0, 0),
+    )
+
+
+def _run_standalone_driver_compare_single_multi_rank(
+    experiment: test_defs.Experiment,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    end_date: datetime.datetime,
 ) -> None:
     if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -79,12 +123,14 @@ def test_standalone_driver_compare_single_multi_rank(
         icon4py_backend=backend_like,
         output_path=tmp_path / "ci_driver_output_serial_rank0",
         force_serial_run=True,
+        end_date=end_date,
     )
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
+        end_date=end_date,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]

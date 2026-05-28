@@ -492,6 +492,9 @@ class Icon4pyDriver:
 def _read_config(
     output_path: pathlib.Path,
     enable_profiling: bool,
+    # TODO(msimberg): This is only for temporary testing. Sync with config and
+    # test changes of @jcanton.
+    end_date: datetime.datetime,
 ) -> tuple[
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
@@ -536,7 +539,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        end_date=end_date,
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
@@ -559,6 +562,7 @@ def initialize_driver(
     grid_file_path: pathlib.Path,
     log_level: str,
     backend_like: model_backends.BackendLike,
+    end_date: datetime.datetime,
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
@@ -627,6 +631,7 @@ def initialize_driver(
         _read_config(
             output_path=output_path,
             enable_profiling=False,
+            end_date=end_date,
         )
     )
 
