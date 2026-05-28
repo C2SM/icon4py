@@ -171,7 +171,10 @@ test_stencils_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
-    SELECTION_TAG: "stencils"
+    SELECTION_PATTERN: "/(^|:)stencils(:|$)/"
+    COMPONENT_PATTERN: "/(^|:)${COMPONENT}(:|$)/"
+    BACKEND_PATTERN: "/(^|:)${BACKEND}(:|$)/"
+    GRID_PATTERN: "/(^|:)${GRID}(:|$)/"
   script:
     - nox -s "test_model-3.13(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
@@ -180,6 +183,14 @@ test_stencils_aarch64:
         BACKEND: *all_backends
         GRID: *all_grids
   rules:
+    - if: '$SELECTION !~ $SELECTION_PATTERN'
+      when: never
+    - if: '$COMPONENTS !~ $COMPONENT_PATTERN'
+      when: never
+    - if: '$BACKENDS !~ $BACKEND_PATTERN'
+      when: never
+    - if: '$GRIDS !~ $GRID_PATTERN'
+      when: never
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
@@ -196,7 +207,10 @@ test_datatests_serial_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
-    SELECTION_TAG: "datatest"
+    SELECTION_PATTERN: "/(^|:)datatest(:|$)/"
+    COMPONENT_PATTERN: "/(^|:)${COMPONENT}(:|$)/"
+    BACKEND_PATTERN: "/(^|:)${BACKEND}(:|$)/"
+    LEVEL_PATTERN: "/(^|:)${LEVEL}(:|$)/"
   script:
     - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
@@ -205,13 +219,13 @@ test_datatests_serial_aarch64:
         BACKEND: *all_backends
         LEVEL: *all_levels
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
+    - if: '$SELECTION !~ $SELECTION_PATTERN'
       when: never
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|:)${COMPONENT}(:|$)/'
+    - if: '$COMPONENTS !~ $COMPONENT_PATTERN'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|:)${BACKEND}(:|$)/'
+    - if: '$BACKENDS !~ $BACKEND_PATTERN'
       when: never
-    - if: '$LEVELS != "" && $LEVELS !~ /(^|:)${LEVEL}(:|$)/'
+    - if: '$LEVELS !~ $LEVEL_PATTERN'
       when: never
     - if: $COMPONENT == 'standalone_driver'
       variables:
@@ -231,11 +245,11 @@ test_tools_aarch64:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
   variables:
-    SELECTION_TAG: "tools"
+    SELECTION_PATTERN: "/(^|:)tools(:|$)/"
   script:
     - nox -s 'test_tools_and_bindings-3.13(datatest)'
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
+    - if: '$SELECTION !~ $SELECTION_PATTERN'
       when: never
     - when: on_success
 
@@ -243,7 +257,10 @@ test_datatests_mpi_aarch64:
   stage: test
   extends: [.test_runner_mpi, .test_prep_mpi]
   variables:
-    SELECTION_TAG: "mpi"
+    SELECTION_PATTERN: "/(^|:)mpi(:|$)/"
+    COMPONENT_PATTERN: "/(^|:)${COMPONENT}(:|$)/"
+    BACKEND_PATTERN: "/(^|:)${BACKEND}(:|$)/"
+    LEVEL_PATTERN: "/(^|:)${LEVEL}(:|$)/"
   script:
     - COMPONENT_PATH=$(echo "$COMPONENT" | tr '-' '/')
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT_PATH --level=$LEVEL
@@ -253,13 +270,13 @@ test_datatests_mpi_aarch64:
         BACKEND: *all_backends
         LEVEL: *integration_level
   rules:
-    - if: '$SELECTION != "" && $SELECTION !~ /(^|:)${SELECTION_TAG}(:|$)/'
+    - if: '$SELECTION !~ $SELECTION_PATTERN'
       when: never
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|:)${COMPONENT}(:|$)/'
+    - if: '$COMPONENTS !~ $COMPONENT_PATTERN'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|:)${BACKEND}(:|$)/'
+    - if: '$BACKENDS !~ $BACKEND_PATTERN'
       when: never
-    - if: '$LEVELS != "" && $LEVELS !~ /(^|:)${LEVEL}(:|$)/'
+    - if: '$LEVELS !~ $LEVEL_PATTERN'
       when: never
     - if: $COMPONENT == 'atmosphere-diffusion'
       variables:
