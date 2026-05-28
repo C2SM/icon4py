@@ -2,11 +2,59 @@ include:
   - local: 'ci/base.yml'
 
 variables:
-  # Filter what runs. Comma-separated lists. Empty = run everything.
-  COMPONENTS: ""
-  BACKENDS: ""
-  LEVELS: ""
-  GRIDS: ""
+  # These variables filter jobs below. Not all variables apply to all jobs (e.g.
+  # GRIDS only applies to stencil tests). These are the defaults for the
+  # pipeline. The are meant to be overridden with with e.g.
+  #
+  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;COMPONENTS=common,standalone_driver
+  COMPONENTS: "advection,diffusion,dycore,microphysics,muphys,common,driver,standalone_driver,atmosphere/diffusion,atmosphere/dycore"
+  BACKENDS: "dace_gpu"
+  LEVELS: "integration"
+  GRIDS: "simple,icon_regional"
+  SELECTION: "stencils,datatest,mpi,tools"
+
+.all_backends: &all_backends
+  - embedded
+  - dace_cpu
+  - dace_gpu
+  - gtfn_cpu
+  - gtfn_gpu
+
+.all_levels: &all_levels
+  - unit
+  - integration
+
+.integration_level: &integration_level
+  - integration
+
+.all_grids: &all_grids
+  - simple
+  - icon_regional
+
+.stencil_components: &stencil_components
+  - advection
+  - diffusion
+  - dycore
+  - microphysics
+  - muphys
+  - common
+  - driver
+
+.datatest_components: &datatest_components
+  - advection
+  - diffusion
+  - dycore
+  - microphysics
+  - muphys
+  - common
+  - driver
+  - standalone_driver
+
+.mpi_components: &mpi_components
+  - atmosphere/diffusion
+  - atmosphere/dycore
+  - common
+  - standalone_driver
 
 .build_mpi_baseimage:
   stage: baseimage
@@ -122,19 +170,23 @@ build_mpi_image:
 .test_stencils:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
+  variables:
+    SELECTION_TAG: "stencils"
   script:
     - nox -s "test_model-3.13(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
-        BACKEND: [dace_cpu, dace_gpu, gtfn_gpu]
-        GRID: [simple, icon_regional]
+      - COMPONENT: *stencil_components
+        BACKEND: *all_backends
+        GRID: *all_grids
   rules:
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)$COMPONENT($|,)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)$BACKEND($|,)/'
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)${COMPONENT}(,|$)/'
       when: never
-    - if: '$GRIDS != "" && $GRIDS !~ /(^|,)$GRID($|,)/'
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)${BACKEND}(,|$)/'
+      when: never
+    - if: '$GRIDS != "" && $GRIDS !~ /(^|,)${GRID}(,|$)/'
       when: never
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
@@ -151,19 +203,23 @@ build_mpi_image:
 .test_datatests_serial:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
+  variables:
+    SELECTION_TAG: "datatest"
   script:
     - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
-        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        LEVEL: [unit, integration]
+      - COMPONENT: *datatest_components
+        BACKEND: *all_backends
+        LEVEL: *all_levels
   rules:
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)$COMPONENT($|,)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)$BACKEND($|,)/'
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)${COMPONENT}(,|$)/'
       when: never
-    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)$LEVEL($|,)/'
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)${BACKEND}(,|$)/'
+      when: never
+    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)${LEVEL}(,|$)/'
       when: never
     - if: $COMPONENT == 'standalone_driver'
       variables:
@@ -182,25 +238,35 @@ build_mpi_image:
 .test_tools:
   stage: test
   extends: [.test_runner_serial, .test_prep_serial]
+  variables:
+    SELECTION_TAG: "tools"
   script:
     - nox -s 'test_tools_and_bindings-3.13(datatest)'
+  rules:
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
+      when: never
+    - when: on_success
 
 .test_datatests_mpi:
   stage: test
   extends: [.test_runner_mpi, .test_prep_mpi]
+  variables:
+    SELECTION_TAG: "mpi"
   script:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
-        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        LEVEL: [integration]
+      - COMPONENT: *mpi_components
+        BACKEND: *all_backends
+        LEVEL: *integration_level
   rules:
-    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)$COMPONENT($|,)/'
+    - if: '$SELECTION != "" && $SELECTION !~ /(^|,)${SELECTION_TAG}(,|$)/'
       when: never
-    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)$BACKEND($|,)/'
+    - if: '$COMPONENTS != "" && $COMPONENTS !~ /(^|,)${COMPONENT}(,|$)/'
       when: never
-    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)$LEVEL($|,)/'
+    - if: '$BACKENDS != "" && $BACKENDS !~ /(^|,)${BACKEND}(,|$)/'
+      when: never
+    - if: '$LEVELS != "" && $LEVELS !~ /(^|,)${LEVEL}(,|$)/'
       when: never
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
