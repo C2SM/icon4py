@@ -608,29 +608,30 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ):
         if any([f is None for f in self.fields.values()]):
-            self._compute(field_src, backend, grid)
+            self._compute(field_src=field_src, grid=grid, backend=backend)
             self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(
         self,
-        factory: FieldSource,
+        *,
+        field_src: FieldSource,
+        grid: GridProvider,
         backend: gtx_typing.Backend | None,
-        grid_provider: GridProvider,
     ) -> None:
         try:
-            metadata = {v: factory.get(v, RetrievalType.METADATA) for v in self._output.values()}
+            metadata = {v: field_src.get(v, RetrievalType.METADATA) for v in self._output.values()}
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
-        self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
-        log.debug(f" getting dependencies {self._dependencies.values()} from {factory}")
-        deps = {k: factory.get(v) for k, v in self._dependencies.items()}
+        self._fields = self._allocate(backend, grid.grid, dtype=dtype)
+        log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
+        deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
-        dims = self._domain_args(grid_provider.grid, grid_provider.vertical_grid)
-        offset_providers = self._get_offset_providers(grid_provider.grid)
+        dims = self._domain_args(grid.grid, grid.vertical_grid)
+        offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
         self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
 
