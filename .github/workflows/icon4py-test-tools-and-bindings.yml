@@ -33,7 +33,7 @@ jobs:
       - name: run nox session - tools and bindings
         env:
           NUM_PROCESSES: auto
-          PYTEST_ADDOPTS: "--durations=0 --tach"
+          PYTEST_ADDOPTS: "--durations=0 --tach --tach-verbose"
         shell: bash
         run: |
           uv run nox -s "test_tools_and_bindings-${{matrix.python-version}}(unittest)" --
