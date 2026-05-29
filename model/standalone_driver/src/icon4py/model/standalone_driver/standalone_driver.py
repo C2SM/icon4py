@@ -554,7 +554,9 @@ def initialize_driver(
     )
 
     # Override output_path from config default with the time- (and possibly MPI-) adjusted one
-    output_path = driver_config.prepare_output_directory(icon4py_driver_config.output_path, process_props)
+    output_path = driver_config.prepare_output_directory(
+        icon4py_driver_config.output_path, process_props
+    )
     icon4py_driver_config = dataclasses.replace(icon4py_driver_config, output_path=output_path)
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
