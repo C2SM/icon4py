@@ -156,6 +156,7 @@ class IconSavepoint:
 class IconGridSavepoint(IconSavepoint):
     def __init__(
         self,
+        *,
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         grid_id: str,
@@ -1965,6 +1966,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
+        *,
         backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
@@ -2006,8 +2008,8 @@ class IconSerialDataProvider:
     def from_savepoint_grid(self, grid_id: str, grid_params: icon.GridParams) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
-            savepoint,
-            self.serializer,
+            sp=savepoint,
+            ser=self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
             grid_params=grid_params,

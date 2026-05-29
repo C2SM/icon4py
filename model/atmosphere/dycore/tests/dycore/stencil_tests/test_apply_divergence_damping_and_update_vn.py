@@ -49,6 +49,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         next_vn: np.ndarray,
         current_vn: np.ndarray,
@@ -83,6 +84,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
+        **kwargs: object,
     ) -> dict:
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 

@@ -48,9 +48,9 @@ def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
-        wgtfac_e,
-        vn,
-        vt,
+        wgtfac_e=wgtfac_e,
+        vn=vn,
+        vt=vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

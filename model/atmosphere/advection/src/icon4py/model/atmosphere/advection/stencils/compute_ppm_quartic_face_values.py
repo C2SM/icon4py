@@ -58,9 +58,9 @@ def compute_ppm_quartic_face_values(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm_quartic_face_values(
-        p_cc,
-        p_cellhgt_mc_now,
-        z_slope,
+        p_cc=p_cc,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        z_slope=z_slope,
         out=p_face,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

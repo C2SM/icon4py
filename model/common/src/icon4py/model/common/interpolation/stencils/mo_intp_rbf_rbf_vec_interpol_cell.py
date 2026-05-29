@@ -37,9 +37,9 @@ def mo_intp_rbf_rbf_vec_interpol_cell(
     vertical_end: gtx.int32,
 ) -> None:
     _mo_intp_rbf_rbf_vec_interpol_cell(
-        p_vn_in,
-        ptr_coeff_1,
-        ptr_coeff_2,
+        p_vn_in=p_vn_in,
+        ptr_coeff_1=ptr_coeff_1,
+        ptr_coeff_2=ptr_coeff_2,
         out=(p_u_out, p_v_out),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

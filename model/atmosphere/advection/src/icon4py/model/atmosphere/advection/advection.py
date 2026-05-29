@@ -140,6 +140,7 @@ class Advection(ABC):
     @abstractmethod
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -198,6 +199,7 @@ class NoAdvection(Advection):
 
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -226,6 +228,7 @@ class GodunovSplittingAdvection(Advection):
 
     def __init__(
         self,
+        *,
         horizontal_advection: advection_horizontal.HorizontalAdvection,
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
@@ -305,6 +308,7 @@ class GodunovSplittingAdvection(Advection):
 
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -415,6 +419,7 @@ class GodunovSplittingAdvection(Advection):
 
 
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
+    *,
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,
@@ -500,6 +505,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
 
 def convert_config_to_advection(
+    *,
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,

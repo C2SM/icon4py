@@ -45,10 +45,10 @@ def compute_advective_vertical_wind_tendency(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_advective_vertical_wind_tendency(
-        z_w_con_c,
-        w,
-        coeff1_dwdz,
-        coeff2_dwdz,
+        z_w_con_c=z_w_con_c,
+        w=w,
+        coeff1_dwdz=coeff1_dwdz,
+        coeff2_dwdz=coeff2_dwdz,
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

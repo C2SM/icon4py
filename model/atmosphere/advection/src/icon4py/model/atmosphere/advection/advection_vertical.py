@@ -163,6 +163,7 @@ class VerticalLimiter(abc.ABC):
     @abc.abstractmethod
     def limit_parabola(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         p_face_up: fa.CellKField[ta.wpfloat],
@@ -225,6 +226,7 @@ class NoLimiter(VerticalLimiter):
 
     def limit_parabola(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         p_face_up: fa.CellKField[ta.wpfloat],
@@ -326,6 +328,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
 
     def limit_parabola(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         p_face_up: fa.CellKField[ta.wpfloat],
@@ -370,6 +373,7 @@ class VerticalAdvection(abc.ABC):
     @abc.abstractmethod
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -450,6 +454,7 @@ class NoAdvection(VerticalAdvection):
 
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -481,6 +486,7 @@ class FiniteVolume(VerticalAdvection):
 
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -516,6 +522,7 @@ class FiniteVolume(VerticalAdvection):
     @abc.abstractmethod
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -527,6 +534,7 @@ class FiniteVolume(VerticalAdvection):
     @abc.abstractmethod
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -620,6 +628,7 @@ class FirstOrderUpwind(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -653,6 +662,7 @@ class FirstOrderUpwind(FiniteVolume):
 
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -688,6 +698,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
     def __init__(
         self,
+        *,
         boundary_conditions: BoundaryConditions,
         vertical_limiter: VerticalLimiter,
         grid: icon_grid.IconGrid,
@@ -893,6 +904,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -1071,6 +1083,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],

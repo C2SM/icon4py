@@ -42,10 +42,10 @@ def extrapolate_temporally_exner_pressure(
     vertical_end: gtx.int32,
 ) -> None:
     _extrapolate_temporally_exner_pressure(
-        exner_exfac,
-        exner,
-        exner_ref_mc,
-        exner_pr,
+        exner_exfac=exner_exfac,
+        exner=exner,
+        exner_ref_mc=exner_ref_mc,
+        exner_pr=exner_pr,
         out=(z_exner_ex_pr, exner_pr),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

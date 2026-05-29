@@ -102,6 +102,7 @@ def create_vertical_grid(
 
 
 def create_static_field_factories(
+    *,
     grid_manager: gm.GridManager,
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
@@ -158,6 +159,7 @@ def create_static_field_factories(
 
 
 def initialize_granules(
+    *,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
     diffusion_config: diffusion.DiffusionConfig,

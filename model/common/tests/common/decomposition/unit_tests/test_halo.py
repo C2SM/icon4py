@@ -150,7 +150,8 @@ def test_no_halo():
     assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
     # vertices
     test_utils.assert_dallclose(
-        np.arange(grid_size.num_vertices), decomposition_info.global_index(dims.VertexDim)
+        np.arange(grid_size.num_vertices),
+        decomposition_info.global_index(dims.VertexDim),
     )
     assert np.all(
         decomposition_info.halo_levels(dims.VertexDim) == definitions.DecompositionFlag.OWNED

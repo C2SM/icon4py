@@ -197,6 +197,7 @@ class SemiLagrangianTracerFlux(ABC):
     @abstractmethod
     def compute_tracer_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -280,6 +281,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
     def compute_tracer_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -336,6 +338,7 @@ class HorizontalAdvection(ABC):
     @abstractmethod
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -397,6 +400,7 @@ class NoAdvection(HorizontalAdvection):
 
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -421,6 +425,7 @@ class FiniteVolume(HorizontalAdvection):
 
     def run(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -452,6 +457,7 @@ class FiniteVolume(HorizontalAdvection):
     @abstractmethod
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -462,6 +468,7 @@ class FiniteVolume(HorizontalAdvection):
     @abstractmethod
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -476,6 +483,7 @@ class SemiLagrangian(FiniteVolume):
 
     def __init__(
         self,
+        *,
         tracer_flux: SemiLagrangianTracerFlux,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
@@ -583,6 +591,7 @@ class SemiLagrangian(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -628,6 +637,7 @@ class SemiLagrangian(FiniteVolume):
 
     def _update_unknowns(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],

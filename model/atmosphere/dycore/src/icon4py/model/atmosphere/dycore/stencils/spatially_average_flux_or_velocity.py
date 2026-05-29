@@ -37,8 +37,8 @@ def spatially_average_flux_or_velocity(
     vertical_end: gtx.int32,
 ) -> None:
     _spatially_average_flux_or_velocity(
-        e_flx_avg,
-        flux_or_velocity,
+        e_flx_avg=e_flx_avg,
+        flux_or_velocity=flux_or_velocity,
         out=spatially_averaged_flux_or_velocity,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

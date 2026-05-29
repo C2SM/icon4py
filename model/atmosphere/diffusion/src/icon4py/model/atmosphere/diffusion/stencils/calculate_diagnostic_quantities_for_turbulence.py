@@ -49,12 +49,12 @@ def calculate_diagnostic_quantities_for_turbulence(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_diagnostic_quantities_for_turbulence(
-        kh_smag_ec,
-        vn,
-        e_bln_c_s,
-        geofac_div,
-        diff_multfac_smag,
-        wgtfac_c,
+        kh_smag_ec=kh_smag_ec,
+        vn=vn,
+        e_bln_c_s=e_bln_c_s,
+        geofac_div=geofac_div,
+        diff_multfac_smag=diff_multfac_smag,
+        wgtfac_c=wgtfac_c,
         out=(div_ic, hdef_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
