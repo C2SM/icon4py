@@ -63,22 +63,19 @@ build_mpi_image_aarch64:
 # that match the filters are generated.
 generate_test_child_pipeline:
   stage: generate_test
-  extends: .container-runner-santis-gh200
-  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  needs: [build_image_aarch64, build_mpi_image_aarch64]
+  extends: .container-runner-lightweight-gh200
+  image: ghcr.io/astral-sh/uv:python3.12-alpine
+  timeout: 5m
   variables:
-    SLURM_NTASKS: 1
-    SLURM_JOB_NUM_NODES: 1
-    SLURM_GPUS_PER_NODE: 1
-    SLURM_PARTITION: "shared"
+    GIT_STRATEGY: fetch
   script:
-    - cd /icon4py
     - scripts/run generate-ci-pipeline > $CI_PROJECT_DIR/test.yml
   artifacts:
     paths: [test.yml]
 
 trigger_test_child_pipeline:
   stage: trigger_test
+  needs: [generate_test_child_pipeline, build_image_aarch64, build_mpi_image_aarch64]
   trigger:
     include:
       - artifact: test.yml
