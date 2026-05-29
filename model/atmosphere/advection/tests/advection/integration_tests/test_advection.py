@@ -204,7 +204,10 @@ def test_advection_run_single_step(
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid, advection_exit_savepoint, ntracer, backend=backend
+        icon_grid=icon_grid,
+        savepoint=advection_exit_savepoint,
+        ntracer=ntracer,
+        backend=backend,
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
