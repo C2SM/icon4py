@@ -68,6 +68,8 @@ generate_test_child_pipeline:
   timeout: 5m
   variables:
     GIT_STRATEGY: fetch
+    KUBERNETES_MEMORY_REQUEST: 4Gi
+    KUBERNETES_MEMORY_LIMIT: 4Gi
   script:
     - scripts/run generate-ci-pipeline > $CI_PROJECT_DIR/test.yml
   artifacts:
