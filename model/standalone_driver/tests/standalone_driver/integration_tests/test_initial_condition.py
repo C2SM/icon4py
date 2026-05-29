@@ -35,7 +35,7 @@ def test_standalone_driver_initial_condition(
 ) -> None:
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
-        config_file_path=experiment.config.config_file_path,
+        config_file_path=experiment.config.file_path,
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_like=backend_like,
     )

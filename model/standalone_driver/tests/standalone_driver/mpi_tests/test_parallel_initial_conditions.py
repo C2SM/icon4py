@@ -81,7 +81,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
             grid_file_path=grid_file_path,
-            config_file_path=experiment.config.config_file_path,
+            config_file_path=experiment.config.file_path,
             log_level="info",
             backend_like=backend_like,
             force_serial_run=True,
@@ -104,7 +104,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
             grid_file_path=grid_file_path,
-            config_file_path=experiment.config.config_file_path,
+            config_file_path=experiment.config.file_path,
             log_level="info",
             backend_like=backend_like,
         )

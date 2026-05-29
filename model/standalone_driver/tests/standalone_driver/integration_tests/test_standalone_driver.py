@@ -49,7 +49,7 @@ def test_standalone_driver(
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
     ds, _ = main.main(
         grid_file_path=grid_file_path,
-        config_file_path=experiment.config.config_file_path,
+        config_file_path=experiment.config.file_path,
         icon4py_backend=backend_like,
     )
 

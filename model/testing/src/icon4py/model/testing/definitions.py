@@ -180,7 +180,7 @@ class ExperimentConfig:
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     graupel: graupel.SingleMomentSixClassIconGraupelConfig
-    config_file_path: pathlib.Path = pathlib.Path()
+    file_path: pathlib.Path = pathlib.Path()
 
 
 @dataclasses.dataclass

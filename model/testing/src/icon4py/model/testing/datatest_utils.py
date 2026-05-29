@@ -210,5 +210,5 @@ def create_experiment_configuration(
         metrics=metrics_config,
         interpolation=interpolation_config,
         graupel=graupel_config,
-        config_file_path=config_path,
+        file_path=config_path,
     )
