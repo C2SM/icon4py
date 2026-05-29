@@ -5,6 +5,7 @@ stages:
   - baseimage
   - image
   - generate_test
+  - trigger_test
   - test
   - benchmark
 

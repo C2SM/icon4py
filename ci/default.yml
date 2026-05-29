@@ -78,7 +78,7 @@ generate_test_child_pipeline:
     paths: [test.yml]
 
 trigger_test_child_pipeline:
-  stage: test
+  stage: trigger_test
   trigger:
     include:
       - artifact: test.yml
