@@ -78,7 +78,7 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
         ("double", np.float64, [1.0, 2.0, 3.0, 4.0], [[1.0, 3.0], [2.0, 4.0]]),
         ("long", np.int64, [1, 2, 3, 4], [[1, 3], [2, 4]]),
         (
-            "_Bool",
+            "unsigned char",
             np.bool_,
             [True, False, True, False, False, True],
             [[True, True, False], [False, False, True]],
@@ -117,8 +117,12 @@ def test_default_mapping_hook_array(ffi):
     assert isinstance(result, np.ndarray)
 
 
-def test_default_mapping_hook_bool():
-    # Scalar bools need no mapper: CFFI delivers a C `_Bool` argument as a Python `bool`.
-    assert (
-        _conversion.default_mapping(None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL)) is None
-    )
+def test_default_mapping_hook_bool(ffi):
+    # Scalar BOOL is `unsigned char` on the C side, so CFFI delivers a Python `int`
+    # which the mapper converts to `bool`.
+    mapper = _conversion.default_mapping(None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL))
+    assert mapper is not None
+    assert mapper(0, ffi=ffi) is False
+    assert mapper(1, ffi=ffi) is True
+    # NVHPC writes `.TRUE.` as 0xFF; the mapper must still produce `True`.
+    assert mapper(255, ffi=ffi) is True

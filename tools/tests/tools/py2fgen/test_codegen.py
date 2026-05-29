@@ -83,7 +83,7 @@ def test_cheader_generation_for_single_function():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, _Bool on_gpu);"
+        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, unsigned char on_gpu);"
     )
 
 
@@ -93,7 +93,7 @@ def test_cheader_for_pointer_args():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, _Bool on_gpu);"
+        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, unsigned char on_gpu);"
     )
 
 
@@ -445,8 +445,8 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, _Bool on_gpu);
-    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, _Bool on_gpu);
+    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, unsigned char on_gpu);
+    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, unsigned char on_gpu);
     """
     assert compare_ignore_whitespace(interface, expected)
 
@@ -468,8 +468,8 @@ def test_bool_param_codegen():
     plugin = BindingsLibrary(library_name="libtest_plugin", functions=[bool_func])
 
     header = CHeaderGenerator.apply(plugin)
-    assert "_Bool flag" in header
-    assert "_Bool* mask" in header
+    assert "unsigned char flag" in header
+    assert "unsigned char* mask" in header
 
     interface = generate_f90_interface(plugin)
     assert "logical(c_bool), value, target :: flag" in interface

@@ -114,8 +114,13 @@ Note that debugging and profiling are not available if Python is set to optimize
 
 ### Booleans
 
-Booleans are required to be C-interoperable types: `_Bool` in C,
-`logical(kind=c_bool)` in Fortran (both 1 byte), and NumPy `bool_` in Python.
+Booleans use the 1-byte chain `unsigned char` (C) / `logical(kind=c_bool)`
+(Fortran) / NumPy `bool_` (Python). The C side is `unsigned char` rather than
+`_Bool` because some Fortran compilers (notably NVHPC) write `.TRUE.` as `-1`
+(byte `0xFF`), which CFFI's strict `_Bool` validator rejects. `unsigned char`
+accepts any byte value; on the Python side a non-zero byte still reads as
+`True` through the `bool_` view.
+
 Callers must declare boolean scalar and array arguments as `logical(kind=c_bool)` (not the default `logical`); converting from a default `logical` is the caller's responsibility.
 
 ### Future improvements

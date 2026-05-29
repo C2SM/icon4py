@@ -33,7 +33,10 @@ BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
 BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "double",
     _definitions.FLOAT32: "float",
-    _definitions.BOOL: "_Bool",
+    # NVHPC writes Fortran `.TRUE.` as `-1` (byte 0xFF), which cffi's `_Bool` validator
+    # rejects ("got a _Bool of value 255, expected 0 or 1"). Use `unsigned char` on the
+    # C side (same 1-byte ABI as `_Bool` and `logical(c_bool)`) to bypass that check.
+    _definitions.BOOL: "unsigned char",
     _definitions.INT32: "int",
     _definitions.INT64: "long",
 }
@@ -238,7 +241,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
                 params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
-        params.append("_Bool on_gpu")
+        params.append(f"{to_c_type(_definitions.BOOL)} on_gpu")
 
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)

@@ -31,7 +31,8 @@ C_STR_TYPE_TO_NP_DTYPE: Final[dict[str, np.dtype]] = {
     "int": np.dtype(np.int32),
     "double": np.dtype(np.float64),
     "float": np.dtype(np.float32),
-    "_Bool": np.dtype(np.bool_),
+    # see comment in `_codegen.BUILTIN_TO_CPP_TYPE` on why bool is `unsigned char` on the C side
+    "unsigned char": np.dtype(np.bool_),
     "long": np.dtype(np.int64),
 }
 
@@ -157,6 +158,10 @@ def _as_array_mapping() -> Callable[[_definitions.ArrayInfo, cffi.FFI], _definit
     return impl
 
 
+def _int_to_bool(value: int, ffi: cffi.FFI) -> bool:
+    return bool(value)
+
+
 def default_mapping(
     _: Any, param_descriptor: _definitions.ParamDescriptor
 ) -> _definitions.MapperType | None:
@@ -164,8 +169,15 @@ def default_mapping(
     Provide default mappings for raw Fortran data to Python data types.
 
     Array parameters are mapped from 'ArrayInfo's to NumPy/CuPy arrays.
+    Scalar 'BOOL' is delivered by CFFI as a Python 'int' (the C side is
+    `unsigned char`); convert it to 'bool' here.
     """
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         # ArrayInfos to Numpy/CuPy arrays
         return _as_array_mapping()
+    if (
+        isinstance(param_descriptor, _definitions.ScalarParamDescriptor)
+        and param_descriptor.dtype == _definitions.BOOL
+    ):
+        return _int_to_bool
     return None
