@@ -302,7 +302,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=self._exchange,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
-            domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
+            domain=(dims.CellDim, dims.LsqUnkDim, dims.C2E2CDim),
             deps={
                 "cell_center_x": geometry_attrs.CELL_CENTER_X,
                 "cell_center_y": geometry_attrs.CELL_CENTER_Y,

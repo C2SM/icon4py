@@ -409,7 +409,11 @@ class VerticalAdvection(abc.ABC):
 class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        backend: gtx_typing.Backend | None,
+    ):
         log.debug("vertical advection class init - start")
 
         # input arguments
@@ -474,7 +478,6 @@ class NoAdvection(VerticalAdvection):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
-
         log.debug("vertical advection run - end")
 
 
@@ -638,7 +641,6 @@ class FirstOrderUpwind(FiniteVolume):
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
             even_timestep=even_timestep
         )
-
         log.debug("running stencil compute_vertical_tracer_flux_upwind - start")
         self._compute_vertical_tracer_flux_upwind(
             p_cc=p_tracer_now,
@@ -688,7 +690,6 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
-
         log.debug("vertical unknowns update - end")
 
 
@@ -1067,7 +1068,6 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil compute_ppm4gpu_integer_flux - end")
 
         ## set boundary conditions
-
         self._boundary_conditions.run(
             p_mflx_tracer_v=p_mflx_tracer_v,
             horizontal_start=horizontal_start,
@@ -1075,7 +1075,6 @@ class PiecewiseParabolicMethod(FiniteVolume):
         )
 
         ## apply flux limiter
-
         self._vertical_limiter.limit_fluxes(
             horizontal_start=horizontal_start, horizontal_end=horizontal_end
         )
@@ -1112,5 +1111,4 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
-
         log.debug("vertical unknowns update - end")
