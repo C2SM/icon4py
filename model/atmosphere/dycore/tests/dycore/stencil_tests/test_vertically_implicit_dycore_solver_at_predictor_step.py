@@ -53,6 +53,9 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 
 
+# `uses_concat_where`: `solve_w` wraps a scan operator in `concat_where(K == 0, ..., scan)`,
+# but embedded evaluates the scan eagerly over the full output K range while the scan's
+# `Koff[-1]`-shifted inputs only cover K>=1, causing an out-of-bounds at K=0.
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):

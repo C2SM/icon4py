@@ -150,7 +150,6 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
     return vn_at_surface
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     stencil_tests.StencilTest

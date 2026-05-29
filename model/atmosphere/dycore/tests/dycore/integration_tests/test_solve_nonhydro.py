@@ -1304,6 +1304,9 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     )
 
 
+# `uses_concat_where`: stencil masks `concat_where` on an Edge window and falls back to
+# `broadcast(scalar, ...)`; embedded needs a bounded fill on both sides of the window.
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",

@@ -273,6 +273,8 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     return vertical_wind_advective_tendency
 
 
+# `uses_concat_where`: stencil masks `concat_where` with a windowed `(K >= a) & (K < b)`
+# and falls back to `broadcast(scalar, ...)`; embedded needs a bounded fill on both sides.
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
@@ -489,6 +491,8 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         )
 
 
+# `uses_concat_where`: stencil falls back to `broadcast(scalar, ...)` over a multi-K range
+# (`K < nflatlev + 1`); embedded can only fill a single-K mask, not an open range.
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
