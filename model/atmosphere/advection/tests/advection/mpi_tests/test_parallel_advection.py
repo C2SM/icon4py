@@ -105,7 +105,7 @@ except ImportError:
     ],
 )
 @pytest.mark.mpi
-def test_advection_run_single_step(
+def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,
