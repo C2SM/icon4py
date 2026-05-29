@@ -23,6 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     inv_dual_edge_length: np.ndarray,
     z_exner_ex_pr: np.ndarray,
@@ -51,6 +52,7 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         inv_dual_edge_length: np.ndarray,
         z_exner_ex_pr: np.ndarray,
         ddxn_z_full: np.ndarray,
@@ -59,12 +61,12 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         **kwargs: Any,
     ) -> dict:
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-            connectivities,
-            inv_dual_edge_length,
-            z_exner_ex_pr,
-            ddxn_z_full,
-            c_lin_e,
-            z_dexner_dz_c_1,
+            connectivities=connectivities,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=z_exner_ex_pr,
+            ddxn_z_full=ddxn_z_full,
+            c_lin_e=c_lin_e,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
         )
         return dict(z_gradh_exner=z_gradh_exner)
 

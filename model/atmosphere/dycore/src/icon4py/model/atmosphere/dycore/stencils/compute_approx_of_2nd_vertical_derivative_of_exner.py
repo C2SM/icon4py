@@ -40,10 +40,10 @@ def compute_approx_of_2nd_vertical_derivative_of_exner(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_approx_of_2nd_vertical_derivative_of_exner(
-        z_theta_v_pr_ic,
-        d2dexdz2_fac1_mc,
-        d2dexdz2_fac2_mc,
-        z_rth_pr_2,
+        z_theta_v_pr_ic=z_theta_v_pr_ic,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        z_rth_pr_2=z_rth_pr_2,
         out=z_dexner_dz_c_2,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -38,6 +38,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_cell_in: np.ndarray,
         c_intp: np.ndarray,
         **kwargs: Any,

@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     levelmask: np.ndarray,
     c_lin_e: np.ndarray,
@@ -144,6 +145,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         levelmask: np.ndarray,
         c_lin_e: np.ndarray,
         z_w_con_c_full: np.ndarray,
@@ -161,20 +163,20 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
         **kwargs: Any,
     ) -> dict:
         ddt_vn_apc = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
-            connectivities,
-            levelmask,
-            c_lin_e,
-            z_w_con_c_full,
-            ddqz_z_full_e,
-            area_edge,
-            tangent_orientation,
-            inv_primal_edge_length,
-            zeta,
-            geofac_grdiv,
-            vn,
-            ddt_vn_apc,
-            cfl_w_limit,
-            scalfac_exdiff,
-            dtime,
+            connectivities=connectivities,
+            levelmask=levelmask,
+            c_lin_e=c_lin_e,
+            z_w_con_c_full=z_w_con_c_full,
+            ddqz_z_full_e=ddqz_z_full_e,
+            area_edge=area_edge,
+            tangent_orientation=tangent_orientation,
+            inv_primal_edge_length=inv_primal_edge_length,
+            zeta=zeta,
+            geofac_grdiv=geofac_grdiv,
+            vn=vn,
+            ddt_vn_apc=ddt_vn_apc,
+            cfl_w_limit=cfl_w_limit,
+            scalfac_exdiff=scalfac_exdiff,
+            dtime=dtime,
         )
         return dict(ddt_vn_apc=ddt_vn_apc)

@@ -102,11 +102,11 @@ def test_io_monitor_create_output_path(test_path):
     )
     config = IOConfig(field_groups=[], output_path=path_name)
     monitor = IOMonitor(
-        config,
-        vertical_params,
-        test_io_utils.simple_grid.config.horizontal_config,
-        test_io_utils.grid_file,
-        test_io_utils.simple_grid.id,
+        config=config,
+        vertical_size=vertical_params,
+        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=test_io_utils.simple_grid.id,
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -125,11 +125,11 @@ def test_io_monitor_write_ugrid_file(test_path):
 
     config = IOConfig(field_groups=[], output_path=path_name)
     monitor = IOMonitor(
-        config,
-        vertical_params,
-        test_io_utils.simple_grid.config.horizontal_config,
-        test_io_utils.grid_file,
-        "simple_grid",
+        config=config,
+        vertical_size=vertical_params,
+        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id="simple_grid",
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
@@ -171,11 +171,11 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     ]
     config = IOConfig(field_groups=field_configs, output_path=path_name)
     monitor = IOMonitor(
-        config,
-        vertical_params,
-        grid.config.horizontal_config,
-        test_io_utils.grid_file,
-        grid.id,
+        config=config,
+        vertical_size=vertical_params,
+        horizontal_size=grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=grid.id,
     )
     start_time = dt.datetime.fromisoformat(configured_output_start)
     monitor.store(state, start_time)
@@ -224,7 +224,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
         timesteps_per_file=1,
     )
     monitor = FieldGroupMonitor(
-        config,
+        config=config,
         vertical=vertical_params,
         horizontal=grid.config.horizontal_config,
         grid_id=grid.id,
@@ -342,7 +342,7 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
     )
 
     group_monitor = FieldGroupMonitor(
-        config,
+        config=config,
         vertical=vertical_params,
         horizontal=grid.config.horizontal_config,
         grid_id=grid.id,
@@ -405,7 +405,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
     vertical_size = test_io_utils.simple_grid.config.vertical_size
     horizontal_size = test_io_utils.simple_grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
-        config,
+        config=config,
         vertical=vertical_size,
         horizontal=horizontal_size,
         grid_id=test_io_utils.simple_grid.id,
@@ -427,7 +427,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
     vertical_size = test_io_utils.simple_grid.config.vertical_size
     horizontal_size = test_io_utils.simple_grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
-        config,
+        config=config,
         vertical=vertical_size,
         horizontal=horizontal_size,
         grid_id=test_io_utils.simple_grid.id,

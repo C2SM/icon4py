@@ -30,6 +30,7 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_cc: np.ndarray,
         p_mflx_contra_v: np.ndarray,
         **kwargs: Any,

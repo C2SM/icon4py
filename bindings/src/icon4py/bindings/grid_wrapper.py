@@ -63,7 +63,7 @@ NumpyBoolArray1D: TypeAlias = Annotated[
 
 
 @icon4py_export.export
-def grid_init(
+def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_starts: NumpyInt32Array1D,
     cell_ends: NumpyInt32Array1D,
     vertex_starts: NumpyInt32Array1D,

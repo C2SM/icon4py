@@ -77,6 +77,7 @@ def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gt
 
 
 def make_custom_dace_backend(
+    *,
     device: DeviceType,
     cached: bool = True,
     auto_optimize: bool = True,

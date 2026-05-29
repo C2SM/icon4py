@@ -43,11 +43,11 @@ def temporary_fields_for_turbulence_diagnostics(
     vertical_end: gtx.int32,
 ) -> None:
     _temporary_fields_for_turbulence_diagnostics(
-        kh_smag_ec,
-        vn,
-        e_bln_c_s,
-        geofac_div,
-        diff_multfac_smag,
+        kh_smag_ec=kh_smag_ec,
+        vn=vn,
+        e_bln_c_s=e_bln_c_s,
+        geofac_div=geofac_div,
+        diff_multfac_smag=diff_multfac_smag,
         out=(kh_c, div),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

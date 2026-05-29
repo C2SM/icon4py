@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_analysis_increments_from_data_assimilation_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
     rho_incr: np.ndarray,
@@ -41,6 +42,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_rho_expl: np.ndarray,
         rho_incr: np.ndarray,
         z_exner_expl: np.ndarray,
@@ -49,7 +51,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         **kwargs: Any,
     ) -> dict:
         z_rho_expl, z_exner_expl = add_analysis_increments_from_data_assimilation_numpy(
-            connectivities,
+            connectivities=connectivities,
             z_rho_expl=z_rho_expl,
             rho_incr=rho_incr,
             z_exner_expl=z_exner_expl,

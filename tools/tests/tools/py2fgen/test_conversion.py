@@ -85,7 +85,7 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
         ),
     ],
 )
-def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):
+def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):  # noqa: PLR0917 [too-many-positional-arguments]
     expected_result = xp.array(expected)
 
     arr = xp.array(rawdata, dtype=rawdtype)

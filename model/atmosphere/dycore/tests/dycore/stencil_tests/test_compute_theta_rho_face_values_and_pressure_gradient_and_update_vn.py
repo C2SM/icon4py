@@ -23,6 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_theta_rho_face_value_by_miura_scheme_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
@@ -155,6 +156,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_at_edges_on_model_levels: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
         horizontal_pressure_gradient: np.ndarray,

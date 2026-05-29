@@ -218,7 +218,8 @@ module = [
   'icon4py.model.testing.serialbox',
   'icon4py.bindings.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
   'icon4py.bindings.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.bindings.grid_wrapper'
+  'icon4py.bindings.grid_wrapper',
+  'icon4py.bindings.muphys_wrapper'
 ]
 
 [[tool.mypy.overrides]]
@@ -316,6 +317,7 @@ select = [
   'PLC',  # Pylint-Convention
   'PLE',  # Pylint-Error
   'PLR',  # Pylint-Refactor
+  'PLR0917',  # [too-many-positional-arguments]  # TODO(egparedes): remove when not longer in preview
   'PLW',  # Pylint-Warning
   'PTH',  # flake8-use-pathlib
   'Q',  # flake8-quotes
@@ -352,8 +354,9 @@ split-on-trailing-comma = false
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
-# Avoid messing up conditions in gt4py stencils
-"**/model/**/stencils/*.py" = ["SIM300"]
+# Avoid messing up conditions in gt4py stencils (SIM300)
+# Stencil parameters referenced in domain specs must remain positional (PLR0917)
+"**/model/**/stencils/*.py" = ["SIM300", "PLR0917"]
 # Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
 # TODO(havogt): fix error related to PLR0915, PLR0911, TD, RUF012 and remove ignores below
@@ -371,6 +374,7 @@ max-complexity = 15
 
 [tool.ruff.lint.pylint]
 max-branches = 12
+max-positional-args = 5
 max-statements = 60
 
 # -- setuptools --

@@ -35,7 +35,7 @@ if TYPE_CHECKING:
         (definitions.Experiments.GAUSS3D, 0),
     ],
 )
-def test_gauss3d_initial_condition(
+def test_gauss3d_initial_condition(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment: definitions.Experiment,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
@@ -55,11 +55,11 @@ def test_gauss3d_initial_condition(
         prognostic_state_now,
         _,
     ) = gauss3d.model_initialization_gauss3d(
-        icon_grid,
-        edge_geometry,
-        dt_utils.get_datapath_for_experiment(experiment.description, process_props),
-        backend,
-        rank,
+        grid=icon_grid,
+        edge_param=edge_geometry,
+        path=dt_utils.get_datapath_for_experiment(experiment.description, process_props),
+        backend=backend,
+        rank=rank,
     )
 
     # only verifying those assigned in the IC rather than all (at least for now)

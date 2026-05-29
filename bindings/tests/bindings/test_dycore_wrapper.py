@@ -234,7 +234,7 @@ def solve_nh_init(
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_dycore_wrapper_granule_inputs(
+def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     istep_init,
     istep_exit,
@@ -782,7 +782,7 @@ def test_dycore_wrapper_granule_inputs(
         ),
     ],
 )
-def test_granule_solve_nonhydro_single_step_regional(
+def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     istep_init,
@@ -967,7 +967,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_granule_solve_nonhydro_multi_step_regional(
+def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     step_date_init,

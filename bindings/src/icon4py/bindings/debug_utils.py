@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def print_grid_decomp_info(
+    *,
     icon_grid: icon.IconGrid,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,

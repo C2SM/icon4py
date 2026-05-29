@@ -44,7 +44,7 @@ _log = logging.getLogger(__name__)
     ],
 )
 @pytest.mark.mpi
-def test_run_solve_nonhydro_single_step(
+def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init: int,
     istep_exit: int,
     step_date_init: str,
