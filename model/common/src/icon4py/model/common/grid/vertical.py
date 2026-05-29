@@ -11,7 +11,7 @@ import functools
 import logging
 import math
 import pathlib
-from typing import Final
+from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -23,6 +23,7 @@ from icon4py.model.common import dimension as dims, exceptions, field_type_alias
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils.fortran_config import list_to_value
 
 
 log = logging.getLogger(__name__)
@@ -118,6 +119,27 @@ class VerticalGridConfig:
     _SLEVE_minimum_relative_layer_thickness_1: Final[ta.wpfloat] = 1.0 / 3.0
     #: minimum relative layer thickness for a nominal thickness of _SLEVE_minimum_layer_thickness_2 (hardcoded in init_vert_coord, not a namelist parameter)
     _SLEVE_minimum_relative_layer_thickness_2: Final[ta.wpfloat] = 0.5
+
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> "VerticalGridConfig":
+        sleve_nml = atmo_dict["sleve_nml"]
+        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
+        run_nml = atmo_dict["run_nml"]
+        return cls(
+            num_levels=list_to_value(run_nml["num_lev"]),
+            maximal_layer_thickness=sleve_nml["max_lay_thckn"],
+            top_height_limit_for_maximal_layer_thickness=sleve_nml["htop_thcknlimit"],
+            lowest_layer_thickness=sleve_nml["min_lay_thckn"],
+            model_top_height=sleve_nml["top_height"],
+            flat_height=sleve_nml["flat_height"],
+            stretch_factor=sleve_nml["stretch_fac"],
+            rayleigh_damping_height=list_to_value(nonhydrostatic_nml["damp_height"]),
+            htop_moist_proc=nonhydrostatic_nml["htop_moist_proc"],
+            SLEVE_decay_scale_1=sleve_nml["decay_scale_1"],
+            SLEVE_decay_scale_2=sleve_nml["decay_scale_2"],
+            SLEVE_decay_exponent=sleve_nml["decay_exp"],
+            **overrides,
+        )
 
 
 @dataclasses.dataclass(frozen=True)

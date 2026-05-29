@@ -80,8 +80,8 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / "ci_driver_output_for_backend_serial_rank0",
             grid_file_path=grid_file_path,
+            config_file_path=experiment.config_file_path(),
             log_level="info",
             backend_like=backend_like,
             force_serial_run=True,
@@ -103,8 +103,8 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
             grid_file_path=grid_file_path,
+            config_file_path=experiment.config_file_path(comm_size=process_props.comm_size),
             log_level="info",
             backend_like=backend_like,
         )

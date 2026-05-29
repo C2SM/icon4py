@@ -8,7 +8,7 @@
 
 import dataclasses
 import logging
-from typing import Final
+from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -269,6 +269,38 @@ class NonHydrostaticConfig:
         self.extra_diffu: bool = extra_diffu
 
         self._validate()
+
+    @classmethod
+    def from_fortran_dict(
+        cls, atmo_dict: dict[str, Any], **overrides: Any
+    ) -> "NonHydrostaticConfig":
+        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
+        run_nml = atmo_dict["run_nml"]
+        dynamics_nml = atmo_dict["dynamics_nml"]
+        return cls(
+            itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
+            iadv_rhotheta=dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"]),
+            igradp_method=dycore_states.HorizontalPressureDiscretizationType(
+                nonhydrostatic_nml["igradp_method"]
+            ),
+            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
+            divdamp_order=dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"]),
+            divdamp_type=dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"]),
+            l_vert_nested=run_nml["lvert_nest"],
+            deepatmos_mode=dynamics_nml["ldeepatmo"],
+            extra_diffu=nonhydrostatic_nml["lextra_diffu"],
+            rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
+            veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
+            fourth_order_divdamp_factor=nonhydrostatic_nml["divdamp_fac"],
+            fourth_order_divdamp_factor2=nonhydrostatic_nml["divdamp_fac2"],
+            fourth_order_divdamp_factor3=nonhydrostatic_nml["divdamp_fac3"],
+            fourth_order_divdamp_factor4=nonhydrostatic_nml["divdamp_fac4"],
+            fourth_order_divdamp_z=nonhydrostatic_nml["divdamp_z"],
+            fourth_order_divdamp_z2=nonhydrostatic_nml["divdamp_z2"],
+            fourth_order_divdamp_z3=nonhydrostatic_nml["divdamp_z3"],
+            fourth_order_divdamp_z4=nonhydrostatic_nml["divdamp_z4"],
+            **overrides,
+        )
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""

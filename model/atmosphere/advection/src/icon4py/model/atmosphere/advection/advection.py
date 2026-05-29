@@ -10,6 +10,7 @@ import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -37,6 +38,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils.fortran_config import list_to_value
 
 
 """
@@ -125,6 +127,25 @@ class AdvectionConfig:
             raise NotImplementedError(
                 f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
             )
+
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> "AdvectionConfig":
+        transport_nml = atmo_dict["transport_nml"]
+        return cls(
+            horizontal_advection_type=HorizontalAdvectionType(
+                list_to_value(transport_nml["ihadv_tracer"])
+            ),
+            horizontal_advection_limiter=HorizontalAdvectionLimiter(
+                list_to_value(transport_nml["itype_hlimit"])
+            ),
+            vertical_advection_type=VerticalAdvectionType(
+                list_to_value(transport_nml["ivadv_tracer"])
+            ),
+            vertical_advection_limiter=VerticalAdvectionLimiter(
+                list_to_value(transport_nml["itype_vlimit"])
+            ),
+            **overrides,
+        )
 
 
 class Advection(ABC):

@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 def main(
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
+    config_file_path: Annotated[pathlib.Path, typer.Option(help="Configuration file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -31,9 +32,6 @@ def main(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
         ),
     ],
-    output_path: Annotated[
-        pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
-    ] = pathlib.Path("./output"),
     log_level: Annotated[
         str,
         typer.Option(
@@ -66,8 +64,8 @@ def main(
     icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
 
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        output_path=output_path,
         grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
         log_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
         backend_like=icon4py_backend,

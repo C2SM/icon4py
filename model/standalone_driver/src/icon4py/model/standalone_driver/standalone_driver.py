@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 import datetime
 import functools
 import logging
@@ -34,6 +35,7 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
+    config_reader,
     driver_constants,
     driver_states,
     driver_utils,
@@ -486,74 +488,9 @@ class Icon4pyDriver:
             )
 
 
-# TODO (Chia Rui): this should be replaced by real configuration reader when the configuration PR is merged
-def _read_config(
-    output_path: pathlib.Path,
-    enable_profiling: bool,
-) -> tuple[
-    driver_config.DriverConfig,
-    v_grid.VerticalGridConfig,
-    diffusion.DiffusionConfig,
-    advection.AdvectionConfig,
-    solve_nh.NonHydrostaticConfig,
-]:
-    vertical_grid_config = v_grid.VerticalGridConfig(
-        num_levels=35,
-        rayleigh_damping_height=45000.0,
-    )
-
-    diffusion_config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        hdiff_temp=False,
-        n_substeps=5,
-        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-        hdiff_efdt_ratio=10.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,
-        velocity_boundary_diffusion_denom=200.0,
-    )
-
-    # NOTE(ricoh): adjust when switching experiments!
-    # These are ICON defaults, irrelevant for Jablonowski_Williamson (no tracers)
-    advection_config = advection.AdvectionConfig(
-        horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-        horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-        vertical_advection_limiter=advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-        vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
-    )
-
-    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
-
-    profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
-
-    icon4py_driver_config = driver_config.DriverConfig(
-        experiment_name="Jablonowski_Williamson",
-        output_path=output_path,
-        dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
-        apply_extra_second_order_divdamp=False,
-        ndyn_substeps=5,
-        vertical_cfl_threshold=ta.wpfloat("1.05"),
-        enable_statistics_output=True,
-        profiling_stats=profiling_stats,
-    )
-
-    return (
-        icon4py_driver_config,
-        vertical_grid_config,
-        diffusion_config,
-        advection_config,
-        nonhydro_config,
-    )
-
-
 def initialize_driver(
-    output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
+    config_file_path: pathlib.Path,
     log_level: str,
     backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
@@ -568,11 +505,12 @@ def initialize_driver(
     - initialize the components selected by the configuration (diffusion and solve_nh)
     - create the driver object
     Args:
-        configuration_file_path: path to the configuration file
-        output_path: path where to store the simulation output
         grid_file_path: path of the grid file
+        config_file_path: path to the directory containing the configuration files
         log_level: logging level
         backend_like: backend-like
+        print_distributed_debug_msg: whether to print debug messages for all ranks
+        force_serial_run: force single-node run even if MPI is available
     Returns:
         Driver: driver object
     """
@@ -597,6 +535,8 @@ def initialize_driver(
         process_props=process_props,
     )
 
+    output_path = pathlib.Path("./output")
+
     if process_props.rank == 0:
         if output_path.exists():
             current_time = datetime.datetime.now()
@@ -620,12 +560,21 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-    driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
-        _read_config(
-            output_path=output_path,
-            enable_profiling=False,
-        )
+    (
+        icon4py_driver_config,
+        vertical_grid_config,
+        diffusion_config,
+        advection_config,
+        solve_nh_config,
+        interpolation_config,
+        metrics_config,
+    ) = config_reader.read_config(
+        config_file_path=config_file_path,
+        enable_profiling=False,
     )
+
+    # Override output_path from config default with the (possibly MPI-adjusted) one
+    icon4py_driver_config = dataclasses.replace(icon4py_driver_config, output_path=output_path)
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
     grid_manager = driver_utils.create_grid_manager(
@@ -661,6 +610,8 @@ def initialize_driver(
         backend=backend,
         exchange=exchange,
         global_reductions=global_reductions,
+        interpolation_config=interpolation_config,
+        metrics_config=metrics_config,
     )
 
     log.info("initializing granules")
@@ -684,7 +635,7 @@ def initialize_driver(
         backend=backend,
     )
     icon4py_driver = Icon4pyDriver(
-        config=driver_config,
+        config=icon4py_driver_config,
         backend=backend,
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,

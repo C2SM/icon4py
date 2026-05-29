@@ -16,6 +16,7 @@ from ._common import (
     chainable,
     named_property,
 )
+from .fortran_config import list_to_value
 
 
 __all__ = [
@@ -25,6 +26,7 @@ __all__ = [
     "TimeStepPair",
     # Functions
     "chainable",
+    "list_to_value",
     # Classes
     "named_property",
 ]

@@ -47,11 +47,10 @@ def test_standalone_driver(
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    output_path = tmp_path / "ci_driver_output"
     ds, _ = main.main(
         grid_file_path=grid_file_path,
+        config_file_path=experiment.config_file_path(),
         icon4py_backend=backend_like,
-        output_path=output_path,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

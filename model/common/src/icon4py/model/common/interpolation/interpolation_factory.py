@@ -9,6 +9,7 @@
 import dataclasses
 import functools
 import logging
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -114,6 +115,24 @@ class InterpolationConfig:
             )
         else:  # default value in ICON
             self.max_nudging_coefficient = 0.375
+
+    @classmethod
+    def from_fortran_dict(
+        cls, atmo_dict: dict[str, Any], **overrides: Any
+    ) -> "InterpolationConfig":
+        interpol_nml = atmo_dict["interpol_nml"]
+        dynamics_nml = atmo_dict["dynamics_nml"]
+        return cls(
+            divergence_averaging_central_cell_weight=dynamics_nml["divavg_cntrwgt"],
+            _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+            nudge_efold_width=interpol_nml["nudge_efold_width"],
+            nudge_zone_width=interpol_nml["nudge_zone_width"],
+            rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+            rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+            rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+            lsq_dim_stencil=interpol_nml["lsq_high_ord"],
+            **overrides,
+        )
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):

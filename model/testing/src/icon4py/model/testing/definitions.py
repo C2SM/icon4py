@@ -13,6 +13,7 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
 
+from icon4py.model.atmosphere.advection import advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
@@ -177,6 +178,7 @@ class ExperimentConfig:
     vertical_grid: v_grid.VerticalGridConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
+    advection: advection.AdvectionConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     graupel: graupel.SingleMomentSixClassIconGraupelConfig
@@ -205,6 +207,12 @@ class Experiment:
     def config(self) -> ExperimentConfig:
         # Return a deep copy so that tests cannot mutate the shared cached config.
         return copy.deepcopy(self._config)
+
+    def config_file_path(self, comm_size: int = 1) -> pathlib.Path:
+        experiment_dir = (
+            f"mpitask{comm_size}_{self.description.name}_v{self.description.version:02d}"
+        )
+        return serialized_data_path() / experiment_dir
 
 
 class Experiments:

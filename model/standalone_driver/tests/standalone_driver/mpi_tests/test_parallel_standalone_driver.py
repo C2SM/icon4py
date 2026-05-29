@@ -52,16 +52,6 @@ def test_standalone_driver_compare_single_multi_rank(
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
-        # NOTE: we use gtfn_cpu to check that single and multirank give bitwise
-        # identical results, as gtfn_cpu is deterministic. In this case we can
-        # set atol = 0.0 and check for bitwise identical results. In theory
-        # dace_cpu should also be deterministic, but it results in 1.8e-14
-        # delta on vn and 4.3e-19 on w on the initial condition, which then
-        # propagates here. We haven't investigated this yet.
-        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
-        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
-        # 0.0 is too strict.
-        # TODO(msimberg,jcanton): Even gtfn_cpu is not always bitwise identical.
         atol = 1e-13
         rtol = 1e-14
     else:
@@ -76,15 +66,15 @@ def test_standalone_driver_compare_single_multi_rank(
 
     single_rank_ds, _ = main.main(
         grid_file_path=grid_file_path,
+        config_file_path=experiment.config_file_path(),
         icon4py_backend=backend_like,
-        output_path=tmp_path / "ci_driver_output_serial_rank0",
         force_serial_run=True,
     )
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
+        config_file_path=experiment.config_file_path(comm_size=process_props.comm_size),
         icon4py_backend=backend_like,
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
