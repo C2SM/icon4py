@@ -4,6 +4,7 @@ include:
 stages:
   - baseimage
   - image
+  - generate_test
   - test
   - benchmark
 
@@ -29,11 +30,6 @@ variables:
     DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION"]'
     KUBERNETES_MEMORY_REQUEST: 128Gi
     KUBERNETES_MEMORY_LIMIT: 128Gi
-build_baseimage_aarch64:
-  extends: [.container-builder-cscs-gh200, .build_baseimage]
-  variables:
-    HPC_SDK_VERSION: 24.11
-    HPC_SDK_NAME: "nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6"
 
 .build_image:
   stage: image
@@ -42,9 +38,6 @@ build_baseimage_aarch64:
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
     DOCKERFILE: ci/docker/checkout.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-build_image_aarch64:
-  extends: [.container-builder-cscs-gh200, .build_image]
-  needs: [build_baseimage_aarch64]
 
 .test_template:
   timeout: 8h
@@ -77,6 +70,7 @@ build_image_aarch64:
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
     PYTEST_ADDOPTS: "--durations=0"
+
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
   needs: [build_image_aarch64]
@@ -94,3 +88,132 @@ build_image_aarch64:
     GT4PY_BUILD_JOBS: 8
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
+
+.test_runner_base:
+  timeout: 8h
+  extends: .container-runner-santis-gh200
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_GPUS_PER_NODE: 1
+    SLURM_PARTITION: "shared"
+    SLURM_CPU_BIND: "verbose"
+    SLURM_MPI_TYPE: pmix
+    USE_MPI: NO
+    PMIX_MCA_psec: native
+    FI_PROVIDER: cxi
+    OMPI_MCA_pml: cm
+    OMPI_MCA_mtl: ofi
+    CUDA_DEVICE_MAX_CONNECTIONS: 8
+    CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
+    ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
+    ICON4PY_ENABLE_GRID_DOWNLOAD: true
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
+    ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
+    ICON4PY_DRIVER_LOGGING_LEVEL: critical
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
+    PYTEST_ADDOPTS: "--durations=0"
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
+    CUDAARCHS: "90"
+    GT4PY_BUILD_JOBS: 8
+    RUNNER: "ci-runner"
+    SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
+    NUM_PROCESSES: 32
+
+.test_runner_serial:
+  extends: .test_runner_base
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  before_script:
+    - cd /icon4py
+    - source ci/scripts/start-cuda-mps.sh
+    - source ci/scripts/gt4py-cache.sh
+  variables:
+    SLURM_NTASKS: 1
+    VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
+    PY2F_GPU_TESTS: 1
+    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
+
+.test_runner_mpi:
+  extends: .test_runner_base
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+  before_script:
+    - cd /icon4py
+    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - source ci/scripts/start-cuda-mps.sh
+    - source ci/scripts/gt4py-cache.sh
+  variables:
+    SLURM_NTASKS: 4
+    UV_PROJECT_ENVIRONMENT: .venv
+
+.test_stencils_aarch64:
+  stage: test
+  extends: .test_runner_serial
+  script:
+    - nox -s "test_model-3.13(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+  rules:
+    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: $COMPONENT == 'dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+
+.test_datatests_serial_aarch64:
+  stage: test
+  extends: .test_runner_serial
+  script:
+    - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+  rules:
+    - if: $COMPONENT == 'standalone_driver'
+      variables:
+        SLURM_TIMELIMIT: '00:50:00'
+    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '01:00:00'
+    - if: $COMPONENT == 'driver' || $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+
+.test_tools_aarch64:
+  stage: test
+  extends: .test_runner_serial
+  script:
+    - nox -s 'test_tools_and_bindings-3.13(datatest)'
+
+.test_datatests_mpi_aarch64:
+  stage: test
+  extends: .test_runner_mpi
+  script:
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+  rules:
+    - if: $COMPONENT == 'atmosphere/diffusion'
+      variables:
+        SLURM_TIMELIMIT: '00:10:00'
+    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
+      variables:
+        SLURM_TIMELIMIT: '01:30:00'
+        SLURM_PARTITION: "normal"
+    - if: $COMPONENT == 'atmosphere/dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:50:00'
+  artifacts:
+    when: always
+    paths:
+      - pytest-log-rank-*.txt
