@@ -64,7 +64,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
 
 
 @pytest.mark.skip_value_error
-@pytest.mark.uses_as_offset
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)

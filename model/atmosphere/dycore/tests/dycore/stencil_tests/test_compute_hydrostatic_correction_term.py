@@ -87,7 +87,6 @@ def compute_hydrostatic_correction_term_numpy(
     return z_hydro_corr[:, nlevels - 1 : nlevels]
 
 
-@pytest.mark.uses_as_offset
 @pytest.mark.continuous_benchmarking
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)

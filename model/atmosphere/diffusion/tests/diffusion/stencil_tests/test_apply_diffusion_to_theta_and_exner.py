@@ -29,7 +29,6 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
 @pytest.mark.skip_value_error
-@pytest.mark.uses_as_offset
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
