@@ -84,3 +84,5 @@ trigger_test_child_pipeline:
       - artifact: test.yml
         job: generate_test_child_pipeline
     strategy: depend
+    forward:
+      pipeline_variables: true
