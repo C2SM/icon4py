@@ -64,7 +64,7 @@ build_mpi_image_aarch64:
 generate_test_child_pipeline:
   stage: generate_test
   extends: .container-runner-lightweight-gh200
-  image: ghcr.io/astral-sh/uv:python3.12-alpine
+  image: ghcr.io/astral-sh/uv:python3.12-trixie-slim
   timeout: 5m
   variables:
     GIT_STRATEGY: fetch
