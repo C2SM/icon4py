@@ -73,7 +73,7 @@ generate_test_child_pipeline:
     SLURM_PARTITION: "shared"
   script:
     - cd /icon4py
-    - scripts/run generate-ci-pipeline > test.yml
+    - scripts/run generate-ci-pipeline > $CI_PROJECT_DIR/test.yml
   artifacts:
     paths: [test.yml]
 
