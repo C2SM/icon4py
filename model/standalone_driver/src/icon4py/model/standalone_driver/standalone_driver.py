@@ -35,7 +35,6 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
-    config_reader,
     driver_constants,
     driver_states,
     driver_utils,
@@ -535,25 +534,6 @@ def initialize_driver(
         process_props=process_props,
     )
 
-    output_path = pathlib.Path("./output")
-
-    if process_props.rank == 0:
-        if output_path.exists():
-            current_time = datetime.datetime.now()
-            log.warning(f"output path {output_path} already exists, a time stamp will be added")
-            output_path = (
-                output_path.parent
-                / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
-            )
-        output_path.mkdir(parents=True, exist_ok=False)
-    if with_mpi:
-        # broadcast (possibly changed) output_path
-        comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
-        output_path = pathlib.Path(
-            comm.bcast(str(output_path) if process_props.rank == 0 else None, root=0)
-        )
-        comm.Barrier()
-
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_like)
     )
@@ -568,12 +548,13 @@ def initialize_driver(
         solve_nh_config,
         interpolation_config,
         metrics_config,
-    ) = config_reader.read_config(
+    ) = driver_config.read_config(
         config_file_path=config_file_path,
         enable_profiling=False,
     )
 
-    # Override output_path from config default with the (possibly MPI-adjusted) one
+    # Override output_path from config default with the time- (and possibly MPI-) adjusted one
+    output_path = driver_config.prepare_output_directory(icon4py_driver_config.output_path, process_props)
     icon4py_driver_config = dataclasses.replace(icon4py_driver_config, output_path=output_path)
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")

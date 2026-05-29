@@ -28,8 +28,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.utils.fortran_config import list_to_value
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 if TYPE_CHECKING:
@@ -90,13 +89,15 @@ class SingleMomentSixClassIconGraupelConfig:
     def from_fortran_dict(
         cls, atmo_dict: dict[str, Any], **overrides: Any
     ) -> SingleMomentSixClassIconGraupelConfig:
+        run_nml = atmo_dict["run_nml"]
+
         nwp_phy_nml = atmo_dict.get("nwp_phy_nml")
         nwp_tuning_nml = atmo_dict.get("nwp_tuning_nml")
-        run_nml = atmo_dict["run_nml"]
         if nwp_phy_nml is not None and nwp_tuning_nml is not None:
             return cls(
                 do_latent_heat_nudging=run_nml["ldass_lhn"],
-                use_constant_latent_heat=list_to_value(nwp_phy_nml["ithermo_water"]) == 0,
+                use_constant_latent_heat=fortran_config.list_to_value(nwp_phy_nml["ithermo_water"])
+                == 0,
                 ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
                 power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
                 exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],

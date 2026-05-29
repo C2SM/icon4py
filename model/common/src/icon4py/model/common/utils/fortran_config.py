@@ -8,10 +8,13 @@
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Final, TypeVar
 
 
 _T = TypeVar("_T")
+
+NAMELIST_ATM_FNAME: Final = "NAMELIST_ICON_output_atm"
+NAMELIST_MASTER_FNAME: Final = "icon_master.namelist"
 
 
 def list_to_value(obj: list[_T] | _T) -> _T:
@@ -22,4 +25,3 @@ def list_to_value(obj: list[_T] | _T) -> _T:
     # Tracers are an even different case where there is one value per tracer,
     # but with the current version of ICON4Py all tracers get the same config.
     return obj[0] if isinstance(obj, list) else obj
-

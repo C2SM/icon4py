@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import enum
 import functools
@@ -49,8 +51,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.utils.fortran_config import list_to_value
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 """
@@ -307,7 +308,7 @@ class DiffusionConfig:
         self._validate()
 
     @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> "DiffusionConfig":
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> DiffusionConfig:
         diffusion_nml = atmo_dict["diffusion_nml"]
         nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
         gridref_nml = atmo_dict["gridref_nml"]
@@ -318,9 +319,9 @@ class DiffusionConfig:
             hdiff_w=diffusion_nml["lhdiff_w"],
             hdiff_vn=diffusion_nml["lhdiff_vn"],
             hdiff_temp=diffusion_nml["lhdiff_temp"],
-            hdiff_smag_w=list_to_value(diffusion_nml["lhdiff_smag_w"]),
+            hdiff_smag_w=fortran_config.list_to_value(diffusion_nml["lhdiff_smag_w"]),
             type_vn_diffu=SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"]),
-            smag_3d=list_to_value(diffusion_nml["lsmag_3d"]),
+            smag_3d=fortran_config.list_to_value(diffusion_nml["lsmag_3d"]),
             type_t_diffu=TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"]),
             hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
             hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],

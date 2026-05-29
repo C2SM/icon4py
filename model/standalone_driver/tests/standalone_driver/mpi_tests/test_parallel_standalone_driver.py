@@ -66,14 +66,14 @@ def test_standalone_driver_compare_single_multi_rank(
 
     single_rank_ds, _ = main.main(
         grid_file_path=grid_file_path,
-        config_file_path=experiment.config_file_path(),
+        config_file_path=experiment.config.config_file_path,
         icon4py_backend=backend_like,
         force_serial_run=True,
     )
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
-        config_file_path=experiment.config_file_path(comm_size=process_props.comm_size),
+        config_file_path=experiment.config.config_file_path,
         icon4py_backend=backend_like,
     )
 

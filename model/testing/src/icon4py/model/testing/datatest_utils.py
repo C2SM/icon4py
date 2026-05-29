@@ -25,6 +25,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import data_handling, definitions, serialbox
 
@@ -168,17 +169,14 @@ def create_experiment_configuration(
     )
     config_path = definitions.serialized_data_path() / experiment_dir
 
-    atmo_dict = _read_namelist_json(config_path / f"{definitions.NAMELIST_ATM_FNAME}.json")
-    master_dict = _read_namelist_json(config_path / f"{definitions.NAMELIST_MASTER_FNAME}.json")
+    atmo_dict = _read_namelist_json(config_path / f"{fortran_config.NAMELIST_ATM_FNAME}.json")
+    master_dict = _read_namelist_json(config_path / f"{fortran_config.NAMELIST_MASTER_FNAME}.json")
 
-    # *** InterpolationConfig (must be first — max_nudging_coefficient is needed by others) ***
     interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atmo_dict)
     assert interpolation_config.max_nudging_coefficient is not None
 
-    # *** MetricsConfig ***
     metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atmo_dict)
 
-    # *** DriverConfig ***
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atmo_dict,
         master_dict,
@@ -187,25 +185,20 @@ def create_experiment_configuration(
         enable_statistics_output=False,
     )
 
-    # *** VerticalGridConfig ***
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atmo_dict)
 
-    # *** NonHydrostaticConfig ***
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atmo_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    # *** DiffusionConfig ***
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atmo_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    # *** AdvectionConfig ***
     advection_config = advection.AdvectionConfig.from_fortran_dict(atmo_dict)
 
-    # *** GraupelConfig ***
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atmo_dict)
 
     return definitions.ExperimentConfig(
@@ -217,4 +210,5 @@ def create_experiment_configuration(
         metrics=metrics_config,
         interpolation=interpolation_config,
         graupel=graupel_config,
+        config_file_path=config_path,
     )

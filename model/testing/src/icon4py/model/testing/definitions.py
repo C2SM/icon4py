@@ -31,8 +31,6 @@ if TYPE_CHECKING:
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
-NAMELIST_ATM_FNAME: Final = "NAMELIST_ICON_output_atm"
-NAMELIST_MASTER_FNAME: Final = "icon_master.namelist"
 GRID_DATA_DIR: Final = "grids"
 EXPERIMENT_DATA_DIR: Final = "experiments"
 MUPHYS_DATA_DIR: Final = "muphys"
@@ -182,6 +180,7 @@ class ExperimentConfig:
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     graupel: graupel.SingleMomentSixClassIconGraupelConfig
+    config_file_path: pathlib.Path = pathlib.Path()
 
 
 @dataclasses.dataclass
@@ -207,12 +206,6 @@ class Experiment:
     def config(self) -> ExperimentConfig:
         # Return a deep copy so that tests cannot mutate the shared cached config.
         return copy.deepcopy(self._config)
-
-    def config_file_path(self, comm_size: int = 1) -> pathlib.Path:
-        experiment_dir = (
-            f"mpitask{comm_size}_{self.description.name}_v{self.description.version:02d}"
-        )
-        return serialized_data_path() / experiment_dir
 
 
 class Experiments:

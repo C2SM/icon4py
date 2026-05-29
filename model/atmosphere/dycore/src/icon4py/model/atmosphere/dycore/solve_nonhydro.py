@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 from typing import Any, Final
@@ -271,9 +273,7 @@ class NonHydrostaticConfig:
         self._validate()
 
     @classmethod
-    def from_fortran_dict(
-        cls, atmo_dict: dict[str, Any], **overrides: Any
-    ) -> "NonHydrostaticConfig":
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
         nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
         run_nml = atmo_dict["run_nml"]
         dynamics_nml = atmo_dict["dynamics_nml"]

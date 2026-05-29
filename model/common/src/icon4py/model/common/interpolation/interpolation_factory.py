@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
@@ -117,9 +119,7 @@ class InterpolationConfig:
             self.max_nudging_coefficient = 0.375
 
     @classmethod
-    def from_fortran_dict(
-        cls, atmo_dict: dict[str, Any], **overrides: Any
-    ) -> "InterpolationConfig":
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> InterpolationConfig:
         interpol_nml = atmo_dict["interpol_nml"]
         dynamics_nml = atmo_dict["dynamics_nml"]
         return cls(

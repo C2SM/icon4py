@@ -30,6 +30,8 @@ from typing import TYPE_CHECKING
 import f90nml
 import typer
 
+from icon4py.model.common.utils import fortran_config
+
 
 if TYPE_CHECKING:
     from icon4py.model.testing import definitions
@@ -423,12 +425,12 @@ def copy_ser_data(
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
     # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / definitions.NAMELIST_ATM_FNAME)
-    with (dest_dir / (definitions.NAMELIST_ATM_FNAME + ".json")).open("w") as f:
+    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
+    with (dest_dir / (fortran_config.NAMELIST_ATM_FNAME + ".json")).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
     # same for icon_master.namelist
-    nml = f90nml.read(exp_dir / definitions.NAMELIST_MASTER_FNAME)
-    with (dest_dir / (definitions.NAMELIST_MASTER_FNAME + ".json")).open("w") as f:
+    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
+    with (dest_dir / (fortran_config.NAMELIST_MASTER_FNAME + ".json")).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files
