@@ -65,7 +65,7 @@ generate_test_child_pipeline:
   stage: generate_test
   extends: .container-runner-santis-gh200
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  needs: [build_image_aarch64]
+  needs: [build_image_aarch64, build_mpi_image_aarch64]
   variables:
     SLURM_NTASKS: 1
     SLURM_JOB_NUM_NODES: 1
