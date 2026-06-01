@@ -143,7 +143,7 @@ module libtest_plugin
                            two_size_0, &
                            two_size_1, &
                            on_gpu) bind(c, name="foo_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          integer(c_int), value, target :: one
@@ -163,7 +163,7 @@ module libtest_plugin
                            one_size_1, &
                            two, &
                            on_gpu) bind(c, name="bar_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: one

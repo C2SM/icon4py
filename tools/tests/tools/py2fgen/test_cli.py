@@ -186,13 +186,13 @@ def test_py2fgen_compilation_and_execution_bool_cpu(
 ):
     """Tests boolean scalar passing and boolean-array writeback end-to-end."""
     run_test_case(
-        cli_runner,
-        square_wrapper_module,
-        "fill_mask",
-        "bool_plugin",
-        samples_path,
-        "test_bool",
-        test_temp_dir,
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function="fill_mask",
+        library_name="bool_plugin",
+        samples_path=samples_path,
+        fortran_driver="test_bool",
+        test_temp_dir=test_temp_dir,
     )
 
 

@@ -79,7 +79,7 @@ module icon4py_bindings
                                       loutshs, &
                                       backend, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: theta_ref_mc
@@ -244,7 +244,7 @@ module icon4py_bindings
                                      dtime, &
                                      linit, &
                                      on_gpu) bind(c, name="diffusion_run_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: w
@@ -426,7 +426,7 @@ module icon4py_bindings
                                  limited_area, &
                                  backend, &
                                  on_gpu) bind(c, name="grid_init_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: cell_starts
@@ -828,7 +828,7 @@ module icon4py_bindings
                                      nflat_gradp, &
                                      backend, &
                                      on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: c_lin_e
@@ -1275,7 +1275,7 @@ module icon4py_bindings
                                     is_iau_active, &
                                     iau_wgt_dyn, &
                                     on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: rho_now

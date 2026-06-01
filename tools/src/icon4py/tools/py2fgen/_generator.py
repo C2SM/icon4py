@@ -56,7 +56,7 @@ def configure_cffi_builder(
 
 @dataclasses.dataclass(frozen=True)
 class RenderedSources:
-    """The four bindings artifacts produced by :func:`render`, all as strings."""
+    """The four bindings artifacts produced by ``render()``, all as strings."""
 
     py: str
     f90: str
@@ -64,18 +64,15 @@ class RenderedSources:
     c: str
 
 
-def render(plugin: _codegen.BindingsLibrary, *, rpath: str = "") -> RenderedSources:
+def render(plugin: _codegen.BindingsLibrary) -> RenderedSources:
     """Render every bindings source for ``plugin`` as an in-memory string.
 
     Args:
-        plugin: The parsed bindings description (from :func:`get_cffi_description`).
-        rpath: Optional runtime library search path to embed in
-            ``extra_link_args``. Only relevant when the rendered ``.c`` is
-            later compiled.
+        plugin: The parsed bindings description.
     """
     c_header = _codegen.generate_c_header(plugin)
     python_wrapper = _codegen.generate_python_wrapper(plugin)
-    builder = configure_cffi_builder(plugin.library_name, c_header, python_wrapper, rpath)
+    builder = configure_cffi_builder(plugin.library_name, c_header, python_wrapper, rpath="")
 
     buf = io.StringIO()
     # CFFI's emit_c_code accepts any writable stream at runtime (long-stable
@@ -128,11 +125,10 @@ def generate_cffi_source(
     c_header: str,
     python_wrapper: str,
     build_path: Path,
-    rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
     """Generate the C source file without compiling."""
     try:
-        builder = configure_cffi_builder(library_name, c_header, python_wrapper, rpath)
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, rpath="")
         builder.emit_c_code(str(build_path / f"{library_name}.c"))
     except Exception as e:
         logging.error(f"Error generating CFFI C source: {e}")

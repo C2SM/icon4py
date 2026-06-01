@@ -125,6 +125,7 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
         return self.generic_visit(
             node,
             ScalarKind=_definitions.ScalarKind,
+            MemorySpace=_definitions.MemorySpace,
             is_array=is_array,
             render_size_args_tuple=render_size_args_tuple,
             render_params=render_params,
@@ -175,7 +176,7 @@ def {{ func.name }}_wrapper(
             # ArrayInfos
             {% for name, arg in func.args.items() %}
             {% if is_array(arg) %}
-            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == MemorySpace.HOST %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
             {% endif %}
             {% endfor %}
 
@@ -287,7 +288,7 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
                     param_declarations.append(_size_param_declaration(size_name))
 
         # on_gpu flag
-        param_declarations.append("logical(c_bool), value :: on_gpu")
+        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)}, value :: on_gpu")
         param_names.append("on_gpu")
 
         param_names_str = ", &\n ".join(param_names)
@@ -302,7 +303,7 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
     Func = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool, c_ptr
+   import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
    integer(c_int) :: rc  ! Stores the return code
    {% for param in param_declarations %}
    {{ param }}
@@ -353,7 +354,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
         ]
 
         # on_gpu flag
-        param_declarations.append("logical(c_bool) :: on_gpu")
+        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)} :: on_gpu")
 
         def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(

@@ -23,7 +23,7 @@ program call_bool_wrapper_cffi_plugin
    call fill_mask(flag, mask, rc)
    if (rc /= 1) then
       print *, "Python failed with exit code = ", rc
-      call exit(1)
+      stop 1
    end if
 
    ! fill_mask writes `flag` (.true.) into every element of `mask`; this checks

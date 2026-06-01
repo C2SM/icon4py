@@ -133,9 +133,10 @@ def test_render_python_wrapper_imports_from_definition_module(square_plugin):
 def test_render_c_source_embeds_python_wrapper_and_header(square_plugin):
     sources = _generator.render(square_plugin)
     # CFFI bakes the Python wrapper into the .c via embedding_init_code.
-    assert "square_from_function" in sources.c
-    # The C header is embedded inline as the set_source preamble, not #include'd.
-    assert "square_from_function_wrapper" in sources.c
+    assert "@ffi.def_extern" in sources.c
+    # The C header is embedded inline as the set_source preamble, not #include'd —
+    # the extern declaration must appear verbatim in sources.c.
+    assert "extern int square_from_function_wrapper(" in sources.c
 
 
 def test_render_fortran_module_is_named_after_library(square_plugin):

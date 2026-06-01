@@ -86,20 +86,19 @@ def main(  # noqa: PLR0917 [too-many-positional-arguments]
         logger.info("%s %s.", label, "changed" if changed else "is up to date")
         any_changed |= changed
 
-    c_source_exists = (output_path / f"{plugin.library_name}.c").exists()
-    shared_lib_exists = (
-        output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
-    ).exists()
-
     if skip_compilation:
+        c_source_exists = (output_path / f"{plugin.library_name}.c").exists()
         if any_changed or not c_source_exists:
             logger.info("Generating C source file...")
             _generator.generate_cffi_source(
-                plugin.library_name, c_header, python_wrapper, output_path, rpath
+                plugin.library_name, c_header, python_wrapper, output_path
             )
         else:
             logger.info("All generated files are up to date. Skipping C code generation.")
     else:
+        shared_lib_exists = (
+            output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
+        ).exists()
         if any_changed or not shared_lib_exists:
             logger.info("Compiling CFFI dynamic library...")
             _generator.generate_and_compile_cffi_plugin(
