@@ -146,12 +146,10 @@ def prepare_output_directory(
             )
         output_path.mkdir(parents=True, exist_ok=False)
 
-    if process_props is not None:
-        if mpi_decomp.mpi4py is not None and mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1:
-            comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
-            output_path = pathlib.Path(
-                comm.bcast(str(output_path) if process_props.rank == 0 else None, root=0)
-            )
-            comm.Barrier()
+    if process_props is not None and process_props.comm_size > 1:
+        output_path = pathlib.Path(
+            process_props.comm.bcast(str(output_path) if process_props.rank == 0 else None, root=0)
+        )
+        process_props.comm.Barrier()
 
     return output_path
