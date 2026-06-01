@@ -28,6 +28,7 @@ class TestComputeVnOnLateralBoundary(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         grf_tend_vn: np.ndarray,
         vn_now: np.ndarray,
         dtime: ta.wpfloat,

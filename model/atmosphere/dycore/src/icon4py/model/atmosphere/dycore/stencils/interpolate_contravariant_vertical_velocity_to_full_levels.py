@@ -32,7 +32,7 @@ def interpolate_contravariant_vertical_velocity_to_full_levels(
 ) -> None:
     # TODO(): this should use a generic stencil
     _interpolate_contravariant_vertical_velocity_to_full_levels(
-        z_w_con_c,
+        z_w_con_c=z_w_con_c,
         out=z_w_con_c_full,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

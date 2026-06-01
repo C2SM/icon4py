@@ -100,7 +100,7 @@ class named_property(property, Generic[C, T]):
         return result
 
 
-class Pair(Generic[T]):
+class Pair(Generic[T]):  # noqa: PLW1641 [eq-without-hash]
     """
     Generic class representing a pair of values.
 
@@ -234,14 +234,16 @@ class PredictorCorrectorPair(Pair[T]):
 
 
 class TimeStepPair(Pair[T]):
-    current = Pair.frozen_first
-    next = Pair.frozen_second
+    current: named_property = Pair.frozen_first
+    next: named_property = Pair.frozen_second
 
 
 P = ParamSpec("P")
 
 
-def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concatenate[T, P], T]:
+def chainable(
+    method_fn: Callable[Concatenate[T, P], None],
+) -> Callable[Concatenate[T, P], T]:
     """
     Make an instance method return the actual instance so it can be used in a chain of calls.
 

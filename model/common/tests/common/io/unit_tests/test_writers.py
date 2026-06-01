@@ -53,10 +53,12 @@ def initialized_writer(
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
     writer = writers.NETCDFWriter(
-        fname,
-        vertical_params,
-        horizontal,
-        writers.TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
+        file_name=fname,
+        vertical=vertical_params,
+        horizontal=horizontal,
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
     )
     writer.initialize_dataset()

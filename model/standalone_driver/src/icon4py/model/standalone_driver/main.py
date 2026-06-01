@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 
 def main(
+    *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,

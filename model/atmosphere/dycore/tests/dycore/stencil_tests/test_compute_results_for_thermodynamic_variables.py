@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_results_for_thermodynamic_variables_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
@@ -63,6 +64,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_rho_expl: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
@@ -79,7 +81,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
-            connectivities,
+            connectivities=connectivities,
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
             inv_ddqz_z_full=inv_ddqz_z_full,

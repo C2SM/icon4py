@@ -33,8 +33,8 @@ def calculate_nabla2_of_theta(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_nabla2_of_theta(
-        z_nabla2_e,
-        geofac_div,
+        z_nabla2_e=z_nabla2_e,
+        geofac_div=geofac_div,
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

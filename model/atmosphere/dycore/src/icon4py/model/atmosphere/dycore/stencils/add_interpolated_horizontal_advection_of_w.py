@@ -36,9 +36,9 @@ def add_interpolated_horizontal_advection_of_w(
     vertical_end: gtx.int32,
 ) -> None:
     _add_interpolated_horizontal_advection_of_w(
-        e_bln_c_s,
-        z_v_grad_w,
-        ddt_w_adv,
+        e_bln_c_s=e_bln_c_s,
+        z_v_grad_w=z_v_grad_w,
+        ddt_w_adv=ddt_w_adv,
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

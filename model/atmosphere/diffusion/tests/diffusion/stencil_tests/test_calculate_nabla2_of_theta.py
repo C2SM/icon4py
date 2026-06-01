@@ -34,6 +34,7 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_nabla2_e: np.ndarray,
         geofac_div: np.ndarray,
         **kwargs,

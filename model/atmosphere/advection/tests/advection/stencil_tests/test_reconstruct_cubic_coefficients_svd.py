@@ -39,6 +39,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_cc: np.ndarray,
         lsq_pseudoinv_1: np.ndarray,
         lsq_pseudoinv_2: np.ndarray,

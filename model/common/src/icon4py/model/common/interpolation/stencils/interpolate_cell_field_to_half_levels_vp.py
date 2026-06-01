@@ -45,8 +45,8 @@ def interpolate_cell_field_to_half_levels_vp(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_cell_field_to_half_levels_vp(
-        wgtfac_c,
-        interpolant,
+        wgtfac_c=wgtfac_c,
+        interpolant=interpolant,
         out=interpolation_to_half_levels_vp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

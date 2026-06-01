@@ -39,8 +39,8 @@ def cell_2_edge_interpolation(
     vertical_end: gtx.int32,
 ) -> None:
     _cell_2_edge_interpolation(
-        in_field,
-        coeff,
+        in_field=in_field,
+        coeff=coeff,
         out=out_field,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

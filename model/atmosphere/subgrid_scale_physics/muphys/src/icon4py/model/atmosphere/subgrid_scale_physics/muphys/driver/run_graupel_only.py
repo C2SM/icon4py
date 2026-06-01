@@ -57,6 +57,7 @@ def get_args():
 
 
 def setup_graupel(
+    *,
     dt: float,
     qnc: float,
     backend: model_backends.BackendLike,

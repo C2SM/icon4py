@@ -54,6 +54,7 @@ def get_args():
 
 
 def _muphys_step_separate(
+    *,
     graupel_program: Callable,
     saturation_adjustment_program: Callable,
     dz: fa.CellKField[ta.wpfloat],
@@ -202,7 +203,9 @@ def main():
     )
 
     # TODO(havogt): once we see single program being equally fast, remove the other implementation
-    muphys_step = setup_muphys(inp, dt=args.dt, qnc=args.qnc, backend=backend, single_program=False)
+    muphys_step = setup_muphys(
+        inp=inp, dt=args.dt, qnc=args.qnc, backend=backend, single_program=False
+    )
 
     start_time = None
     for _x in range(int(args.itime) + 1):

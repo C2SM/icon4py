@@ -45,8 +45,8 @@ def interpolate_edge_field_to_half_levels_vp(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_edge_field_to_half_levels_vp(
-        wgtfac_e,
-        interpolant,
+        wgtfac_e=wgtfac_e,
+        interpolant=interpolant,
         out=interpolation_to_half_levels_vp,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

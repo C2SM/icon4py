@@ -75,7 +75,7 @@ def _saturation_adjustment(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def saturation_adjustment(
+def saturation_adjustment(  # noqa: PLR0917 [too-many-positional-arguments]
     te: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
     q_in: Q,  # Class with humidity, cloud, rain, snow, ice and graupel water
@@ -88,9 +88,9 @@ def saturation_adjustment(
     vertical_end: gtx.int32,
 ) -> None:
     _saturation_adjustment(
-        te,
-        rho,
-        q_in,
+        te=te,
+        rho=rho,
+        q_in=q_in,
         out=(te_out, qve_out, qce_out),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

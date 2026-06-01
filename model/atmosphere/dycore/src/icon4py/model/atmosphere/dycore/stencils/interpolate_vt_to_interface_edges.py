@@ -37,8 +37,8 @@ def interpolate_vt_to_interface_edges(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_vt_to_interface_edges(
-        wgtfac_e,
-        vt,
+        wgtfac_e=wgtfac_e,
+        vt=vt,
         out=z_vt_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

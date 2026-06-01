@@ -16,7 +16,13 @@ from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_d
 from icon4py.model.standalone_driver import driver_states, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
-from icon4py.model.testing.fixtures.datatest import backend_like, experiment, process_props
+from icon4py.model.testing.fixtures.datatest import (
+    backend_like,
+    download_ser_data,
+    experiment,
+    experiment_description,
+    process_props,
+)
 
 
 if mpi_decomposition.mpi4py is None:
@@ -28,7 +34,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.JW,
     ],

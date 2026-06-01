@@ -28,6 +28,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         kh_smag_e: np.ndarray,
         enh_diffu_3d: np.ndarray,
         **kwargs,

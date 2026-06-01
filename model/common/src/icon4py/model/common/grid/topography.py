@@ -26,6 +26,7 @@ def compute_nabla2_on_cell(
 
 
 def smooth_topography(
+    *,
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,

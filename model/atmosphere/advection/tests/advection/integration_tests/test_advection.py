@@ -32,6 +32,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -41,7 +42,6 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
-    construct_config,
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
     construct_interpolation_state,
@@ -66,7 +66,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
@@ -108,7 +108,7 @@ from ..utils import (
         ),
     ],
 )
-def test_advection_run_single_step(
+def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,
@@ -135,12 +135,13 @@ def test_advection_run_single_step(
         pytest.xfail(
             "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
-    config = construct_config(
+    config = advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
         vertical_advection_limiter=vertical_advection_limiter,
     )
+
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     least_squares_coeffs = compute_lsq_coeffs(
@@ -203,7 +204,10 @@ def test_advection_run_single_step(
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid, advection_exit_savepoint, ntracer, backend=backend
+        icon_grid=icon_grid,
+        savepoint=advection_exit_savepoint,
+        ntracer=ntracer,
+        backend=backend,
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
@@ -255,22 +259,22 @@ def test_compute_lsq_coeffs(
     cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
     cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
     lsq_pseudoinv = compute_lsq_coeffs(
-        cell_center_x,
-        cell_center_y,
-        cell_lat,
-        cell_lon,
-        c2e2c,
-        cell_owner_mask,
-        domain_length,
-        domain_height,
-        grid_sphere_radius,
-        lsq_dim_unk,
-        lsq_dim_c,
-        lsq_wgt_exp,
-        lsq_dim_stencil,
-        start_idx,
-        min_rlcell_int,
-        icon_grid.grid_params.geometry_type,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        cell_lat=cell_lat,
+        cell_lon=cell_lon,
+        c2e2c=c2e2c,
+        cell_owner_mask=cell_owner_mask,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        grid_sphere_radius=grid_sphere_radius,
+        lsq_dim_unk=lsq_dim_unk,
+        lsq_dim_c=lsq_dim_c,
+        lsq_wgt_exp=lsq_wgt_exp,
+        lsq_dim_stencil=lsq_dim_stencil,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        geometry_type=icon_grid.grid_params.geometry_type,
         exchange=decomposition.single_node_exchange,
     )
 

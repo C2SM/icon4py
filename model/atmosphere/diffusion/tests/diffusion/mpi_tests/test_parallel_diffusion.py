@@ -28,7 +28,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.mpi
 @pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -39,14 +39,12 @@ _log = logging.getLogger(__file__)
         (definitions.Experiments.JW, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_parallel_diffusion(
+def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment: definitions.Experiment,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
-    ndyn_substeps: int,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,
@@ -55,10 +53,6 @@ def test_parallel_diffusion(
     grid_savepoint: serialbox.IconGridSavepoint,
     metric_state: diffusion_states.DiffusionMetricState,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     caplog: Any,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -79,18 +73,12 @@ def test_parallel_diffusion(
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = experiment.config.diffusion
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}:  setup: using {process_props.comm_name} with {process_props.comm_size} nodes"
     )
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
 
     diffusion_params = diffusion_.DiffusionParams(config)
     cell_geometry = grid_savepoint.construct_cell_geometry()

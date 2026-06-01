@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_explicit_part_for_rho_and_exner_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     rho_nnow: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
@@ -58,6 +59,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_nnow: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         z_flxdiv_mass: np.ndarray,
@@ -71,7 +73,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (z_rho_expl, z_exner_expl) = compute_explicit_part_for_rho_and_exner_numpy(
-            connectivities,
+            connectivities=connectivities,
             rho_nnow=rho_nnow,
             inv_ddqz_z_full=inv_ddqz_z_full,
             z_flxdiv_mass=z_flxdiv_mass,

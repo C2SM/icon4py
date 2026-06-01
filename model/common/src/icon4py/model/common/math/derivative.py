@@ -25,7 +25,7 @@ def _compute_first_vertical_derivative_at_cells(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_first_vertical_derivative_at_cells(
+def compute_first_vertical_derivative_at_cells(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_kdim_field: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     first_vertical_derivative: fa.CellKField[vpfloat],
@@ -35,8 +35,8 @@ def compute_first_vertical_derivative_at_cells(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_first_vertical_derivative_at_cells(
-        cell_kdim_field,
-        inv_ddqz_z_full,
+        cell_kdim_field=cell_kdim_field,
+        inv_ddqz_z_full=inv_ddqz_z_full,
         out=first_vertical_derivative,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -75,7 +75,7 @@ def difference_level_plus1_on_cells(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def average_two_vertical_levels_downwards_on_edges(
+def average_two_vertical_levels_downwards_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     input_field: fa.EdgeKField[wpfloat],
     average: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
@@ -84,7 +84,7 @@ def average_two_vertical_levels_downwards_on_edges(
     vertical_end: gtx.int32,
 ):
     average_level_plus1_on_edges(
-        input_field,
+        half_level_field=input_field,
         out=average,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -94,7 +94,7 @@ def average_two_vertical_levels_downwards_on_edges(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def average_two_vertical_levels_downwards_on_cells(
+def average_two_vertical_levels_downwards_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
     input_field: fa.CellKField[wpfloat],
     average: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
@@ -103,7 +103,7 @@ def average_two_vertical_levels_downwards_on_cells(
     vertical_end: gtx.int32,
 ) -> None:
     average_level_plus1_on_cells(
-        input_field,
+        half_level_field=input_field,
         out=average,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

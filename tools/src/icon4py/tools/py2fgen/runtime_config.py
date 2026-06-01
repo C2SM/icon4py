@@ -97,6 +97,6 @@ class _NoopContextManager(contextlib.AbstractContextManager):
 
 
 HOOK_BINDINGS_FUNCTION: dict[str, contextlib.AbstractContextManager] = collections.defaultdict(
-    lambda: _NoopContextManager()
+    _NoopContextManager
 )
 """Hook to register a ContextManager per function that wraps the function. The default is a no-op."""

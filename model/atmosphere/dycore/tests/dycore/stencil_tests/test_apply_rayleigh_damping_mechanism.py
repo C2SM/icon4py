@@ -39,6 +39,7 @@ class TestApplyRayleighDampingMechanism(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_raylfac: np.ndarray,
         w: np.ndarray,
         **kwargs: Any,

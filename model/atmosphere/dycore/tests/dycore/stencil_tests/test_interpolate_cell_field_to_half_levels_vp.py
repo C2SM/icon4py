@@ -41,6 +41,7 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         wgtfac_c: np.ndarray,
         interpolant: np.ndarray,
         **kwargs: Any,

@@ -23,6 +23,7 @@ from icon4py.model.testing import config
 def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
+    *,
     rtol: float = 1.0e-12,
     atol: float = 0.0,
     equal_nan: bool = False,
@@ -36,6 +37,7 @@ def dallclose(
 def assert_dallclose(
     actual: npt.ArrayLike,
     desired: npt.ArrayLike,
+    *,
     rtol: float = 1.0e-12,
     atol: float = 0.0,
     equal_nan: bool = False,

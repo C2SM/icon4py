@@ -37,8 +37,8 @@ def interpolate_to_surface(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_to_surface(
-        wgtfacq_c,
-        interpolant,
+        wgtfacq_c=wgtfacq_c,
+        interpolant=interpolant,
         out=interpolation_to_surface,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

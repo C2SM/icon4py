@@ -41,11 +41,11 @@ def compute_nudgecoeffs(
 ) -> None:
     """Compute nudging coefficient for edges based the grid refinement level of an edge."""
     _compute_nudgecoeffs(
-        refin_ctrl,
-        grf_nudge_start_e,
-        max_nudging_coefficient,
-        nudge_efold_width,
-        nudge_zone_width,
+        refin_ctrl=refin_ctrl,
+        grf_nudge_start_e=grf_nudge_start_e,
+        max_nudging_coefficient=max_nudging_coefficient,
+        nudge_efold_width=nudge_efold_width,
+        nudge_zone_width=nudge_zone_width,
         out=nudging_coefficients_for_edges,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )

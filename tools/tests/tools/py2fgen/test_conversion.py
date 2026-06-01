@@ -23,7 +23,7 @@ except ImportError:
 
 @pytest.fixture
 def ffi():
-    import cffi
+    import cffi  # noqa: PLC0415 [import-outside-top-level]
 
     return cffi.FFI()
 
@@ -89,7 +89,7 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
         ("int", np.int32, [-1, 0, -1, 0, 0, -1], [[True, True, False], [False, False, True]]),
     ],
 )
-def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):
+def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):  # noqa: PLR0917 [too-many-positional-arguments]
     expected_result = xp.array(expected)
 
     arr = xp.array(rawdata, dtype=rawdtype)

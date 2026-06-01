@@ -9,20 +9,17 @@
 import pytest
 
 from icon4py.model.testing.fixtures.datatest import (
-    damping_height,
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
     istep_exit,
     istep_init,
     linit,
-    lowest_layer_thickness,
     metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
     process_props,
     savepoint_diffusion_exit,
     savepoint_diffusion_init,
@@ -31,7 +28,6 @@ from icon4py.model.testing.fixtures.datatest import (
     savepoint_nonhydro_step_final,
     step_date_exit,
     step_date_init,
-    stretch_factor,
     substep_exit,
     substep_init,
 )
@@ -48,20 +44,17 @@ except KeyError:
 
 __all__ = [
     # imported fixtures:
-    "damping_height",
     "data_provider",
     "download_ser_data",
     "experiment",
+    "experiment_description",
     "grid_savepoint",
     "icon_grid",
     "interpolation_savepoint",
     "istep_exit",
     "istep_init",
     "linit",
-    "lowest_layer_thickness",
     "metrics_savepoint",
-    "model_top_height",
-    "ndyn_substeps",
     "process_props",
     "savepoint_diffusion_exit",
     "savepoint_diffusion_init",
@@ -70,7 +63,6 @@ __all__ = [
     "savepoint_nonhydro_step_final",
     "step_date_exit",
     "step_date_init",
-    "stretch_factor",
     "substep_exit",
     "substep_init",
 ]

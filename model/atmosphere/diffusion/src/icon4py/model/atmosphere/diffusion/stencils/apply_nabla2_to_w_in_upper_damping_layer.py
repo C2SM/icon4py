@@ -38,10 +38,10 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_nabla2_to_w_in_upper_damping_layer(
-        w,
-        diff_multfac_n2w,
-        cell_area,
-        z_nabla2_c,
+        w=w,
+        diff_multfac_n2w=diff_multfac_n2w,
+        cell_area=cell_area,
+        z_nabla2_c=z_nabla2_c,
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

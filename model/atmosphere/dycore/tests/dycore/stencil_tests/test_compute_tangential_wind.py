@@ -37,6 +37,7 @@ class TestComputeTangentialWind(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vn: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,

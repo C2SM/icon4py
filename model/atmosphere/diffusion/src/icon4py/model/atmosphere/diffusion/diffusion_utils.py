@@ -77,7 +77,7 @@ def setup_fields_for_initial_step(
 
 
 @gtx.field_operator
-def _init_diffusion_local_fields_for_regular_timestep(
+def _init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many-positional-arguments]
     k4: float,
     dyn_substeps: float,
     hdiff_smag_fac: float,
@@ -93,15 +93,15 @@ def _init_diffusion_local_fields_for_regular_timestep(
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     enh_smag_fac = _en_smag_fac_for_zero_nshift(
-        vect_a,
-        hdiff_smag_fac,
-        hdiff_smag_fac2,
-        hdiff_smag_fac3,
-        hdiff_smag_fac4,
-        hdiff_smag_z,
-        hdiff_smag_z2,
-        hdiff_smag_z3,
-        hdiff_smag_z4,
+        vect_a=vect_a,
+        hdiff_smag_fac=hdiff_smag_fac,
+        hdiff_smag_fac2=hdiff_smag_fac2,
+        hdiff_smag_fac3=hdiff_smag_fac3,
+        hdiff_smag_fac4=hdiff_smag_fac4,
+        hdiff_smag_z=hdiff_smag_z,
+        hdiff_smag_z2=hdiff_smag_z2,
+        hdiff_smag_z3=hdiff_smag_z3,
+        hdiff_smag_z4=hdiff_smag_z4,
     )
     return (
         diff_multfac_vn,
@@ -111,7 +111,7 @@ def _init_diffusion_local_fields_for_regular_timestep(
 
 
 @gtx.program
-def init_diffusion_local_fields_for_regular_timestep(
+def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many-positional-arguments]
     k4: float,
     dyn_substeps: float,
     hdiff_smag_fac: float,
@@ -128,17 +128,17 @@ def init_diffusion_local_fields_for_regular_timestep(
     enh_smag_fac: fa.KField[float],
 ):
     _init_diffusion_local_fields_for_regular_timestep(
-        k4,
-        dyn_substeps,
-        hdiff_smag_fac,
-        hdiff_smag_fac2,
-        hdiff_smag_fac3,
-        hdiff_smag_fac4,
-        hdiff_smag_z,
-        hdiff_smag_z2,
-        hdiff_smag_z3,
-        hdiff_smag_z4,
-        vect_a,
+        k4=k4,
+        dyn_substeps=dyn_substeps,
+        hdiff_smag_fac=hdiff_smag_fac,
+        hdiff_smag_fac2=hdiff_smag_fac2,
+        hdiff_smag_fac3=hdiff_smag_fac3,
+        hdiff_smag_fac4=hdiff_smag_fac4,
+        hdiff_smag_z=hdiff_smag_z,
+        hdiff_smag_z2=hdiff_smag_z2,
+        hdiff_smag_z3=hdiff_smag_z3,
+        hdiff_smag_z4=hdiff_smag_z4,
+        vect_a=vect_a,
         out=(
             diff_multfac_vn,
             smag_limit,
@@ -167,7 +167,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
 
 
 @gtx.program
-def init_nabla2_factor_in_upper_damping_zone(
+def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917 [too-many-positional-arguments]
     physical_heights: fa.KField[float],
     diff_multfac_n2w: fa.KField[float],
     end_index_of_damping_layer: gtx.int32,

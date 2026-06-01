@@ -36,9 +36,9 @@ def compute_tendency(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_tendency(
-        p_tracer_now,
-        p_tracer_new,
-        p_dtime,
+        p_tracer_now=p_tracer_now,
+        p_tracer_new=p_tracer_new,
+        p_dtime=p_dtime,
         out=opt_ddt_tracer_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

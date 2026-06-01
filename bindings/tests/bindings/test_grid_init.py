@@ -16,7 +16,7 @@ from icon4py.tools.py2fgen import test_utils
 
 
 @pytest.fixture
-def grid_init(grid_savepoint):
+def grid_init(grid_savepoint, experiment):
     # --- Set Up Grid Parameters ---
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
@@ -81,12 +81,8 @@ def grid_init(grid_savepoint):
     primal_normal_x = test_utils.array_to_array_info(grid_savepoint.primal_normal_v1().ndarray)
     primal_normal_y = test_utils.array_to_array_info(grid_savepoint.primal_normal_v2().ndarray)
 
-    # vertical grid
-    lowest_layer_thickness = 20.0
-    model_top_height = 23000.0
-    stretch_factor = 0.65
-    flat_height = 16000.0
-    rayleigh_damping_height = 12500.0
+    # vertical grid config from experiment namelist
+    cfg = experiment.config.vertical_grid
 
     vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
 
@@ -146,11 +142,11 @@ def grid_init(grid_savepoint):
         primal_normal_x=primal_normal_x,
         primal_normal_y=primal_normal_y,
         vct_a=vct_a,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        flat_height=flat_height,
-        rayleigh_damping_height=rayleigh_damping_height,
+        lowest_layer_thickness=cfg.lowest_layer_thickness,
+        model_top_height=cfg.model_top_height,
+        stretch_factor=cfg.stretch_factor,
+        flat_height=cfg.flat_height,
+        rayleigh_damping_height=cfg.rayleigh_damping_height,
         mean_cell_area=mean_cell_area,
         c_glb_index=c_glb_index,
         e_glb_index=e_glb_index,

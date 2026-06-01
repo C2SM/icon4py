@@ -40,11 +40,11 @@ def apply_horizontal_density_increment(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_horizontal_density_increment(
-        p_rhodz_new,
-        p_mflx_contra_v,
-        deepatmo_divzl,
-        deepatmo_divzu,
-        p_dtime,
+        p_rhodz_new=p_rhodz_new,
+        p_mflx_contra_v=p_mflx_contra_v,
+        deepatmo_divzl=deepatmo_divzl,
+        deepatmo_divzu=deepatmo_divzu,
+        p_dtime=p_dtime,
         out=rhodz_ast2,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

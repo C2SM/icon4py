@@ -34,9 +34,9 @@ def update_wind(
     vertical_end: gtx.int32,
 ) -> None:
     _update_wind(
-        w_now,
-        grf_tend_w,
-        dtime,
+        w_now=w_now,
+        grf_tend_w=grf_tend_w,
+        dtime=dtime,
         out=w_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -13,8 +13,8 @@
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import json
-import os
 import pathlib
 import re
 import shutil
@@ -43,7 +43,7 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 @dataclasses.dataclass(frozen=True)
 class SerializationSettings:
     comm_sizes: list[int]
-    experiments: list[definitions.Experiment]
+    experiments: list[definitions.ExperimentDescription]
     sbatch_partition: str
     sbatch_time: str
     sbatch_account: str
@@ -85,10 +85,14 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Directories (adjust if needed)
-        ROOT_PROJECT_DIR = pathlib.Path(os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
+        # Directories (derived from this script's location in icon4py/)
+        _THIS_FILE = pathlib.Path(__file__).resolve()
+        ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
+        assert ICON4PY_REPO_DIR.name == "icon4py", (
+            f"Expected icon4py repo dir, got {ICON4PY_REPO_DIR}"
+        )
+        ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
-        ICON4PY_REPO_DIR = ROOT_PROJECT_DIR / "icon4py"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
         RUNSCRIPTS_DIR = BUILD_DIR / "run"
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
@@ -422,12 +426,16 @@ def copy_ser_data(
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
     # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / definitions.NAMELIST_ICON_FNAME)
-    with (dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")).open("w") as f:
+    nml = f90nml.read(exp_dir / definitions.NAMELIST_ATM_FNAME)
+    with (dest_dir / (definitions.NAMELIST_ATM_FNAME + ".json")).open("w") as f:
+        json.dump(nml.todict(), f, indent=4)
+    # same for icon_master.namelist
+    nml = f90nml.read(exp_dir / definitions.NAMELIST_MASTER_FNAME)
+    with (dest_dir / (definitions.NAMELIST_MASTER_FNAME + ".json")).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files
-    namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
+    namelist_files = sorted(itertools.chain(exp_dir.glob("NAMELIST_*"), exp_dir.glob("*.namelist")))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
@@ -520,8 +528,8 @@ def run_serialization() -> None:
 
     # Import here to reduce startup time for the CLI
     global dt_utils, definitions  # noqa: PLW0603 [global-statement]
-    import icon4py.model.testing.datatest_utils as dt_utils
-    from icon4py.model.testing import definitions
+    import icon4py.model.testing.datatest_utils as dt_utils  # noqa: PLC0415 [import-outside-top-level]
+    from icon4py.model.testing import definitions  # noqa: PLC0415 [import-outside-top-level]
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)

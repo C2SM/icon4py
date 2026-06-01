@@ -77,7 +77,11 @@ def _compute_ppm4gpu_integer_flux(
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
 
     p_cc_cellmass_now_jks = _sum_neighbor_contributions_all(
-        z_cfl_pos, z_cfl_neg, js, p_cc, p_cellmass_now
+        mask1=z_cfl_pos,
+        mask2=z_cfl_neg,
+        js=js,
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
     )
 
     z_iflx = wsign * p_cc_cellmass_now_jks
@@ -102,13 +106,13 @@ def compute_ppm4gpu_integer_flux(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_integer_flux(
-        p_cc,
-        p_cellmass_now,
-        z_cfl,
-        p_upflux,
-        k,
-        slev,
-        p_dtime,
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
+        z_cfl=z_cfl,
+        p_upflux=p_upflux,
+        k=k,
+        slev=slev,
+        p_dtime=p_dtime,
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

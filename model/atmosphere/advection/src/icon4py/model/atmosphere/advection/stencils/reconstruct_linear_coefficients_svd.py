@@ -47,9 +47,9 @@ def reconstruct_linear_coefficients_svd(
     vertical_end: gtx.int32,
 ) -> None:
     _reconstruct_linear_coefficients_svd(
-        p_cc,
-        lsq_pseudoinv_1,
-        lsq_pseudoinv_2,
+        p_cc=p_cc,
+        lsq_pseudoinv_1=lsq_pseudoinv_1,
+        lsq_pseudoinv_2=lsq_pseudoinv_2,
         out=(p_coeff_1_dsl, p_coeff_2_dsl, p_coeff_3_dsl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

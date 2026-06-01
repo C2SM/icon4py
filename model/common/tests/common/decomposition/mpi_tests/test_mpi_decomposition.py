@@ -28,6 +28,7 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -49,7 +50,7 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
 
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
@@ -64,7 +65,7 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
     ),
 )
 @pytest.mark.datatest
-def test_decomposition_info_masked(
+def test_decomposition_info_masked(  # noqa: PLR0917 [too-many-positional-arguments]
     dim: gtx.Dimension,
     owned: int,
     total: int,
@@ -105,7 +106,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
@@ -120,7 +121,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 )
 @pytest.mark.datatest
 @pytest.mark.mpi(min_size=2)
-def test_decomposition_info_local_index(
+def test_decomposition_info_local_index(  # noqa: PLR0917 [too-many-positional-arguments]
     dim: gtx.Dimension,
     owned: int,
     total: int,
@@ -307,7 +308,7 @@ def test_exchange_on_dummy_data(
 @pytest.mark.datatest
 @pytest.mark.embedded_only
 @pytest.mark.parametrize("process_props", [False], indirect=True)
-def test_halo_exchange_for_sparse_field(
+def test_halo_exchange_for_sparse_field(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: test_defs.Experiment,
     process_props: decomp_defs.ProcessProperties,

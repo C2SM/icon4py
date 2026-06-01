@@ -104,7 +104,7 @@ GRID_REFERENCE_VALUES: dict[str, dict[str, float]] = {
     },
     test_defs.Grids.TORUS_50000x5000.name: {
         "num_cells": 1056,
-        "num_vertices": 52,
+        "num_vertices": 528,
         "num_edges": 1584,
         "mean_edge_length": 757.5757575757576,
         "mean_dual_edge_length": 437.3865675678984,

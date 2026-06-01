@@ -20,6 +20,7 @@ def _batched_searchsorted(a, v, array_ns):
 
 
 def compute_zdiff_gradp(
+    *,
     e2c,
     z_me: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,

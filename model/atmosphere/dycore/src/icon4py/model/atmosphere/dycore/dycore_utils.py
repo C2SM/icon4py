@@ -24,13 +24,11 @@ def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[floa
 
 
 @gtx.field_operator
-def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
-    tuple[
-        fa.EdgeKField[wpfloat],
-        fa.EdgeKField[wpfloat],
-        fa.EdgeKField[wpfloat],
-    ]
-):
+def _broadcast_zero_to_three_edge_kdim_fields_wp() -> tuple[
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[wpfloat],
+]:
     return (
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
@@ -63,7 +61,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 
 
 @gtx.field_operator
-def _calculate_divdamp_fields(
+def _calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolated_fourth_order_divdamp_factor: fa.KField[float],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -86,7 +84,7 @@ def _calculate_divdamp_fields(
 
 
 @gtx.program
-def calculate_divdamp_fields(
+def calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolated_fourth_order_divdamp_factor: fa.KField[float],
     fourth_order_divdamp_scaling_coeff: fa.KField[float],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[float],
@@ -97,12 +95,12 @@ def calculate_divdamp_fields(
     dbl_eps: float,
 ):
     _calculate_divdamp_fields(
-        interpolated_fourth_order_divdamp_factor,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
-        max_nudging_coefficient,
-        dbl_eps,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        dbl_eps=dbl_eps,
         out=(
             fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary,

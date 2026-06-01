@@ -51,6 +51,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         scalar_field: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,

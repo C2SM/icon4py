@@ -66,13 +66,13 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_virtual_potential_temperatures_and_pressure_gradient(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
+        wgtfac_c=wgtfac_c,
+        z_rth_pr_2=z_rth_pr_2,
+        theta_v=theta_v,
+        vwind_expl_wgt=vwind_expl_wgt,
+        exner_pr=exner_pr,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        ddqz_z_half=ddqz_z_half,
         out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

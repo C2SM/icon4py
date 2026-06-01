@@ -43,8 +43,8 @@ def compute_horizontal_kinetic_energy(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_horizontal_kinetic_energy(
-        vn,
-        vt,
+        vn=vn,
+        vt=vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

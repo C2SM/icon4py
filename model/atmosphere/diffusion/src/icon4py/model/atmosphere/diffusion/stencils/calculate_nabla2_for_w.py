@@ -33,8 +33,8 @@ def calculate_nabla2_for_w(
 ) -> None:
     # TODO(): replace this by common/math/stencils/compute_nabla2_on_cell_k
     _calculate_nabla2_for_w(
-        w,
-        geofac_n2s,
+        w=w,
+        geofac_n2s=geofac_n2s,
         out=z_nabla2_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

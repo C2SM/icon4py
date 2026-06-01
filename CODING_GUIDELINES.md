@@ -120,7 +120,7 @@ Consider configuration files as another type of source code and apply the same c
 
 ### Ignoring QA errors
 
-You may occasionally need to disable checks from _quality assurance_ (QA) tools (e.g. linters, type checkers, etc.) on specific lines as some tool might not be able to fully understand why a certain piece of code is needed. This is usually done with special comments, e.g. `# noqa: F401`, `# type: ignore`. However, you should **only** ignore QA errors when you fully understand their source and rewriting your code to pass QA checks would make it less readable. Additionally, you should add a short descriptive code if possible (check [ruff rules][ruff-rules] and [mypy error codes][mypy-error-codes] for reference):
+You may occasionally need to disable checks from _quality assurance_ (QA) tools (e.g. linters, type checkers, etc.) on specific lines as some tool might not be able to fully understand why a certain piece of code is needed. This is usually done with special comments, e.g. `# noqa: F401`, `# type: ignore`. However, you should **only** ignore QA errors when you fully understand their source and rewriting your code to pass QA checks would make it less readable. Additionally, you should add a short descriptive code if possible (check [ruff rules][ruff-rules] and [mypy error codes][mypy-error-codes] for reference; use `ruff rule <CODE>` to look up the name for a specific code):
 
 ```python
 f = lambda: "empty"  # noqa: E731 [lambda-assignment]

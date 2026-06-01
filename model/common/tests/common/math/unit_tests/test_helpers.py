@@ -62,6 +62,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         input_field: np.ndarray,
         **kwargs: Any,
     ) -> dict:
@@ -96,6 +97,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         input_field: np.ndarray,
         **kwargs: Any,
     ) -> dict:

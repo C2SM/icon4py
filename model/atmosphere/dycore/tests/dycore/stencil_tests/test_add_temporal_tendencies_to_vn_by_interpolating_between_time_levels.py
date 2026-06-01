@@ -23,6 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+    *,
     vn_nnow: np.ndarray,
     ddt_vn_apc_ntl1: np.ndarray,
     ddt_vn_apc_ntl2: np.ndarray,
@@ -50,6 +51,7 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vn_nnow: np.ndarray,
         ddt_vn_apc_ntl1: np.ndarray,
         ddt_vn_apc_ntl2: np.ndarray,
@@ -63,16 +65,16 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
         **kwargs: Any,
     ) -> dict:
         vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
-            vn_nnow,
-            ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2,
-            ddt_vn_phy,
-            z_theta_v_e,
-            z_gradh_exner,
-            dtime,
-            wgt_nnow_vel,
-            wgt_nnew_vel,
-            cpd,
+            vn_nnow=vn_nnow,
+            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+            ddt_vn_phy=ddt_vn_phy,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            dtime=dtime,
+            wgt_nnow_vel=wgt_nnow_vel,
+            wgt_nnew_vel=wgt_nnew_vel,
+            cpd=cpd,
         )
         return dict(vn_nnew=vn_nnew)
 

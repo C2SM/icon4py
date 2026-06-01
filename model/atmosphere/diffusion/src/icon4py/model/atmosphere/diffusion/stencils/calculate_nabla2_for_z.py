@@ -37,9 +37,9 @@ def calculate_nabla2_for_z(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_nabla2_for_z(
-        kh_smag_e,
-        inv_dual_edge_length,
-        theta_v,
+        kh_smag_e=kh_smag_e,
+        inv_dual_edge_length=inv_dual_edge_length,
+        theta_v=theta_v,
         out=z_nabla2_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

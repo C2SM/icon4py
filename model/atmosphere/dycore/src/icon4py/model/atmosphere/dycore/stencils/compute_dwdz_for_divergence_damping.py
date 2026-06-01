@@ -40,9 +40,9 @@ def compute_dwdz_for_divergence_damping(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_dwdz_for_divergence_damping(
-        inv_ddqz_z_full,
-        w,
-        w_concorr_c,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        w=w,
+        w_concorr_c=w_concorr_c,
         out=z_dwdz_dd,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -47,11 +47,11 @@ def add_vertical_wind_derivative_to_divergence_damping(
     vertical_end: gtx.int32,
 ) -> None:
     _add_vertical_wind_derivative_to_divergence_damping(
-        hmask_dd3d,
-        scalfac_dd3d,
-        inv_dual_edge_length,
-        z_dwdz_dd,
-        z_graddiv_vn,
+        hmask_dd3d=hmask_dd3d,
+        scalfac_dd3d=scalfac_dd3d,
+        inv_dual_edge_length=inv_dual_edge_length,
+        z_dwdz_dd=z_dwdz_dd,
+        z_graddiv_vn=z_graddiv_vn,
         out=z_graddiv_vn,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),

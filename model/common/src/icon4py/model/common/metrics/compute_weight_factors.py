@@ -58,7 +58,7 @@ def _compute_wgtfac_c(
 
 # TODO(halungge): missing test?
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_wgtfac_c(
+def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
     nlev: gtx.int32,
@@ -68,8 +68,8 @@ def compute_wgtfac_c(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_wgtfac_c(
-        z_ifc,
-        nlev,
+        z_ifc=z_ifc,
+        nlev=nlev,
         out=wgtfac_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -117,6 +117,7 @@ def compute_wgtfacq_c_dsl(
 
 
 def compute_wgtfacq_e_dsl(
+    *,
     e2c: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,

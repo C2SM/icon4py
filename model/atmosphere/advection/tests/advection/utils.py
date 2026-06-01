@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.atmosphere.advection import advection, advection_states
+from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -20,20 +20,6 @@ from icon4py.model.testing import serialbox as sb, test_utils
 
 
 log = logging.getLogger(__name__)
-
-
-def construct_config(
-    horizontal_advection_type: advection.HorizontalAdvectionType,
-    horizontal_advection_limiter: advection.HorizontalAdvectionLimiter,
-    vertical_advection_type: advection.VerticalAdvectionType,
-    vertical_advection_limiter: advection.VerticalAdvectionLimiter,
-) -> advection.AdvectionConfig:
-    return advection.AdvectionConfig(
-        horizontal_advection_type=horizontal_advection_type,
-        horizontal_advection_limiter=horizontal_advection_limiter,
-        vertical_advection_type=vertical_advection_type,
-        vertical_advection_limiter=vertical_advection_limiter,
-    )
 
 
 def construct_interpolation_state(
@@ -140,6 +126,7 @@ def log_serialized(
 
 
 def verify_advection_fields(
+    *,
     grid: icon_grid.IconGrid,
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,

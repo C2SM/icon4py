@@ -222,6 +222,7 @@ def model_initialization_serialbox(
 
 
 def read_initial_state(
+    *,
     grid: icon_grid.IconGrid,
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
@@ -317,6 +318,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
+    *,
     path: pathlib.Path,
     grid_file: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,

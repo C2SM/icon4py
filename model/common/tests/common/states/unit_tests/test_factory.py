@@ -30,6 +30,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     metrics_savepoint,
     process_props,
@@ -64,12 +65,12 @@ class SimpleFieldSource(factory.FieldSource):
         self._exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
 
         for key, value in data_.items():
-            self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
+            self.register_provider(factory.PrecomputedFieldProvider(fields={key: value[0]}))
             self._metadata[key] = value[1]
 
     def _register_initial_fields(self) -> None:
         for key, value in self._initial_data.items():
-            self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
+            self.register_provider(factory.PrecomputedFieldProvider(fields={key: value[0]}))
             self._metadata[key] = value[1]
 
     def reset(self) -> None:
@@ -147,7 +148,9 @@ def height_coordinate_source(
         "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
     }
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=experiment.num_levels), vct_a, vct_b
+        v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
+        vct_a,
+        vct_b,
     )
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid
@@ -165,13 +168,13 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
     fields = {"x": "x", "y": "y", "z": "z"}
 
     provider = factory.EmbeddedFieldOperatorProvider(
-        field_op, domain, fields, deps, do_exchange=False
+        func=field_op, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
     provider(
-        "x",
-        cell_coordinate_source,
-        cell_coordinate_source.backend,
-        cell_coordinate_source,
+        field_name="x",
+        field_src=cell_coordinate_source,
+        backend=cell_coordinate_source.backend,
+        grid=cell_coordinate_source,
         exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["x"]
@@ -190,12 +193,14 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         "input_field": "height_coordinate",
     }
     fields = {"average": "output_f"}
-    provider = factory.ProgramFieldProvider(program, domain, fields, deps, do_exchange=False)
+    provider = factory.ProgramFieldProvider(
+        func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
+    )
     provider(
-        "output_f",
-        height_coordinate_source,
-        height_coordinate_source.backend,
-        height_coordinate_source,
+        field_name="output_f",
+        field_src=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid=height_coordinate_source,
         exchange=decomposition.single_node_exchange,
     )
     x = provider.fields["output_f"]
@@ -236,7 +241,7 @@ def test_composite_field_source_contains_all_metadata(
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
-        test_source, (cell_coordinate_source, height_coordinate_source)
+        me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
 
     assert composite.backend == test_source.backend
@@ -261,7 +266,7 @@ def test_composite_field_source_get_all_fields(
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
-        test_source, (cell_coordinate_source, height_coordinate_source)
+        me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
     foo = composite.get("foo")
     assert isinstance(foo, gtx.Field)
@@ -298,7 +303,7 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
-        test_source, (cell_coordinate_source, height_coordinate_source)
+        me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
     with pytest.raises(ValueError, match="Field 'alice' not provided by the source"):
         composite.get("alice")

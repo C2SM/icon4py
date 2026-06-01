@@ -32,6 +32,7 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_mass_flx_e: np.ndarray,
         geofac_div: np.ndarray,
         z_rhofluxdiv_c: np.ndarray,

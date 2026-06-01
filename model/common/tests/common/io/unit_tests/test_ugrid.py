@@ -94,7 +94,7 @@ def test_icon_ugrid_patch_fill_value(file):
 
 def assert_start_index(uxds: xa.Dataset, name: str):
     assert uxds[name].attrs["start_index"] == 0
-    assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
+    assert np.min(np.nonzero(uxds[name].data > FILL_VALUE)) == 0
 
 
 @pytest.mark.parametrize("file", grid_files())
