@@ -137,16 +137,16 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
             decomposition_info,
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
-            c_glb_index,
-            e_glb_index,
-            v_glb_index,
-            c_owner_mask,
-            e_owner_mask,
-            v_owner_mask,
-            num_cells,
-            num_edges,
-            num_vertices,
-            comm_id,
+            c_glb_index=c_glb_index,
+            e_glb_index=e_glb_index,
+            v_glb_index=v_glb_index,
+            c_owner_mask=c_owner_mask,
+            e_owner_mask=e_owner_mask,
+            v_owner_mask=v_owner_mask,
+            num_cells=num_cells,
+            num_edges=num_edges,
+            num_vertices=num_vertices,
+            comm_id=comm_id,
         )
 
     grid = wrapper_common.construct_icon_grid(
