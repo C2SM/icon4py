@@ -99,7 +99,6 @@ def read_config(
     profiling_stats = ProfilingStats() if enable_profiling else None
 
     interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atmo_dict)
-    assert interpolation_config.max_nudging_coefficient is not None
 
     metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atmo_dict)
 
