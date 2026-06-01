@@ -426,11 +426,11 @@ def copy_ser_data(
 
     # Translate to json and copy NAMELIST_ICON_output_atm
     nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
-    with (dest_dir / (fortran_config.NAMELIST_ATM_FNAME + ".json")).open("w") as f:
+    with (dest_dir / (fortran_config.ATM_DICT_FNAME)).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
     # same for icon_master.namelist
     nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
-    with (dest_dir / (fortran_config.NAMELIST_MASTER_FNAME + ".json")).open("w") as f:
+    with (dest_dir / (fortran_config.MASTER_DICT_FNAME)).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files

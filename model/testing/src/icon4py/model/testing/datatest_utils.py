@@ -86,19 +86,30 @@ def get_muphys_archive_url(root_url: str, experiment_type: str, experiment_name:
     return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 
+def get_path_for_experiment(
+    experiment_description: definitions.ExperimentDescription,
+    process_props: decomposition.ProcessProperties,
+) -> pathlib.Path:
+    """Get the path to an experiment root directory."""
+
+    experiment_dir = get_ranked_experiment_name_with_version(
+        experiment_description,
+        process_props.comm_size,
+    )
+    return definitions.serialized_data_path() / experiment_dir
+
+
 def get_datapath_for_experiment(
     experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment."""
 
-    experiment_dir = get_ranked_experiment_name_with_version(
+    experiment_path = get_path_for_experiment(
         experiment_description,
-        process_props.comm_size,
+        process_props,
     )
-    return definitions.serialized_data_path().joinpath(
-        experiment_dir, definitions.SERIALIZED_DATA_SUBDIR
-    )
+    return experiment_path / definitions.SERIALIZED_DATA_SUBDIR
 
 
 def create_icon_serial_data_provider(
@@ -129,21 +140,6 @@ def download_experiment(
     data_handling.download_test_data(destination_path.parent, uri)
 
 
-@functools.cache
-def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
-    """
-    Read and cache the namelist JSON file.
-
-    Args:
-        json_file_path: Path to the NAMELIST_ICON_output_atm.json file
-
-    Returns:
-        Dictionary containing the parsed JSON data
-    """
-    with json_file_path.open() as f:
-        return json.load(f)
-
-
 def create_experiment_configuration(
     experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
@@ -163,42 +159,43 @@ def create_experiment_configuration(
         ExperimentConfig object containing the configuration for the experiment
     """
 
-    experiment_dir = get_ranked_experiment_name_with_version(
+    experiment_path = get_path_for_experiment(
         experiment_description,
-        processor_props.comm_size,
+        processor_props,
     )
-    config_path = definitions.serialized_data_path() / experiment_dir
 
-    atmo_dict = _read_namelist_json(config_path / f"{fortran_config.NAMELIST_ATM_FNAME}.json")
-    master_dict = _read_namelist_json(config_path / f"{fortran_config.NAMELIST_MASTER_FNAME}.json")
+    with (experiment_path / fortran_config.ATM_DICT_FNAME).open() as f:
+        atm_dict = json.load(f)
+    with (experiment_path / fortran_config.MASTER_DICT_FNAME).open() as f:
+        master_dict = json.load(f)
 
-    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atmo_dict)
+    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
-    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atmo_dict)
+    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
-        atmo_dict,
+        atm_dict,
         master_dict,
         experiment_name=experiment_description.name,
         profiling_stats=None,
         enable_statistics_output=False,
     )
 
-    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atmo_dict)
+    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
-        atmo_dict,
+        atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
-        atmo_dict,
+        atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atmo_dict)
+    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atmo_dict)
+    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
     return definitions.ExperimentConfig(
         driver=driver_cfg,

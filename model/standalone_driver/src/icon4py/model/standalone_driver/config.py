@@ -91,31 +91,31 @@ def read_config(
     interpolation_factory.InterpolationConfig,
     metrics_factory.MetricsConfig,
 ]:
-    with (config_file_path / f"{fortran_config.NAMELIST_ATM_FNAME}.json").open() as f:
-        atmo_dict = json.load(f)
-    with (config_file_path / f"{fortran_config.NAMELIST_MASTER_FNAME}.json").open() as f:
+    with (config_file_path / fortran_config.ATM_DICT_FNAME).open() as f:
+        atm_dict = json.load(f)
+    with (config_file_path / fortran_config.MASTER_DICT_FNAME).open() as f:
         master_dict = json.load(f)
 
     profiling_stats = ProfilingStats() if enable_profiling else None
 
-    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atmo_dict)
+    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
-    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atmo_dict)
+    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 
     driver_cfg = DriverConfig.from_fortran_dict(
-        atmo_dict,
+        atm_dict,
         master_dict,
         experiment_name="standalone",
         profiling_stats=profiling_stats,
     )
-    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atmo_dict)
+    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
-        atmo_dict,
+        atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atmo_dict)
+    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
-        atmo_dict,
+        atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
