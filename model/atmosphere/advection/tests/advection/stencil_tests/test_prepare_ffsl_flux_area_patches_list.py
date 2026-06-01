@@ -18,8 +18,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.testing import stencil_tests
 
 
-# Check whether lines inters.
 def _ccw_numpy(
+    *,
     p0_lon,
     p0_lat,
     p1_lon,
@@ -27,6 +27,12 @@ def _ccw_numpy(
     p2_lon,
     p2_lat,
 ):
+    """
+    Counter-clockwise test.
+    Given three points P0, P1, P2, it computes the sign of the cross product of vectors (P1-P0) and (P2-P0):
+    cross = dx1*dy2 - dy1*dx2
+    If cross > 0, the three points are in counter-clockwise order (returns 1), otherwise clockwise (returns -1).
+    """
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -37,12 +43,12 @@ def _ccw_numpy(
     dy1dx2 = dy1 * dx2
 
     lccw = np.where(dx1dy2 > dy1dx2, True, False)
-    ccw_out = np.where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
+    ccw_out = np.where(lccw, 1, -1)  # 1: counterclockwise, -1: clockwise
     return ccw_out
 
 
-# Check whether two lines intersect
 def _lintersect_numpy(
+    *,
     line1_p1_lon,
     line1_p1_lat,
     line1_p2_lon,
@@ -52,35 +58,42 @@ def _lintersect_numpy(
     line2_p2_lon,
     line2_p2_lat,
 ):
+    """
+    Line segment intersection test.
+    Uses the CCW-based intersection test: two line segments AB and CD intersect if and only if:
+    - A, B separate C and D (i.e. CCW(A,B,C) and CCW(A,B,D) have opposite signs → product = -1)
+    - C, D separate A and B (i.e. CCW(C,D,A) and CCW(C,D,B) have opposite signs → product = -1)
+    Both products must equal -1 simultaneously (sum = -2) for an intersection to occur.
+    """
     intersect1 = _ccw_numpy(
-        line1_p1_lon,
-        line1_p1_lat,
-        line1_p2_lon,
-        line1_p2_lat,
-        line2_p1_lon,
-        line2_p1_lat,
+        p0_lon=line1_p1_lon,
+        p0_lat=line1_p1_lat,
+        p1_lon=line1_p2_lon,
+        p1_lat=line1_p2_lat,
+        p2_lon=line2_p1_lon,
+        p2_lat=line2_p1_lat,
     ) * _ccw_numpy(
-        line1_p1_lon,
-        line1_p1_lat,
-        line1_p2_lon,
-        line1_p2_lat,
-        line2_p2_lon,
-        line2_p2_lat,
+        p0_lon=line1_p1_lon,
+        p0_lat=line1_p1_lat,
+        p1_lon=line1_p2_lon,
+        p1_lat=line1_p2_lat,
+        p2_lon=line2_p2_lon,
+        p2_lat=line2_p2_lat,
     )
     intersect2 = _ccw_numpy(
-        line2_p1_lon,
-        line2_p1_lat,
-        line2_p2_lon,
-        line2_p2_lat,
-        line1_p1_lon,
-        line1_p1_lat,
+        p0_lon=line2_p1_lon,
+        p0_lat=line2_p1_lat,
+        p1_lon=line2_p2_lon,
+        p1_lat=line2_p2_lat,
+        p2_lon=line1_p1_lon,
+        p2_lat=line1_p1_lat,
     ) * _ccw_numpy(
-        line2_p1_lon,
-        line2_p1_lat,
-        line2_p2_lon,
-        line2_p2_lat,
-        line1_p2_lon,
-        line1_p2_lat,
+        p0_lon=line2_p1_lon,
+        p0_lat=line2_p1_lat,
+        p1_lon=line2_p2_lon,
+        p1_lat=line2_p2_lat,
+        p2_lon=line1_p2_lon,
+        p2_lat=line1_p2_lat,
     )
     lintersect_out = np.where((intersect1 + intersect2) == -2, True, False)
 
@@ -89,6 +102,7 @@ def _lintersect_numpy(
 
 # Compute intersection point of two lines in 2D
 def _line_intersect_numpy(
+    *,
     line1_p1_lon,
     line1_p1_lat,
     line1_p2_lon,
@@ -145,6 +159,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _generate_flux_area_geometry(
+        *,
         dreg_patch0_1_lon_dsl,
         dreg_patch0_1_lat_dsl,
         dreg_patch0_2_lon_dsl,
@@ -224,6 +239,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case1_patch0(
+        *,
         mask_case1,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
@@ -277,6 +293,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case1_patch1(
+        *,
         mask_case1,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
@@ -316,6 +333,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case1_patch2(
+        *,
         mask_case1,
         lvn_sys_pos,
         arrival_pts_2_lon_dsl,
@@ -356,6 +374,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2a_patch0(
+        *,
         mask_case2a,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
@@ -413,6 +432,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2a_patch1(
+        *,
         mask_case2a,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
@@ -476,6 +496,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2b_patch0(
+        *,
         mask_case2b,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
@@ -533,6 +554,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2b_patch1(
+        *,
         mask_case2b,
         dreg_patch1_1_lon_vmask,
         dreg_patch1_1_lat_vmask,
@@ -567,6 +589,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case2b_patch2(
+        *,
         mask_case2b,
         lvn_sys_pos,
         arrival_pts_2_lon_dsl,
@@ -630,6 +653,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3a_patch0(
+        *,
         mask_case3a,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
@@ -687,6 +711,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3a_patch1(
+        *,
         mask_case3a,
         lvn_sys_pos,
         arrival_pts_1_lon_dsl,
@@ -752,6 +777,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3b_patch0(
+        *,
         mask_case3b,
         arrival_pts_1_lon_dsl,
         arrival_pts_1_lat_dsl,
@@ -807,6 +833,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
     @staticmethod
     def _apply_case3b_patch2(
+        *,
         mask_case3b,
         arrival_pts_2_lon_dsl,
         arrival_pts_2_lat_dsl,
@@ -874,6 +901,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     def reference(
         cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         famask_int,
         p_vn,
         ptr_v3_lon,
@@ -894,17 +922,17 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         tangent_orientation_dsl = np.expand_dims(tangent_orientation_dsl, axis=-1)
 
         result_tuple = cls._generate_flux_area_geometry(
-            dreg_patch0_1_lon_dsl,
-            dreg_patch0_1_lat_dsl,
-            dreg_patch0_2_lon_dsl,
-            dreg_patch0_2_lat_dsl,
-            dreg_patch0_3_lon_dsl,
-            dreg_patch0_3_lat_dsl,
-            dreg_patch0_4_lon_dsl,
-            dreg_patch0_4_lat_dsl,
-            p_vn,
-            ptr_v3_lon_e,
-            ptr_v3_lat_e,
+            dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+            dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+            dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+            dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+            dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+            dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+            dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+            dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
+            p_vn=p_vn,
+            ptr_v3_lon_e=ptr_v3_lon_e,
+            ptr_v3_lat_e=ptr_v3_lat_e,
         )
 
         (
@@ -932,25 +960,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
         # Create first mask does departure-line segment intersects with A1V3
         lintersect_line1 = _lintersect_numpy(
-            fl_line_p1_lon,
-            fl_line_p1_lat,
-            fl_line_p2_lon,
-            fl_line_p2_lat,
-            tri_line1_p1_lon,
-            tri_line1_p1_lat,
-            tri_line1_p2_lon,
-            tri_line1_p2_lat,
+            line1_p1_lon=fl_line_p1_lon,
+            line1_p1_lat=fl_line_p1_lat,
+            line1_p2_lon=fl_line_p2_lon,
+            line1_p2_lat=fl_line_p2_lat,
+            line2_p1_lon=tri_line1_p1_lon,
+            line2_p1_lat=tri_line1_p1_lat,
+            line2_p2_lon=tri_line1_p2_lon,
+            line2_p2_lat=tri_line1_p2_lat,
         )
         # Create first mask does departure-line segment intersects with A2V3
         lintersect_line2 = _lintersect_numpy(
-            fl_line_p1_lon,
-            fl_line_p1_lat,
-            fl_line_p2_lon,
-            fl_line_p2_lat,
-            tri_line2_p1_lon,
-            tri_line2_p1_lat,
-            tri_line2_p2_lon,
-            tri_line2_p2_lat,
+            line1_p1_lon=fl_line_p1_lon,
+            line1_p1_lat=fl_line_p1_lat,
+            line1_p2_lon=fl_line_p2_lon,
+            line1_p2_lat=fl_line_p2_lat,
+            line2_p1_lon=tri_line2_p1_lon,
+            line2_p1_lat=tri_line2_p1_lat,
+            line2_p2_lon=tri_line2_p2_lon,
+            line2_p2_lat=tri_line2_p2_lat,
         )
 
         lvn_sys_pos = np.where(
@@ -961,24 +989,24 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         famask_bool = np.where(famask_int == 1, True, False)
         mask_case1 = np.logical_and.reduce([lintersect_line1, lintersect_line2, famask_bool])
         ps1_x, ps1_y = _line_intersect_numpy(
-            fl_line_p1_lon,
-            fl_line_p1_lat,
-            fl_line_p2_lon,
-            fl_line_p2_lat,
-            tri_line1_p1_lon,
-            tri_line1_p1_lat,
-            tri_line1_p2_lon,
-            tri_line1_p2_lat,
+            line1_p1_lon=fl_line_p1_lon,
+            line1_p1_lat=fl_line_p1_lat,
+            line1_p2_lon=fl_line_p2_lon,
+            line1_p2_lat=fl_line_p2_lat,
+            line2_p1_lon=tri_line1_p1_lon,
+            line2_p1_lat=tri_line1_p1_lat,
+            line2_p2_lon=tri_line1_p2_lon,
+            line2_p2_lat=tri_line1_p2_lat,
         )
         ps2_x, ps2_y = _line_intersect_numpy(
-            fl_line_p1_lon,
-            fl_line_p1_lat,
-            fl_line_p2_lon,
-            fl_line_p2_lat,
-            tri_line2_p1_lon,
-            tri_line2_p1_lat,
-            tri_line2_p2_lon,
-            tri_line2_p2_lat,
+            line1_p1_lon=fl_line_p1_lon,
+            line1_p1_lat=fl_line_p1_lat,
+            line1_p2_lon=fl_line_p2_lon,
+            line1_p2_lat=fl_line_p2_lat,
+            line2_p1_lon=tri_line2_p1_lon,
+            line2_p1_lat=tri_line2_p1_lat,
+            line2_p2_lon=tri_line2_p2_lon,
+            line2_p2_lat=tri_line2_p2_lat,
         )
 
         # ------------------------------------------------- Case 1
@@ -993,20 +1021,20 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_4_lon_dsl,
             dreg_patch0_4_lat_dsl,
         ) = cls._apply_case1_patch0(
-            mask_case1,
-            lvn_sys_pos,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            ps1_x,
-            ps1_y,
-            ps2_x,
-            ps2_y,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            depart_pts_2_lon_dsl,
-            depart_pts_2_lat_dsl,
+            mask_case1=mask_case1,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            ps1_x=ps1_x,
+            ps1_y=ps1_y,
+            ps2_x=ps2_x,
+            ps2_y=ps2_y,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            depart_pts_2_lon_dsl=depart_pts_2_lon_dsl,
+            depart_pts_2_lat_dsl=depart_pts_2_lat_dsl,
         )
         # Case 1 - patch 1
         (
@@ -1019,14 +1047,14 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch1_3_lon_vmask,
             dreg_patch1_3_lat_vmask,
         ) = cls._apply_case1_patch1(
-            mask_case1,
-            lvn_sys_pos,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            ps1_x,
-            ps1_y,
+            mask_case1=mask_case1,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            ps1_x=ps1_x,
+            ps1_y=ps1_y,
         )
         # Case 1 - patch 2
         (
@@ -1039,14 +1067,14 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_3_lon_vmask,
             dreg_patch2_3_lat_vmask,
         ) = cls._apply_case1_patch2(
-            mask_case1,
-            lvn_sys_pos,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            depart_pts_2_lon_dsl,
-            depart_pts_2_lat_dsl,
-            ps2_x,
-            ps2_y,
+            mask_case1=mask_case1,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            depart_pts_2_lon_dsl=depart_pts_2_lon_dsl,
+            depart_pts_2_lat_dsl=depart_pts_2_lat_dsl,
+            ps2_x=ps2_x,
+            ps2_y=ps2_y,
         )
 
         # ------------------------------------------------- Case 2a
@@ -1055,24 +1083,24 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         )
         # Case 2a - patch 0
         result_tuple_patch0 = cls._apply_case2a_patch0(
-            mask_case2a,
-            lvn_sys_pos,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            ps1_x,
-            ps1_y,
-            depart_pts_2_lon_dsl,
-            depart_pts_2_lat_dsl,
-            dreg_patch0_1_lon_dsl,
-            dreg_patch0_1_lat_dsl,
-            dreg_patch0_2_lon_dsl,
-            dreg_patch0_2_lat_dsl,
-            dreg_patch0_3_lon_dsl,
-            dreg_patch0_3_lat_dsl,
-            dreg_patch0_4_lon_dsl,
-            dreg_patch0_4_lat_dsl,
+            mask_case2a=mask_case2a,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            ps1_x=ps1_x,
+            ps1_y=ps1_y,
+            depart_pts_2_lon_dsl=depart_pts_2_lon_dsl,
+            depart_pts_2_lat_dsl=depart_pts_2_lat_dsl,
+            dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+            dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+            dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+            dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+            dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+            dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+            dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+            dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
         )
 
         (
@@ -1087,22 +1115,22 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         ) = result_tuple_patch0
         # Case 2a - patch 1
         result_tuple_patch1 = cls._apply_case2a_patch1(
-            mask_case2a,
-            lvn_sys_pos,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            ps1_x,
-            ps1_y,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            dreg_patch1_1_lon_vmask,
-            dreg_patch1_1_lat_vmask,
-            dreg_patch1_4_lon_vmask,
-            dreg_patch1_4_lat_vmask,
-            dreg_patch1_2_lon_vmask,
-            dreg_patch1_2_lat_vmask,
-            dreg_patch1_3_lon_vmask,
-            dreg_patch1_3_lat_vmask,
+            mask_case2a=mask_case2a,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            ps1_x=ps1_x,
+            ps1_y=ps1_y,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            dreg_patch1_1_lon_vmask=dreg_patch1_1_lon_vmask,
+            dreg_patch1_1_lat_vmask=dreg_patch1_1_lat_vmask,
+            dreg_patch1_4_lon_vmask=dreg_patch1_4_lon_vmask,
+            dreg_patch1_4_lat_vmask=dreg_patch1_4_lat_vmask,
+            dreg_patch1_2_lon_vmask=dreg_patch1_2_lon_vmask,
+            dreg_patch1_2_lat_vmask=dreg_patch1_2_lat_vmask,
+            dreg_patch1_3_lon_vmask=dreg_patch1_3_lon_vmask,
+            dreg_patch1_3_lat_vmask=dreg_patch1_3_lat_vmask,
         )
 
         (
@@ -1131,24 +1159,24 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         )
         # Case 2b - patch 0
         result_tuple_patch0_case2b = cls._apply_case2b_patch0(
-            mask_case2b,
-            lvn_sys_pos,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            ps2_x,
-            ps2_y,
-            dreg_patch0_1_lon_dsl,
-            dreg_patch0_1_lat_dsl,
-            dreg_patch0_2_lon_dsl,
-            dreg_patch0_2_lat_dsl,
-            dreg_patch0_3_lon_dsl,
-            dreg_patch0_3_lat_dsl,
-            dreg_patch0_4_lon_dsl,
-            dreg_patch0_4_lat_dsl,
+            mask_case2b=mask_case2b,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            ps2_x=ps2_x,
+            ps2_y=ps2_y,
+            dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+            dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+            dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+            dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+            dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+            dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+            dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+            dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
         )
 
         (
@@ -1164,15 +1192,15 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
         # Case 2b - patch 1
         result_tuple_patch1_case2b = cls._apply_case2b_patch1(
-            mask_case2b,
-            dreg_patch1_1_lon_vmask,
-            dreg_patch1_1_lat_vmask,
-            dreg_patch1_2_lon_vmask,
-            dreg_patch1_2_lat_vmask,
-            dreg_patch1_3_lon_vmask,
-            dreg_patch1_3_lat_vmask,
-            dreg_patch1_4_lon_vmask,
-            dreg_patch1_4_lat_vmask,
+            mask_case2b=mask_case2b,
+            dreg_patch1_1_lon_vmask=dreg_patch1_1_lon_vmask,
+            dreg_patch1_1_lat_vmask=dreg_patch1_1_lat_vmask,
+            dreg_patch1_2_lon_vmask=dreg_patch1_2_lon_vmask,
+            dreg_patch1_2_lat_vmask=dreg_patch1_2_lat_vmask,
+            dreg_patch1_3_lon_vmask=dreg_patch1_3_lon_vmask,
+            dreg_patch1_3_lat_vmask=dreg_patch1_3_lat_vmask,
+            dreg_patch1_4_lon_vmask=dreg_patch1_4_lon_vmask,
+            dreg_patch1_4_lat_vmask=dreg_patch1_4_lat_vmask,
         )
 
         (
@@ -1188,22 +1216,22 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
 
         # Case 2b - patch 2
         result_tuple_patch2_case2b = cls._apply_case2b_patch2(
-            mask_case2b,
-            lvn_sys_pos,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            depart_pts_2_lon_dsl,
-            depart_pts_2_lat_dsl,
-            ps2_x,
-            ps2_y,
-            dreg_patch2_1_lon_vmask,
-            dreg_patch2_1_lat_vmask,
-            dreg_patch2_4_lon_vmask,
-            dreg_patch2_4_lat_vmask,
-            dreg_patch2_2_lon_vmask,
-            dreg_patch2_2_lat_vmask,
-            dreg_patch2_3_lon_vmask,
-            dreg_patch2_3_lat_vmask,
+            mask_case2b=mask_case2b,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            depart_pts_2_lon_dsl=depart_pts_2_lon_dsl,
+            depart_pts_2_lat_dsl=depart_pts_2_lat_dsl,
+            ps2_x=ps2_x,
+            ps2_y=ps2_y,
+            dreg_patch2_1_lon_vmask=dreg_patch2_1_lon_vmask,
+            dreg_patch2_1_lat_vmask=dreg_patch2_1_lat_vmask,
+            dreg_patch2_4_lon_vmask=dreg_patch2_4_lon_vmask,
+            dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
+            dreg_patch2_2_lon_vmask=dreg_patch2_2_lon_vmask,
+            dreg_patch2_2_lat_vmask=dreg_patch2_2_lat_vmask,
+            dreg_patch2_3_lon_vmask=dreg_patch2_3_lon_vmask,
+            dreg_patch2_3_lat_vmask=dreg_patch2_3_lat_vmask,
         )
 
         (
@@ -1230,46 +1258,46 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         # ----------------------------------------------- Case 3a
         # Check whether flux area edge 2 intersects with triangle edge 1
         lintersect_e2_line1 = _lintersect_numpy(
-            fl_e2_p1_lon,
-            fl_e2_p1_lat,
-            fl_e2_p2_lon,
-            fl_e2_p2_lat,
-            tri_line1_p1_lon,
-            tri_line1_p1_lat,
-            tri_line1_p2_lon,
-            tri_line1_p2_lat,
+            line1_p1_lon=fl_e2_p1_lon,
+            line1_p1_lat=fl_e2_p1_lat,
+            line1_p2_lon=fl_e2_p2_lon,
+            line1_p2_lat=fl_e2_p2_lat,
+            line2_p1_lon=tri_line1_p1_lon,
+            line2_p1_lat=tri_line1_p1_lat,
+            line2_p2_lon=tri_line1_p2_lon,
+            line2_p2_lat=tri_line1_p2_lat,
         )
         mask_case3a = np.logical_and(lintersect_e2_line1, famask_bool)
         pi1_x, pi1_y = _line_intersect_numpy(
-            fl_e2_p1_lon,
-            fl_e2_p1_lat,
-            fl_e2_p2_lon,
-            fl_e2_p2_lat,
-            tri_line1_p1_lon,
-            tri_line1_p1_lat,
-            tri_line1_p2_lon,
-            tri_line1_p2_lat,
+            line1_p1_lon=fl_e2_p1_lon,
+            line1_p1_lat=fl_e2_p1_lat,
+            line1_p2_lon=fl_e2_p2_lon,
+            line1_p2_lat=fl_e2_p2_lat,
+            line2_p1_lon=tri_line1_p1_lon,
+            line2_p1_lat=tri_line1_p1_lat,
+            line2_p2_lon=tri_line1_p2_lon,
+            line2_p2_lat=tri_line1_p2_lat,
         )
         # Case 3a - patch 0
         result = cls._apply_case3a_patch0(
-            mask_case3a,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            lvn_sys_pos,
-            ps2_x,
-            ps2_y,
-            dreg_patch0_1_lon_dsl,
-            dreg_patch0_1_lat_dsl,
-            dreg_patch0_2_lon_dsl,
-            dreg_patch0_2_lat_dsl,
-            dreg_patch0_3_lon_dsl,
-            dreg_patch0_3_lat_dsl,
-            dreg_patch0_4_lon_dsl,
-            dreg_patch0_4_lat_dsl,
+            mask_case3a=mask_case3a,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            lvn_sys_pos=lvn_sys_pos,
+            ps2_x=ps2_x,
+            ps2_y=ps2_y,
+            dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+            dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+            dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+            dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+            dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+            dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+            dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+            dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
         )
 
         (
@@ -1294,24 +1322,24 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch1_3_lon_vmask,
             dreg_patch1_3_lat_vmask,
         ) = cls._apply_case3a_patch1(
-            mask_case3a,
-            lvn_sys_pos,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            pi1_x,
-            pi1_y,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            depart_pts_2_lon_dsl,
-            depart_pts_2_lat_dsl,
-            dreg_patch1_1_lon_vmask,
-            dreg_patch1_1_lat_vmask,
-            dreg_patch1_4_lon_vmask,
-            dreg_patch1_4_lat_vmask,
-            dreg_patch1_2_lon_vmask,
-            dreg_patch1_2_lat_vmask,
-            dreg_patch1_3_lon_vmask,
-            dreg_patch1_3_lat_vmask,
+            mask_case3a=mask_case3a,
+            lvn_sys_pos=lvn_sys_pos,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            pi1_x=pi1_x,
+            pi1_y=pi1_y,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            depart_pts_2_lon_dsl=depart_pts_2_lon_dsl,
+            depart_pts_2_lat_dsl=depart_pts_2_lat_dsl,
+            dreg_patch1_1_lon_vmask=dreg_patch1_1_lon_vmask,
+            dreg_patch1_1_lat_vmask=dreg_patch1_1_lat_vmask,
+            dreg_patch1_4_lon_vmask=dreg_patch1_4_lon_vmask,
+            dreg_patch1_4_lat_vmask=dreg_patch1_4_lat_vmask,
+            dreg_patch1_2_lon_vmask=dreg_patch1_2_lon_vmask,
+            dreg_patch1_2_lat_vmask=dreg_patch1_2_lat_vmask,
+            dreg_patch1_3_lon_vmask=dreg_patch1_3_lon_vmask,
+            dreg_patch1_3_lat_vmask=dreg_patch1_3_lat_vmask,
         )
         # Case 3a - patch 2
         dreg_patch2_1_lon_vmask = np.where(mask_case3a, 0.0, dreg_patch2_1_lon_vmask)
@@ -1326,25 +1354,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         # ------------------------------------------------ Case 3b
         # Check whether flux area edge 1 intersects with triangle edge 2
         lintersect_e1_line2 = _lintersect_numpy(
-            fl_e1_p1_lon,
-            fl_e1_p1_lat,
-            fl_e1_p2_lon,
-            fl_e1_p2_lat,
-            tri_line2_p1_lon,
-            tri_line2_p1_lat,
-            tri_line2_p2_lon,
-            tri_line2_p2_lat,
+            line1_p1_lon=fl_e1_p1_lon,
+            line1_p1_lat=fl_e1_p1_lat,
+            line1_p2_lon=fl_e1_p2_lon,
+            line1_p2_lat=fl_e1_p2_lat,
+            line2_p1_lon=tri_line2_p1_lon,
+            line2_p1_lat=tri_line2_p1_lat,
+            line2_p2_lon=tri_line2_p2_lon,
+            line2_p2_lat=tri_line2_p2_lat,
         )
         mask_case3b = lintersect_e1_line2 & famask_bool
         pi2_x, pi2_y = _line_intersect_numpy(
-            fl_e1_p1_lon,
-            fl_e1_p1_lat,
-            fl_e1_p2_lon,
-            fl_e1_p2_lat,
-            tri_line2_p1_lon,
-            tri_line2_p1_lat,
-            tri_line2_p2_lon,
-            tri_line2_p2_lat,
+            line1_p1_lon=fl_e1_p1_lon,
+            line1_p1_lat=fl_e1_p1_lat,
+            line1_p2_lon=fl_e1_p2_lon,
+            line1_p2_lat=fl_e1_p2_lat,
+            line2_p1_lon=tri_line2_p1_lon,
+            line2_p1_lat=tri_line2_p1_lat,
+            line2_p2_lon=tri_line2_p2_lon,
+            line2_p2_lat=tri_line2_p2_lat,
         )
         # Case 3b - patch 0
         (
@@ -1357,22 +1385,22 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_3_lon_dsl,
             dreg_patch0_3_lat_dsl,
         ) = cls._apply_case3b_patch0(
-            mask_case3b,
-            arrival_pts_1_lon_dsl,
-            arrival_pts_1_lat_dsl,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            pi2_x,
-            pi2_y,
-            lvn_sys_pos,
-            dreg_patch0_1_lon_dsl,
-            dreg_patch0_1_lat_dsl,
-            dreg_patch0_4_lon_dsl,
-            dreg_patch0_4_lat_dsl,
-            dreg_patch0_2_lon_dsl,
-            dreg_patch0_2_lat_dsl,
-            dreg_patch0_3_lon_dsl,
-            dreg_patch0_3_lat_dsl,
+            mask_case3b=mask_case3b,
+            arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
+            arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            pi2_x=pi2_x,
+            pi2_y=pi2_y,
+            lvn_sys_pos=lvn_sys_pos,
+            dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+            dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+            dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+            dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
+            dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+            dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+            dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+            dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
         )
         # Case 3b - patch 1
         dreg_patch1_1_lon_vmask = np.where(mask_case3b, 0.0, dreg_patch1_1_lon_vmask)
@@ -1395,24 +1423,24 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_4_lon_vmask,
             dreg_patch2_4_lat_vmask,
         ) = cls._apply_case3b_patch2(
-            mask_case3b,
-            arrival_pts_2_lon_dsl,
-            arrival_pts_2_lat_dsl,
-            depart_pts_1_lon_dsl,
-            depart_pts_1_lat_dsl,
-            depart_pts_2_lon_dsl,
-            depart_pts_2_lat_dsl,
-            pi2_x,
-            pi2_y,
-            lvn_sys_pos,
-            dreg_patch2_1_lon_vmask,
-            dreg_patch2_1_lat_vmask,
-            dreg_patch2_2_lon_vmask,
-            dreg_patch2_2_lat_vmask,
-            dreg_patch2_3_lon_vmask,
-            dreg_patch2_3_lat_vmask,
-            dreg_patch2_4_lon_vmask,
-            dreg_patch2_4_lat_vmask,
+            mask_case3b=mask_case3b,
+            arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
+            arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
+            depart_pts_1_lon_dsl=depart_pts_1_lon_dsl,
+            depart_pts_1_lat_dsl=depart_pts_1_lat_dsl,
+            depart_pts_2_lon_dsl=depart_pts_2_lon_dsl,
+            depart_pts_2_lat_dsl=depart_pts_2_lat_dsl,
+            pi2_x=pi2_x,
+            pi2_y=pi2_y,
+            lvn_sys_pos=lvn_sys_pos,
+            dreg_patch2_1_lon_vmask=dreg_patch2_1_lon_vmask,
+            dreg_patch2_1_lat_vmask=dreg_patch2_1_lat_vmask,
+            dreg_patch2_2_lon_vmask=dreg_patch2_2_lon_vmask,
+            dreg_patch2_2_lat_vmask=dreg_patch2_2_lat_vmask,
+            dreg_patch2_3_lon_vmask=dreg_patch2_3_lon_vmask,
+            dreg_patch2_3_lat_vmask=dreg_patch2_3_lat_vmask,
+            dreg_patch2_4_lon_vmask=dreg_patch2_4_lon_vmask,
+            dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
         )
         # --------------------------------------------- Case 4
         # NB: Next line acts as the "ELSE IF", indices that already previously matched one of the above conditions

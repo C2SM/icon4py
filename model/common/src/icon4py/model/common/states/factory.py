@@ -45,6 +45,7 @@ import collections
 import contextlib
 import enum
 import functools
+import inspect
 import logging
 import types
 import typing
@@ -111,9 +112,9 @@ class NeedsExchange(Protocol):
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
-                assert (
-                    first_dim.kind == gtx.DimensionKind.HORIZONTAL
-                ), f"1st dimension {first_dim} needs to be one of {list(dims.horizontal_dims())} for exchange"
+                assert first_dim.kind == gtx.DimensionKind.HORIZONTAL, (
+                    f"1st dimension {first_dim} needs to be one of {list(dims.horizontal_dims())} for exchange"
+                )
                 with as_exchangeable_field(field) as buffer:
                     exchange.exchange(first_dim, buffer, stream=decomposition.BLOCK)
                 log.debug(f"exchanged buffer for {name}")
@@ -135,6 +136,7 @@ class FieldProvider(Protocol):
 
     def __call__(
         self,
+        *,
         field_name: str,
         field_src: FieldSource,
         backend: gtx_typing.Backend | None,
@@ -238,7 +240,13 @@ class FieldSource(GridProvider, Protocol):
                         f"Field {field_name} not provided by f{provider.func.__name__}."
                     )
 
-                buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
+                buffer = provider(
+                    field_name=field_name,
+                    field_src=self._sources,
+                    backend=self.backend,
+                    grid=self,
+                    exchange=self._exchange,
+                )
                 return (
                     buffer
                     if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
@@ -263,7 +271,7 @@ class FieldSource(GridProvider, Protocol):
 
 
 class CompositeSource(FieldSource):
-    def __init__(self, me: FieldSource, others: tuple[FieldSource, ...]):
+    def __init__(self, *, me: FieldSource, others: tuple[FieldSource, ...]):
         self._backend = me.backend
         self._grid = me.grid
         self._vertical_grid = me.vertical_grid
@@ -301,6 +309,7 @@ class PrecomputedFieldProvider(FieldProvider):
 
     def __call__(
         self,
+        *,
         field_name: str,
         field_src: FieldSource,
         backend: gtx_typing.Backend | None,
@@ -331,13 +340,13 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
 
     def __init__(
         self,
+        *,
         func: gtx_typing.FieldOperator,
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
-        fields: dict[str, str],  # keyword arg to (field_operator, field_name)
-        deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
+        fields: dict[str, str],
+        deps: dict[str, str],
         do_exchange: bool,
-        params: dict[str, state_utils.ScalarType]
-        | None = None,  # keyword arg to (field_operator, field_name)
+        params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
         self._dims: (
@@ -368,6 +377,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
 
     def __call__(
         self,
+        *,
         field_name: str,
         field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
@@ -498,6 +508,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     def __init__(
         self,
+        *,
         func: gtx_typing.Program,
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
@@ -589,36 +600,38 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     def __call__(
         self,
+        *,
         field_name: str,
-        factory: FieldSource | None,
+        field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
-        grid_provider: GridProvider,
+        grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ):
         if any([f is None for f in self.fields.values()]):
-            self._compute(factory, backend, grid_provider)
+            self._compute(field_src=field_src, grid=grid, backend=backend)
             self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(
         self,
-        factory: FieldSource,
+        *,
+        field_src: FieldSource,
+        grid: GridProvider,
         backend: gtx_typing.Backend | None,
-        grid_provider: GridProvider,
     ) -> None:
         try:
-            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
+            metadata = {v: field_src.get(v, RetrievalType.METADATA) for v in self._output.values()}
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
-        self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
-        log.debug(f" getting dependencies {self._dependencies.values()} from {factory}")
-        deps = {k: factory.get(v) for k, v in self._dependencies.items()}
+        self._fields = self._allocate(backend, grid.grid, dtype=dtype)
+        log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
+        deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
-        dims = self._domain_args(grid_provider.grid, grid_provider.vertical_grid)
-        offset_providers = self._get_offset_providers(grid_provider.grid)
+        dims = self._domain_args(grid.grid, grid.vertical_grid)
+        offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
         self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
 
@@ -653,6 +666,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
     def __init__(
         self,
+        *,
         func: Callable,
         domain: Sequence[gtx.Dimension],
         fields: Sequence[str],
@@ -673,15 +687,16 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
     def __call__(
         self,
+        *,
         field_name: str,
-        factory: FieldSource,
+        field_src: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             log.info(f"computing field {field_name}")
-            self._compute(factory, backend, grid)
+            self._compute(field_src, backend, grid)
             exchangeable_fields = {
                 name: field for name, field in self.fields.items() if isinstance(field, gtx.Field)
             }
@@ -722,13 +737,10 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         # TODO(egparedes): dealing with type annotations at run-time is error prone
         #   and requires robust utility functions. This snippet should use a better
         #   solution in the future.
-        try:
-            annotations = typing.get_type_hints(self._func)
-        except TypeError:
-            obj = self._func
-            while hasattr(obj, "__wrapped__") or isinstance(obj, functools.partial):
-                obj = getattr(obj, "__wrapped__", None) or obj.func
-            annotations = typing.get_type_hints(obj)
+        obj = inspect.unwrap(self._func)
+        while isinstance(obj, functools.partial):
+            obj = inspect.unwrap(obj.func)
+        annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
             parameter_annotation = annotations.get(dep_key)
             checked = _is_compatible_union(

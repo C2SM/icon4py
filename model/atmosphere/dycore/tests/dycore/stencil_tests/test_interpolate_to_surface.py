@@ -39,6 +39,7 @@ class TestInterpolateToSurface(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         interpolant: np.ndarray,
         wgtfacq_c: np.ndarray,
         interpolation_to_surface: np.ndarray,

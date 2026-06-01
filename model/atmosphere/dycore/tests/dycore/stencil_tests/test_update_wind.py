@@ -27,6 +27,7 @@ class TestUpdateWind(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         w_now: np.ndarray,
         grf_tend_w: np.ndarray,
         dtime: float,

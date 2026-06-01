@@ -32,8 +32,8 @@ def enhance_diffusion_coefficient_for_grid_point_cold_pools(
     vertical_end: gtx.int32,
 ) -> None:
     _enhance_diffusion_coefficient_for_grid_point_cold_pools(
-        kh_smag_e,
-        enh_diffu_3d,
+        kh_smag_e=kh_smag_e,
+        enh_diffu_3d=enh_diffu_3d,
         out=kh_smag_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

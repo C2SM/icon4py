@@ -12,6 +12,7 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
+pyrightconfig.json
 
 ### Sphinx ###
 **/docs/_source/*.rst
@@ -137,3 +138,4 @@ venv.bak/
 
 ### Others ###
 .obsidian
+pyrightconfig.json

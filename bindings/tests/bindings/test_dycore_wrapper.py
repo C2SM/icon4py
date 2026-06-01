@@ -16,7 +16,7 @@ import pytest
 
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import constants, dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -37,28 +37,9 @@ def solve_nh_init(
     grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
+    experiment,
 ):
-    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
-    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    rayleigh_type = constants.RayleighType.KLEMP
-    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    divdamp_type = 3
-    l_vert_nested = False
-    ldeepatmo = False
-    iau_init = False
-    extra_diffu = True
-    rhotheta_offctr = -0.1
-    veladv_offctr = 0.25
-    max_nudging_coefficient = 0.375
-    divdamp_fac = 0.004
-    divdamp_fac2 = 0.004
-    divdamp_fac3 = 0.004
-    divdamp_fac4 = 0.004
-    divdamp_z = 32500.0
-    divdamp_z2 = 40000.0
-    divdamp_z3 = 60000.0
-    divdamp_z4 = 80000.0
+    cfg = experiment.config.nonhydrostatic
 
     # vertical grid params
     nflat_gradp = gtx.int32(
@@ -212,27 +193,27 @@ def solve_nh_init(
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=coeff_gradekin,
         c_owner_mask=c_owner_mask,
-        itime_scheme=itime_scheme,
-        iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method,
-        rayleigh_type=rayleigh_type,
-        divdamp_order=divdamp_order,
-        divdamp_type=divdamp_type,
-        l_vert_nested=l_vert_nested,
-        ldeepatmo=ldeepatmo,
-        iau_init=iau_init,
-        extra_diffu=extra_diffu,
-        rhotheta_offctr=rhotheta_offctr,
-        veladv_offctr=veladv_offctr,
-        nudge_max_coeff=max_nudging_coefficient,
-        divdamp_fac=divdamp_fac,
-        divdamp_fac2=divdamp_fac2,
-        divdamp_fac3=divdamp_fac3,
-        divdamp_fac4=divdamp_fac4,
-        divdamp_z=divdamp_z,
-        divdamp_z2=divdamp_z2,
-        divdamp_z3=divdamp_z3,
-        divdamp_z4=divdamp_z4,
+        itime_scheme=cfg.itime_scheme,
+        iadv_rhotheta=cfg.iadv_rhotheta,
+        igradp_method=cfg.igradp_method,
+        rayleigh_type=cfg.rayleigh_type,
+        divdamp_order=cfg.divdamp_order,
+        divdamp_type=cfg.divdamp_type,
+        l_vert_nested=cfg.l_vert_nested,
+        ldeepatmo=cfg.deepatmos_mode,
+        iau_init=cfg.iau_init,
+        extra_diffu=cfg.extra_diffu,
+        rhotheta_offctr=cfg.rhotheta_offctr,
+        veladv_offctr=cfg.veladv_offctr,
+        nudge_max_coeff=cfg.max_nudging_coefficient,
+        divdamp_fac=cfg.fourth_order_divdamp_factor,
+        divdamp_fac2=cfg.fourth_order_divdamp_factor2,
+        divdamp_fac3=cfg.fourth_order_divdamp_factor3,
+        divdamp_fac4=cfg.fourth_order_divdamp_factor4,
+        divdamp_z=cfg.fourth_order_divdamp_z,
+        divdamp_z2=cfg.fourth_order_divdamp_z2,
+        divdamp_z3=cfg.fourth_order_divdamp_z3,
+        divdamp_z4=cfg.fourth_order_divdamp_z4,
         nflat_gradp=nflat_gradp,
         backend=wrapper_common.BackendIntEnum.GTFN,
     )
@@ -243,7 +224,7 @@ def solve_nh_init(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -253,8 +234,7 @@ def solve_nh_init(
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-@pytest.mark.parametrize("ndyn_substeps", (2,))
-def test_dycore_wrapper_granule_inputs(
+def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     istep_init,
     istep_exit,
@@ -263,7 +243,6 @@ def test_dycore_wrapper_granule_inputs(
     step_date_init,
     step_date_exit,
     experiment,
-    ndyn_substeps,
     savepoint_nonhydro_init,
     grid_savepoint,
     metrics_savepoint,
@@ -280,28 +259,8 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Granule input parameters for dycore init
 
-    # non hydrostatic config parameters
-    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
-    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    rayleigh_type = constants.RayleighType.KLEMP
-    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    divdamp_type = 3
-    l_vert_nested = False
-    ldeepatmo = False
-    iau_init = False
-    extra_diffu = True
-    rhotheta_offctr = -0.1
-    veladv_offctr = 0.25
-    max_nudging_coefficient = 0.375
-    divdamp_fac = 0.004
-    divdamp_fac2 = 0.004
-    divdamp_fac3 = 0.004
-    divdamp_fac4 = 0.004
-    divdamp_z = 32500.0
-    divdamp_z2 = 40000.0
-    divdamp_z3 = 60000.0
-    divdamp_z4 = 80000.0
+    cfg = experiment.config.nonhydrostatic
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # vertical grid params
     nflat_gradp = gtx.int32(
@@ -518,7 +477,7 @@ def test_dycore_wrapper_granule_inputs(
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
-    expected_config = definitions.construct_nonhydrostatic_config(experiment)
+    expected_config = experiment.config.nonhydrostatic
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
@@ -639,27 +598,27 @@ def test_dycore_wrapper_granule_inputs(
             coeff2_dwdz=coeff2_dwdz,
             coeff_gradekin=coeff_gradekin,
             c_owner_mask=c_owner_mask,
-            itime_scheme=itime_scheme,
-            iadv_rhotheta=iadv_rhotheta,
-            igradp_method=igradp_method,
-            rayleigh_type=rayleigh_type,
-            divdamp_order=divdamp_order,
-            divdamp_type=divdamp_type,
-            l_vert_nested=l_vert_nested,
-            ldeepatmo=ldeepatmo,
-            iau_init=iau_init,
-            extra_diffu=extra_diffu,
-            rhotheta_offctr=rhotheta_offctr,
-            veladv_offctr=veladv_offctr,
-            nudge_max_coeff=max_nudging_coefficient,
-            divdamp_fac=divdamp_fac,
-            divdamp_fac2=divdamp_fac2,
-            divdamp_fac3=divdamp_fac3,
-            divdamp_fac4=divdamp_fac4,
-            divdamp_z=divdamp_z,
-            divdamp_z2=divdamp_z2,
-            divdamp_z3=divdamp_z3,
-            divdamp_z4=divdamp_z4,
+            itime_scheme=cfg.itime_scheme,
+            iadv_rhotheta=cfg.iadv_rhotheta,
+            igradp_method=cfg.igradp_method,
+            rayleigh_type=cfg.rayleigh_type,
+            divdamp_order=cfg.divdamp_order,
+            divdamp_type=cfg.divdamp_type,
+            l_vert_nested=cfg.l_vert_nested,
+            ldeepatmo=cfg.deepatmos_mode,
+            iau_init=cfg.iau_init,
+            extra_diffu=cfg.extra_diffu,
+            rhotheta_offctr=cfg.rhotheta_offctr,
+            veladv_offctr=cfg.veladv_offctr,
+            nudge_max_coeff=cfg.max_nudging_coefficient,
+            divdamp_fac=cfg.fourth_order_divdamp_factor,
+            divdamp_fac2=cfg.fourth_order_divdamp_factor2,
+            divdamp_fac3=cfg.fourth_order_divdamp_factor3,
+            divdamp_fac4=cfg.fourth_order_divdamp_factor4,
+            divdamp_z=cfg.fourth_order_divdamp_z,
+            divdamp_z2=cfg.fourth_order_divdamp_z2,
+            divdamp_z3=cfg.fourth_order_divdamp_z3,
+            divdamp_z4=cfg.fourth_order_divdamp_z4,
             nflat_gradp=nflat_gradp,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
@@ -814,7 +773,7 @@ def test_dycore_wrapper_granule_inputs(
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "experiment_description,step_date_init, step_date_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -823,7 +782,7 @@ def test_dycore_wrapper_granule_inputs(
         ),
     ],
 )
-def test_granule_solve_nonhydro_single_step_regional(
+def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     istep_init,
@@ -833,7 +792,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     step_date_init,
     step_date_exit,
     experiment,
-    ndyn_substeps,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_final,
@@ -843,6 +801,8 @@ def test_granule_solve_nonhydro_single_step_regional(
     backend,
 ):
     caplog.set_level(logging.DEBUG)
+
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # savepoints
     sp = savepoint_nonhydro_init
@@ -998,7 +958,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
@@ -1007,7 +967,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_granule_solve_nonhydro_multi_step_regional(
+def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     step_date_init,
@@ -1020,11 +980,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_final,
     experiment,
-    ndyn_substeps,
     vn_only,  # TODO(): we don't use that value?
     at_initial_timestep,
     backend,
 ):
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
+
     # savepoints
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final

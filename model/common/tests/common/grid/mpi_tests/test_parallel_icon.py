@@ -27,6 +27,7 @@ from ...fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     process_props,
@@ -47,8 +48,8 @@ _log = logging.getLogger(__name__)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_props(process_props: decomp_defs.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
-    import ghex.context as ghex  # type: ignore[import-not-found]
-    from mpi4py import MPI
+    import ghex.context as ghex  # type: ignore[import-not-found]  # noqa: PLC0415 [import-outside-top-level]
+    from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
     assert process_props.comm
 
@@ -75,7 +76,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
@@ -145,13 +146,13 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         test_defs.Experiments.MCH_CH_R04B09,
     ],
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
-def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
+def test_start_index_end_index_halo_zones_on_distributed_lam_grid(  # noqa: PLR0917 [too-many-positional-arguments]
     process_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,

@@ -53,6 +53,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
 
 
 def compute_btraj_numpy(
+    *,
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
@@ -72,10 +73,10 @@ def compute_btraj_numpy(
     primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
-    z_ntdistv_bary_1 = -(
+    z_ntdistv_bary_1 = np.negative(
         p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
-    z_ntdistv_bary_2 = -(
+    z_ntdistv_bary_2 = np.negative(
         p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 
@@ -95,6 +96,7 @@ def compute_btraj_numpy(
 
 
 def sten_16_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     p_vn: np.ndarray,
     rho_ref_me: np.ndarray,
@@ -145,6 +147,7 @@ def sten_16_numpy(
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     p_vn: np.ndarray,
     p_vt: np.ndarray,
@@ -168,38 +171,38 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
         z_grad_rth_3,
         z_grad_rth_4,
     ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-        connectivities,
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
-        geofac_grg_x,
-        geofac_grg_y,
+        connectivities=connectivities,
+        p_ccpr1=perturbed_rho_at_cells_on_model_levels,
+        p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
     )
 
     p_distv_bary_1, p_distv_bary_2 = compute_btraj_numpy(
-        p_vn,
-        p_vt,
-        pos_on_tplane_e_1,
-        pos_on_tplane_e_2,
-        primal_normal_cell_1,
-        dual_normal_cell_1,
-        primal_normal_cell_2,
-        dual_normal_cell_2,
-        p_dthalf,
+        p_vn=p_vn,
+        p_vt=p_vt,
+        pos_on_tplane_e_1=pos_on_tplane_e_1,
+        pos_on_tplane_e_2=pos_on_tplane_e_2,
+        primal_normal_cell_1=primal_normal_cell_1,
+        dual_normal_cell_1=dual_normal_cell_1,
+        primal_normal_cell_2=primal_normal_cell_2,
+        dual_normal_cell_2=dual_normal_cell_2,
+        p_dthalf=p_dthalf,
     )
 
     z_rho_e, z_theta_v_e = sten_16_numpy(
-        connectivities,
-        p_vn,
-        rho_ref_me,
-        theta_ref_me,
-        p_distv_bary_1,
-        p_distv_bary_2,
-        z_grad_rth_1,
-        z_grad_rth_2,
-        z_grad_rth_3,
-        z_grad_rth_4,
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
+        connectivities=connectivities,
+        p_vn=p_vn,
+        rho_ref_me=rho_ref_me,
+        theta_ref_me=theta_ref_me,
+        p_distv_bary_1=p_distv_bary_1,
+        p_distv_bary_2=p_distv_bary_2,
+        z_grad_rth_1=z_grad_rth_1,
+        z_grad_rth_2=z_grad_rth_2,
+        z_grad_rth_3=z_grad_rth_3,
+        z_grad_rth_4=z_grad_rth_4,
+        z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
+        z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
     )
 
     return (z_rho_e, z_theta_v_e)
@@ -214,6 +217,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
@@ -232,22 +236,22 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
-            connectivities,
-            p_vn,
-            p_vt,
-            pos_on_tplane_e_1,
-            pos_on_tplane_e_2,
-            primal_normal_cell_1,
-            dual_normal_cell_1,
-            primal_normal_cell_2,
-            dual_normal_cell_2,
-            p_dthalf,
-            rho_ref_me,
-            theta_ref_me,
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-            geofac_grg_x,
-            geofac_grg_y,
+            connectivities=connectivities,
+            p_vn=p_vn,
+            p_vt=p_vt,
+            pos_on_tplane_e_1=pos_on_tplane_e_1,
+            pos_on_tplane_e_2=pos_on_tplane_e_2,
+            primal_normal_cell_1=primal_normal_cell_1,
+            dual_normal_cell_1=dual_normal_cell_1,
+            primal_normal_cell_2=primal_normal_cell_2,
+            dual_normal_cell_2=dual_normal_cell_2,
+            p_dthalf=p_dthalf,
+            rho_ref_me=rho_ref_me,
+            theta_ref_me=theta_ref_me,
+            perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
         )
         return dict(out=(z_rho_e, z_theta_v_e))
 
