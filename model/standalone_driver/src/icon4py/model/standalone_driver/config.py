@@ -83,7 +83,7 @@ class DriverConfig:
 
 @dataclasses.dataclass
 class ExperimentConfig:
-    #NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
+    # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
     file_path: pathlib.Path
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
@@ -99,13 +99,12 @@ def read_config(
     config_file_path: pathlib.Path,
     enable_profiling: bool = False,
 ) -> ExperimentConfig:
-    #NOTE: This has a duplicate in testing/datatest_utils.py to avoid circular imports.
+    # NOTE: This has a duplicate in testing/datatest_utils.py to avoid circular imports.
 
     with (config_file_path / fortran_config.ATM_DICT_FNAME).open() as f:
         atm_dict = json.load(f)
     with (config_file_path / fortran_config.MASTER_DICT_FNAME).open() as f:
         master_dict = json.load(f)
-
 
     metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 

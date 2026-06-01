@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import functools
 import json
 import pathlib
 import urllib.parse
@@ -109,7 +108,7 @@ def get_datapath_for_experiment(
         experiment_description,
         process_props,
     )
-    return experiment_path / definitions.SERIALIZED_DATA_SUBDIR
+    return experiment_path.joinpath(definitions.SERIALIZED_DATA_SUBDIR)
 
 
 def create_icon_serial_data_provider(
@@ -144,7 +143,7 @@ def create_experiment_configuration(
     experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> definitions.ExperimentConfig:
-    #NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
+    # NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
 
     experiment_path = get_path_for_experiment(
         experiment_description,
@@ -173,7 +172,6 @@ def create_experiment_configuration(
         atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
-
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
