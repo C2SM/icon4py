@@ -107,7 +107,7 @@ class SingleMomentSixClassIconGraupelConfig:
                 snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
                 **overrides,
             )
-        return cls(**overrides)
+        return None  # Throw an error if trying to acces this
 
 
 @dataclasses.dataclass
