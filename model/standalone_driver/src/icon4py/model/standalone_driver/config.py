@@ -19,8 +19,10 @@ from gt4py.next.instrumentation import metrics as gtx_metrics
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+    single_moment_six_class_gscp_graupel as graupel,
+)
 from icon4py.model.common import type_alias as ta
-from icon4py.model.common.decomposition import mpi_decomposition as mpi_decomp
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
@@ -79,54 +81,70 @@ class DriverConfig:
         )
 
 
+@dataclasses.dataclass
+class ExperimentConfig:
+    #NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
+    file_path: pathlib.Path
+    metrics: metrics_factory.MetricsConfig
+    interpolation: interpolation_factory.InterpolationConfig
+    vertical_grid: v_grid.VerticalGridConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig
+    diffusion: diffusion.DiffusionConfig
+    advection: advection.AdvectionConfig
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig
+    driver: DriverConfig
+
+
 def read_config(
     config_file_path: pathlib.Path,
     enable_profiling: bool = False,
-) -> tuple[
-    DriverConfig,
-    v_grid.VerticalGridConfig,
-    diffusion.DiffusionConfig,
-    advection.AdvectionConfig,
-    solve_nh.NonHydrostaticConfig,
-    interpolation_factory.InterpolationConfig,
-    metrics_factory.MetricsConfig,
-]:
+) -> ExperimentConfig:
+    #NOTE: This has a duplicate in testing/datatest_utils.py to avoid circular imports.
+
     with (config_file_path / fortran_config.ATM_DICT_FNAME).open() as f:
         atm_dict = json.load(f)
     with (config_file_path / fortran_config.MASTER_DICT_FNAME).open() as f:
         master_dict = json.load(f)
 
-    profiling_stats = ProfilingStats() if enable_profiling else None
-
-    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
     metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 
-    driver_cfg = DriverConfig.from_fortran_dict(
-        atm_dict,
-        master_dict,
-        experiment_name="standalone",
-        profiling_stats=profiling_stats,
-    )
+    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
+
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
-    diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
-        atm_dict,
-        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
-    )
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    return (
-        driver_cfg,
-        vertical_grid_config,
-        diffusion_config,
-        advection_config,
-        nonhydro_config,
-        interpolation_config,
-        metrics_config,
+    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+
+    diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
+        atm_dict,
+        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
+    )
+
+    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+
+    profiling_stats = ProfilingStats() if enable_profiling else None
+    driver_cfg = DriverConfig.from_fortran_dict(
+        atm_dict,
+        master_dict,
+        experiment_name="ICON4Py experiment",
+        profiling_stats=profiling_stats,
+    )
+
+    return ExperimentConfig(
+        file_path=config_file_path,
+        metrics=metrics_config,
+        interpolation=interpolation_config,
+        vertical_grid=vertical_grid_config,
+        nonhydrostatic=nonhydro_config,
+        diffusion=diffusion_config,
+        advection=advection_config,
+        graupel=graupel_config,
+        driver=driver_cfg,
     )
 
 

@@ -540,29 +540,21 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-    (
-        icon4py_driver_config,
-        vertical_grid_config,
-        diffusion_config,
-        advection_config,
-        solve_nh_config,
-        interpolation_config,
-        metrics_config,
-    ) = driver_config.read_config(
+    config = driver_config.read_config(
         config_file_path=config_file_path,
         enable_profiling=False,
     )
 
     # Override output_path from config default with the time- (and possibly MPI-) adjusted one
     output_path = driver_config.prepare_output_directory(
-        icon4py_driver_config.output_path, process_props
+        config.driver.output_path, process_props
     )
-    icon4py_driver_config = dataclasses.replace(icon4py_driver_config, output_path=output_path)
+    config.driver = dataclasses.replace(config.driver, output_path=output_path)
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=vertical_grid_config,
+        vertical_grid_config=config.vertical_grid,
         allocator=allocator,
         process_props=process_props,
     )
@@ -574,7 +566,7 @@ def initialize_driver(
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
-        vertical_grid_config=vertical_grid_config,
+        vertical_grid_config=config.vertical_grid,
         allocator=allocator,
     )
 
@@ -593,8 +585,8 @@ def initialize_driver(
         backend=backend,
         exchange=exchange,
         global_reductions=global_reductions,
-        interpolation_config=interpolation_config,
-        metrics_config=metrics_config,
+        interpolation_config=config.interpolation,
+        metrics_config=config.metrics,
     )
 
     log.info("initializing granules")
@@ -605,9 +597,9 @@ def initialize_driver(
     ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
-        diffusion_config=diffusion_config,
-        solve_nh_config=solve_nh_config,
-        advection_config=advection_config,
+        diffusion_config=config.diffusion,
+        solve_nh_config=config.nonhydrostatic,
+        advection_config=config.advection,
         static_field_factories=static_field_factories,
         exchange=exchange,
         owner_mask=gtx.as_field(
@@ -618,14 +610,14 @@ def initialize_driver(
         backend=backend,
     )
     icon4py_driver = Icon4pyDriver(
-        config=icon4py_driver_config,
+        config=config.driver,
         backend=backend,
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
-        vertical_grid_config=vertical_grid_config,
+        vertical_grid_config=config.vertical_grid,
         tracer_advection_granule=tracer_advection_granule,
         exchange=exchange,
         global_reductions=global_reductions,

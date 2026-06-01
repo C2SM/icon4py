@@ -172,15 +172,16 @@ class ExperimentDescription:
 
 @dataclasses.dataclass
 class ExperimentConfig:
-    driver: driver_config.DriverConfig
+    #NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
+    file_path: pathlib.Path
+    metrics: metrics_factory.MetricsConfig
+    interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
     advection: advection.AdvectionConfig
-    metrics: metrics_factory.MetricsConfig
-    interpolation: interpolation_factory.InterpolationConfig
     graupel: graupel.SingleMomentSixClassIconGraupelConfig
-    file_path: pathlib.Path = pathlib.Path()
+    driver: driver_config.DriverConfig
 
 
 @dataclasses.dataclass

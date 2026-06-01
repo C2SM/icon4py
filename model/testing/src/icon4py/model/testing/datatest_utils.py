@@ -144,20 +144,7 @@ def create_experiment_configuration(
     experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> definitions.ExperimentConfig:
-    """
-    Create configuration objects from the experiment's namelist JSON files.
-
-    This function reads the NAMELIST_ICON_output_atm.json and icon_master.namelist.json
-    files that come with the serialized experiment data and constructs configuration
-    objects using from_fortran_dict classmethods.
-
-    Args:
-        experiment_description: The experiment definition
-        processor_props: Processor properties containing comm_size
-
-    Returns:
-        ExperimentConfig object containing the configuration for the experiment
-    """
+    #NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
 
     experiment_path = get_path_for_experiment(
         experiment_description,
@@ -169,9 +156,26 @@ def create_experiment_configuration(
     with (experiment_path / fortran_config.MASTER_DICT_FNAME).open() as f:
         master_dict = json.load(f)
 
+    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
+
     interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
-    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
+    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
+
+    nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
+        atm_dict,
+        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
+    )
+
+    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+
+    diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
+        atm_dict,
+        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
+    )
+
+
+    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict,
@@ -181,30 +185,14 @@ def create_experiment_configuration(
         enable_statistics_output=False,
     )
 
-    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
-
-    nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
-        atm_dict,
-        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
-    )
-
-    diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
-        atm_dict,
-        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
-    )
-
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
-
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
-
     return definitions.ExperimentConfig(
-        driver=driver_cfg,
+        file_path=experiment_path,
+        metrics=metrics_config,
+        interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
         advection=advection_config,
-        metrics=metrics_config,
-        interpolation=interpolation_config,
         graupel=graupel_config,
-        file_path=config_path,
+        driver=driver_cfg,
     )
