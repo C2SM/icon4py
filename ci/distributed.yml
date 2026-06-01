@@ -68,6 +68,7 @@ build_distributed:
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PYTEST_ADDOPTS: "--durations=0"
+    ICON4PY_TEST_MPI_SUBCOMM_SIZE: "4"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
@@ -91,13 +92,11 @@ build_distributed:
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --mpi-subcomm-size=4 --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
-      - COMPONENT: [common]
-      #   BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        BACKEND: [embedded, dace_cpu, dace_gpu]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
+        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'

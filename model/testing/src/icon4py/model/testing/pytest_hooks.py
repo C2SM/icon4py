@@ -66,6 +66,10 @@ def pytest_configure(config):
         init_mpi()
 
     subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
+    if subcomm_size is None:
+        env_val = os.environ.get("ICON4PY_TEST_MPI_SUBCOMM_SIZE")
+        if env_val is not None:
+            subcomm_size = int(env_val)
     if subcomm_size is not None:
         from mpi4py import MPI
 
