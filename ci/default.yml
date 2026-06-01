@@ -48,15 +48,13 @@ build_mpi_baseimage_aarch64:
   stage: image
   variables:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION-mpi
 
 build_mpi_image_aarch64:
   stage: image
   extends: [.container-builder-cscs-gh200, .build_mpi_image]
   needs: [build_mpi_baseimage_aarch64]
-  variables:
-    UV_PROJECT_ENVIRONMENT: venv_dist
 
 # Generate child pipelines dynamically based on selection of COMPONENTS,
 # BACKENDS, etc. using scripts/python/generate_ci_pipeline.py. Only test jobs

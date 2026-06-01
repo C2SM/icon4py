@@ -139,15 +139,14 @@ variables:
 
 .test_runner_mpi:
   extends: .test_runner_base
-  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION-mpi
   before_script:
     - cd /icon4py
-    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - source .venv/bin/activate
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   variables:
     SLURM_NTASKS: 4
-    UV_PROJECT_ENVIRONMENT: .venv
 
 .test_stencils_aarch64:
   stage: test
