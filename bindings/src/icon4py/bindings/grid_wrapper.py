@@ -177,12 +177,12 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     if comm_id is not None:
         wrapper_debug_utils.print_grid_decomp_info(
-            grid,
-            process_props,
-            decomposition_info,
-            num_cells,
-            num_edges,
-            num_vertices,
+            icon_grid=grid,
+            process_props=process_props,
+            decomposition_info=decomposition_info,
+            num_cells=num_cells,
+            num_edges=num_edges,
+            num_verts=num_vertices,
         )
 
     # Vertical grid config
