@@ -102,6 +102,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         # edge indices
         edge_domain = h_grid.domain(dims.EdgeDim)
+
         self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
@@ -362,7 +363,11 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx.typing.Backend | None):
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        backend: gtx.typing.Backend | None,
+    ):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -408,7 +413,6 @@ class NoAdvection(HorizontalAdvection):
             field_out=p_tracer_new,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
-
         log.debug("horizontal advection run - end")
 
 
@@ -443,7 +447,6 @@ class FiniteVolume(HorizontalAdvection):
             p_mflx_tracer_h=p_mflx_tracer_h,
             dtime=dtime,
         )
-
         log.debug("horizontal advection run - end")
 
     @abstractmethod
@@ -480,7 +483,6 @@ class SemiLagrangian(FiniteVolume):
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime,
     ):
         log.debug("horizontal advection class init - start")
 
@@ -492,7 +494,6 @@ class SemiLagrangian(FiniteVolume):
         self._edge_params = edge_params
         self._cell_params = cell_params
         self._backend = backend
-        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
