@@ -76,7 +76,7 @@ def pytest_configure(config):
         if env_val is not None:
             subcomm_size = int(env_val)
     if subcomm_size is not None:
-        from mpi4py import MPI
+        from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
         if not MPI.Is_initialized():
             raise pytest.UsageError(
@@ -304,7 +304,7 @@ class MPISubcommScheduler:
     """Splits MPI_COMM_WORLD into subcommunicators for parallel test execution."""
 
     def __init__(self, subcomm_size: int):
-        from mpi4py import MPI
+        from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
         if subcomm_size <= 0:
             raise ValueError("--mpi-subcomm-size must be a positive integer")
@@ -325,7 +325,9 @@ class MPISubcommScheduler:
         self.group_id = self.world_rank // self.subcomm_size
         self.subcomm = self.world.Split(self.group_id, self.world_rank)
 
-        from icon4py.model.common.decomposition import mpi_decomposition
+        from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+            mpi_decomposition,
+        )
 
         self._original_get_props = mpi_decomposition._get_process_properties
 
@@ -371,7 +373,9 @@ class MPISubcommScheduler:
             if self.subcomm is not None and self.subcomm != self.world:
                 self.subcomm.Free()
         finally:
-            from icon4py.model.common.decomposition import mpi_decomposition
+            from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+                mpi_decomposition,
+            )
 
             mpi_decomposition._get_process_properties = self._original_get_props
 
