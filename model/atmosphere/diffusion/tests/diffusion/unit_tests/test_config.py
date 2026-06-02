@@ -39,8 +39,6 @@ def test_diffusion_experiment_config(
             "smagorinski_scaling_factor",
             "max_nudging_coefficient",
             "shear_type",
-            "thhgtd_zdiffu",
-            "thslp_zdiffu",
             "velocity_boundary_diffusion_denominator",
             "ndyn_substeps",
         ),

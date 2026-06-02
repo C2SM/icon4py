@@ -13,8 +13,6 @@ nudging_decay_rate: 2.0
 shear_type: VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
 smagorinski_scaling_factor: 0.025
 temperature_boundary_diffusion_denominator: 135.0
-thhgtd_zdiffu: 125.0
-thslp_zdiffu: 0.02
 type_t_diffu: 2
 type_vn_diffu: 1
 velocity_boundary_diffusion_denominator: 150.0

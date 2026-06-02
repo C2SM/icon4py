@@ -14,8 +14,6 @@ diffusion:
   shear_type: VERTICAL_OF_HORIZONTAL_WIND
   smagorinski_scaling_factor: 0.015
   temperature_boundary_diffusion_denominator: 45.0
-  thhgtd_zdiffu: 200.0
-  thslp_zdiffu: 0.025
   type_t_diffu: 2
   type_vn_diffu: 1
   velocity_boundary_diffusion_denominator: 200.0
@@ -35,7 +33,7 @@ dycore:
   iadv_rhotheta: MIURA
   iau_wgt_dyn: 0.0
   igradp_method: TAYLOR_HYDRO
-  is_iau_active: false
+  iau_init: false
   itime_scheme: MOST_EFFICIENT
   max_nudging_coefficient: 0.1
   ndyn_substeps: 4
