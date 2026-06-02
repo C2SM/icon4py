@@ -92,7 +92,7 @@ class _DecoratedFunction:
 
     A function is exportable if it provides the attribute 'param_descriptors'.
 
-    See :func:`export` for details.
+    See ``export()`` for details.
     """
 
     _fun: Callable
@@ -146,7 +146,7 @@ def export(
 
     The standard mechanism for exporting a function is to decorate the function with
     '@py2fgen.export(param_descriptors=...)'. Where 'ParamDescriptors' is a dictionary
-    that provides a :class:`ParamDescriptor` for each parameter of the function.
+    that provides a ``ParamDescriptor`` for each parameter of the function.
 
     Additionally, the user can provide a hook to fill 'param_descriptors' from the parameters
     type annotations.
@@ -157,7 +157,7 @@ def export(
     Note: The mapping function (not the hook) is called at every invocation of the function,
     therefore it is recommended to use a cache for the mapping function.
 
-    A default mapping is provided, see :func:`_conversion.default_mapping`.
+    A default mapping is provided, see ``_conversion.default_mapping()``.
     """
 
     # precise typing is impossible since we are manipulating the args (e.g. ArrayInfo to the Python runtime objects)
