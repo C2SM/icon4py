@@ -195,7 +195,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_c",
-        dtype=ta.wpfloat,
+        dtype=ta.float64,
     ),
     RBF_SCALE_EDGE: dict(
         standard_name=RBF_SCALE_EDGE,
@@ -203,7 +203,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_e",
-        dtype=ta.wpfloat,
+        dtype=ta.float64,
     ),
     RBF_SCALE_VERTEX: dict(
         standard_name=RBF_SCALE_VERTEX,
@@ -211,7 +211,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_v",
-        dtype=ta.wpfloat,
+        dtype=ta.float64,
     ),
     LSQ_PSEUDOINV: dict(
         standard_name=LSQ_PSEUDOINV,
