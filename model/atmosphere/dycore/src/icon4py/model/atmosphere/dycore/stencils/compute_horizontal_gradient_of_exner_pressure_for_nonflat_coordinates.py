@@ -44,11 +44,11 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-        inv_dual_edge_length,
-        z_exner_ex_pr,
-        ddxn_z_full,
-        c_lin_e,
-        z_dexner_dz_c_1,
+        inv_dual_edge_length=inv_dual_edge_length,
+        z_exner_ex_pr=z_exner_ex_pr,
+        ddxn_z_full=ddxn_z_full,
+        c_lin_e=c_lin_e,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
         out=z_gradh_exner,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

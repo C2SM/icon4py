@@ -156,7 +156,7 @@ def test_time_step_flags(
         ),
     ],
 )
-def test_nonhydro_predictor_step(
+def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     istep_exit,
     substep_init,
@@ -478,13 +478,12 @@ def test_nonhydro_predictor_step(
         ),
     ],
 )
-def test_nonhydro_corrector_step(
+def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -669,13 +668,12 @@ def test_nonhydro_corrector_step(
         ),
     ],
 )
-def test_run_solve_nonhydro_single_step(
+def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     step_date_init,
     step_date_exit,
     experiment,
@@ -794,7 +792,7 @@ def test_run_solve_nonhydro_single_step(
         (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", False),
     ],
 )
-def test_run_solve_nonhydro_multi_step(
+def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     istep_init,
     substep_init,
@@ -803,7 +801,6 @@ def test_run_solve_nonhydro_multi_step(
     substep_exit,
     step_date_exit,
     at_initial_timestep,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
     is_iau_active,
@@ -984,12 +981,11 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
         ),
     ],
 )
-def test_compute_perturbed_quantities_and_interpolation(
+def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     grid_savepoint,
     metrics_savepoint,
@@ -1190,14 +1186,13 @@ def test_compute_perturbed_quantities_and_interpolation(
         ),
     ],
 )
-def test_compute_interpolation_and_nonhydro_buoy(
+def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     istep_init,
     istep_exit,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     grid_savepoint,
     metrics_savepoint,
@@ -1327,11 +1322,10 @@ def test_compute_interpolation_and_nonhydro_buoy(
         ),
     ],
 )
-def test_compute_rho_theta_pgrad_and_update_vn(
+def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
     is_iau_active,
@@ -1524,7 +1518,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
         ),
     ],
 )
-def test_apply_divergence_damping_and_update_vn(
+def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
@@ -1532,7 +1526,6 @@ def test_apply_divergence_damping_and_update_vn(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
     is_iau_active,
@@ -1673,7 +1666,7 @@ def test_apply_divergence_damping_and_update_vn(
         ),
     ],
 )
-def test_compute_horizontal_velocity_quantities_and_fluxes(
+def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
     step_date_init,
     step_date_exit,
     experiment,
@@ -1836,7 +1829,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         ),
     ],
 )
-def test_compute_averaged_vn_and_fluxes(
+def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     istep_exit,
     step_date_init,
@@ -1948,13 +1941,12 @@ def test_compute_averaged_vn_and_fluxes(
         ),
     ],
 )
-def test_vertically_implicit_solver_at_predictor_step(
+def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     substep_init,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
     is_iau_active,
@@ -2136,7 +2128,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         ),
     ],
 )
-def test_vertically_implicit_solver_at_corrector_step(
+def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
@@ -2145,7 +2137,6 @@ def test_vertically_implicit_solver_at_corrector_step(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
     is_iau_active,

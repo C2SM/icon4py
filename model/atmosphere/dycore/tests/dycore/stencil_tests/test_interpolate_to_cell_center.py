@@ -44,6 +44,7 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         interpolant: np.ndarray,
         e_bln_c_s: np.ndarray,
         **kwargs: Any,

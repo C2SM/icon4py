@@ -30,7 +30,8 @@ if TYPE_CHECKING:
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
-NAMELIST_ICON_FNAME: Final = "NAMELIST_ICON_output_atm"
+NAMELIST_ATM_FNAME: Final = "NAMELIST_ICON_output_atm"
+NAMELIST_MASTER_FNAME: Final = "icon_master.namelist"
 GRID_DATA_DIR: Final = "grids"
 EXPERIMENT_DATA_DIR: Final = "experiments"
 MUPHYS_DATA_DIR: Final = "muphys"
@@ -167,7 +168,7 @@ class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 3
+    version: int = 4
 
 
 @dataclasses.dataclass

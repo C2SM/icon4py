@@ -137,7 +137,7 @@ class IntermediateFields:
 
 
 class NonHydrostaticParams:
-    """Calculates derived quantities depending on the NonHydrostaticdycore_config."""
+    """Calculates derived quantities depending on the NonHydrostaticConfig."""
 
     def __init__(self, config: dycore_config.NonHydrostaticConfig):
         #: Weighting coefficients for velocity advection if tendency averaging is used
@@ -170,6 +170,7 @@ class NonHydrostaticParams:
 class SolveNonhydro:
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: dycore_config.NonHydrostaticConfig,
         params: NonHydrostaticParams,
@@ -594,12 +595,12 @@ class SolveNonhydro:
         )
 
         self.velocity_advection = VelocityAdvection(
-            grid,
-            metric_state_nonhydro,
-            interpolation_state,
-            vertical_params,
-            edge_geometry,
-            owner_mask,
+            grid=grid,
+            metric_state=metric_state_nonhydro,
+            interpolation_state=interpolation_state,
+            vertical_params=vertical_params,
+            edge_params=edge_geometry,
+            owner_mask=owner_mask,
             backend=backend,
         )
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -807,6 +808,7 @@ class SolveNonhydro:
 
     def time_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
@@ -890,6 +892,7 @@ class SolveNonhydro:
 
     def run_predictor_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
@@ -1065,6 +1068,7 @@ class SolveNonhydro:
 
     def run_corrector_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,

@@ -66,13 +66,13 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     vertical_end: gtx.int32,
 ) -> None:
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-        zd_vertoffset,
-        zd_diffcoef,
-        geofac_n2s_c,
-        geofac_n2s_nbh,
-        vcoef,
-        theta_v,
-        z_temp,
+        zd_vertoffset=zd_vertoffset,
+        zd_diffcoef=zd_diffcoef,
+        geofac_n2s_c=geofac_n2s_c,
+        geofac_n2s_nbh=geofac_n2s_nbh,
+        vcoef=vcoef,
+        theta_v=theta_v,
+        z_temp=z_temp,
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

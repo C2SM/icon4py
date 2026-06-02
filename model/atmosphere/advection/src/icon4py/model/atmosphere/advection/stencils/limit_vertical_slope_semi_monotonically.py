@@ -39,10 +39,10 @@ def limit_vertical_slope_semi_monotonically(
     vertical_end: gtx.int32,
 ) -> None:
     _limit_vertical_slope_semi_monotonically(
-        p_cc,
-        z_slope,
-        k,
-        elev,
+        p_cc=p_cc,
+        z_slope=z_slope,
+        k=k,
+        elev=elev,
         out=z_slope,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

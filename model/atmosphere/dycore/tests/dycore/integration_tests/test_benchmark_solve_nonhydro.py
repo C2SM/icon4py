@@ -221,7 +221,7 @@ def solve_nonhydro(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_benchmark_solve_nonhydro(
+def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_manager: gm.GridManager,
     solve_nonhydro: solve_nh.SolveNonhydro,
     at_first_substep: bool,

@@ -116,6 +116,7 @@ class Diffusion:
 
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: diffusion_config.DiffusionConfig,
         params: DiffusionParams,

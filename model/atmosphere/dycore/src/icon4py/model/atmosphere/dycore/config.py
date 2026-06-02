@@ -13,7 +13,7 @@ from icon4py.model.common import constants
 from icon4py.model.common.config import config as common_config
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class NonHydrostaticConfig:
     """
     Contains necessary parameter to configure a nonhydro run.
