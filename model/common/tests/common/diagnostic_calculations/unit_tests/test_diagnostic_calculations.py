@@ -251,7 +251,7 @@ def test_diagnose_pressure(
 )
 @pytest.mark.parametrize("location", ["interface-nwp"])
 @pytest.mark.datatest
-def test_diagnostic_update_after_saturation_adjustement(
+def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-many-positional-arguments]
     location: str,
     date: str,
     experiment: definitions.Experiment,

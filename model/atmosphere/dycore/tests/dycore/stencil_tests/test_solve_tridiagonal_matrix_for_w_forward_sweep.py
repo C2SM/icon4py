@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
+    *,
     vwind_impl_wgt: np.ndarray,
     theta_v_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
@@ -64,6 +65,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -78,17 +80,17 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         **kwargs: Any,
     ) -> dict:
         z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-            vwind_impl_wgt,
-            theta_v_ic,
-            ddqz_z_half,
-            z_alpha,
-            z_beta,
-            z_exner_expl,
-            z_w_expl,
-            z_q,
-            w,
-            dtime,
-            cpd,
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_ic=theta_v_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_alpha=z_alpha,
+            z_beta=z_beta,
+            z_exner_expl=z_exner_expl,
+            z_w_expl=z_w_expl,
+            z_q_ref=z_q,
+            w_ref=w,
+            dtime=dtime,
+            cpd=cpd,
         )
         return dict(z_q=z_q_ref, w=w_ref)
 

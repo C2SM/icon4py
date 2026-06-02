@@ -48,14 +48,14 @@ def update_mass_flux_weighted(
     vertical_end: gtx.int32,
 ) -> None:
     _update_mass_flux_weighted(
-        rho_ic,
-        vwind_expl_wgt,
-        vwind_impl_wgt,
-        w_now,
-        w_new,
-        w_concorr_c,
-        mass_flx_ic,
-        r_nsubsteps,
+        rho_ic=rho_ic,
+        vwind_expl_wgt=vwind_expl_wgt,
+        vwind_impl_wgt=vwind_impl_wgt,
+        w_now=w_now,
+        w_new=w_new,
+        w_concorr_c=w_concorr_c,
+        mass_flx_ic=mass_flx_ic,
+        r_nsubsteps=r_nsubsteps,
         out=mass_flx_ic,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
