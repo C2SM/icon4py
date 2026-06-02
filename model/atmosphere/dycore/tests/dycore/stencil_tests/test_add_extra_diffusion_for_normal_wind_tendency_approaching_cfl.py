@@ -98,7 +98,6 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     return ddt_vn_apc
 
 
-@pytest.mark.embedded_remap_error
 class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl
     OUTPUTS = ("ddt_vn_apc",)
