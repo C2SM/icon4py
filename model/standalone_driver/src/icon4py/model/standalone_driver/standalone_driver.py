@@ -29,7 +29,6 @@ from icon4py.model.common.decomposition import (
 )
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
@@ -39,6 +38,7 @@ from icon4py.model.standalone_driver import (
     driver_states,
     driver_utils,
 )
+from icon4py.model.standalone_driver.testcases import topography
 
 
 log = logging.getLogger(__name__)
@@ -568,10 +568,10 @@ def initialize_driver(
         allocator=allocator,
     )
 
-    log.info("initializing the JW topography")
-    cell_topography = topography.jablonowski_williamson(
+    log.info("initializing the topography")
+    cell_topography = topography.create(
+        experiment_name=config.driver.experiment_name,
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
-        u0=35.0,
     )
 
     log.info("initializing the static-field factories")

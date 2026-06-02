@@ -73,7 +73,8 @@ def main(
     )
 
     log.info("Generating the initial condition")
-    ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+    ds: driver_states.DriverStates = initial_condition.create(
+        experiment_name=icon4py_driver.config.experiment_name,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
