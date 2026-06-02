@@ -169,6 +169,8 @@ def pytest_collection_modifyitems(config, items):
     scheduler = getattr(config, "_mpi_scheduler", None)
     if scheduler is not None:
         items[:] = scheduler.filter_items(items)
+        if not items:
+            pytest.exit("No tests assigned to this MPI subcomm group", returncode=0)
 
     test_level = config.getoption("--level")
     if test_level == "any":
