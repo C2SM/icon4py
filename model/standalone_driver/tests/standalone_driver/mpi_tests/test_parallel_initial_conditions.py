@@ -37,13 +37,13 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
+        test_defs.Experiments.GAUSS3D,
     ],
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
+def test_initial_conditions_compare_single_multi_rank(
     experiment: test_defs.Experiment,
-    tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
@@ -88,7 +88,8 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         )
     )
 
-    single_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+    single_rank_ds: driver_states.DriverStates = initial_condition.create(
+        experiment_name=experiment.description.name,
         grid=single_rank_icon4py_driver.grid,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
@@ -110,7 +111,8 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         )
     )
 
-    multi_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+    multi_rank_ds: driver_states.DriverStates = initial_condition.create(
+        experiment_name=experiment.description.name,
         grid=multi_rank_icon4py_driver.grid,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,

@@ -25,11 +25,10 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW, definitions.Experiments.GAUSS3D])
 @pytest.mark.datatest
-def test_standalone_driver_initial_condition(
+def test_initial_conditions(
     backend_like: model_backends.BackendLike,
-    tmp_path: pathlib.Path,
     experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
 ) -> None:
@@ -40,7 +39,8 @@ def test_standalone_driver_initial_condition(
         backend_like=backend_like,
     )
 
-    ds = initial_condition.jablonowski_williamson(
+    ds = initial_condition.create(
+        experiment_name=experiment.description.name,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
@@ -52,31 +52,33 @@ def test_standalone_driver_initial_condition(
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=icon4py_driver.exchange,
     )
-    jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
+    prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
     assert test_utils.dallclose(
         ds.prognostics.current.rho.asnumpy(),
-        jabw_exit_savepoint.rho().asnumpy(),
+        prognostics_savepoint.rho_now().asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.exner.asnumpy(),
+        prognostics_savepoint.exner_now().asnumpy(),
+        atol=1e-14,
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.theta_v.asnumpy(),
+        prognostics_savepoint.theta_v_now().asnumpy(),
+        atol=1e-11,
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
-        jabw_exit_savepoint.vn().asnumpy(),
+        prognostics_savepoint.vn_now().asnumpy(),
         atol=1e-12,
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.w.asnumpy(),
-        jabw_exit_savepoint.w().asnumpy(),
+        prognostics_savepoint.w_now().asnumpy(),
         atol=1e-12,
-    )
-
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), jabw_exit_savepoint.exner().asnumpy(), atol=1e-14
-    )
-
-    assert test_utils.dallclose(
-        ds.prognostics.current.theta_v.asnumpy(),
-        jabw_exit_savepoint.theta_v().asnumpy(),
-        atol=1e-11,
     )
