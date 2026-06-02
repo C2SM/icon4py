@@ -24,8 +24,8 @@ from icon4py.model.testing import config
 
 
 if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+    from icon4py.model.atmosphere.diffusion import config as diffusion_config
+    from icon4py.model.atmosphere.dycore import config as dycore_config
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
@@ -175,8 +175,8 @@ class ExperimentDescription:
 class ExperimentConfig:
     driver: driver_config.DriverConfig
     vertical_grid: v_grid.VerticalGridConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
+    nonhydrostatic: dycore_config.NonHydrostaticConfig
+    diffusion: diffusion_config.DiffusionConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     graupel: graupel.SingleMomentSixClassIconGraupelConfig

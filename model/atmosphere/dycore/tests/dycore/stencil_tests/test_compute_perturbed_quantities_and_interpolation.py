@@ -24,7 +24,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (
     compute_perturbed_quantities_and_interpolation,
 )
@@ -188,7 +188,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             np.zeros_like(temporal_extrapolation_of_perturbed_exner),
             temporal_extrapolation_of_perturbed_exner,
         )
-        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+        if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             exner_at_cells_on_half_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
@@ -300,7 +300,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             ),
             (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
         )
-        if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+        if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
@@ -405,7 +405,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+        igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
 
         cell_domain = h_grid.domain(dims.CellDim)
         start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))

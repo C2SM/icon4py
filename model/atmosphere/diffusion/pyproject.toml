@@ -30,7 +30,8 @@ dependencies = [
   "icon4py-common~=0.2.0rc2",
   # external dependencies
   "gt4py==1.1.10",
-  'packaging>=20.0'
+  'packaging>=20.0',
+  "numpy>=1.23.3"
 ]
 description = "ICON diffusion."
 license = {text = "BSD-3 License"}

@@ -30,17 +30,10 @@ from icon4py.bindings import (
     grid_wrapper,
     icon4py_export,
 )
-from icon4py.model.atmosphere.diffusion.diffusion import (
-    Diffusion,
-    DiffusionConfig,
-    DiffusionParams,
-    ForcingType,
-    TurbulenceShearForcingType,
-)
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion as diffusion_module,
+    diffusion_states,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -52,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class DiffusionGranule:
-    diffusion: Diffusion
+    diffusion: diffusion_module.Diffusion
     dummy_field_factory: Callable
 
 
@@ -116,12 +109,12 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters
-    config = DiffusionConfig(
+    config = diffusion_config.DiffusionConfig(
         diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
+        apply_to_vertical_wind=hdiff_w,
+        apply_to_horizontal_wind=hdiff_vn,
+        apply_zdiffusion_t=zdiffu_t,
         hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
         hdiff_efdt_ratio=hdiff_efdt_ratio,
@@ -134,17 +127,17 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_height2=smagorinski_scaling_height2,
         smagorinski_scaling_height3=smagorinski_scaling_height3,
         smagorinski_scaling_height4=smagorinski_scaling_height4,
-        hdiff_temp=hdiff_temp,
+        apply_to_temperature=hdiff_temp,
         n_substeps=ndyn_substeps,
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
-        shear_type=TurbulenceShearForcingType(itype_sher),
-        iforcing=ForcingType(iforcing),
+        shear_type=diffusion_config.TurbulenceShearForcingType(itype_sher),
+        iforcing=diffusion_config.ForcingType(iforcing),
         a_hshr=a_hshr,
         loutshs=loutshs,
     )
 
-    diffusion_params = DiffusionParams(config)
+    diffusion_params = diffusion_module.DiffusionParams(config)
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
     cell_k_domain = gtx.domain(
@@ -209,7 +202,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         )
 
     # Metric state
-    metric_state = DiffusionMetricState(
+    metric_state = diffusion_states.DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         zd_intcoef=zd_intcoef,
@@ -227,7 +220,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
     # Interpolation state
-    interpolation_state = DiffusionInterpolationState(
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
@@ -241,7 +234,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Initialize the diffusion granule
     global granule  # noqa: PLW0603 [global-statement]
     granule = DiffusionGranule(
-        diffusion=Diffusion(
+        diffusion=diffusion_module.Diffusion(
             grid=grid_wrapper.grid_state.grid,
             config=config,
             params=diffusion_params,
@@ -293,7 +286,7 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=w.dtype)
     if dwdy is None:
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
-    diagnostic_state = DiffusionDiagnosticState(
+    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,
         dwdx=dwdx,

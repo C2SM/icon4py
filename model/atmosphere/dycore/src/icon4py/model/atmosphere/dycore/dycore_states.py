@@ -52,7 +52,7 @@ class DivergenceDampingType(enum.IntEnum):
     COMBINED = 32
 
 
-class DivergenceDampingOrder(gtx.int32, enum.Enum):
+class DivergenceDampingOrder(common_utils.NamespaceMixin, gtx.int32, enum.Enum):
     #: 2nd order divergence damping
     SECOND_ORDER = 2
     #: 4th order divergence damping
@@ -61,7 +61,7 @@ class DivergenceDampingOrder(gtx.int32, enum.Enum):
     COMBINED = 24
 
 
-class HorizontalPressureDiscretizationType(gtx.int32, enum.Enum):
+class HorizontalPressureDiscretizationType(common_utils.NamespaceMixin, gtx.int32, enum.Enum):
     """Parameter called igradp_method in ICON namelist."""
 
     #: conventional discretization with metric correction term
@@ -76,7 +76,7 @@ class HorizontalPressureDiscretizationType(gtx.int32, enum.Enum):
     POLYNOMIAL_HYDRO = 5
 
 
-class RhoThetaAdvectionType(gtx.int32, enum.Enum):
+class RhoThetaAdvectionType(common_utils.NamespaceMixin, gtx.int32, enum.Enum):
     """Parameter called iadv_rhotheta in ICON namelist."""
 
     #: simple 2nd order upwind-biased scheme

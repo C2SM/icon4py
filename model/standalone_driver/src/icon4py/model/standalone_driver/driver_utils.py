@@ -18,8 +18,16 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+)
+from icon4py.model.atmosphere.dycore import (
+    config as dycore_config,
+    dycore_states,
+    solve_nonhydro as solve_nh,
+)
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
@@ -162,8 +170,8 @@ def initialize_granules(
     *,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
-    diffusion_config: diffusion.DiffusionConfig,
-    solve_nh_config: solve_nh.NonHydrostaticConfig,
+    diffusion_config: diffusion_config.DiffusionConfig,
+    solve_nh_config: dycore_config.NonHydrostaticConfig,
     advection_config: advection.AdvectionConfig,
     static_field_factories: driver_states.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,

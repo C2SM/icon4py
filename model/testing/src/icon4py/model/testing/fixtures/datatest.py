@@ -497,6 +497,5 @@ def is_iau_active() -> bool:
     return False
 
 
-@pytest.fixture
 def iau_wgt_dyn() -> float:
     return 0.0

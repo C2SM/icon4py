@@ -33,7 +33,7 @@ from icon4py.bindings import (
     grid_wrapper,
     icon4py_export,
 )
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore import config as dycore_config, dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -155,7 +155,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
             allocator=allocator,
         )
 
-    config = solve_nonhydro.NonHydrostaticConfig(
+    config = dycore_config.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,

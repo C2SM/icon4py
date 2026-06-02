@@ -19,8 +19,16 @@ from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+)
+from icon4py.model.atmosphere.dycore import (
+    config as dycore_config,
+    dycore_states,
+    solve_nonhydro as solve_nh,
+)
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
@@ -495,28 +503,28 @@ def _read_config(
 ) -> tuple[
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
-    diffusion.DiffusionConfig,
+    diffusion_config.DiffusionConfig,
     advection.AdvectionConfig,
-    solve_nh.NonHydrostaticConfig,
+    dycore_config.NonHydrostaticConfig,
 ]:
     vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=35,
         rayleigh_damping_height=45000.0,
     )
 
-    diffusion_config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        hdiff_temp=False,
-        n_substeps=5,
-        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
+    diffusion_configuration = diffusion_config.DiffusionConfig(
+        diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        apply_to_vertical_wind=True,
+        apply_to_horizontal_wind=True,
+        apply_to_temperature=False,
+        ndyn_substeps=5,
+        type_t_diffu=diffusion_config.TemperatureDiscretizationType.HETEROGENEOUS,
+        type_vn_diffu=diffusion_config.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=10.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,
-        velocity_boundary_diffusion_denom=200.0,
+        apply_zdiffusion_t=False,
+        velocity_boundary_diffusion_denominator=200.0,
     )
 
     # NOTE(ricoh): adjust when switching experiments!
@@ -528,7 +536,7 @@ def _read_config(
         vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
-    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
+    nonhydro_config = dycore_config.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 
@@ -547,7 +555,7 @@ def _read_config(
     return (
         icon4py_driver_config,
         vertical_grid_config,
-        diffusion_config,
+        diffusion_configuration,
         advection_config,
         nonhydro_config,
     )

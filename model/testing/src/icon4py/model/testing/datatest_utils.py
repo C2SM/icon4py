@@ -17,8 +17,8 @@ from typing import TypeVar
 
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.diffusion import config as diffusion_config
+from icon4py.model.atmosphere.dycore import config as dycore_config, dycore_states
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
@@ -246,7 +246,7 @@ def create_experiment_configuration(
     )
 
     # *** NonHydrostaticConfig ***
-    nonhydro_config = solve_nh.NonHydrostaticConfig(
+    nonhydro_config = dycore_config.NonHydrostaticConfig(
         itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
         iadv_rhotheta=dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"]),
         igradp_method=dycore_states.HorizontalPressureDiscretizationType(
@@ -275,15 +275,15 @@ def create_experiment_configuration(
     hdiff_smag_w = _list_to_value(diffusion_nml["lhdiff_smag_w"])
     smag_3d = _list_to_value(diffusion_nml["lsmag_3d"])
 
-    diffusion_config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType(diffusion_nml["hdiff_order"]),
-        hdiff_w=diffusion_nml["lhdiff_w"],
-        hdiff_vn=diffusion_nml["lhdiff_vn"],
-        hdiff_temp=diffusion_nml["lhdiff_temp"],
-        hdiff_smag_w=hdiff_smag_w,
-        type_vn_diffu=diffusion.SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"]),
-        smag_3d=smag_3d,
-        type_t_diffu=diffusion.TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"]),
+    diffusion_configuration = diffusion_config.DiffusionConfig(
+        diffusion_type=diffusion_config.DiffusionType(diffusion_nml["hdiff_order"]),
+        apply_to_vertical_wind=diffusion_nml["lhdiff_w"],
+        apply_to_horizontal_wind=diffusion_nml["lhdiff_vn"],
+        apply_to_temperature=diffusion_nml["lhdiff_temp"],
+        apply_smag_diff_to_vertical_wind=hdiff_smag_w,
+        type_vn_diffu=diffusion_config.SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"]),
+        compute_3d_smag_coeff=smag_3d,
+        type_t_diffu=diffusion_config.TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"]),
         hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
         hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
         smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
@@ -294,13 +294,13 @@ def create_experiment_configuration(
         smagorinski_scaling_height2=diffusion_nml["hdiff_smag_z2"],
         smagorinski_scaling_height3=diffusion_nml["hdiff_smag_z3"],
         smagorinski_scaling_height4=diffusion_nml["hdiff_smag_z4"],
-        n_substeps=nonhydrostatic_nml["ndyn_substeps"],
-        zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
-        velocity_boundary_diffusion_denom=gridref_nml["denom_diffu_v"],
-        temperature_boundary_diffusion_denom=gridref_nml["denom_diffu_t"],
+        ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
+        apply_zdiffusion_t=nonhydrostatic_nml["l_zdiffu_t"],
+        velocity_boundary_diffusion_denominator=gridref_nml["denom_diffu_v"],
+        temperature_boundary_diffusion_denominator=gridref_nml["denom_diffu_t"],
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
-        shear_type=diffusion.TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
-        iforcing=diffusion.ForcingType(run_nml["iforcing"]),
+        shear_type=diffusion_config.TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
+        iforcing=diffusion_config.ForcingType(run_nml["iforcing"]),
         a_hshr=turbdiff_nml["a_hshr"],
     )
 
@@ -339,7 +339,7 @@ def create_experiment_configuration(
         driver=driver_cfg,
         vertical_grid=vertical_grid_config,
         nonhydrostatic=nonhydro_config,
-        diffusion=diffusion_config,
+        diffusion=diffusion_configuration,
         metrics=metrics_config,
         interpolation=interpolation_config,
         graupel=graupel_config,

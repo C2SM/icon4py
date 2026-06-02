@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.grid.states as grid_states
+import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
@@ -48,7 +48,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    config = solve_nh.NonHydrostaticConfig()
+    config = dycore_config.init_config().get()
     second_order_divdamp_factor = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
@@ -954,7 +954,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = solve_nh.NonHydrostaticConfig()
+    config = dycore_config.init_config().get()
     params = solve_nh.NonHydrostaticParams(config)
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()
@@ -989,9 +989,6 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     icon_grid,
     grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1199,9 +1196,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     icon_grid,
     grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1340,9 +1334,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
@@ -1544,7 +1535,6 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
     sp_nh_init = savepoint_nonhydro_init
@@ -1677,10 +1667,6 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
@@ -1690,8 +1676,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1848,20 +1832,16 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
 def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
     at_first_substep,
-    grid_savepoint,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1975,9 +1955,6 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    istep_exit,
-    substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
 ):

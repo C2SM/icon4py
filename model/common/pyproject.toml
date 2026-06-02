@@ -30,7 +30,9 @@ dependencies = [
   'gt4py==1.1.10',
   'packaging>=20.0',
   'typing-extensions>=4.11.0',
-  'numpy>=1.23.3'
+  'numpy>=1.23.3',
+  'omegaconf>=2.3.0',
+  'PyYAML>=6.0.0'
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}

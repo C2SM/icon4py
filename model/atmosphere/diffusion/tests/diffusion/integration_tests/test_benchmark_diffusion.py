@@ -13,14 +13,24 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 import icon4py.model.common.dimension as dims
-import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, model_backends, model_options
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+)
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,
+    states as grid_states,
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
@@ -51,21 +61,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     allocator = model_backends.get_allocator(backend_like)
     dtime = 10.0
 
-    config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-        hdiff_efdt_ratio=24.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coefficient=0.375,
-        n_substeps=5,
-        shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-    )
+    config = diffusion_config.init_config().get()
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 

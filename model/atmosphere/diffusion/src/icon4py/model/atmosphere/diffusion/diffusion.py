@@ -7,8 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
-import enum
-import functools
 import logging
 import math
 import sys
@@ -19,7 +17,11 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
-from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion_states,
+    diffusion_utils,
+)
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -61,297 +63,11 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 log = logging.getLogger(__name__)
 
 
-class DiffusionType(int, enum.Enum):
-    """
-    Order of nabla operator for diffusion.
-
-    Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
-    Note: We currently only support type 5.
-    """
-
-    NO_DIFFUSION = -1  #: no diffusion
-    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
-    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
-    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
-    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
-
-
-class SmagorinskyStencilType(int, enum.Enum):
-    """
-    Type of the reconstruction stencil for the Smagorinsky diffusion of normal wind (vn).
-
-    Note: Called `itype_vn_diffu` in `mo_diffusion_nml.f90`.
-    Note: We currently only support type 1 in combination with lsmag_3d=False.
-    """
-
-    DIAMOND_VERTICES = (
-        1  #: Smagorinsky diffusion of vn with diamond stencil on vertices (only for vn)
-    )
-    CELLS_AND_VERTICES = 2  #: Smagorinsky diffusion of vn with stencil on neighboring vertices (E2V) and cell centers (E2C)
-
-
-class TemperatureDiscretizationType(int, enum.Enum):
-    """
-    Type of the discretization of the Smagorinsky diffusion of temperature.
-
-    Note: Called `itype_t_diffu` in `mo_diffusion_nml.f90`.
-    Note: We currently only support type 2.
-    """
-
-    HOMOGENEOUS = 1  #: K Lap(T)
-    HETEROGENEOUS = 2  #: Div (K Grad(T))
-
-
-class TurbulenceShearForcingType(int, enum.Enum):
-    """
-    Type of shear forcing used in turbulence.
-
-    Note: called `itype_sher` in `mo_turbdiff_nml.f90`
-    """
-
-    VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
-        1  #: as `VERTICAL_ONLY` plus horizontal shear correction
-    )
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
-        2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
-    )
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
-
-
-class ForcingType(int, enum.Enum):
-    """
-    Type of physics forcing applied to the model.
-
-    Note: called `iforcing` in `mo_run_nml.f90`
-    """
-
-    NO_FORCING = 0  #: no physics forcing (diagnostic / idealized runs)
-    AES = 2  #: Atmospheric Earth System / ECHAM forcing (iaes)
-    NWP = 3  #: Numerical Weather Prediction forcing (inwp)
-
-
-class DiffusionConfig:
-    """
-    Contains necessary parameter to configure a diffusion run.
-
-    Encapsulates namelist parameters and derived parameters.
-    Values should be read from configuration.
-    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    """
-
-    # TODO(halungge): to be read from config
-    # TODO(halungge):  handle dependencies on other namelists (see below...)
-
-    def __init__(
-        self,
-        *,
-        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w: bool = True,
-        hdiff_vn: bool = True,
-        hdiff_temp: bool = True,
-        hdiff_smag_w: bool = False,
-        type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
-        smag_3d: bool = False,
-        type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
-        hdiff_efdt_ratio: float = 36.0,
-        hdiff_w_efdt_ratio: float = 15.0,
-        smagorinski_scaling_factor: float = 0.015,
-        smagorinski_scaling_factor2: float = 2e-6
-        * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))),
-        smagorinski_scaling_factor3: float = 0.0,
-        smagorinski_scaling_factor4: float = 1.0,
-        smagorinski_scaling_height: float = 32500.0,
-        smagorinski_scaling_height2: float = 1600.0
-        + 50000.0
-        + math.sqrt(1600.0 * (1600 + 50000.0)),
-        smagorinski_scaling_height3: float = 50000.0,
-        smagorinski_scaling_height4: float = 90000.0,
-        n_substeps: int = 5,
-        zdiffu_t: bool = True,
-        velocity_boundary_diffusion_denom: float = 200.0,
-        temperature_boundary_diffusion_denom: float = 135.0,
-        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
-        * 0.02,
-        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-        iforcing: ForcingType = ForcingType.NO_FORCING,
-        a_hshr: float = 1.0,
-        loutshs: bool = False,
-    ):
-        """Set the diffusion configuration parameters with the ICON default values."""
-        # parameters from namelist diffusion_nml
-
-        self.diffusion_type: int = diffusion_type
-
-        #: If True, apply diffusion on the vertical wind field
-        #: Called 'lhdiff_w' in mo_diffusion_nml.f90
-        self.apply_to_vertical_wind: bool = hdiff_w
-
-        #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
-        #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
-        self.apply_to_horizontal_wind = hdiff_vn
-
-        #:  If True, apply horizontal diffusion to temperature field
-        #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
-        self.apply_to_temperature: bool = hdiff_temp
-
-        #: If True, compute Smagorinsky diffusion to vertical wind field
-        #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
-        self.apply_smag_diff_to_vertical_wind: bool = hdiff_smag_w
-
-        #: If True, compute 3D Smagorinsky diffusion coefficient
-        #: Called 'lsmag_3d' in mo_diffusion_nml.f90
-        self.compute_3d_smag_coeff: bool = smag_3d
-
-        #: Options for discretizing the Smagorinsky momentum diffusion
-        #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
-        self.type_vn_diffu: int = type_vn_diffu
-
-        #: Options for discretizing the Smagorinsky temperature diffusion
-        #: Called 'itype_t_diffu' in mo_diffusion_nml.f90
-        self.type_t_diffu: int = type_t_diffu
-
-        #: Ratio of e-folding time to (2*)time step
-        #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
-        self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
-
-        #: Ratio of e-folding time to time step for w diffusion (NH only)
-        #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
-        self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
-
-        # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
-        #: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value)
-        #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
-
-        #: Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and
-        #: start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1).
-        #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor2: float = smagorinski_scaling_factor2
-
-        #: Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the
-        #: quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients.
-        #: Called 'hdiff_smag_fac3' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor3: float = smagorinski_scaling_factor3
-
-        #: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value).
-        #: Also the third control point that defines the quadratic segment together with factor2 and factor3.
-        #: Called 'hdiff_smag_fac4' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor4: float = smagorinski_scaling_factor4
-
-        #: Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor below this height.
-        #: Called 'hdiff_smag_z' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height: float = smagorinski_scaling_height
-
-        #: Transition height between linear and quadratic segments.
-        #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height2: float = smagorinski_scaling_height2
-
-        #: Interior control point height within the quadratic segment (height2 <= height3 <= height4).
-        #: Called 'hdiff_smag_z3' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height3: float = smagorinski_scaling_height3
-
-        #: Upper boundary of the quadratic segment: factor is constant at smagorinski_scaling_factor4 above this height.
-        #: Called 'hdiff_smag_z4' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height4: float = smagorinski_scaling_height4
-
-        #: If True, apply truly horizontal temperature diffusion over steep slopes
-        #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
-        self.apply_zdiffusion_t: bool = zdiffu_t
-
-        # from other namelists:
-        # from parent namelist mo_nonhydrostatic_nml
-
-        #: Number of dynamics substeps per fast-physics step
-        #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
-        self.ndyn_substeps: int = n_substeps
-
-        # namelist mo_gridref_nml.f90
-
-        #: Denominator for temperature boundary diffusion
-        #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-        self.temperature_boundary_diffusion_denominator: float = (
-            temperature_boundary_diffusion_denom
-        )
-
-        #: Denominator for velocity boundary diffusion
-        #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-        self.velocity_boundary_diffusion_denominator: float = velocity_boundary_diffusion_denom
-
-        # parameters from namelist: mo_interpol_nml.f90
-
-        #: Parameter describing the lateral boundary nudging in limited area mode.
-        #:
-        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
-        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        self.max_nudging_coefficient: float = max_nudging_coefficient
-
-        #: Type of shear forcing used in turbulence
-        #: Called 'itype_sher' in mo_turbdiff_nml.f90
-        self.shear_type = shear_type
-
-        #: Type of physics forcing
-        #: Called 'iforcing' in mo_run_nml.f90
-        self.iforcing: ForcingType = iforcing
-
-        #: Scaling factor for horizontal shear production term
-        #: Called 'a_hshr' in mo_turbdiff_nml.f90
-        self.a_hshr: float = a_hshr
-
-        #: Output flag for horizontal shear
-        #: Called 'loutshs' in mo_turbdiff_nml.f90
-        #: not a namelist parameter: its default is FALSE and only set to true in fortran `IF (.NOT. ldynamics)`
-        self.loutshs: bool = loutshs
-
-        self._validate()
-
-    def _validate(self):
-        """Apply consistency checks and validation on configuration parameters."""
-        if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
-            raise NotImplementedError(
-                "Only diffusion type 5 = `Smagorinsky diffusion with fourth-order background "
-                "diffusion` is implemented"
-            )
-
-        if self.type_vn_diffu != SmagorinskyStencilType.DIAMOND_VERTICES:
-            raise NotImplementedError(
-                "Only type_vn_diffu 1 = `Smagorinsky diffusion with diamond stencil on vertices` is implemented"
-            )
-
-        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENEOUS:
-            raise NotImplementedError(
-                "Only type_t_diffu 2 = `Smagorinsky diffusion with heterogeneous discretization` is implemented"
-            )
-
-        if self.apply_smag_diff_to_vertical_wind:
-            raise NotImplementedError("Smagorinsky diffusion for vertical wind is not implemented")
-
-        if self.compute_3d_smag_coeff:
-            raise NotImplementedError("3D Smagorinsky diffusion computation is not implemented")
-
-        if self.shear_type not in (
-            TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-            TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND,
-            TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-        ):
-            raise NotImplementedError(
-                f"Turbulence Shear only {TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND} "
-                f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND} "
-                f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
-                f"implemented"
-            )
-
-    @functools.cached_property
-    def substep_as_float(self):
-        return float(self.ndyn_substeps)
-
-
 @dataclasses.dataclass(frozen=True)
 class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
-    config: dataclasses.InitVar[DiffusionConfig]
+    config: dataclasses.InitVar[diffusion_config.DiffusionConfig]
     K2: Final[float] = dataclasses.field(init=False)
     K4: Final[float] = dataclasses.field(init=False)
     K6: Final[float] = dataclasses.field(init=False)
@@ -402,7 +118,7 @@ class Diffusion:
         self,
         *,
         grid: icon_grid.IconGrid,
-        config: DiffusionConfig,
+        config: diffusion_config.DiffusionConfig,
         params: DiffusionParams,
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
@@ -777,7 +493,7 @@ class Diffusion:
 
         if (
             self.config.shear_type
-            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            >= diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
             or self.config.loutshs
             or self.config.a_hshr > 0.0
         ):
@@ -881,7 +597,10 @@ class Diffusion:
             # computations, which happen right after diffusion, do not require the halo lines to be correct and there
             # is another halo exchange after the physics are applied.
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
-            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+            if initial_run or self.config.iforcing not in (
+                diffusion_config.ForcingType.NWP,
+                diffusion_config.ForcingType.AES,
+            ):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(
                     dims.CellDim,
@@ -894,7 +613,10 @@ class Diffusion:
         # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
         # computations, which happen right after diffusion, do not require the halo lines to be correct and there
         # is another halo exchange after the physics are applied.
-        if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+        if initial_run or self.config.iforcing not in (
+            diffusion_config.ForcingType.NWP,
+            diffusion_config.ForcingType.AES,
+        ):
             log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(
                 dims.CellDim,

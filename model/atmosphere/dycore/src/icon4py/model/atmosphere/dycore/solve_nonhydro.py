@@ -17,7 +17,7 @@ from gt4py.next import common as gtx_common
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
+from icon4py.model.atmosphere.dycore import config as dycore_config, dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
@@ -136,179 +136,10 @@ class IntermediateFields:
         )
 
 
-class NonHydrostaticConfig:
-    """
-    Contains necessary parameter to configure a nonhydro run.
-
-    Encapsulates namelist parameters and derived parameters.
-    TODO: (magdalena) values should be read from a configuration file.
-    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    """
-
-    def __init__(
-        self,
-        *,
-        itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
-        iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
-        igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
-        divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
-        divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
-        l_vert_nested: bool = False,
-        deepatmos_mode: bool = False,
-        iau_init: bool = False,
-        extra_diffu: bool = True,
-        rhotheta_offctr: float = -0.1,
-        veladv_offctr: float = 0.25,
-        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
-        * 0.02,
-        fourth_order_divdamp_factor: float = 0.0025,
-        fourth_order_divdamp_factor2: float = 0.004,
-        fourth_order_divdamp_factor3: float = 0.004,
-        fourth_order_divdamp_factor4: float = 0.004,
-        fourth_order_divdamp_z: float = 32500.0,
-        fourth_order_divdamp_z2: float = 40000.0,
-        fourth_order_divdamp_z3: float = 60000.0,
-        fourth_order_divdamp_z4: float = 80000.0,
-    ):
-        # parameters from namelist nonhydrostatic_nml
-        self.itime_scheme: int = itime_scheme
-
-        #: Miura scheme for advection of rho and theta
-        self.iadv_rhotheta: dycore_states.RhoThetaAdvectionType = iadv_rhotheta
-        #: Use truly horizontal pressure-gradient computation to ensure numerical
-        #: stability without heavy orography smoothing
-        self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
-
-        #: type of Rayleigh damping (namelist key: rayleigh_type)
-        self.rayleigh_type: constants.RayleighType = rayleigh_type
-
-        #: order of divergence damping
-        self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
-
-        #: type of divergence damping
-        self.divdamp_type: dycore_states.DivergenceDampingType = divdamp_type
-
-        #: off-centering for density and potential temperature at interface levels.
-        #: Specifying a negative value here reduces the amount of vertical
-        #: wind off-centering needed for stability of sound waves.
-        self.rhotheta_offctr: float = rhotheta_offctr
-
-        #: off-centering of velocity advection in corrector step
-        self.veladv_offctr: float = veladv_offctr
-
-        # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
-        #: scaling factor for divergence damping
-        self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
-        """
-        Declared as divdamp_fac in ICON. It is a scaling factor for fourth order divergence damping between
-        heights of fourth_order_divdamp_z and fourth_order_divdamp_z2.
-        """
-        self.fourth_order_divdamp_factor2: float = fourth_order_divdamp_factor2
-        """
-        Declared as divdamp_fac2 in ICON. It is a scaling factor for fourth order divergence damping between
-        heights of fourth_order_divdamp_z and fourth_order_divdamp_z2. Divergence damping factor reaches
-        fourth_order_divdamp_factor2 at fourth_order_divdamp_z2.
-        """
-        self.fourth_order_divdamp_factor3: float = fourth_order_divdamp_factor3
-        """
-        Declared as divdamp_fac3 in ICON. It is a scaling factor to determine the quadratic vertical
-        profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
-        and fourth_order_divdamp_z4.
-        """
-        self.fourth_order_divdamp_factor4: float = fourth_order_divdamp_factor4
-        """
-        Declared as divdamp_fac4 in ICON. It is a scaling factor to determine the quadratic vertical
-        profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
-        and fourth_order_divdamp_z4. Divergence damping factor reaches fourth_order_divdamp_factor4
-        at fourth_order_divdamp_z4.
-        """
-        self.fourth_order_divdamp_z: float = fourth_order_divdamp_z
-        """
-        Declared as divdamp_z in ICON. The upper limit in height where divergence damping factor is a constant.
-        """
-        self.fourth_order_divdamp_z2: float = fourth_order_divdamp_z2
-        """
-        Declared as divdamp_z2 in ICON. The upper limit in height above fourth_order_divdamp_z where divergence
-        damping factor decreases as a linear function of height.
-        """
-        self.fourth_order_divdamp_z3: float = fourth_order_divdamp_z3
-        """
-        Declared as divdamp_z3 in ICON. Am intermediate height between fourth_order_divdamp_z2 and
-        fourth_order_divdamp_z4 where divergence damping factor decreases quadratically with height.
-        """
-        self.fourth_order_divdamp_z4: float = fourth_order_divdamp_z4
-        """
-        Declared as divdamp_z4 in ICON. The upper limit in height where divergence damping factor decreases
-        quadratically with height.
-        """
-
-        #: parameters from other namelists:
-
-        #: from mo_interpol_nml.f90
-
-        #: Parameter describing the lateral boundary nudging in limited area mode.
-        #:
-        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
-        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        self.max_nudging_coefficient: float = max_nudging_coefficient
-
-        #: from mo_run_nml.f90 (namelist key: lvert_nest).
-        #: use vertical nesting
-        self.l_vert_nested: bool = l_vert_nested
-
-        #: from dynamics_nml.f90 (namelist key: ldeepatmo).
-        #: deep atmosphere mode, originally defined as ldeepatmo in ICON
-        self.deepatmos_mode: bool = deepatmos_mode
-
-        #: incremental analysis init mode, set to init_mode == MODE_IAU (5) in Fortran.
-        self.iau_init: bool = iau_init
-
-        #: Apply additional diffusion at grid points close to CFL limit
-        #: Called 'lextra_diffu' in mo_nonhydrostatic_nml.f90
-        self.extra_diffu: bool = extra_diffu
-
-        self._validate()
-
-    def _validate(self):
-        """Apply consistency checks and validation on configuration parameters."""
-
-        if self.l_vert_nested:
-            raise NotImplementedError("Vertical nesting support not implemented")
-
-        if self.deepatmos_mode:
-            raise NotImplementedError("Deep atmosphere mode not implemented")
-
-        if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            raise NotImplementedError("igradp_method can only be 3")
-
-        if self.itime_scheme != dycore_states.TimeSteppingScheme.MOST_EFFICIENT:
-            raise NotImplementedError("itime_scheme can only be 4")
-
-        if self.iadv_rhotheta != dycore_states.RhoThetaAdvectionType.MIURA:
-            raise NotImplementedError("iadv_rhotheta can only be 2 (Miura scheme)")
-
-        if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
-            raise NotImplementedError(
-                "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
-            )
-
-        if self.rayleigh_type != constants.RayleighType.KLEMP:
-            raise NotImplementedError(
-                "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
-            )
-
-        if not self.extra_diffu:
-            raise NotImplementedError(
-                "extra_diffu=False is not supported; only True is implemented"
-            )
-
-
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
 
-    def __init__(self, config: NonHydrostaticConfig):
+    def __init__(self, config: dycore_config.NonHydrostaticConfig):
         #: Weighting coefficients for velocity advection if tendency averaging is used
         #: The off-centering specified here turned out to be beneficial to numerical
         #: stability in extreme situations
@@ -341,7 +172,7 @@ class SolveNonhydro:
         self,
         *,
         grid: icon_grid.IconGrid,
-        config: NonHydrostaticConfig,
+        config: dycore_config.NonHydrostaticConfig,
         params: NonHydrostaticParams,
         metric_state_nonhydro: dycore_states.MetricStateNonHydro,
         interpolation_state: dycore_states.InterpolationState,

@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import difflib
 import pathlib
 
 import pytest
 from click.testing import CliRunner
 
+from icon4py.model.testing import test_utils
 from icon4py.tools.py2fgen import _cli, _utils
 
 
@@ -37,24 +37,9 @@ def invoke_cli(cli_runner, module, function, library_name, path):
     assert result.exit_code == 0, "CLI execution failed"
 
 
-def diff(reference: pathlib.Path, actual: pathlib.Path):
-    with pathlib.Path.open(reference) as f:
-        reference_lines = f.readlines()
-    with pathlib.Path.open(actual) as f:
-        actual_lines = f.readlines()
-    result = difflib.context_diff(reference_lines, actual_lines)
-
-    clean = True
-    for line in result:
-        logger.info(f"result line: {line}")
-        clean = False
-
-    return clean
-
-
 def check_generated_files(bindings_name: str) -> None:
     for suffix in [".h", ".f90", ".py"]:
-        assert diff(
+        assert test_utils.diff(
             reference_path(bindings_name) / f"{bindings_name}{suffix}",
             actual_path(bindings_name) / f"{bindings_name}{suffix}",
         )
