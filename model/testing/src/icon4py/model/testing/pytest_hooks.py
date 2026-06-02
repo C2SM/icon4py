@@ -53,6 +53,17 @@ def pytest_configure(config):
 
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
+
+    subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
+    if subcomm_size is None:
+        env_val = os.environ.get("ICON4PY_TEST_MPI_SUBCOMM_SIZE")
+        if env_val is not None:
+            subcomm_size = int(env_val)
+    if subcomm_size is not None and not (with_mpi or only_mpi):
+        raise pytest.UsageError(
+            "--mpi-subcomm-size requires MPI to be initialized. Make sure --with-mpi is passed."
+        )
+
     if with_mpi or only_mpi:
         from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
             import_error,
@@ -70,29 +81,17 @@ def pytest_configure(config):
 
         init_mpi()
 
-    subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
-    if subcomm_size is None:
-        env_val = os.environ.get("ICON4PY_TEST_MPI_SUBCOMM_SIZE")
-        if env_val is not None:
-            subcomm_size = int(env_val)
-    if subcomm_size is not None:
-        from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
+        if subcomm_size is not None:
+            scheduler = MPISubcommScheduler(subcomm_size)
+            config._mpi_scheduler = scheduler
 
-        if not MPI.Is_initialized():
-            raise pytest.UsageError(
-                "--mpi-subcomm-size requires MPI to be initialized. Make sure --with-mpi is passed."
-            )
-
-        scheduler = MPISubcommScheduler(subcomm_size)
-        config._mpi_scheduler = scheduler
-
-        if scheduler.subcomm.Get_rank() == 0:
-            start_rank = scheduler.group_id * scheduler.subcomm_size
-            end_rank = (scheduler.group_id + 1) * scheduler.subcomm_size - 1
-            print(
-                f"\n[MPI Scheduler] Group {scheduler.group_id}/{scheduler.num_groups}: "
-                f"world ranks {start_rank}-{end_rank}, subcomm size {scheduler.subcomm_size}"
-            )
+            if scheduler.subcomm.Get_rank() == 0:
+                start_rank = scheduler.group_id * scheduler.subcomm_size
+                end_rank = (scheduler.group_id + 1) * scheduler.subcomm_size - 1
+                print(
+                    f"\n[MPI Scheduler] Group {scheduler.group_id}/{scheduler.num_groups}: "
+                    f"world ranks {start_rank}-{end_rank}, subcomm size {scheduler.subcomm_size}"
+                )
 
 
 def pytest_addoption(parser: pytest.Parser):
