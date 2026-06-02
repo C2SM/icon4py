@@ -145,7 +145,9 @@ class DiffusionConfig:
     #: Must be >= 0.
     #: Between hdiff_smag_z and hdiff_smag_z2 the scaling factor changes linearly.
     #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
-    smagorinski_scaling_factor2: float = 2e-6 * (1600 + 25000 + np.sqrt(1600 * (1600 + 50000)))
+    smagorinski_scaling_factor2: float = float(
+        2e-6 * (1600 + 25000 + np.sqrt(1600 * (1600 + 50000)))
+    )
 
     #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z3
     #: Must be >= 0.
@@ -167,7 +169,7 @@ class DiffusionConfig:
     #: hdiff_smag_z ends, and where the quadratic profile up to hdiff_smag_z4 starts.
     #: hdiff_smag_z < hdiff_smag_z2 < hdiff_smag_ z4.
     #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
-    smagorinski_scaling_height2: float = 1600 + 50000 + np.sqrt(1600 * (1600 + 50000))
+    smagorinski_scaling_height2: float = float(1600 + 50000 + np.sqrt(1600 * (1600 + 50000)))
 
     #: Height with scaling factor hdiff_smag_fac3.
     #: Needed to determine the quadratic function between hdiff_smag_z2 and hdiff_smag_z4.

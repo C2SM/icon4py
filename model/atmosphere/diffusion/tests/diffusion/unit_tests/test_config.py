@@ -10,7 +10,12 @@ import pathlib
 
 import icon4py.model.atmosphere.diffusion.config as diffusion_config
 from icon4py.model.testing import definitions, test_utils
-from icon4py.model.testing.fixtures.datatest import experiment
+from icon4py.model.testing.fixtures.datatest import (
+    download_ser_data,
+    experiment,
+    experiment_description,
+    process_props,
+)
 
 
 def test_diffusion_default_config(tmp_path: pathlib.Path) -> None:
@@ -25,7 +30,7 @@ def test_diffusion_experiment_config(
     tmp_path: pathlib.Path, experiment: definitions.Experiment
 ) -> None:
     configuration = diffusion_config.init_config()
-    exp_config = definitions.construct_diffusion_config(experiment)
+    exp_config = experiment.config.diffusion
     configuration.update(exp_config)
     overwrites = {
         definitions.Experiments.EXCLAIM_APE.name: (

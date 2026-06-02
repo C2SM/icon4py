@@ -14,7 +14,12 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+    diffusion_utils,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
@@ -91,7 +96,7 @@ def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.B
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio():
-    config = diffusion.DiffusionConfig()
+    config = diffusion_config.DiffusionConfig()
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -104,7 +109,7 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio():
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio():
-    config = diffusion.DiffusionConfig()
+    config = diffusion_config.DiffusionConfig()
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -117,7 +122,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio():
 
 
 def test_smagorinski_heights_diffusion_type_5_are_consistent():
-    config = diffusion.DiffusionConfig()
+    config = diffusion_config.DiffusionConfig()
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -132,7 +137,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent():
 
 
 def test_smagorinski_factor_diffusion_type_5():
-    params = diffusion.DiffusionParams(diffusion.DiffusionConfig())
+    params = diffusion.DiffusionParams(diffusion_config.DiffusionConfig())
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert all(p >= 0 for p in params.smagorinski_factor)
