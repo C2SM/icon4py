@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.initialization import topography
+from icon4py.model.standalone_driver.testcases import topography
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
@@ -33,11 +33,11 @@ def test_jablonowski_williamson_topography(
     backend: gtx_typing.Backend | None,
     grid_savepoint: sb.IconGridSavepoint,
     topography_savepoint: sb.TopographySavepoint,
-):
+) -> None:
     cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
-    topo_c = topography.jablonowski_williamson(
+    topo_c = topography.create(
+        experiment_name="exclaim_nh35_tri_jws",
         cell_lat=cell_center_lat,
-        u0=35.0,
     )
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()

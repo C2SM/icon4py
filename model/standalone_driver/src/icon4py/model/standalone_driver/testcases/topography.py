@@ -6,25 +6,30 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import math
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 
-def jablonowski_williamson(
-    cell_lat: data_alloc.NDArray,
-    u0: float,
-) -> data_alloc.NDArray:
-    """Function to initialize topography.
 
-    The prescribed topography is zonally symmetric and depends only on latitude.
-    It forms a smooth, broad ridge at the equator, with height controlled by the jet strength parameter u0.
-    The elevation decreases gradually toward the poles, producing an idealized annular mountain belt consistent with the analytic base state.
+def create(experiment_name: str, cell_lat: data_alloc.NDArray) -> data_alloc.NDArray:
+    match experiment_name:
+        case "exclaim_nh35_tri_jws":
+            return _exclaim_nh35_tri_jws(cell_lat)
+        case "exclaim_gauss3d":
+            raise NotImplementedError("Gauss3d topography is not yet implemented")
+        case _:
+            raise ValueError(f"Unknown experiment name for topography: {experiment_name!r}")
 
-    This topography is coupled with the Jablonowski-Williamson test case for global atmospheric models.
 
-    """
+def _exclaim_nh35_tri_jws(cell_lat: data_alloc.NDArray) -> data_alloc.NDArray:
+    u0 = 35.0
     array_ns = data_alloc.array_namespace(cell_lat)
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
