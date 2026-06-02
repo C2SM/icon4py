@@ -154,12 +154,16 @@ def create_experiment_configuration(
         atm_dict = json.load(f)
     with (experiment_path / fortran_config.MASTER_DICT_FNAME).open() as f:
         master_dict = json.load(f)
+    with (experiment_path / fortran_config.INPUT_DICT_FNAME).open() as f:
+        input_dict = json.load(f)
 
     metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 
     interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
+
+    topography_config = topography.TopographyConfig.from_fortran_dict(master_dict, input_dict)
 
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
@@ -175,6 +179,8 @@ def create_experiment_configuration(
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
+    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(master_dict, input_dict)
+
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict,
         master_dict,
@@ -188,9 +194,11 @@ def create_experiment_configuration(
         metrics=metrics_config,
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,
+        topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
         advection=advection_config,
         graupel=graupel_config,
+        initial_condition=initial_condition_config,
         driver=driver_cfg,
     )

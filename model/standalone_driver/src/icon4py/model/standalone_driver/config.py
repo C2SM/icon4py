@@ -23,10 +23,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.common import type_alias as ta
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import topography, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config
+from icon4py.model.standalone_driver.testcases import initial_condition
 
 
 log = logging.getLogger(__name__)
@@ -91,10 +92,12 @@ class ExperimentConfig:
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
+    topography: topography.TopographyConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
     advection: advection.AdvectionConfig
     graupel: graupel.SingleMomentSixClassIconGraupelConfig
+    initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
 
 
@@ -108,12 +111,16 @@ def read_config(
         atm_dict = json.load(f)
     with (config_file_path / fortran_config.MASTER_DICT_FNAME).open() as f:
         master_dict = json.load(f)
+    with (config_file_path / fortran_config.INPUT_DICT_FNAME).open() as f:
+        input_dict = json.load(f)
 
     metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 
     interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
+
+    topography_config = topography.TopographyConfig.from_fortran_dict(master_dict, input_dict)
 
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
@@ -129,6 +136,8 @@ def read_config(
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
+    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(master_dict, input_dict)
+
     profiling_stats = ProfilingStats() if enable_profiling else None
     driver_cfg = DriverConfig.from_fortran_dict(
         atm_dict,
@@ -141,10 +150,12 @@ def read_config(
         metrics=metrics_config,
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,
+        topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
         advection=advection_config,
         graupel=graupel_config,
+        initial_condition=initial_condition_config,
         driver=driver_cfg,
     )
 
