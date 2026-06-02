@@ -18,7 +18,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 
 import icon4py.model.common.states.metadata as data
-from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.type_alias import wpfloat
@@ -84,40 +84,44 @@ class VerticalGridConfig:
     #: Number of full levels.
     num_levels: int
     #: Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
-    maximal_layer_thickness: Final[wpfloat] = wpfloat(25000.0)
+    maximal_layer_thickness: Final[wpfloat] = 25000.0
     #: Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height below which thickness of grid cells must not exceed maximal_layer_thickness.
-    top_height_limit_for_maximal_layer_thickness: Final[wpfloat] = wpfloat(15000.0)
+    top_height_limit_for_maximal_layer_thickness: Final[wpfloat] = 15000.0
     #: Defined as min_lay_thckn in ICON namelist mo_sleve_nml. Thickness of lowest level grid cells.
-    lowest_layer_thickness: Final[wpfloat] = wpfloat(50.0)
+    lowest_layer_thickness: Final[wpfloat] = 50.0
     #: Model top height in ICON namelist mo_sleve_nml.
-    model_top_height: Final[wpfloat] = wpfloat(23500.0)
+    model_top_height: Final[wpfloat] = 23500.0
     #: Defined in ICON namelist mo_sleve_nml. Height above which coordinate surfaces are flat
-    flat_height: Final[wpfloat] = wpfloat(16000.0)
+    flat_height: Final[wpfloat] = 16000.0
     #: Defined as stretch_fac in ICON namelist mo_sleve_nml. Scaling factor for stretching/squeezing the model layer distribution.
-    stretch_factor: Final[wpfloat] = wpfloat(1.0)
+    stretch_factor: Final[wpfloat] = 1.0
     #: Defined as damp_height in ICON namelist nonhydrostatic_nml. Height [m] at which Rayleigh damping of vertical wind starts.
-    rayleigh_damping_height: Final[wpfloat] = wpfloat(45000.0)
+    rayleigh_damping_height: Final[wpfloat] = 45000.0
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
-    htop_moist_proc: Final[wpfloat] = wpfloat(22500.0)
+    htop_moist_proc: Final[wpfloat] = 22500.0
     #: file name containing vct_a and vct_b table
     file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
     #: Decay scale for large-scale topography component
-    SLEVE_decay_scale_1: Final[wpfloat] = wpfloat(4000.0)
+    SLEVE_decay_scale_1: Final[wpfloat] = 4000.0
     #: Decay scale for small-scale topography component
-    SLEVE_decay_scale_2: Final[wpfloat] = wpfloat(2500.0)
+    SLEVE_decay_scale_2: Final[wpfloat] = 2500.0
     #: Exponent for decay function
-    SLEVE_decay_exponent: Final[wpfloat] = wpfloat(1.2)
+    SLEVE_decay_exponent: Final[wpfloat] = 1.2
     #: minimum absolute layer thickness 1 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_1: Final[wpfloat] = wpfloat(100.0)
+    SLEVE_minimum_layer_thickness_1: Final[wpfloat] = 100.0
     #: minimum absolute layer thickness 2 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_2: Final[wpfloat] = wpfloat(500.0)
+    SLEVE_minimum_layer_thickness_2: Final[wpfloat] = 500.0
     #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
-    SLEVE_minimum_relative_layer_thickness_1: Final[wpfloat] = wpfloat(1.0 / 3.0)
+    SLEVE_minimum_relative_layer_thickness_1: Final[wpfloat] = 1.0 / 3.0
     #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
-    SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = wpfloat(0.5)
+    SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = 0.5
+
+    def __post_init__(self):
+        ta.config_scalars_to_wp(self, attributes=[field.name for field in self.__dataclass_fields__.values() if "float" in repr(field.type)])
+
 
 
 @dataclasses.dataclass(frozen=True)
