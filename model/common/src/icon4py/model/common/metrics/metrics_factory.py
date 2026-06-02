@@ -92,19 +92,19 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         log.debug(f"using array_ns {self._xp} ")
         vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
         self._config = {
-            "divdamp_trans_start": 12500.0,
-            "divdamp_trans_end": 17500.0,
+            "divdamp_trans_start": ta.wpfloat(12500.0),
+            "divdamp_trans_end": ta.wpfloat(17500.0),
             "divdamp_type": 3,
             "damping_height": vertical_grid.config.rayleigh_damping_height,
             "rayleigh_type": rayleigh_type,
-            "rayleigh_coeff": rayleigh_coeff,
-            "exner_expol": exner_expol,
-            "vwind_offctr": vwind_offctr,
+            "rayleigh_coeff": ta.wpfloat(rayleigh_coeff),
+            "exner_expol": ta.wpfloat(exner_expol),
+            "vwind_offctr": ta.wpfloat(vwind_offctr),
             "igradp_method": 3,
             "igradp_constant": 3,
-            "thslp_zdiffu": thslp_zdiffu,
-            "thhgtd_zdiffu": thhgtd_zdiffu,
-            "vct_a_1": vct_a_1,
+            "thslp_zdiffu": ta.wpfloat(thslp_zdiffu),
+            "thhgtd_zdiffu": ta.wpfloat(thhgtd_zdiffu),
+            "vct_a_1": ta.wpfloat(vct_a_1),
         }
 
         k_index = data_alloc.index_field(
@@ -127,7 +127,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    "topography": topography,
+                    "topography": gtx.astype(topography, ta.wpfloat),
                     "vct_a": self._vertical_grid.interface_physical_height,
                     "height_u": self._vertical_grid.interface_physical_height[
                         : self._grid.num_levels
@@ -292,7 +292,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rayleigh_type": self._config["rayleigh_type"],
                 "rayleigh_coeff": self._config["rayleigh_coeff"],
                 "vct_a_1": self._config["vct_a_1"],
-                "pi_const": math.pi,
+                "pi_const": ta.wpfloat(math.pi),
             },
             do_exchange=False,
         )

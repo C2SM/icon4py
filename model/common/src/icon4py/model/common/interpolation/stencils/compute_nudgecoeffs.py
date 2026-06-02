@@ -23,8 +23,8 @@ def _compute_nudgecoeffs(
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
         max_nudging_coefficient
-        * exp((-(astype(refin_ctrl - grf_nudge_start_e, wpfloat))) / (2.0 * nudge_efold_width)),
-        0.0,
+        * exp((-(astype(refin_ctrl - grf_nudge_start_e, wpfloat))) / (wpfloat(2.0) * nudge_efold_width)),
+        wpfloat(0.0),
     )
 
 

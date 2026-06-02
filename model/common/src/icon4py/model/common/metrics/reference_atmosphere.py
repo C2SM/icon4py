@@ -43,7 +43,7 @@ def _compute_reference_atmosphere_edge_fields(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_edge_fields(
     z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     rho_ref_me: fa.EdgeKField[wpfloat],
     theta_ref_me: fa.EdgeKField[wpfloat],
     p0ref: wpfloat,
@@ -270,7 +270,7 @@ def _compute_d2dexdz2_fac_mc(
     z_mc = astype(z_mc, vpfloat)
     fac1 = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
     fac2 = (
-        2.0
+        vpfloat(2.0)
         * grav
         / (cpd * theta_ref_mc**3)
         * (grav / cpd - del_t_bg / h_scal_bg * exp(-z_mc / h_scal_bg))
@@ -326,7 +326,7 @@ def compute_d2dexdz2_fac_mc(
     z_mc: fa.CellKField[wpfloat],
     d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
     d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    cpd: float,
+    cpd: wpfloat,
     grav: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,

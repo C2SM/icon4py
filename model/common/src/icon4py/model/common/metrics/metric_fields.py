@@ -52,13 +52,13 @@ def _compute_ddqz_z_half(
     z_mc: fa.CellKField[wpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
+    ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), wpfloat(0.0), wpfloat(2.0) * (z_ifc - z_mc))
     ddqz_z_half = concat_where(
         (0 < dims.KDim) & (dims.KDim < nlev),  # noqa: SIM300 [yoda-conditions]
         z_mc(Koff[-1]) - z_mc,
         ddqz_z_half,
     )
-    ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
+    ddqz_z_half = concat_where(dims.KDim == nlev, wpfloat(2.0) * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
 
@@ -106,7 +106,7 @@ def _compute_ddqz_z_full_and_inverse(
     z_ifc: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     ddqz_z_full = difference_level_plus1_on_cells(z_ifc)
-    inverse_ddqz_z_full = 1.0 / ddqz_z_full
+    inverse_ddqz_z_full = wpfloat(1.0) / ddqz_z_full
     return ddqz_z_full, inverse_ddqz_z_full
 
 
@@ -153,11 +153,11 @@ def _compute_scaling_factor_for_3d_divdamp(
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
 ) -> fa.KField[wpfloat]:
-    scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
+    scaling_factor_for_3d_divdamp = broadcast(wpfloat(1.0), (dims.KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
+        zf = wpfloat(0.5) * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
         scaling_factor_for_3d_divdamp = where(
-            zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
+            zf >= divdamp_trans_end, wpfloat(0.0), scaling_factor_for_3d_divdamp
         )
         scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_start,
@@ -210,18 +210,18 @@ def _compute_rayleigh_w(
     vct_a_1: wpfloat,
     pi_const: wpfloat,
 ) -> fa.KField[wpfloat]:
-    rayleigh_w = broadcast(0.0, (dims.KDim,))
-    z_sin_diff = maximum(0.0, vct_a - damping_height)
+    rayleigh_w = broadcast(wpfloat(0.0), (dims.KDim,))
+    z_sin_diff = maximum(wpfloat(0.0), vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
     if rayleigh_type == 1:  # RayleighType.CLASSIC
         rayleigh_w = (
             rayleigh_coeff
-            * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
+            * (sin(pi_const / wpfloat(2.0) * z_sin_diff / maximum(wpfloat(0.001), vct_a_1 - damping_height))) ** 2
         )
 
     elif rayleigh_type == 2:  # RayleighType.KLEMP
         rayleigh_w = rayleigh_coeff * (
-            1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
+            wpfloat(1.0) - tanh(wpfloat(3.8) * z_tanh_diff / maximum(wpfloat(0.000001), vct_a_1 - damping_height))
         )
     return rayleigh_w
 
@@ -382,7 +382,7 @@ def compute_ddxt_z_half_e(
 def _compute_exner_w_explicit_weight_parameter(
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
 ) -> fa.CellField[wpfloat]:
-    return 1.0 - exner_w_implicit_weight_parameter
+    return wpfloat(1.0) - exner_w_implicit_weight_parameter
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -471,11 +471,11 @@ def _compute_exner_exfac(
 ) -> fa.CellKField[wpfloat]:
     exner_exfac = concat_where(
         dims.CellDim >= lateral_boundary_level_2,
-        exner_expol * minimum(1.0 - (4.0 * maxslp) ** 2, 1.0 - (0.002 * maxhgtd) ** 2),
+        exner_expol * minimum(wpfloat(1.0) - (wpfloat(4.0) * maxslp) ** 2, wpfloat(1.0) - (wpfloat(0.002) * maxhgtd) ** 2),
         exner_expol,
     )
-    exner_exfac = maximum(0.0, exner_exfac)
-    exner_exfac = where(maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - maxslp)), exner_exfac)
+    exner_exfac = maximum(wpfloat(0.0), exner_exfac)
+    exner_exfac = where(maxslp > wpfloat(1.5), maximum(wpfloat(-1.0) / wpfloat(6.0), wpfloat(1.0) / wpfloat(9.0) * (wpfloat(1.5) - maxslp)), exner_exfac)
 
     return exner_exfac
 
@@ -611,7 +611,7 @@ def compute_nflat_gradp(
 def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
 ) -> fa.EdgeField[wpfloat]:
-    extrapol_dist = 5.0
+    extrapol_dist = wpfloat(5.0)
     x = max_over(z_ifc(E2C), axis=dims.E2CDim)
     return x - extrapol_dist
 
@@ -656,13 +656,13 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
         downward_distance,
-        0.0,
+        wpfloat(0.0),
     )
 
     pg_exdist_dsl = where(
         (k_lev >= (flat_idx_max + 1)) & (z_me < extrapolation_distance) & e_owner_mask,
         z_me - extrapolation_distance,
-        0.0,
+        wpfloat(0.0),
     )
 
     return pg_exdist_dsl
@@ -747,15 +747,15 @@ def _compute_horizontal_mask_for_3d_divdamp(
     grf_nudgezone_width_wp = astype(grf_nudgezone_width, wpfloat)
     horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
-        1.0
-        / (grf_nudgezone_width_wp - 1.0)
-        * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
-        0.0,
+        wpfloat(1.0)
+        / (grf_nudgezone_width_wp - wpfloat(1.0))
+        * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - wpfloat(1.0))),
+        wpfloat(0.0),
     )
     horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl <= 0)
-        | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + 2.0 * (grf_nudgezone_width_wp - 1.0))),
-        1.0,
+        | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + wpfloat(2.0) * (grf_nudgezone_width_wp - wpfloat(1.0)))),
+        wpfloat(1.0),
         horizontal_mask_for_3d_divdamp,
     )
     return horizontal_mask_for_3d_divdamp
@@ -920,20 +920,20 @@ def compute_exner_w_implicit_weight_parameter(
     horizontal_start_cell: int,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(c2e)
-    factor = max(vwind_offctr, 0.75)
+    factor = max(vwind_offctr, wpfloat(0.75))
 
     zn_off = array_ns.abs(z_ddxn_z_half_e[:, nlev][c2e])
     zt_off = array_ns.abs(z_ddxt_z_half_e[:, nlev][c2e])
     stacked = array_ns.concatenate((zn_off, zt_off), axis=1)
-    maxslope = 0.425 * array_ns.amax(stacked, axis=1) ** (0.75)
+    maxslope = wpfloat(0.425) * array_ns.amax(stacked, axis=1) ** wpfloat(0.75)
     diff = array_ns.minimum(
-        0.25,
-        0.00025 * (np.amax(np.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0),
+        wpfloat(0.25),
+        wpfloat(0.00025) * (np.amax(np.abs(zn_off * dual_edge_length[c2e]), axis=1) - wpfloat(250.0)),
     )
     offctr = array_ns.minimum(
         factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
     )
-    exner_w_implicit_weight_parameter = 0.5 + offctr
+    exner_w_implicit_weight_parameter = wpfloat(0.5) + offctr
 
     k_start = max(0, nlev - 9)
 
@@ -941,9 +941,9 @@ def compute_exner_w_implicit_weight_parameter(
 
     for jk in range(k_start, nlev):
         zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
-        index_for_k = np.where(zdiff2_sliced < 0.6)[0]
+        index_for_k = np.where(zdiff2_sliced < wpfloat(0.6))[0]
         max_value_k = np.maximum(
-            1.2 - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
+            wpfloat(1.2) - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
         )
         exner_w_implicit_weight_parameter[index_for_k + horizontal_start_cell] = max_value_k[
             index_for_k

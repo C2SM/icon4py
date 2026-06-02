@@ -27,6 +27,7 @@ from icon4py.model.common.interpolation import (
     rbf_interpolation as rbf,
 )
 from icon4py.model.common.states import factory, model
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -60,10 +61,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         domain_height = self.grid.grid_params.domain_height
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
-            "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
-            "weighting_factor": 0.0,
-            "max_nudging_coefficient": 0.375,
-            "nudge_efold_width": 2.0,
+            "divergence_averaging_central_cell_weight": wpfloat(0.5),  # divavg_cntrwgt in ICON
+            "weighting_factor": wpfloat(0.0),
+            "max_nudging_coefficient": wpfloat(0.375),
+            "nudge_efold_width": wpfloat(2.0),
             "nudge_zone_width": 10,
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],

@@ -457,8 +457,6 @@ class Diffusion:
         )
         #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.thresh_tdiff: wpfloat = wpfloat(-5.0)
-        #: threshold temperature deviation from neighboring grid points that activates extra diffusion against runaway cooling
-        self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
         self.nudgezone_diff: vpfloat = gtx.astype(
