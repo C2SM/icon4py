@@ -59,6 +59,7 @@ build_distributed:
     SLURM_GPUS_PER_NODE: 1
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: 'verbose'
+    SLURM_LABELIO: 1
     SLURM_NTASKS: 32
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
