@@ -90,8 +90,6 @@ if TYPE_CHECKING:
     # the docstring above is an unofficial pyright way of adding the docstring to TypeAlias,
     # however it doesn't work within TYPE_CHECKING, therefore tools will not pick it up
 else:
-    from typing import Any
-
     ArrayInfo: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
 
 if TYPE_CHECKING:
