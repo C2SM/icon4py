@@ -14,7 +14,6 @@ from icon4py.model.testing.fixtures import (
     experiment,
     experiment_description,
     grid_savepoint,
-    icon_grid,
     interpolation_savepoint,
     istep_exit,
     istep_init,
@@ -27,6 +26,7 @@ from icon4py.model.testing.fixtures import (
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
+    topography_savepoint,
 )
 
 
