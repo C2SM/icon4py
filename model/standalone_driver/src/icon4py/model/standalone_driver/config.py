@@ -70,6 +70,7 @@ class DriverConfig:
         start_date_str = master_time_control_nml["experimentstartdate"]
         end_date_str = master_time_control_nml["experimentstopdate"]
         return cls(
+            experiment_name=master_dict["model_namelist_filename"].removeprefix("NAMELIST_").removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
             start_date=datetime.datetime.fromisoformat(start_date_str.replace("Z", "+00:00")),
             end_date=datetime.datetime.fromisoformat(end_date_str.replace("Z", "+00:00")),
@@ -130,7 +131,6 @@ def read_config(
     driver_cfg = DriverConfig.from_fortran_dict(
         atm_dict,
         master_dict,
-        experiment_name="ICON4Py experiment",
         profiling_stats=profiling_stats,
     )
 
