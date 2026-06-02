@@ -38,31 +38,23 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, model_top_height",
-    [
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0),
-    ],
+    "experiment_description",
+    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
-    experiment: definitions.Experiments,
-    model_top_height: ta.wpfloat,
+    experiment: definitions.Experiment,
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     icon_grid: icon_grid.IconGrid,
-    lowest_layer_thickness: ta.wpfloat,
     backend: gtx_typing.Backend,
 ):
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
@@ -87,11 +79,7 @@ def test_graupel(
         qg=entry_savepoint.qg(),
     )
     prognostic_state = prognostics.PrognosticState(
-        rho=entry_savepoint.rho(),
-        vn=None,
-        w=None,
-        exner=None,
-        theta_v=None,
+        rho=entry_savepoint.rho(), vn=None, w=None, exner=None, theta_v=None
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=entry_savepoint.temperature(),
@@ -102,16 +90,7 @@ def test_graupel(
         v=None,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-        ice_stickeff_min=0.01,
-        power_law_coeff_for_ice_mean_fall_speed=1.25,
-        exponent_for_density_factor_in_ice_sedimentation=0.3,
-        power_law_coeff_for_snow_fall_speed=20.0,
-        rain_mu=0.0,
-        rain_n0=1.0,
-        snow2graupel_riming_coeff=0.5,
-    )
+    graupel_config = experiment.config.graupel
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
         graupel_config=graupel_config,

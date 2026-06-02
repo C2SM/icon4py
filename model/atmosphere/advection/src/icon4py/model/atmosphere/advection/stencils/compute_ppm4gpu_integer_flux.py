@@ -100,7 +100,7 @@ def compute_ppm4gpu_integer_flux(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ppm4gpu_integer_flux(
         p_cc,
         p_cellmass_now,

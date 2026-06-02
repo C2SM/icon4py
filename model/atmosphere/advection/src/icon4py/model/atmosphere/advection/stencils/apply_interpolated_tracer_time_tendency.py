@@ -32,7 +32,7 @@ def apply_interpolated_tracer_time_tendency(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_interpolated_tracer_time_tendency(
         p_tracer_now,
         p_grf_tend_tracer,

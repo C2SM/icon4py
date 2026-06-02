@@ -85,7 +85,7 @@ def integrate_tracer_vertically(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _integrate_tracer_vertically(
         tracer_now,
         rhodz_now,

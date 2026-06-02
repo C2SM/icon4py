@@ -346,5 +346,5 @@ class FieldGroupMonitor(monitor.Monitor):
 
 
 def generate_name(fname: str, counter: int) -> str:
-    stem = fname.split(".")[0]
+    stem = fname.split(".", maxsplit=1)[0]
     return f"{stem}_{counter:0>4}.nc"

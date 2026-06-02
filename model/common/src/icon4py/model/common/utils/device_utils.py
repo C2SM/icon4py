@@ -11,7 +11,7 @@ from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar
 
 import gt4py.next as gtx
-import gt4py.next.allocators as gtx_allocators
+import gt4py.next.custom_layout_allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
 
 
@@ -21,7 +21,7 @@ except ImportError:
     cp = None
 
 
-def is_cupy_device(allocator: gtx_typing.FieldBufferAllocationUtil | None) -> bool:
+def is_cupy_device(allocator: gtx_typing.Allocator | None) -> bool:
     if allocator is None:
         return False
 
@@ -31,12 +31,15 @@ def is_cupy_device(allocator: gtx_typing.FieldBufferAllocationUtil | None) -> bo
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var] #gt4py-related typing
 
 
-def sync(allocator: gtx_typing.FieldBufferAllocationUtil | None = None) -> None:
+def sync(allocator: gtx_typing.Allocator | None = None) -> None:
     """
     Synchronize the device if appropriate for the given backend.
 
     Note: this is and ad-hoc interface, maybe the function should get the device to sync for.
     """
+    # Type annotation already describes that only these types are allowed, but mypy coverage is not great.
+    # The explicit assert avoids critical mistakes in using this function.
+    assert allocator is None or gtx_allocators.is_field_allocation_tool(allocator)
     if allocator is not None and is_cupy_device(allocator):
         cp.cuda.runtime.deviceSynchronize()
 
@@ -46,7 +49,7 @@ _R = TypeVar("_R")
 
 
 def synchronized_function(
-    func: Callable[_P, _R], *, allocator: gtx_typing.FieldBufferAllocationUtil | None
+    func: Callable[_P, _R], *, allocator: gtx_typing.Allocator | None
 ) -> Callable[_P, _R]:
     """
     Wraps a function and synchronizes after execution
@@ -62,7 +65,7 @@ def synchronized_function(
 
 
 def synchronized(
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator that synchronizes the device after the function execution.

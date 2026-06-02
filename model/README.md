@@ -97,11 +97,15 @@ Note that the current Python build for GHEX seems not to run on MacOS.
 
 3. Run parallel tests
    In order to run the parallel tests you need to specify the `--with-mpi` option to `pytest`
-   and _pass the exact folder location of the tests_ to `pytest`.
+   and pass the exact folder location of the tests to `pytest`, or use the `-k mpi_tests` filter.
+   Use the `ci/scripts/ci-mpi-wrapper.sh` helper script to avoid cluttering stdout with output
+   from all ranks. Output from the the first rank will go to stdout, and the output of all
+   ranks will go to rank-specific log files `pytest-log-rank-<rank>.txt`.
 
 ```bash
-mpirun -np 4 pytest -v -s --with-mpi model/atmosphere/diffusion/diffusion_tests/mpi_tests/
-mpirun -np 4 pytest -v -s --with-mpi model/common/tests/mpi_tests/
+mpirun -np 4 ci/scripts/ci-mpi-wrapper pytest -v -s --with-mpi -k mpi_tests
+mpirun -np 4 ci/scripts/ci-mpi-wrapper pytest -v -s --with-mpi model/atmosphere/diffusion/diffusion_tests/mpi_tests/
+mpirun -np 4 ci/scripts/ci-mpi-wrapper pytest -v -s --with-mpi model/common/tests/mpi_tests/
 ```
 
 You can restrict the number of compile process that gt4py uses by setting `GT4PY_BUILD_JOBS` environment variable:

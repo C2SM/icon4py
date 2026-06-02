@@ -72,10 +72,10 @@ def compute_btraj_numpy(
     primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
-    z_ntdistv_bary_1 = -(
+    z_ntdistv_bary_1 = np.negative(
         p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
-    z_ntdistv_bary_2 = -(
+    z_ntdistv_bary_2 = np.negative(
         p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 
@@ -252,7 +252,9 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         return dict(out=(z_rho_e, z_theta_v_e))
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        self, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         pos_on_tplane_e_1 = data_alloc.random_field(

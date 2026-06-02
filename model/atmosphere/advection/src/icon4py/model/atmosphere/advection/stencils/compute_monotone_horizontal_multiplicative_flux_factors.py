@@ -90,7 +90,7 @@ def compute_monotone_horizontal_multiplicative_flux_factors(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_monotone_horizontal_multiplicative_flux_factors(
         z_tracer_max,
         z_tracer_min,

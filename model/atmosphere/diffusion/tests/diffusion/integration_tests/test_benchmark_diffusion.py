@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.diffusion import (
     diffusion_states,
 )
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -127,12 +128,11 @@ def test_diffusion_benchmark(
     )
 
     metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
+        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
+        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
@@ -162,7 +162,7 @@ def test_diffusion_benchmark(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend_like,
-        orchestration=False,
+        exchange=decomp_defs.single_node_exchange,
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)

@@ -28,7 +28,6 @@ def _compute_nudgecoeffs(
     )
 
 
-# TODO(halungge): not registered in factory
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
@@ -39,7 +38,7 @@ def compute_nudgecoeffs(
     nudge_zone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """Compute nudging coefficient for edges based the grid refinement level of an edge."""
     _compute_nudgecoeffs(
         refin_ctrl,

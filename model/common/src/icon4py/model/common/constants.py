@@ -9,8 +9,6 @@ import enum
 import sys
 from typing import Final
 
-from gt4py.eve import utils as eve_utils
-
 from icon4py.model.common import type_alias as ta, utils
 
 
@@ -92,8 +90,8 @@ RD_O_P0REF: Final[ta.wpfloat] = RD / P0REF
 SEA_LEVEL_PRESSURE: Final[ta.wpfloat] = 101325.0
 P0SL_BG: Final[ta.wpfloat] = SEA_LEVEL_PRESSURE
 
-# average earth radius in [m]
-EARTH_RADIUS: Final[float] = 6.371229e6
+#: average earth radius in [m]
+EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 #: Earth angular velocity [rad/s]
 EARTH_ANGULAR_VELOCITY: Final[ta.wpfloat] = 7.29212e-5
@@ -118,11 +116,8 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 #: default dynamics to physics time step ratio
 DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
 
-#: average earth radius in [m]
-EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
-
-class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
+class PhysicsConstants(ta.wpfloat, enum.Enum):
     """
     Constants used in gt4py stencils.
     """
@@ -154,7 +149,7 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
 
 
 # TODO (halungge): is this in the right place, it is not a constant...
-class RayleighType(utils.NamespaceMixin, enum.IntEnum):
+class RayleighType(utils.NamespaceMixin, int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
     #: Klemp (2008) type Rayleigh damping

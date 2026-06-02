@@ -22,11 +22,11 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
+    process_props,
 )
 
 

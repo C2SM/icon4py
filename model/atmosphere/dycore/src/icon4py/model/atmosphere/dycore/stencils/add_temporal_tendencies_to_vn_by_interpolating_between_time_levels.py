@@ -56,7 +56,7 @@ def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
         vn_nnow,
         ddt_vn_apc_ntl1,

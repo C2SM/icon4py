@@ -6,87 +6,28 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from datetime import datetime, timedelta
-
 import pytest
 
-from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
-from icon4py.model.driver import icon4py_configuration as driver_config
 from icon4py.model.testing.fixtures import (
-    damping_height,
     data_provider,
     download_ser_data,
     experiment,
-    flat_height,
+    experiment_description,
     grid_savepoint,
-    htop_moist_proc,
     icon_grid,
     interpolation_savepoint,
     istep_exit,
     istep_init,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
     metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
-    processor_props,
-    ranked_data_path,
+    process_props,
+    savepoint_diffusion_exit,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
-    stretch_factor,
-    top_height_limit_for_maximal_layer_thickness,
 )
-
-
-# TODO(OngChia): Reuse those pytest fixtures for diffusion test instead of creating here
-@pytest.fixture
-def r04b09_diffusion_config(ndyn_substeps) -> diffusion_config.DiffusionConfig:
-    """
-    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
-
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default.
-    """
-    return diffusion_config.DiffusionConfig(
-        diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        type_t_diffu=2,
-        type_vn_diffu=1,
-        hdiff_efdt_ratio=24.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
-        velocity_boundary_diffusion_denom=150.0,
-        _nudge_max_coeff=0.075,
-        n_substeps=ndyn_substeps,
-    )
-
-
-@pytest.fixture
-def r04b09_iconrun_config(
-    ndyn_substeps,
-    timeloop_date_init,
-    timeloop_date_exit,
-    timeloop_diffusion_linit_init,
-) -> driver_config.Icon4pyRunConfig:
-    """
-    Create Icon4pyRunConfig matching MCH_CH_r04b09_dsl.
-
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default.
-    """
-    return driver_config.Icon4pyRunConfig(
-        dtime=timedelta(seconds=10.0),
-        start_date=datetime.fromisoformat(timeloop_date_init),
-        end_date=datetime.fromisoformat(timeloop_date_exit),
-        n_substeps=ndyn_substeps,
-        apply_initial_stabilization=timeloop_diffusion_linit_init,
-    )
 
 
 @pytest.fixture
@@ -109,21 +50,8 @@ def timeloop_diffusion_savepoint_init(
 
 
 @pytest.fixture
-def timeloop_diffusion_savepoint_exit(
-    data_provider,  # imported fixtures data_provider`
-    step_date_exit,  # imported fixtures step_date_exit`
-    timeloop_diffusion_linit_exit,
-):
-    """
-    Load data from ICON savepoint at exist of diffusion module.
-
-    date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
-    fixture, passing 'step_data=<iso_string>'
-    """
-    sp = data_provider.from_savepoint_diffusion_exit(
-        linit=timeloop_diffusion_linit_exit, date=step_date_exit
-    )
-    return sp
+def linit(timeloop_diffusion_linit_exit: bool) -> bool:
+    return timeloop_diffusion_linit_exit
 
 
 @pytest.fixture

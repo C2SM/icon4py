@@ -40,7 +40,7 @@ def extrapolate_temporally_exner_pressure(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _extrapolate_temporally_exner_pressure(
         exner_exfac,
         exner,

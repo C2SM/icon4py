@@ -33,7 +33,7 @@ MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
-processor_properties = decomposition.SingleNodeProcessProperties()
+process_properties = decomposition.SingleNodeProcessProperties()
 
 
 class GlobalFileAttributes(TypedDict, total=False):
@@ -94,7 +94,7 @@ class NETCDFWriter:
         horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: GlobalFileAttributes,
-        process_properties: decomposition.ProcessProperties = processor_properties,
+        process_properties: decomposition.ProcessProperties = process_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties
@@ -211,9 +211,9 @@ class NETCDFWriter:
                 actual_var_name = ds_var.get(var_name).name
                 dims = ds_var.get(actual_var_name).dimensions
                 shape = ds_var.get(actual_var_name).shape
-                assert (
-                    len(canonical_new_slice.dims) == len(dims) - 1
-                ), f"Data variable dimensions do not match for {standard_name}."
+                assert len(canonical_new_slice.dims) == len(dims) - 1, (
+                    f"Data variable dimensions do not match for {standard_name}."
+                )
 
                 # TODO(halungge): change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
                 # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)

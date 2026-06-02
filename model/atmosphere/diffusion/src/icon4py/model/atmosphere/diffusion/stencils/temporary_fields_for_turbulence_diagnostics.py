@@ -41,7 +41,7 @@ def temporary_fields_for_turbulence_diagnostics(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec,
         vn,

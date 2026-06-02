@@ -17,16 +17,8 @@ import netCDF4 as nc4
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
-from icon4py.model.common.decomposition import (
-    definitions as decomposition,
-    mpi_decomposition as mpi_decomp,
-)
-from icon4py.model.common.grid import (
-    base,
-    icon as icon_grid,
-    states as grid_states,
-    vertical as v_grid,
-)
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -388,10 +380,10 @@ def _grid_savepoint(
     grid_file: pathlib.Path,
     rank: int,
 ) -> sb.IconGridSavepoint:
-    global_grid_params, grid_uuid = _create_grid_global_params(grid_file)
+    grid_params, grid_uuid = _create_grid_params(grid_file)
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_uuid,
-        global_grid_params.grid_shape,
+        grid_params,
     )
     return sp
 
@@ -399,7 +391,7 @@ def _grid_savepoint(
 def read_decomp_info(
     path: pathlib.Path,
     grid_file: pathlib.Path,
-    procs_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     ser_type=SerializationType.SB,
 ) -> decomposition.DecompositionInfo:
@@ -408,7 +400,7 @@ def read_decomp_info(
             backend,
             path,
             grid_file,
-            procs_props.rank,
+            process_props.rank,
         ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -459,7 +451,6 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         diffusion_metric_state = diffusion_states.DiffusionMetricState(
-            mask_hdiff=metrics_savepoint.mask_hdiff(),
             theta_ref_mc=metrics_savepoint.theta_ref_mc(),
             wgtfac_c=metrics_savepoint.wgtfac_c(),
             zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -487,13 +478,12 @@ def read_static_fields(
         metrics_savepoint = data_provider.from_metrics_savepoint()
         grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-            bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
             rayleigh_w=metrics_savepoint.rayleigh_w(),
             time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
             reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
             wgtfac_c=metrics_savepoint.wgtfac_c(),
-            wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+            wgtfacq_c=metrics_savepoint.wgtfacq_c(),
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
             reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
             reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
@@ -509,12 +499,11 @@ def read_static_fields(
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
             nflat_gradp=grid_savepoint.nflat_gradp(),
-            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-            pg_exdist=metrics_savepoint.pg_exdist(),
+            pg_exdist=metrics_savepoint.pg_exdist_dsl(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),
-            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid_savepoint.num(dims.KDim)),
+            wgtfacq_e=metrics_savepoint.wgtfacq_e(),
             exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
             horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
             scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -544,7 +533,7 @@ def configure_logging(
     run_path: str,
     experiment_name: str,
     enable_output: bool = True,
-    processor_procs: decomposition.ProcessProperties = None,
+    process_props: decomposition.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
@@ -555,7 +544,7 @@ def configure_logging(
         run_path: path to the output folder where the logfile should be stored
         experiment_name: name of the simulation
         enable_output: enable output logging messages above debug level
-        processor_procs: ProcessProperties
+        process_props: ProcessProperties
 
     """
     if not enable_output:
@@ -574,8 +563,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    # TODO(OngChia): modify here when single_dispatch is ready
-    console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
+    console_handler.addFilter(decomposition.ParallelLogger(process_props))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
@@ -585,17 +573,17 @@ def configure_logging(
 
 
 @functools.cache
-def _create_grid_global_params(
+def _create_grid_params(
     grid_file: pathlib.Path,
-) -> tuple[icon_grid.GlobalGridParams, str]:
+) -> tuple[icon_grid.GridParams, str]:
     """
-    Create global grid params and its uuid.
+    Create grid params and its uuid.
 
     Args:
         grid_file: path of the grid file
 
     Returns:
-        global_grid_params: GlobalGridParams
+        grid_params: GridParams
         grid_uuid: id (uuid) of the horizontal grid
     """
     grid = nc4.Dataset(grid_file, "r", format="NETCDF4")
@@ -603,17 +591,28 @@ def _create_grid_global_params(
     grid_level = grid.getncattr("grid_level")
     grid_uuid = grid.getncattr("uuidOfHGrid")
     try:
-        grid_geometry_type = base.GeometryType(grid.getncattr("grid_geometry"))
+        grid_geometry_type = icon_grid.GeometryType(grid.getncattr("grid_geometry"))
     except AttributeError:
         log.warning(
             "Global attribute grid_geometry is not found in the grid. Icosahedral grid is assumed."
         )
-        grid_geometry_type = base.GeometryType.ICOSAHEDRON
+        grid_geometry_type = icon_grid.GeometryType.ICOSAHEDRON
+
+    match grid_geometry_type:
+        case icon_grid.GeometryType.ICOSAHEDRON:
+            grid_params = icon_grid.GridParams(
+                icon_grid.IcosahedronParams(
+                    subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
+                ),
+            )
+        case icon_grid.GeometryType.TORUS:
+            grid_params = icon_grid.GridParams(
+                icon_grid.TorusParams(
+                    domain_length=grid.getncattr("domain_length"),
+                    domain_height=grid.getncattr("domain_height"),
+                ),
+            )
+
     grid.close()
-    global_grid_params = icon_grid.GlobalGridParams(
-        grid_shape=icon_grid.GridShape(
-            geometry_type=grid_geometry_type,
-            subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
-        ),
-    )
-    return global_grid_params, grid_uuid
+
+    return grid_params, grid_uuid

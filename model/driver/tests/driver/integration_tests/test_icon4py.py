@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-import click
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -17,11 +17,12 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
-    icon4py_configuration,
+    icon4py_configuration as driver_config,
     icon4py_driver,
     initialization_utils as driver_init,
 )
@@ -29,7 +30,6 @@ from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
-from ..utils import construct_icon4pyrun_config
 
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
+    "experiment_description, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -56,7 +56,6 @@ if TYPE_CHECKING:
             "2021-06-20T12:00:10.000",
             True,
             False,
-            False,
         ),
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -70,7 +69,6 @@ if TYPE_CHECKING:
             "2021-06-20T12:00:20.000",
             False,
             False,
-            True,
         ),
         (
             definitions.Experiments.GAUSS3D,
@@ -84,6 +82,18 @@ if TYPE_CHECKING:
             "2001-01-01T00:00:04.000",
             False,
             False,
+        ),
+        (
+            definitions.Experiments.JW,
+            1,
+            2,
+            1,
+            5,
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            False,
             False,
         ),
     ],
@@ -93,46 +103,31 @@ def test_run_timeloop_single_step(
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
-    vn_only: bool,  # TODO unused?
     *,
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
-    ndyn_substeps: int,
     timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
-    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
     savepoint_velocity_init: sb.IconVelocityInitSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
-    if experiment == definitions.Experiments.GAUSS3D:
-        config = icon4py_configuration.read_config(
-            experiment_type=driver_init.ExperimentType.GAUSS3D,
-            backend=backend,
-        )
-        diffusion_config = config.diffusion_config
-        nonhydro_config = config.solve_nonhydro_config
-        icon4pyrun_config = config.run_config
-
-    else:
-        diffusion_config = definitions.construct_diffusion_config(
-            experiment, ndyn_substeps=ndyn_substeps
-        )
-        nonhydro_config = definitions.construct_nonhydrostatic_config(experiment)
-        icon4pyrun_config = construct_icon4pyrun_config(
-            experiment,
-            timeloop_date_init,
-            timeloop_date_exit,
-            timeloop_diffusion_linit_init,
-            ndyn_substeps=ndyn_substeps,
-            backend=backend,
-        )
+    diffusion_config = experiment.config.diffusion
+    nonhydro_config = experiment.config.nonhydrostatic
+    icon4pyrun_config = driver_config.Icon4pyRunConfig(
+        dtime=experiment.config.driver.dtime,
+        start_date=datetime.fromisoformat(timeloop_date_init),
+        end_date=datetime.fromisoformat(timeloop_date_exit),
+        n_substeps=experiment.config.diffusion.ndyn_substeps,
+        apply_initial_stabilization=timeloop_diffusion_linit_init,
+        restart_mode=False
+        if experiment.description == definitions.Experiments.JW
+        else (not timeloop_diffusion_linit_init),
+        backend=backend,
+    )
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
@@ -149,7 +144,6 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -157,13 +151,7 @@ def test_run_timeloop_single_step(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
@@ -181,6 +169,7 @@ def test_run_timeloop_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     sp = savepoint_nonhydro_init
@@ -210,13 +199,12 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
@@ -232,12 +220,11 @@ def test_run_timeloop_single_step(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
-        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -257,6 +244,7 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
@@ -345,10 +333,10 @@ def test_run_timeloop_single_step(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit.vn()
-    w_sp = timeloop_diffusion_savepoint_exit.w()
+    exner_sp = savepoint_diffusion_exit.exner()
+    theta_sp = savepoint_diffusion_exit.theta_v()
+    vn_sp = savepoint_diffusion_exit.vn()
+    w_sp = savepoint_diffusion_exit.w()
 
     assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
@@ -359,7 +347,7 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-14,
+        atol=1e-13,
     )
 
     assert test_utils.dallclose(
@@ -382,7 +370,7 @@ def test_run_timeloop_single_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, experiment_type",
+    "experiment_description, experiment_type",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -393,9 +381,9 @@ def test_run_timeloop_single_step(
 def test_driver(
     experiment,
     experiment_type,
+    process_props,
     *,
     data_provider,
-    ranked_data_path,
     backend_like,
 ):
     """
@@ -404,8 +392,8 @@ def test_driver(
     TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
     """
     data_path = dt_utils.get_datapath_for_experiment(
-        ranked_base_path=ranked_data_path,
-        experiment=experiment,
+        process_props=process_props,
+        experiment_description=experiment.description,
     )
     gm = grid_utils.get_grid_manager_from_experiment(
         experiment=experiment,

@@ -7,7 +7,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: mshick/add-pr-comment@v2
+      - uses: mshick/add-pr-comment@v3
         with:
           refresh-message-position: true
           message: |2
@@ -17,6 +17,7 @@ jobs:
             Please make sure you run these tests via comment before you merge!
 
             * `cscs-ci run default`
+            * `cscs-ci run distributed`
 
             **Optional Tests**
 

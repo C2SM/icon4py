@@ -13,7 +13,7 @@ import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
-    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_averaged_vn_and_fluxes,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -26,8 +26,9 @@ from .test_spatially_average_flux_or_velocity import spatially_average_flux_or_v
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.StencilTest):
-    PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
+    PROGRAM = compute_averaged_vn_and_fluxes
     OUTPUTS = (
         "spatially_averaged_vn",
         "mass_flux_at_edges_on_model_levels",
@@ -35,6 +36,25 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         "substep_and_spatially_averaged_vn",
         "substep_averaged_mass_flux",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "prepare_advection",
+            "at_first_substep",
+            "r_nsubsteps",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "prepare_advection",
+            "at_first_substep",
+            "r_nsubsteps",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -134,8 +154,21 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
             substep_averaged_mass_flux=substep_averaged_mass_flux,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @pytest.fixture(
+        params=[
+            {"prepare_advection": pa, "at_first_substep": afs}
+            for pa, afs in [
+                (True, True),
+                (True, False),
+            ]
+        ],
+        ids=lambda p: (
+            f"prepare_advection[{p['prepare_advection']}]__at_first_substep[{p['at_first_substep']}]"
+        ),
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
@@ -147,13 +180,13 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        prepare_advection = True
-        at_first_substep = True
-        r_nsubsteps = 0.2
+        prepare_advection = request.param["prepare_advection"]
+        at_first_substep = request.param["at_first_substep"]
+        r_nsubsteps = 0.5
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,

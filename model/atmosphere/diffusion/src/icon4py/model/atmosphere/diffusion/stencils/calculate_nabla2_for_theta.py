@@ -40,7 +40,7 @@ def calculate_nabla2_for_theta(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_nabla2_for_theta(
         kh_smag_e,
         inv_dual_edge_length,

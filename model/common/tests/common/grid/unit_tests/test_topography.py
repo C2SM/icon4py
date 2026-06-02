@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
 
 
@@ -26,13 +26,6 @@ if TYPE_CHECKING:
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.GAUSS3D,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_topography_smoothing_with_serialized_data(
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -41,11 +34,13 @@ def test_topography_smoothing_with_serialized_data(
     backend: gtx_typing.Backend | None,
 ) -> None:
     cell_geometry = grid_savepoint.construct_cell_geometry()
+    assert cell_geometry.area is not None, (
+        "Broken assumption: this test assumes it's running from a savepoint containing a 'cell_area' field."
+    )
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     num_iterations = 25
     topography = topography_savepoint.topo_c()
-    xp = data_alloc.import_array_ns(backend)
     topography_smoothed_ref = topography_savepoint.topo_smt_c().asnumpy()
 
     topography_smoothed = topo.smooth_topography(
@@ -54,7 +49,7 @@ def test_topography_smoothing_with_serialized_data(
         geofac_n2s=geofac_n2s.ndarray,
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
-        array_ns=xp,
+        exchange=decomposition.single_node_exchange,
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

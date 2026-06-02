@@ -49,7 +49,7 @@ def apply_nabla2_and_nabla4_to_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_and_nabla4_to_vn(
         area_edge,
         kh_smag_e,

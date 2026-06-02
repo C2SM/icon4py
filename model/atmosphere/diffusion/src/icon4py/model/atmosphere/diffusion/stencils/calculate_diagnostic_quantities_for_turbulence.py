@@ -47,7 +47,7 @@ def calculate_diagnostic_quantities_for_turbulence(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_diagnostic_quantities_for_turbulence(
         kh_smag_ec,
         vn,

@@ -13,9 +13,9 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _init_two_edge_kdim_fields_with_zero_wp() -> (
-    tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]
-):
+def _init_two_edge_kdim_fields_with_zero_wp() -> tuple[
+    fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]
+]:
     """Formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33."""
     return broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
         wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
@@ -30,7 +30,7 @@ def init_two_edge_kdim_fields_with_zero_wp(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _init_two_edge_kdim_fields_with_zero_wp(
         out=(edge_kdim_field_with_zero_wp_1, edge_kdim_field_with_zero_wp_2),
         domain={

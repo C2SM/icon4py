@@ -30,7 +30,7 @@ def calculate_nabla2_for_w(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     # TODO(): replace this by common/math/stencils/compute_nabla2_on_cell_k
     _calculate_nabla2_for_w(
         w,

@@ -18,32 +18,21 @@ from icon4py.model.testing.fixtures.benchmark import (
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
-    damping_height,
     data_provider,
     decomposition_info,
     download_ser_data,
-    exner_expol,
     experiment,
-    flat_height,
+    experiment_description,
     grid_savepoint,
-    htop_moist_proc,
     icon_grid,
     interpolation_savepoint,
     linit,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
     metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
-    processor_props,
-    ranked_data_path,
-    rayleigh_coeff,
+    process_props,
     savepoint_diffusion_exit,
     savepoint_diffusion_init,
     step_date_exit,
     step_date_init,
-    stretch_factor,
-    vwind_offctr,
 )
 
 
@@ -68,7 +57,6 @@ def metric_state(
     metrics_savepoint: sb.MetricSavepoint,
 ) -> diffusion_states.DiffusionMetricState:
     return diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),

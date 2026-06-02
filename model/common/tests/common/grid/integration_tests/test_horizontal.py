@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING
 import pytest
 from gt4py import next as gtx
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import definitions
-from icon4py.model.testing.fixtures import experiment
+from icon4py.model.testing.fixtures import download_ser_data, experiment, experiment_description
 
 from ...fixtures import *  # noqa: F403
 from .. import utils
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_map_icon_start_end_index(
     experiment: definitions.Experiment, dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
 ) -> None:
@@ -38,7 +39,7 @@ def test_map_icon_start_end_index(
     _assert_domain_map(end_map, end_indices[dim])
 
 
-def _assert_domain_map(index_map: dict[h_grid.Domain, gtx.int32], index_array: np.ndarray) -> None:  # type: ignore  [name-defined] # noqa: PLR0912
+def _assert_domain_map(index_map: dict[h_grid.Domain, gtx.int32], index_array: np.ndarray) -> None:  # noqa: PLR0912
     same_index = False
     for d, index in index_map.items():
         if d.zone == h_grid.Zone.INTERIOR:

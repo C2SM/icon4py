@@ -34,7 +34,7 @@ def add_interpolated_horizontal_advection_of_w(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _add_interpolated_horizontal_advection_of_w(
         e_bln_c_s,
         z_v_grad_w,

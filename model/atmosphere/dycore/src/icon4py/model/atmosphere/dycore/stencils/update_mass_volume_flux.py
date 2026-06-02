@@ -41,7 +41,7 @@ def update_mass_volume_flux(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_mass_volume_flux(
         z_contr_w_fl_l,
         rho_ic,

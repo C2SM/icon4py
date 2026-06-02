@@ -103,17 +103,26 @@ class NonHydrostaticConfig:
     #: off-centering of velocity advection in corrector step
     veladv_offctr: float = 0.25
 
+    #: If True: Apply additional momentum diffusion at grid points close to the stability limit for vertical
+    #: advection (becomes effective extremely rarely in practice; this is mostly an emergency fix
+    #: for pathological cases with very large orographic gravity waves).
+    #: Called lextra_diffu in mo_nonhydrostatic_nml.f90
+    extra_diffu: bool = True
+
     #: parameters from other namelists:
 
     #: from mo_initicon_nml.f90/ mo_initicon_config.f90
-    #: whether or not incremental analysis update is active
-    is_iau_active: bool = False
-    #: IAU weight for dynamics fields
-    iau_wgt_dyn: float = 0.0
+    #: Incremental analysis init mode, defined as one of the ICON init modes.
+    #: Note: related to 'init_mode' in mo_initicon_nml.f90
+    iau_init: bool = False
 
     #: from mo_run_nml.f90
     #: use vertical nesting # TODO (halungge): not supported in icon4py remove!!
     l_vert_nested: bool = dataclasses.field(default=False, metadata={"omegaconf_ignore": True})
+
+    #: Called ldeepatmo in mo_dynamics_nml.f90
+    #: Switch for deep-atmosphere modification.
+    deepatmos_mode: bool = False
 
     #: from mo_interpol_nml.f90
 

@@ -90,7 +90,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         area,
         geofac_n2s,

@@ -19,7 +19,7 @@ import nox
 
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["test_model", "test_tools"]
+nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 
 
 # -- Parameter sets --
@@ -31,6 +31,7 @@ ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/subgrid_scale_physics/muphys",
     "common",
     "driver",
+    "standalone_driver",
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
@@ -41,6 +42,9 @@ ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
+SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
 #: is not guaranteed to be available in the venv where `nox` is running.
@@ -50,7 +54,7 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks."""
     _install_session_venv(session, extras=["io", "testing"], groups=["test"])
@@ -59,16 +63,15 @@ def benchmark_model(session: nox.Session) -> None:
         *f"pytest \
         -v \
         -m continuous_benchmarking \
-        --benchmark-only \
         --benchmark-warmup=on \
-        --benchmark-warmup-iterations=30 \
+        --benchmark-warmup-iterations=10 \
         --benchmark-json=pytest_benchmark_results_{session.python}.json \
         ./model".split(),
         *session.posargs,
     )
 
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_model-{python}"])
 def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -103,7 +106,7 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_model-{python}"])
 def __bencher_feature_branch_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -142,7 +145,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 # Model test sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(
@@ -161,15 +164,15 @@ def test_model(
         )
 
 
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", "basic")
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
 
 
-# Tools test sessions
+# Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=["3.10", "3.11"])
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize(
     "datatest",
     [
@@ -180,17 +183,20 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
         ),
     ],
 )
-def test_tools(session: nox.Session, datatest: bool) -> None:
-    """Run tests for the Fortran integration tools."""
+def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
+    """Run tests for the Fortran bindings and integration tools."""
     _install_session_venv(
         session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
     )
 
-    with session.chdir("tools"):
-        session.run(
-            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
-            *session.posargs,
-        )
+    datatest_flag = "--datatest-only" if datatest else "--datatest-skip"
+    pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
+    if not datatest:
+        # tools/ has no datatest-marked tests, so skip it in datatest mode
+        with session.chdir("tools"):
+            session.run(*pytest_base.split(), *session.posargs)
+    with session.chdir("bindings"):
+        session.run(*pytest_base.split(), *session.posargs)
 
 
 # -- utils --

@@ -33,7 +33,7 @@ def compute_first_vertical_derivative_at_cells(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_first_vertical_derivative_at_cells(
         cell_kdim_field,
         inv_ddqz_z_full,

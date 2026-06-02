@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast
@@ -48,17 +47,9 @@ from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increm
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
     _update_mass_volume_flux,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants, RayleighType
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = constants.RayleighType.namespace()
 
 
 @gtx.field_operator
@@ -92,23 +83,23 @@ def _set_surface_boundary_condition_for_computation_of_w(
 def _compute_w_explicit_term_with_predictor_advective_tendency(
     current_w: fa.CellKField[wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[vpfloat],
     dtime: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     (
         predictor_vertical_wind_advective_tendency_wp,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels_wp,
+        nonhydro_buoy_at_cells_on_half_levels_wp,
     ) = astype(
         (
             predictor_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels,
         ),
         wpfloat,
     )
 
     w_explicit_term_wp = current_w + dtime * (
         predictor_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * pressure_buoyancy_acceleration_at_cells_on_half_levels_wp
+        - PhysicsConstants.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -118,7 +109,7 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     current_w: fa.CellKField[wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[vpfloat],
     dtime: wpfloat,
     advection_explicit_weight_parameter: wpfloat,
     advection_implicit_weight_parameter: wpfloat,
@@ -126,12 +117,12 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     (
         predictor_vertical_wind_advective_tendency_wp,
         corrector_vertical_wind_advective_tendency_wp,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels_wp,
+        nonhydro_buoy_at_cells_on_half_levels_wp,
     ) = astype(
         (
             predictor_vertical_wind_advective_tendency,
             corrector_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels,
         ),
         wpfloat,
     )
@@ -139,7 +130,7 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     w_explicit_term_wp = current_w + dtime * (
         advection_explicit_weight_parameter * predictor_vertical_wind_advective_tendency_wp
         + advection_implicit_weight_parameter * corrector_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * pressure_buoyancy_acceleration_at_cells_on_half_levels_wp
+        - PhysicsConstants.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -159,9 +150,9 @@ def _compute_solver_coefficients_matrix(
 
     z_beta_wp = (
         dtime
-        * dycore_consts.rd
+        * PhysicsConstants.rd
         * current_exner
-        / (dycore_consts.cvd * current_rho * current_theta_v)
+        / (PhysicsConstants.cvd * current_rho * current_theta_v)
         * inv_ddqz_z_full_wp
     )
     z_alpha_wp = (
@@ -224,7 +215,7 @@ def _vertically_implicit_solver_at_predictor_step(
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
@@ -272,7 +263,7 @@ def _vertically_implicit_solver_at_predictor_step(
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
         ),
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
@@ -340,16 +331,14 @@ def _vertically_implicit_solver_at_predictor_step(
         z_w_expl=w_explicit_term,
         z_exner_expl=exner_explicit_term,
         dtime=dtime,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-    if rayleigh_type == rayleigh_damping_options.KLEMP:
+    if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
-                w_1=w_1,
                 w=next_w,
             ),
             next_w,
@@ -414,7 +403,7 @@ def vertically_implicit_solver_at_predictor_step(
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
@@ -480,7 +469,7 @@ def vertically_implicit_solver_at_predictor_step(
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
@@ -537,7 +526,7 @@ def _vertically_implicit_solver_at_corrector_step(
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
@@ -589,7 +578,7 @@ def _vertically_implicit_solver_at_corrector_step(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
@@ -655,17 +644,14 @@ def _vertically_implicit_solver_at_corrector_step(
         z_w_expl=w_explicit_term,
         z_exner_expl=exner_explicit_term,
         dtime=dtime,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-
-    if rayleigh_type == rayleigh_damping_options.KLEMP:
+    if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
-                w_1=w_1,
                 w=next_w,
             ),
             next_w,
@@ -755,7 +741,7 @@ def vertically_implicit_solver_at_corrector_step(
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
@@ -790,7 +776,7 @@ def vertically_implicit_solver_at_corrector_step(
     end_cell_index_local: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
-):
+) -> None:
     _set_surface_boundary_condition_for_computation_of_w(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         out=next_w,
@@ -809,7 +795,7 @@ def vertically_implicit_solver_at_corrector_step(
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,

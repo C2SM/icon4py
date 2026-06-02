@@ -28,13 +28,11 @@ def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[floa
 
 
 @gtx.field_operator
-def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
-    tuple[
-        fa.EdgeKField[wpfloat],
-        fa.EdgeKField[wpfloat],
-        fa.EdgeKField[wpfloat],
-    ]
-):
+def _broadcast_zero_to_three_edge_kdim_fields_wp() -> tuple[
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[wpfloat],
+]:
     return (
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
@@ -124,5 +122,5 @@ def _compute_rayleigh_damping_factor(
 @gtx.program
 def compute_rayleigh_damping_factor(
     rayleigh_w: fa.KField[float], dtime: float, rayleigh_damping_factor: fa.KField[float]
-):
+) -> None:
     _compute_rayleigh_damping_factor(rayleigh_w, dtime, out=rayleigh_damping_factor)

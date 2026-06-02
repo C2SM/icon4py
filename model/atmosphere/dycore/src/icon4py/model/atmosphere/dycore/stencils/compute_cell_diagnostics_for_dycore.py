@@ -19,7 +19,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast, maximum
@@ -31,12 +30,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
 )
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
-    _init_two_cell_kdim_fields_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -51,11 +44,8 @@ from icon4py.model.common.math.derivative import _compute_first_vertical_derivat
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType.namespace()
-
-
 @gtx.field_operator
-def _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
+def _calculate_nonhydro_buoy_at_cells_on_half_levels(
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
@@ -83,7 +73,7 @@ def _compute_perturbed_quantities_and_interpolation(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
@@ -108,7 +98,7 @@ def _compute_perturbed_quantities_and_interpolation(
             ),
             exner_at_cells_on_half_levels,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
     )
 
@@ -148,9 +138,9 @@ def _compute_perturbed_quantities_and_interpolation(
 
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = concat_where(
+    nonhydro_buoy_at_cells_on_half_levels = concat_where(
         dims.KDim >= 1,
-        _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
+        _calculate_nonhydro_buoy_at_cells_on_half_levels(
             exner_w_explicit_weight_parameter,
             theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels,
@@ -158,7 +148,7 @@ def _compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_half_levels,
             ddz_of_reference_exner_at_cells_on_half_levels,
         ),
-        pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels,
     )
 
     return (
@@ -169,7 +159,7 @@ def _compute_perturbed_quantities_and_interpolation(
         exner_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels,
     )
 
 
@@ -177,25 +167,18 @@ def _compute_perturbed_quantities_and_interpolation(
 def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     igradp_method: gtx.int32,
-) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-]:
-    temporal_extrapolation_of_perturbed_exner = _init_cell_kdim_field_with_zero_wp()
-
+) -> fa.CellKField[ta.vpfloat]:
     exner_at_cells_on_half_levels = (
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
     )
 
-    return (
-        temporal_extrapolation_of_perturbed_exner,
-        exner_at_cells_on_half_levels,
-    )
+    return exner_at_cells_on_half_levels
 
 
 @gtx.field_operator
@@ -223,7 +206,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
             ),
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 
@@ -241,7 +224,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
             ),
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
         else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 
@@ -298,7 +281,7 @@ def compute_perturbed_quantities_and_interpolation(
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -343,7 +326,7 @@ def compute_perturbed_quantities_and_interpolation(
         - exner_w_explicit_weight_parameter: explicitness weight for exner and w in the vertically implicit dycore solver
         - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function [m-1]
         - ddqz_z_half: vertical spacing pn half levels (distance between the height of cell centers at k at k-1)  [m]
-        - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration [m s-2]
+        - nonhydro_buoy_at_cells_on_half_levels: pressure buoyancy acceleration [m s-2]
         - time_extrapolation_parameter_for_exner: time extrapolation parameter for exner function
         - current_exner: exner function at current substep
         - reference_exner_at_cells_on_model_levels: reference exner function
@@ -370,17 +353,10 @@ def compute_perturbed_quantities_and_interpolation(
         - rho_at_cells_on_half_levels
         - perturbed_theta_v_at_cells_on_half_levels
         - theta_v_at_cells_on_half_levels
-        - pressure_buoyancy_acceleration_at_cells_on_half_levels
+        - nonhydro_buoy_at_cells_on_half_levels
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
-    _init_two_cell_kdim_fields_with_zero_vp(
-        out=(perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
-            dims.KDim: (model_top, surface_level - 1),
-        },
-    )
 
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
@@ -397,11 +373,9 @@ def compute_perturbed_quantities_and_interpolation(
     _surface_computations(
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         igradp_method=igradp_method,
-        out=(
-            temporal_extrapolation_of_perturbed_exner,
-            exner_at_cells_on_half_levels,
-        ),
+        out=exner_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (surface_level - 1, surface_level),
@@ -418,7 +392,7 @@ def compute_perturbed_quantities_and_interpolation(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
@@ -433,7 +407,7 @@ def compute_perturbed_quantities_and_interpolation(
             exner_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels,
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
@@ -496,7 +470,7 @@ def compute_perturbed_quantities_and_interpolation(
 
 
 @gtx.field_operator
-def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+def _compute_interpolation_and_nonhydro_buoy(
     w: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -583,7 +557,7 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
         + back_trajectory_w_at_cells_on_half_levels
         * (time_averaged_theta_v_kup - time_averaged_theta_v)
     )
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = (
+    nonhydro_buoy_at_cells_on_half_levels = (
         exner_w_explicit_weight_parameter
         * theta_v_at_cells_on_half_levels
         * (
@@ -601,16 +575,16 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
         rho_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
-        astype(pressure_buoyancy_acceleration_at_cells_on_half_levels, vpfloat),
+        astype(nonhydro_buoy_at_cells_on_half_levels, vpfloat),
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+def compute_interpolation_and_nonhydro_buoy(
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -630,7 +604,7 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_solve_nonhydro_stencil_1_to_13_corrector.
 
@@ -641,7 +615,7 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
         - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
         - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
         - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
-        - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
+        - nonhydro_buoy_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
         - w: vertical wind at cell centers [m s-1]
         - contravariant_correction_at_cells_on_half_levels: contravariant metric correction at cells on half levels
         - current_rho: air density at current substep [K]
@@ -666,9 +640,9 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
         - rho_at_cells_on_half_levels
         - perturbed_theta_v_at_cells_on_half_levels
         - theta_v_at_cells_on_half_levels
-        - pressure_buoyancy_acceleration_at_cells_on_half_levels
+        - nonhydro_buoy_at_cells_on_half_levels
     """
-    _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+    _compute_interpolation_and_nonhydro_buoy(
         w,
         contravariant_correction_at_cells_on_half_levels,
         current_rho,
@@ -688,7 +662,7 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
             rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -13,8 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.initialization import jablonowski_williamson_topography as topography
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.initialization import topography
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
@@ -28,7 +27,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
@@ -36,10 +35,9 @@ def test_jablonowski_williamson_topography(
     topography_savepoint: sb.TopographySavepoint,
 ):
     cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
-    topo_c = topography.jablonowski_williamson_topography(
+    topo_c = topography.jablonowski_williamson(
         cell_lat=cell_center_lat,
         u0=35.0,
-        array_ns=data_alloc.import_array_ns(backend),
     )
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()

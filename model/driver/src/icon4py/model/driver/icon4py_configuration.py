@@ -10,7 +10,7 @@ import datetime
 import functools
 import logging
 
-from gt4py.next import metrics as gtx_metrics
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
@@ -76,14 +76,12 @@ def read_config(
             diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
-            type_t_diffu=2,
-            type_vn_diffu=1,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=24.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
             n_substeps=n_substeps_reduced,
@@ -93,7 +91,6 @@ def read_config(
     def _mch_ch_r04b09_nonhydro_config():
         return dycore_config.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-            iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
@@ -111,12 +108,12 @@ def read_config(
             hdiff_vn=True,
             hdiff_temp=False,
             n_substeps=n_substeps,
-            type_t_diffu=2,
-            type_vn_diffu=1,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
+            zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
         )
 
@@ -142,10 +139,10 @@ def read_config(
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _jablownoski_Williamson_config():
+    def _jablonowski_williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend=backend,
@@ -201,7 +198,7 @@ def read_config(
             vertical_grid_config,
             diffusion_config,
             nonhydro_config,
-        ) = _jablownoski_Williamson_config()
+        ) = _jablonowski_williamson_config()
     elif experiment_type == driver_init.ExperimentType.GAUSS3D:
         (
             model_run_config,

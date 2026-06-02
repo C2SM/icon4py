@@ -54,7 +54,7 @@ def en_smag_fac_for_zero_nshift(
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
     enh_smag_fac: fa.KField[float],
-):
+) -> None:
     _en_smag_fac_for_zero_nshift(
         vect_a,
         hdiff_smag_fac,

@@ -16,18 +16,10 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import (
-    config,
-    data_handling as data,
-    datatest_utils as dt_utils,
-    definitions,
-    locking,
-)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
 
 if TYPE_CHECKING:
-    import pathlib
-
     from icon4py.model.testing import serialbox
 
 
@@ -82,72 +74,64 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
 
 
 @pytest.fixture
-def cpu_allocator() -> gtx_typing.FieldBufferAllocationUtil:
+def cpu_allocator() -> gtx_typing.Allocator:
     return model_backends.get_allocator(None)
 
 
 @pytest.fixture(
-    params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
+    params=[
+        definitions.Grids.R02B04_GLOBAL,
+        definitions.Grids.MCH_CH_R04B09_DSL,
+        definitions.Grids.TORUS_50000x5000,
+    ],
     ids=lambda r: r.name,
 )
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescription:
+    """Default parametrization for grid."""
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.EXCLAIM_APE,
+        definitions.Experiments.GAUSS3D,
+    ],
+    ids=lambda r: r.name,
+)
+def experiment_description(request: pytest.FixtureRequest) -> definitions.ExperimentDescription:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""
     return request.param
 
 
-@pytest.fixture(scope="session", params=[False])
-def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
-    with_mpi = request.param
-    runtype = decomposition.get_runtype(with_mpi=with_mpi)
-    return decomposition.get_processor_properties(runtype)
-
-
-@pytest.fixture(scope="session")
-def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
-    return dt_utils.get_ranked_data_path(
-        definitions.serialized_data_path(), processor_props.comm_size
+@pytest.fixture
+def experiment(
+    experiment_description: definitions.ExperimentDescription,
+    process_props: decomposition.ProcessProperties,
+    download_ser_data: None,  # downloads data as side-effect
+) -> definitions.Experiment:
+    return definitions.Experiment(
+        experiment_description=experiment_description,
+        experiment_config=dt_utils.create_experiment_configuration(
+            experiment_description, process_props
+        ),
     )
 
 
-def _download_ser_data(
-    comm_size: int,
-    _ranked_data_path: pathlib.Path,
-    _experiment: definitions.Experiment,
-) -> None:
-    # not a fixture to be able to use this function outside of pytest
-    try:
-        destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
-        uri = _experiment.partitioned_data[comm_size]
-
-        data_file = _ranked_data_path.joinpath(f"{_experiment.name}_mpitask{comm_size}.tar.gz").name
-        _ranked_data_path.mkdir(parents=True, exist_ok=True)
-        if config.ENABLE_TESTDATA_DOWNLOAD:
-            with locking.lock(_ranked_data_path):
-                # Note: if the lock would be created for `destination_path` it would always exist...
-                if not destination_path.exists():
-                    data.download_and_extract(uri, _ranked_data_path, data_file)
-        else:
-            # If test data download is disabled, we check if the directory exists
-            # without locking. We assume the location is managed by the user
-            # and avoid locking shared directories (e.g. on CI).
-            if not destination_path.exists():
-                raise RuntimeError(
-                    f"Serialization data {data_file} does not exist, and downloading is disabled."
-                )
-    except KeyError as err:
-        raise RuntimeError(
-            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
-        ) from err
+@pytest.fixture(scope="session", params=[False])
+def process_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
+    with_mpi = request.param
+    runtype = decomposition.get_runtype(with_mpi=with_mpi)
+    return decomposition.get_process_properties(runtype)
 
 
 @pytest.fixture
 def download_ser_data(
     request: pytest.FixtureRequest,
-    processor_props: decomposition.ProcessProperties,
-    ranked_data_path: pathlib.Path,
-    experiment: definitions.Experiment,
+    process_props: decomposition.ProcessProperties,
+    experiment_description: definitions.ExperimentDescription,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -159,27 +143,25 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
+    dt_utils.download_experiment(experiment_description, process_props)
 
 
 @pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
-    ranked_data_path: pathlib.Path,
     experiment: definitions.Experiment,
-    processor_props: decomposition.ProcessProperties,
+    process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
+    data_path = dt_utils.get_datapath_for_experiment(experiment.description, process_props)
+    return dt_utils.create_icon_serial_data_provider(data_path, process_props.rank, backend)
 
 
 @pytest.fixture
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
-    return data_provider.from_savepoint_grid(experiment.name, grid_shape)
+    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.params)
 
 
 @pytest.fixture
@@ -198,24 +180,9 @@ def icon_grid(
 def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, grid_shape=grid_shape
+        grid_id=experiment.name, grid_params=experiment.grid.params
     ).construct_decomposition_info()
-
-
-@pytest.fixture
-def ndyn_substeps(experiment: definitions.Experiment) -> int:
-    """
-    Return number of dynamical substeps.
-
-    Serialized data of global and regional experiments uses a reduced number
-    (2 instead of the default 5) in order to reduce the amount of data generated.
-    """
-    if experiment == definitions.Experiments.GAUSS3D:
-        return 5
-    else:
-        return 2
 
 
 @pytest.fixture
@@ -526,82 +493,9 @@ def istep_exit() -> int:
 
 
 @pytest.fixture
-def lowest_layer_thickness(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 20.0
-    else:
-        return 50.0
+def is_iau_active() -> bool:
+    return False
 
 
-@pytest.fixture
-def model_top_height(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 23000.0
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
-        return 75000.0
-    else:
-        return 23500.0
-
-
-@pytest.fixture
-def flat_height() -> float:
-    return 16000.0
-
-
-@pytest.fixture
-def stretch_factor(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 0.65
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.9
-    else:
-        return 1.0
-
-
-@pytest.fixture
-def damping_height(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return 12500.0
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
-        return 50000.0
-    else:
-        return 45000.0
-
-
-@pytest.fixture
-def htop_moist_proc() -> float:
-    return 22500.0
-
-
-@pytest.fixture
-def maximal_layer_thickness() -> float:
-    return 25000.0
-
-
-@pytest.fixture
-def rayleigh_coeff(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.1
-    else:
-        return 5.0
-
-
-@pytest.fixture
-def exner_expol(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.3333333333333
-    else:
-        return 0.333
-
-
-@pytest.fixture
-def vwind_offctr(experiment: definitions.Experiment) -> float:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        return 0.15
-    else:
-        return 0.2
-
-
-@pytest.fixture
-def top_height_limit_for_maximal_layer_thickness() -> float:
-    return 15000.0
+def iau_wgt_dyn() -> float:
+    return 0.0

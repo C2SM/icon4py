@@ -11,7 +11,6 @@ import functools
 import logging
 import math
 import pathlib
-from types import ModuleType
 from typing import Final
 
 import gt4py.next as gtx
@@ -21,6 +20,7 @@ import numpy as np
 import icon4py.model.common.states.metadata as data
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -58,9 +58,9 @@ class Domain:
     def _validate(self):
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
-            assert (
-                self.offset >= 0
-            ), f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            assert self.offset >= 0, (
+                f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            )
 
 
 def domain(dim: gtx.Dimension):
@@ -103,21 +103,21 @@ class VerticalGridConfig:
     file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
-    # SLEVE. Default values from mo_sleve_nml.
+    # SLEVE. decay_scale_1, decay_scale_2 and decay_exp are from mo_sleve_nml.
     #: Decay scale for large-scale topography component
     SLEVE_decay_scale_1: float = 4000.0
     #: Decay scale for small-scale topography component
     SLEVE_decay_scale_2: float = 2500.0
     #: Exponent for decay function
     SLEVE_decay_exponent: float = 1.2
-    #: minimum absolute layer thickness 1 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_1: float = 100.0
-    #: minimum absolute layer thickness 2 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_2: float = 500.0
-    #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
-    SLEVE_minimum_relative_layer_thickness_1: float = 1.0 / 3.0
-    #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
-    SLEVE_minimum_relative_layer_thickness_2: float = 0.5
+    #: minimum absolute layer thickness 1 for SLEVE coordinates (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_layer_thickness_1: float = 100.0
+    #: minimum absolute layer thickness 2 for SLEVE coordinates (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_layer_thickness_2: float = 500.0
+    #: minimum relative layer thickness for nominal thicknesses <= _SLEVE_minimum_layer_thickness_1 (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_relative_layer_thickness_1: float = 1.0 / 3.0
+    #: minimum relative layer thickness for a nominal thickness of _SLEVE_minimum_layer_thickness_2 (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_relative_layer_thickness_2: float = 0.5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -133,9 +133,9 @@ class VerticalGrid:
 
     config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[ta.wpfloat]]
-    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat]]
+    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat] | None]
     _vct_a: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
-    _vct_b: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
+    _vct_b: fa.KField[ta.wpfloat] | None = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
@@ -180,9 +180,9 @@ class VerticalGrid:
         vct_a_array = self._vct_a.ndarray
         dvct = vct_a_array[:-1] - vct_a_array[1:]
         array_value = [
-            f"   0   {vct_a_array[0]:12.3f}",
+            f"   0   {vct_a_array[0]:12.3f}             ",
             *(
-                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                f"{k + 1:4d}   {vct_a_array[k + 1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
             ),
         ]
@@ -216,9 +216,9 @@ class VerticalGrid:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
 
         index += domain.offset
-        assert (
-            0 <= index <= self._bottom_level(domain)
-        ), f"vertical index {index} outside of grid levels for {domain.dim}"
+        assert 0 <= index <= self._bottom_level(domain), (
+            f"vertical index {index} outside of grid levels for {domain.dim}"
+        )
         return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> int:
@@ -248,7 +248,7 @@ class VerticalGrid:
         return self._vct_a
 
     @property
-    def vct_b(self) -> fa.KField:
+    def vct_b(self) -> fa.KField | None:
         return self._vct_b
 
     def size(self, dim: gtx.Dimension) -> int:
@@ -293,7 +293,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.FieldBufferAllocationUtil
+    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.Allocator
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -339,7 +339,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
+    vertical_config: VerticalGridConfig, allocator: gtx_typing.Allocator
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -528,7 +528,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
+    vertical_config: VerticalGridConfig,
+    allocator: gtx_typing.Allocator,
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
@@ -565,7 +566,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
     SLEVE_decay_scale_2: ta.wpfloat,
-    array_ns: ModuleType = np,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute the 3D vertical coordinate field using the SLEVE coordinate
@@ -576,6 +577,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     blends smothly into the surface layer at num_lev + 1 which is the
     topography.
     """
+    array_ns = data_alloc.array_namespace(vct_a)
     num_cells = cell_areas.shape[0]
     num_levels = vct_a.shape[0] - 1
 
@@ -595,6 +597,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         cell_areas=cell_areas,
         geofac_n2s=geofac_n2s,
         c2e2co=c2e2co,
+        exchange=exchange,
     )
 
     vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
@@ -637,8 +640,8 @@ def _check_and_correct_layer_thickness(
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(vertical_coordinate)
     num_cells = vertical_coordinate.shape[0]
     num_levels = vertical_coordinate.shape[1] - 1
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=int)
@@ -724,12 +727,9 @@ def _check_flatness_of_flat_level(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     nflatlev: int,
-    array_ns: ModuleType = np,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not array_ns.all(
-        vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]
-    ):
+    if not (vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]).all():
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 
@@ -749,7 +749,7 @@ def compute_vertical_coordinate(
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
-    array_ns: ModuleType = np,
+    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
     Compute the (Cell, K) vertical coordinate field starting from the
@@ -783,7 +783,7 @@ def compute_vertical_coordinate(
         SLEVE_decay_scale_1=SLEVE_decay_scale_1,
         SLEVE_decay_exponent=SLEVE_decay_exponent,
         SLEVE_decay_scale_2=SLEVE_decay_scale_2,
-        array_ns=array_ns,
+        exchange=exchange,
     )
 
     vertical_coordinate = _check_and_correct_layer_thickness(
@@ -794,14 +794,12 @@ def compute_vertical_coordinate(
         SLEVE_minimum_layer_thickness_2=SLEVE_minimum_layer_thickness_2,
         SLEVE_minimum_relative_layer_thickness_2=SLEVE_minimum_relative_layer_thickness_2,
         lowest_layer_thickness=lowest_layer_thickness,
-        array_ns=array_ns,
     )
 
     _check_flatness_of_flat_level(
         vertical_coordinate=vertical_coordinates_on_half_levels,
         vct_a=vct_a,
         nflatlev=nflatlev,
-        array_ns=array_ns,
     )
 
     return vertical_coordinate

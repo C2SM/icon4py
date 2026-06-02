@@ -75,7 +75,7 @@ def compute_barycentric_backtrajectory_alt(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_barycentric_backtrajectory_alt(
         p_vn,
         p_vt,

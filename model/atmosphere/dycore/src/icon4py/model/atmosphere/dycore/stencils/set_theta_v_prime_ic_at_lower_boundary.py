@@ -36,7 +36,7 @@ def set_theta_v_prime_ic_at_lower_boundary(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _set_theta_v_prime_ic_at_lower_boundary(
         wgtfacq_c,
         z_rth_pr,

@@ -37,13 +37,23 @@ def format_fortran_code(source: str) -> str:
     return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
 
 
-def write_file(string: str, outdir: pathlib.Path, fname: str) -> None:
-    path = outdir / fname
-    with path.open("w") as f:
-        f.write(string)
+def write_if_changed(content: str, path: pathlib.Path, *, force: bool = False) -> bool:
+    """Write file only if its content differs from what is already on disk.
+
+    Args:
+        force: If True, always write the file regardless of current content.
+
+    Returns True if the file was written (content changed, file was new, or force=True),
+    False if the existing file already has the same content.
+    """
+    if not force and path.exists() and path.read_text(encoding="utf-8") == content:
+        return False
+    path.parent.mkdir(exist_ok=True, parents=True)
+    path.write_text(content, encoding="utf-8")
+    return True
 
 
-def setup_logger(name: str, log_level: int = logging.INFO) -> logging.Logger:
+def setup_logger(name: str, log_level: int = logging.WARNING) -> logging.Logger:
     """Set up a logger with a given name and log level."""
     logger = logging.getLogger(name)
     logger.setLevel(log_level)

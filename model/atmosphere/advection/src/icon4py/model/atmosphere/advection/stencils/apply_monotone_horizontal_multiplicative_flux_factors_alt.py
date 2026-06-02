@@ -47,7 +47,7 @@ def apply_monotone_horizontal_multiplicative_flux_factors_alt(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_monotone_horizontal_multiplicative_flux_factors_alt(
         z_anti,
         z_mflx_low,

@@ -21,7 +21,7 @@ BENCHMARK_DEFAULT_LEVELS: Final[int] = 80
 
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
-    10  # the number matters for performance measurements, but otherwise is arbitrary
+    40  # the number matters for performance measurements, but otherwise is arbitrary. Set to 40 since some tests use `nflat_gradp` which is typically set to 34.
 )
 VALID_GRID_PRESETS: tuple[str, ...] = (
     "simple",
@@ -36,7 +36,7 @@ def _get_grid_manager_from_preset(
     grid_preset: str,
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> gm.GridManager | None:
     match grid_preset:
         case "icon_regional":

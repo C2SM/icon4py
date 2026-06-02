@@ -48,11 +48,19 @@ def construct_interpolation_state(
 
 
 def construct_least_squares_state(
-    savepoint: sb.InterpolationSavepoint, backend: gtx_typing.Backend | None
+    least_squares_coeffs: data_alloc.NDArray, backend: gtx_typing.Backend | None
 ) -> advection_states.AdvectionLeastSquaresState:
     return advection_states.AdvectionLeastSquaresState(
-        lsq_pseudoinv_1=savepoint.lsq_pseudoinv_1(),
-        lsq_pseudoinv_2=savepoint.lsq_pseudoinv_2(),
+        lsq_pseudoinv_1=gtx.as_field(
+            (dims.CellDim, dims.C2E2CDim),
+            least_squares_coeffs[:, 0, :],
+            allocator=backend,
+        ),
+        lsq_pseudoinv_2=gtx.as_field(
+            (dims.CellDim, dims.C2E2CDim),
+            least_squares_coeffs[:, 1, :],
+            allocator=backend,
+        ),
     )
 
 
@@ -177,6 +185,7 @@ def verify_advection_fields(
         diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         rtol=1e-10,
+        atol=1e-11,
     )
     assert test_utils.dallclose(
         diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],

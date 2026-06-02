@@ -37,7 +37,7 @@ def compute_mass_flux(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_mass_and_temperature_flux(
         z_rho_e,
         z_vn_avg,

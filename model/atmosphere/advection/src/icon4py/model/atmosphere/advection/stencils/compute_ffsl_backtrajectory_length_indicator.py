@@ -37,7 +37,7 @@ def compute_ffsl_backtrajectory_length_indicator(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ffsl_backtrajectory_length_indicator(
         p_vn,
         p_vt,

@@ -14,7 +14,6 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -45,19 +44,13 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    field_type_aliases as fa,
-    model_backends,
-)
+from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -79,8 +72,8 @@ class DiffusionParams:
     K4: Final[float] = dataclasses.field(init=False)
     K6: Final[float] = dataclasses.field(init=False)
     K4W: Final[float] = dataclasses.field(init=False)
-    smagorinski_factor: Final[float] = dataclasses.field(init=False)
-    smagorinski_height: Final[float] = dataclasses.field(init=False)
+    smagorinski_factor: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
+    smagorinski_height: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
@@ -96,56 +89,26 @@ class DiffusionParams:
             (1.0 / (config.hdiff_w_efdt_ratio * 36.0) if config.hdiff_w_efdt_ratio > 0 else 0.0),
         )
 
-        (
-            smagorinski_factor,
-            smagorinski_height,
-        ) = self._determine_smagorinski_factor(config)
-        object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
-        object.__setattr__(self, "smagorinski_height", smagorinski_height)
-
-    def _determine_smagorinski_factor(self, config: diffusion_config.DiffusionConfig):
-        """Enhanced Smagorinsky diffusion factor.
-
-        Smagorinsky diffusion factor is defined as a profile in height
-        above sea level with 4 height sections.
-
-        It is calculated/used only in the case of diffusion_type 3 or 5
-        """
-        match config.diffusion_type:
-            case 5:
-                (
-                    smagorinski_factor,
-                    smagorinski_height,
-                ) = diffusion_type_5_smagorinski_factor(config)
-            case 4:
-                # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
-                # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
-                smagorinski_factor = (
-                    config.smagorinski_scaling_factor
-                    if config.smagorinski_scaling_factor
-                    else 0.15,
-                )
-                smagorinski_height = None
-            case _:
-                raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-                smagorinski_factor = None
-                smagorinski_height = None
-                pass
-        return smagorinski_factor, smagorinski_height
-
-
-def diffusion_type_5_smagorinski_factor(config: diffusion_config.DiffusionConfig):
-    """
-    Initialize Smagorinski factors used in diffusion type 5.
-
-    The calculation and magic numbers are taken from mo_diffusion_nml.f90
-    """
-    magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
-    magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
-    magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-    factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
-    heights = (32500.0, magic_z2, 50000.0, 90000.0)
-    return factor, heights
+        object.__setattr__(
+            self,
+            "smagorinski_factor",
+            (
+                config.smagorinski_scaling_factor,
+                config.smagorinski_scaling_factor2,
+                config.smagorinski_scaling_factor3,
+                config.smagorinski_scaling_factor4,
+            ),
+        )
+        object.__setattr__(
+            self,
+            "smagorinski_height",
+            (
+                config.smagorinski_scaling_height,
+                config.smagorinski_scaling_height2,
+                config.smagorinski_scaling_height3,
+                config.smagorinski_scaling_height4,
+            ),
+        )
 
 
 class Diffusion:
@@ -165,12 +128,10 @@ class Diffusion:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        orchestration: bool = False,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime,
     ):
         self._allocator = model_backends.get_allocator(backend)
-        self._orchestration = orchestration
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
         self.config = config
         self._params = params
         self._grid = grid
@@ -181,12 +142,12 @@ class Diffusion:
         self._cell_params = cell_params
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
-            self._exchange
+            self._exchange,
         )  # wait on a communication handle
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
         )
-        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        #: threshold temperature deviation from neighboring grid points that activates extra diffusion against runaway cooling
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
@@ -283,9 +244,7 @@ class Diffusion:
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
                 "diff_multfac_w": self.diff_multfac_w,
-                "type_shear": gtx.int32(
-                    self.config.shear_type.value
-                ),  # DaCe parser peculiarity (does not work as gtx.int32)
+                "type_shear": self.config.shear_type,
             },
             horizontal_sizes={
                 "horizontal_start": self._horizontal_start_index_w_diffusion,
@@ -296,7 +255,7 @@ class Diffusion:
             vertical_sizes={
                 "vertical_start": 0,
                 "vertical_end": self._grid.num_levels,
-                "nrdmax": gtx.int32(  # DaCe parser peculiarity (does not work as gtx.int32)
+                "nrdmax": gtx.int32(
                     self._vertical_grid.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
             },
@@ -325,7 +284,6 @@ class Diffusion:
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
-                "mask": self._metric_state.mask_hdiff,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
                 "zd_diffcoef": self._metric_state.zd_diffcoef,
                 "vcoef": self._metric_state.zd_intcoef,
@@ -389,11 +347,7 @@ class Diffusion:
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
-        # TODO(edopao): we should call gtx.common.offset_provider_to_type()
-        #   but this requires some changes in gt4py domain inference.
-        self.compile_time_connectivities = self._grid.connectivities
-
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
@@ -466,96 +420,40 @@ class Diffusion:
 
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
-    def initial_run(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: float,
-    ):
-        """
-        Calculate initial diffusion step.
-
-        In ICON at the start of the simulation diffusion is run with a parameter linit = True:
-
-        'For real-data runs, perform an extra diffusion call before the first time
-        step because no other filtering of the interpolated velocity field is done'
-
-        This run uses special values for diff_multfac_vn, smag_limit and smag_offset
-
-        """
-        diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
-        smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
-
-        self.setup_fields_for_initial_step(
-            self._params.K4,
-            self.config.hdiff_efdt_ratio,
-            diff_multfac_vn,
-            smag_limit,
-        )
-        self._do_diffusion_step(
-            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0
-        )
-        self._sync_cell_fields(prognostic_state)
-
     def run(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
+        initial_run: bool = False,
     ):
         """
-        Do one diffusion step within regular time loop.
+        Do one diffusion step.
 
-        runs a diffusion step for the parameter linit=False, within regular time loop.
+        In ICON at the start of the simulation diffusion is run with linit=True:
+
+        'For real-data runs, perform an extra diffusion call before the first time
+        step because no other filtering of the interpolated velocity field is done'
+
+        The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
+        if initial_run:
+            diff_multfac_vn = data_alloc.zero_field(
+                self._grid, dims.KDim, allocator=self._allocator
+            )
+            smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
+            self.setup_fields_for_initial_step(
+                self._params.K4,
+                self.config.hdiff_efdt_ratio,
+                diff_multfac_vn,
+                smag_limit,
+            )
+            smag_offset = 0.0
+        else:
+            diff_multfac_vn = self.diff_multfac_vn
+            smag_limit = self.smag_limit
+            smag_offset = self.smag_offset
 
-        self._do_diffusion_step(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-            diff_multfac_vn=self.diff_multfac_vn,
-            smag_limit=self.smag_limit,
-            smag_offset=self.smag_offset,
-        )
-
-    def _sync_cell_fields(self, prognostic_state):
-        """
-        Communicate theta_v, exner and w.
-
-        communication only done in original code if the following condition applies:
-        IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
-        """
-        log.debug("communication of prognostic cell fields: theta, w, exner - start")
-        self._exchange.exchange_and_wait(
-            dims.CellDim,
-            prognostic_state.w,
-            prognostic_state.theta_v,
-            prognostic_state.exner,
-        )
-        log.debug("communication of prognostic cell fields: theta, w, exner - done")
-
-    @dace_orchestration.orchestrate
-    def _do_diffusion_step(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: float,
-        diff_multfac_vn: fa.KField[float],
-        smag_limit: fa.KField[float],
-        smag_offset: float,
-    ):
-        """
-        Run a diffusion step.
-
-        Args:
-            diagnostic_state: output argument, data class that contains diagnostic variables
-            prognostic_state: output argument, data class that contains prognostic variables
-            dtime: the time step,
-            diff_multfac_vn:
-            smag_limit:
-            smag_offset:
-
-        """
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
         log.debug("rbf interpolation 1: start")
@@ -567,12 +465,14 @@ class Diffusion:
         log.debug("rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of vn - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
+            full_exchange=True,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -589,10 +489,12 @@ class Diffusion:
             smag_offset=smag_offset,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
+
         if (
             self.config.shear_type
             >= diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-            or self.config.ltkeshs
+            or self.config.loutshs
+            or self.config.a_hshr > 0.0
         ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
@@ -608,35 +510,21 @@ class Diffusion:
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
 
-        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO(halungge): move this up and do asynchronous exchange
-        if self.config.type_vn_diffu > 1:
-            log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
-            log.debug("communication rbf extrapolation of z_nable2_e - end")
-
         log.debug("2nd rbf interpolation: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
-            p_e_in=self.z_nabla2_e,
-            ptr_coeff_1=self._interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=self._interpolation_state.rbf_coeff_2,
-            p_u_out=self.u_vert,
-            p_v_out=self.v_vert,
-            horizontal_start=self._vertex_start_lateral_boundary_level_2,
-            horizontal_end=self._vertex_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
+            p_e_in=self.z_nabla2_e, p_u_out=self.u_vert, p_v_out=self.v_vert
         )
         log.debug("2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
+            full_exchange=True,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -651,8 +539,13 @@ class Diffusion:
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
-        log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange(prognostic_state.vn, dim=dims.EdgeDim, wait=False)
+        log.debug("communication of prognostic.vn : start")
+        handle_edge_comm = self._exchange(
+            prognostic_state.vn,
+            dim=dims.EdgeDim,
+            full_exchange=False,
+            stream=decomposition.DEFAULT_STREAM,
+        )
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -672,11 +565,16 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
+        self.halo_exchange_wait(
+            handle_edge_comm,
+            stream=decomposition.DEFAULT_STREAM,
+        )  # need to do this here, since we currently only use 1 communication object.
+        log.debug("communication of prognostic.vn - end")
+
         if self.config.apply_to_temperature:
             log.debug(
                 "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
             )
-
             self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
                 theta_v=prognostic_state.theta_v,
                 kh_smag_e=self.kh_smag_e,
@@ -688,34 +586,40 @@ class Diffusion:
             self.copy_field(
                 prognostic_state.theta_v, self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
-
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 theta_v_in=self.theta_v_tmp,
                 theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
             )
+            # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+            # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+            # is another halo exchange after the physics are applied.
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
+            if initial_run or self.config.iforcing not in (
+                diffusion_config.ForcingType.NWP,
+                diffusion_config.ForcingType.AES,
+            ):
+                log.debug("communication of prognostic cell fields: theta and exner - start")
+                self._exchange.exchange(
+                    dims.CellDim,
+                    prognostic_state.theta_v,
+                    prognostic_state.exner,
+                    stream=decomposition.DEFAULT_STREAM,
+                )
+                log.debug("communication of prognostic cell fields: theta and exner - done")
 
-        self.halo_exchange_wait(
-            handle_edge_comm
-        )  # need to do this here, since we currently only use 1 communication object.
-        log.debug("communication of prognogistic.vn - end")
-
-    # TODO(kotsaloscv): It is unsafe to set it as cached property -demands more testing-
-    def orchestration_uid(self) -> str:
-        """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
-        members_to_disregard = [
-            "_allocator",
-            "_exchange",
-            "_grid",
-            "compile_time_connectivities",
-            *[
-                name
-                for name in self.__dict__
-                if isinstance(self.__dict__[name], gtx_typing.Program)
-            ],
-        ]
-        return dace_orchestration.generate_orchestration_uid(
-            self, members_to_disregard=members_to_disregard
-        )
+        # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+        # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+        # is another halo exchange after the physics are applied.
+        if initial_run or self.config.iforcing not in (
+            diffusion_config.ForcingType.NWP,
+            diffusion_config.ForcingType.AES,
+        ):
+            log.debug("communication of prognostic cell field: w - start")
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_state.w,
+                stream=decomposition.DEFAULT_STREAM,
+            )
+            log.debug("communication of prognostic cell field: w - done")

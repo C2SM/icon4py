@@ -413,7 +413,7 @@ class SimpleGridData:
 
 def simple_grid(
     *,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
     num_levels: int = DEFAULT_NUM_LEVELS,
 ) -> base.Grid:
     """
@@ -473,7 +473,6 @@ def simple_grid(
         id="simple_grid",
         config=config,
         connectivities=connectivities,
-        geometry_type=base.GeometryType.TORUS,
         start_index=simple_start_index,
         end_index=simple_end_index,
     )

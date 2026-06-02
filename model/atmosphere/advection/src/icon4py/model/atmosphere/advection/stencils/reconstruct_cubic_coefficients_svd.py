@@ -117,7 +117,7 @@ def reconstruct_cubic_coefficients_svd(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _reconstruct_cubic_coefficients_svd(
         p_cc,
         lsq_pseudoinv_1,
