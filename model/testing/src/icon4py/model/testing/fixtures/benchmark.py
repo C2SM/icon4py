@@ -19,11 +19,11 @@ from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,
+    topography,
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.standalone_driver.testcases import topography
 
 
 @pytest.fixture(

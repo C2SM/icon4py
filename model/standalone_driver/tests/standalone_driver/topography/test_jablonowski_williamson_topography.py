@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.standalone_driver.testcases import topography
+from icon4py.model.common.grid import topography
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403

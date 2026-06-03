@@ -136,7 +136,9 @@ def read_config(
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
-    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(master_dict, input_dict)
+    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
+        master_dict, input_dict
+    )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
     driver_cfg = DriverConfig.from_fortran_dict(

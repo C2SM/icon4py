@@ -27,7 +27,11 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
+from icon4py.model.common.grid import (
+    geometry_attributes as geom_attr,
+    topography,
+    vertical as v_grid,
+)
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -38,7 +42,6 @@ from icon4py.model.standalone_driver import (
     driver_states,
     driver_utils,
 )
-from icon4py.model.standalone_driver.testcases import topography
 
 
 log = logging.getLogger(__name__)

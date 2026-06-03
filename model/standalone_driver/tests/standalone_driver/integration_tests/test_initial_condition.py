@@ -25,7 +25,9 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW, definitions.Experiments.GAUSS3D])
+@pytest.mark.parametrize(
+    "experiment_description", [definitions.Experiments.JW, definitions.Experiments.GAUSS3D]
+)
 @pytest.mark.datatest
 def test_initial_conditions(
     backend_like: model_backends.BackendLike,

@@ -75,7 +75,7 @@ depends_on = [
 
 [[modules]]
 path = "icon4py.model.testing"
-depends_on = [{ path = "icon4py.model.common" }]
+depends_on = [{ path = "icon4py.model.common" }, { path = "icon4py.model.standalone_driver" }]
 
 [[modules]]
 path = "icon4py.tools"

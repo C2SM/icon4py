@@ -179,7 +179,9 @@ def create_experiment_configuration(
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
-    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(master_dict, input_dict)
+    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
+        master_dict, input_dict
+    )
 
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict,
