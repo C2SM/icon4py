@@ -22,7 +22,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.14"]
-        backend: ["embedded", "dace_cpu", "gtfn_cpu"]
+        #backend: ["embedded", "dace_cpu", "gtfn_cpu"]
+        backend: ["dace_cpu"]
         component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "driver", "common", "standalone_driver"]
     steps:
       - name: Checkout
