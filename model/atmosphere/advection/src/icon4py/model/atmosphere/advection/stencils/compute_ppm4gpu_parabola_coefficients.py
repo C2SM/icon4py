@@ -8,28 +8,29 @@
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _compute_ppm4gpu_parabola_coefficients(
-    z_face_up: fa.CellKField[ta.wpfloat],
-    z_face_low: fa.CellKField[ta.wpfloat],
-    p_cc: fa.CellKField[ta.wpfloat],
-) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
-    z_delta_q = 0.5 * (z_face_up - z_face_low)
-    z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
+    z_face_up: fa.CellKField[wpfloat],
+    z_face_low: fa.CellKField[wpfloat],
+    p_cc: fa.CellKField[wpfloat],
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    z_delta_q = wpfloat(0.5) * (z_face_up - z_face_low)
+    z_a1 = p_cc - wpfloat(0.5) * (z_face_up + z_face_low)
 
     return z_delta_q, z_a1
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ppm4gpu_parabola_coefficients(
-    z_face_up: fa.CellKField[ta.wpfloat],
-    z_face_low: fa.CellKField[ta.wpfloat],
-    p_cc: fa.CellKField[ta.wpfloat],
-    z_delta_q: fa.CellKField[ta.wpfloat],
-    z_a1: fa.CellKField[ta.wpfloat],
+    z_face_up: fa.CellKField[wpfloat],
+    z_face_low: fa.CellKField[wpfloat],
+    p_cc: fa.CellKField[wpfloat],
+    z_delta_q: fa.CellKField[wpfloat],
+    z_a1: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

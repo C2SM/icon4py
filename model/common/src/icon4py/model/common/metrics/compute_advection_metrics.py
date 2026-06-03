@@ -9,15 +9,15 @@ from __future__ import annotations
 
 from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _compute_advection_deepatmo_fields(
-    height_u: fa.KField[ta.wpfloat],
-    height_l: fa.KField[ta.wpfloat],
-    grid_sphere_radius: ta.wpfloat,
-) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
+    height_u: fa.KField[wpfloat],
+    height_l: fa.KField[wpfloat],
+    grid_sphere_radius: wpfloat,
+) -> tuple[fa.KField[wpfloat], fa.KField[wpfloat], fa.KField[wpfloat]]:
     """
     Compute 'deepatmo_divh', 'deepatmo_divzL', 'deepatmo_divzU' from 'vct_a' and 'grid_sphere_radius'.
 
@@ -30,37 +30,37 @@ def _compute_advection_deepatmo_fields(
     - deepatmo_divzL
     - deepatmo_divzU
     """
-    height = 0.5 * (height_l + height_u)
+    height = wpfloat(0.5) * (height_l + height_u)
     radial_distance = height + grid_sphere_radius
     radial_distance_l = grid_sphere_radius + height_l
     radial_distance_u = grid_sphere_radius + height_u
     deepatmo_gradh = grid_sphere_radius / radial_distance
     deepatmo_divh = (
         deepatmo_gradh
-        * 3.0
-        / 4.0
+        * wpfloat(3.0)
+        / wpfloat(4.0)
         / (
-            1.0
+            wpfloat(1.0)
             - radial_distance_l * radial_distance_u / (radial_distance_l + radial_distance_u) ** 2
         )
     )
-    deepatmo_divzL = 3.0 / (
-        1.0 + radial_distance_u / radial_distance_l + (radial_distance_u / radial_distance_l) ** 2
+    deepatmo_divzL = wpfloat(3.0) / (
+        wpfloat(1.0) + radial_distance_u / radial_distance_l + (radial_distance_u / radial_distance_l) ** 2
     )
-    deepatmo_divzU = 3.0 / (
-        1.0 + radial_distance_l / radial_distance_u + (radial_distance_l / radial_distance_u) ** 2
+    deepatmo_divzU = wpfloat(3.0) / (
+        wpfloat(1.0) + radial_distance_l / radial_distance_u + (radial_distance_l / radial_distance_u) ** 2
     )
     return deepatmo_divh, deepatmo_divzL, deepatmo_divzU
 
 
 @gtx.program
 def compute_advection_deepatmo_fields(
-    height_u: fa.KField[ta.wpfloat],
-    height_l: fa.KField[ta.wpfloat],
-    deepatmo_divh: fa.KField[ta.wpfloat],
-    deepatmo_divzL: fa.KField[ta.wpfloat],
-    deepatmo_divzU: fa.KField[ta.wpfloat],
-    grid_sphere_radius: float,
+    height_u: fa.KField[wpfloat],
+    height_l: fa.KField[wpfloat],
+    deepatmo_divh: fa.KField[wpfloat],
+    deepatmo_divzL: fa.KField[wpfloat],
+    deepatmo_divzU: fa.KField[wpfloat],
+    grid_sphere_radius: wpfloat,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

@@ -9,22 +9,22 @@
 import gt4py.next as gtx
 from gt4py.next import astype, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import wpfloat, vpfloat
 
 
 @gtx.field_operator
 def _compute_horizontal_tracer_flux_from_linear_coefficients_alt(
-    z_lsq_coeff_1: fa.CellKField[ta.wpfloat],
-    z_lsq_coeff_2: fa.CellKField[ta.wpfloat],
-    z_lsq_coeff_3: fa.CellKField[ta.wpfloat],
-    distv_bary_1: fa.EdgeKField[ta.vpfloat],
-    distv_bary_2: fa.EdgeKField[ta.vpfloat],
-    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
-    p_vn: fa.EdgeKField[ta.wpfloat],
-) -> fa.EdgeKField[ta.wpfloat]:
-    lvn_pos_inv = p_vn < 0.0
+    z_lsq_coeff_1: fa.CellKField[wpfloat],
+    z_lsq_coeff_2: fa.CellKField[wpfloat],
+    z_lsq_coeff_3: fa.CellKField[wpfloat],
+    distv_bary_1: fa.EdgeKField[vpfloat],
+    distv_bary_2: fa.EdgeKField[vpfloat],
+    p_mass_flx_e: fa.EdgeKField[wpfloat],
+    p_vn: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    lvn_pos_inv = p_vn < wpfloat(0.0)
 
     p_out_e = (
         where(lvn_pos_inv, z_lsq_coeff_1(E2C[1]), z_lsq_coeff_1(E2C[0]))
@@ -39,14 +39,14 @@ def _compute_horizontal_tracer_flux_from_linear_coefficients_alt(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_horizontal_tracer_flux_from_linear_coefficients_alt(
-    z_lsq_coeff_1: fa.CellKField[ta.wpfloat],
-    z_lsq_coeff_2: fa.CellKField[ta.wpfloat],
-    z_lsq_coeff_3: fa.CellKField[ta.wpfloat],
-    distv_bary_1: fa.EdgeKField[ta.vpfloat],
-    distv_bary_2: fa.EdgeKField[ta.vpfloat],
-    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
-    p_vn: fa.EdgeKField[ta.wpfloat],
-    p_out_e: fa.EdgeKField[ta.wpfloat],
+    z_lsq_coeff_1: fa.CellKField[wpfloat],
+    z_lsq_coeff_2: fa.CellKField[wpfloat],
+    z_lsq_coeff_3: fa.CellKField[wpfloat],
+    distv_bary_1: fa.EdgeKField[vpfloat],
+    distv_bary_2: fa.EdgeKField[vpfloat],
+    p_mass_flx_e: fa.EdgeKField[wpfloat],
+    p_vn: fa.EdgeKField[wpfloat],
+    p_out_e: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

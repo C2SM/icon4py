@@ -27,7 +27,7 @@ def _compute_courant_number_below(
     nlev: gtx.int32,
     wp_eps: wpfloat,
 ) -> fa.CellKField[wpfloat]:
-    z_mass_pos = z_mass > 0.0
+    z_mass_pos = z_mass > wpfloat(0.0)
 
     in_bounds_p0 = k <= nlev - 1
     in_bounds_p1 = k <= nlev - 2
@@ -35,27 +35,27 @@ def _compute_courant_number_below(
     in_bounds_p3 = k <= nlev - 4
 
     mass_gt_cellmass_p0 = where(z_mass_pos & in_bounds_p0, z_mass >= p_cellmass_now, False)
-    z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_now, 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_now, wpfloat(0.0))
 
     mass_gt_cellmass_p1 = mass_gt_cellmass_p0 & where(
         z_mass_pos & in_bounds_p1, z_mass >= p_cellmass_now(Koff[1]), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(Koff[1]), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(Koff[1]), wpfloat(0.0))
 
     mass_gt_cellmass_p2 = mass_gt_cellmass_p1 & where(
         z_mass_pos & in_bounds_p2, z_mass >= p_cellmass_now(Koff[2]), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(Koff[2]), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(Koff[2]), wpfloat(0.0))
 
     mass_gt_cellmass_p3 = mass_gt_cellmass_p2 & where(
         z_mass_pos & in_bounds_p3, z_mass >= p_cellmass_now(Koff[3]), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(Koff[3]), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(Koff[3]), wpfloat(0.0))
 
-    z_cfl = z_cfl + where(mass_gt_cellmass_p0, 1.0, 0.0)
-    z_cfl = z_cfl + where(mass_gt_cellmass_p1, 1.0, 0.0)
-    z_cfl = z_cfl + where(mass_gt_cellmass_p2, 1.0, 0.0)
-    z_cfl = z_cfl + where(mass_gt_cellmass_p3, 1.0, 0.0)
+    z_cfl = z_cfl + where(mass_gt_cellmass_p0, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl + where(mass_gt_cellmass_p1, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl + where(mass_gt_cellmass_p2, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl + where(mass_gt_cellmass_p3, wpfloat(1.0), wpfloat(0.0))
 
     p_cellmass_now_jks = p_cellmass_now
     p_cellmass_now_jks = where(mass_gt_cellmass_p0, p_cellmass_now(Koff[1]), p_cellmass_now_jks)
@@ -63,8 +63,8 @@ def _compute_courant_number_below(
     p_cellmass_now_jks = where(mass_gt_cellmass_p2, p_cellmass_now(Koff[3]), p_cellmass_now_jks)
     p_cellmass_now_jks = where(mass_gt_cellmass_p3, p_cellmass_now(Koff[4]), p_cellmass_now_jks)
 
-    z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, 0.0)
-    z_cfl = z_cfl + where(z_cflfrac < 1.0, z_cflfrac, 1.0 - wp_eps)
+    z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, wpfloat(0.0))
+    z_cfl = z_cfl + where(z_cflfrac < wpfloat(1.0), z_cflfrac, wpfloat(1.0) - wp_eps)
 
     return z_cfl
 
@@ -78,7 +78,7 @@ def _compute_courant_number_above(
     slevp1_ti: gtx.int32,
     wp_eps: wpfloat,
 ) -> fa.CellKField[wpfloat]:
-    z_mass_neg = z_mass <= 0.0
+    z_mass_neg = z_mass <= wpfloat(0.0)
 
     in_bounds_m0 = k >= slevp1_ti + 1
     in_bounds_m1 = k >= slevp1_ti + 2
@@ -88,22 +88,22 @@ def _compute_courant_number_above(
     mass_gt_cellmass_m0 = where(
         z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_now(Koff[-1]), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(Koff[-1]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(Koff[-1]), wpfloat(0.0))
 
     mass_gt_cellmass_m1 = mass_gt_cellmass_m0 & where(
         z_mass_neg & in_bounds_m1, abs(z_mass) >= p_cellmass_now(Koff[-2]), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(Koff[-2]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(Koff[-2]), wpfloat(0.0))
 
     mass_gt_cellmass_m2 = mass_gt_cellmass_m1 & where(
         z_mass_neg & in_bounds_m2, abs(z_mass) >= p_cellmass_now(Koff[-3]), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(Koff[-3]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(Koff[-3]), wpfloat(0.0))
 
     mass_gt_cellmass_m3 = mass_gt_cellmass_m2 & where(
         z_mass_neg & in_bounds_m3, abs(z_mass) >= p_cellmass_now(Koff[-4]), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(Koff[-4]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(Koff[-4]), wpfloat(0.0))
 
     p_cellmass_now_jks = p_cellmass_now(Koff[-1])
     p_cellmass_now_jks = where(mass_gt_cellmass_m0, p_cellmass_now(Koff[-2]), p_cellmass_now_jks)
@@ -111,13 +111,13 @@ def _compute_courant_number_above(
     p_cellmass_now_jks = where(mass_gt_cellmass_m2, p_cellmass_now(Koff[-4]), p_cellmass_now_jks)
     p_cellmass_now_jks = where(mass_gt_cellmass_m3, p_cellmass_now(Koff[-5]), p_cellmass_now_jks)
 
-    z_cfl = z_cfl - where(mass_gt_cellmass_m0, 1.0, 0.0)
-    z_cfl = z_cfl - where(mass_gt_cellmass_m1, 1.0, 0.0)
-    z_cfl = z_cfl - where(mass_gt_cellmass_m2, 1.0, 0.0)
-    z_cfl = z_cfl - where(mass_gt_cellmass_m3, 1.0, 0.0)
+    z_cfl = z_cfl - where(mass_gt_cellmass_m0, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl - where(mass_gt_cellmass_m1, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl - where(mass_gt_cellmass_m2, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl - where(mass_gt_cellmass_m3, wpfloat(1.0), wpfloat(0.0))
 
-    z_cflfrac = where(z_mass_neg, z_mass / p_cellmass_now_jks, 0.0)
-    z_cfl = z_cfl + where(abs(z_cflfrac) < 1.0, z_cflfrac, wp_eps - 1.0)
+    z_cflfrac = where(z_mass_neg, z_mass / p_cellmass_now_jks, wpfloat(0.0))
+    z_cfl = z_cfl + where(abs(z_cflfrac) < wpfloat(1.0), z_cflfrac, wp_eps - wpfloat(1.0))
 
     return z_cfl
 

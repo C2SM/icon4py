@@ -9,30 +9,30 @@
 import gt4py.next as gtx
 from gt4py.next import astype, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2CDim
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import wpfloat, vpfloat
 
 
 @gtx.field_operator
 def _compute_barycentric_backtrajectory(
-    p_vn: fa.EdgeKField[ta.wpfloat],
-    p_vt: fa.EdgeKField[ta.wpfloat],
+    p_vn: fa.EdgeKField[wpfloat],
+    p_vt: fa.EdgeKField[wpfloat],
     cell_idx: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    p_dthalf: ta.wpfloat,
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    p_dthalf: wpfloat,
 ) -> tuple[
     fa.EdgeKField[gtx.int32],
     fa.EdgeKField[gtx.int32],
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
-    lvn_pos = p_vn >= 0.0
+    lvn_pos = p_vn >=  wpfloat(0.0)
 
     p_cell_idx = where(lvn_pos, cell_idx[E2CDim(0)], cell_idx[E2CDim(1)])
     p_cell_rel_idx_dsl = where(lvn_pos, 0, 1)
@@ -71,20 +71,20 @@ def _compute_barycentric_backtrajectory(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_barycentric_backtrajectory(
-    p_vn: fa.EdgeKField[ta.wpfloat],
-    p_vt: fa.EdgeKField[ta.wpfloat],
+    p_vn: fa.EdgeKField[wpfloat],
+    p_vt: fa.EdgeKField[wpfloat],
     cell_idx: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     p_cell_idx: fa.EdgeKField[gtx.int32],
     p_cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
-    p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
-    p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
-    p_dthalf: ta.wpfloat,
+    p_distv_bary_1: fa.EdgeKField[vpfloat],
+    p_distv_bary_2: fa.EdgeKField[vpfloat],
+    p_dthalf: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

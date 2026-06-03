@@ -123,7 +123,7 @@ class NoFluxCondition(BoundaryConditions):
         log.debug("running stencil init_constant_cell_kdim_field - start")
         self._init_constant_cell_kdim_field(
             field=p_mflx_tracer_v,
-            value=0.0,
+            value=ta.wpfloat(0.0),
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
@@ -136,7 +136,7 @@ class NoFluxCondition(BoundaryConditions):
         log.debug("running stencil init_constant_cell_kdim_field - start")
         self._init_constant_cell_kdim_field(
             field=p_mflx_tracer_v,
-            value=0.0,
+            value=ta.wpfloat(0.0),
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels,
@@ -749,7 +749,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=init_constant_cell_kdim_field,
             constant_args={
-                "value": 0.0,
+                "value": ta.wpfloat(0.0),
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
