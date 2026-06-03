@@ -10,10 +10,14 @@
 
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
-Reads the pipeline variables (COMPONENTS, BACKENDS, LEVELS, GRIDS,
-SELECTION) and writes a child pipeline that includes ``ci/base.yml``
-and instantiates only the test jobs whose matrix entries match the
-requested filter.
+Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, BACKENDS,
+LEVELS, GRIDS, MODEL_SUBSET) and writes a child pipeline that includes
+``ci/base.yml`` and instantiates only the test jobs whose matrix
+entries match the requested filter.
+
+Each SESSION value maps to a single job template that corresponds to a nox
+session. Parameters like MODEL_SUBPACKAGE and MODEL_SUBSET are passed as nox
+session parameters.
 
 This script exists because using rules:if with regexes that are dynamically
 generated does not work (gitlab does not expand variables in patterns). This
@@ -34,17 +38,7 @@ import yaml
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 # Full matrix dimensions
-STENCIL_COMPONENTS = [
-    "advection",
-    "diffusion",
-    "dycore",
-    "microphysics",
-    "muphys",
-    "common",
-    "driver",
-]
-
-DATATEST_COMPONENTS = [
+MODEL_COMPONENTS_NOX = [
     "advection",
     "diffusion",
     "dycore",
@@ -62,9 +56,11 @@ MPI_COMPONENTS = [
     "standalone_driver",
 ]
 
+ALL_SESSIONS = ["model", "tools", "mpi"]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
 ALL_LEVELS = ["unit", "integration"]
+ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 
 INTEGRATION_LEVEL = ["integration"]
 
@@ -95,18 +91,20 @@ def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[s
 
 
 def _generate_child_pipeline(
-    components: str | None = None,
+    session: str | None = None,
+    model_subpackages: str | None = None,
+    model_subset: str | None = None,
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
-    selection: str | None = None,
 ) -> str:
     """Return the child pipeline YAML as a string."""
     # Fallback defaults match ci/default.yml pipeline variables.
-    requested_selections = _resolve_filter(selection, "SELECTION", "stencils:datatest:mpi:tools")
-    requested_components = _resolve_filter(
-        components,
-        "COMPONENTS",
+    requested_sessions = _resolve_filter(session, "SESSION", "model:tools:mpi")
+    requested_model_subsets = _resolve_filter(model_subset, "MODEL_SUBSET", "stencils:datatest")
+    requested_model_subpackages = _resolve_filter(
+        model_subpackages,
+        "MODEL_SUBPACKAGES",
         (
             "advection:diffusion:dycore:microphysics:muphys:"
             "common:driver:standalone_driver:"
@@ -121,62 +119,66 @@ def _generate_child_pipeline(
         "include": [{"local": "ci/base.yml"}],
     }
 
-    # Stencil tests
-    if "stencils" in requested_selections:
-        filtered_components = _intersect(requested_components, STENCIL_COMPONENTS)
+    # Model tests (unified job covering stencils, datatest, and basic subsets)
+    if "model" in requested_sessions:
+        filtered_subpackages = _intersect(requested_model_subpackages, MODEL_COMPONENTS_NOX)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
-        filtered_grids = _intersect(requested_grids, ALL_GRIDS)
-        if filtered_components and filtered_backends and filtered_grids:
-            pipeline["test_stencils_aarch64"] = {
-                "extends": ".test_stencils_aarch64",
-                "parallel": {
-                    "matrix": [
+        filtered_subsets = _intersect(requested_model_subsets, ALL_MODEL_SUBSETS)
+
+        if filtered_subpackages and filtered_backends and filtered_subsets:
+            matrix: list[dict] = []
+
+            # Stencils subset needs GRID dimension
+            if "stencils" in filtered_subsets:
+                filtered_grids = _intersect(requested_grids, ALL_GRIDS)
+                if filtered_grids:
+                    matrix.append(
                         {
-                            "COMPONENT": filtered_components,
+                            "MODEL_SUBPACKAGE": filtered_subpackages,
+                            "MODEL_SUBSET": ["stencils"],
                             "BACKEND": filtered_backends,
                             "GRID": filtered_grids,
                         }
-                    ]
-                },
-            }
+                    )
 
-    # Serial datatest tests
-    if "datatest" in requested_selections:
-        filtered_components = _intersect(requested_components, DATATEST_COMPONENTS)
-        filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
-        filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-        if filtered_components and filtered_backends and filtered_levels:
-            pipeline["test_datatests_serial_aarch64"] = {
-                "extends": ".test_datatests_serial_aarch64",
-                "parallel": {
-                    "matrix": [
+            # Datatest and basic subsets need LEVEL dimension
+            level_subsets = [s for s in filtered_subsets if s in ("datatest", "basic")]
+            if level_subsets:
+                filtered_levels = _intersect(requested_levels, ALL_LEVELS)
+                if filtered_levels:
+                    matrix.append(
                         {
-                            "COMPONENT": filtered_components,
+                            "MODEL_SUBPACKAGE": filtered_subpackages,
+                            "MODEL_SUBSET": level_subsets,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
                         }
-                    ]
-                },
-            }
+                    )
+
+            if matrix:
+                pipeline["test_model_aarch64"] = {
+                    "extends": ".test_model_aarch64",
+                    "parallel": {"matrix": matrix},
+                }
 
     # Tools test (single job, no matrix)
-    if "tools" in requested_selections:
+    if "tools" in requested_sessions:
         pipeline["test_tools_aarch64"] = {
             "extends": ".test_tools_aarch64",
         }
 
-    # MPI datatest tests
-    if "mpi" in requested_selections:
-        filtered_components = _intersect(requested_components, MPI_COMPONENTS)
+    # MPI tests
+    if "mpi" in requested_sessions:
+        filtered_components = _intersect(requested_model_subpackages, MPI_COMPONENTS)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, INTEGRATION_LEVEL)
         if filtered_components and filtered_backends and filtered_levels:
-            pipeline["test_datatests_mpi_aarch64"] = {
-                "extends": ".test_datatests_mpi_aarch64",
+            pipeline["test_mpi_aarch64"] = {
+                "extends": ".test_mpi_aarch64",
                 "parallel": {
                     "matrix": [
                         {
-                            "COMPONENT": filtered_components,
+                            "MODEL_SUBPACKAGE": filtered_components,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
                         }
@@ -196,9 +198,26 @@ def _generate_child_pipeline(
 
 @cli.command()
 def generate_ci_pipeline(
-    components: Annotated[
+    session: Annotated[
         str | None,
-        typer.Option("--components", help="Colon/comma-separated component filter"),
+        typer.Option(
+            "--session",
+            help="Colon/comma-separated nox session filter (model, tools, mpi)",
+        ),
+    ] = None,
+    model_subpackages: Annotated[
+        str | None,
+        typer.Option(
+            "--model-subpackages",
+            help="Colon/comma-separated model subpackage filter",
+        ),
+    ] = None,
+    model_subset: Annotated[
+        str | None,
+        typer.Option(
+            "--model-subset",
+            help="Colon/comma-separated model test subset filter (stencils, datatest, basic)",
+        ),
     ] = None,
     backends: Annotated[
         str | None,
@@ -212,10 +231,6 @@ def generate_ci_pipeline(
         str | None,
         typer.Option("--grids", help="Colon/comma-separated grid filter"),
     ] = None,
-    selection: Annotated[
-        str | None,
-        typer.Option("--selection", help="Colon/comma-separated selection filter"),
-    ] = None,
 ) -> None:
     """Generate child pipeline YAML to stdout.
 
@@ -225,11 +240,12 @@ def generate_ci_pipeline(
     """
     sys.stdout.write(
         _generate_child_pipeline(
-            components=components,
+            session=session,
+            model_subpackages=model_subpackages,
+            model_subset=model_subset,
             backends=backends,
             levels=levels,
             grids=grids,
-            selection=selection,
         )
     )
 

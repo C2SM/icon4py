@@ -100,37 +100,24 @@ variables:
   variables:
     SLURM_NTASKS: 4
 
-.test_stencils_aarch64:
+.test_model_aarch64:
   stage: test
   extends: .test_runner_serial
   script:
-    - nox -s "test_model-3.13(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+    - |
+      NOX_ARGS="--backend=$BACKEND"
+      if [ -n "$GRID" ]; then NOX_ARGS="$NOX_ARGS --grid=$GRID"; fi
+      if [ -n "$LEVEL" ]; then NOX_ARGS="$NOX_ARGS --level=$LEVEL"; fi
+      nox -s "test_model-3.13($MODEL_SUBSET, $MODEL_SUBPACKAGE)" -- $NOX_ARGS
   rules:
-    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
-      variables:
-        NUM_PROCESSES: 8
-        SLURM_TIMELIMIT: '00:30:00'
-    - if: $COMPONENT == 'dycore'
-      variables:
-        SLURM_TIMELIMIT: '00:15:00'
-    - when: on_success
-      variables:
-        SLURM_TIMELIMIT: '00:15:00'
-
-.test_datatests_serial_aarch64:
-  stage: test
-  extends: .test_runner_serial
-  script:
-    - nox -s "test_model-3.13(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
-  rules:
-    - if: $COMPONENT == 'standalone_driver'
+    - if: $MODEL_SUBPACKAGE == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '01:00:00'
-    - if: $COMPONENT == 'driver' || $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
+    - if: $MODEL_SUBPACKAGE == 'driver' || $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
@@ -143,23 +130,23 @@ variables:
   script:
     - nox -s 'test_tools_and_bindings-3.13(datatest)'
 
-.test_datatests_mpi_aarch64:
+.test_mpi_aarch64:
   stage: test
   extends: .test_runner_mpi
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$MODEL_SUBPACKAGE --level=$LEVEL
   rules:
-    - if: $COMPONENT == 'atmosphere/diffusion'
+    - if: $MODEL_SUBPACKAGE == 'atmosphere/diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
+    - if: $MODEL_SUBPACKAGE == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
-    - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
+    - if: ($MODEL_SUBPACKAGE == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($MODEL_SUBPACKAGE == 'standalone_driver' && $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '01:30:00'
         SLURM_PARTITION: "normal"
-    - if: $COMPONENT == 'atmosphere/dycore'
+    - if: $MODEL_SUBPACKAGE == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success

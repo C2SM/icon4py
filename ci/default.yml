@@ -7,12 +7,13 @@ variables:
   # pipeline and don't include all possible jobs. The are meant to be overridden
   # with with e.g.
   #
-  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;COMPONENTS=common:standalone_driver
-  COMPONENTS: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver:atmosphere/diffusion:atmosphere/dycore"
+  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver
+  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver:atmosphere/diffusion:atmosphere/dycore"
   BACKENDS: "dace_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
-  SELECTION: "stencils:datatest:mpi:tools"
+  SESSION: "model:tools:mpi"
+  MODEL_SUBSET: "stencils:datatest"
 
 
 build_baseimage_aarch64:
@@ -56,9 +57,9 @@ build_mpi_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_mpi_image]
   needs: [build_mpi_baseimage_aarch64]
 
-# Generate child pipelines dynamically based on selection of COMPONENTS,
-# BACKENDS, etc. using scripts/python/generate_ci_pipeline.py. Only test jobs
-# that match the filters are generated.
+# Generate child pipelines dynamically based on selection of SESSION,
+# MODEL_SUBPACKAGES, BACKENDS, etc. using scripts/python/generate_ci_pipeline.py.
+# Only test jobs that match the filters are generated.
 generate_test_child_pipeline:
   stage: generate_test
   extends: .container-runner-lightweight-gh200
