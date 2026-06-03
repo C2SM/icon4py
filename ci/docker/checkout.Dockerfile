@@ -17,3 +17,4 @@ RUN uv sync \
     --group test \
     --python $PYVERSION && \
     chmod -R a+rwX "$UV_CACHE_DIR"
+ENV PATH="/icon4py/.venv/bin:$PATH"
