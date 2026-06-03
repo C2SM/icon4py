@@ -41,8 +41,8 @@ def extrapolate_at_top(
     vertical_end: gtx.int32,
 ) -> None:
     _extrapolate_at_top(
-        wgtfacq_e,
-        vn,
+        wgtfacq_e=wgtfacq_e,
+        vn=vn,
         out=vn_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

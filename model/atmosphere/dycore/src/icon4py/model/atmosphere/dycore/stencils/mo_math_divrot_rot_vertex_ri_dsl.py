@@ -33,8 +33,8 @@ def mo_math_divrot_rot_vertex_ri_dsl(
     vertical_end: gtx.int32,
 ) -> None:
     _mo_math_divrot_rot_vertex_ri_dsl(
-        vec_e,
-        geofac_rot,
+        vec_e=vec_e,
+        geofac_rot=geofac_rot,
         out=rot_vec,
         domain={
             dims.VertexDim: (horizontal_start, horizontal_end),

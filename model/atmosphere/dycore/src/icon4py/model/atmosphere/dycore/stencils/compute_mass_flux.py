@@ -39,10 +39,10 @@ def compute_mass_flux(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_mass_and_temperature_flux(
-        z_rho_e,
-        z_vn_avg,
-        ddqz_z_full_e,
-        z_theta_v_e,
+        z_rho_e=z_rho_e,
+        z_vn_avg=z_vn_avg,
+        ddqz_z_full_e=ddqz_z_full_e,
+        z_theta_v_e=z_theta_v_e,
         out=(mass_fl_e, z_theta_v_fl_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

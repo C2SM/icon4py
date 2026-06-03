@@ -66,13 +66,13 @@ def compute_intermediate_horizontal_flux_from_linear_coefficients(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_intermediate_horizontal_flux_from_linear_coefficients(
-        z_lsq_coeff_1_dsl,
-        z_lsq_coeff_2_dsl,
-        z_lsq_coeff_3_dsl,
-        distv_bary_1,
-        distv_bary_2,
-        p_mass_flx_e,
-        cell_rel_idx_dsl,
+        z_lsq_coeff_1_dsl=z_lsq_coeff_1_dsl,
+        z_lsq_coeff_2_dsl=z_lsq_coeff_2_dsl,
+        z_lsq_coeff_3_dsl=z_lsq_coeff_3_dsl,
+        distv_bary_1=distv_bary_1,
+        distv_bary_2=distv_bary_2,
+        p_mass_flx_e=p_mass_flx_e,
+        cell_rel_idx_dsl=cell_rel_idx_dsl,
         out=z_tracer_mflx_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

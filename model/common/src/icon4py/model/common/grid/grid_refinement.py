@@ -225,13 +225,13 @@ def compute_domain_bounds(
         h_grid.domain(dim)(h_grid.Zone.HALO)
     )
     not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
-    halo_region_1 = array_ns.where(halo_level_1 & not_lateral_boundary_1)[0]
+    halo_region_1 = array_ns.nonzero(halo_level_1 & not_lateral_boundary_1)[0]
     not_lateral_boundary_2 = (refinement_ctrl < 1) | (
         refinement_ctrl
         > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
     )
 
-    halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
+    halo_region_2 = array_ns.nonzero(halo_level_2 & not_lateral_boundary_2)[0]
     start_halo_2, end_halo_2 = (
         (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
         if halo_region_2.size > 0
@@ -257,7 +257,7 @@ def compute_domain_bounds(
             if domain.zone.is_lateral_boundary()
             else _LAST_BOUNDARY[dim].level + domain.zone.level
         )
-        found = array_ns.where((refinement_ctrl == value) & owned)[0]
+        found = array_ns.nonzero((refinement_ctrl == value) & owned)[0]
         start_index, end_index = (
             (array_ns.min(found).item(), array_ns.max(found).item() + 1)
             if found.size > 0
