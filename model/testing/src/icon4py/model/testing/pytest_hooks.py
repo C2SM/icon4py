@@ -348,8 +348,7 @@ class MPISubcommScheduler:
         valid_mpi_items = [
             item
             for item in mpi_items
-            if (mark := item.get_closest_marker("mpi")) is not None
-            and mark.kwargs.get("min_size", 1) <= self.subcomm_size
+            if item.get_closest_marker("mpi").kwargs.get("min_size", 1) <= self.subcomm_size
         ]
 
         assigned_mpi = [
