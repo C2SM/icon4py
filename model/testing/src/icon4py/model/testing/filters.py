@@ -49,6 +49,10 @@ item_marker_filters: dict[str, ItemFilter] = {
             pytest.xfail, " gt4py _compiled_programs returns error when backend is None."
         ),
     ),
+    pytest.mark.uses_as_offset.name: ItemFilter(
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
+        action=functools.partial(pytest.xfail, "Embedded backend does not support as_offset."),
+    ),
     pytest.mark.uses_concat_where.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(pytest.xfail, "Embedded backend does not support concat_where."),

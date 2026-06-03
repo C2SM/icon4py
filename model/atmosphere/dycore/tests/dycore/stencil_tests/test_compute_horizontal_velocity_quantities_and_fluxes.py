@@ -83,6 +83,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_velocity_quantities_and_fluxes

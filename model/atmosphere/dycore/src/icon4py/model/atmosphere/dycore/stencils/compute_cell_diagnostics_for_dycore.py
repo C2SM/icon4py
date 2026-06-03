@@ -121,11 +121,11 @@ def _compute_perturbed_quantities_and_interpolation(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim == 0,
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
+        dims.KDim >= 1,
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
         ),
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
     )
 
     theta_v_at_cells_on_half_levels = concat_where(

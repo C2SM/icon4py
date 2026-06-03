@@ -30,11 +30,10 @@ def _compute_ppm_all_face_values(
     slevp1: gtx.int32,
     elevp1: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    quadratic = _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now)
     p_face = concat_where(
-        dims.KDim == slevp1,
-        quadratic,
-        concat_where(dims.KDim == elev, quadratic, p_face_in),
+        (dims.KDim == slevp1) | (dims.KDim == elev),
+        _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now),
+        p_face_in,
     )
 
     p_face = concat_where(dims.KDim == slev, p_cc, p_face)

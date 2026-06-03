@@ -20,6 +20,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
+@pytest.mark.uses_concat_where
 class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)

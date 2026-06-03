@@ -57,6 +57,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     return z_temp
 
 
+@pytest.mark.uses_as_offset
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)

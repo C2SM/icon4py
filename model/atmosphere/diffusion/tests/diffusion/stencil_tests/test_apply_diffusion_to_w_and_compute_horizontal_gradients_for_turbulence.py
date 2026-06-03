@@ -29,6 +29,7 @@ from .test_calculate_horizontal_gradients_for_turbulence import (
 from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence

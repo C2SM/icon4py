@@ -114,9 +114,7 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
-# `uses_concat_where`: stencil masks `concat_where` on an Edge window and falls back to
-# `broadcast(scalar, ...)`; embedded needs a bounded fill on both sides of the window.
-@pytest.mark.uses_concat_where
+@pytest.mark.uses_as_offset
 @pytest.mark.continuous_benchmarking
 class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = compute_rho_theta_pgrad_and_update_vn

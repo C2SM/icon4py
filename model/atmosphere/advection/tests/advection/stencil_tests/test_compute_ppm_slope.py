@@ -18,6 +18,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
+@pytest.mark.uses_concat_where
 class TestComputePpmSlope(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_slope
     OUTPUTS = (

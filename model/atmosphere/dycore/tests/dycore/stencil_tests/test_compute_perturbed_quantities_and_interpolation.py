@@ -61,6 +61,7 @@ def compute_first_vertical_derivative_numpy(
     return first_vertical_derivative
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
