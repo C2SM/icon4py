@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import math
 from typing import TYPE_CHECKING
@@ -52,7 +53,46 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def exclaim_nh35_tri_jws(  # noqa: PLR0915 [too-many-statements]
+@dataclasses.dataclass
+class InitialConditionConfig:
+    parameters: JablonowskiWilliamsonParameters | Gauss3DParameters
+
+    @classmethod
+    def from_fortran_dict(cls, atm_dict: dict[str, Any], input_dict: dict[str, Any]):
+        if atm_dict["run_nml"]["ltestcase"]:
+            testcase_nml = input_dict["nh_testcase_nml"]
+            match testcase_nml["nh_test_name"]:
+                case "jabw" | "jabw_s":
+                    parameters = JablonowskiWilliamsonParameters()
+                case "gauss3D":
+                    parameters = Gauss3DParameters()
+        return None
+
+
+@dataclasses.dataclass
+class JablonowskiWilliamsonParameters:
+    p_sfc: float = 100000.0
+    baroclinic_amplitude: float = 0.0
+    u0: float = 35.0
+    temp0: float = 288.0
+    eta_0: float = 0.252
+    eta_t: float = 0.2
+    gamma: float = 0.005
+    dtemp: float = 4.8e5
+    lon_perturbation_center: float = math.pi / 9.0
+    lat_perturbation_center: float = 2.0 * math.pi / 9.0
+    create = jablonowski_williamson
+
+@dataclasses.dataclass
+class Gauss3DParameters:
+    u0: float = 0.0
+    t0: float = 300.0
+    brunt_vais: float = 0.01
+
+    create = gauss3d
+
+def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
+    parameters: JablonowskiWilliamsonParameters,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -86,16 +126,16 @@ def exclaim_nh35_tri_jws(  # noqa: PLR0915 [too-many-statements]
     interp = _extract_interpolation(interpolation_field_source)
     zone_idx = _zone_indices(grid)
 
-    p_sfc = ta.wpfloat("100000.0")
-    jw_baroclinic_amplitude = ta.wpfloat("0.0")
-    u0 = ta.wpfloat("35.0")
-    temp0 = ta.wpfloat("288.0")
-    eta_0 = ta.wpfloat("0.252")
-    eta_t = ta.wpfloat("0.2")
-    gamma = ta.wpfloat("0.005")
-    dtemp = ta.wpfloat("4.8e5")
-    lon_perturbation_center = math.pi / ta.wpfloat("9.0")
-    lat_perturbation_center = ta.wpfloat("2.0") * lon_perturbation_center
+    p_sfc = parameters.p_sfc
+    jw_baroclinic_amplitude = parameters.baroclinic_amplitude
+    u0 = parameters.u0
+    temp0 = parameters.temp0
+    eta_0 = parameters.eta_0
+    eta_t = parameters.eta_t
+    gamma = parameters.gamma
+    dtemp = parameters.dtemp
+    lon_perturbation_center = parameters.lon_perturbation_center
+    lat_perturbation_center = parameters.lat_perturbation_center
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels
@@ -263,7 +303,8 @@ def exclaim_nh35_tri_jws(  # noqa: PLR0915 [too-many-statements]
     )
 
 
-def exclaim_gauss3d(
+def gauss3d(
+    parameters: Gauss3DParameters,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -282,10 +323,12 @@ def exclaim_gauss3d(
     geometry = _extract_geometry(geometry_field_source)
     zone_idx = _zone_indices(grid)
 
+    num_edges = grid.num_edges
     num_levels = grid.num_levels
 
-    t0 = 300.0
-    brunt_vais = 0.01
+    u0 = parameters.u0
+    t0 = parameters.t0
+    brunt_vais = parameters.brunt_vais
 
     prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
@@ -294,7 +337,15 @@ def exclaim_gauss3d(
     rho_ndarray = prognostic_state_now.rho.ndarray
     theta_v_ndarray = prognostic_state_now.theta_v.ndarray
 
-    prognostic_state_now.vn.ndarray[:, :] = 0.0
+    mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end[0:zone_idx["end_edge_lateral_boundary_level_2"]] = False
+    mask = xp.repeat(
+        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+        num_levels,
+        axis=1,
+    )
+    u = xp.where(mask, u0, 0.0)
+    prognostic_state_now.vn.ndarray[:, :] = u * geometry["primal_normal_x"]
 
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * metrics["geopot"][:, k_index]
@@ -357,41 +408,6 @@ def exclaim_gauss3d(
         prognostic_state_now=prognostic_state_now,
         diagnostic_state=diagnostic_state,
     )
-
-
-def create(
-    experiment_name: str,
-    grid: icon_grid.IconGrid,
-    geometry_field_source: grid_geometry.GridGeometry,
-    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
-    metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    backend: gtx_typing.Backend | None,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
-    exchange: decomposition_defs.ExchangeRuntime,
-) -> driver_states.DriverStates:
-    match experiment_name:
-        case "exclaim_nh35_tri_jws":
-            ic_fn = exclaim_nh35_tri_jws
-        case "exclaim_gauss3d":
-            ic_fn = exclaim_gauss3d
-        case _:
-            raise ValueError(f"Unknown experiment name for initial condition: {experiment_name!r}")
-    return ic_fn(
-        grid=grid,
-        geometry_field_source=geometry_field_source,
-        interpolation_field_source=interpolation_field_source,
-        metrics_field_source=metrics_field_source,
-        backend=backend,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        damping_height=damping_height,
-        exchange=exchange,
-    )
-
 
 def _extract_metrics(
     metrics_field_source: metrics_factory.MetricsFieldsFactory,

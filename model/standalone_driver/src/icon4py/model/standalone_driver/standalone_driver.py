@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 class Icon4pyDriver:
     def __init__(
         self,
-        config: driver_config.DriverConfig,
+        config: driver_config.ExperimentConfig
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
@@ -611,7 +611,7 @@ def initialize_driver(
         backend=backend,
     )
     icon4py_driver = Icon4pyDriver(
-        config=config.driver,
+        config=config,
         backend=backend,
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,

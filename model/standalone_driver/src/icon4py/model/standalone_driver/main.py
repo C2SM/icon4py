@@ -73,8 +73,8 @@ def main(
     )
 
     log.info("Generating the initial condition")
-    ds: driver_states.DriverStates = initial_condition.create(
-        experiment_name=icon4py_driver.config.experiment_name,
+    ds: driver_states.DriverStates = icon4py_driver.config.initial_condition.create(
+        parameters=icon4py_driver.config.initial_condition.parameters,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
@@ -86,6 +86,7 @@ def main(
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=icon4py_driver.exchange,
     )
+
 
     log.info("driver setup: DONE")
     log.info("time loop: START")

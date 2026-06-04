@@ -89,7 +89,7 @@ def test_initial_conditions_compare_single_multi_rank(
     )
 
     single_rank_ds: driver_states.DriverStates = initial_condition.create(
-        experiment_name=experiment.description.name,
+        config=experiment.description.name,
         grid=single_rank_icon4py_driver.grid,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
@@ -112,7 +112,7 @@ def test_initial_conditions_compare_single_multi_rank(
     )
 
     multi_rank_ds: driver_states.DriverStates = initial_condition.create(
-        experiment_name=experiment.description.name,
+        config=experiment.description.name,
         grid=multi_rank_icon4py_driver.grid,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,
