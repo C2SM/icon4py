@@ -45,6 +45,9 @@ Use the `bump-versions` script to update all packages to the new version:
 ./scripts/run bump-versions <new_version>
 ```
 
+Note that the version should not include a `v` prefix. Only the version tag that
+is created later should include a `v` prefix.
+
 This updates `version` in every `pyproject.toml` and `__init__.py`, and also
 updates cross-package dependency constraints (e.g., `icon4py-common~=0.1.0` ->
 `icon4py-common~=0.2.0`).
