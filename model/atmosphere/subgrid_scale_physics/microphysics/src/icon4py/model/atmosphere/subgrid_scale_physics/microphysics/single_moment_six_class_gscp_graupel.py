@@ -118,6 +118,7 @@ class MetricStateIconGraupel:
 class SingleMomentSixClassIconGraupel:
     def __init__(
         self,
+        *,
         graupel_config: SingleMomentSixClassIconGraupelConfig,
         grid: icon_grid.IconGrid,
         metric_state: MetricStateIconGraupel,
@@ -364,6 +365,7 @@ class SingleMomentSixClassIconGraupel:
 
     def run(
         self,
+        *,
         dtime: ta.wpfloat,
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],

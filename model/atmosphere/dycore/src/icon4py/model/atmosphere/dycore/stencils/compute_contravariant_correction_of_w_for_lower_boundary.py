@@ -54,9 +54,9 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_contravariant_correction_of_w_for_lower_boundary(
-        e_bln_c_s,
-        z_w_concorr_me,
-        wgtfacq_c,
+        e_bln_c_s=e_bln_c_s,
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfacq_c=wgtfacq_c,
         out=w_concorr_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

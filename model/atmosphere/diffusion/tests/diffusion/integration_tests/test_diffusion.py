@@ -148,7 +148,7 @@ def test_smagorinski_factor_diffusion_type_5():
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
     ],
 )
-def test_diffusion_init(
+def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     savepoint_diffusion_init,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
@@ -271,10 +271,9 @@ def _verify_init_values_against_savepoint(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
-def test_verify_diffusion_init_against_savepoint(
+def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
-    *,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
     savepoint_diffusion_init,
@@ -294,14 +293,14 @@ def test_verify_diffusion_init_against_savepoint(
     )
 
     diffusion_granule = diffusion.Diffusion(
-        grid,
-        config,
-        additional_parameters,
-        vertical_params,
-        metric_state,
-        interpolation_state,
-        edge_params,
-        cell_params,
+        grid=grid,
+        config=config,
+        params=additional_parameters,
+        vertical_grid=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_params,
+        cell_params=cell_params,
         backend=backend,
         exchange=decomp_defs.single_node_exchange,
     )
@@ -326,11 +325,10 @@ def test_verify_diffusion_init_against_savepoint(
         ),
     ],
 )
-def test_run_diffusion_single_step(
+def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
@@ -387,7 +385,7 @@ def test_run_diffusion_single_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
-def test_run_diffusion_initial_step(
+def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     linit,
     savepoint_diffusion_init,

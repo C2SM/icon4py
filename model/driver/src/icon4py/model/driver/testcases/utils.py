@@ -20,6 +20,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def hydrostatic_adjustment_ndarray(
+    *,
     wgtfac_c: data_alloc.NDArray,
     ddqz_z_half: data_alloc.NDArray,
     exner_ref_mc: data_alloc.NDArray,
@@ -61,6 +62,7 @@ def hydrostatic_adjustment_ndarray(
 
 
 def hydrostatic_adjustment_constant_thetav_ndarray(
+    *,
     wgtfac_c: data_alloc.NDArray,
     ddqz_z_half: data_alloc.NDArray,
     exner_ref_mc: data_alloc.NDArray,
@@ -101,6 +103,7 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
 
 
 def zonalwind_2_normalwind_ndarray(
+    *,
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
@@ -191,7 +194,7 @@ def _compute_perturbed_exner(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_perturbed_exner(
+def compute_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
     exner: fa.CellKField[ta.wpfloat],
     reference_exner: fa.CellKField[ta.vpfloat],
     perturbed_exner: fa.CellKField[ta.wpfloat],
@@ -212,6 +215,7 @@ def compute_perturbed_exner(
 
 
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
+    *,
     vn_ndarray: data_alloc.NDArray,
     w_ndarray: data_alloc.NDArray,
     exner_ndarray: data_alloc.NDArray,

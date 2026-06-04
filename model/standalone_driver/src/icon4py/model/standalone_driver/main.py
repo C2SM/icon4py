@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 
 def main(
+    *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     config_file_path: Annotated[pathlib.Path, typer.Option(help="Configuration file path.")],
     # it may be better to split device from backend,

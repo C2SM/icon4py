@@ -25,6 +25,7 @@ def compute_max_nbhgt_array_ns(
 
 
 def _compute_k_start_end(
+    *,
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,
     maxslp_avg: data_alloc.NDArray,
@@ -54,6 +55,7 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_mask_and_coef(
+    *,
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,
@@ -106,6 +108,7 @@ def compute_diffusion_mask_and_coef(
 
 
 def compute_diffusion_intcoef_and_vertoffset(
+    *,
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,

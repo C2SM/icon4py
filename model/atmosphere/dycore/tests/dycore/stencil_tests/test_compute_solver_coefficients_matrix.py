@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_solver_coefficients_matrix_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     exner_nnow: np.ndarray,
     rho_nnow: np.ndarray,
@@ -47,6 +48,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         exner_nnow: np.ndarray,
         rho_nnow: np.ndarray,
         theta_v_nnow: np.ndarray,
@@ -60,7 +62,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (z_beta, z_alpha) = compute_solver_coefficients_matrix_numpy(
-            connectivities,
+            connectivities=connectivities,
             exner_nnow=exner_nnow,
             rho_nnow=rho_nnow,
             theta_v_nnow=theta_v_nnow,

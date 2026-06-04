@@ -162,6 +162,7 @@ class Advection(ABC):
     @abstractmethod
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -220,6 +221,7 @@ class NoAdvection(Advection):
 
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -227,7 +229,6 @@ class NoAdvection(Advection):
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("advection run - start")
-
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
         self._exchange.exchange(
             dims.CellDim, prep_adv.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
@@ -249,6 +250,7 @@ class GodunovSplittingAdvection(Advection):
 
     def __init__(
         self,
+        *,
         horizontal_advection: advection_horizontal.HorizontalAdvection,
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
@@ -328,6 +330,7 @@ class GodunovSplittingAdvection(Advection):
 
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -423,13 +426,13 @@ class GodunovSplittingAdvection(Advection):
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
-        log.debug("communication of advection cell field: p_tracer_new - start")
+        log.debug("communication of tracer advection field: p_tracer_new - start")
         self._exchange.exchange(
             dims.CellDim,
             p_tracer_new,
             stream=decomposition.DEFAULT_STREAM,
         )
-        log.debug("communication of advection cell field: p_tracer_new - end")
+        log.debug("communication of tracer advection field: p_tracer_new - end")
 
         # finalize step
         self._even_timestep = not self._even_timestep
@@ -438,6 +441,7 @@ class GodunovSplittingAdvection(Advection):
 
 
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
+    *,
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,
@@ -482,7 +486,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 edge_params=edge_params,
                 cell_params=cell_params,
                 backend=backend,
-                exchange=exchange,
             )
         case _:
             raise NotImplementedError("Unknown horizontal advection type.")
@@ -524,6 +527,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
 
 def convert_config_to_advection(
+    *,
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,

@@ -45,6 +45,7 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_q: np.ndarray,
         w: np.ndarray,
         **kwargs: Any,

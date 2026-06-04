@@ -42,6 +42,7 @@ class TestComputeGraddiv2OfVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         geofac_grdiv: np.ndarray,
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,

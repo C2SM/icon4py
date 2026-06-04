@@ -168,7 +168,7 @@ class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 3
+    version: int = 4
 
 
 @dataclasses.dataclass

@@ -52,10 +52,10 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_avg_vn_and_graddiv_vn_and_vt(
-        e_flx_avg,
-        vn,
-        geofac_grdiv,
-        rbf_vec_coeff_e,
+        e_flx_avg=e_flx_avg,
+        vn=vn,
+        geofac_grdiv=geofac_grdiv,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
         out=(z_vn_avg, z_graddiv_vn, vt),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

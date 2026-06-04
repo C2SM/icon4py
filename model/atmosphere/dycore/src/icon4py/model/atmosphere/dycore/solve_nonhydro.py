@@ -149,6 +149,7 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
+        *,
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
@@ -370,6 +371,7 @@ class NonHydrostaticParams:
 class SolveNonhydro:
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
@@ -794,12 +796,12 @@ class SolveNonhydro:
         )
 
         self.velocity_advection = VelocityAdvection(
-            grid,
-            metric_state_nonhydro,
-            interpolation_state,
-            vertical_params,
-            edge_geometry,
-            owner_mask,
+            grid=grid,
+            metric_state=metric_state_nonhydro,
+            interpolation_state=interpolation_state,
+            vertical_params=vertical_params,
+            edge_params=edge_geometry,
+            owner_mask=owner_mask,
             backend=backend,
         )
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -1007,6 +1009,7 @@ class SolveNonhydro:
 
     def time_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
@@ -1090,6 +1093,7 @@ class SolveNonhydro:
 
     def run_predictor_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
@@ -1265,6 +1269,7 @@ class SolveNonhydro:
 
     def run_corrector_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,

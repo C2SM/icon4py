@@ -20,7 +20,6 @@ sys.setrecursionlimit(5500)
 
 
 # FUNCTIONS
-# Checking turn when travelling along three points, used to check whether lines inters.
 @gtx.field_operator
 def ccw(
     p0_lon: fa.EdgeKField[ta.wpfloat],
@@ -30,14 +29,19 @@ def ccw(
     p2_lon: fa.EdgeKField[ta.wpfloat],
     p2_lat: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[gtx.int32]:
+    """
+    Counter-clockwise test.
+    Given three points P0, P1, P2, it computes the sign of the cross product of vectors (P1-P0) and (P2-P0):
+    cross = dx1*dy2 - dy1*dx2
+    If cross > 0, the three points are in counter-clockwise order (returns 1), otherwise clockwise (returns -1).
+    """
     dx1dy2 = (p1_lon - p0_lon) * (p2_lat - p0_lat)
     dy1dx2 = (p1_lat - p0_lat) * (p2_lon - p0_lon)
     lccw = dx1dy2 > dy1dx2
-    ccw_out = where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
+    ccw_out = where(lccw, 1, -1)  # 1: counterclockwise, -1: clockwise
     return ccw_out
 
 
-# Checks whether two lines intersect
 @gtx.field_operator
 def lintersect(
     line1_p1_lon: fa.EdgeKField[ta.wpfloat],
@@ -49,35 +53,42 @@ def lintersect(
     line2_p2_lon: fa.EdgeKField[ta.wpfloat],
     line2_p2_lat: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[bool]:
+    """
+    Line segment intersection test.
+    Uses the CCW-based intersection test: two line segments AB and CD intersect if and only if:
+    - A, B separate C and D (i.e. CCW(A,B,C) and CCW(A,B,D) have opposite signs → product = -1)
+    - C, D separate A and B (i.e. CCW(C,D,A) and CCW(C,D,B) have opposite signs → product = -1)
+    Both products must equal -1 simultaneously (sum = -2) for an intersection to occur.
+    """
     intersect1 = ccw(
-        line1_p1_lon,
-        line1_p1_lat,
-        line1_p2_lon,
-        line1_p2_lat,
-        line2_p1_lon,
-        line2_p1_lat,
+        p0_lon=line1_p1_lon,
+        p0_lat=line1_p1_lat,
+        p1_lon=line1_p2_lon,
+        p1_lat=line1_p2_lat,
+        p2_lon=line2_p1_lon,
+        p2_lat=line2_p1_lat,
     ) * ccw(
-        line1_p1_lon,
-        line1_p1_lat,
-        line1_p2_lon,
-        line1_p2_lat,
-        line2_p2_lon,
-        line2_p2_lat,
+        p0_lon=line1_p1_lon,
+        p0_lat=line1_p1_lat,
+        p1_lon=line1_p2_lon,
+        p1_lat=line1_p2_lat,
+        p2_lon=line2_p2_lon,
+        p2_lat=line2_p2_lat,
     )
     intersect2 = ccw(
-        line2_p1_lon,
-        line2_p1_lat,
-        line2_p2_lon,
-        line2_p2_lat,
-        line1_p1_lon,
-        line1_p1_lat,
+        p0_lon=line2_p1_lon,
+        p0_lat=line2_p1_lat,
+        p1_lon=line2_p2_lon,
+        p1_lat=line2_p2_lat,
+        p2_lon=line1_p1_lon,
+        p2_lat=line1_p1_lat,
     ) * ccw(
-        line2_p1_lon,
-        line2_p1_lat,
-        line2_p2_lon,
-        line2_p2_lat,
-        line1_p2_lon,
-        line1_p2_lat,
+        p0_lon=line2_p1_lon,
+        p0_lat=line2_p1_lat,
+        p1_lon=line2_p2_lon,
+        p1_lat=line2_p2_lat,
+        p2_lon=line1_p2_lon,
+        p2_lat=line1_p2_lat,
     )
     lintersect_out = (intersect1 + intersect2) == -2
 
@@ -184,25 +195,25 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
 
     # Create first mask does departure-line segment intersects with A1V3
     lintersect_line1 = lintersect(
-        fl_line_p1_lon,
-        fl_line_p1_lat,
-        fl_line_p2_lon,
-        fl_line_p2_lat,
-        tri_line1_p1_lon,
-        tri_line1_p1_lat,
-        tri_line1_p2_lon,
-        tri_line1_p2_lat,
+        line1_p1_lon=fl_line_p1_lon,
+        line1_p1_lat=fl_line_p1_lat,
+        line1_p2_lon=fl_line_p2_lon,
+        line1_p2_lat=fl_line_p2_lat,
+        line2_p1_lon=tri_line1_p1_lon,
+        line2_p1_lat=tri_line1_p1_lat,
+        line2_p2_lon=tri_line1_p2_lon,
+        line2_p2_lat=tri_line1_p2_lat,
     )
     # Create first mask does departure-line segment intersects with A2V3
     lintersect_line2 = lintersect(
-        fl_line_p1_lon,
-        fl_line_p1_lat,
-        fl_line_p2_lon,
-        fl_line_p2_lat,
-        tri_line2_p1_lon,
-        tri_line2_p1_lat,
-        tri_line2_p2_lon,
-        tri_line2_p2_lat,
+        line1_p1_lon=fl_line_p1_lon,
+        line1_p1_lat=fl_line_p1_lat,
+        line1_p2_lon=fl_line_p2_lon,
+        line1_p2_lat=fl_line_p2_lat,
+        line2_p1_lon=tri_line2_p1_lon,
+        line2_p1_lat=tri_line2_p1_lat,
+        line2_p2_lon=tri_line2_p2_lon,
+        line2_p2_lat=tri_line2_p2_lat,
     )
 
     lvn_sys_pos = (p_vn * broadcast(tangent_orientation_dsl, (dims.EdgeDim, dims.KDim))) >= 0.0
@@ -210,24 +221,24 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     # ------------------------------------------------- Case 1
     mask_case1 = lintersect_line1 & lintersect_line2 & famask_bool
     ps1_x, ps1_y = line_intersect(
-        fl_line_p1_lon,
-        fl_line_p1_lat,
-        fl_line_p2_lon,
-        fl_line_p2_lat,
-        tri_line1_p1_lon,
-        tri_line1_p1_lat,
-        tri_line1_p2_lon,
-        tri_line1_p2_lat,
+        line1_p1_lon=fl_line_p1_lon,
+        line1_p1_lat=fl_line_p1_lat,
+        line1_p2_lon=fl_line_p2_lon,
+        line1_p2_lat=fl_line_p2_lat,
+        line2_p1_lon=tri_line1_p1_lon,
+        line2_p1_lat=tri_line1_p1_lat,
+        line2_p2_lon=tri_line1_p2_lon,
+        line2_p2_lat=tri_line1_p2_lat,
     )
     ps2_x, ps2_y = line_intersect(
-        fl_line_p1_lon,
-        fl_line_p1_lat,
-        fl_line_p2_lon,
-        fl_line_p2_lat,
-        tri_line2_p1_lon,
-        tri_line2_p1_lat,
-        tri_line2_p2_lon,
-        tri_line2_p2_lat,
+        line1_p1_lon=fl_line_p1_lon,
+        line1_p1_lat=fl_line_p1_lat,
+        line1_p2_lon=fl_line_p2_lon,
+        line1_p2_lat=fl_line_p2_lat,
+        line2_p1_lon=tri_line2_p1_lon,
+        line2_p1_lat=tri_line2_p1_lat,
+        line2_p2_lon=tri_line2_p2_lon,
+        line2_p2_lat=tri_line2_p2_lat,
     )
 
     # Case 1 - patch 0
@@ -395,25 +406,25 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     # ----------------------------------------------- Case 3a
     # Check whether flux area edge 2 intersects with triangle edge 1
     lintersect_e2_line1 = lintersect(
-        fl_e2_p1_lon,
-        fl_e2_p1_lat,
-        fl_e2_p2_lon,
-        fl_e2_p2_lat,
-        tri_line1_p1_lon,
-        tri_line1_p1_lat,
-        tri_line1_p2_lon,
-        tri_line1_p2_lat,
+        line1_p1_lon=fl_e2_p1_lon,
+        line1_p1_lat=fl_e2_p1_lat,
+        line1_p2_lon=fl_e2_p2_lon,
+        line1_p2_lat=fl_e2_p2_lat,
+        line2_p1_lon=tri_line1_p1_lon,
+        line2_p1_lat=tri_line1_p1_lat,
+        line2_p2_lon=tri_line1_p2_lon,
+        line2_p2_lat=tri_line1_p2_lat,
     )
     mask_case3a = lintersect_e2_line1 & famask_bool
     pi1_x, pi1_y = line_intersect(
-        fl_e2_p1_lon,
-        fl_e2_p1_lat,
-        fl_e2_p2_lon,
-        fl_e2_p2_lat,
-        tri_line1_p1_lon,
-        tri_line1_p1_lat,
-        tri_line1_p2_lon,
-        tri_line1_p2_lat,
+        line1_p1_lon=fl_e2_p1_lon,
+        line1_p1_lat=fl_e2_p1_lat,
+        line1_p2_lon=fl_e2_p2_lon,
+        line1_p2_lat=fl_e2_p2_lat,
+        line2_p1_lon=tri_line1_p1_lon,
+        line2_p1_lat=tri_line1_p1_lat,
+        line2_p2_lon=tri_line1_p2_lon,
+        line2_p2_lat=tri_line1_p2_lat,
     )
     # Case 3a - patch 0
     dreg_patch0_1_lon_dsl = where(mask_case3a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
@@ -478,25 +489,25 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     # ------------------------------------------------ Case 3b
     # Check whether flux area edge 1 intersects with triangle edge 2
     lintersect_e1_line2 = lintersect(
-        fl_e1_p1_lon,
-        fl_e1_p1_lat,
-        fl_e1_p2_lon,
-        fl_e1_p2_lat,
-        tri_line2_p1_lon,
-        tri_line2_p1_lat,
-        tri_line2_p2_lon,
-        tri_line2_p2_lat,
+        line1_p1_lon=fl_e1_p1_lon,
+        line1_p1_lat=fl_e1_p1_lat,
+        line1_p2_lon=fl_e1_p2_lon,
+        line1_p2_lat=fl_e1_p2_lat,
+        line2_p1_lon=tri_line2_p1_lon,
+        line2_p1_lat=tri_line2_p1_lat,
+        line2_p2_lon=tri_line2_p2_lon,
+        line2_p2_lat=tri_line2_p2_lat,
     )
     mask_case3b = lintersect_e1_line2 & famask_bool
     pi2_x, pi2_y = line_intersect(
-        fl_e1_p1_lon,
-        fl_e1_p1_lat,
-        fl_e1_p2_lon,
-        fl_e1_p2_lat,
-        tri_line2_p1_lon,
-        tri_line2_p1_lat,
-        tri_line2_p2_lon,
-        tri_line2_p2_lat,
+        line1_p1_lon=fl_e1_p1_lon,
+        line1_p1_lat=fl_e1_p1_lat,
+        line1_p2_lon=fl_e1_p2_lon,
+        line1_p2_lat=fl_e1_p2_lat,
+        line2_p1_lon=tri_line2_p1_lon,
+        line2_p1_lat=tri_line2_p1_lat,
+        line2_p2_lon=tri_line2_p2_lon,
+        line2_p2_lat=tri_line2_p2_lat,
     )
     # Case 3b - patch 0
     dreg_patch0_1_lon_dsl = where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
@@ -633,19 +644,19 @@ def prepare_ffsl_flux_area_patches_list(
     vertical_end: gtx.int32,
 ) -> None:
     _prepare_ffsl_flux_area_patches_list(
-        famask_int,
-        p_vn,
-        ptr_v3_lon,
-        ptr_v3_lat,
-        tangent_orientation_dsl,
-        dreg_patch0_1_lon_dsl,
-        dreg_patch0_1_lat_dsl,
-        dreg_patch0_2_lon_dsl,
-        dreg_patch0_2_lat_dsl,
-        dreg_patch0_3_lon_dsl,
-        dreg_patch0_3_lat_dsl,
-        dreg_patch0_4_lon_dsl,
-        dreg_patch0_4_lat_dsl,
+        famask_int=famask_int,
+        p_vn=p_vn,
+        ptr_v3_lon=ptr_v3_lon,
+        ptr_v3_lat=ptr_v3_lat,
+        tangent_orientation_dsl=tangent_orientation_dsl,
+        dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
+        dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
+        dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
+        dreg_patch0_2_lat_dsl=dreg_patch0_2_lat_dsl,
+        dreg_patch0_3_lon_dsl=dreg_patch0_3_lon_dsl,
+        dreg_patch0_3_lat_dsl=dreg_patch0_3_lat_dsl,
+        dreg_patch0_4_lon_dsl=dreg_patch0_4_lon_dsl,
+        dreg_patch0_4_lat_dsl=dreg_patch0_4_lat_dsl,
         out=(
             dreg_patch0_1_lon_dsl,
             dreg_patch0_1_lat_dsl,
