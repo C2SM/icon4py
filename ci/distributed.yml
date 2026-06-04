@@ -4,7 +4,7 @@ include:
 .test_template_distributed:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  extends: [.container-runner-santis-gh200, .test_template_distributed]
+  extends: .container-runner-santis-gh200
   needs: [build_image_aarch64]
   variables:
     SLURM_JOB_NUM_NODES: 1
@@ -37,6 +37,7 @@ include:
 
 .test_distributed_aarch64:
   stage: test
+  extends: [.test_template_distributed]
   before_script:
     - cd /icon4py
     - source .venv/bin/activate
