@@ -13,11 +13,13 @@ from typing import Final, TypeVar
 
 _T = TypeVar("_T")
 
+NAMELIST_INPUT_FNAME: Final = "NAMELIST_expname"
 NAMELIST_ATM_FNAME: Final = "NAMELIST_ICON_output_atm"
 NAMELIST_MASTER_FNAME: Final = "icon_master.namelist"
 
 ATM_DICT_FNAME: Final = f"{NAMELIST_ATM_FNAME}.json"
 MASTER_DICT_FNAME: Final = f"{NAMELIST_MASTER_FNAME}.json"
+INPUT_DICT_FNAME: Final = f"{NAMELIST_INPUT_FNAME}.json"
 
 
 def list_to_value(obj: list[_T] | _T) -> _T:

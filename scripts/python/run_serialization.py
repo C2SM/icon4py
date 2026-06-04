@@ -139,6 +139,10 @@ def get_nmlfile_name(experiment: definitions.Experiment) -> str:
     return f"exp.{get_f90exp_name(experiment)}"
 
 
+def get_dumped_nmlfile_name(experiment: definitions.Experiment) -> str:
+    return f"NAMELIST_{get_f90exp_name(experiment)}"
+
+
 def get_slurmscript_name(experiment: definitions.Experiment) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
@@ -431,6 +435,10 @@ def copy_ser_data(
     # same for icon_master.namelist
     nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
     with (dest_dir / (fortran_config.MASTER_DICT_FNAME)).open("w") as f:
+        json.dump(nml.todict(), f, indent=4)
+    # same for NAMELIST_expname
+    nml = f90nml.read(exp_dir / get_dumped_nmlfile_name(experiment))
+    with (dest_dir / (fortran_config.INPUT_DICT_FNAME)).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files
