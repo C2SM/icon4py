@@ -4,12 +4,8 @@ include:
 .test_template_distributed:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  before_script:
-    - cd /icon4py
-    - source .venv/bin/activate
-    - echo "running with $(python --version)"
-    - source ci/scripts/start-cuda-mps.sh
-    - source ci/scripts/gt4py-cache.sh
+  extends: [.container-runner-santis-gh200, .test_template_distributed]
+  needs: [build_image_aarch64]
   variables:
     SLURM_JOB_NUM_NODES: 1
     # Use only one GPU for all ranks of the test as all tests are serialized
@@ -41,8 +37,12 @@ include:
 
 .test_distributed_aarch64:
   stage: test
-  extends: [.container-runner-santis-gh200, .test_template_distributed]
-  needs: [build_image_aarch64]
+  before_script:
+    - cd /icon4py
+    - source .venv/bin/activate
+    - echo "running with $(python --version)"
+    - source ci/scripts/start-cuda-mps.sh
+    - source ci/scripts/gt4py-cache.sh
   script:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
