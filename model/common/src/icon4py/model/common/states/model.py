@@ -32,6 +32,8 @@ class OptionalMetaData(TypedDict, total=False):
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+    #: physics-component output category: "tendency" applied as field += val*dt; "diagnostic" stored unscaled
+    kind: Literal["tendency", "diagnostic"]
 
 
 class RequiredMetaData(TypedDict, total=True):

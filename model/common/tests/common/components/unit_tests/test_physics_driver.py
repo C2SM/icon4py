@@ -1,0 +1,203 @@
+import dataclasses
+import datetime
+
+import pytest
+
+from icon4py.model.common.components.physics_driver import (
+    ForcingMode,
+    PhysicsDriver,
+    PhysicsProcess,
+    ProcessTimeControl,
+)
+from icon4py.model.common.states.model import FieldMetaData
+
+
+def test_field_metadata_accepts_kind() -> None:
+    meta: FieldMetaData = {
+        "standard_name": "tend_temperature",
+        "units": "K s-1",
+        "kind": "tendency",
+    }
+    assert meta["kind"] == "tendency"
+
+
+def test_forcing_mode_values() -> None:
+    assert ForcingMode.DIAGNOSTIC.value == 0
+    assert ForcingMode.APPLY.value == 1
+    assert ForcingMode.DIAGNOSTIC is not ForcingMode.APPLY
+    assert len(ForcingMode) == 2
+
+
+_T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
+_DT = datetime.timedelta(seconds=300)   # 5-min physics interval
+
+
+def _tc(
+    interval: datetime.timedelta = _DT,
+    start: datetime.datetime = _T0,
+    end: datetime.datetime = _T0 + datetime.timedelta(days=1),
+    mode: ForcingMode = ForcingMode.APPLY,
+) -> ProcessTimeControl:
+    return ProcessTimeControl(
+        interval=interval, start_date=start, end_date=end, forcing_mode=mode
+    )
+
+
+class TestProcessTimeControl:
+    def test_is_enabled_true_when_interval_positive(self) -> None:
+        assert _tc(interval=_DT).is_enabled() is True
+
+    def test_is_enabled_false_when_interval_zero(self) -> None:
+        assert _tc(interval=datetime.timedelta(0)).is_enabled() is False
+
+    def test_is_active_false_when_disabled(self) -> None:
+        assert _tc(interval=datetime.timedelta(0)).is_active(_T0) is False
+
+    def test_is_in_window_at_start_is_true(self) -> None:
+        assert _tc().is_in_window(_T0) is True
+
+    def test_is_in_window_at_end_is_false(self) -> None:
+        end = _T0 + datetime.timedelta(hours=1)
+        assert _tc(end=end).is_in_window(end) is False
+
+    def test_is_in_window_before_start_is_false(self) -> None:
+        assert _tc().is_in_window(_T0 - datetime.timedelta(seconds=1)) is False
+
+    def test_is_in_window_inside_is_true(self) -> None:
+        assert _tc().is_in_window(_T0 + datetime.timedelta(hours=12)) is True
+
+    def test_is_active_at_start_is_true(self) -> None:
+        assert _tc().is_active(_T0) is True
+
+    def test_is_active_at_one_interval_is_true(self) -> None:
+        assert _tc().is_active(_T0 + _DT) is True
+
+    def test_is_active_at_half_interval_is_false(self) -> None:
+        assert _tc().is_active(_T0 + _DT / 2) is False
+
+    def test_is_active_before_start_is_false(self) -> None:
+        assert _tc().is_active(_T0 - datetime.timedelta(seconds=1)) is False
+
+    def test_is_active_tolerates_microsecond_jitter(self) -> None:
+        # 2 intervals + 1 microsecond — should still count as "fire on the boundary"
+        jitter = datetime.timedelta(microseconds=1)
+        assert _tc().is_active(_T0 + 2 * _DT + jitter) is True
+
+    def test_frozen_dataclass(self) -> None:
+        tc = _tc()
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
+
+
+def test_physics_process_construction() -> None:
+    class _DummyComponent:
+        inputs_properties = {}
+        outputs_properties = {}
+
+        def __call__(self, state, time_step):  # noqa: D401
+            return {}
+
+    proc = PhysicsProcess(
+        name="muphys",
+        component=_DummyComponent(),
+        time_control=_tc(),
+    )
+    assert proc.name == "muphys"
+    assert proc.component is not None
+    assert proc.time_control.is_enabled()
+
+
+@dataclasses.dataclass
+class RecordingComponent:
+    """Stub Component: records calls, returns configured outputs.
+
+    `output_kinds` keys mirror `outputs` keys; values are 'tendency' or
+    'diagnostic'.
+    """
+
+    outputs: dict[str, object]
+    output_kinds: dict[str, str]
+    call_count: int = 0
+    last_state: dict | None = None
+    last_time: datetime.datetime | None = None
+
+    @property
+    def inputs_properties(self) -> dict:
+        return {}
+
+    @property
+    def outputs_properties(self) -> dict:
+        return {
+            k: {"standard_name": k, "units": "1", "kind": self.output_kinds[k]}
+            for k in self.outputs
+        }
+
+    def __call__(self, state, time_step):
+        self.call_count += 1
+        self.last_state = state
+        self.last_time = time_step
+        return dict(self.outputs)
+
+
+@dataclasses.dataclass
+class RecordingPhysicsState:
+    """Stub PhysicsState: records refresh / scatter; returns a fixed dict
+    from as_component_input. Implements just enough surface for L2."""
+
+    refresh_calls: list = dataclasses.field(default_factory=list)
+    scatter_calls: list = dataclasses.field(default_factory=list)
+
+    def refresh_from_prognostic(self, prognostic, metrics) -> None:
+        self.refresh_calls.append((prognostic, metrics))
+
+    def as_component_input(self) -> dict:
+        return {"foo": "bar"}
+
+    def scatter_to_prognostic(self, prognostic, outputs, dt) -> None:
+        self.scatter_calls.append((prognostic, outputs, dt))
+
+
+def test_recording_doubles_record_calls() -> None:
+    component = RecordingComponent(
+        outputs={"tend_temperature": "T_TEND_VALUE", "pflx": "PFLX_VALUE"},
+        output_kinds={"tend_temperature": "tendency", "pflx": "diagnostic"},
+    )
+    state = RecordingPhysicsState()
+
+    # Simulate what PhysicsDriver would do.
+    state.refresh_from_prognostic("prog", "metrics")
+    out = component(state.as_component_input(), _T0)
+    state.scatter_to_prognostic("prog", out, 300.0)
+
+    assert state.refresh_calls == [("prog", "metrics")]
+    assert component.call_count == 1
+    assert component.last_state == {"foo": "bar"}   # what as_component_input returned
+    assert state.scatter_calls == [("prog", out, 300.0)]
+
+
+def test_run_invokes_components_in_order() -> None:
+    state = RecordingPhysicsState()
+    comp_a = RecordingComponent(
+        outputs={"tend_temperature": "A"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+    comp_b = RecordingComponent(
+        outputs={"tend_temperature": "B"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+
+    driver = PhysicsDriver(
+        processes=[
+            PhysicsProcess(name="A", component=comp_a, time_control=_tc()),
+            PhysicsProcess(name="B", component=comp_b, time_control=_tc()),
+        ],
+        physics_state=state,
+    )
+
+    driver.run(prognostic="prog", metrics="metrics", dt=300.0, now=_T0)
+
+    assert comp_a.call_count == 1
+    assert comp_b.call_count == 1
+    # B's scatter must follow A's (operator-splitting ordering)
+    assert state.scatter_calls[0][1] == {"tend_temperature": "A"}
+    assert state.scatter_calls[1][1] == {"tend_temperature": "B"}
