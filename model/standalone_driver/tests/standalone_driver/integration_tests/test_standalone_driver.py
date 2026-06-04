@@ -32,6 +32,16 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
+        (
+            test_defs.Experiments.GAUSS3D,
+            2,
+            5,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+        ),
     ],
 )
 def test_standalone_driver(
