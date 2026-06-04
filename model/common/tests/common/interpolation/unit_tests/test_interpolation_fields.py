@@ -39,6 +39,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -158,12 +159,12 @@ def test_compute_geofac_n2s(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_n2s = compute_geofac_n2s(
-        dual_edge_length.ndarray,
-        geofac_div.ndarray,
-        c2e,
-        e2c,
-        c2e2c,
-        horizontal_start,
+        dual_edge_length=dual_edge_length.ndarray,
+        geofac_div=geofac_div.ndarray,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        horizontal_start=horizontal_start,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(geofac_n2s), geofac_n2s_ref.asnumpy())
 
@@ -190,15 +191,15 @@ def test_compute_geofac_grg(
     geofac_grg_0, geofac_grg_1 = functools.partial(
         compute_geofac_grg, exchange=decomposition.single_node_exchange
     )(
-        primal_normal_cell_x,
-        primal_normal_cell_y,
-        owner_mask,
-        geofac_div,
-        c_lin_e,
-        c2e,
-        e2c,
-        c2e2c,
-        horizontal_start,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        owner_mask=owner_mask,
+        geofac_div=geofac_div,
+        c_lin_e=c_lin_e,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        horizontal_start=horizontal_start,
     )
     assert test_helpers.dallclose(
         data_alloc.as_numpy(geofac_grg_0),
@@ -231,13 +232,13 @@ def test_compute_geofac_grdiv(
     e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_grdiv = compute_geofac_grdiv(
-        geofac_div.ndarray,
-        inv_dual_edge_length.ndarray,
-        owner_mask.ndarray,
-        c2e,
-        e2c,
-        e2c2e,
-        horizontal_start,
+        geofac_div=geofac_div.ndarray,
+        inv_dual_edge_length=inv_dual_edge_length.ndarray,
+        owner_mask=owner_mask.ndarray,
+        c2e=c2e,
+        e2c=e2c,
+        e2c2e=e2c2e,
+        horizontal_start=horizontal_start,
     )
     assert test_helpers.dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
@@ -266,24 +267,24 @@ def test_compute_c_bln_avg(
     match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
-                c2e2c0,
-                lat,
-                lon,
-                cell_areas,
-                cell_owner_mask,
-                divergence_averaging_central_cell_weight,
-                horizontal_start,
-                horizontal_start_p2,
+                c2e2c0=c2e2c0,
+                lat=lat,
+                lon=lon,
+                cell_areas=cell_areas,
+                cell_owner_mask=cell_owner_mask,
+                divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+                horizontal_start=horizontal_start,
+                horizontal_start_level_3=horizontal_start_p2,
                 exchange=decomposition.single_node_exchange,
             )
         case icon.GeometryType.TORUS:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
-                c2e2c0,
-                cell_areas,
-                cell_owner_mask,
-                divergence_averaging_central_cell_weight,
-                horizontal_start,
-                horizontal_start_p2,
+                c2e2c0=c2e2c0,
+                cell_areas=cell_areas,
+                cell_owner_mask=cell_owner_mask,
+                divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+                horizontal_start=horizontal_start,
+                horizontal_start_level_3=horizontal_start_p2,
                 exchange=decomposition.single_node_exchange,
             )
 
@@ -313,18 +314,18 @@ def test_compute_e_flx_avg(
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
     e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.single_node_exchange)(
-        c_bln_avg,
-        geofac_div,
-        owner_mask,
-        primal_cart_normal_x,
-        primal_cart_normal_y,
-        primal_cart_normal_z,
-        e2c,
-        c2e,
-        c2e2c,
-        e2c2e,
-        horizontal_start_1,
-        horizontal_start_2,
+        c_bln_avg=c_bln_avg,
+        geofac_div=geofac_div,
+        owner_mask=owner_mask,
+        primal_cart_normal_x=primal_cart_normal_x,
+        primal_cart_normal_y=primal_cart_normal_y,
+        primal_cart_normal_z=primal_cart_normal_z,
+        e2c=e2c,
+        c2e=c2e,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        horizontal_start_p3=horizontal_start_1,
+        horizontal_start_p4=horizontal_start_2,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 
@@ -379,7 +380,13 @@ def test_compute_e_bln_c_s(
 
     match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
-            e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0)
+            e_bln_c_s = compute_e_bln_c_s(
+                c2e=c2e,
+                cells_lat=cells_lat,
+                cells_lon=cells_lon,
+                edges_lat=edges_lat,
+                edges_lon=edges_lon,
+            )
         case icon.GeometryType.TORUS:
             e_bln_c_s = compute_e_bln_c_s_torus(c2e)
     assert test_helpers.dallclose(
@@ -414,18 +421,18 @@ def test_compute_pos_on_tplane_e(
     match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
-                sphere_radius,
-                primal_normal_v1,
-                primal_normal_v2,
-                dual_normal_v1,
-                dual_normal_v2,
-                cells_lon,
-                cells_lat,
-                edges_lon,
-                edges_lat,
-                owner_mask,
-                e2c,
-                horizontal_start,
+                grid_sphere_radius=sphere_radius,
+                primal_normal_v1=primal_normal_v1,
+                primal_normal_v2=primal_normal_v2,
+                dual_normal_v1=dual_normal_v1,
+                dual_normal_v2=dual_normal_v2,
+                cells_lon=cells_lon,
+                cells_lat=cells_lat,
+                edges_lon=edges_lon,
+                edges_lat=edges_lat,
+                owner_mask=owner_mask,
+                e2c=e2c,
+                horizontal_start=horizontal_start,
             )
         case icon.GeometryType.TORUS:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y_torus(

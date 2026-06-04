@@ -95,7 +95,7 @@ build_distributed:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, standalone_driver]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common, standalone_driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
   rules:
@@ -112,7 +112,7 @@ build_distributed:
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
-    - if: $COMPONENT == 'atmosphere/dycore'
+    - if: ($COMPONENT == 'atmosphere/dycore' || $COMPONENT == 'atmosphere/advection')
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success

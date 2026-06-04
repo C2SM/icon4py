@@ -44,10 +44,10 @@ def apply_monotone_horizontal_multiplicative_flux_factors(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_monotone_horizontal_multiplicative_flux_factors(
-        z_anti,
-        r_m,
-        r_p,
-        z_mflx_low,
+        z_anti=z_anti,
+        r_m=r_m,
+        r_p=r_p,
+        z_mflx_low=z_mflx_low,
         out=p_mflx_tracer_h,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

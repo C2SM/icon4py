@@ -34,8 +34,8 @@ def compute_tangential_wind(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_tangential_wind(
-        vn,
-        rbf_vec_coeff_e,
+        vn=vn,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
         out=vt,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

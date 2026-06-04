@@ -21,22 +21,15 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
-    damping_height,
     data_provider,
     download_ser_data,
     experiment,
-    flat_height,
+    experiment_description,
     grid_savepoint,
-    htop_moist_proc,
     icon_grid,
     interpolation_savepoint,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
     metrics_savepoint,
-    model_top_height,
     process_props,
-    stretch_factor,
-    top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
 
@@ -51,8 +44,8 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    "max_h,damping_height,delta",
-    [(60000, 34000, 612), (12000, 10000, 100), (109050, 45000, 123)],
+    "max_h,damping_height,delta,flat_height",
+    [(60000, 34000, 612, 50000), (12000, 10000, 100, 11000), (109050, 45000, 123, 80000)],
 )
 def test_damping_layer_calculation(
     max_h: float, damping_height: float, delta: float, flat_height: float
@@ -77,16 +70,12 @@ def test_damping_layer_calculation(
 
 @pytest.mark.datatest
 def test_damping_layer_calculation_from_icon_input(
-    grid_savepoint: sb.IconGridSavepoint, damping_height: float, flat_height: float
+    grid_savepoint: sb.IconGridSavepoint, experiment: definitions.Experiment
 ) -> None:
     a = grid_savepoint.vct_a()
     b = grid_savepoint.vct_b()
     nrdmax = grid_savepoint.nrdmax()
-    vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
-        flat_height=flat_height,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=a,
@@ -94,7 +83,7 @@ def test_damping_layer_calculation_from_icon_input(
     )
     assert nrdmax == vertical_grid.end_index_of_damping_layer
     a_array = a.ndarray
-    damping_height = min(damping_height, a_array[0])
+    damping_height = min(vertical_config.rayleigh_damping_height, a_array[0])
     assert a_array[nrdmax] >= damping_height
     assert a_array[nrdmax + 1] < damping_height
     assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
@@ -111,8 +100,8 @@ def test_grid_size(
         vct_b=grid_savepoint.vct_b(),
     )
 
-    assert experiment.num_levels == vertical_grid.size(dims.KDim)
-    assert experiment.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
+    assert experiment.config.vertical_grid.num_levels == vertical_grid.size(dims.KDim)
+    assert experiment.config.vertical_grid.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
 
 
 @pytest.mark.parametrize(
@@ -152,7 +141,7 @@ def configure_vertical_grid(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, expected_moist_level",
+    "experiment_description, expected_moist_level",
     [(definitions.Experiments.MCH_CH_R04B09, 0), (definitions.Experiments.EXCLAIM_APE, 25)],
 )
 def test_moist_level_calculation(
@@ -209,7 +198,7 @@ def test_grid_index_top(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
@@ -226,7 +215,7 @@ def test_grid_index_damping(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
@@ -243,7 +232,7 @@ def test_grid_index_moist(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
@@ -261,7 +250,7 @@ def test_grid_index_flat(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
 )
 @pytest.mark.parametrize("dim", dims.vertical_dims())
@@ -274,13 +263,17 @@ def test_grid_index_bottom(
 ) -> None:
     valid_offset = -offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    num_levels = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
+    num_levels = (
+        experiment.config.vertical_grid.num_levels
+        if dim == dims.KDim
+        else experiment.config.vertical_grid.num_levels + 1
+    )
     domain = v_grid.Domain(dim, v_grid.Zone.BOTTOM, valid_offset)
     assert num_levels + valid_offset == vertical_grid.index(domain)
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
@@ -291,7 +284,11 @@ def test_grid_index_raises_if_index_above_num_levels(
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
-    vertical_size = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
+    vertical_size = (
+        experiment.config.vertical_grid.num_levels
+        if dim == dims.KDim
+        else experiment.config.vertical_grid.num_levels + 1
+    )
     invalid_offset = vertical_size + 1 + offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
     domain = v_grid.Domain(dim, zone, invalid_offset)
@@ -300,7 +297,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
@@ -311,7 +308,11 @@ def test_grid_index_raises_if_index_below_zero(
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
-    vertical_size = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
+    vertical_size = (
+        experiment.config.vertical_grid.num_levels
+        if dim == dims.KDim
+        else experiment.config.vertical_grid.num_levels + 1
+    )
     invalid_offset = -(vertical_size + 1 + offset)
     vertical_grid = configure_vertical_grid(grid_savepoint)
     with pytest.raises(expected_exception=AssertionError):
@@ -322,27 +323,10 @@ def test_grid_index_raises_if_index_below_zero(
 @pytest.mark.datatest
 def test_vct_a_vct_b_calculation_from_icon_input(
     grid_savepoint: sb.IconGridSavepoint,
-    maximal_layer_thickness: float,
-    top_height_limit_for_maximal_layer_thickness: float,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    flat_height: float,
-    stretch_factor: float,
-    damping_height: float,
-    htop_moist_proc: float,
+    experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
-    vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
-        maximal_layer_thickness=maximal_layer_thickness,
-        top_height_limit_for_maximal_layer_thickness=top_height_limit_for_maximal_layer_thickness,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        flat_height=flat_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-        htop_moist_proc=htop_moist_proc,
-    )
+    vertical_config = experiment.config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
     assert test_utils.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
@@ -352,44 +336,27 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment_description",
     [
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.GAUSS3D,
         definitions.Experiments.EXCLAIM_APE,
     ],
 )
-def test_compute_vertical_coordinate(
+def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     topography_savepoint: sb.TopographySavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     experiment: definitions.Experiment,
-    model_top_height: float,
     backend: gtx_typing.Backend,
 ) -> None:
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
-    specific_values = (
-        {"rayleigh_damping_height": 12500.0, "stretch_factor": 0.65, "lowest_layer_thickness": 20.0}
-        if experiment == definitions.Experiments.MCH_CH_R04B09
-        else {
-            "rayleigh_damping_height": 45000.0,
-            "stretch_factor": 1.0,
-            "lowest_layer_thickness": 50.0,
-        }
-    )
-
-    vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
-        flat_height=16000.0,
-        htop_moist_proc=22500.0,
-        maximal_layer_thickness=25000.0,
-        **specific_values,  # type: ignore[arg-type]
-    )
+    vertical_config = experiment.config.vertical_grid
 
     vertical_geometry = v_grid.VerticalGrid(
         config=vertical_config,
@@ -399,9 +366,12 @@ def test_compute_vertical_coordinate(
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
     topography = None
-    if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):
+    if experiment.description in (
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.GAUSS3D,
+    ):
         topography = topography_savepoint.topo_c()
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
+    elif experiment.description == definitions.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, allocator=backend, dtype=ta.wpfloat
         )
@@ -418,14 +388,14 @@ def test_compute_vertical_coordinate(
         geofac_n2s=geofac_n2s.ndarray,
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         nflatlev=vertical_geometry.nflatlev,
-        model_top_height=model_top_height,
-        SLEVE_decay_scale_1=4000.0,
-        SLEVE_decay_exponent=1.2,
-        SLEVE_decay_scale_2=2500.0,
-        SLEVE_minimum_layer_thickness_1=100.0,
-        SLEVE_minimum_relative_layer_thickness_1=1.0 / 3.0,
-        SLEVE_minimum_layer_thickness_2=500.0,
-        SLEVE_minimum_relative_layer_thickness_2=0.5,
+        model_top_height=vertical_config.model_top_height,
+        SLEVE_decay_scale_1=vertical_config.SLEVE_decay_scale_1,
+        SLEVE_decay_exponent=vertical_config.SLEVE_decay_exponent,
+        SLEVE_decay_scale_2=vertical_config.SLEVE_decay_scale_2,
+        SLEVE_minimum_layer_thickness_1=vertical_config._SLEVE_minimum_layer_thickness_1,
+        SLEVE_minimum_relative_layer_thickness_1=vertical_config._SLEVE_minimum_relative_layer_thickness_1,
+        SLEVE_minimum_layer_thickness_2=vertical_config._SLEVE_minimum_layer_thickness_2,
+        SLEVE_minimum_relative_layer_thickness_2=vertical_config._SLEVE_minimum_relative_layer_thickness_2,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
         exchange=decomposition.single_node_exchange,
     )
