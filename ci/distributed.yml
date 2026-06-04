@@ -2,26 +2,14 @@ include:
   - local: 'ci/base.yml'
 
 .test_template_distributed:
-  timeout: 8h
-  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  extends: .container-runner-santis-gh200
-  needs: [build_image_aarch64]
+  extends: [.test_template_aarch64]
   variables:
     SLURM_JOB_NUM_NODES: 1
     # Use only one GPU for all ranks of the test as all tests are serialized
     SLURM_GPUS_PER_NODE: 1
     SLURM_PARTITION: "shared"
-    SLURM_CPU_BIND: 'verbose'
+    SLURM_CPU_BIND: "verbose"
     SLURM_NTASKS: 4
-    ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
-    ICON4PY_ENABLE_GRID_DOWNLOAD: true
-    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
-    ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
-    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
-    ICON4PY_DRIVER_LOGGING_LEVEL: critical
-    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
-    PYTEST_ADDOPTS: "--durations=0"
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
     USE_MPI: NO
@@ -32,8 +20,6 @@ include:
     FI_PROVIDER: cxi
     OMPI_MCA_pml: cm
     OMPI_MCA_mtl: ofi
-    CUDAARCHS: "90"
-    GT4PY_BUILD_JOBS: 8
 
 .test_distributed_aarch64:
   stage: test

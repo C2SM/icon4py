@@ -63,6 +63,8 @@ build_image_aarch64:
     CUDA_DEVICE_MAX_CONNECTIONS: 8
     CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
     NUM_PROCESSES: auto
+    GT4PY_BUILD_JOBS: 8
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
@@ -71,6 +73,7 @@ build_image_aarch64:
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PY2F_GPU_TESTS: 1
     PYTEST_ADDOPTS: "--durations=0"
+
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
   needs: [build_image_aarch64]
@@ -80,10 +83,7 @@ build_image_aarch64:
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
-    # Creating more pytest workers does speeds up testing, but pytest startup
-    # time also scales with number of workers; 32 is a balance between these for
-    # jobs that don't run many tests.
+    # Creating more pytest workers speeds up testing, but pytest startup time
+    # also scales with number of workers; 32 is a balance between these for jobs
+    # that don't run many tests.
     NUM_PROCESSES: 32
-    GT4PY_BUILD_JOBS: 8
-    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
-    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
