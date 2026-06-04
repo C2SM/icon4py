@@ -6,10 +6,40 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.advection import advection_states
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.math.stencils import generic_math_operations_array_ns
+from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.grid import (
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    icon as icon_grid,
+)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
+from icon4py.model.common.math.stencils import (
+    generic_math_operations as gt4py_math_op,
+    generic_math_operations_array_ns,
+)
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.standalone_driver import driver_states
 
 
 def apply_hydrostatic_adjustment_ndarray(
@@ -96,8 +126,8 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
 
 def zonalwind_2_normalwind_ndarray(
     grid: icon_grid.IconGrid,
-    jw_u0: float,
-    jw_baroclinic_amplitude: float,
+    u0: float,
+    baroclinic_amplitude: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
     edge_lat: data_alloc.NDArray,
@@ -110,8 +140,8 @@ def zonalwind_2_normalwind_ndarray(
 
     Args:
         grid: IconGrid
-        jw_u0: base zonal wind speed factor, or maximum wind speed
-        jw_baroclinic_amplitude: perturbation amplitude
+        u0: base zonal wind speed factor, or maximum wind speed
+        baroclinic_amplitude: perturbation amplitude
         lat_perturbation_center: perturbation center in latitude
         lon_perturbation_center: perturbation center in longitude
         edge_lat: edge center latitude
@@ -139,14 +169,14 @@ def zonalwind_2_normalwind_ndarray(
     )
     u = array_ns.where(
         mask,
-        jw_u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
+        u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
         0.0,
     )
-    if jw_baroclinic_amplitude > 1.0e-20:
+    if baroclinic_amplitude > 1.0e-20:
         u = array_ns.where(
             mask,
             u
-            + jw_baroclinic_amplitude
+            + baroclinic_amplitude
             * array_ns.exp(
                 -(
                     (
@@ -210,3 +240,144 @@ def init_w(
     w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
     return w
+
+
+# ---------------------------------------------------------------------------
+# Shared field-extraction helpers (used by individual test-case modules)
+# ---------------------------------------------------------------------------
+
+
+def extract_metrics(
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+) -> dict[str, data_alloc.NDArray]:
+    return {
+        "wgtfac_c": metrics_field_source.get(metrics_attributes.WGTFAC_C).ndarray,
+        "ddqz_z_half": metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF).ndarray,
+        "theta_ref_mc": metrics_field_source.get(metrics_attributes.THETA_REF_MC).ndarray,
+        "theta_ref_ic": metrics_field_source.get(metrics_attributes.THETA_REF_IC).ndarray,
+        "exner_ref_mc": metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray,
+        "d_exner_dz_ref_ic": metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray,
+        "geopot": phy_const.GRAV * metrics_field_source.get(metrics_attributes.Z_MC).ndarray,
+        "z_ifc": metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
+    }
+
+
+def extract_geometry(
+    geometry_field_source: grid_geometry.GridGeometry,
+) -> dict[str, data_alloc.NDArray]:
+    return {
+        "cell_lat": geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
+        "edge_lat": geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray,
+        "edge_lon": geometry_field_source.get(geometry_meta.EDGE_LON).ndarray,
+        "primal_normal_x": geometry_field_source.get(geometry_meta.EDGE_NORMAL_U).ndarray,
+        "inv_dual_edge_length": geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ).ndarray,
+        "edge_cell_distance": geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+        "primal_edge_length": geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
+        "cell_area": geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+    }
+
+
+def extract_interpolation(
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+) -> dict:
+    return {
+        "c_lin_e": interpolation_field_source.get(interpolation_attributes.C_LIN_E),
+        "rbf_vec_coeff_c1": interpolation_field_source.get(
+            interpolation_attributes.RBF_VEC_COEFF_C1
+        ),
+        "rbf_vec_coeff_c2": interpolation_field_source.get(
+            interpolation_attributes.RBF_VEC_COEFF_C2
+        ),
+    }
+
+
+def zone_indices(grid: icon_grid.IconGrid) -> dict[str, int]:
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    return {
+        "end_edge_lateral_boundary_level_2": grid.end_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "end_edge_end": grid.end_index(edge_domain(h_grid.Zone.END)),
+        "end_cell_lateral_boundary_level_2": grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "end_cell_end": grid.end_index(cell_domain(h_grid.Zone.END)),
+    }
+
+
+def assemble_driver_states(
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.Allocator,
+    backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime,
+    interpolation: dict,
+    zone_indices_map: dict[str, int],
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+    prognostic_state_now: prognostics.PrognosticState,
+    diagnostic_state: diagnostics.DiagnosticState,
+) -> driver_states.DriverStates:
+    prognostic_state_next = prognostics.PrognosticState(
+        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
+        w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
+        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
+        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
+        theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+    )
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+
+    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+        p_e_in=prognostic_states.current.vn,
+        ptr_coeff_1=interpolation["rbf_vec_coeff_c1"],
+        ptr_coeff_2=interpolation["rbf_vec_coeff_c2"],
+        p_u_out=diagnostic_state.u,
+        p_v_out=diagnostic_state.v,
+        horizontal_start=zone_indices_map["end_cell_lateral_boundary_level_2"],
+        horizontal_end=zone_indices_map["end_cell_end"],
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider=grid.connectivities,
+    )
+    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
+
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
+        field_a=prognostic_states.current.exner,
+        field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
+        output_field=perturbed_exner,
+        horizontal_start=0,
+        horizontal_end=grid.num_cells,
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider={},
+    )
+
+    diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+        grid=grid,
+        allocator=allocator,
+    )
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+    tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    prep_tracer_adv = advection_states.AdvectionPrepAdvState(
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+    )
+
+    return driver_states.DriverStates(
+        prep_advection_prognostic=prep_adv,
+        solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
+        prep_tracer_advection_prognostic=prep_tracer_adv,
+        tracer_advection_diagnostic=tracer_advection_diagnostic_state,
+        diffusion_diagnostic=diffusion_diagnostic_state,
+        prognostics=prognostic_states,
+        diagnostic=diagnostic_state,
+    )
