@@ -17,8 +17,8 @@ variables:
   before_script:
     # include build arguments in hash since we use a parameterized Docker file
     - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
-    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION
-    - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG
+    - echo "BASE_IMAGE=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
     reports:
       dotenv: build.env
@@ -26,7 +26,6 @@ variables:
     DOCKERFILE: ci/docker/base.Dockerfile
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
     KUBERNETES_MEMORY_REQUEST: 128Gi
     KUBERNETES_MEMORY_LIMIT: 128Gi
 build_baseimage_aarch64:
@@ -38,7 +37,7 @@ build_baseimage_aarch64:
       # Unique image name based on commit SHA
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
     DOCKERFILE: ci/docker/checkout.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE"]'
 build_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_image]
   needs: [build_baseimage_aarch64]
