@@ -29,6 +29,7 @@ class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         wgtfac_e: np.ndarray,
         vn: np.ndarray,
         vt: np.ndarray,

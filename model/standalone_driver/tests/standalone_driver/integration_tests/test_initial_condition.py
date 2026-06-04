@@ -16,15 +16,16 @@ from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
-    damping_height,
     data_provider,
     download_ser_data,
+    experiment,
+    experiment_description,
     process_props,
 )
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [(definitions.Experiments.JW)])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 @pytest.mark.datatest
 def test_jablonowski_williamson_initial_condition(
     backend_like: model_backends.BackendLike,

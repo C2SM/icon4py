@@ -23,6 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
@@ -46,6 +47,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         w_nnow: np.ndarray,
         ddt_w_adv_ntl1: np.ndarray,
         z_th_ddz_exner_c: np.ndarray,
@@ -60,7 +62,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
             z_w_expl,
             z_contr_w_fl_l,
         ) = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
-            connectivities,
+            connectivities=connectivities,
             w_nnow=w_nnow,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
             z_th_ddz_exner_c=z_th_ddz_exner_c,
