@@ -71,7 +71,7 @@ typing-distributed = ["mpi4py>=3.1.5", "pymetis>2022.1"]
 [project]
 authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
 classifiers = [
-  'Development Status :: 3 - Alpha',
+  'Development Status :: 4 - Beta',
   'Intended Audience :: Science/Research',
   'License :: OSI Approved :: BSD License',
   'Operating System :: POSIX',
