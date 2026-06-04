@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import datetime
 
@@ -29,7 +37,7 @@ def test_forcing_mode_values() -> None:
 
 
 _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
-_DT = datetime.timedelta(seconds=300)   # 5-min physics interval
+_DT = datetime.timedelta(seconds=300)  # 5-min physics interval
 
 
 def _tc(
@@ -38,9 +46,7 @@ def _tc(
     end: datetime.datetime = _T0 + datetime.timedelta(days=1),
     mode: ForcingMode = ForcingMode.APPLY,
 ) -> ProcessTimeControl:
-    return ProcessTimeControl(
-        interval=interval, start_date=start, end_date=end, forcing_mode=mode
-    )
+    return ProcessTimeControl(interval=interval, start_date=start, end_date=end, forcing_mode=mode)
 
 
 class TestProcessTimeControl:
@@ -94,7 +100,7 @@ def test_physics_process_construction() -> None:
         inputs_properties = {}
         outputs_properties = {}
 
-        def __call__(self, state, time_step):  # noqa: D401
+        def __call__(self, state, time_step):
             return {}
 
     proc = PhysicsProcess(
@@ -171,7 +177,7 @@ def test_recording_doubles_record_calls() -> None:
 
     assert state.refresh_calls == [("prog", "metrics")]
     assert component.call_count == 1
-    assert component.last_state == {"foo": "bar"}   # what as_component_input returned
+    assert component.last_state == {"foo": "bar"}  # what as_component_input returned
     assert state.scatter_calls == [("prog", out, 300.0)]
 
 

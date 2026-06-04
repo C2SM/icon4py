@@ -1,4 +1,12 @@
-"""L2 physics orchestrator (icon4py analogue of ICON-MPIM's aes_phy_main)."""
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""L2 physics orchestrator"""
 
 from __future__ import annotations
 
@@ -71,8 +79,7 @@ class PhysicsProcess:
 
 
 class PhysicsStateProtocol(Protocol):
-    """The slice of PhysicsState that PhysicsDriver depends on. Keeps L2
-    decoupled from L1's concrete class."""
+    """The slice of PhysicsState that PhysicsDriver depends on."""
 
     def refresh_from_prognostic(self, prognostic: Any, metrics: Any) -> None: ...
     def as_component_input(self) -> dict[str, Any]: ...
