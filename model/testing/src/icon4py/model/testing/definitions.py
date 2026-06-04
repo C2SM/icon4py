@@ -165,7 +165,7 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    version: int = 3
+    version: int = 5
 
 
 class Experiments:
@@ -198,7 +198,6 @@ class Experiments:
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
-        version=4,
     )
 
 
