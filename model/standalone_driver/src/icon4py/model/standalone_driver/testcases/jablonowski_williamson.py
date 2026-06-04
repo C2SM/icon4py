@@ -216,8 +216,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
-        jw_u0=u0,
-        jw_baroclinic_amplitude=jw_baroclinic_amplitude,
+        u0=u0,
+        baroclinic_amplitude=jw_baroclinic_amplitude,
         lat_perturbation_center=lat_perturbation_center,
         lon_perturbation_center=lon_perturbation_center,
         edge_lat=geometry["edge_lat"],
