@@ -225,22 +225,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             delta = newton_function / newton_function_prime
             eta_old = eta_old - delta
 
-            # TODO(pstark) remove this log print:
-            log.info(
-                f"eta_mean,std: {eta_old.mean()}, {eta_old.std()} <-> delta: {delta.mean()}, {delta.std()}"
-            )
-            # log.info(
-            #     f"eta_min,mean,max: {eta_old.min()}, {eta_old.mean()}, {eta_old.max()} <-> delta: {delta.min()}, {delta.mean()}, {delta.max()}"
-            # )
-
             if xp.abs(delta, out=delta).max() < eta_old.max() * epsilon:
                 log.info(f"delta_abs_max={delta.max()}, eta_max={eta_old.max()}, epsilon={epsilon}")
                 break
-
-        log.info(
-            f"potential eps-factor: {xp.abs(delta, out=delta).max() / (eta_old.max() * phy_const.WP_EPS)}"
-        )
-        # log.info(f"eta_min,mean,max: {eta_old.min()}, {eta_old.mean()}, {eta_old.max()}")
         initial_guess = eta_old.mean()
 
         # Final update for zeta_v
