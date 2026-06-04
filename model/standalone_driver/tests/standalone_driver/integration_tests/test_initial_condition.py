@@ -5,13 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import pathlib
 
 import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.standalone_driver import driver_utils, standalone_driver
-from icon4py.model.standalone_driver.testcases import initial_condition
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -26,7 +24,12 @@ from icon4py.model.testing.fixtures.datatest import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description", [definitions.Experiments.JW, definitions.Experiments.GAUSS3D]
+    "experiment_description",
+    [
+        definitions.Experiments.JW,
+        definitions.Experiments.GAUSS3D,
+        definitions.Experiments.MCH_CH_R04B09,
+    ],
 )
 @pytest.mark.datatest
 def test_initial_conditions(
@@ -41,8 +44,8 @@ def test_initial_conditions(
         backend_like=backend_like,
     )
 
-    ds = initial_condition.create(
-        config=experiment.description.name,
+    ds = icon4py_driver.config.initial_condition.create(
+        parameters=icon4py_driver.config.initial_condition.parameters,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,

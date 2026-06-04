@@ -42,6 +42,16 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            2,
+            2,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            True,
+            False,
+        ),
     ],
 )
 def test_standalone_driver(

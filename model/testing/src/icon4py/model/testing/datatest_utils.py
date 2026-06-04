@@ -21,11 +21,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import topography, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.standalone_driver import config as driver_config, initial_condition
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 
@@ -180,7 +180,7 @@ def create_experiment_configuration(
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
-        master_dict, input_dict
+        master_dict, input_dict, data_path=experiment_path
     )
 
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(

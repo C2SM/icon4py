@@ -85,7 +85,9 @@ def gauss3d(
     theta_v_ndarray = prognostic_state_now.theta_v.ndarray
 
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
-    mask_array_edge_start_plus1_to_edge_end[0:zone_idx["end_edge_lateral_boundary_level_2"]] = False
+    mask_array_edge_start_plus1_to_edge_end[0 : zone_idx["end_edge_lateral_boundary_level_2"]] = (
+        False
+    )
     mask = xp.repeat(
         xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
         num_levels,

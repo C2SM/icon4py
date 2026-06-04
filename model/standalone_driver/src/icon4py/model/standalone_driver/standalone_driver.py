@@ -307,7 +307,8 @@ class Icon4pyDriver:
         )
         if (
             global_max_vertical_cfl
-            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.driver.vertical_cfl_threshold
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR
+            * self.config.driver.vertical_cfl_threshold
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(

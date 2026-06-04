@@ -27,7 +27,7 @@ from icon4py.model.common.grid import topography, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver.testcases import initial_condition
+from icon4py.model.standalone_driver import initial_condition
 
 
 log = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ def read_config(
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
-        master_dict, input_dict
+        master_dict, input_dict, data_path=config_file_path
     )
 
     profiling_stats = ProfilingStats() if enable_profiling else None

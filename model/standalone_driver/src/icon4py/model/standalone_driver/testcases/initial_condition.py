@@ -44,6 +44,7 @@ class InitialConditionConfig:
 
     @classmethod
     def from_fortran_dict(cls, atm_dict: dict[str, Any], input_dict: dict[str, Any]):
+
         if not atm_dict["run_nml"].get("ltestcase", False):
             return None
 

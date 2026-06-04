@@ -1837,8 +1837,14 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def vn_now(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
+    def w_now(self):
+        return self._get_field("w_now", dims.CellDim, dims.KDim)  # shape (ncells, nlev+1)
+
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def tracer_now(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
 
 
 class IconGraupelSavepoint(IconSavepoint):

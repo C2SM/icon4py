@@ -14,7 +14,6 @@ import typer
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
-from icon4py.model.standalone_driver.testcases import initial_condition
 
 
 log = logging.getLogger(__name__)
@@ -87,7 +86,6 @@ def main(
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=icon4py_driver.exchange,
     )
-
 
     log.info("driver setup: DONE")
     log.info("time loop: START")
