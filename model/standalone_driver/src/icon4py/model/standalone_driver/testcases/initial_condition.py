@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection_states
@@ -53,20 +53,43 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _params_from_dict(cls: type, source: dict[str, Any]):
+    """Construct a dataclass from a namelist dict.
+
+    Unknown keys are ignored (e.g. topography params mixed into the same nml
+    block).  Missing keys fall back to the dataclass field defaults.
+    Fortran→Python name translation is driven by the optional ``_fortran_name_map``
+    class variable: ``{fortran_key: python_field_name}``.
+    """
+    name_map: dict[str, str] = getattr(cls, "_fortran_name_map", {})
+    known_fields = {f.name for f in dataclasses.fields(cls)}
+    kwargs: dict[str, Any] = {}
+    for key, value in source.items():
+        python_name = name_map.get(key, key)
+        if python_name in known_fields:
+            kwargs[python_name] = value
+    return cls(**kwargs)
+
+
 @dataclasses.dataclass
 class InitialConditionConfig:
     parameters: JablonowskiWilliamsonParameters | Gauss3DParameters
 
     @classmethod
     def from_fortran_dict(cls, atm_dict: dict[str, Any], input_dict: dict[str, Any]):
-        if atm_dict["run_nml"]["ltestcase"]:
-            testcase_nml = input_dict["nh_testcase_nml"]
-            match testcase_nml["nh_test_name"]:
-                case "jabw" | "jabw_s":
-                    parameters = JablonowskiWilliamsonParameters()
-                case "gauss3D":
-                    parameters = Gauss3DParameters()
-        return None
+        if not atm_dict["run_nml"].get("ltestcase", False):
+            return None
+
+        testcase_nml = input_dict.get("nh_testcase_nml", {})
+        match testcase_nml.get("nh_test_name"):
+            case "jabw" | "jabw_s":
+                parameters = _params_from_dict(JablonowskiWilliamsonParameters, testcase_nml)
+            case "gauss3D":
+                parameters = _params_from_dict(Gauss3DParameters, testcase_nml)
+            case name:
+                raise ValueError(f"Unknown or missing test case name: {name!r}")
+
+        return cls(parameters=parameters)
 
 
 @dataclasses.dataclass
@@ -81,15 +104,14 @@ class JablonowskiWilliamsonParameters:
     dtemp: float = 4.8e5
     lon_perturbation_center: float = math.pi / 9.0
     lat_perturbation_center: float = 2.0 * math.pi / 9.0
+
+    _fortran_name_map: ClassVar[dict[str, str]] = {
+        "jw_up": "baroclinic_amplitude",
+        "jw_u0": "u0",
+        "jw_temp0": "temp0",
+    }
+
     create = jablonowski_williamson
-
-@dataclasses.dataclass
-class Gauss3DParameters:
-    u0: float = 0.0
-    t0: float = 300.0
-    brunt_vais: float = 0.01
-
-    create = gauss3d
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     parameters: JablonowskiWilliamsonParameters,
@@ -302,6 +324,21 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         diagnostic_state=diagnostic_state,
     )
 
+
+
+@dataclasses.dataclass
+class Gauss3DParameters:
+    u0: float = 0.0
+    t0: float = 300.0
+    brunt_vais: float = 0.01
+
+    _fortran_name_map: ClassVar[dict[str, str]] = {
+        "nh_u0": "u0",
+        "nh_t0": "t0",
+        "nh_brunt_vais": "brunt_vais",
+    }
+
+    create = gauss3d
 
 def gauss3d(
     parameters: Gauss3DParameters,
