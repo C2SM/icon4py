@@ -39,8 +39,7 @@ export ICON_GRID="icon_benchmark_regional" # TODO(CSCS): Check also `icon_benchm
     --backend=dace_gpu \
     --grid=${ICON_GRID} \
     model/atmosphere/dycore/tests/dycore/stencil_tests/test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.py \
-    -k "test_TestComputeThetaRhoPressureGradientAndUpdateVn[compile_time_domain-is_iau_active[False]]"
-
+    -k "test_TestComputeThetaRhoPressureGradientAndUpdateVn[is_iau_active[False]-compile_time_domain]"
 # Get the kernel names of the GT4Py program so that we can filter them with rocprof-compute
 LAST_COMPILED_DIRECTORY=$(realpath $(ls -td ${GT4PY_BUILD_CACHE_DIR}/.gt4py_cache/*/ | head -1))
 echo "# Last compiled GT4Py directory: $LAST_COMPILED_DIRECTORY"
@@ -60,4 +59,4 @@ ncu --set full ${NCU_KERNEL_NAME_FILTER} --import-source yes -f -o thetarho .ven
     --backend=dace_gpu \
     --grid=${ICON_GRID} \
     model/atmosphere/dycore/tests/dycore/stencil_tests/test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.py \
-    -k "test_TestComputeThetaRhoPressureGradientAndUpdateVn[compile_time_domain-is_iau_active[False]]"
+    -k "test_TestComputeThetaRhoPressureGradientAndUpdateVn[is_iau_active[False]-compile_time_domain]"
