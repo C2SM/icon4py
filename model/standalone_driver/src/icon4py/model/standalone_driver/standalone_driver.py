@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 class Icon4pyDriver:
     def __init__(
         self,
-        config: driver_config.ExperimentConfig
+        config: driver_config.ExperimentConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
@@ -70,7 +70,7 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self.vertical_grid_config = vertical_grid_config
-        self.model_time_variables = driver_states.ModelTimeVariables(config=config)
+        self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
         self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
@@ -81,7 +81,7 @@ class Icon4pyDriver:
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
             self.static_field_factories.metrics_field_source._vertical_grid,
-            self.config,
+            self.config.driver,
         )
 
     @functools.cached_property
@@ -123,10 +123,10 @@ class Icon4pyDriver:
         wall_clock_starting_time = datetime.datetime.now()
 
         for time_step in range(self.model_time_variables.n_time_steps):
-            if self.config.profiling_stats is not None:
-                if not self.config.profiling_stats.skip_first_timestep or time_step > 0:
+            if self.config.driver.profiling_stats is not None:
+                if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
                     gtx_config.COLLECT_METRICS_LEVEL = (
-                        self.config.profiling_stats.gt4py_metrics_level
+                        self.config.driver.profiling_stats.gt4py_metrics_level
                     )
 
             log.info(
@@ -158,11 +158,11 @@ class Icon4pyDriver:
 
         self.timer_collection.show_timer_report()
         if (
-            self.config.profiling_stats is not None
-            and self.config.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
+            self.config.driver.profiling_stats is not None
+            and self.config.driver.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
         ):
             print(gtx_metrics.dumps())
-            gtx_metrics.dump_json(self.config.profiling_stats.gt4py_metrics_output_file)
+            gtx_metrics.dump_json(self.config.driver.profiling_stats.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,
@@ -198,7 +198,7 @@ class Icon4pyDriver:
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
-        for tracer_idx in range(self.config.ntracer):
+        for tracer_idx in range(self.config.driver.ntracer):
             self.tracer_advection.run(
                 diagnostic_state=tracer_advection_diagnostic_state,
                 prep_adv=tracer_prep_adv,
@@ -305,7 +305,7 @@ class Icon4pyDriver:
         )
         if (
             global_max_vertical_cfl
-            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.driver.vertical_cfl_threshold
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
@@ -315,19 +315,19 @@ class Icon4pyDriver:
 
         if self.model_time_variables.cfl_watch_mode:
             substep_fraction = ta.wpfloat(
-                self.model_time_variables.ndyn_substeps_var / self.config.ndyn_substeps
+                self.model_time_variables.ndyn_substeps_var / self.config.driver.ndyn_substeps
             )
             if (
                 global_max_vertical_cfl * substep_fraction
-                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
+                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.driver.vertical_cfl_threshold
             ):
                 log.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
                 )
 
-            vertical_cfl_threshold_for_increment = self.config.vertical_cfl_threshold
+            vertical_cfl_threshold_for_increment = self.config.driver.vertical_cfl_threshold
             vertical_cfl_threshold_for_decrement = (
-                driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
+                driver_constants.CFL_THRESHOLD_FACTOR * self.config.driver.vertical_cfl_threshold
             )
 
             if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
@@ -355,7 +355,7 @@ class Icon4pyDriver:
                     f"The number of dynamics substeps is increased to {self.model_time_variables.ndyn_substeps_var}"
                 )
             if (
-                self.model_time_variables.ndyn_substeps_var > self.config.ndyn_substeps
+                self.model_time_variables.ndyn_substeps_var > self.config.driver.ndyn_substeps
                 and global_max_vertical_cfl
                 * ta.wpfloat(
                     self.model_time_variables.ndyn_substeps_var
@@ -372,10 +372,10 @@ class Icon4pyDriver:
                 )
 
                 if (
-                    self.model_time_variables.ndyn_substeps_var == self.config.ndyn_substeps
+                    self.model_time_variables.ndyn_substeps_var == self.config.driver.ndyn_substeps
                     and global_max_vertical_cfl
                     < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR
-                    * self.config.vertical_cfl_threshold
+                    * self.config.driver.vertical_cfl_threshold
                 ):
                     log.warning(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
@@ -388,7 +388,7 @@ class Icon4pyDriver:
         )
 
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
-        if self.config.apply_extra_second_order_divdamp:
+        if self.config.driver.apply_extra_second_order_divdamp:
             fourth_order_divdamp_factor = self.solve_nonhydro._config.fourth_order_divdamp_factor
             if (
                 self.model_time_variables.elapsed_time_in_seconds
@@ -426,7 +426,7 @@ class Icon4pyDriver:
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
         absolute maximum value of rho, vn, and w, as well as the levels at which their maximum value is found.
         """
-        if self.config.enable_statistics_output:
+        if self.config.driver.enable_statistics_output:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
                 prognostic_states.rho,
@@ -455,7 +455,7 @@ class Icon4pyDriver:
     def _compute_total_mass_and_energy(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.enable_statistics_output:
+        if self.config.driver.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
             cell_area_ndarray = self.static_field_factories.geometry_field_source.get(
                 geom_attr.CELL_AREA
@@ -473,7 +473,7 @@ class Icon4pyDriver:
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.enable_statistics_output:
+        if self.config.driver.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
             vn_ndarray = prognostic_states.vn.ndarray
             w_ndarray = prognostic_states.w.ndarray
