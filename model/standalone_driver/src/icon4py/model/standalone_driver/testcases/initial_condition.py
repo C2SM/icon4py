@@ -177,8 +177,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         * phy_const.EARTH_ANGULAR_VELOCITY
     )
     lapse_rate = phy_const.RD * gamma / phy_const.GRAV
+    initial_guess = ta.wpfloat(1.0)
+    epsilon = 10 * phy_const.WP_EPS
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
+        eta_old = xp.full(num_cells, fill_value=initial_guess, dtype=ta.wpfloat)
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
@@ -220,7 +222,26 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             )
             newton_function = geopot_jw - geopot[:, k_index]
             newton_function_prime = -phy_const.RD / eta_old * temperature_jw
-            eta_old = eta_old - newton_function / newton_function_prime
+            delta = newton_function / newton_function_prime
+            eta_old = eta_old - delta
+
+            # TODO(pstark) remove this log print:
+            log.info(
+                f"eta_mean,std: {eta_old.mean()}, {eta_old.std()} <-> delta: {delta.mean()}, {delta.std()}"
+            )
+            # log.info(
+            #     f"eta_min,mean,max: {eta_old.min()}, {eta_old.mean()}, {eta_old.max()} <-> delta: {delta.min()}, {delta.mean()}, {delta.max()}"
+            # )
+
+            if xp.abs(delta, out=delta).max() < eta_old.max() * epsilon:
+                log.info(f"delta_abs_max={delta.max()}, eta_max={eta_old.max()}, epsilon={epsilon}")
+                break
+
+        log.info(
+            f"potential eps-factor: {xp.abs(delta, out=delta).max() / (eta_old.max() * phy_const.WP_EPS)}"
+        )
+        # log.info(f"eta_min,mean,max: {eta_old.min()}, {eta_old.mean()}, {eta_old.max()}")
+        initial_guess = eta_old.mean()
 
         # Final update for zeta_v
         eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
