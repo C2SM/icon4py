@@ -12,12 +12,13 @@ import dataclasses
 import math
 from typing import ClassVar
 
-from icon4py.model.common import constants as phy_const
+from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @dataclasses.dataclass
-class JablonowskiWilliamsonTopographyParameters:
+class JablonowskiWilliamsonParameters:
     """Parameters for the Jablonowski-Williamson test-case topography.
 
     The default values match the EXCLAIM ``exclaim_nh35_tri_jws`` experiment.
@@ -29,10 +30,10 @@ class JablonowskiWilliamsonTopographyParameters:
     eta_0: float = 0.252
 
 
-def compute_topography(
-    parameters: JablonowskiWilliamsonTopographyParameters,
+def jablonowski_williamson(
     *,
-    cell_lat: data_alloc.NDArray,
+    parameters: JablonowskiWilliamsonParameters,
+    grid_manager: gm.GridManager,
 ) -> data_alloc.NDArray:
     """Compute the JW surface geopotential height on cell centres.
 
@@ -41,6 +42,7 @@ def compute_topography(
     """
     u0 = parameters.u0
     eta_0 = parameters.eta_0
+    cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
 
     array_ns = data_alloc.array_namespace(cell_lat)
     sin_lat = array_ns.sin(cell_lat)

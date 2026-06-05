@@ -12,11 +12,17 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.common import dimension as dims, topography
+from icon4py.model.common import model_backends, topography
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.topography.testcases import jablonowski_williamson as jw_topo
-from icon4py.model.testing import definitions, test_utils
-
-from ..fixtures import *  # noqa: F403
+from icon4py.model.testing import definitions, grid_utils, test_utils
+from icon4py.model.testing.fixtures import (
+    backend,
+    download_ser_data,
+    experiment,
+    experiment_description,
+    topography_savepoint,
+)
 
 
 if TYPE_CHECKING:
@@ -30,15 +36,18 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
     experiment: definitions.Experiment,
-    backend: gtx_typing.Backend | None,
-    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
     topography_savepoint: sb.TopographySavepoint,
 ) -> None:
-    cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
-    config = topography.TopographyConfig(
-        parameters=jw_topo.JablonowskiWilliamsonTopographyParameters(),
+    gm = grid_utils.get_grid_manager_from_experiment(
+        experiment=experiment,
+        keep_skip_values=True,
+        allocator=model_backends.get_allocator(backend),
     )
-    topo_c = topography.create(config, cell_lat=cell_center_lat)
+    config = topography.TopographyConfig(
+        parameters=jw_topo.JablonowskiWilliamsonParameters(),
+    )
+    topo_c = topography.create(config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.single_node_exchange)
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()
 

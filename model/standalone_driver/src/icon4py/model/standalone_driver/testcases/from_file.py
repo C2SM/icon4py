@@ -11,10 +11,9 @@ from __future__ import annotations
 import dataclasses
 import logging
 import pathlib
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
-import numpy as np
-import serialbox  # serialbox4py
+import serialbox
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
@@ -38,8 +37,6 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-_ICON_PYDYCORE_PREFIX: Final = "icon_pydycore"
-
 
 @dataclasses.dataclass
 class FromFileParameters:
@@ -56,7 +53,7 @@ def _read_prognostics_from_serialbox(
     data_path: pathlib.Path,
     rank: int,
     grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend | None,
+    backend: gtx_typing.Backend,
     ntracer: int,
 ) -> prognostics.PrognosticState:
     """Read prognostic IC fields directly from a serialbox snapshot.
@@ -68,7 +65,7 @@ def _read_prognostics_from_serialbox(
     All array manipulation uses only ``numpy`` and the GT4Py field API;
     there is intentionally no dependency on ``icon4py.model.testing``.
     """
-    fname = f"{_ICON_PYDYCORE_PREFIX}_rank{rank}"
+    fname = f"icon_pydycore_rank{rank}"
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), fname)
     sp = ser.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
     log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
@@ -78,10 +75,10 @@ def _read_prognostics_from_serialbox(
     xp = data_alloc.import_array_ns(backend)
 
     def read_cell_k(name: str):
-        return xp.asarray(np.squeeze(ser.read(name, sp).astype(float))[:nc, :])
+        return xp.asarray(xp.squeeze(ser.read(name, sp).astype(float))[:nc, :])
 
     def read_edge_k(name: str):
-        return xp.asarray(np.squeeze(ser.read(name, sp).astype(float))[:ne, :])
+        return xp.asarray(xp.squeeze(ser.read(name, sp).astype(float))[:ne, :])
 
     state = prognostics.initialize_prognostic_state(grid=grid, allocator=backend, ntracer=ntracer)
     state.rho.ndarray[:, :] = read_cell_k("rho_now")
@@ -91,7 +88,7 @@ def _read_prognostics_from_serialbox(
     state.w.ndarray[:, :] = read_cell_k("w_now")  # shape (nc, num_levels + 1)
 
     if ntracer > 0:
-        tracers_raw = np.squeeze(ser.read("tracers_now", sp).astype(float))
+        tracers_raw = xp.squeeze(ser.read("tracers_now", sp).astype(float))
         for i in range(ntracer):
             state.tracer[i].ndarray[:, :] = xp.asarray(tracers_raw[:nc, :, i])
 
@@ -105,7 +102,7 @@ def read_from_file(
     geometry_field_source: grid_geometry.GridGeometry,  # unused; kept for API parity
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    backend: gtx_typing.Backend | None,
+    backend: gtx_typing.Backend,
     lowest_layer_thickness: ta.wpfloat,  # unused; kept for API parity
     model_top_height: ta.wpfloat,  # unused; kept for API parity
     stretch_factor: ta.wpfloat,  # unused; kept for API parity

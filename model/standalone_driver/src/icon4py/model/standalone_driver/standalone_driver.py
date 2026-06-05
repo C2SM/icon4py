@@ -580,7 +580,9 @@ def initialize_driver(
     log.info("initializing the topography")
     cell_topography = topography.create(
         config=config.topography,
-        cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
+        grid_manager=grid_manager,
+        backend=backend,
+        exchange=exchange,
     )
 
     log.info("initializing the static-field factories")

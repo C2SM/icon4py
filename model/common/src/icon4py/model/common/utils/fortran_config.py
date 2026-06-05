@@ -22,6 +22,7 @@ ATM_DICT_FNAME: Final = f"{NAMELIST_ATM_FNAME}.json"
 MASTER_DICT_FNAME: Final = f"{NAMELIST_MASTER_FNAME}.json"
 INPUT_DICT_FNAME: Final = f"{NAMELIST_INPUT_FNAME}.json"
 
+SER_DATA_SUBDIR: Final = "ser_data"
 
 def list_to_value(obj: list[_T] | _T) -> _T:
     # Some parameters are allocated as `max_dom`-sized lists, with one value

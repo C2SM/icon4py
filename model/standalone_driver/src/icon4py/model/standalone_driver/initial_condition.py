@@ -10,11 +10,14 @@ from __future__ import annotations
 
 import dataclasses
 import pathlib
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver.testcases import gauss3d, jablonowski_williamson as jabw
-from icon4py.model.standalone_driver.testcases.from_file import FromFileParameters, read_from_file
+from icon4py.model.standalone_driver.testcases import (
+    from_file as from_file_ic,
+    gauss3d as gauss_ic,
+    jablonowski_williamson as jw_ic,
+)
 
 
 if TYPE_CHECKING:
@@ -28,13 +31,12 @@ if TYPE_CHECKING:
     from icon4py.model.standalone_driver import driver_states
 
 
-_SER_DATA_SUBDIR: Final = "ser_data"
 
 
 @dataclasses.dataclass
 class InitialConditionConfig:
     parameters: (
-        jabw.JablonowskiWilliamsonParameters | gauss3d.Gauss3DParameters | FromFileParameters
+        jw_ic.JablonowskiWilliamsonParameters | gauss_ic.Gauss3DParameters | from_file_ic.FromFileParameters
     )
 
     @classmethod
@@ -51,8 +53,8 @@ class InitialConditionConfig:
                 return None
             ntracer = fortran_config.list_to_value(run_nml.get("ntracer", 0))
             return cls(
-                parameters=FromFileParameters(
-                    data_path=data_path / _SER_DATA_SUBDIR,
+                parameters=from_file_ic.FromFileParameters(
+                    data_path=data_path / fortran_config.SER_DATA_SUBDIR,
                     ntracer=ntracer,
                 ),
             )
@@ -61,11 +63,11 @@ class InitialConditionConfig:
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
                 parameters = fortran_config.params_from_dict(
-                    jabw.JablonowskiWilliamsonParameters, testcase_nml
+                    jw_ic.JablonowskiWilliamsonParameters, testcase_nml
                 )
             case "gauss3D":
                 parameters = fortran_config.params_from_dict(
-                    gauss3d.Gauss3DParameters, testcase_nml
+                    gauss_ic.Gauss3DParameters, testcase_nml
                 )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
@@ -101,11 +103,11 @@ def create(
         exchange=exchange,
     )
     match config.parameters:
-        case jabw.JablonowskiWilliamsonParameters():
-            return jabw.jablonowski_williamson(parameters=config.parameters, **kwargs)
-        case gauss3d.Gauss3DParameters():
-            return gauss3d.gauss3d(parameters=config.parameters, **kwargs)
-        case FromFileParameters():
-            return read_from_file(parameters=config.parameters, **kwargs)
+        case jw_ic.JablonowskiWilliamsonParameters():
+            return jw_ic.jablonowski_williamson(parameters=config.parameters, **kwargs)
+        case gauss_ic.Gauss3DParameters():
+            return gauss_ic.gauss3d(parameters=config.parameters, **kwargs)
+        case from_file_ic.FromFileParameters():
+            return from_file_ic.read_from_file(parameters=config.parameters, **kwargs)
         case _:
             raise TypeError(f"Unknown IC parameters type: {type(config.parameters)!r}")

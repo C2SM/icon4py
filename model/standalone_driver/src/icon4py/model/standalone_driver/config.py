@@ -120,7 +120,9 @@ def read_config(
 
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
-    topography_config = topography.TopographyConfig.from_fortran_dict(master_dict, input_dict)
+    topography_config = topography.TopographyConfig.from_fortran_dict(
+        master_dict, input_dict, data_path=config_file_path
+    )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
