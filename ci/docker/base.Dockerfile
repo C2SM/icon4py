@@ -145,6 +145,7 @@ RUN set -eux; \
     ./autogen.sh; \
     ./configure \
       --with-cuda=${CUDA_PATH} \
+      --enable-cuda-dlopen \
       --enable-xpmem=/usr \
       --enable-tcp \
       --enable-cxi; \
