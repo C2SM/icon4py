@@ -59,7 +59,7 @@ def read_from_file(
     data_path = parameters.data_path
 
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), fname)
-    sp = ser.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
+    sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
     log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
 
     nc = grid_manager.grid.num_cells
