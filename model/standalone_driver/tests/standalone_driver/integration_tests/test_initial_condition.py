@@ -45,7 +45,7 @@ def test_initial_conditions(
     )
 
     ds = initial_condition.create(
-        icon4py_driver.config.initial_condition,
+        config=icon4py_driver.config.initial_condition,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
