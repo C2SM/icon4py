@@ -3,12 +3,14 @@ include:
 
 variables:
   # These variables filter jobs below. Not all variables apply to all jobs (e.g.
-  # GRIDS only applies to stencil tests). These are the defaults for the
-  # pipeline and don't include all possible jobs. The are meant to be overridden
-  # with with e.g.
+  # GRIDS only applies to stencil tests, LEVELS to datatest/basic and MPI).
+  # MODEL_SUBPACKAGES uses short nox IDs; MPI_SUBPACKAGES uses filesystem paths.
+  # These are the defaults for the pipeline and don't include all possible jobs.
+  # They are meant to be overridden with e.g.
   #
-  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver
-  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver:atmosphere/diffusion:atmosphere/dycore"
+  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MPI_SUBPACKAGES=common;SESSION=model;MODEL_SUBSET=datatest
+  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
+  MPI_SUBPACKAGES: "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver"
   BACKENDS: "dace_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"

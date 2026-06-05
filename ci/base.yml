@@ -106,17 +106,17 @@ variables:
   script:
     - |
       NOX_ARGS="--backend=$BACKEND"
-      if [ -n "$GRID" ]; then NOX_ARGS="$NOX_ARGS --grid=$GRID"; fi
-      if [ -n "$LEVEL" ]; then NOX_ARGS="$NOX_ARGS --level=$LEVEL"; fi
+      if [ -n "${GRID:-}" ]; then NOX_ARGS="$NOX_ARGS --grid=$GRID"; fi
+      if [ -n "${LEVEL:-}" ]; then NOX_ARGS="$NOX_ARGS --level=$LEVEL"; fi
       nox -s "test_model-3.13($MODEL_SUBSET, $MODEL_SUBPACKAGE)" -- $NOX_ARGS
   rules:
-    - if: $MODEL_SUBPACKAGE == 'standalone_driver'
-      variables:
-        SLURM_TIMELIMIT: '00:50:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '01:00:00'
+    - if: $MODEL_SUBPACKAGE == 'standalone_driver'
+      variables:
+        SLURM_TIMELIMIT: '00:50:00'
     - if: $MODEL_SUBPACKAGE == 'driver' || $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
@@ -136,6 +136,9 @@ variables:
   script:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$MODEL_SUBPACKAGE --level=$LEVEL
   rules:
+    - if: $MODEL_SUBPACKAGE == 'atmosphere/advection'
+      variables:
+        SLURM_TIMELIMIT: '00:10:00'
     - if: $MODEL_SUBPACKAGE == 'atmosphere/diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'

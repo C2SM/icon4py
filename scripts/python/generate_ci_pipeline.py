@@ -10,9 +10,9 @@
 
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
-Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, BACKENDS,
-LEVELS, GRIDS, MODEL_SUBSET) and writes a child pipeline that includes
-``ci/base.yml`` and instantiates only the test jobs whose matrix
+Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, MPI_SUBPACKAGES,
+BACKENDS, LEVELS, GRIDS, MODEL_SUBSET) and writes a child pipeline that
+includes ``ci/base.yml`` and instantiates only the test jobs whose matrix
 entries match the requested filter.
 
 Each SESSION value maps to a single job template that corresponds to a nox
@@ -50,6 +50,7 @@ MODEL_COMPONENTS_NOX = [
 ]
 
 MPI_COMPONENTS = [
+    "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
     "common",
@@ -78,6 +79,24 @@ def _intersect(constraint: list[str], candidates: list[str]) -> list[str]:
     return [v for v in candidates if v in constraint_set]
 
 
+def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
+    """Validate that all tokens are members of valid.
+
+    Exits with a descriptive error message and status 1 if any token is not
+    recognised, helping users catch typos early instead of silently producing
+    an empty pipeline.
+    """
+    invalid = [t for t in tokens if t not in valid]
+    if invalid:
+        accepted = ", ".join(sorted(valid))
+        print(
+            f"ERROR: invalid {name} values: {', '.join(invalid)}",
+            file=sys.stderr,
+        )
+        print(f"Accepted values: {accepted}", file=sys.stderr)
+        sys.exit(1)
+
+
 def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[str]:
     """Resolve a filter value from CLI arg, env var, or built-in default.
 
@@ -91,8 +110,10 @@ def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[s
 
 
 def _generate_child_pipeline(
+    *,
     session: str | None = None,
     model_subpackages: str | None = None,
+    mpi_subpackages: str | None = None,
     model_subset: str | None = None,
     backends: str | None = None,
     levels: str | None = None,
@@ -101,19 +122,33 @@ def _generate_child_pipeline(
     """Return the child pipeline YAML as a string."""
     # Fallback defaults match ci/default.yml pipeline variables.
     requested_sessions = _resolve_filter(session, "SESSION", "model:tools:mpi")
+    _validate_tokens("SESSION", requested_sessions, ALL_SESSIONS)
+
     requested_model_subsets = _resolve_filter(model_subset, "MODEL_SUBSET", "stencils:datatest")
+    _validate_tokens("MODEL_SUBSET", requested_model_subsets, ALL_MODEL_SUBSETS)
+
     requested_model_subpackages = _resolve_filter(
         model_subpackages,
         "MODEL_SUBPACKAGES",
-        (
-            "advection:diffusion:dycore:microphysics:muphys:"
-            "common:driver:standalone_driver:"
-            "atmosphere/diffusion:atmosphere/dycore"
-        ),
+        "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver",
     )
+    _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, MODEL_COMPONENTS_NOX)
+
+    requested_mpi_subpackages = _resolve_filter(
+        mpi_subpackages,
+        "MPI_SUBPACKAGES",
+        "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver",
+    )
+    _validate_tokens("MPI_SUBPACKAGES", requested_mpi_subpackages, MPI_COMPONENTS)
+
     requested_backends = _resolve_filter(backends, "BACKENDS", "dace_gpu")
+    _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
+
     requested_levels = _resolve_filter(levels, "LEVELS", "integration")
+    _validate_tokens("LEVELS", requested_levels, ALL_LEVELS)
+
     requested_grids = _resolve_filter(grids, "GRIDS", "simple:icon_regional")
+    _validate_tokens("GRIDS", requested_grids, ALL_GRIDS)
 
     pipeline: dict = {
         "include": [{"local": "ci/base.yml"}],
@@ -169,7 +204,7 @@ def _generate_child_pipeline(
 
     # MPI tests
     if "mpi" in requested_sessions:
-        filtered_components = _intersect(requested_model_subpackages, MPI_COMPONENTS)
+        filtered_components = _intersect(requested_mpi_subpackages, MPI_COMPONENTS)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, INTEGRATION_LEVEL)
         if filtered_components and filtered_backends and filtered_levels:
@@ -189,15 +224,16 @@ def _generate_child_pipeline(
     test_jobs = [k for k in pipeline if k != "include"]
     if not test_jobs:
         print(
-            "WARNING: no test jobs matched the filter",
+            "ERROR: no test jobs matched the filter",
             file=sys.stderr,
         )
+        sys.exit(1)
 
     return yaml.dump(pipeline, default_flow_style=False, sort_keys=False)
 
 
 @cli.command()
-def generate_ci_pipeline(
+def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
     session: Annotated[
         str | None,
         typer.Option(
@@ -210,6 +246,13 @@ def generate_ci_pipeline(
         typer.Option(
             "--model-subpackages",
             help="Colon/comma-separated model subpackage filter",
+        ),
+    ] = None,
+    mpi_subpackages: Annotated[
+        str | None,
+        typer.Option(
+            "--mpi-subpackages",
+            help="Colon/comma-separated MPI subpackage filter",
         ),
     ] = None,
     model_subset: Annotated[
@@ -242,6 +285,7 @@ def generate_ci_pipeline(
         _generate_child_pipeline(
             session=session,
             model_subpackages=model_subpackages,
+            mpi_subpackages=mpi_subpackages,
             model_subset=model_subset,
             backends=backends,
             levels=levels,
