@@ -35,6 +35,7 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
+        gfortran \
         pkg-config \
         python3 \
         python3-openssl \
@@ -63,11 +64,6 @@ RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
 
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
 ENV CUDA_PATH=${HPC_SDK_PATH}/cuda
-
-ENV CC=${HPC_SDK_PATH}/compilers/bin/nvc
-ENV CXX=${HPC_SDK_PATH}/compilers/bin/nvc++
-ENV FC=${HPC_SDK_PATH}/compilers/bin/nvfortran
-ENV CUDAHOSTCXX=${HPC_SDK_PATH}/compilers/bin/nvc++
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
