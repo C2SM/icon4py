@@ -86,3 +86,4 @@ build_image_aarch64:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
