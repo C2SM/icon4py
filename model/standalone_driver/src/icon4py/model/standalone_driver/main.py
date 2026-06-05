@@ -13,7 +13,12 @@ import typer
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
+from icon4py.model.standalone_driver import (
+    driver_states,
+    driver_utils,
+    initial_condition,
+    standalone_driver,
+)
 
 
 log = logging.getLogger(__name__)
@@ -73,8 +78,8 @@ def main(
     )
 
     log.info("Generating the initial condition")
-    ds: driver_states.DriverStates = icon4py_driver.config.initial_condition.create(
-        parameters=icon4py_driver.config.initial_condition.parameters,
+    ds: driver_states.DriverStates = initial_condition.create(
+        config=icon4py_driver.config.initial_condition,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,

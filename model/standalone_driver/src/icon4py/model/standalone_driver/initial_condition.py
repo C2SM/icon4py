@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import pathlib
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Final
 
 from icon4py.model.common.utils import fortran_config
@@ -19,6 +18,13 @@ from icon4py.model.standalone_driver.testcases.from_file import FromFileParamete
 
 
 if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common import type_alias as ta
+    from icon4py.model.common.decomposition import definitions as decomposition_defs
+    from icon4py.model.common.grid import geometry as grid_geometry, icon as icon_grid
+    from icon4py.model.common.interpolation import interpolation_factory
+    from icon4py.model.common.metrics import metrics_factory
     from icon4py.model.standalone_driver import driver_states
 
 
@@ -48,7 +54,6 @@ class InitialConditionConfig:
     parameters: (
         jabw.JablonowskiWilliamsonParameters | gauss3d.Gauss3DParameters | FromFileParameters
     )
-    create: Callable[..., driver_states.DriverStates]
 
     @classmethod
     def from_fortran_dict(
@@ -68,18 +73,53 @@ class InitialConditionConfig:
                     data_path=data_path / _SER_DATA_SUBDIR,
                     ntracer=ntracer,
                 ),
-                create=read_from_file,
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
                 parameters = _params_from_dict(jabw.JablonowskiWilliamsonParameters, testcase_nml)
-                create = jabw.jablonowski_williamson
             case "gauss3D":
                 parameters = _params_from_dict(gauss3d.Gauss3DParameters, testcase_nml)
-                create = gauss3d.gauss3d
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-        return cls(parameters=parameters, create=create)
+        return cls(parameters=parameters)
+
+
+def create(
+    *,
+    config: InitialConditionConfig,
+    grid: icon_grid.IconGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+    backend: gtx_typing.Backend | None,
+    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
+    stretch_factor: ta.wpfloat,
+    damping_height: ta.wpfloat,
+    exchange: decomposition_defs.ExchangeRuntime,
+) -> driver_states.DriverStates:
+    """Create initial driver states by dispatching on the type of ``config.parameters``."""
+    kwargs: dict[str, Any] = dict(
+        grid=grid,
+        geometry_field_source=geometry_field_source,
+        interpolation_field_source=interpolation_field_source,
+        metrics_field_source=metrics_field_source,
+        backend=backend,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        damping_height=damping_height,
+        exchange=exchange,
+    )
+    match config.parameters:
+        case jabw.JablonowskiWilliamsonParameters():
+            return jabw.jablonowski_williamson(parameters=config.parameters, **kwargs)
+        case gauss3d.Gauss3DParameters():
+            return gauss3d.gauss3d(parameters=config.parameters, **kwargs)
+        case FromFileParameters():
+            return read_from_file(parameters=config.parameters, **kwargs)
+        case _:
+            raise TypeError(f"Unknown IC parameters type: {type(config.parameters)!r}")

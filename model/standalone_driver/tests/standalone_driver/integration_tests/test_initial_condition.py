@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import driver_utils, standalone_driver
+from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -44,8 +44,8 @@ def test_initial_conditions(
         backend_like=backend_like,
     )
 
-    ds = icon4py_driver.config.initial_condition.create(
-        parameters=icon4py_driver.config.initial_condition.parameters,
+    ds = initial_condition.create(
+        icon4py_driver.config.initial_condition,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
