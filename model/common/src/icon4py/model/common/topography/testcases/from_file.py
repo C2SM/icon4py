@@ -41,7 +41,7 @@ def read_from_file(
     *,
     parameters: FromFileParameters,
     grid_manager: gm.GridManager,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """Initialise prognostic state from a serialised ICON initial-condition snapshot.

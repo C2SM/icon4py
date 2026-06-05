@@ -51,6 +51,7 @@ class Gauss3DParameters:
 
 
 def gauss3d(
+    *,
     parameters: Gauss3DParameters,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,

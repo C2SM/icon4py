@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.topography.testcases import (
     from_file as from_file_topo,
-    gauss3d as gauss_topo,
+    gaussian_hill as gausshill_topo,
     jablonowski_williamson as jw_topo,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
@@ -26,9 +26,14 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
 
+
 @dataclasses.dataclass
 class TopographyConfig:
-    parameters: jw_topo.JablonowskiWilliamsonParameters | from_file_topo.FromFileParameters
+    parameters: (
+        jw_topo.JablonowskiWilliamsonParameters
+        | gausshill_topo.GaussianHillParameters
+        | from_file_topo.FromFileParameters
+    )
 
     @classmethod
     def from_fortran_dict(
@@ -55,7 +60,9 @@ class TopographyConfig:
                     jw_topo.JablonowskiWilliamsonParameters, testcase_nml
                 )
             case "gauss3D":
-                raise NotImplementedError("Gauss3D topography is not yet implemented")
+                parameters = fortran_config.params_from_dict(
+                    gausshill_topo.GaussianHillParameters, testcase_nml
+                )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
@@ -66,16 +73,25 @@ def create(
     *,
     config: TopographyConfig,
     grid_manager: gm.GridManager,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """Create topography array by dispatching on the type of ``config.parameters``."""
     match config.parameters:
         case jw_topo.JablonowskiWilliamsonParameters():
-            return jw_topo.jablonowski_williamson(parameters=config.parameters, grid_manager=grid_manager)
-        case gauss_topo.Gauss3DParameters():
-            return gauss_topo.gauss3d(parameters=config.parameters, grid_manager=grid_manager)
+            return jw_topo.jablonowski_williamson(
+                parameters=config.parameters, grid_manager=grid_manager
+            )
+        case gausshill_topo.GaussianHillParameters():
+            return gausshill_topo.gaussian_hill(
+                parameters=config.parameters, grid_manager=grid_manager
+            )
         case from_file_topo.FromFileParameters():
-            return from_file_topo.read_from_file(parameters=config.parameters, grid_manager=grid_manager, backend=backend, exchange=exchange)
+            return from_file_topo.read_from_file(
+                parameters=config.parameters,
+                grid_manager=grid_manager,
+                backend=backend,
+                exchange=exchange,
+            )
         case _:
             raise TypeError(f"Unknown topography parameters type: {type(config.parameters)!r}")

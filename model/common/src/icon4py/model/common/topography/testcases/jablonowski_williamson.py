@@ -42,7 +42,7 @@ def jablonowski_williamson(
     """
     u0 = parameters.u0
     eta_0 = parameters.eta_0
-    cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
+    cell_lat = grid_manager.coordinates[dims.CellDim]["lat"].ndarray
 
     array_ns = data_alloc.array_namespace(cell_lat)
     sin_lat = array_ns.sin(cell_lat)
