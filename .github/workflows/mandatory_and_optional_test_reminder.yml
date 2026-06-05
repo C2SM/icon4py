@@ -14,24 +14,23 @@ jobs:
 
             **Mandatory Tests**
 
-            Please make sure you run these tests via comment before you merge!
+            You can test your changes on CSCS CI before merge with the `default` pipeline:
 
             * `cscs-ci run default`
-            * `cscs-ci run distributed`
+
+            You can pass options to override pipeline variables, for example:
+
+            * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
+            * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSION=model`
+
+            **Avoid running the pipeline for all tests when you are developing.**
+
+            All tests will be run on merge through the merge queue.
 
             **Optional Tests**
 
             To run benchmarks you can use:
 
             * `cscs-ci run benchmark-bencher`
-
-            To run tests and benchmarks with the DaCe backend you can use:
-
-            * `cscs-ci run dace`
-
-            To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
-             * `cscs-ci run extra`
-
-
 
             For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).
