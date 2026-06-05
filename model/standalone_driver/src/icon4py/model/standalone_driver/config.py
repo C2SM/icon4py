@@ -67,11 +67,12 @@ class DriverConfig:
         nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
         run_nml = atmo_dict["run_nml"]
         master_time_control_nml = master_dict["master_time_control_nml"]
+        master_model_nml = master_dict["master_model_nml"]
         dtime = run_nml["dtime"]
         start_date_str = master_time_control_nml["experimentstartdate"]
         end_date_str = master_time_control_nml["experimentstopdate"]
         return cls(
-            experiment_name=master_dict["model_namelist_filename"]
+            experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
