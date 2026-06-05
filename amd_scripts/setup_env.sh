@@ -7,6 +7,7 @@ export HUGETLB_MORECORE="no"
 export PYTHONOPTIMIZE="2"
 export HCC_AMDGPU_TARGET="gfx942"
 export ROCM_HOME="/user-environment/env/default"
+export ROCM_DIR="/user-environment/env/default"
 export HIPCC="$(which hipcc)"
 
 # Auto-detect ROCm version from hipcc instead of hardcoding.

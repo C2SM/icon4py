@@ -44,5 +44,11 @@ if [ -f "$CUPY_HIP_WORKAROUND" ]; then
     echo "# Patched CuPy hip_workaround.cuh: $CUPY_HIP_WORKAROUND"
 fi
 
+AMDSMI_UENV_PYTHON_PACKAGE=$(ls -d /user-environment/linux-zen3/amdsmi-*/share/amd_smi 2>/dev/null | head -1)
+TMP_AMDSMI_PKG_DIR="tmp_amd_smi_python_package"
+cp -r ${AMDSMI_UENV_PYTHON_PACKAGE} ${TMP_AMDSMI_PKG_DIR}
+pip install $(realpath ${TMP_AMDSMI_PKG_DIR})
+rm -r ${TMP_AMDSMI_PKG_DIR}
+
 echo "# install done"
 date
