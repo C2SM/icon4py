@@ -14,7 +14,7 @@ ENV GHEX_TRANSPORT_BACKEND=MPI
 RUN uv sync \
     --no-dev \
     --extra all \
-    --extra cuda12 \
+    --extra cuda13 \
     --group test \
     --python $PYVERSION && \
     chmod -R a+rwX "$UV_CACHE_DIR"

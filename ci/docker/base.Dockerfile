@@ -35,9 +35,6 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
-        nvidia-cuda-dev \
-        nvidia-cuda-toolkit \
-        nvidia-cuda-toolkit-gcc \
         pkg-config \
         python3 \
         python3-openssl \
@@ -49,10 +46,33 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-ENV CC=/usr/bin/cuda-gcc
-ENV CXX=/usr/bin/cuda-g++
-ENV CUDAHOSTCXX=/usr/bin/cuda-g++
-ENV CUDA_PATH=/usr
+ARG ARCH=aarch64
+ARG HPC_SDK_VERSION=26.3
+ARG HPC_SDK_NAME=nvhpc_2026_263_Linux_${ARCH}_cuda_13.1
+ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
+
+ENV NVHPC_SILENT=true
+ENV NVHPC_INSTALL_DIR=/opt/nvidia/hpc_sdk
+ENV NVHPC_INSTALL_TYPE=single
+RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
+    mkdir -p /opt/nvidia && \
+    tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
+    rm /tmp/nvhpc.tar.gz && \
+    cd /opt/nvidia/${HPC_SDK_NAME} && ./install && \
+    rm -rf /opt/nvidia/${HPC_SDK_NAME}
+
+ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
+ENV CUDA_PATH=${HPC_SDK_PATH}/cuda
+
+ENV CC=${HPC_SDK_PATH}/compilers/bin/nvc
+ENV CXX=${HPC_SDK_PATH}/compilers/bin/nvc++
+ENV FC=${HPC_SDK_PATH}/compilers/bin/nvfortran
+ENV CUDAHOSTCXX=${HPC_SDK_PATH}/compilers/bin/nvc++
+
+ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
+    MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
+    LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
+
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
@@ -102,7 +122,7 @@ RUN set -eux; \
     cd shs-libcxi; \
     ./autogen.sh; \
     ./configure \
-      --with-cuda; \
+      --with-cuda=${CUDA_PATH}; \
     make -j"$(nproc)" install; \
     cd /; \
     rm -rf /shs-libcxi; \
@@ -128,7 +148,7 @@ RUN set -eux; \
     cd libfabric; \
     ./autogen.sh; \
     ./configure \
-      --with-cuda \
+      --with-cuda=${CUDA_PATH} \
       --enable-xpmem=/usr \
       --enable-tcp \
       --enable-cxi; \
@@ -144,7 +164,7 @@ RUN set -eux; \
     cd "/tmp/openmpi-${openmpi_version}"; \
     ./configure \
       --with-ofi \
-      --with-cuda=/usr; \
+      --with-cuda=${CUDA_PATH}; \
     make -j"$(nproc)" install; \
     cd /; \
     rm -rf "/tmp/openmpi-${openmpi_version}" /tmp/ompi.tar.gz; \

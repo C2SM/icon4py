@@ -26,10 +26,14 @@ variables:
     DOCKERFILE: ci/docker/base.Dockerfile
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
+    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME"]'
     KUBERNETES_MEMORY_REQUEST: 128Gi
     KUBERNETES_MEMORY_LIMIT: 128Gi
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
+  variables:
+    HPC_SDK_VERSION: 26.3
+    HPC_SDK_NAME: "nvhpc_2026_263_Linux_${ARCH}_cuda_13.1"
 
 .build_image:
   stage: image
@@ -71,6 +75,7 @@ build_image_aarch64:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PY2F_GPU_TESTS: 1
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
     PYTEST_ADDOPTS: "--durations=0"
 
 .test_template_aarch64:
@@ -80,10 +85,11 @@ build_image_aarch64:
     RUNNER: "ci-runner"
     SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/26.3"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Creating more pytest workers speeds up testing, but pytest startup time
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
-    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda13"
