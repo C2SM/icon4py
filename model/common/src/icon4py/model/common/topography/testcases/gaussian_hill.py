@@ -9,9 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import ClassVar
-
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc

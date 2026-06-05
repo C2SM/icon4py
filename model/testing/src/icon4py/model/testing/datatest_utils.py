@@ -33,6 +33,7 @@ from icon4py.model.testing import data_handling, definitions, serialbox
 
 logger = logging.getLogger(__name__)
 
+
 def get_process_properties_for_run(
     run_instance: decomposition.RunType,
 ) -> decomposition.ProcessProperties:

@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
-from typing import ClassVar
-
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
