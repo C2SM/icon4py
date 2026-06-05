@@ -5,3 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from icon4py.model.standalone_driver.initial_condition.config import InitialConditionConfig, create
+
+
+__all__ = [
+    "InitialConditionConfig",
+    "create",
+]

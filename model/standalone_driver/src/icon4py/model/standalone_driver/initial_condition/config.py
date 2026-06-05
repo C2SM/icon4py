@@ -13,7 +13,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver.testcases import (
+from icon4py.model.standalone_driver.initial_condition.testcases import (
     from_file as from_file_ic,
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
@@ -31,12 +31,12 @@ if TYPE_CHECKING:
     from icon4py.model.standalone_driver import driver_states
 
 
-
-
 @dataclasses.dataclass
 class InitialConditionConfig:
     parameters: (
-        jw_ic.JablonowskiWilliamsonParameters | gauss_ic.Gauss3DParameters | from_file_ic.FromFileParameters
+        jw_ic.JablonowskiWilliamsonParameters
+        | gauss_ic.Gauss3DParameters
+        | from_file_ic.FromFileParameters
     )
 
     @classmethod

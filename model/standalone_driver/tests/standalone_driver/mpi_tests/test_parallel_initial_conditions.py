@@ -13,8 +13,7 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import driver_states, standalone_driver
-from icon4py.model.standalone_driver.testcases import initial_condition
+from icon4py.model.standalone_driver import driver_states, initial_condition, standalone_driver
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
@@ -89,7 +88,7 @@ def test_initial_conditions_compare_single_multi_rank(
     )
 
     single_rank_ds: driver_states.DriverStates = initial_condition.create(
-        config=experiment.description.name,
+        config=single_rank_icon4py_driver.config.initial_condition,
         grid=single_rank_icon4py_driver.grid,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
@@ -112,7 +111,7 @@ def test_initial_conditions_compare_single_multi_rank(
     )
 
     multi_rank_ds: driver_states.DriverStates = initial_condition.create(
-        config=experiment.description.name,
+        config=multi_rank_icon4py_driver.config.initial_condition,
         grid=multi_rank_icon4py_driver.grid,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,
