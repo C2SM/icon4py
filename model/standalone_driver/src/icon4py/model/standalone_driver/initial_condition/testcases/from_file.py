@@ -72,13 +72,13 @@ def _read_prognostics_from_serialbox(
 
     nc = grid.num_cells
     ne = grid.num_edges
-    xp = data_alloc.import_array_ns(backend)
+    array_ns = data_alloc.import_array_ns(backend)
 
-    def read_cell_k(name: str):
-        return xp.asarray(xp.squeeze(ser.read(name, sp).astype(float))[:nc, :])
+    def read_cell_k(name: str) -> data_alloc.NDArray:
+        return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:nc, :])
 
-    def read_edge_k(name: str):
-        return xp.asarray(xp.squeeze(ser.read(name, sp).astype(float))[:ne, :])
+    def read_edge_k(name: str) -> data_alloc.NDArray:
+        return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:ne, :])
 
     state = prognostics.initialize_prognostic_state(grid=grid, allocator=backend, ntracer=ntracer)
     state.rho.ndarray[:, :] = read_cell_k("rho_now")
@@ -88,9 +88,9 @@ def _read_prognostics_from_serialbox(
     state.w.ndarray[:, :] = read_cell_k("w_now")  # shape (nc, num_levels + 1)
 
     if ntracer > 0:
-        tracers_raw = xp.squeeze(ser.read("tracers_now", sp).astype(float))
+        tracers_raw = array_ns.squeeze(ser.read("tracers_now", sp).astype(float))
         for i in range(ntracer):
-            state.tracer[i].ndarray[:, :] = xp.asarray(tracers_raw[:nc, :, i])
+            state.tracer[i].ndarray[:, :] = array_ns.asarray(tracers_raw[:nc, :, i])
 
     return state
 

@@ -171,6 +171,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/compute_advection_metrics.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
@@ -227,7 +228,7 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
-module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
+module = ["icon4py.model.standalone_driver.initial_condition.testcases.*"]
 
 [[tool.mypy.overrides]]
 disable_error_code = [

@@ -60,6 +60,7 @@ class InitialConditionConfig:
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
+        parameters: jw_ic.JablonowskiWilliamsonParameters | gauss_ic.Gauss3DParameters # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
                 parameters = fortran_config.params_from_dict(
