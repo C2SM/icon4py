@@ -164,6 +164,28 @@ def test_model(
         )
 
 
+# MPI test session. Each rank should be given its own envdir via --envdir
+# ".nox-${RANK}" to avoid venv creation races.
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def test_model_mpi(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+    """Run MPI tests for selected icon4py model subpackages."""
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
+    session.run(
+        "pytest",
+        "-sv",
+        "--benchmark-disable",
+        f"model/{subpackage}",
+        "-k",
+        "mpi_tests",
+        "--with-mpi",
+        "-n0",
+        *session.posargs,
+        success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+    )
+
+
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:

@@ -80,6 +80,10 @@ build_distributed:
     FI_PROVIDER: cxi
     OMPI_MCA_pml: cm
     OMPI_MCA_mtl: ofi
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
+    GT4PY_BUILD_JOBS: 8
+    CUDA_DEVICE_MAX_CONNECTIONS: 8
+    CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
 
 .test_distributed_aarch64:
   stage: test
@@ -92,17 +96,17 @@ build_distributed:
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh nox --envdir ".nox-${SLURM_PROCID}" -s "test_model_mpi-3.13($COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common, standalone_driver]
+      - COMPONENT: [diffusion, dycore, advection, common, standalone_driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
   rules:
-    - if: $COMPONENT == 'atmosphere/diffusion'
+    - if: $COMPONENT == 'diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
+    - if: $COMPONENT == 'dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
@@ -112,7 +116,7 @@ build_distributed:
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
-    - if: ($COMPONENT == 'atmosphere/dycore' || $COMPONENT == 'atmosphere/advection')
+    - if: ($COMPONENT == 'dycore' || $COMPONENT == 'advection')
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
