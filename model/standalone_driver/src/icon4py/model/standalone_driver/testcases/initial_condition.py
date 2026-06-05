@@ -12,29 +12,12 @@ import dataclasses
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
+from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver.testcases import gauss3d, jablonowski_williamson as jabw
 
 
 if TYPE_CHECKING:
     from icon4py.model.standalone_driver import driver_states
-
-
-def _params_from_dict(cls: type, source: dict[str, Any]):
-    """Construct a dataclass from a namelist dict.
-
-    Unknown keys are ignored (e.g. topography params mixed into the same nml block).
-    Missing keys fall back to the dataclass field defaults.
-    Fortran→Python name translation is driven by the required ``_fortran_name_map``
-    class variable: ``{fortran_key: python_field_name}``.
-    """
-    name_map: dict[str, str] = cls._fortran_name_map  # type: ignore[attr-defined]
-    known_fields = {f.name for f in dataclasses.fields(cls)}
-    kwargs: dict[str, Any] = {}
-    for key, value in source.items():
-        python_name = name_map.get(key, key)
-        if python_name in known_fields:
-            kwargs[python_name] = value
-    return cls(**kwargs)
 
 
 @dataclasses.dataclass
@@ -51,10 +34,14 @@ class InitialConditionConfig:
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
-                parameters = _params_from_dict(jabw.JablonowskiWilliamsonParameters, testcase_nml)
+                parameters = fortran_config.params_from_dict(
+                    jabw.JablonowskiWilliamsonParameters, testcase_nml
+                )
                 create = jabw.jablonowski_williamson
             case "gauss3D":
-                parameters = _params_from_dict(gauss3d.Gauss3DParameters, testcase_nml)
+                parameters = fortran_config.params_from_dict(
+                    gauss3d.Gauss3DParameters, testcase_nml
+                )
                 create = gauss3d.gauss3d
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")

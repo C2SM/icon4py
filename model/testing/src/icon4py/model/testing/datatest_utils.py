@@ -20,8 +20,9 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.common import topography
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import topography, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config

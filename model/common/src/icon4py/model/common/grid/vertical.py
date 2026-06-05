@@ -21,9 +21,13 @@ import numpy as np
 
 import icon4py.model.common.states.metadata as data
 import icon4py.model.common.type_alias as ta
-from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common import (
+    dimension as dims,
+    exceptions,
+    field_type_aliases as fa,
+    topography as topo,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 

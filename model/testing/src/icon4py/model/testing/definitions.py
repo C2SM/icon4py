@@ -17,7 +17,8 @@ from icon4py.model.atmosphere.advection import advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common.grid import icon as icon_grid, topography, vertical as v_grid
+from icon4py.model.common import topography
+from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.standalone_driver import config as driver_config, initial_condition

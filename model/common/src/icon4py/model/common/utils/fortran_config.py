@@ -8,7 +8,8 @@
 
 from __future__ import annotations
 
-from typing import Final, TypeVar
+import dataclasses
+from typing import Any, Final, TypeVar
 
 
 _T = TypeVar("_T")
@@ -31,3 +32,21 @@ def list_to_value(obj: list[_T] | _T) -> _T:
     # Tracers are an even different case where there is one value per tracer,
     # but with the current version of ICON4Py all tracers get the same config.
     return obj[0] if isinstance(obj, list) else obj
+
+
+def params_from_dict(cls: type, source: dict[str, Any]):
+    """Construct a dataclass from a Fortran namelist dict.
+
+    Unknown keys are ignored (e.g. topography params mixed into the same nml block).
+    Missing keys fall back to the dataclass field defaults.
+    Fortran→Python name translation is driven by the required ``_fortran_name_map``
+    class variable: ``{fortran_key: python_field_name}``.
+    """
+    name_map: dict[str, str] = cls._fortran_name_map  # type: ignore[attr-defined]
+    known_fields = {f.name for f in dataclasses.fields(cls)}
+    kwargs: dict[str, Any] = {}
+    for key, value in source.items():
+        python_name = name_map.get(key, key)
+        if python_name in known_fields:
+            kwargs[python_name] = value
+    return cls(**kwargs)

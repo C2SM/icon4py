@@ -22,16 +22,18 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    model_backends,
+    model_options,
+    topography,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import (
-    geometry_attributes as geom_attr,
-    topography,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -577,7 +579,7 @@ def initialize_driver(
 
     log.info("initializing the topography")
     cell_topography = topography.create(
-        experiment_name=config.driver.experiment_name,
+        config=config.topography,
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
     )
 
