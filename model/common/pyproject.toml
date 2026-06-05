@@ -31,7 +31,7 @@ dependencies = [
   'packaging>=20.0',
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
-  "serialbox4py>=2.6.2", # needed to read topography from file until IO is done
+  "serialbox4py>=2.6.2"  # needed to read topography from file until IO is done
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}
