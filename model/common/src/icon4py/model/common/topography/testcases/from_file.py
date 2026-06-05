@@ -13,7 +13,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING
 
-import serialbox
+import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import grid_manager as gm
