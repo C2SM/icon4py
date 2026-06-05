@@ -34,12 +34,11 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.standalone_driver import driver_states
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.standalone_driver import driver_states
 
 
 def apply_hydrostatic_adjustment_ndarray(
