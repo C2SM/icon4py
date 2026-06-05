@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import pathlib
 import urllib.parse
 
@@ -29,6 +30,8 @@ from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import config as driver_config, initial_condition
 from icon4py.model.testing import data_handling, definitions, serialbox
 
+
+logger = logging.getLogger(__name__)
 
 def get_process_properties_for_run(
     run_instance: decomposition.RunType,
@@ -173,7 +176,16 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+    if experiment_description == definitions.Experiments.MCH_CH_R04B09:
+        # The MCH_CH_R04B09 experiment uses an advection scheme that is not supported by ICON4Py.
+        # Hopefully you are not actually trying to access this.
+        logger.warning(
+            "Loading advection config with default values for experiment %s, as the original config is not supported by ICON4Py",
+            experiment_description.name,
+        )
+        advection_config = advection.AdvectionConfig()
+    else:
+        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
