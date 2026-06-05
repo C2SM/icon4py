@@ -11,9 +11,14 @@ from __future__ import annotations
 import dataclasses
 from typing import ClassVar
 
+from typing import TYPE_CHECKING
+
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import grid_manager as gm
 
 
 @dataclasses.dataclass

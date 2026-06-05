@@ -12,7 +12,6 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.topography.testcases import (
     from_file as from_file_topo,
     gaussian_hill as gausshill_topo,
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
+    from icon4py.model.common.grid import grid_manager as gm
 
 
 @dataclasses.dataclass

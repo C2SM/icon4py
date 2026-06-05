@@ -16,13 +16,13 @@ from typing import TYPE_CHECKING
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.grid import grid_manager as gm
     from icon4py.model.standalone_driver import driver_states
 
 
