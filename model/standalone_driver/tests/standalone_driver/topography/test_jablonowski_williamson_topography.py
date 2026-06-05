@@ -47,7 +47,9 @@ def test_jablonowski_williamson_topography(
     config = topography.TopographyConfig(
         parameters=jw_topo.JablonowskiWilliamsonParameters(),
     )
-    topo_c = topography.create(config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.single_node_exchange)
+    topo_c = topography.create(
+        config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.single_node_exchange
+    )
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()
 

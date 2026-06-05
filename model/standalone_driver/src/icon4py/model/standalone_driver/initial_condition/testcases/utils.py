@@ -318,6 +318,7 @@ def zone_indices(grid: icon_grid.IconGrid) -> dict[str, int]:
 
 
 def assemble_driver_states(
+    *,
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
     backend: gtx_typing.Backend | None,

@@ -194,7 +194,8 @@ def _compute_perturbed_exner(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_perturbed_exner(
+    *,
     exner: fa.CellKField[ta.wpfloat],
     reference_exner: fa.CellKField[ta.vpfloat],
     perturbed_exner: fa.CellKField[ta.wpfloat],
@@ -204,8 +205,8 @@ def compute_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_end: gtx.int32,
 ) -> None:
     _compute_perturbed_exner(
-        exner,
-        reference_exner,
+        exner=exner,
+        reference_exner=reference_exner,
         out=perturbed_exner,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
