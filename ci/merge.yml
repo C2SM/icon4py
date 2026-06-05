@@ -2,16 +2,14 @@ include:
   - local: 'ci/base.yml'
 
 variables:
-  # These variables filter jobs below. Not all variables apply to all jobs (e.g.
-  # GRIDS only applies to stencil tests, LEVELS to datatest/basic and MPI).
-  # MODEL_SUBPACKAGES uses short nox IDs; MPI_SUBPACKAGES uses filesystem paths.
-  # These are the defaults for the pipeline and don't include all possible jobs.
-  # They are meant to be overridden with e.g.
+  # See default.yml and generate_ci_pipelines.py for details on how these are
+  # used. This pipeline is triggered on merges through the merge queue and
+  # should generally not be triggered manually.
   #
-  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MPI_SUBPACKAGES=common;SESSION=model;MODEL_SUBSET=datatest
+  # The matrix defined by the options below gates PR merges.
   MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
   MPI_SUBPACKAGES: "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver"
-  BACKENDS: "dace_gpu"
+  BACKENDS: "embedded:dace_cpu:dace_gpu:gtfn_cpu:gtfn_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
   SESSION: "model:tools:mpi"
