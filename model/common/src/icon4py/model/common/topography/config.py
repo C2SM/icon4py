@@ -41,12 +41,10 @@ class TopographyConfig:
         atm_dict: dict[str, Any],
         input_dict: dict[str, Any],
         *,
-        data_path: pathlib.Path | None = None,
-    ) -> TopographyConfig | None:
+        data_path: pathlib.Path,
+    ) -> TopographyConfig:
         run_nml = atm_dict.get("run_nml", {})
         if not run_nml.get("ltestcase", False):
-            if data_path is None:
-                return None
             return cls(
                 parameters=from_file_topo.FromFileParameters(
                     data_path=data_path / fortran_config.SER_DATA_SUBDIR,
@@ -54,6 +52,9 @@ class TopographyConfig:
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
+        parameters: (
+            jw_topo.JablonowskiWilliamsonParameters | gausshill_topo.GaussianHillParameters
+        )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
                 parameters = fortran_config.params_from_dict(
