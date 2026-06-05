@@ -2,7 +2,7 @@ include:
   - local: 'ci/base.yml'
 
 variables:
-  # See default.yml and generate_ci_pipelines.py for details on how these are
+  # See default.yml and generate_ci_pipeline.py for details on how these are
   # used. This pipeline is triggered on merges through the merge queue and
   # should generally not be triggered manually.
   #
