@@ -21,6 +21,14 @@ import nox
 nox.options.default_venv_backend = "uv"
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 
+_rank = (
+    os.environ.get("PMI_RANK")
+    or os.environ.get("OMPI_COMM_WORLD_RANK")
+    or os.environ.get("SLURM_PROCID")
+)
+if _rank is not None:
+    nox.options.envdir = f".nox-{_rank}"
+
 
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
@@ -164,8 +172,9 @@ def test_model(
         )
 
 
-# MPI test session. Each rank should be given its own envdir via --envdir
-# ".nox-${RANK}" to avoid venv creation races.
+# MPI test session. Per-rank venv isolation is handled automatically:
+# nox.options.envdir is set to ".nox-<rank>" at import time when an MPI rank
+# variable is present.
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 def test_model_mpi(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
