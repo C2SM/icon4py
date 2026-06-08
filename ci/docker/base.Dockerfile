@@ -37,6 +37,7 @@ RUN apt-get update && \
         llvm \
         gfortran \
         pkg-config \
+        python3 \
         strace \
         tar \
         tk-dev \
