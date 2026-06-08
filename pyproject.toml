@@ -228,7 +228,7 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
-module = ["icon4py.model.standalone_driver.initial_condition.testcases.*"]
+module = ["icon4py.model.standalone_driver.initial_condition.analytical.*"]
 
 [[tool.mypy.overrides]]
 disable_error_code = [

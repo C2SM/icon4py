@@ -14,8 +14,8 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver.initial_condition.testcases import (
-    from_file as from_file_ic,
+from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
+from icon4py.model.standalone_driver.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
 )

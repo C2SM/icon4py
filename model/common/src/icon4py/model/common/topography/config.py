@@ -13,8 +13,8 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common.topography.testcases import (
-    from_file as from_file_topo,
+from icon4py.model.common.topography import from_file as from_file_topo
+from icon4py.model.common.topography.analytical import (
     gaussian_hill as gausshill_topo,
     jablonowski_williamson as jw_topo,
 )

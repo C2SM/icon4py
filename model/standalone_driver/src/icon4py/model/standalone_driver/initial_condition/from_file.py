@@ -25,7 +25,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver.initial_condition.testcases import utils as testcases_utils
+from icon4py.model.standalone_driver.initial_condition.analytical import utils as testcases_utils
 
 
 if TYPE_CHECKING:
@@ -70,27 +70,27 @@ def _read_prognostics_from_serialbox(
     sp = ser.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
     log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
 
-    nc = grid.num_cells
-    ne = grid.num_edges
+    num_cells = grid.num_cells
+    num_edges = grid.num_edges
     array_ns = data_alloc.import_array_ns(backend)
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
-        return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:nc, :])
+        return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:num_cells, :])
 
     def read_edge_k(name: str) -> data_alloc.NDArray:
-        return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:ne, :])
+        return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:num_edges, :])
 
     state = prognostics.initialize_prognostic_state(grid=grid, allocator=backend, ntracer=ntracer)
     state.rho.ndarray[:, :] = read_cell_k("rho_now")
     state.exner.ndarray[:, :] = read_cell_k("exner_now")
     state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
     state.vn.ndarray[:, :] = read_edge_k("vn_now")
-    state.w.ndarray[:, :] = read_cell_k("w_now")  # shape (nc, num_levels + 1)
+    state.w.ndarray[:, :] = read_cell_k("w_now")
 
     if ntracer > 0:
         tracers_raw = array_ns.squeeze(ser.read("tracers_now", sp).astype(float))
         for i in range(ntracer):
-            state.tracer[i].ndarray[:, :] = array_ns.asarray(tracers_raw[:nc, :, i])
+            state.tracer[i].ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
 
     return state
 

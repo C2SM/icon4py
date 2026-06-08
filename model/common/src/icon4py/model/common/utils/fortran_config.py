@@ -37,8 +37,23 @@ def list_to_value(obj: list[_T] | _T) -> _T:
     return obj[0] if isinstance(obj, list) else obj
 
 
+def _translate_fields(
+    source: dict[str, Any],
+    name_map: dict[str, str],
+    known_fields: set[str],
+) -> dict[str, Any]:
+    """Map Fortran namelist keys to Python field names, keeping only known dataclass fields."""
+    params: dict[str, Any] = {}
+    for key, value in source.items():
+        python_name = name_map.get(key, key)
+        if python_name in known_fields:
+            params[python_name] = value
+    return params
+
+
 def params_from_dict(cls: type[_T], source: dict[str, Any]) -> _T:
     """Construct a dataclass from a Fortran namelist dict.
+
     This is used by the topography and initial_condition Params classes which
     contain part (sometimes renamed) of the fortran namelist parameters.
 
@@ -49,17 +64,5 @@ def params_from_dict(cls: type[_T], source: dict[str, Any]) -> _T:
     """
     name_map: dict[str, str] = cls.fortran_name_map  # type: ignore[attr-defined]
     known_fields = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
-    #kwargs: dict[str, Any] = fill_dicts()
-    kwargs: dict[str, Any] = {}
-    for key, value in source.items():
-        python_name = name_map.get(key, key)
-        if python_name in known_fields:
-            kwargs[python_name] = value
+    kwargs = _translate_fields(source, name_map, known_fields)
     return cls(**kwargs)
-
-# def fill_dicts():
-#     for key, value in source.items():
-#         python_name = name_map.get(key, key)
-#         if python_name in known_fields:
-#             kwargs[python_name] = value
-#     return kwargs

@@ -70,12 +70,11 @@ depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
     { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
-    { path = "icon4py.model.testing" },              # TODO(): remove this dependency when driver is fully standalone
 ]
 
 [[modules]]
 path = "icon4py.model.testing"
-depends_on = [{ path = "icon4py.model.common" }, { path = "icon4py.model.standalone_driver" }]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.tools"

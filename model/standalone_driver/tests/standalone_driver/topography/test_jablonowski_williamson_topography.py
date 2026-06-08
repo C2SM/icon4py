@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends, topography
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.topography.testcases import jablonowski_williamson as jw_topo
+from icon4py.model.common.topography.analytical import jablonowski_williamson as jw_topo
 from icon4py.model.testing import definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,

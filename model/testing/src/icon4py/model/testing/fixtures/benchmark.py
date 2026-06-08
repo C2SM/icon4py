@@ -26,7 +26,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.topography.testcases import jablonowski_williamson as jw_topo
+from icon4py.model.common.topography.analytical import jablonowski_williamson as jw_topo
 
 
 @pytest.fixture(
