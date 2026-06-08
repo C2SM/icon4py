@@ -67,7 +67,7 @@ RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
 ENV CUDA_PATH=${HPC_SDK_PATH}/cuda
 
-ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
+ENV PATH=${HPC_SDK_PATH}/compilers/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
     LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
 
