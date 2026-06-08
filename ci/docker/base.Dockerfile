@@ -36,9 +36,9 @@ RUN apt-get update && \
         libyaml-dev \
         llvm \
         gfortran \
-        gfortran-13 \
-        gcc-13 \
-        g++-13 \
+        gfortran-12 \
+        gcc-12 \
+        g++-12 \
         pkg-config \
         python3 \
         strace \
@@ -74,9 +74,9 @@ ENV PATH=${HPC_SDK_PATH}/compilers/bin:${PATH} \
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-ENV CC=gcc-13
-ENV CXX=g++-13
-ENV FC=gfortran-13
+ENV CC=gcc-12
+ENV CXX=g++-12
+ENV FC=gfortran-12
 
 # Install Rust using rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
