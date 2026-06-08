@@ -62,10 +62,10 @@ class DriverConfig:
 
     @classmethod
     def from_fortran_dict(
-        cls, atmo_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
+        cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
     ) -> DriverConfig:
-        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
-        run_nml = atmo_dict["run_nml"]
+        nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
+        run_nml = atm_dict["run_nml"]
         master_time_control_nml = master_dict["master_time_control_nml"]
         master_model_nml = master_dict["master_model_nml"]
         dtime = run_nml["dtime"]
@@ -122,7 +122,7 @@ def read_config(
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
     topography_config = topography.TopographyConfig.from_fortran_dict(
-        master_dict, input_dict, data_path=config_file_path
+        atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
@@ -149,13 +149,13 @@ def read_config(
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
-        master_dict, input_dict, data_path=config_file_path
+        atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
     driver_cfg = DriverConfig.from_fortran_dict(
-        atm_dict,
-        master_dict,
+        atm_dict=atm_dict,
+        master_dict=master_dict,
         profiling_stats=profiling_stats,
     )
 

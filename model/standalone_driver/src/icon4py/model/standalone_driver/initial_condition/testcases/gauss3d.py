@@ -43,7 +43,7 @@ class Gauss3DParameters:
     t0: float = 300.0
     brunt_vais: float = 0.01
 
-    _fortran_name_map: ClassVar[dict[str, str]] = {
+    fortran_name_map: ClassVar[dict[str, str]] = {
         "nh_u0": "u0",
         "nh_t0": "t0",
         "nh_brunt_vais": "brunt_vais",
@@ -65,7 +65,7 @@ def gauss3d(
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     allocator = model_backends.get_allocator(backend)
-    xp = data_alloc.import_array_ns(allocator)
+    array_ns = data_alloc.import_array_ns(allocator)
 
     metrics = testcases_utils.extract_metrics(metrics_field_source)
     geometry = testcases_utils.extract_geometry(geometry_field_source)
@@ -85,27 +85,27 @@ def gauss3d(
     rho_ndarray = prognostic_state_now.rho.ndarray
     theta_v_ndarray = prognostic_state_now.theta_v.ndarray
 
-    mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end = array_ns.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0 : zone_idx["end_edge_lateral_boundary_level_2"]] = (
         False
     )
-    mask = xp.repeat(
-        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+    mask = array_ns.repeat(
+        array_ns.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
         num_levels,
         axis=1,
     )
-    u = xp.where(mask, u0, 0.0)
-    prognostic_state_now.vn.ndarray[:, :] = u * geometry["primal_normal_x"]
+    u_field = array_ns.where(mask, u0, 0.0)
+    prognostic_state_now.vn.ndarray[:, :] = u_field * geometry["primal_normal_x"][:, array_ns.newaxis]
 
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * metrics["geopot"][:, k_index]
-        theta_v_ndarray[:, k_index] = t0 * xp.exp(z_help)
+        theta_v_ndarray[:, k_index] = t0 * array_ns.exp(z_help)
 
     if brunt_vais != 0.0:
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * metrics["geopot"][:, num_levels - 1]
         exner_ndarray[:, num_levels - 1] = (
             phy_const.GRAV / brunt_vais
-        ) ** 2 / t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
+        ) ** 2 / t0 / phy_const.CPD * (array_ns.exp(-z_help) - 1.0) + 1.0
     else:
         exner_ndarray[:, num_levels - 1] = (
             1.0 - metrics["geopot"][:, num_levels - 1] / phy_const.CPD / t0

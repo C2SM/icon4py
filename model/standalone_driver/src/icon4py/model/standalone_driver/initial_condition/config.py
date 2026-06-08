@@ -42,9 +42,9 @@ class InitialConditionConfig:
     @classmethod
     def from_fortran_dict(
         cls,
+        *,
         atm_dict: dict[str, Any],
         input_dict: dict[str, Any],
-        *,
         data_path: pathlib.Path,
     ) -> InitialConditionConfig:
         run_nml = atm_dict.get("run_nml", {})

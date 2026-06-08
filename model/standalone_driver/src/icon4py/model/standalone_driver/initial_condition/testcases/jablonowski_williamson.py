@@ -57,7 +57,7 @@ class JablonowskiWilliamsonParameters:
     lon_perturbation_center: float = math.pi / 9.0
     lat_perturbation_center: float = 2.0 * math.pi / 9.0
 
-    _fortran_name_map: ClassVar[dict[str, str]] = {
+    fortran_name_map: ClassVar[dict[str, str]] = {
         "jw_up": "baroclinic_amplitude",
         "jw_u0": "u0",
         "jw_temp0": "temp0",

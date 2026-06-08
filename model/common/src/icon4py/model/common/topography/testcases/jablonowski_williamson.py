@@ -27,10 +27,10 @@ class JablonowskiWilliamsonParameters:
     The default values match the EXCLAIM ``exclaim_nh35_tri_jws`` experiment.
     """
 
-    _fortran_name_map: ClassVar[dict[str, str]] = {"jw_u0": "u0"}
-
     u0: float = 35.0
     eta_0: float = 0.252
+
+    fortran_name_map: ClassVar[dict[str, str]] = {"jw_u0": "u0"}
 
 
 def jablonowski_williamson(

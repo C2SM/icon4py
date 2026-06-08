@@ -274,10 +274,10 @@ class NonHydrostaticConfig:
         self._validate()
 
     @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
-        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
-        run_nml = atmo_dict["run_nml"]
-        dynamics_nml = atmo_dict["dynamics_nml"]
+    def from_fortran_dict(cls, atm_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
+        nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
+        run_nml = atm_dict["run_nml"]
+        dynamics_nml = atm_dict["dynamics_nml"]
         return cls(
             itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
             iadv_rhotheta=dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"]),

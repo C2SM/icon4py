@@ -26,12 +26,12 @@ class GaussianHillParameters:
     The default values match TODO (jcanton): add reference to the experiment in ICON.
     """
 
-    _fortran_name_map: ClassVar[dict[str, str]] = {}
-
     mount_x: float = 0.0
     mount_y: float = 0.0
     mount_height: float = 100.0
     mount_width: float = 100.0
+
+    fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def gaussian_hill(

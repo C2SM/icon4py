@@ -169,7 +169,7 @@ def create_experiment_configuration(
     vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
     topography_config = topography.TopographyConfig.from_fortran_dict(
-        master_dict, input_dict, data_path=experiment_path
+        atm_dict=atm_dict, input_dict=input_dict, data_path=experiment_path
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
@@ -196,12 +196,12 @@ def create_experiment_configuration(
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
-        master_dict, input_dict, data_path=experiment_path
+        atm_dict=atm_dict, input_dict=input_dict, data_path=experiment_path
     )
 
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict,
-        master_dict,
+        atm_dict=atm_dict,
+        master_dict=master_dict,
         profiling_stats=None,
         enable_statistics_output=False,
     )

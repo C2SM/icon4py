@@ -44,14 +44,22 @@ def params_from_dict(cls: type[_T], source: dict[str, Any]) -> _T:
 
     Unknown keys are ignored (e.g. topography params mixed into the same nml block).
     Missing keys fall back to the dataclass field defaults.
-    Fortran→Python name translation is driven by the required ``_fortran_name_map``
+    Fortran→Python name translation is driven by the required ``fortran_name_map``
     class variable: ``{fortran_key: python_field_name}``.
     """
-    name_map: dict[str, str] = cls._fortran_name_map  # type: ignore[attr-defined]
+    name_map: dict[str, str] = cls.fortran_name_map  # type: ignore[attr-defined]
     known_fields = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
+    #kwargs: dict[str, Any] = fill_dicts()
     kwargs: dict[str, Any] = {}
     for key, value in source.items():
         python_name = name_map.get(key, key)
         if python_name in known_fields:
             kwargs[python_name] = value
     return cls(**kwargs)
+
+# def fill_dicts():
+#     for key, value in source.items():
+#         python_name = name_map.get(key, key)
+#         if python_name in known_fields:
+#             kwargs[python_name] = value
+#     return kwargs
