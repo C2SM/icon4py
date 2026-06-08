@@ -36,6 +36,9 @@ RUN apt-get update && \
         libyaml-dev \
         llvm \
         gfortran \
+        gfortran-13 \
+        gcc-13 \
+        g++-13 \
         pkg-config \
         python3 \
         strace \
@@ -47,8 +50,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ARG ARCH=aarch64
-ARG HPC_SDK_VERSION=26.3
-ARG HPC_SDK_NAME=nvhpc_2026_263_Linux_${ARCH}_cuda_13.1
+ARG HPC_SDK_VERSION=24.11
+ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6
 ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 ENV NVHPC_SILENT=true
@@ -70,6 +73,10 @@ ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH}
 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+ENV CC=gcc-13
+ENV CXX=g++-13
+ENV FC=gfortran-13
 
 # Install Rust using rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
