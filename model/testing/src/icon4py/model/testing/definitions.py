@@ -174,7 +174,6 @@ class ExperimentDescription:
 @dataclasses.dataclass
 class ExperimentConfig:
     # NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
-    file_path: pathlib.Path
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig

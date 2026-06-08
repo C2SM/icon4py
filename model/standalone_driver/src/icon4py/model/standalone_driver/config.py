@@ -89,7 +89,6 @@ class DriverConfig:
 @dataclasses.dataclass
 class ExperimentConfig:
     # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
-    file_path: pathlib.Path
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
@@ -160,7 +159,6 @@ def read_config(
     )
 
     return ExperimentConfig(
-        file_path=config_file_path,
         metrics=metrics_config,
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,

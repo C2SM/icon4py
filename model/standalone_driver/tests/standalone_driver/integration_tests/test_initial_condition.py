@@ -9,8 +9,15 @@
 import pytest
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    grid_utils,
+    serialbox as sb,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -33,28 +40,29 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 @pytest.mark.datatest
 def test_initial_conditions(
-    backend_like: model_backends.BackendLike,
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     data_provider: sb.IconSerialDataProvider,
+    process_props: decomp_defs.ProcessProperties,
+    backend_like: model_backends.BackendLike,
 ) -> None:
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        grid_file_path=grid_utils._download_grid_file(experiment.grid),
-        config_file_path=experiment.config.file_path,
+        grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_like=backend_like,
     )
 
     ds = initial_condition.create(
         config=icon4py_driver.config.initial_condition,
+        vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
-        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=icon4py_driver.exchange,
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()

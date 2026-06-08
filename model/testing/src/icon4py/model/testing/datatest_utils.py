@@ -207,7 +207,6 @@ def create_experiment_configuration(
     )
 
     return definitions.ExperimentConfig(
-        file_path=experiment_path,
         metrics=metrics_config,
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,

@@ -9,6 +9,7 @@ import pytest
 
 from icon4py.model.testing.fixtures import (
     backend,
+    backend_like,
     data_provider,
     download_ser_data,
     experiment,

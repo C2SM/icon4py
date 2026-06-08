@@ -5,14 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import pathlib
 
 import pytest
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import main
-from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
-from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    serialbox as sb,
+    test_utils,
+)
 
 from ..fixtures import *  # noqa: F403
 
@@ -55,21 +60,24 @@ from ..fixtures import *  # noqa: F403
     ],
 )
 def test_standalone_driver(
-    experiment: test_defs.Experiment,
+    experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
     *,
+    process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
     ds, _ = main.main(
         grid_file_path=grid_file_path,
-        config_file_path=experiment.config.file_path,
+        config_file_path=config_file_path,
         icon4py_backend=backend_like,
     )
 
