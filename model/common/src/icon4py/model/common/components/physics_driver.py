@@ -60,6 +60,7 @@ class ProcessTimeControl:
         Equivalent to AES `isCurrentEventActive(ev_xxx, datetime)`. Uses a
         small relative tolerance to absorb datetime/timedelta floating-point
         jitter accumulated over many steps.
+
         """
         if now < self.start_date or not self.is_enabled():
             return False
@@ -78,10 +79,12 @@ class PhysicsProcess:
     time_control: ProcessTimeControl
 
 
+# TODO(Yilu): this is only a structural protocol. later on this would be a real PhysicsState adapter
+# TODO (Yilu)
 class PhysicsStateProtocol(Protocol):
     """The slice of PhysicsState that PhysicsDriver depends on."""
 
-    def refresh_from_prognostic(self, prognostic: Any, metrics: Any) -> None: ...
+    def update_from_prognostic(self, prognostic: Any) -> None: ...
     def as_component_input(self) -> dict[str, Any]: ...
     def scatter_to_prognostic(
         self, prognostic: Any, outputs: dict[str, Any], dt: float
@@ -103,11 +106,26 @@ class PhysicsDriver:
     def run(
         self,
         prognostic: Any,
-        metrics: Any,
         dt: float,
         now: datetime.datetime,
     ) -> None:
-        self._physics_state.refresh_from_prognostic(prognostic, metrics)
+        self._physics_state.update_from_prognostic(prognostic)
         for proc in self._processes:
-            outputs = proc.component(self._physics_state.as_component_input(), now)
+            tc = proc.time_control
+            if not tc.is_enabled():
+                continue
+            in_window = tc.is_in_window(now)
+            if in_window and tc.is_active(now):
+                # compute
+                outputs = proc.component(self._physics_state.as_component_input(), now)
+                self._recycle_cache[proc.name] = outputs
+            elif in_window:
+                # recycle
+                outputs = self._recycle_cache[proc.name]
+            else:
+                # no forcing
+                continue
             self._physics_state.scatter_to_prognostic(prognostic, outputs, dt)
+            # Re-sync PhysicsState so the next process sees the post-scatter state
+            # (sequential / Lie-Trotter splitting; mirrors AES mo_interface_cloud_mig.f90).
+            self._physics_state.update_from_prognostic(prognostic)

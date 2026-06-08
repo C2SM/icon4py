@@ -150,11 +150,11 @@ class RecordingPhysicsState:
     """Stub PhysicsState: records refresh / scatter; returns a fixed dict
     from as_component_input. Implements just enough surface for L2."""
 
-    refresh_calls: list = dataclasses.field(default_factory=list)
+    update_calls: list = dataclasses.field(default_factory=list)
     scatter_calls: list = dataclasses.field(default_factory=list)
 
-    def refresh_from_prognostic(self, prognostic, metrics) -> None:
-        self.refresh_calls.append((prognostic, metrics))
+    def update_from_prognostic(self, prognostic) -> None:
+        self.update_calls.append(prognostic)
 
     def as_component_input(self) -> dict:
         return {"foo": "bar"}
@@ -171,11 +171,11 @@ def test_recording_doubles_record_calls() -> None:
     state = RecordingPhysicsState()
 
     # Simulate what PhysicsDriver would do.
-    state.refresh_from_prognostic("prog", "metrics")
+    state.update_from_prognostic("prog")
     out = component(state.as_component_input(), _T0)
     state.scatter_to_prognostic("prog", out, 300.0)
 
-    assert state.refresh_calls == [("prog", "metrics")]
+    assert state.update_calls == ["prog"]
     assert component.call_count == 1
     assert component.last_state == {"foo": "bar"}  # what as_component_input returned
     assert state.scatter_calls == [("prog", out, 300.0)]
@@ -200,10 +200,96 @@ def test_run_invokes_components_in_order() -> None:
         physics_state=state,
     )
 
-    driver.run(prognostic="prog", metrics="metrics", dt=300.0, now=_T0)
+    driver.run(prognostic="prog", dt=300.0, now=_T0)
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
     # B's scatter must follow A's (operator-splitting ordering)
     assert state.scatter_calls[0][1] == {"tend_temperature": "A"}
     assert state.scatter_calls[1][1] == {"tend_temperature": "B"}
+
+
+def test_disabled_process_is_skipped() -> None:
+    state = RecordingPhysicsState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "X"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+    tc_disabled = _tc(interval=datetime.timedelta(0))
+
+    driver = PhysicsDriver(
+        processes=[PhysicsProcess(name="disabled", component=comp, time_control=tc_disabled)],
+        physics_state=state,
+    )
+
+    driver.run(prognostic="prog", dt=300.0, now=_T0)
+
+    assert comp.call_count == 0
+    assert state.scatter_calls == []
+
+
+def test_out_of_window_process_does_nothing() -> None:
+    state = RecordingPhysicsState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "X"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+    # Window starts in the future — `now=_T0` is before it.
+    future = _T0 + datetime.timedelta(days=1)
+    tc = _tc(start=future, end=future + datetime.timedelta(hours=1))
+
+    driver = PhysicsDriver(
+        processes=[PhysicsProcess(name="future", component=comp, time_control=tc)],
+        physics_state=state,
+    )
+
+    driver.run(prognostic="prog", dt=300.0, now=_T0)
+
+    assert comp.call_count == 0
+    assert state.scatter_calls == []
+
+
+def test_active_call_caches_outputs_and_applies_them() -> None:
+    state = RecordingPhysicsState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "FRESH"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+    driver = PhysicsDriver(
+        processes=[PhysicsProcess(name="p", component=comp, time_control=_tc())],
+        physics_state=state,
+    )
+
+    driver.run(prognostic="prog", dt=300.0, now=_T0)
+
+    assert comp.call_count == 1
+    assert state.scatter_calls == [("prog", {"tend_temperature": "FRESH"}, 300.0)]
+
+
+def test_inactive_in_window_recycles_cached_outputs() -> None:
+    state = RecordingPhysicsState()
+    # Component returns "FRESH" the first time, would return "STALE" the second
+    # if called — but on the recycle step it MUST NOT be called.
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "FRESH"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+    # interval = 2 * dt → process fires every other call.
+    interval = 2 * _DT
+    tc = _tc(interval=interval)
+    driver = PhysicsDriver(
+        processes=[PhysicsProcess(name="p", component=comp, time_control=tc)],
+        physics_state=state,
+    )
+
+    # Step 1: active (elapsed == 0), compute + cache.
+    driver.run(prognostic="prog", dt=_DT.total_seconds(), now=_T0)
+    # Step 2: in window, but not active (elapsed == _DT, not a multiple of 2*_DT).
+    driver.run(prognostic="prog", dt=_DT.total_seconds(), now=_T0 + _DT)
+
+    # Component invoked once total (compute step only).
+    assert comp.call_count == 1
+    # But scatter happened twice — once with the fresh tendency, once recycled.
+    assert len(state.scatter_calls) == 2
+    assert state.scatter_calls[0][1] == {"tend_temperature": "FRESH"}
+    assert state.scatter_calls[1][1] == {"tend_temperature": "FRESH"}  # recycled
