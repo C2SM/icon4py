@@ -8,7 +8,6 @@ stages:
   - benchmark
 
 variables:
-  PYVERSION_PREFIX: py313
   PYVERSION: 3.13.13
 
 # Base image build step with SHA256 checksum for caching
