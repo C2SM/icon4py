@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+
 @dataclasses.dataclass
 class InitialConditionConfig:
     parameters: (
@@ -69,12 +70,12 @@ class InitialConditionConfig:
         )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
-                log.info("Creating analytical initial condition for Jablonowski-Williamson test case")
+                log.info("Analytical initial condition for Jablonowski-Williamson test case")
                 parameters = fortran_config.params_from_dict(
                     jw_ic.JablonowskiWilliamsonParameters, testcase_nml
                 )
             case "gauss3D":
-                log.info("Creating analytical initial condition for Gauss 3D test case")
+                log.info("Analytical initial condition for Gauss 3D test case")
                 parameters = fortran_config.params_from_dict(
                     gauss_ic.Gauss3DParameters, testcase_nml
                 )
@@ -93,7 +94,6 @@ def create(
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
-
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """Create initial driver states by dispatching on the type of ``config.parameters``."""

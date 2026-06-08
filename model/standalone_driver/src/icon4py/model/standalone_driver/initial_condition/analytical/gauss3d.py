@@ -92,7 +92,9 @@ def gauss3d(
         axis=1,
     )
     u_field = array_ns.where(mask, u0, 0.0)
-    prognostic_state_now.vn.ndarray[:, :] = u_field * geometry["primal_normal_x"][:, array_ns.newaxis]
+    prognostic_state_now.vn.ndarray[:, :] = (
+        u_field * geometry["primal_normal_x"][:, array_ns.newaxis]
+    )
 
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * metrics["geopot"][:, k_index]

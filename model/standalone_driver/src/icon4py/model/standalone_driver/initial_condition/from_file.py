@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 import serialbox  # type: ignore[import-untyped]
 
-from icon4py.model.common import type_alias as ta
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_factory
@@ -31,7 +31,6 @@ from icon4py.model.standalone_driver.initial_condition.analytical import utils a
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import geometry as grid_geometry
     from icon4py.model.standalone_driver import driver_states
 
 
@@ -53,7 +52,7 @@ def _read_prognostics_from_serialbox(
     data_path: pathlib.Path,
     rank: int,
     grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     ntracer: int,
 ) -> prognostics.PrognosticState:
     """Read prognostic IC fields directly from a serialbox snapshot.
@@ -65,6 +64,9 @@ def _read_prognostics_from_serialbox(
     All array manipulation uses only ``numpy`` and the GT4Py field API;
     there is intentionally no dependency on ``icon4py.model.testing``.
     """
+    array_ns = data_alloc.import_array_ns(backend)
+    allocator = model_backends.get_allocator(backend)
+
     fname = f"icon_pydycore_rank{rank}"
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), fname)
     sp = ser.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
@@ -72,7 +74,6 @@ def _read_prognostics_from_serialbox(
 
     num_cells = grid.num_cells
     num_edges = grid.num_edges
-    array_ns = data_alloc.import_array_ns(backend)
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
         return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:num_cells, :])
@@ -80,7 +81,7 @@ def _read_prognostics_from_serialbox(
     def read_edge_k(name: str) -> data_alloc.NDArray:
         return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:num_edges, :])
 
-    state = prognostics.initialize_prognostic_state(grid=grid, allocator=backend, ntracer=ntracer)
+    state = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator, ntracer=ntracer)
     state.rho.ndarray[:, :] = read_cell_k("rho_now")
     state.exner.ndarray[:, :] = read_cell_k("exner_now")
     state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
@@ -101,7 +102,7 @@ def read_from_file(
     grid: icon_grid.IconGrid,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """Initialise prognostic state from a serialised ICON initial-condition snapshot.
@@ -113,6 +114,7 @@ def read_from_file(
     ``gauss3d``, …) and can be stored transparently in
     :attr:`~icon4py.model.standalone_driver.initial_condition.InitialConditionConfig.create`.
     """
+    allocator = model_backends.get_allocator(backend)
     prognostic_state_now = _read_prognostics_from_serialbox(
         data_path=parameters.data_path,
         rank=exchange.my_rank(),
@@ -120,10 +122,10 @@ def read_from_file(
         backend=backend,
         ntracer=parameters.ntracer,
     )
-    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=backend)
+    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     return testcases_utils.assemble_driver_states(
         grid=grid,
-        allocator=backend,
+        allocator=allocator,
         backend=backend,
         exchange=exchange,
         interpolation=testcases_utils.extract_interpolation(interpolation_field_source),

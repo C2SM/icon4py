@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+
 @dataclasses.dataclass
 class TopographyConfig:
     parameters: (
@@ -60,12 +61,12 @@ class TopographyConfig:
         )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
-                log.info("Creating analytical topography for Jablonowski-Williamson test case")
+                log.info("Analytical topography for Jablonowski-Williamson test case")
                 parameters = fortran_config.params_from_dict(
                     jw_topo.JablonowskiWilliamsonParameters, testcase_nml
                 )
             case "gauss3D":
-                log.info("Creating analytical topography for Gauss 3D test case")
+                log.info("Analytical topography for Gaussian hill")
                 parameters = fortran_config.params_from_dict(
                     gausshill_topo.GaussianHillParameters, testcase_nml
                 )
