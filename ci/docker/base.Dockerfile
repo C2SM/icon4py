@@ -49,6 +49,12 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
+RUN update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-12 100 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 && \
+    update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-12 100
+
 ARG ARCH=aarch64
 ARG HPC_SDK_VERSION=24.11
 ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6
@@ -77,6 +83,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV CC=gcc-12
 ENV CXX=g++-12
 ENV FC=gfortran-12
+ENV CUDAHOSTCXX=g++-12
 
 # Install Rust using rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
