@@ -1582,8 +1582,8 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev#ae73c6b0784021ef7df8c7e299e84ab1e0b48a47"}
-version = "2.3.12"
+source = {git = "https://github.com/philip-paul-mueller/dace?branch=phimuell__new-gpu-codegen-dev#b93199c1bf287d836abd211bf7ea81e34128b06d"}
+version = "2.3.13"
 
 [[package]]
 dependencies = [
@@ -2210,8 +2210,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#3f9cef3eb5342d402ddc5c6d3e0fa30b30014b90"}
-version = "1.0.4.post808+3f9cef3e"
+source = {git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#207374bbcc3d4f0abd4fb18cefc4cf695078f7c5"}
+version = "1.0.4.post816+207374bb"
 
 [package.optional-dependencies]
 cuda12 = [
