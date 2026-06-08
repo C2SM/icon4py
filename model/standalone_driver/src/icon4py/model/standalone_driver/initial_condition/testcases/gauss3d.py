@@ -53,15 +53,12 @@ class Gauss3DParameters:
 def gauss3d(
     *,
     parameters: Gauss3DParameters,
+    vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     allocator = model_backends.get_allocator(backend)
@@ -125,13 +122,6 @@ def gauss3d(
     )
     log.info("Hydrostatic adjustment (constant theta_v) computation completed.")
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(

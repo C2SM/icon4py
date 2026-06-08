@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import grid_manager as gm
 
+log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class TopographyConfig:
@@ -45,6 +47,7 @@ class TopographyConfig:
     ) -> TopographyConfig:
         run_nml = atm_dict.get("run_nml", {})
         if not run_nml.get("ltestcase", False):
+            log.info("Reading initial condition from file")
             return cls(
                 parameters=from_file_topo.FromFileParameters(
                     data_path=data_path / fortran_config.SER_DATA_SUBDIR,
@@ -57,10 +60,12 @@ class TopographyConfig:
         )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
+                log.info("Creating analytical topography for Jablonowski-Williamson test case")
                 parameters = fortran_config.params_from_dict(
                     jw_topo.JablonowskiWilliamsonParameters, testcase_nml
                 )
             case "gauss3D":
+                log.info("Creating analytical topography for Gauss 3D test case")
                 parameters = fortran_config.params_from_dict(
                     gausshill_topo.GaussianHillParameters, testcase_nml
                 )

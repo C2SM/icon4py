@@ -99,14 +99,9 @@ def read_from_file(
     *,
     parameters: FromFileParameters,
     grid: icon_grid.IconGrid,
-    geometry_field_source: grid_geometry.GridGeometry,  # unused; kept for API parity
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend,
-    lowest_layer_thickness: ta.wpfloat,  # unused; kept for API parity
-    model_top_height: ta.wpfloat,  # unused; kept for API parity
-    stretch_factor: ta.wpfloat,  # unused; kept for API parity
-    damping_height: ta.wpfloat,  # unused; kept for API parity
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """Initialise prognostic state from a serialised ICON initial-condition snapshot.

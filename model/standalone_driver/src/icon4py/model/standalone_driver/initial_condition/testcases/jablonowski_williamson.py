@@ -67,15 +67,12 @@ class JablonowskiWilliamsonParameters:
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     *,
     parameters: JablonowskiWilliamsonParameters,
+    vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
@@ -93,7 +90,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     The reference experiment config for this is in icon-exclaim/run/exp.exclaim_nh35_tri_jws_sb.
     """
     allocator = model_backends.get_allocator(backend)
-    xp = data_alloc.import_array_ns(allocator)
+    array_ns = data_alloc.import_array_ns(allocator)
 
     metrics = testcases_utils.extract_metrics(metrics_field_source)
     geometry = testcases_utils.extract_geometry(geometry_field_source)
@@ -130,8 +127,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
 
-    sin_lat = xp.sin(geometry["cell_lat"])
-    cos_lat = xp.cos(geometry["cell_lat"])
+    sin_lat = array_ns.sin(geometry["cell_lat"])
+    cos_lat = array_ns.cos(geometry["cell_lat"])
     fac1 = ta.wpfloat("1.0") / ta.wpfloat("6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
         cos_lat**2 + ta.wpfloat("1.0") / ta.wpfloat("3.0")
     )
@@ -148,25 +145,25 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     lapse_rate = phy_const.RD * gamma / phy_const.GRAV
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
+        eta_old = array_ns.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
         log.info(f"In Newton iteration, k = {k_index}")
         for _ in range(100):
             eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-            cos_etav = xp.cos(eta_v_ndarray[:, k_index])
-            sin_etav = xp.sin(eta_v_ndarray[:, k_index])
+            cos_etav = array_ns.cos(eta_v_ndarray[:, k_index])
+            sin_etav = array_ns.sin(eta_v_ndarray[:, k_index])
 
             temperature_avg = temp0 * (eta_old**lapse_rate)
             geopot_avg = temp0 * phy_const.GRAV / gamma * (ta.wpfloat("1.0") - eta_old**lapse_rate)
-            temperature_avg = xp.where(
+            temperature_avg = array_ns.where(
                 eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
             )
-            geopot_avg = xp.where(
+            geopot_avg = array_ns.where(
                 eta_old < eta_t,
                 geopot_avg
                 - phy_const.RD
                 * dtemp
                 * (
-                    (xp.log(eta_old / eta_t) + ta.wpfloat("137.0") / ta.wpfloat("60.0"))
+                    (array_ns.log(eta_old / eta_t) + ta.wpfloat("137.0") / ta.wpfloat("60.0"))
                     * (eta_t**5)
                     - ta.wpfloat("5.0") * (eta_t**4) * eta_old
                     + ta.wpfloat("5.0") * (eta_t**3) * (eta_old**2)
@@ -180,7 +177,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             geopot_jw = geopot_avg + u0 * (cos_etav**1.5) * (fac1 * u0 * (cos_etav**1.5) + fac2)
             temperature_jw = temperature_avg + ta.wpfloat(
                 "0.75"
-            ) * eta_old * math.pi * u0 / phy_const.RD * sin_etav * xp.sqrt(cos_etav) * (
+            ) * eta_old * math.pi * u0 / phy_const.RD * sin_etav * array_ns.sqrt(cos_etav) * (
                 ta.wpfloat("2.0") * u0 * fac1 * (cos_etav**1.5) + fac2
             )
             newton_function = geopot_jw - metrics["geopot"][:, k_index]
@@ -228,13 +225,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("U2vn computation completed.")
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
