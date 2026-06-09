@@ -362,7 +362,7 @@ class GridFile:
         name: FieldName,
         indices: data_alloc.NDArray | None = None,
         transpose: bool = False,
-        dtype: np.dtype = ta.wpfloat,
+        dtype: np.dtype = ta.dpfloat,
     ) -> np.ndarray:
         """Read a field from the grid file.
 

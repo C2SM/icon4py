@@ -251,6 +251,15 @@ class FieldSource(GridProvider, Protocol):
     def _provided_by_source(self, name) -> str:
         return name in self._sources._providers or name in self._sources.metadata
 
+    if ta.precision == "double":
+
+        def get_wp(self, field_name: str):
+            return self.get(field_name, RetrievalType.FIELD)
+    else:
+
+        def get_wp(self, field_name: str):
+            return self.get(field_name, RetrievalType.FIELD).astype(ta.wpfloat)
+
     def register_provider(self, provider: FieldProvider) -> None:
         # dependencies must be provider by this field source or registered in sources
         for dependency in provider.dependencies:

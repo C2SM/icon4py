@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition,
@@ -144,17 +144,17 @@ class GridManager:
                 "lat": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(
-                        gridfile.CoordinateName.CELL_LATITUDE, indices=my_cell_indices
+                        gridfile.CoordinateName.CELL_LATITUDE,
+                        indices=my_cell_indices,
                     ),
-                    dtype=ta.wpfloat,
                     allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(
-                        gridfile.CoordinateName.CELL_LONGITUDE, indices=my_cell_indices
+                        gridfile.CoordinateName.CELL_LONGITUDE,
+                        indices=my_cell_indices,
                     ),
-                    dtype=ta.wpfloat,
                     allocator=allocator,
                 ),
             },
@@ -162,17 +162,17 @@ class GridManager:
                 "lat": gtx.as_field(
                     (dims.EdgeDim,),
                     self._reader.variable(
-                        gridfile.CoordinateName.EDGE_LATITUDE, indices=my_edge_indices
+                        gridfile.CoordinateName.EDGE_LATITUDE,
+                        indices=my_edge_indices,
                     ),
-                    dtype=ta.wpfloat,
                     allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.EdgeDim,),
                     self._reader.variable(
-                        gridfile.CoordinateName.EDGE_LONGITUDE, indices=my_edge_indices
+                        gridfile.CoordinateName.EDGE_LONGITUDE,
+                        indices=my_edge_indices,
                     ),
-                    dtype=ta.wpfloat,
                     allocator=allocator,
                 ),
             },
@@ -180,18 +180,18 @@ class GridManager:
                 "lat": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(
-                        gridfile.CoordinateName.VERTEX_LATITUDE, indices=my_vertex_indices
+                        gridfile.CoordinateName.VERTEX_LATITUDE,
+                        indices=my_vertex_indices,
                     ),
                     allocator=allocator,
-                    dtype=ta.wpfloat,
                 ),
                 "lon": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(
-                        gridfile.CoordinateName.VERTEX_LONGITUDE, indices=my_vertex_indices
+                        gridfile.CoordinateName.VERTEX_LONGITUDE,
+                        indices=my_vertex_indices,
                     ),
                     allocator=allocator,
-                    dtype=ta.wpfloat,
                 ),
             },
         }
@@ -200,55 +200,46 @@ class GridManager:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.CellDim]["y"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_Y, indices=my_cell_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.CellDim]["z"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_Z, indices=my_cell_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["x"] = gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.CoordinateName.EDGE_X, indices=my_edge_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["y"] = gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.CoordinateName.EDGE_Y, indices=my_edge_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["z"] = gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.CoordinateName.EDGE_Z, indices=my_edge_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["x"] = gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.CoordinateName.VERTEX_X, indices=my_vertex_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["y"] = gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.CoordinateName.VERTEX_Y, indices=my_vertex_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["z"] = gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.CoordinateName.VERTEX_Z, indices=my_vertex_indices),
-                dtype=ta.wpfloat,
                 allocator=allocator,
             )
 
