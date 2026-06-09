@@ -62,7 +62,7 @@ class TopographyConfig:
             flat_topo.FlatTopographyConfig
             | jw_topo.JablonowskiWilliamsonConfig
             | gausshill_topo.GaussianHillConfig
-        )  # otherwise mypy complains
+        )  # mypy does not automatically catch type
         match testcase_nml.get("nh_test_name"):
             case "APE_nwp" | "wk82":
                 log.info("Flat topography")

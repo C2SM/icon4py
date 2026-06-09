@@ -63,7 +63,7 @@ class InitialConditionConfig:
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         config: (
             jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
-        )  # otherwise mypy complains
+        )  # mypy does not automatically catch type
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s" | "APE_nwp":
                 log.info("Analytical initial condition for Jablonowski-Williamson test case")
