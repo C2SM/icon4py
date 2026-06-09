@@ -13,7 +13,7 @@ from typing import Any, Protocol
 import numpy as np
 from gt4py import next as gtx
 
-from icon4py.model.common import exceptions, type_alias as ta
+from icon4py.model.common import exceptions
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -362,7 +362,7 @@ class GridFile:
         name: FieldName,
         indices: data_alloc.NDArray | None = None,
         transpose: bool = False,
-        dtype: np.dtype = ta.dpfloat,
+        dtype: np.dtype = gtx.float64,
     ) -> np.ndarray:
         """Read a field from the grid file.
 

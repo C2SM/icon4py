@@ -27,7 +27,6 @@ from icon4py.model.common.interpolation import (
     rbf_interpolation as rbf,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -61,10 +60,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         domain_height = self.grid.grid_params.domain_height
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
-            "divergence_averaging_central_cell_weight": wpfloat(0.5),  # divavg_cntrwgt in ICON
-            "weighting_factor": wpfloat(0.0),
-            "max_nudging_coefficient": wpfloat(0.375),
-            "nudge_efold_width": wpfloat(2.0),
+            "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
+            "weighting_factor": 0.0,
+            "max_nudging_coefficient": 0.375,
+            "nudge_efold_width": 2.0,
             "nudge_zone_width": 10,
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
@@ -248,7 +247,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "domain_length": self._config["domain_length"],
                 "domain_height": self._config["domain_height"],
-                "grid_sphere_radius": constants.EARTH_RADIUS,
+                "grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS),
                 "lsq_dim_unk": self._config["lsq_dim_unk"],
                 "lsq_dim_c": self._config["lsq_dim_c"],
                 "lsq_wgt_exp": self._config["lsq_wgt_exp"],
@@ -326,7 +325,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                     connectivities={"e2c": dims.E2CDim},
                     params={
-                        "grid_sphere_radius": constants.EARTH_RADIUS,
+                        "grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS),
                         "horizontal_start": self.grid.start_index(
                             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                         ),

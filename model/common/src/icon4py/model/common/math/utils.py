@@ -19,12 +19,11 @@ from gt4py import next as gtx
 from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import dpfloat
 
 
 def compute_sqrt(
-    input_val: dpfloat,
-) -> dpfloat:
+    input_val: gtx.float64,
+) -> gtx.float64:
     """
     Compute the square root of input_val.
     math.sqrt is not sufficiently typed for the validation happening in the factories.
@@ -33,7 +32,7 @@ def compute_sqrt(
 
 
 @gtx.field_operator
-def invert_edge_field(f: fa.EdgeField[dpfloat]) -> fa.EdgeField[dpfloat]:
+def invert_edge_field(f: fa.EdgeField[gtx.float64]) -> fa.EdgeField[gtx.float64]:
     """
     Invert values.
     Args:
@@ -42,13 +41,13 @@ def invert_edge_field(f: fa.EdgeField[dpfloat]) -> fa.EdgeField[dpfloat]:
     Returns:
         1/f where f is not zero.
     """
-    return where(f != dpfloat(0.0), dpfloat(1.0) / f, f)
+    return where(f != 0.0, 1.0 / f, f)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_inverse_on_edges(
-    f: fa.EdgeField[dpfloat],
-    f_inverse: fa.EdgeField[dpfloat],
+    f: fa.EdgeField[gtx.float64],
+    f_inverse: fa.EdgeField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):

@@ -8,6 +8,8 @@
 
 from typing import Final
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
@@ -43,7 +45,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     NUDGECOEFFS_E: dict(
         standard_name=NUDGECOEFFS_E,
@@ -51,7 +53,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(yiluchen1066): : need to check unit
         dims=(dims.EdgeDim,),
         icon_var_name="nudgecoeff_e",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     C_BLN_AVG: dict(
         standard_name=C_BLN_AVG,
@@ -59,7 +61,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.EdgeDim, dims.C2E2CODim),
         icon_var_name="c_bln_avg",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     E_BLN_C_S: dict(
         standard_name=E_BLN_C_S,
@@ -67,7 +69,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(): check or confirm
         dims=(dims.CellDim, dims.C2EDim),
         icon_var_name="e_bln_c_s",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     GEOFAC_DIV: dict(
         standard_name=GEOFAC_DIV,
@@ -75,7 +77,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.CellDim, dims.C2EDim),
         icon_var_name="geofac_div",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     GEOFAC_ROT: dict(
         standard_name=GEOFAC_ROT,
@@ -83,7 +85,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="geofac_rot",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     GEOFAC_N2S: dict(
         standard_name=GEOFAC_N2S,
@@ -91,7 +93,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.CellDim, dims.C2E2CODim),
         icon_var_name="geofac_n2s",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     GEOFAC_GRDIV: dict(
         standard_name=GEOFAC_GRDIV,
@@ -99,7 +101,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.EdgeDim, dims.E2C2EODim),
         icon_var_name="geofac_grdiv",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     GEOFAC_GRG_X: dict(
         standard_name=GEOFAC_GRG_X,
@@ -107,7 +109,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.CellDim, dims.C2E2CODim),
         icon_var_name="geofac_grg",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     GEOFAC_GRG_Y: dict(
         standard_name=GEOFAC_GRG_Y,
@@ -115,7 +117,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(halungge): check or confirm
         dims=(dims.CellDim, dims.C2E2CODim),
         icon_var_name="geofac_grg",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     E_FLX_AVG: dict(
         standard_name=E_FLX_AVG,
@@ -123,7 +125,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(): check or confirm
         dims=(dims.EdgeDim, dims.E2C2EODim),
         icon_var_name="e_flx_avg",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     POS_ON_TPLANE_E_X: dict(
         standard_name=POS_ON_TPLANE_E_X,
@@ -131,7 +133,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(): check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="pos_on_tplane_e_x",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     POS_ON_TPLANE_E_Y: dict(
         standard_name=POS_ON_TPLANE_E_Y,
@@ -139,7 +141,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO(): check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="pos_on_tplane_e_y",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     CELL_AW_VERTS: dict(
         standard_name=CELL_AW_VERTS,
@@ -147,7 +149,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2CDim),
         icon_var_name="cells_aw_verts",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     RBF_VEC_COEFF_C1: dict(
         standard_name=RBF_VEC_COEFF_C1,
@@ -155,7 +157,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.C2E2C2EDim),
         icon_var_name="rbf_vec_coeff_c1",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     RBF_VEC_COEFF_C2: dict(
         standard_name=RBF_VEC_COEFF_C2,
@@ -163,7 +165,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.C2E2C2EDim),
         icon_var_name="rbf_vec_coeff_c2",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     RBF_VEC_COEFF_E: dict(
         standard_name=RBF_VEC_COEFF_E,
@@ -171,7 +173,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim, dims.E2C2EDim),
         icon_var_name="rbf_vec_coeff_e",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     RBF_VEC_COEFF_V1: dict(
         standard_name=RBF_VEC_COEFF_V1,
@@ -179,7 +181,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="rbf_vec_coeff_v1",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     RBF_VEC_COEFF_V2: dict(
         standard_name=RBF_VEC_COEFF_V2,
@@ -187,7 +189,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="rbf_vec_coeff_v2",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
     RBF_SCALE_CELL: dict(
         standard_name=RBF_SCALE_CELL,
@@ -195,7 +197,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_c",
-        dtype=ta.dpfloat,
+        dtype=gtx.float64,
     ),
     RBF_SCALE_EDGE: dict(
         standard_name=RBF_SCALE_EDGE,
@@ -203,7 +205,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_e",
-        dtype=ta.dpfloat,
+        dtype=gtx.float64,
     ),
     RBF_SCALE_VERTEX: dict(
         standard_name=RBF_SCALE_VERTEX,
@@ -211,7 +213,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_v",
-        dtype=ta.dpfloat,
+        dtype=gtx.float64,
     ),
     LSQ_PSEUDOINV: dict(
         standard_name=LSQ_PSEUDOINV,
@@ -219,6 +221,6 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.C2E2CDim),
         icon_var_name="ptr_int_lsq%lsq_pseudoinv",
-        dtype=ta.dpfloat,
+        dtype=ta.wpfloat,
     ),
 }

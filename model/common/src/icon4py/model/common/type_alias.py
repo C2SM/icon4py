@@ -18,7 +18,6 @@ DEFAULT_PRECISION = "double"
 wpfloat: type[gtx.float32] | type[gtx.float64] = gtx.float64
 vpfloat: type[gtx.float32] | type[gtx.float64] = wpfloat
 anyfloat: TypeAlias = gtx.float32 | gtx.float64
-dpfloat: TypeAlias = gtx.float64
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
