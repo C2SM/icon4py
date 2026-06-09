@@ -132,7 +132,7 @@ def read_config(
 
     if "exclaim_ch_r04b09_dsl" in config_file_path.name or "exclaim_ape_R02B04" in config_file_path.name:
         # The MCH_CH_R04B09 and APE_R02B04 experiments use an advection scheme that is not supported by ICON4Py.
-        # Hopefully you are not actually trying to access this.
+        # You should not access these values.
         log.warning(
             "Loading advection config with default values for experiment %s, as the original config is not supported by ICON4Py",
             config_file_path.name,
