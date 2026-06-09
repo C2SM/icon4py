@@ -35,7 +35,7 @@ def smooth_topography(
     """Compute the smoothed (laplacian-filtered) topography needed by the SLEVE coordinate."""
     array_ns = data_alloc.array_namespace(topography)
     smooth_topo = topography.copy()
-    # TODO(@halungge): if the input topography is properly exchanged, which it should, this is not needed here.
+    # TODO(jcanton): if the input topography is properly exchanged, which it should, this is not needed here.
     exchange.exchange(dims.CellDim, smooth_topo, stream=decomposition.BLOCK)
 
     for _ in range(num_iterations):
