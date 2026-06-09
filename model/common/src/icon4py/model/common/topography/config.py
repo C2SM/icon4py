@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.topography import from_file as from_file_topo
 from icon4py.model.common.topography.analytical import (
+    flat_topography as flat_topo,
     gaussian_hill as gausshill_topo,
     jablonowski_williamson as jw_topo,
 )
@@ -33,7 +34,8 @@ log = logging.getLogger(__name__)
 @dataclasses.dataclass
 class TopographyConfig:
     parameters: (
-        jw_topo.JablonowskiWilliamsonParameters
+        flat_topo.FlatTopographyParameters
+        | jw_topo.JablonowskiWilliamsonParameters
         | gausshill_topo.GaussianHillParameters
         | from_file_topo.FromFileParameters
     )
@@ -57,9 +59,14 @@ class TopographyConfig:
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         parameters: (
-            jw_topo.JablonowskiWilliamsonParameters | gausshill_topo.GaussianHillParameters
+            flat_topo.FlatTopographyParameters
+            | jw_topo.JablonowskiWilliamsonParameters
+            | gausshill_topo.GaussianHillParameters
         )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
+            case "AES_nwp":
+                log.info("Flat topography")
+                parameters = flat_topo.FlatTopographyParameters()
             case "jabw" | "jabw_s":
                 log.info("Analytical topography for Jablonowski-Williamson test case")
                 parameters = fortran_config.params_from_dict(
@@ -85,6 +92,10 @@ def create(
 ) -> data_alloc.NDArray:
     """Create topography array by dispatching on the type of ``config.parameters``."""
     match config.parameters:
+        case flat_topo.FlatTopographyParameters():
+            return flat_topo.flat_topography(
+                parameters=config.parameters, grid_manager=grid_manager
+            )
         case jw_topo.JablonowskiWilliamsonParameters():
             return jw_topo.jablonowski_williamson(
                 parameters=config.parameters, grid_manager=grid_manager
