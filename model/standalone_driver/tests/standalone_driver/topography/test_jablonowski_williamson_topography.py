@@ -18,6 +18,7 @@ from icon4py.model.common.topography.analytical import jablonowski_williamson as
 from icon4py.model.testing import definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
+    data_provider,
     download_ser_data,
     experiment,
     experiment_description,
