@@ -49,6 +49,25 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
+ENV CC=gcc-12
+ENV CXX=g++-12
+ENV FC=gfortran-12
+ENV CUDAHOSTCXX=g++-12
+
+# Install Rust using rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustc --version && which rustc && cargo --version && which cargo
+
+# Install Bencher for performance monitoring
+# Update the following comment to trigger a rebuild to update the CLI:
+# last update: 2026-5-11
+# This is necessary because the cloud version and the CLI version have to match
+# but obviously, version changes do not register in the Dockerfile hash.
+RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
+RUN bencher --version && which bencher
+
+# Install NVIDIA HPC SDK for nvfortran
 ARG ARCH=aarch64
 ARG HPC_SDK_VERSION=24.11
 ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6
@@ -74,24 +93,6 @@ ENV PATH=${HPC_SDK_PATH}/compilers/bin:${PATH} \
 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-
-ENV CC=gcc-12
-ENV CXX=g++-12
-ENV FC=gfortran-12
-ENV CUDAHOSTCXX=g++-12
-
-# Install Rust using rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN rustc --version && which rustc && cargo --version && which cargo
-
-# Install Bencher for performance monitoring
-# Update the following comment to trigger a rebuild to update the CLI:
-# last update: 2026-5-11
-# This is necessary because the cloud version and the CLI version have to match
-# but obviously, version changes do not register in the Dockerfile hash.
-RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
-RUN bencher --version && which bencher
 
 # Install OpenMPI configured with libfabric, libcxi, and gdrcopy support for use
 # on Alps. This is based on examples in
