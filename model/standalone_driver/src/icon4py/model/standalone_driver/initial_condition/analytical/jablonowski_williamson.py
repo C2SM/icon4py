@@ -46,6 +46,9 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class JablonowskiWilliamsonConfig:
+    # jabw* and APE testcases share this initial condition and config
+    # with the difference that jabw* has p_sfc hardcoded to 1e5, while APE
+    # reads zp_ape from the nh_testcase_nml
     p_sfc: float = 100000.0
     baroclinic_amplitude: float = 0.0
     u0: float = 35.0
@@ -61,6 +64,7 @@ class JablonowskiWilliamsonConfig:
         "jw_up": "baroclinic_amplitude",
         "jw_u0": "u0",
         "jw_temp0": "temp0",
+        "zp_ape": "p_sfc",
     }
 
 

@@ -34,6 +34,7 @@ from icon4py.model.testing.fixtures.datatest import (
     "experiment_description",
     [
         definitions.Experiments.JW,
+        definitions.Experiments.EXCLAIM_APE,
         definitions.Experiments.GAUSS3D,
         definitions.Experiments.MCH_CH_R04B09,
     ],
