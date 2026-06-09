@@ -42,12 +42,15 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
+        test_defs.Experiments.EXCLAIM_APE,
+        test_defs.Experiments.GAUSS3D,
     ],
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_standalone_driver_compare_single_multi_rank(
     experiment_description: test_defs.ExperimentDescription,
+    tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
@@ -73,6 +76,7 @@ def test_standalone_driver_compare_single_multi_rank(
     single_rank_ds, _ = main.main(
         grid_file_path=grid_file_path,
         config_file_path=config_file_path,
+        output_path=tmp_path / "ci_driver_output_serial_rank0",
         icon4py_backend=backend_like,
         force_serial_run=True,
     )
@@ -80,6 +84,7 @@ def test_standalone_driver_compare_single_multi_rank(
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         config_file_path=config_file_path,
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
         icon4py_backend=backend_like,
     )
 

@@ -173,9 +173,12 @@ def read_config(
 
 
 def prepare_output_directory(
-    output_path: pathlib.Path,
+    config_output_path: pathlib.Path,
+    cli_output_path: pathlib.Path | None,
     process_props: Any | None = None,
 ) -> pathlib.Path:
+    output_path = cli_output_path if cli_output_path is not None else config_output_path
+
     is_rank_zero = process_props is None or process_props.rank == 0
 
     if is_rank_zero:

@@ -1,4 +1,4 @@
-# ICON4Py - ICON inspired code in Python and GT4Py
+# ICON5Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -28,6 +28,10 @@ def main(
     *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     config_file_path: Annotated[pathlib.Path, typer.Option(help="Configuration file path.")],
+    output_path: Annotated[
+        pathlib.Path | None,
+        typer.Option(help="Optional override output path. Normally read from config."),
+    ] = None,
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -71,6 +75,7 @@ def main(
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         grid_file_path=grid_file_path,
         config_file_path=config_file_path,
+        output_path=output_path,
         log_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
         backend_like=icon4py_backend,

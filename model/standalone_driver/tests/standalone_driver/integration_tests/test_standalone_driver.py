@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pathlib
+
 import pytest
 
 from icon4py.model.common import model_backends
@@ -65,6 +67,7 @@ def test_standalone_driver(
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
     *,
+    tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
@@ -78,6 +81,7 @@ def test_standalone_driver(
     ds, _ = main.main(
         grid_file_path=grid_file_path,
         config_file_path=config_file_path,
+        output_path=tmp_path / "ci_driver_output",
         icon4py_backend=backend_like,
     )
 

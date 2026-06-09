@@ -499,6 +499,7 @@ def initialize_driver(
     *,
     grid_file_path: pathlib.Path,
     config_file_path: pathlib.Path,
+    output_path: pathlib.Path | None,
     log_level: str,
     backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
@@ -554,8 +555,8 @@ def initialize_driver(
         enable_profiling=False,
     )
 
-    # Override output_path from config default with the time- (and possibly MPI-) adjusted one
-    output_path = driver_config.prepare_output_directory(config.driver.output_path, process_props)
+    # Override output_path from config with CLI-arg provided, and the time- (and possibly MPI-) adjusted one
+    output_path = driver_config.prepare_output_directory(config_output_path=config.driver.output_path, cli_output_path=output_path, process_props=process_props)
     config.driver = dataclasses.replace(config.driver, output_path=output_path)
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")

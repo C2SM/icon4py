@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pathlib
+
 import pytest
 
 from icon4py.model.common import model_backends
@@ -43,6 +45,7 @@ from icon4py.model.testing.fixtures.datatest import (
 def test_initial_conditions(
     experiment_description: definitions.ExperimentDescription,
     data_provider: sb.IconSerialDataProvider,
+    tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
@@ -53,6 +56,7 @@ def test_initial_conditions(
         grid_file_path=grid_file_path,
         config_file_path=config_file_path,
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
+        output_path=tmp_path / "ci_driver_output",
         backend_like=backend_like,
     )
 
