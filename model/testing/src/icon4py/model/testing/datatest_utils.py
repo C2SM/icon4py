@@ -177,16 +177,7 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    if experiment_description in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE):
-        # The MCH_CH_R04B09 and APE_R02B04 experiments use an advection scheme that is not supported by ICON4Py.
-        # You should not access these values.
-        logger.warning(
-            "Loading advection config with default values for experiment %s, as the original config is not supported by ICON4Py",
-            experiment_description.name,
-        )
-        advection_config = advection.AdvectionConfig()
-    else:
-        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,

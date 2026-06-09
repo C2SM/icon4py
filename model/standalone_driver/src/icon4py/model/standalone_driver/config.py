@@ -130,16 +130,7 @@ def read_config(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    if "exclaim_ch_r04b09_dsl" in config_file_path.name or "exclaim_ape_R02B04" in config_file_path.name:
-        # The MCH_CH_R04B09 and APE_R02B04 experiments use an advection scheme that is not supported by ICON4Py.
-        # You should not access these values.
-        log.warning(
-            "Loading advection config with default values for experiment %s, as the original config is not supported by ICON4Py",
-            config_file_path.name,
-        )
-        advection_config = advection.AdvectionConfig()
-    else:
-        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,

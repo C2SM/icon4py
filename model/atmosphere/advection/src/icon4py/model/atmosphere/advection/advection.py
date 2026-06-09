@@ -58,6 +58,8 @@ class HorizontalAdvectionType(Enum):
     NO_ADVECTION = 0
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
+    #: FFSL_HYB with miura_cycl *** not implemented in ICON4Py (available in config but will fail in convert_config_to_horizontal_vertical_advection)
+    FFSL_HYB_MIURA_CYCL = 52
 
 
 class HorizontalAdvectionLimiter(Enum):
@@ -67,6 +69,8 @@ class HorizontalAdvectionLimiter(Enum):
 
     #: no horizontal limiter
     NO_LIMITER = 0
+    #: monotonous flux limiter *** not implemented in ICON4Py (available in config but will fail in convert_config_to_horizontal_vertical_advection)
+    MONOTONIC = 3
     #: positive definite horizontal limiter
     POSITIVE_DEFINITE = 4
 
@@ -97,37 +101,14 @@ class VerticalAdvectionLimiter(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionConfig:
-    horizontal_advection_type: HorizontalAdvectionType = HorizontalAdvectionType.NO_ADVECTION
-    horizontal_advection_limiter: HorizontalAdvectionLimiter = HorizontalAdvectionLimiter.NO_LIMITER
-    vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.NO_ADVECTION
-    vertical_advection_limiter: VerticalAdvectionLimiter = VerticalAdvectionLimiter.NO_LIMITER
+    horizontal_advection_type: HorizontalAdvectionType
+    horizontal_advection_limiter: HorizontalAdvectionLimiter
+    vertical_advection_type: VerticalAdvectionType
+    vertical_advection_limiter: VerticalAdvectionLimiter
 
     """
     Contains necessary parameters to configure an advection run.
     """
-
-    def __post_init__(self) -> None:
-        self._validate()
-
-    def _validate(self) -> None:
-        """Apply consistency checks and validation on configuration parameters."""
-
-        if not hasattr(HorizontalAdvectionType, self.horizontal_advection_type.name):
-            raise NotImplementedError(
-                f"Horizontal advection type {self.horizontal_advection_type} not implemented."
-            )
-        if not hasattr(HorizontalAdvectionLimiter, self.horizontal_advection_limiter.name):
-            raise NotImplementedError(
-                f"Horizontal advection limiter {self.horizontal_advection_limiter} not implemented."
-            )
-        if not hasattr(VerticalAdvectionType, self.vertical_advection_type.name):
-            raise NotImplementedError(
-                f"Vertical advection type {self.vertical_advection_type} not implemented."
-            )
-        if not hasattr(VerticalAdvectionLimiter, self.vertical_advection_limiter.name):
-            raise NotImplementedError(
-                f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
-            )
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
