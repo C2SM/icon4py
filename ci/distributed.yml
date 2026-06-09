@@ -91,12 +91,13 @@ build_distributed:
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   script:
-    - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-3.13($COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-3.13($SELECTION, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
       - COMPONENT: [diffusion, dycore, advection, common, standalone_driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
+        SELECTION: [basic, datatest]
   rules:
     - if: $COMPONENT == 'diffusion'
       variables:

@@ -184,7 +184,7 @@ def test_model_mpi(
     """Run MPI tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    pytest_args = _selection_to_pytest_args(selection)
+    pytest_args = _selection_to_pytest_args(selection, mpi=True)
     with session.chdir(f"model/{subpackage}"):
         session.run(
             "pytest",
@@ -260,13 +260,15 @@ def _install_session_venv(
         )
 
 
-def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
+def _selection_to_pytest_args(selection: ModelTestsSubset, *, mpi: bool = False) -> list[str]:
     pytest_args = []
 
     match selection:
         case "datatest":
             pytest_args.extend(["--datatest-only"])
         case "stencils":
+            if mpi:
+                raise AssertionError("Stencil tests are only serial")
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
             pytest_args.extend(
