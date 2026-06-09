@@ -556,7 +556,11 @@ def initialize_driver(
     )
 
     # Override output_path from config with CLI-arg provided, and the time- (and possibly MPI-) adjusted one
-    output_path = driver_config.prepare_output_directory(config_output_path=config.driver.output_path, cli_output_path=output_path, process_props=process_props)
+    output_path = driver_config.prepare_output_directory(
+        config_output_path=config.driver.output_path,
+        cli_output_path=output_path,
+        process_props=process_props,
+    )
     config.driver = dataclasses.replace(config.driver, output_path=output_path)
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")

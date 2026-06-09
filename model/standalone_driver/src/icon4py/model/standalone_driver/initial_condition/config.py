@@ -39,11 +39,7 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: (
-        jw_ic.JablonowskiWilliamsonConfig
-        | gauss_ic.Gauss3DConfig
-        | from_file_ic.FromFileConfig
-    )
+    config: jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
 
     @classmethod
     def from_fortran_dict(

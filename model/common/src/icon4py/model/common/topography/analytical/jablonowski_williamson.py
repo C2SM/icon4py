@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class JablonowskiWilliamsonConfig:
-
     u0: float = 35.0
     eta_0: float = 0.252
 

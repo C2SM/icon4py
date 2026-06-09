@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class GaussianHillConfig:
-
     mount_x: float = 0.0
     mount_y: float = 0.0
     mount_height: float = 100.0
