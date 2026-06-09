@@ -11,3 +11,4 @@ ENV GHEX_GPU_TYPE=NVIDIA
 ENV GHEX_GPU_ARCH=90
 ENV GHEX_TRANSPORT_BACKEND=MPI
 RUN uv sync --extra all --extra cuda12 --group test --python=$PYVERSION
+ENV PATH=/icon4py/.venv/bin:${PATH}

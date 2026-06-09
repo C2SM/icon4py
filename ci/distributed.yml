@@ -37,12 +37,10 @@ build_distributed_baseimage_aarch64:
   variables:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION-mpi
 
 .build_distributed:
   extends: [.build_distributed_template]
-  variables:
-    UV_PROJECT_ENVIRONMENT: venv_dist
 
 build_distributed:
   stage: image
@@ -51,7 +49,7 @@ build_distributed:
 
 .test_template_distributed:
   timeout: 8h
-  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION-mpi
   extends: [.container-runner-santis-gh200, .build_distributed]
   needs: [build_distributed]
   variables:
@@ -90,9 +88,6 @@ build_distributed:
   extends: [.test_template_distributed]
   before_script:
     - cd /icon4py
-    - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
-    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-    - echo "running with $(python --version)"
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   script:
