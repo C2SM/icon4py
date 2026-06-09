@@ -1,6 +1,7 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
+# Propagate this as environment variable for use in e.g. gt4py cache directories
 ENV BASE_IMAGE=$BASE_IMAGE
 
 COPY . /icon4py
