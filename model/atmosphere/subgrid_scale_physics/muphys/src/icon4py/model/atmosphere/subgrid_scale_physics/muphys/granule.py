@@ -89,7 +89,7 @@ _OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
 }
 
 
-class MuphysComponent:
+class MuphysGranule:
     """L4 per-process adapter wrapping the muphys microphysics program."""
 
     inputs_properties = _INPUTS_PROPERTIES
@@ -102,7 +102,7 @@ class MuphysComponent:
         qnc: float,
         backend: gtx_typing.Backend | None = None,
         *,
-        muphys_step: Callable[..., Any] | None = None,  # TODO (Yilu)
+        muphys_step: Callable[..., Any] | None = None,
     ) -> None:
         self._grid = grid
         self._dt = dt
@@ -111,7 +111,7 @@ class MuphysComponent:
         if muphys_step is None:
             # TODO(Yilu): run_full_muphys.setup_muphys(single_program=False) from dt/qnc/grid.
             raise NotImplementedError(
-                "MuphysComponent needs an explicit `muphys_step` until scope-4 wires the "
+                "MuphysGranule needs an explicit `muphys_step` until scope-4 wires the "
                 "muphys setup; inject one for now."
             )
         self._muphys_step = muphys_step

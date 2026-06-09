@@ -80,7 +80,6 @@ class PhysicsProcess:
 
 
 # TODO(Yilu): this is only a structural protocol. later on this would be a real PhysicsState adapter
-# TODO (Yilu)
 class PhysicsStateProtocol(Protocol):
     """The slice of PhysicsState that PhysicsDriver depends on."""
 
