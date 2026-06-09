@@ -177,22 +177,25 @@ def test_model(
 # variable is present.
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-def test_model_mpi(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+@nox.parametrize("selection", MODEL_TESTS_SUBSETS)
+def test_model_mpi(
+    session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
+) -> None:
     """Run MPI tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    session.run(
-        "pytest",
-        "-sv",
-        "--benchmark-disable",
-        f"model/{subpackage}",
-        "-k",
-        "mpi_tests",
-        "--with-mpi",
-        "-n0",
-        *session.posargs,
-        success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
-    )
+    pytest_args = _selection_to_pytest_args(selection)
+    with session.chdir(f"model/{subpackage}"):
+        session.run(
+            "pytest",
+            "-sv",
+            "--benchmark-disable",
+            "-n0",
+            "--only-mpi",
+            *pytest_args,
+            *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
