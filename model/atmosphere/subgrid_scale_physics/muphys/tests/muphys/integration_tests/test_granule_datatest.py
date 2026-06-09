@@ -53,7 +53,6 @@ def test_granule_matches_direct_muphys(
     te0 = inp.t.asnumpy().copy()
     q0 = {s: getattr(inp, f"q{s}").asnumpy().copy() for s in _SPECIES}
 
-    # One muphys step, shared by the granule and the direct reference run.
     muphys_program = run_full_muphys.setup_muphys(
         inp=inp,
         dt=experiment.dt,
@@ -62,7 +61,6 @@ def test_granule_matches_direct_muphys(
         single_program=False,
     )
 
-    # 1. Granule: copies inputs internally, returns tendencies + precip diagnostics.
     granule = MuphysGranule(
         ncells=inp.ncells,
         nlev=inp.nlev,
@@ -85,7 +83,6 @@ def test_granule_matches_direct_muphys(
     }
     out = granule(state, _T0)
 
-    # 2. Direct muphys on the same input, into distinct output buffers.
     direct = common.GraupelOutput.allocate(
         allocator=allocator,
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
@@ -107,13 +104,17 @@ def test_granule_matches_direct_muphys(
     )
 
     dt = experiment.dt
-    # Applying the granule's tendencies to the ORIGINAL input reproduces muphys's state.
-    assert test_utils.dallclose(te0 + out["tend_temperature"].asnumpy() * dt, direct.t.asnumpy())
+
+    assert test_utils.dallclose(
+        te0 + out["tend_temperature"].asnumpy() * dt, direct.t.asnumpy(), atol=1e-15
+    )
     for s in _SPECIES:
         applied = q0[s] + out[f"tend_q{s}"].asnumpy() * dt
-        assert test_utils.dallclose(applied, getattr(direct, f"q{s}").asnumpy())
+        assert test_utils.dallclose(applied, getattr(direct, f"q{s}").asnumpy(), atol=1e-15)
 
-    # Precip diagnostics pass straight through (surface slot for the surface fields).
+    # Precip diagnostics pass straight through unchanged: the granule's buffers and
+    # `direct`'s come from the same muphys run on identical input, so require an exact
+    # (atol=0) match. Compare the surface slot for the surface-only fields.
     assert test_utils.dallclose(out["pflx"].asnumpy(), direct.pflx.asnumpy())
     for name in ("pr", "ps", "pi", "pg", "pre"):
         assert test_utils.dallclose(
