@@ -65,8 +65,6 @@ build_image_aarch64:
     CUDA_DEVICE_MAX_CONNECTIONS: 8
     CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
     NUM_PROCESSES: auto
-    GT4PY_BUILD_JOBS: 8
-    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
@@ -92,4 +90,6 @@ build_image_aarch64:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
+    GT4PY_BUILD_JOBS: 8
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
