@@ -79,7 +79,8 @@ class PhysicsProcess:
     time_control: ProcessTimeControl
 
 
-# TODO(Yilu): this is only a structural protocol. later on this would be a real PhysicsState adapter
+# TODO(Yilu): this is only a structural protocol. probably we will not keep it later on
+# TODO (Yilu): is this necessary?
 class PhysicsStateProtocol(Protocol):
     """The slice of PhysicsState that PhysicsDriver depends on."""
 
@@ -109,14 +110,16 @@ class PhysicsDriver:
         now: datetime.datetime,
     ) -> None:
         self._physics_state.update_from_prognostic(prognostic)
-        for proc in self._processes:
+        for proc in self._processes: # TODO (Yilu)
             tc = proc.time_control
             if not tc.is_enabled():
                 continue
             in_window = tc.is_in_window(now)
             if in_window and tc.is_active(now):
                 # compute
-                outputs = proc.component(self._physics_state.as_component_input(), now)
+                outputs = proc.component(self._physics_state.as_component_input(), now) # TODO (Yilu); rename withe the granule
+                # TODO (Yilu): this is related with as_component_input() itself
+                # TODO (Yilu): isn't this should be a real component call?
                 self._recycle_cache[proc.name] = outputs
             elif in_window:
                 # recycle
@@ -125,6 +128,5 @@ class PhysicsDriver:
                 # no forcing
                 continue
             self._physics_state.scatter_to_prognostic(prognostic, outputs, dt)
-            # Re-sync PhysicsState so the next process sees the post-scatter state
-            # (sequential / Lie-Trotter splitting; mirrors AES mo_interface_cloud_mig.f90).
+
             self._physics_state.update_from_prognostic(prognostic)

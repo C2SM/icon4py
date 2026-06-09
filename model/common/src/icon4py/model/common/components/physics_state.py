@@ -33,9 +33,8 @@ if TYPE_CHECKING:
 #: muphys species keys, in the order of the muphys ``Q`` tuple.
 _SPECIES = ("v", "c", "r", "s", "i", "g")
 
-#: STUB (scope-4): placeholder species -> tracer-index map. The real moisture
-#: tracer layout is owned by the ``warm_bubble_init_condition`` branch and must
-#: be pinned down before integration. DO NOT rely on this for production runs.
+#: STUB (scope-4): placeholder species -> tracer-index map.
+# TODO (Yilu): this should be identical to the mapping in the warm_bubble_init_conditon branch
 _STUB_TRACER_INDEX: dict[str, int] = {"v": 0, "c": 1, "r": 2, "s": 3, "i": 4, "g": 5}
 
 
@@ -111,13 +110,13 @@ class MuphysState:
         # field source (ddqz_z_full is static, so fetch-at-construction is enough).
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
 
-        # muphys INPUTS, owned: diagnosed each step (not stored prognostically).
+        # muphys INPUTS, owned: diagnosed each step
         self.te = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend
         )  # temperature
         self.p = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)  # pressure
 
-        # INTERNAL, owned: not muphys I/O. tv feeds the pressure diagnosis and the
+        # INTERNAL. tv feeds the pressure diagnosis and the
         # tend_T -> exner conversion; pressure_ifc is half-level pressure whose extra
         # surface slot (index num_levels) holds surface pressure -- the
         # DiagnosticState.surface_pressure idiom.
@@ -126,7 +125,7 @@ class MuphysState:
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         )
 
-        # INTERNAL, owned scratch: used only inside the outbound tend_T -> exner chain.
+        # INTERNAL
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._exner_tendency = data_alloc.zero_field(
@@ -152,6 +151,7 @@ class MuphysState:
             program = program.with_backend(self._backend)
         program(**kwargs)
 
+    # TODO (Yilu): rename, probably from_prognostics
     def update_from_prognostic(self, prognostic: prognostics.PrognosticState) -> None:
         """
         prepare the input fields for muphys from the prognostic state. This includes:
@@ -214,6 +214,7 @@ class MuphysState:
             vertical_end=self._num_levels,
             offset_provider={},
         )
+
 
     def scatter_to_prognostic(
         self,
@@ -304,6 +305,8 @@ class MuphysState:
         self.pg = outputs["pg"]
         self.pre = outputs["pre"]
 
+    # TODO (Yilu): need to check this function
+    # TODO (Yilu): another thing to understand is what does this function do
     def as_component_input(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
         """
         Translate to the generic Component input dict (the 10 muphys input fields).
