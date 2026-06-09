@@ -51,10 +51,10 @@ def _translate_fields(
     return params
 
 
-def params_from_dict(cls: type[_T], source: dict[str, Any]) -> _T:
+def config_dataclass_from_dict(cls: type[_T], source: dict[str, Any]) -> _T:
     """Construct a dataclass from a Fortran namelist dict.
 
-    This is used by the topography and initial_condition Params classes which
+    This is used by the topography and initial_condition Config classes which
     contain part (sometimes renamed) of the fortran namelist parameters.
 
     Unknown keys are ignored (e.g. topography params mixed into the same nml block).

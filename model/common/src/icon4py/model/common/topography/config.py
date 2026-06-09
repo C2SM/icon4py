@@ -69,12 +69,12 @@ class TopographyConfig:
                 config = flat_topo.FlatTopographyConfig()
             case "jabw" | "jabw_s":
                 log.info("Analytical topography for Jablonowski-Williamson test case")
-                config = fortran_config.params_from_dict(
+                config = fortran_config.config_dataclass_from_dict(
                     jw_topo.JablonowskiWilliamsonConfig, testcase_nml
                 )
             case "gauss3D":
                 log.info("Analytical Gaussian hill topography")
-                config = fortran_config.params_from_dict(
+                config = fortran_config.config_dataclass_from_dict(
                     gausshill_topo.GaussianHillConfig, testcase_nml
                 )
             case name:

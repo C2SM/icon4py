@@ -71,12 +71,12 @@ class InitialConditionConfig:
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
                 log.info("Analytical initial condition for Jablonowski-Williamson test case")
-                config = fortran_config.params_from_dict(
+                config = fortran_config.config_dataclass_from_dict(
                     jw_ic.JablonowskiWilliamsonConfig, testcase_nml
                 )
             case "gauss3D":
                 log.info("Analytical initial condition for Gauss 3D test case")
-                config = fortran_config.params_from_dict(
+                config = fortran_config.config_dataclass_from_dict(
                     gauss_ic.Gauss3DConfig, testcase_nml
                 )
             case name:
