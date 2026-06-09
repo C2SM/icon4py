@@ -70,7 +70,9 @@ class InitialConditionConfig:
                 config = fortran_config.config_dataclass_from_dict(
                     jw_ic.JablonowskiWilliamsonConfig, testcase_nml
                 )
-            case "gauss3D" | "wk82":  # TODO (jcanton): wk82 is just a placeholder until next PR, it is not actually used
+            case (
+                "gauss3D" | "wk82"
+            ):  # TODO (jcanton): wk82 is just a placeholder until next PR, it is not actually used
                 log.info("Analytical initial condition for Gauss 3D test case")
                 config = fortran_config.config_dataclass_from_dict(
                     gauss_ic.Gauss3DConfig, testcase_nml
