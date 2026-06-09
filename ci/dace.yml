@@ -9,14 +9,15 @@ include:
     - if: $BACKEND == 'dace_gpu'
       variables:
         NUM_PROCESSES: 8
-        SLURM_TIMELIMIT: '00:45:00'
+        SLURM_TIMELIMIT: '00:40:00'
+        DACE_compiler_cuda_implementation: experimental
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:35:00'
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
-        BACKEND: [dace_gpu]  # TODO(phimuell): Reenable `dace_cpu`.
+        BACKEND: [dace_cpu, dace_gpu]
         GRID: [simple, icon_regional]
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
@@ -28,13 +29,14 @@ test_model_stencils_aarch64:
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
-        BACKEND: [dace_gpu]  # TODO(phimuell): Reenable `dace_cpu`.
+        BACKEND: [dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
     - if: $BACKEND == 'dace_gpu'
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '00:40:00'
+        DACE_compiler_cuda_implementation: experimental
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:30:00'
