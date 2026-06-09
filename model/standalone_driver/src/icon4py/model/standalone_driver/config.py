@@ -131,7 +131,7 @@ def read_config(
     )
 
     advection_config = advection.AdvectionConfig()
-    if (
+    if not (
         "exclaim_ch_r04b09_dsl" in config_file_path.name
         or "exclaim_ape_R02B04" in config_file_path.name
     ):
@@ -139,6 +139,7 @@ def read_config(
         # that has not been ported to ICON4Py and can therefore not be used for
         # testing.
         # TODO (jcanton): implement a more robust solution for this exception
+        # and remove AdvectionConfig defaults
         advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
