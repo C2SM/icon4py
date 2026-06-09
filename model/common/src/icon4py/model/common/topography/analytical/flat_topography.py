@@ -31,7 +31,10 @@ def flat_topography(
     grid_manager: gm.GridManager,
 ) -> data_alloc.NDArray:
 
-    cell_x = grid_manager.coordinates[dims.CellDim]["x"].ndarray
+    try:
+        cell_x = grid_manager.coordinates[dims.CellDim]["lon"].ndarray
+    except KeyError:
+        cell_x = grid_manager.coordinates[dims.CellDim]["x"].ndarray
 
     array_ns = data_alloc.array_namespace(cell_x)
 
