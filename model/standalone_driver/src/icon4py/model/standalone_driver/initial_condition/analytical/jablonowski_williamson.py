@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class JablonowskiWilliamsonParameters:
+class JablonowskiWilliamsonConfig:
     p_sfc: float = 100000.0
     baroclinic_amplitude: float = 0.0
     u0: float = 35.0
@@ -66,7 +66,7 @@ class JablonowskiWilliamsonParameters:
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     *,
-    parameters: JablonowskiWilliamsonParameters,
+    config: JablonowskiWilliamsonConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
@@ -76,18 +76,12 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
-    Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
-    you want to run baroclinic case.
+    Initial condition for Jablonowski-Williamson test.
+    Set jw_baroclinic_amplitude to values larger than 0.01 if you want to run
+    baroclinic case.
 
-    Args:
-        grid: IconGrid
-        geometry_field_source: geometric field factory
-        interpolation_field_source: interpolation field factory
-        metrics_field_source: metric field factory
-        backend: GT4Py backend
-    Returns: driver state
-
-    The reference experiment config for this is in icon-exclaim/run/exp.exclaim_nh35_tri_jws_sb.
+    The reference experiment config for this is
+    exp.exclaim_nh35_tri_jws_sb.
     """
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
@@ -97,16 +91,16 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     interp = testcases_utils.extract_interpolation(interpolation_field_source)
     zone_idx = testcases_utils.zone_indices(grid)
 
-    p_sfc = parameters.p_sfc
-    jw_baroclinic_amplitude = parameters.baroclinic_amplitude
-    u0 = parameters.u0
-    temp0 = parameters.temp0
-    eta_0 = parameters.eta_0
-    eta_t = parameters.eta_t
-    gamma = parameters.gamma
-    dtemp = parameters.dtemp
-    lon_perturbation_center = parameters.lon_perturbation_center
-    lat_perturbation_center = parameters.lat_perturbation_center
+    p_sfc = config.p_sfc
+    jw_baroclinic_amplitude = config.baroclinic_amplitude
+    u0 = config.u0
+    temp0 = config.temp0
+    eta_0 = config.eta_0
+    eta_t = config.eta_t
+    gamma = config.gamma
+    dtemp = config.dtemp
+    lon_perturbation_center = config.lon_perturbation_center
+    lat_perturbation_center = config.lat_perturbation_center
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels

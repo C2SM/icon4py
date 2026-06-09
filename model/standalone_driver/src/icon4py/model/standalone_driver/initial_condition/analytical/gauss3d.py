@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class Gauss3DParameters:
+class Gauss3DConfig:
     u0: float = 0.0
     t0: float = 300.0
     brunt_vais: float = 0.01
@@ -52,7 +52,7 @@ class Gauss3DParameters:
 
 def gauss3d(
     *,
-    parameters: Gauss3DParameters,
+    config: Gauss3DConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
@@ -61,6 +61,12 @@ def gauss3d(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
+    """
+    Initial condition for Gauss 3D test case.
+
+    The reference experiment config for this is
+    exp.exclaim_gauss3d_sb.
+    """
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
 
@@ -71,9 +77,9 @@ def gauss3d(
     num_edges = grid.num_edges
     num_levels = grid.num_levels
 
-    u0 = parameters.u0
-    t0 = parameters.t0
-    brunt_vais = parameters.brunt_vais
+    u0 = config.u0
+    t0 = config.t0
+    brunt_vais = config.brunt_vais
 
     prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)

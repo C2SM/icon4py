@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class FromFileParameters:
+class FromFileConfig:
     """Parameters for the file-based topography."""
 
     #: Path to the serialised data directory (typically ``<experiment>/ser_data``).
@@ -39,7 +39,7 @@ class FromFileParameters:
 
 def read_from_file(
     *,
-    parameters: FromFileParameters,
+    config: FromFileConfig,
     grid_manager: gm.GridManager,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
@@ -56,7 +56,7 @@ def read_from_file(
     xp = data_alloc.import_array_ns(backend)
 
     fname = f"icon_pydycore_rank{exchange.my_rank()}"
-    data_path = parameters.data_path
+    data_path = config.data_path
 
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), fname)
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()

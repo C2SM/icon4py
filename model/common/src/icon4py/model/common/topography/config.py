@@ -33,11 +33,11 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class TopographyConfig:
-    parameters: (
-        flat_topo.FlatTopographyParameters
-        | jw_topo.JablonowskiWilliamsonParameters
-        | gausshill_topo.GaussianHillParameters
-        | from_file_topo.FromFileParameters
+    config: (
+        flat_topo.FlatTopographyConfig
+        | jw_topo.JablonowskiWilliamsonConfig
+        | gausshill_topo.GaussianHillConfig
+        | from_file_topo.FromFileConfig
     )
 
     @classmethod
@@ -52,35 +52,35 @@ class TopographyConfig:
         if not run_nml.get("ltestcase", False):
             log.info("Reading initial condition from file")
             return cls(
-                parameters=from_file_topo.FromFileParameters(
+                config=from_file_topo.FromFileConfig(
                     data_path=data_path / fortran_config.SER_DATA_SUBDIR,
                 ),
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
-        parameters: (
-            flat_topo.FlatTopographyParameters
-            | jw_topo.JablonowskiWilliamsonParameters
-            | gausshill_topo.GaussianHillParameters
+        config: (
+            flat_topo.FlatTopographyConfig
+            | jw_topo.JablonowskiWilliamsonConfig
+            | gausshill_topo.GaussianHillConfig
         )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
-            case "AES_nwp":
+            case "APE_nwp":
                 log.info("Flat topography")
-                parameters = flat_topo.FlatTopographyParameters()
+                config = flat_topo.FlatTopographyConfig()
             case "jabw" | "jabw_s":
                 log.info("Analytical topography for Jablonowski-Williamson test case")
-                parameters = fortran_config.params_from_dict(
-                    jw_topo.JablonowskiWilliamsonParameters, testcase_nml
+                config = fortran_config.params_from_dict(
+                    jw_topo.JablonowskiWilliamsonConfig, testcase_nml
                 )
             case "gauss3D":
-                log.info("Analytical topography for Gaussian hill")
-                parameters = fortran_config.params_from_dict(
-                    gausshill_topo.GaussianHillParameters, testcase_nml
+                log.info("Analytical Gaussian hill topography")
+                config = fortran_config.params_from_dict(
+                    gausshill_topo.GaussianHillConfig, testcase_nml
                 )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-        return cls(parameters=parameters)
+        return cls(config=config)
 
 
 def create(
@@ -90,26 +90,26 @@ def create(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> data_alloc.NDArray:
-    """Create topography array by dispatching on the type of ``config.parameters``."""
-    match config.parameters:
-        case flat_topo.FlatTopographyParameters():
+    """Create topography array by dispatching on the type of ``config.config``."""
+    match config.config:
+        case flat_topo.FlatTopographyConfig():
             return flat_topo.flat_topography(
-                parameters=config.parameters, grid_manager=grid_manager
+                config=config.config, grid_manager=grid_manager
             )
-        case jw_topo.JablonowskiWilliamsonParameters():
+        case jw_topo.JablonowskiWilliamsonConfig():
             return jw_topo.jablonowski_williamson(
-                parameters=config.parameters, grid_manager=grid_manager
+                config=config.config, grid_manager=grid_manager
             )
-        case gausshill_topo.GaussianHillParameters():
+        case gausshill_topo.GaussianHillConfig():
             return gausshill_topo.gaussian_hill(
-                parameters=config.parameters, grid_manager=grid_manager
+                config=config.config, grid_manager=grid_manager
             )
-        case from_file_topo.FromFileParameters():
+        case from_file_topo.FromFileConfig():
             return from_file_topo.read_from_file(
-                parameters=config.parameters,
+                config=config.config,
                 grid_manager=grid_manager,
                 backend=backend,
                 exchange=exchange,
             )
         case _:
-            raise TypeError(f"Unknown topography parameters type: {type(config.parameters)!r}")
+            raise TypeError(f"Unknown topography config type: {type(config.config)!r}")

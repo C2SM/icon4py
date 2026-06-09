@@ -39,10 +39,10 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class InitialConditionConfig:
-    parameters: (
-        jw_ic.JablonowskiWilliamsonParameters
-        | gauss_ic.Gauss3DParameters
-        | from_file_ic.FromFileParameters
+    config: (
+        jw_ic.JablonowskiWilliamsonConfig
+        | gauss_ic.Gauss3DConfig
+        | from_file_ic.FromFileConfig
     )
 
     @classmethod
@@ -58,31 +58,31 @@ class InitialConditionConfig:
             ntracer = fortran_config.list_to_value(run_nml.get("ntracer", 0))
             log.info("Reading initial condition from file")
             return cls(
-                parameters=from_file_ic.FromFileParameters(
+                config=from_file_ic.FromFileConfig(
                     data_path=data_path / fortran_config.SER_DATA_SUBDIR,
                     ntracer=ntracer,
                 ),
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
-        parameters: (
-            jw_ic.JablonowskiWilliamsonParameters | gauss_ic.Gauss3DParameters
+        config: (
+            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
         )  # otherwise mypy complains
         match testcase_nml.get("nh_test_name"):
             case "jabw" | "jabw_s":
                 log.info("Analytical initial condition for Jablonowski-Williamson test case")
-                parameters = fortran_config.params_from_dict(
-                    jw_ic.JablonowskiWilliamsonParameters, testcase_nml
+                config = fortran_config.params_from_dict(
+                    jw_ic.JablonowskiWilliamsonConfig, testcase_nml
                 )
             case "gauss3D":
                 log.info("Analytical initial condition for Gauss 3D test case")
-                parameters = fortran_config.params_from_dict(
-                    gauss_ic.Gauss3DParameters, testcase_nml
+                config = fortran_config.params_from_dict(
+                    gauss_ic.Gauss3DConfig, testcase_nml
                 )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-        return cls(parameters=parameters)
+        return cls(config=config)
 
 
 def create(
@@ -96,11 +96,11 @@ def create(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
-    """Create initial driver states by dispatching on the type of ``config.parameters``."""
-    match config.parameters:
-        case jw_ic.JablonowskiWilliamsonParameters():
+    """Create initial driver states by dispatching on the type of ``config.config``."""
+    match config.config:
+        case jw_ic.JablonowskiWilliamsonConfig():
             return jw_ic.jablonowski_williamson(
-                parameters=config.parameters,
+                config=config.config,
                 vertical_config=vertical_config,
                 grid=grid,
                 geometry_field_source=geometry_field_source,
@@ -109,9 +109,9 @@ def create(
                 backend=backend,
                 exchange=exchange,
             )
-        case gauss_ic.Gauss3DParameters():
+        case gauss_ic.Gauss3DConfig():
             return gauss_ic.gauss3d(
-                parameters=config.parameters,
+                config=config.config,
                 vertical_config=vertical_config,
                 grid=grid,
                 geometry_field_source=geometry_field_source,
@@ -120,9 +120,9 @@ def create(
                 backend=backend,
                 exchange=exchange,
             )
-        case from_file_ic.FromFileParameters():
+        case from_file_ic.FromFileConfig():
             return from_file_ic.read_from_file(
-                parameters=config.parameters,
+                config=config.config,
                 grid=grid,
                 interpolation_field_source=interpolation_field_source,
                 metrics_field_source=metrics_field_source,
@@ -130,4 +130,4 @@ def create(
                 exchange=exchange,
             )
         case _:
-            raise TypeError(f"Unknown IC parameters type: {type(config.parameters)!r}")
+            raise TypeError(f"Unknown IC config type: {type(config.config)!r}")

@@ -111,7 +111,7 @@ def metrics_field_source(
     )
 
     config = topography.TopographyConfig(
-        parameters=jw_topo.JablonowskiWilliamsonParameters(),
+        config=jw_topo.JablonowskiWilliamsonConfig(),
     )
     topo_c = topography.create(
         config=config,

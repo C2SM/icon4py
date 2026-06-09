@@ -21,11 +21,7 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass
-class JablonowskiWilliamsonParameters:
-    """Parameters for the Jablonowski-Williamson test-case topography.
-
-    The default values match the EXCLAIM ``exclaim_nh35_tri_jws`` experiment.
-    """
+class JablonowskiWilliamsonConfig:
 
     u0: float = 35.0
     eta_0: float = 0.252
@@ -35,16 +31,16 @@ class JablonowskiWilliamsonParameters:
 
 def jablonowski_williamson(
     *,
-    parameters: JablonowskiWilliamsonParameters,
+    config: JablonowskiWilliamsonConfig,
     grid_manager: gm.GridManager,
 ) -> data_alloc.NDArray:
     """Compute the JW surface geopotential height on cell centres.
 
     Implements the analytical mountain described in Jablonowski & Williamson
-    (2006), eq. (9), adapted for the EXCLAIM ICON grid.
+    (2006), eq. (9), adapted for the ICON grid.
     """
-    u0 = parameters.u0
-    eta_0 = parameters.eta_0
+    u0 = config.u0
+    eta_0 = config.eta_0
     cell_lat = grid_manager.coordinates[dims.CellDim]["lat"].ndarray
 
     array_ns = data_alloc.array_namespace(cell_lat)

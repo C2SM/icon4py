@@ -20,15 +20,14 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass
-class FlatTopographyParameters:
-    """Empty parameters class, used for match/case statement in topography.config
-    """
+class FlatTopographyConfig:
+    # Empty config class, used for match/case statement in topography.config
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def flat_topography(
     *,
-    parameters: FlatTopographyParameters,
+    config: FlatTopographyConfig,
     grid_manager: gm.GridManager,
 ) -> data_alloc.NDArray:
 

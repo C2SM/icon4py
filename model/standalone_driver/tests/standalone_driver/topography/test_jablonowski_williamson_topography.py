@@ -45,7 +45,7 @@ def test_jablonowski_williamson_topography(
         allocator=model_backends.get_allocator(backend),
     )
     config = topography.TopographyConfig(
-        parameters=jw_topo.JablonowskiWilliamsonParameters(),
+        config=jw_topo.JablonowskiWilliamsonConfig(),
     )
     topo_c = topography.create(
         config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.single_node_exchange

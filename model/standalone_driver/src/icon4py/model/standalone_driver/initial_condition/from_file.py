@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class FromFileParameters:
+class FromFileConfig:
     """Parameters for the file-based initial condition."""
 
     #: Path to the serialised data directory (typically ``<experiment>/ser_data``).
@@ -98,7 +98,7 @@ def _read_prognostics_from_serialbox(
 
 def read_from_file(
     *,
-    parameters: FromFileParameters,
+    config: FromFileConfig,
     grid: icon_grid.IconGrid,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
@@ -116,11 +116,11 @@ def read_from_file(
     """
     allocator = model_backends.get_allocator(backend)
     prognostic_state_now = _read_prognostics_from_serialbox(
-        data_path=parameters.data_path,
+        data_path=config.data_path,
         rank=exchange.my_rank(),
         grid=grid,
         backend=backend,
-        ntracer=parameters.ntracer,
+        ntracer=config.ntracer,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     return testcases_utils.assemble_driver_states(

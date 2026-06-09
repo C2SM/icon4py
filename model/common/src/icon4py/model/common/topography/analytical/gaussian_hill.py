@@ -20,29 +20,25 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass
-class GaussianHillParameters:
-    """Parameters for the Gaussian hill test-case topography.
-
-    The default values match TODO (jcanton): add reference to the experiment in ICON.
-    """
+class GaussianHillConfig:
 
     mount_x: float = 0.0
     mount_y: float = 0.0
     mount_height: float = 100.0
-    mount_width: float = 100.0
+    mount_width: float = 1000.0
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def gaussian_hill(
     *,
-    parameters: GaussianHillParameters,
+    config: GaussianHillConfig,
     grid_manager: gm.GridManager,
 ) -> data_alloc.NDArray:
-    mount_x = parameters.mount_x
-    mount_y = parameters.mount_y
-    mount_height = parameters.mount_height
-    mount_width = parameters.mount_width
+    mount_x = config.mount_x
+    mount_y = config.mount_y
+    mount_height = config.mount_height
+    mount_width = config.mount_width
 
     cell_x = grid_manager.coordinates[dims.CellDim]["x"].ndarray
     cell_y = grid_manager.coordinates[dims.CellDim]["y"].ndarray
