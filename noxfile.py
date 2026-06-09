@@ -39,11 +39,11 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
 ]
 
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
+MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
 ToolsBindingsTestsSubset: TypeAlias = Literal["datatest", "unittest"]
-TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[str]] = [
+TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ToolsBindingsTestsSubset.__args__
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
