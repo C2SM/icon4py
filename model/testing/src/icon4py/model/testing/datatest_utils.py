@@ -177,7 +177,16 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+    advection_config = advection.AdvectionConfig()
+    if experiment_description not in (
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.EXCLAIM_APE,
+    ):
+        # The experiments above were run in fortran with an advection scheme
+        # that has not been ported to ICON4Py and can therefore not be used for
+        # testing.
+        # TODO (jcanton): implement a more robust solution for this exception
+        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,

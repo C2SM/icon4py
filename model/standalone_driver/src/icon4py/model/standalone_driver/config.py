@@ -130,7 +130,16 @@ def read_config(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
+    advection_config = advection.AdvectionConfig()
+    if (
+        "exclaim_ch_r04b09_dsl" in config_file_path.name
+        or "exclaim_ape_R02B04" in config_file_path.name
+    ):
+        # The experiments above were run in fortran with an advection scheme
+        # that has not been ported to ICON4Py and can therefore not be used for
+        # testing.
+        # TODO (jcanton): implement a more robust solution for this exception
+        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
 
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,

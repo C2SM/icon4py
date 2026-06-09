@@ -58,8 +58,6 @@ class HorizontalAdvectionType(Enum):
     NO_ADVECTION = 0
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
-    #: FFSL_HYB with miura_cycl *** not implemented in ICON4Py (available in config but will fail in convert_config_to_horizontal_vertical_advection)
-    FFSL_HYB_MIURA_CYCL = 52
 
 
 class HorizontalAdvectionLimiter(Enum):
@@ -69,8 +67,6 @@ class HorizontalAdvectionLimiter(Enum):
 
     #: no horizontal limiter
     NO_LIMITER = 0
-    #: monotonous flux limiter *** not implemented in ICON4Py (available in config but will fail in convert_config_to_horizontal_vertical_advection)
-    MONOTONIC = 3
     #: positive definite horizontal limiter
     POSITIVE_DEFINITE = 4
 
