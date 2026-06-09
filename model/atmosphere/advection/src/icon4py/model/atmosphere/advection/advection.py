@@ -102,7 +102,6 @@ class AdvectionConfig:
     vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.NO_ADVECTION
     vertical_advection_limiter: VerticalAdvectionLimiter = VerticalAdvectionLimiter.NO_LIMITER
 
-
     """
     Contains necessary parameters to configure an advection run.
     """
