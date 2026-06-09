@@ -177,8 +177,8 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    if experiment_description == definitions.Experiments.MCH_CH_R04B09:
-        # The MCH_CH_R04B09 experiment uses an advection scheme that is not supported by ICON4Py.
+    if experiment_description in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE):
+        # The MCH_CH_R04B09 and APE_R02B04 experiments use an advection scheme that is not supported by ICON4Py.
         # Hopefully you are not actually trying to access this.
         logger.warning(
             "Loading advection config with default values for experiment %s, as the original config is not supported by ICON4Py",
