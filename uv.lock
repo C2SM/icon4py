@@ -2210,8 +2210,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#64e731657c1e35af2ee283e07a01655d4e123d7a"}
-version = "1.0.4.post825+64e73165"
+source = {git = "https://github.com/philip-paul-mueller/gt4py?branch=dace_new_gpu_codegen#f074f21986505886f70dde49c0f58aff422f8772"}
+version = "1.0.4.post839+f074f219"
 
 [package.optional-dependencies]
 cuda12 = [
