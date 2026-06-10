@@ -178,7 +178,8 @@ def test_model(
 
 # MPI test session. Per-rank venv isolation is handled automatically:
 # nox.options.envdir is set to ".nox-<rank>" at import time when an MPI rank
-# variable is present.
+# variable is present. Note that the session assumes that mpi is wrapped around
+# the nox call. nox will call mpirun or srun.
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_MPI_TESTS_SUBSETS)
