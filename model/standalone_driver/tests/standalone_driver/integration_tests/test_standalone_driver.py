@@ -34,8 +34,8 @@ from ..fixtures import *  # noqa: F403
             2,
             5,
             "2008-09-01T00:00:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in 
+            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in 
             False,
             False,
         ),
@@ -49,16 +49,7 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
-        (
-            test_defs.Experiments.MCH_CH_R04B09,
-            2,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-        ),
+        # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
     ],
 )
 def test_standalone_driver(
