@@ -42,6 +42,7 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.level("integration")
 def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
