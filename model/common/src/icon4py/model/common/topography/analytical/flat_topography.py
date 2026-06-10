@@ -12,6 +12,7 @@ import dataclasses
 from typing import TYPE_CHECKING, ClassVar
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -27,17 +28,15 @@ class FlatTopographyConfig:
 
 def flat_topography(
     *,
-    config: FlatTopographyConfig,
     grid_manager: gm.GridManager,
 ) -> data_alloc.NDArray:
 
-    try:
-        cell_x = grid_manager.coordinates[dims.CellDim]["lon"].ndarray
-    except KeyError:
-        cell_x = grid_manager.coordinates[dims.CellDim]["x"].ndarray
+    match grid_manager.grid.geometry_type:
+        case icon_grid.GeometryType.ICOSAHEDRON:
+            cell_x = grid_manager.coordinates[dims.CellDim]["lon"].ndarray
+        case icon_grid.GeometryType.TORUS:
+            cell_x = grid_manager.coordinates[dims.CellDim]["x"].ndarray
 
     array_ns = data_alloc.array_namespace(cell_x)
 
-    topo = array_ns.zeros_like(cell_x)
-
-    return topo
+    return array_ns.zeros_like(cell_x)

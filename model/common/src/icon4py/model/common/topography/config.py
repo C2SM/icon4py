@@ -93,7 +93,7 @@ def create(
     """Create topography array by dispatching on the type of ``config.config``."""
     match config.config:
         case flat_topo.FlatTopographyConfig():
-            return flat_topo.flat_topography(config=config.config, grid_manager=grid_manager)
+            return flat_topo.flat_topography(grid_manager=grid_manager)
         case jw_topo.JablonowskiWilliamsonConfig():
             return jw_topo.jablonowski_williamson(config=config.config, grid_manager=grid_manager)
         case gausshill_topo.GaussianHillConfig():

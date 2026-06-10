@@ -25,6 +25,7 @@ class GaussianHillConfig:
     mount_y: float = 0.0
     mount_height: float = 100.0
     mount_width: float = 1000.0
+    # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
@@ -46,6 +47,4 @@ def gaussian_hill(
 
     dist = ((cell_x - mount_x) ** 2 + (cell_y - mount_y) ** 2) ** 0.5
 
-    topo = mount_height * array_ns.exp(-((dist / mount_width) ** 2))
-
-    return topo
+    return mount_height * array_ns.exp(-((dist / mount_width) ** 2))

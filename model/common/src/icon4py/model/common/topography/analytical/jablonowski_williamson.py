@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 class JablonowskiWilliamsonConfig:
     u0: float = 35.0
     eta_0: float = 0.252
+    # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
 
     fortran_name_map: ClassVar[dict[str, str]] = {"jw_u0": "u0"}
 
