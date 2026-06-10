@@ -53,6 +53,7 @@ def assert_dallclose(
         max_diff = np.max(np.abs(np.asarray(actual) - np.asarray(desired)))
         color = "\033[1;31m" if max_diff > 0 else "\033[32m"
         print(f"{color}{err_msg} max diff {max_diff}\033[0m")
+        return True
     else:
         np_testing.assert_allclose(
             actual,  # type: ignore[arg-type]
