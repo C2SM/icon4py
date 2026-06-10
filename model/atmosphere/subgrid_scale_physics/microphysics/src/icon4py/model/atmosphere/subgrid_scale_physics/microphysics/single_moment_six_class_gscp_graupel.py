@@ -107,7 +107,11 @@ class SingleMomentSixClassIconGraupelConfig:
                 snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
                 **overrides,
             )
-        return None  # Throw an error if trying to acces this
+        # If the required namelists are not present it means that this
+        # experiment was not run with microphysics.
+        # Throw an error if trying to acces this instead of initializing with
+        # default values, which may hide difficult to find bugs.
+        return None
 
 
 @dataclasses.dataclass
