@@ -6,17 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Datatest: MuphysGranule (L4) vs direct muphys on the MINI experiment.
-
-Verifies the granule's state->tendency conversion against real muphys output:
-applying the granule's tendencies to the original input must reproduce muphys's
-updated state, and the precip diagnostics must match.
-
-This is a datatest -- it needs the muphys MINI NetCDF data (auto-downloaded) and a
-compiling backend, so it runs in CI and is skipped in fast local runs (e.g. with
---datatest-skip or without ICON4PY_TEST_DATA_PATH).
-"""
-
 from __future__ import annotations
 
 import datetime
@@ -112,9 +101,6 @@ def test_granule_matches_direct_muphys(
         applied = q0[s] + out[f"tend_q{s}"].asnumpy() * dt
         assert test_utils.dallclose(applied, getattr(direct, f"q{s}").asnumpy(), atol=1e-15)
 
-    # Precip diagnostics pass straight through unchanged: the granule's buffers and
-    # `direct`'s come from the same muphys run on identical input, so require an exact
-    # (atol=0) match. Compare the surface slot for the surface-only fields.
     assert test_utils.dallclose(out["pflx"].asnumpy(), direct.pflx.asnumpy())
     for name in ("pr", "ps", "pi", "pg", "pre"):
         assert test_utils.dallclose(

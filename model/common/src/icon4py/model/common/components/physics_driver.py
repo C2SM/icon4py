@@ -27,6 +27,7 @@ class ForcingMode(enum.IntEnum):
 
     DIAGNOSTIC = 0
     APPLY = 1
+# TODO (Yilu): where does this forcingmode used, and its relation with the kind usage for variables
 
 
 _ACTIVE_TOLERANCE = 1e-6  # relative tolerance on the modulo, in fractions of `interval`
@@ -72,19 +73,21 @@ class ProcessTimeControl:
 
 @dataclasses.dataclass
 class PhysicsProcess:
-    """A registered physics process: a Component plus its time control."""
+    """A registered physics process: a granule plus its time control.
+
+    The granule is the AES L4 per-process adapter (e.g. ``MuphysGranule``); it
+    implements the generic ``Component`` protocol, which is how the driver types it.
+    """
 
     name: str
-    component: Component
+    granule: Component
     time_control: ProcessTimeControl
 
 
-# TODO(Yilu): this is only a structural protocol. probably we will not keep it later on
-# TODO (Yilu): is this necessary?
 class PhysicsStateProtocol(Protocol):
     """The slice of PhysicsState that PhysicsDriver depends on."""
 
-    def update_from_prognostic(self, prognostic: Any) -> None: ...
+    def gather_from_prognostic(self, prognostic: Any) -> None: ...
     def as_component_input(self) -> dict[str, Any]: ...
     def scatter_to_prognostic(
         self, prognostic: Any, outputs: dict[str, Any], dt: float
@@ -109,17 +112,15 @@ class PhysicsDriver:
         dt: float,
         now: datetime.datetime,
     ) -> None:
-        self._physics_state.update_from_prognostic(prognostic)
+        self._physics_state.gather_from_prognostic(prognostic) # TODO (Yilu): fix it
         for proc in self._processes: # TODO (Yilu)
             tc = proc.time_control
             if not tc.is_enabled():
                 continue
             in_window = tc.is_in_window(now)
             if in_window and tc.is_active(now):
-                # compute
-                outputs = proc.component(self._physics_state.as_component_input(), now) # TODO (Yilu); rename withe the granule
-                # TODO (Yilu): this is related with as_component_input() itself
-                # TODO (Yilu): isn't this should be a real component call?
+                # compute: run the granule (e.g. muphys) on the current physics state
+                outputs = proc.granule(self._physics_state.as_component_input(), now)
                 self._recycle_cache[proc.name] = outputs
             elif in_window:
                 # recycle
@@ -129,4 +130,4 @@ class PhysicsDriver:
                 continue
             self._physics_state.scatter_to_prognostic(prognostic, outputs, dt)
 
-            self._physics_state.update_from_prognostic(prognostic)
+            self._physics_state.gather_from_prognostic(prognostic)

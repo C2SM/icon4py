@@ -105,11 +105,11 @@ def test_physics_process_construction() -> None:
 
     proc = PhysicsProcess(
         name="muphys",
-        component=_DummyComponent(),
+        granule=_DummyComponent(),
         time_control=_tc(),
     )
     assert proc.name == "muphys"
-    assert proc.component is not None
+    assert proc.granule is not None
     assert proc.time_control.is_enabled()
 
 
@@ -150,11 +150,11 @@ class RecordingPhysicsState:
     """Stub PhysicsState: records refresh / scatter; returns a fixed dict
     from as_component_input. Implements just enough surface for L2."""
 
-    update_calls: list = dataclasses.field(default_factory=list)
+    gather_calls: list = dataclasses.field(default_factory=list)
     scatter_calls: list = dataclasses.field(default_factory=list)
 
-    def update_from_prognostic(self, prognostic) -> None:
-        self.update_calls.append(prognostic)
+    def gather_from_prognostic(self, prognostic) -> None:
+        self.gather_calls.append(prognostic)
 
     def as_component_input(self) -> dict:
         return {"foo": "bar"}
@@ -171,11 +171,11 @@ def test_recording_doubles_record_calls() -> None:
     state = RecordingPhysicsState()
 
     # Simulate what PhysicsDriver would do.
-    state.update_from_prognostic("prog")
+    state.gather_from_prognostic("prog")
     out = component(state.as_component_input(), _T0)
     state.scatter_to_prognostic("prog", out, 300.0)
 
-    assert state.update_calls == ["prog"]
+    assert state.gather_calls == ["prog"]
     assert component.call_count == 1
     assert component.last_state == {"foo": "bar"}  # what as_component_input returned
     assert state.scatter_calls == [("prog", out, 300.0)]
@@ -194,8 +194,8 @@ def test_run_invokes_components_in_order() -> None:
 
     driver = PhysicsDriver(
         processes=[
-            PhysicsProcess(name="A", component=comp_a, time_control=_tc()),
-            PhysicsProcess(name="B", component=comp_b, time_control=_tc()),
+            PhysicsProcess(name="A", granule=comp_a, time_control=_tc()),
+            PhysicsProcess(name="B", granule=comp_b, time_control=_tc()),
         ],
         physics_state=state,
     )
@@ -218,7 +218,7 @@ def test_disabled_process_is_skipped() -> None:
     tc_disabled = _tc(interval=datetime.timedelta(0))
 
     driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="disabled", component=comp, time_control=tc_disabled)],
+        processes=[PhysicsProcess(name="disabled", granule=comp, time_control=tc_disabled)],
         physics_state=state,
     )
 
@@ -239,7 +239,7 @@ def test_out_of_window_process_does_nothing() -> None:
     tc = _tc(start=future, end=future + datetime.timedelta(hours=1))
 
     driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="future", component=comp, time_control=tc)],
+        processes=[PhysicsProcess(name="future", granule=comp, time_control=tc)],
         physics_state=state,
     )
 
@@ -256,7 +256,7 @@ def test_active_call_caches_outputs_and_applies_them() -> None:
         output_kinds={"tend_temperature": "tendency"},
     )
     driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="p", component=comp, time_control=_tc())],
+        processes=[PhysicsProcess(name="p", granule=comp, time_control=_tc())],
         physics_state=state,
     )
 
@@ -278,7 +278,7 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
     interval = 2 * _DT
     tc = _tc(interval=interval)
     driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="p", component=comp, time_control=tc)],
+        processes=[PhysicsProcess(name="p", granule=comp, time_control=tc)],
         physics_state=state,
     )
 

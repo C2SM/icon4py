@@ -74,7 +74,7 @@ def apply_tendency(  # noqa: PLR0917  # stencil params referenced in domain spec
         },
     )
 
-
+# TODO (Yilu)
 class MuphysState:
     """L1 physics state adapter
 
@@ -133,7 +133,7 @@ class MuphysState:
         )
 
         # muphys INPUTS, references into the dycore state, bound each step by
-        # update_from_prognostic (None until then). rho is input-only; the q
+        # gather_from_prognostic (None until then). rho is input-only; the q
         # updates return via tend_q in scatter_to_prognostic.
         self.rho: fa.CellKField[ta.wpfloat] | None = None
         self.q: dict[str, fa.CellKField[ta.wpfloat]] = {}
@@ -151,8 +151,7 @@ class MuphysState:
             program = program.with_backend(self._backend)
         program(**kwargs)
 
-    # TODO (Yilu): rename, probably from_prognostics
-    def update_from_prognostic(self, prognostic: prognostics.PrognosticState) -> None:
+    def gather_from_prognostic(self, prognostic: prognostics.PrognosticState) -> None:
         """
         prepare the input fields for muphys from the prognostic state. This includes:
             - binding the references for rho and q (the muphys input fields that are stored prognostically in the dycore state)
@@ -214,7 +213,6 @@ class MuphysState:
             vertical_end=self._num_levels,
             offset_provider={},
         )
-
 
     def scatter_to_prognostic(
         self,
@@ -305,14 +303,12 @@ class MuphysState:
         self.pg = outputs["pg"]
         self.pre = outputs["pre"]
 
-    # TODO (Yilu): need to check this function
-    # TODO (Yilu): another thing to understand is what does this function do
     def as_component_input(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
         """
         Translate to the generic Component input dict (the 10 muphys input fields).
         """
         if self.rho is None:
-            raise RuntimeError("as_component_input called before update_from_prognostic")
+            raise RuntimeError("as_component_input called before gather_from_prognostic")
         inp = {"dz": self.dz, "te": self.te, "p": self.p, "rho": self.rho}
         inp.update({f"q{s}": self.q[s] for s in _SPECIES})
         return inp
