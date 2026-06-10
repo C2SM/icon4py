@@ -13,7 +13,12 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import driver_states, initial_condition, standalone_driver
+from icon4py.model.standalone_driver import (
+    driver_states,
+    driver_utils,
+    initial_condition,
+    standalone_driver,
+)
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -85,14 +90,28 @@ def test_initial_conditions_compare_single_multi_rank(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    allocator = model_backends.get_allocator(backend)
+    config = standalone_driver.build_config(config_file_path)
+
+    serial_process_props = decomp_defs.get_process_properties(
+        decomp_defs.get_runtype(with_mpi=False)
+    )
+    serial_config = config.with_driver_overrides(
+        output_path=tmp_path / "ci_driver_output_serial_rank0"
+    )
+    serial_grid_manager = driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=serial_process_props,
+    )
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            grid_file_path=grid_file_path,
-            config_file_path=config_file_path,
-            log_level="info",
-            output_path=tmp_path / "ci_driver_output_serial_rank0",
-            backend_like=backend_like,
-            force_serial_run=True,
+            config=serial_config,
+            grid_manager=serial_grid_manager,
+            process_props=serial_process_props,
+            backend=backend,
         )
     )
 
@@ -107,13 +126,21 @@ def test_initial_conditions_compare_single_multi_rank(
         exchange=single_rank_icon4py_driver.exchange,
     )
 
+    mpi_config = config.with_driver_overrides(
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"
+    )
+    mpi_grid_manager = driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            grid_file_path=grid_file_path,
-            config_file_path=config_file_path,
-            log_level="info",
-            output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            backend_like=backend_like,
+            config=mpi_config,
+            grid_manager=mpi_grid_manager,
+            process_props=process_props,
+            backend=backend,
         )
     )
 

@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import main
+from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -56,9 +56,10 @@ def test_standalone_driver_compare_single_multi_rank(
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
-        model_options.customize_backend(program=None, backend=backend_like)
-    ):
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    allocator = model_backends.get_allocator(backend)
+
+    if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(backend):
         atol = 1e-13
         rtol = 1e-14
     else:
@@ -72,19 +73,41 @@ def test_standalone_driver_compare_single_multi_rank(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    single_rank_ds, _ = main.main(
+    config = standalone_driver.build_config(config_file_path)
+
+    serial_process_props = decomp_defs.get_process_properties(
+        decomp_defs.get_runtype(with_mpi=False)
+    )
+    serial_config = config.with_driver_overrides(
+        output_path=tmp_path / "ci_driver_output_serial_rank0"
+    )
+    serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        config_file_path=config_file_path,
-        output_path=tmp_path / "ci_driver_output_serial_rank0",
-        icon4py_backend=backend_like,
-        force_serial_run=True,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=serial_process_props,
+    )
+    single_rank_ds, _ = standalone_driver.run_driver(
+        config=serial_config,
+        grid_manager=serial_grid_manager,
+        process_props=serial_process_props,
+        backend=backend,
     )
 
-    multi_rank_ds, decomposition_info = main.main(
+    mpi_config = config.with_driver_overrides(
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"
+    )
+    mpi_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        config_file_path=config_file_path,
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-        icon4py_backend=backend_like,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    multi_rank_ds, multi_rank_driver = standalone_driver.run_driver(
+        config=mpi_config,
+        grid_manager=mpi_grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
@@ -102,7 +125,7 @@ def test_standalone_driver_compare_single_multi_rank(
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
-            decomposition_info=decomposition_info,
+            decomposition_info=multi_rank_driver.decomposition_info,
             process_props=process_props,
             dim=dim,
             global_reference_field=global_reference_field,

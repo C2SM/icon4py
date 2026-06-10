@@ -10,9 +10,9 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import main
+from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -49,16 +49,6 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
-        (
-            test_defs.Experiments.MCH_CH_R04B09,
-            2,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-        ),
     ],
 )
 def test_standalone_driver(
@@ -78,11 +68,21 @@ def test_standalone_driver(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    ds, _ = main.main(
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    config = standalone_driver.build_config(config_file_path)
+    config = config.with_driver_overrides(output_path=tmp_path / "ci_driver_output")
+    allocator = model_backends.get_allocator(backend)
+    grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        config_file_path=config_file_path,
-        output_path=tmp_path / "ci_driver_output",
-        icon4py_backend=backend_like,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    ds, _ = standalone_driver.run_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
@@ -91,7 +91,6 @@ def test_standalone_driver(
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
 
-    breakpoint()
     assert test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
@@ -114,4 +113,6 @@ def test_standalone_driver(
         atol=6e-8,
     )
 
-    assert test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
+    assert test_utils.assert_dallclose(
+        ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10
+    )

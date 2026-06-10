@@ -101,6 +101,9 @@ class ExperimentConfig:
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
 
+    def with_driver_overrides(self, **overrides: Any) -> ExperimentConfig:
+        return dataclasses.replace(self, driver=dataclasses.replace(self.driver, **overrides))
+
 
 def read_config(
     config_file_path: pathlib.Path,
