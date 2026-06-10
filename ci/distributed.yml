@@ -81,9 +81,6 @@ build_distributed:
     # TODO(msimberg): these will come from base template after #1292 is merged
     # (must happen before this branch is merged).
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
-    GT4PY_BUILD_JOBS: 8
-    CUDA_DEVICE_MAX_CONNECTIONS: 8
-    CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
 
 .test_distributed_aarch64:
   stage: test
