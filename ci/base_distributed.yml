@@ -60,7 +60,7 @@ build_distributed:
     SLURM_GPUS_PER_NODE: 1
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: 'verbose'
-    SLURM_NTASKS: 16
+    SLURM_NTASKS: 4
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
@@ -94,7 +94,7 @@ build_distributed:
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --mpi-subcomm-size=4 --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   artifacts:
     when: always
     paths:
