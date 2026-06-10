@@ -90,26 +90,28 @@ def test_standalone_driver(
     theta_sp = savepoint_diffusion_exit.theta_v()
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
-    assert test_utils.dallclose(
+
+    breakpoint()
+    assert test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-7,
     )
 
-    assert test_utils.dallclose(
+    assert test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-9,
     )
 
-    assert test_utils.dallclose(
+    assert test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=5e-11
     )
 
-    assert test_utils.dallclose(
+    assert test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=6e-8,
     )
 
-    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
+    assert test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
