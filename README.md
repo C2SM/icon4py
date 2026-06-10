@@ -28,7 +28,7 @@ uv pip install --prerelease=allow icon4py
 
 ### Extras
 
-The `icon4py` meta-package provides the following optional extras. The same extras apply in development workflows by using `uv sync --extra <name>`.
+The `icon4py` meta-package provides the following optional extras. The same extras apply in development workflows by using `uv sync --extra <name1> --extra <name2> ...`.
 
 | Extra         | Description                                                                                                                                            |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
