@@ -27,7 +27,7 @@ _rank = (
     or os.environ.get("SLURM_PROCID")
 )
 if _rank is not None:
-    nox.options.envdir = f".nox-{_rank}"
+    nox.options.envdir = f".nox/mpi-rank-{_rank}"
 
 
 # -- Parameter sets --
