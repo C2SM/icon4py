@@ -52,7 +52,7 @@ MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
 ]
 # Stencil tests are by definition serial
 MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
-    p for p in MODEL_TESTS_SUBSETS if p != "stencils"
+    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__ if arg != "stencils"
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
