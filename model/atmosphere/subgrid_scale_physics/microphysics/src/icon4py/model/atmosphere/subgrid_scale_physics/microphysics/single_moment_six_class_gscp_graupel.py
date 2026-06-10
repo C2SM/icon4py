@@ -109,8 +109,9 @@ class SingleMomentSixClassIconGraupelConfig:
             )
         # If the required namelists are not present it means that this
         # experiment was not run with microphysics.
-        # Throw an error if trying to acces this instead of initializing with
-        # default values, which may hide difficult to find bugs.
+        # Throw an error if trying to acces this config in the granule instead
+        # of initializing with default values, which may hide difficult to find
+        # bugs.
         return None
 
 
