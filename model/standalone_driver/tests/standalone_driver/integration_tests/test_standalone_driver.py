@@ -34,8 +34,8 @@ from ..fixtures import *  # noqa: F403
             2,
             5,
             "2008-09-01T00:00:00.000",
-            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
-            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
             False,
             False,
         ),
@@ -65,7 +65,6 @@ def test_standalone_driver(
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
-
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
@@ -95,27 +94,25 @@ def test_standalone_driver(
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=5e-4,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=6e-7,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=3e-6,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=8e-9,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
-        atol=2e-7,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=5e-11,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=3e-5,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=6e-8,
     )
 
-    test_utils.assert_dallclose(
-        ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=4e-7
-    )  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
