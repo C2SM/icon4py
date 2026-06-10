@@ -49,6 +49,7 @@ class JablonowskiWilliamsonConfig:
     # jabw* and APE testcases share this initial condition and config
     # with the difference that jabw* has p_sfc hardcoded to 1e5, while APE
     # reads zp_ape from the nh_testcase_nml
+    # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
     p_sfc: float = 100000.0
     baroclinic_amplitude: float = 0.0
     u0: float = 35.0

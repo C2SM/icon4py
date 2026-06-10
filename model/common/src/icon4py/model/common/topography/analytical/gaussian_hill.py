@@ -25,6 +25,7 @@ class GaussianHillConfig:
     mount_y: float = 0.0
     mount_height: float = 100.0
     mount_width: float = 1000.0
+    # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 

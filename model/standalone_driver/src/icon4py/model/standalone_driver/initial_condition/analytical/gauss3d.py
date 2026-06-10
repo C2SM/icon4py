@@ -42,6 +42,7 @@ class Gauss3DConfig:
     u0: float = 0.0
     t0: float = 300.0
     brunt_vais: float = 0.01
+    # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
 
     fortran_name_map: ClassVar[dict[str, str]] = {
         "nh_u0": "u0",
