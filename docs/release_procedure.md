@@ -85,6 +85,9 @@ Publishing the GitHub Release automatically triggers the
 
    **Note:** TestPyPI may not have all transitive dependencies. Use
    `--extra-index-url https://pypi.org/simple/` as a fallback.
+   You may also need `--index-strategy unsafe-best-match` to allow picking the
+   best match from pypi.org and test.pypi.org. Finally, `--refresh` may be
+   needed to update cached package information.
 
    Test in dependent projects if needed, like in ICON.
 
