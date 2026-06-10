@@ -36,7 +36,7 @@ The `icon4py` meta-package provides the following optional extras. The same extr
 | `cuda12`      | Required for CUDA support with CUDA version 12. Requires the CUDA toolkit to be installed.                                                             |
 | `cuda13`      | Same as `cuda12` for CUDA version 13.                                                                                                                  |
 | `rocm7`       | Same as `cuda*` for ROCm on AMD GPUs.                                                                                                                  |
-| `distributed` | Enables Support for distributed multi-node runs. Requires an MPI implementation and Boost headers. See below for fixes to installation issues on Alps. |
+| `distributed` | Enables support for distributed multi-node runs. Requires an MPI implementation and Boost headers. See below for fixes to installation issues on Alps. |
 | `fortran`     | Enables `icon4py-bindings` as a dependency, which provides an interface for using ICON4Py in ICON Fortran. Requires C and Fortran compilers.           |
 | `io`          | Enables I/O dependencies such as NetCDF.                                                                                                               |
 | `testing`     | Enables `icon4py-testing` as a dependency, providing utilities for testing ICON4Py.                                                                    |
