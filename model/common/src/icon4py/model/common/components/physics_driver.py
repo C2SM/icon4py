@@ -13,9 +13,10 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import enum
-from typing import Any, Protocol
+from typing import Any
 
 from icon4py.model.common.components.components import Component
+from icon4py.model.common.components.physics_state import PhysicsStateProtocol
 
 
 class ForcingMode(enum.IntEnum):
@@ -27,6 +28,8 @@ class ForcingMode(enum.IntEnum):
 
     DIAGNOSTIC = 0
     APPLY = 1
+
+
 # TODO (Yilu): where does this forcingmode used, and its relation with the kind usage for variables
 
 
@@ -84,16 +87,6 @@ class PhysicsProcess:
     time_control: ProcessTimeControl
 
 
-class PhysicsStateProtocol(Protocol):
-    """The slice of PhysicsState that PhysicsDriver depends on."""
-
-    def gather_from_prognostic(self, prognostic: Any) -> None: ...
-    def as_component_input(self) -> dict[str, Any]: ...
-    def scatter_to_prognostic(
-        self, prognostic: Any, outputs: dict[str, Any], dt: float
-    ) -> None: ...
-
-
 class PhysicsDriver:
     """L2 physics orchestrator. icon4py analogue of `aes_phy_main`."""
 
@@ -112,8 +105,8 @@ class PhysicsDriver:
         dt: float,
         now: datetime.datetime,
     ) -> None:
-        self._physics_state.gather_from_prognostic(prognostic) # TODO (Yilu): fix it
-        for proc in self._processes: # TODO (Yilu)
+        for proc in self._processes:
+            self._physics_state.gather_from_prognostic(prognostic)
             tc = proc.time_control
             if not tc.is_enabled():
                 continue
@@ -129,5 +122,3 @@ class PhysicsDriver:
                 # no forcing
                 continue
             self._physics_state.scatter_to_prognostic(prognostic, outputs, dt)
-
-            self._physics_state.gather_from_prognostic(prognostic)
