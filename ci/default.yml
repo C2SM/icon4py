@@ -25,15 +25,15 @@ test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
 
-.test_tools_datatests:
+.test_tools_and_bindings:
   stage: test
   script:
     - nox -s "test_tools_and_bindings-3.13($SELECTION)"
-test_tools_datatests_aarch64:
+test_tools_and_bindings_aarch64:
   parallel:
     matrix:
       - SELECTION: [datatest, unittest]
-  extends: [.test_tools_datatests, .test_template_aarch64]
+  extends: [.test_tools_and_bindings, .test_template_aarch64]
 
 .test_model_datatests:
   stage: test
