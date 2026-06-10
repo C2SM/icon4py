@@ -18,7 +18,7 @@ ICON4Py is licensed under the terms of the BSD-3-Clause.
 
 All ICON4Py packages can be installed through PyPI with the [`icon4py` meta package](https://pypi.org/project/icon4py/).
 
-We recommend using [`uv`](https://docs.astral.sh/uv/) for both regular installation and development workflows. See the [installation instructions](https://docs.astral.sh/uv/getting-started/installation/)) for details on installing `uv`.
+We recommend using [`uv`](https://docs.astral.sh/uv/) for both regular installation and development workflows. See the [installation instructions](https://docs.astral.sh/uv/getting-started/installation/) for details on installing `uv`.
 
 ```bash
 uv pip install --prerelease=allow icon4py
