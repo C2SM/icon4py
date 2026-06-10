@@ -95,7 +95,9 @@ def test_standalone_driver(
     )
 
     test_utils.assert_dallclose(
-        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=2e-7  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        ds.prognostics.current.exner.asnumpy(),
+        exner_sp.asnumpy(),
+        atol=2e-7,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
     )
 
     test_utils.assert_dallclose(
@@ -104,4 +106,6 @@ def test_standalone_driver(
         atol=3e-5,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
     )
 
-    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=4e-7)  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+    test_utils.assert_dallclose(
+        ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=4e-7
+    )  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
