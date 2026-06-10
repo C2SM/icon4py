@@ -72,30 +72,30 @@ def test_initial_conditions(
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
-    assert test_utils.assert_dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.rho.asnumpy(),
         prognostics_savepoint.rho_now().asnumpy(),
     )
 
-    assert test_utils.assert_dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         prognostics_savepoint.exner_now().asnumpy(),
         atol=1e-14,
     )
 
-    assert test_utils.assert_dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         prognostics_savepoint.theta_v_now().asnumpy(),
         atol=1e-11,
     )
 
-    assert test_utils.assert_dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         prognostics_savepoint.vn_now().asnumpy(),
         atol=1e-12,
     )
 
-    assert test_utils.assert_dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         prognostics_savepoint.w_now().asnumpy(),
         atol=1e-12,
