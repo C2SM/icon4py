@@ -5,6 +5,7 @@ test_extended_distributed:
   stage: test
   extends: [.test_distributed_aarch64]
   variables:
+    SLURM_PARTITION: "normal"
     SLURM_TIMELIMIT: '02:00:00'
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
   parallel:
