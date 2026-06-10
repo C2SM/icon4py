@@ -39,6 +39,4 @@ def flat_topography(
 
     array_ns = data_alloc.array_namespace(cell_x)
 
-    topo = array_ns.zeros_like(cell_x)
-
-    return topo
+    return array_ns.zeros_like(cell_x)

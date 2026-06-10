@@ -46,6 +46,4 @@ def gaussian_hill(
 
     dist = ((cell_x - mount_x) ** 2 + (cell_y - mount_y) ** 2) ** 0.5
 
-    topo = mount_height * array_ns.exp(-((dist / mount_width) ** 2))
-
-    return topo
+    return mount_height * array_ns.exp(-((dist / mount_width) ** 2))
