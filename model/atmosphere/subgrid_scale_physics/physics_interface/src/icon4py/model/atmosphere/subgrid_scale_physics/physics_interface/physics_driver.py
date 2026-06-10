@@ -20,18 +20,23 @@ from icon4py.model.common.components.physics_state import PhysicsStateProtocol
 
 
 class ForcingMode(enum.IntEnum):
-    """AES fc_xxx analogue.
+    """Per-process apply switch -- the icon4py analogue of AES ``fc_xxx``.
 
-    DIAGNOSTIC: compute the forcing but do not apply it to state.
-    APPLY:      compute and apply (field += tend*dt).
+    Decides whether a process's computed forcing is fed back into the prognostic
+    state when the process runs:
+
+    - APPLY:      compute and apply it (``field += tend*dt``); the process affects the run.
+    - DIAGNOSTIC: compute it but do NOT apply it -- the outputs stay available for
+      inspection/output while the prognostic state is left unchanged ("look, don't touch").
+
+    This composes with ``kind`` tag (``states/model.py``): ForcingMode is
+    per-PROCESS, and ``kind`` is whether the field is a tendency or a diagnostic.
+    A process is applied only if APPLY mode, and within it only ``kind="tendency"`` fields
+    are added to the state.
     """
 
     DIAGNOSTIC = 0
     APPLY = 1
-
-
-# TODO (Yilu): where does this forcingmode used, and its relation with the kind usage for variables
-# TODO (Yilu): this needs to be figured out
 
 
 _ACTIVE_TOLERANCE = 1e-6  # relative tolerance on the modulo, in fractions of `interval`
@@ -106,6 +111,8 @@ class PhysicsDriver:
         dt: float,
         now: datetime.datetime,
     ) -> None:
+        # TODO (Yilu): currently, ForcingMode is not applied, because muphys is always APPLY mode.
+        # TODO (Yilu): later on, when a non-APPLY process exits
         for proc in self._processes:
             self._physics_state.gather_from_prognostic(prognostic)
             tc = proc.time_control
