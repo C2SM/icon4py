@@ -47,8 +47,12 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
 ]
 
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
+MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+]
+# Stencil tests are by definition serial
+MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    p for p in MODEL_TESTS_SUBSETS if p != "stencils"
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
@@ -177,14 +181,14 @@ def test_model(
 # variable is present.
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-@nox.parametrize("selection", MODEL_TESTS_SUBSETS)
+@nox.parametrize("selection", MODEL_MPI_TESTS_SUBSETS)
 def test_model_mpi(
     session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
 ) -> None:
     """Run MPI tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    pytest_args = _selection_to_pytest_args(selection, mpi=True)
+    pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
             "pytest",
@@ -260,15 +264,13 @@ def _install_session_venv(
         )
 
 
-def _selection_to_pytest_args(selection: ModelTestsSubset, *, mpi: bool = False) -> list[str]:
+def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     pytest_args = []
 
     match selection:
         case "datatest":
             pytest_args.extend(["--datatest-only"])
         case "stencils":
-            if mpi:
-                raise AssertionError("Stencil tests are only serial")
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
             pytest_args.extend(
