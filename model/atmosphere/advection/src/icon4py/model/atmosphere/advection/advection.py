@@ -97,14 +97,14 @@ class VerticalAdvectionLimiter(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionConfig:
-    horizontal_advection_type: HorizontalAdvectionType = HorizontalAdvectionType.NO_ADVECTION
-    horizontal_advection_limiter: HorizontalAdvectionLimiter = HorizontalAdvectionLimiter.NO_LIMITER
-    vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.NO_ADVECTION
-    vertical_advection_limiter: VerticalAdvectionLimiter = VerticalAdvectionLimiter.NO_LIMITER
-
     """
     Contains necessary parameters to configure an advection run.
     """
+
+    horizontal_advection_type: HorizontalAdvectionType
+    horizontal_advection_limiter: HorizontalAdvectionLimiter
+    vertical_advection_type: VerticalAdvectionType
+    vertical_advection_limiter: VerticalAdvectionLimiter
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
