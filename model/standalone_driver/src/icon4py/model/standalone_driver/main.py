@@ -28,7 +28,7 @@ def main(
     log_level: str = next(iter(driver_utils._LOGGING_LEVELS.keys())),
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
-    enable_output: bool = False,
+    enable_output: bool = True,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -117,15 +117,15 @@ def cli(
     enable_output: Annotated[
         bool,
         typer.Option(
+            "--enable-output/--no-enable-output",
             help=(
-                "Write prognostic (rho, exner, theta_v, w, vn) and diagnostic "
-                "(u, v, temperature, virtual temperature, pressure) fields to "
-                "NETCDF/UGRID output (single node). "
-                "Falls back to prognostics-only if the diagnostic computation "
-                "cannot be set up. Requires the icon4py-common[io] extra."
+                "Write the prognostic (rho, exner, theta_v, w, vn) and diagnostic "
+                "(u, v, temperature, virtual temperature, pressure) fields to a single "
+                "NETCDF/UGRID output file (single node). Enabled by default; "
+                "use --no-enable-output to run without output."
             ),
         ),
-    ] = False,
+    ] = True,
 ) -> None:
     """Command-line entry point wrapping :func:`main`.
 

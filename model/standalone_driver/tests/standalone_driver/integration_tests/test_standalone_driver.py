@@ -52,6 +52,7 @@ def test_standalone_driver(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=output_path,
+        enable_output=False,  # this test verifies prognostics, not the IO path
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

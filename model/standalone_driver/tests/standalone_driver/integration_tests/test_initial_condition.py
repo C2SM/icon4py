@@ -38,6 +38,7 @@ def test_standalone_driver_initial_condition(
         grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_like=backend_like,
+        enable_output=False,  # this test only checks the initial condition
     )
 
     ds = initial_condition.jablonowski_williamson(

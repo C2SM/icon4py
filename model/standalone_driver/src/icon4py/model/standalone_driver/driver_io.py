@@ -14,8 +14,9 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
 - computes the standard diagnostic output fields (u, v, temperature, virtual temperature,
   pressure) from the prognostic state (:func:`compute_diagnostics`) and assembles them
   (:func:`diagnostic_fields_to_dataarrays`),
-- provides a factory that builds an ``IOMonitor`` with a prognostic and (optionally) a
-  diagnostic field group (:func:`create_io_monitor`).
+- provides a factory that builds an ``IOMonitor`` with a single field group containing
+  *all* output fields, prognostic and diagnostic alike, written to one file
+  (:func:`create_io_monitor`).
 
 The whole module imports the optional ``icon4py-common[io]`` dependencies (xarray,
 netCDF4, uxarray, cftime) lazily, so the driver keeps working without them as long as
@@ -45,9 +46,9 @@ if TYPE_CHECKING:
 #: Output subfolder created *inside* the driver's run/output directory.
 OUTPUT_SUBDIR: Final[str] = "io"
 
-#: File-name stubs for the two field groups (a counter + ``.nc`` is appended).
-DEFAULT_PROGNOSTIC_FILENAME: Final[str] = "icon4py_prognostics"
-DEFAULT_DIAGNOSTIC_FILENAME: Final[str] = "icon4py_diagnostics"
+#: File-name stub for the (single) output file (a counter + ``.nc`` is appended).
+#: Prognostic and diagnostic fields are written together into this file.
+DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 
 
 # --------------------------------------------------------------------------------------
@@ -64,8 +65,8 @@ _PROGNOSTIC_FIELD_SPECS: Final[dict[str, tuple[str, str, bool]]] = {
     "normal_velocity": ("vn", "normal_velocity", False),
 }
 
-#: Prognostic variables written by default.
-DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = list(_PROGNOSTIC_FIELD_SPECS.keys())
+#: The prognostic output variables.
+PROGNOSTIC_VARIABLES: Final[list[str]] = list(_PROGNOSTIC_FIELD_SPECS.keys())
 
 
 def _to_host_data_array(
@@ -92,7 +93,7 @@ def prognostic_state_to_dataarrays(
     """Assemble a CF/UGRID-annotated model-state dict from a ``PrognosticState``."""
     from icon4py.model.common.states import data as state_data  # noqa: PLC0415
 
-    selected = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
+    selected = PROGNOSTIC_VARIABLES if variables is None else variables
 
     state: dict[str, xr.DataArray] = {}
     for key in selected:
@@ -100,7 +101,8 @@ def prognostic_state_to_dataarrays(
             prognostic_attr, cf_key, is_on_interface = _PROGNOSTIC_FIELD_SPECS[key]
         except KeyError as err:
             raise ValueError(
-                f"Unknown output variable '{key}'. Known variables are: {DEFAULT_OUTPUT_VARIABLES}."
+                f"Unknown prognostic output variable '{key}'. "
+                f"Known variables are: {PROGNOSTIC_VARIABLES}."
             ) from err
         field = getattr(prognostic_state, prognostic_attr)
         attrs = dict(
@@ -117,13 +119,17 @@ def prognostic_state_to_dataarrays(
 #: Diagnostic output variables. All are cell/full-level fields, i.e. they ride the same
 #: (proven) write path as ``air_density``. ``surface_pressure`` is intentionally omitted
 #: for now: it is a horizontal-only field and the horizontal-only write path is untested.
-DEFAULT_DIAGNOSTIC_VARIABLES: Final[list[str]] = [
+DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "eastward_wind",
     "northward_wind",
     "temperature",
     "virtual_temperature",
     "pressure",
 ]
+
+#: All output variables (prognostic + diagnostic). There is no distinction between the
+#: two groups at the IO level: they are always written together, into the same file.
+DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
 
 
 @dataclasses.dataclass
@@ -312,23 +318,22 @@ def create_io_monitor(
     start_date: dt.datetime,
     dtime: dt.timedelta,
     variables: list[str] | None = None,
-    diagnostic_variables: list[str] | None = None,
-    include_diagnostics: bool = True,
     process_properties: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
-    """Build a single-node ``IOMonitor`` with a prognostic and, optionally, a diagnostic group.
+    """Build a single-node ``IOMonitor`` with one field group holding all output fields.
+
+    Prognostic and diagnostic fields are not distinguished at the IO level: they form a
+    single field group and are written together into the same NetCDF file
+    (``DEFAULT_OUTPUT_FILENAME``).
 
     The output interval and start time are derived from the driver's ``start_date`` and
     ``dtime`` so that the monitor's capture logic fires on every model step. The first model
     time seen at the IO hook is ``start_date + dtime`` (the simulation date is advanced before
-    integration), so the field groups start there.
+    integration), so the field group starts there.
     """
     from icon4py.model.common.io import io as common_io  # noqa: PLC0415
 
-    prognostic_vars = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
-    diagnostic_vars = (
-        DEFAULT_DIAGNOSTIC_VARIABLES if diagnostic_variables is None else diagnostic_variables
-    )
+    output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
     io_output_path = output_path / OUTPUT_SUBDIR
     first_output_time = start_date + dtime
@@ -338,23 +343,12 @@ def create_io_monitor(
         common_io.FieldGroupIOConfig(
             output_interval=interval,
             start_time=first_output_time.isoformat(),
-            filename=DEFAULT_PROGNOSTIC_FILENAME,
-            variables=prognostic_vars,
-            nc_title="ICON4Py standalone driver prognostic output",
-            nc_comment="Prognostic fields from the ICON4Py standalone driver.",
+            filename=DEFAULT_OUTPUT_FILENAME,
+            variables=output_variables,
+            nc_title="ICON4Py standalone driver output",
+            nc_comment=("Prognostic and diagnostic fields from the ICON4Py standalone driver."),
         )
     ]
-    if include_diagnostics:
-        field_groups.append(
-            common_io.FieldGroupIOConfig(
-                output_interval=interval,
-                start_time=first_output_time.isoformat(),
-                filename=DEFAULT_DIAGNOSTIC_FILENAME,
-                variables=diagnostic_vars,
-                nc_title="ICON4Py standalone driver diagnostic output",
-                nc_comment="Diagnostic fields from the ICON4Py standalone driver.",
-            )
-        )
 
     config = common_io.IOConfig(output_path=str(io_output_path), field_groups=field_groups)
     return common_io.IOMonitor(

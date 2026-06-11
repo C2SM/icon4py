@@ -79,12 +79,14 @@ def test_standalone_driver_compare_single_multi_rank(
         icon4py_backend=backend_like,
         output_path=tmp_path / "ci_driver_output_serial_rank0",
         force_serial_run=True,
+        enable_output=False,  # IO is single-node only (Phase 0)
     )
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
+        enable_output=False,  # IO is single-node only (Phase 0)
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]

@@ -29,7 +29,7 @@ dependencies = [
   # workspace members
   "icon4py-atmosphere-dycore~=0.2.0",
   "icon4py-atmosphere-diffusion~=0.2.0",
-  "icon4py-common~=0.2.0",
+  "icon4py-common[io]~=0.2.0",  # io extra required: output is enabled by default
   "icon4py-testing~=0.2.0",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
   "typer>=0.20.0",
@@ -44,9 +44,6 @@ readme = "README.md"
 requires-python = ">=3.10"
 # managed by bump-my-version:
 version = "0.2.0"
-
-[project.optional-dependencies]
-io = ["icon4py-common[io]"]
 
 [project.scripts]
 icon4py-standalone-driver = "icon4py.model.standalone_driver.main:click"  # TODO (Yilu): change the name (remove the standalone) when it becomes the main driver

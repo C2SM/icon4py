@@ -160,17 +160,18 @@ class Icon4pyDriver:
             self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
             if self.io_monitor is not None:
+                # Prognostic and diagnostic fields are always written together (one field
+                # group, one file): assemble the prognostics, compute the diagnostics from
+                # them, and store the merged state.
+                assert self.io_diagnostic_inputs is not None
                 state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_states.current)
-                if self.io_diagnostic_inputs is not None:
-                    diagnostic_fields = driver_io.compute_diagnostics(
-                        prognostic_states.current,
-                        grid=self.grid,
-                        backend=self.backend,
-                        inputs=self.io_diagnostic_inputs,
-                    )
-                    state_to_store.update(
-                        driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields)
-                    )
+                diagnostic_fields = driver_io.compute_diagnostics(
+                    prognostic_states.current,
+                    grid=self.grid,
+                    backend=self.backend,
+                    inputs=self.io_diagnostic_inputs,
+                )
+                state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
                 self.io_monitor.store(state_to_store, self.model_time_variables.simulation_date)
 
         if self.io_monitor is not None:
@@ -586,7 +587,7 @@ def initialize_driver(
     backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
-    enable_output: bool = False,
+    enable_output: bool = True,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -714,29 +715,27 @@ def initialize_driver(
     )
     io_monitor = None
     io_diagnostic_inputs = None
+    if enable_output and with_mpi:
+        # Phase 0 IO is single-node only: under MPI every rank would construct its own
+        # monitor and write overlapping files. Disable until the distributed IO phase.
+        log.warning("output is not supported in distributed (MPI) runs yet: disabling IO")
+        enable_output = False
     if enable_output:
         log.info("initializing single-node IO monitor")
-        # Try to set up diagnostic output. The diagnostic computation is exercised once on a
-        # throw-away zero state so that a structurally broken diagnostic path (e.g. a missing
-        # field source) degrades to prognostics-only output instead of failing the run.
-        try:
-            io_diagnostic_inputs = driver_io.fetch_diagnostic_inputs(static_field_factories)
-            trial_state = prognostics.initialize_prognostic_state(
-                grid_manager.grid, allocator=model_backends.get_allocator(backend)
-            )
-            driver_io.compute_diagnostics(
-                trial_state,
-                grid=grid_manager.grid,
-                backend=backend,
-                inputs=io_diagnostic_inputs,
-            )
-            log.info("diagnostic output enabled")
-        except Exception as error:  # blind except on purpose: degrade gracefully
-            log.warning(
-                f"diagnostic output disabled (computation could not be set up): {error}. "
-                "Writing prognostic fields only."
-            )
-            io_diagnostic_inputs = None
+        # Diagnostics are always written alongside the prognostics (no fallback). The
+        # diagnostic computation is exercised once on a throw-away zero state so that a
+        # structurally broken diagnostic path fails fast at initialization (and the
+        # stencils are compiled before the time loop starts).
+        io_diagnostic_inputs = driver_io.fetch_diagnostic_inputs(static_field_factories)
+        trial_state = prognostics.initialize_prognostic_state(
+            grid_manager.grid, allocator=model_backends.get_allocator(backend)
+        )
+        driver_io.compute_diagnostics(
+            trial_state,
+            grid=grid_manager.grid,
+            backend=backend,
+            inputs=io_diagnostic_inputs,
+        )
 
         io_monitor = driver_io.create_io_monitor(
             output_path=output_path,
@@ -745,7 +744,6 @@ def initialize_driver(
             vertical_grid=vertical_grid,
             start_date=driver_config.start_date,
             dtime=driver_config.dtime,
-            include_diagnostics=io_diagnostic_inputs is not None,
         )
 
     icon4py_driver = Icon4pyDriver(

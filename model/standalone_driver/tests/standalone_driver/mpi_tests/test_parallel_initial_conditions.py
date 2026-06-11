@@ -85,6 +85,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             log_level="info",
             backend_like=backend_like,
             force_serial_run=True,
+            enable_output=False,  # IO is single-node only (Phase 0)
         )
     )
 
@@ -107,6 +108,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             grid_file_path=grid_file_path,
             log_level="info",
             backend_like=backend_like,
+            enable_output=False,  # IO is single-node only (Phase 0)
         )
     )
 

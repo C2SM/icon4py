@@ -74,7 +74,7 @@ def test_assembles_all_default_variables(
 ) -> None:
     state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
 
-    assert set(state.keys()) == set(driver_io.DEFAULT_OUTPUT_VARIABLES)
+    assert set(state.keys()) == set(driver_io.PROGNOSTIC_VARIABLES)
     for name, da in state.items():
         assert isinstance(da, xr.DataArray)
         expected_dims, on_interface = _EXPECTED[name]
@@ -132,7 +132,7 @@ def test_variables_subset(prognostic_state: prognostics.PrognosticState) -> None
 
 
 def test_unknown_variable_raises(prognostic_state: prognostics.PrognosticState) -> None:
-    with pytest.raises(ValueError, match="Unknown output variable"):
+    with pytest.raises(ValueError, match="Unknown prognostic output variable"):
         driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=["not_a_field"])
 
 
@@ -181,7 +181,6 @@ def test_create_io_monitor_derives_matching_time_config(
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
         start_date=start_date,
         dtime=dtime,
-        include_diagnostics=False,
     )
 
     config = recorded["config"]
@@ -189,15 +188,22 @@ def test_create_io_monitor_derives_matching_time_config(
     field_group = config.field_groups[0]
     assert field_group.start_time == "2024-01-01T00:05:00"
     assert field_group.output_interval == "300 SECONDS"
+    # a single group holding all fields, prognostic + diagnostic, in one file
     assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
+    assert list(field_group.variables) == [
+        *driver_io.PROGNOSTIC_VARIABLES,
+        *driver_io.DIAGNOSTIC_VARIABLES,
+    ]
+    assert field_group.filename == driver_io.DEFAULT_OUTPUT_FILENAME
     # output is written to the dedicated subfolder of the run directory
     assert config.output_path == str(tmp_path / driver_io.OUTPUT_SUBDIR)
     assert recorded["grid_id"] == grid.id
 
 
-def test_create_io_monitor_adds_diagnostic_group(
+def test_create_io_monitor_has_no_separate_diagnostic_group(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Prognostics and diagnostics are not split: there is exactly one field group."""
     from icon4py.model.common.io import io as common_io  # noqa: PLC0415
 
     recorded: dict[str, Any] = {}
@@ -215,15 +221,12 @@ def test_create_io_monitor_adds_diagnostic_group(
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
         start_date=dt.datetime(2024, 1, 1),
         dtime=dt.timedelta(seconds=300),
-        include_diagnostics=True,
     )
 
     groups = recorded["config"].field_groups
-    assert len(groups) == 2
-    assert list(groups[0].variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
-    assert list(groups[1].variables) == driver_io.DEFAULT_DIAGNOSTIC_VARIABLES
-    assert groups[0].filename == driver_io.DEFAULT_PROGNOSTIC_FILENAME
-    assert groups[1].filename == driver_io.DEFAULT_DIAGNOSTIC_FILENAME
+    assert len(groups) == 1
+    assert set(driver_io.DIAGNOSTIC_VARIABLES) <= set(groups[0].variables)
+    assert set(driver_io.PROGNOSTIC_VARIABLES) <= set(groups[0].variables)
 
 
 def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
@@ -235,10 +238,10 @@ def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
     def _zero_cell_k() -> Any:
         return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float)
 
-    fields = {name: _zero_cell_k() for name in driver_io.DEFAULT_DIAGNOSTIC_VARIABLES}
+    fields = {name: _zero_cell_k() for name in driver_io.DIAGNOSTIC_VARIABLES}
     state = driver_io.diagnostic_fields_to_dataarrays(fields)
 
-    assert set(state.keys()) == set(driver_io.DEFAULT_DIAGNOSTIC_VARIABLES)
+    assert set(state.keys()) == set(driver_io.DIAGNOSTIC_VARIABLES)
     for da in state.values():
         assert da.dims == ("cell", "level")
         assert da.shape == (grid.num_cells, grid.num_levels)

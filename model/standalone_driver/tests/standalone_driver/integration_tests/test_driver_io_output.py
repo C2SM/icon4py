@@ -65,24 +65,19 @@ def test_standalone_driver_writes_output(
     # the UGRID grid file is written on monitor init
     _find_one(io_dir, "*_ugrid.nc")
 
-    # prognostic data file: all five fields with the expected shapes and a single time
-    prognostic_file = _find_one(io_dir, f"{driver_io.DEFAULT_PROGNOSTIC_FILENAME}_*.nc")
-    with nc.Dataset(prognostic_file) as ds:
+    # single data file: all prognostic AND diagnostic fields together, with the expected
+    # shapes and a single time slice (output is on by default; no group split)
+    output_file = _find_one(io_dir, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*.nc")
+    with nc.Dataset(output_file) as ds:
         assert ds.Conventions == "CF-1.7"
         for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
-            assert name in ds.variables, f"{name} missing from prognostic output"
+            assert name in ds.variables, f"{name} missing from output"
             var = ds.variables[name]
             assert var.dimensions[0] == "time"
             assert var.shape[0] == 1
         # vertical placement: w on interface levels, the rest on full levels
         assert "interface_level" in ds.variables["upward_air_velocity"].dimensions
         assert "edge" in ds.variables["normal_velocity"].dimensions
+        # diagnostics live on cells/full levels
+        assert "cell" in ds.variables["temperature"].dimensions
         assert len(ds.dimensions["time"]) == 1
-
-    # diagnostic data file (present unless diagnostics were disabled at init)
-    diagnostic_files = sorted(io_dir.rglob(f"{driver_io.DEFAULT_DIAGNOSTIC_FILENAME}_*.nc"))
-    if diagnostic_files:
-        with nc.Dataset(diagnostic_files[0]) as ds:
-            for name in driver_io.DEFAULT_DIAGNOSTIC_VARIABLES:
-                assert name in ds.variables, f"{name} missing from diagnostic output"
-                assert ds.variables[name].dimensions[0] == "time"
