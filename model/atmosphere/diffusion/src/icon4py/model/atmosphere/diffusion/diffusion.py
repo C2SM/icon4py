@@ -344,7 +344,7 @@ class DiffusionConfig:
             **overrides,
         )
 
-    def _validate(self):
+    def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""
         if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
             raise NotImplementedError(
@@ -381,7 +381,7 @@ class DiffusionConfig:
             )
 
     @functools.cached_property
-    def substep_as_float(self):
+    def substep_as_float(self) -> float:
         return float(self.ndyn_substeps)
 
 
@@ -397,7 +397,7 @@ class DiffusionParams:
     smagorinski_factor: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
     smagorinski_height: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
 
-    def __post_init__(self, config):
+    def __post_init__(self, config: DiffusionConfig) -> None:
         object.__setattr__(
             self,
             "K2",
@@ -452,7 +452,7 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
-    ):
+    ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
@@ -463,6 +463,8 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+
+        assert self._cell_params.area is not None
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange,
@@ -497,7 +499,10 @@ class Diffusion:
                 "horizontal_start": self._vertex_start_lateral_boundary_level_2,
                 "horizontal_end": self._vertex_end_local,
             },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
             offset_provider=self._grid.connectivities,
         )
 
@@ -576,8 +581,8 @@ class Diffusion:
                 "interior_idx": self._cell_start_interior,
             },
             vertical_sizes={
-                "vertical_start": 0,
-                "vertical_end": self._grid.num_levels,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
                 "nrdmax": gtx.int32(
                     self._vertical_grid.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
@@ -670,7 +675,7 @@ class Diffusion:
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
-    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
@@ -708,7 +713,7 @@ class Diffusion:
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
 
-    def _determine_horizontal_domains(self):
+    def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -749,7 +754,7 @@ class Diffusion:
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
         initial_run: bool = False,
-    ):
+    ) -> None:
         """
         Do one diffusion step.
 

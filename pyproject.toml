@@ -151,7 +151,7 @@ files = [
   # TODO(egparedes): activate for all sources and tests
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
@@ -236,7 +236,10 @@ module = [
 disable_error_code = [
   "valid-type"  # vfloat is not a valid type
 ]
-module = ["icon4py.model.atmosphere.advection.stencils.*"]
+module = [
+  "icon4py.model.atmosphere.advection.stencils.*",
+  "icon4py.model.atmosphere.diffusion.stencils.*"
+]
 
 # -- pytest --
 [tool.pytest]
