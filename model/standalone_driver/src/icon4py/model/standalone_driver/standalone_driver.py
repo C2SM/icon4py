@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 import types
+import typing
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -35,9 +36,14 @@ from icon4py.model.common.utils import data_allocation as data_alloc, device_uti
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_constants,
+    driver_io,
     driver_states,
     driver_utils,
 )
+
+
+if typing.TYPE_CHECKING:
+    from icon4py.model.common.io import io as common_io
 
 
 log = logging.getLogger(__name__)
@@ -58,6 +64,8 @@ class Icon4pyDriver:
         tracer_advection_granule: advection.Advection,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
+        io_monitor: "common_io.IOMonitor | None" = None,
+        io_diagnostic_inputs: "driver_io.DiagnosticInputs | None" = None,
     ):
         self.config = config
         self.backend = backend
@@ -74,6 +82,8 @@ class Icon4pyDriver:
         )
         self.exchange = exchange
         self.global_reductions = global_reductions
+        self.io_monitor = io_monitor
+        self.io_diagnostic_inputs = io_diagnostic_inputs
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
@@ -149,7 +159,22 @@ class Icon4pyDriver:
 
             self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
-            # TODO(OngChia): simple IO enough for JW test
+            if self.io_monitor is not None:
+                state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_states.current)
+                if self.io_diagnostic_inputs is not None:
+                    diagnostic_fields = driver_io.compute_diagnostics(
+                        prognostic_states.current,
+                        grid=self.grid,
+                        backend=self.backend,
+                        inputs=self.io_diagnostic_inputs,
+                    )
+                    state_to_store.update(
+                        driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields)
+                    )
+                self.io_monitor.store(state_to_store, self.model_time_variables.simulation_date)
+
+        if self.io_monitor is not None:
+            self.io_monitor.close()
 
         self._compute_mean_at_final_time_step(prognostic_states.current)
 
@@ -561,6 +586,7 @@ def initialize_driver(
     backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
+    enable_output: bool = False,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -686,6 +712,42 @@ def initialize_driver(
         ),
         backend=backend,
     )
+    io_monitor = None
+    io_diagnostic_inputs = None
+    if enable_output:
+        log.info("initializing single-node IO monitor")
+        # Try to set up diagnostic output. The diagnostic computation is exercised once on a
+        # throw-away zero state so that a structurally broken diagnostic path (e.g. a missing
+        # field source) degrades to prognostics-only output instead of failing the run.
+        try:
+            io_diagnostic_inputs = driver_io.fetch_diagnostic_inputs(static_field_factories)
+            trial_state = prognostics.initialize_prognostic_state(
+                grid_manager.grid, allocator=model_backends.get_allocator(backend)
+            )
+            driver_io.compute_diagnostics(
+                trial_state,
+                grid=grid_manager.grid,
+                backend=backend,
+                inputs=io_diagnostic_inputs,
+            )
+            log.info("diagnostic output enabled")
+        except Exception as error:  # blind except on purpose: degrade gracefully
+            log.warning(
+                f"diagnostic output disabled (computation could not be set up): {error}. "
+                "Writing prognostic fields only."
+            )
+            io_diagnostic_inputs = None
+
+        io_monitor = driver_io.create_io_monitor(
+            output_path=output_path,
+            grid_file_path=grid_file_path,
+            grid=grid_manager.grid,
+            vertical_grid=vertical_grid,
+            start_date=driver_config.start_date,
+            dtime=driver_config.dtime,
+            include_diagnostics=io_diagnostic_inputs is not None,
+        )
+
     icon4py_driver = Icon4pyDriver(
         config=driver_config,
         backend=backend,
@@ -698,6 +760,8 @@ def initialize_driver(
         tracer_advection_granule=tracer_advection_granule,
         exchange=exchange,
         global_reductions=global_reductions,
+        io_monitor=io_monitor,
+        io_diagnostic_inputs=io_diagnostic_inputs,
     )
 
     return icon4py_driver

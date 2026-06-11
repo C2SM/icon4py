@@ -52,7 +52,7 @@ class GlobalFileAttributes(TypedDict, total=False):
     Conventions: Required[str]  # TODO(halungge): check changelog? latest version is 1.11
 
     #: unique id of the horizontal grid used in the simulation (from grid file)
-    uuidOfHGrid: Required[uuid.UUID]
+    uuidOfHGrid: Required[uuid.UUID | str]
 
     #: institution name
     institution: Required[str]

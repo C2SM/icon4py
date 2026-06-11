@@ -1,0 +1,252 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Unit tests for the driver-side IO bridge (``driver_io``).
+
+These tests are data-free: they use the ``simple_grid`` and a zero-initialised
+``PrognosticState`` so they need no serialized/grid test data. The optional
+``icon4py-common[io]`` stack (xarray, netcdf4, uxarray, cftime) is required and the
+module is skipped if it is not installed.
+"""
+
+import copy
+import datetime as dt
+import pathlib
+from typing import Any
+
+import pytest
+
+
+# Skip the whole module if the optional IO stack is not installed.
+pytest.importorskip("xarray")
+pytest.importorskip("netCDF4")
+pytest.importorskip("uxarray")
+pytest.importorskip("cftime")
+
+import numpy as np
+import xarray as xr
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base, simple
+from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.standalone_driver import driver_io
+
+
+@pytest.fixture
+def grid() -> base.Grid:
+    return simple.simple_grid()
+
+
+@pytest.fixture
+def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
+    # Constructed directly (instead of `initialize_prognostic_state`) so the test works
+    # with the generic `simple_grid` and the default (numpy) allocator.
+    def _cell_k(extend: dict[Any, int] | None = None) -> Any:
+        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, extend=extend)
+
+    return prognostics.PrognosticState(
+        rho=_cell_k(),
+        w=_cell_k(extend={dims.KDim: 1}),
+        vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=float),
+        exner=_cell_k(),
+        theta_v=_cell_k(),
+    )
+
+
+#: Expected (dim names, uses interface vertical level) per output variable.
+_EXPECTED = {
+    "air_density": (("cell", "level"), False),
+    "exner_function": (("cell", "level"), False),
+    "theta_v": (("cell", "level"), False),
+    "upward_air_velocity": (("cell", "interface_level"), True),
+    "normal_velocity": (("edge", "level"), False),
+}
+
+
+def test_assembles_all_default_variables(
+    prognostic_state: prognostics.PrognosticState, grid: base.Grid
+) -> None:
+    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+
+    assert set(state.keys()) == set(driver_io.DEFAULT_OUTPUT_VARIABLES)
+    for name, da in state.items():
+        assert isinstance(da, xr.DataArray)
+        expected_dims, on_interface = _EXPECTED[name]
+        assert da.dims == expected_dims
+
+        horizontal = expected_dims[0]
+        horizontal_size = {
+            "cell": grid.num_cells,
+            "edge": grid.num_edges,
+            "vertex": grid.num_vertices,
+        }[horizontal]
+        vertical_size = grid.num_levels + 1 if on_interface else grid.num_levels
+        assert da.shape == (horizontal_size, vertical_size)
+
+
+def test_dataarrays_carry_cf_and_ugrid_metadata(
+    prognostic_state: prognostics.PrognosticState,
+) -> None:
+    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+
+    air_density = state["air_density"]
+    # CF metadata from states.data
+    assert air_density.attrs["standard_name"] == "air_density"
+    assert air_density.attrs["units"] == "kg m-3"
+    # UGRID metadata added by io.utils.to_data_array for the horizontal dimension
+    assert air_density.attrs["location"] == "face"
+    assert air_density.attrs["mesh"] == "mesh"
+    assert air_density.attrs["coordinates"] == "clon clat"
+
+    # edge field gets the edge location mapping
+    assert state["normal_velocity"].attrs["location"] == "edge"
+
+
+def test_does_not_mutate_shared_cf_attributes(
+    prognostic_state: prognostics.PrognosticState,
+) -> None:
+    """`to_data_array` mutates the attrs dict it is handed; the bridge must pass a copy,
+    so the shared module-level CF attribute table must be left untouched."""
+    before = copy.deepcopy(state_data.PROGNOSTIC_CF_ATTRIBUTES)
+
+    driver_io.prognostic_state_to_dataarrays(prognostic_state)
+
+    assert before == state_data.PROGNOSTIC_CF_ATTRIBUTES
+    # specifically, no UGRID keys leaked into the shared table
+    for entry in state_data.PROGNOSTIC_CF_ATTRIBUTES.values():
+        assert "location" not in entry
+        assert "mesh" not in entry
+        assert "coordinates" not in entry
+
+
+def test_variables_subset(prognostic_state: prognostics.PrognosticState) -> None:
+    subset = ["air_density", "normal_velocity"]
+    state = driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=subset)
+    assert set(state.keys()) == set(subset)
+
+
+def test_unknown_variable_raises(prognostic_state: prognostics.PrognosticState) -> None:
+    with pytest.raises(ValueError, match="Unknown output variable"):
+        driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=["not_a_field"])
+
+
+def test_data_is_host_numpy(prognostic_state: prognostics.PrognosticState) -> None:
+    """The buffer handed to netCDF4 must be a host numpy array, not a device array."""
+    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+    for da in state.values():
+        assert isinstance(da.data, np.ndarray)
+
+
+def test_create_io_monitor_derives_matching_time_config(
+    grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The monitor's field group must start at ``start_date + dtime`` with an interval
+    equal to ``dtime`` so the capture logic fires on every step.
+
+    ``IOMonitor`` is replaced by a recorder so the test needs no real grid file.
+    """
+    from icon4py.model.common.io import io as common_io  # noqa: PLC0415
+
+    recorded: dict[str, Any] = {}
+
+    class _RecordingMonitor:
+        def __init__(
+            self,
+            *,
+            config: Any,
+            vertical_size: Any,
+            horizontal_size: Any,
+            grid_file_name: Any,
+            grid_id: Any,
+        ) -> None:
+            recorded["config"] = config
+            recorded["grid_file_name"] = grid_file_name
+            recorded["grid_id"] = grid_id
+
+    monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
+
+    start_date = dt.datetime(2024, 1, 1, 0, 0, 0)
+    dtime = dt.timedelta(seconds=300)
+
+    driver_io.create_io_monitor(
+        output_path=tmp_path,
+        grid_file_path=tmp_path / "grid.nc",
+        grid=grid,
+        vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+        start_date=start_date,
+        dtime=dtime,
+        include_diagnostics=False,
+    )
+
+    config = recorded["config"]
+    assert len(config.field_groups) == 1
+    field_group = config.field_groups[0]
+    assert field_group.start_time == "2024-01-01T00:05:00"
+    assert field_group.output_interval == "300 SECONDS"
+    assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
+    # output is written to the dedicated subfolder of the run directory
+    assert config.output_path == str(tmp_path / driver_io.OUTPUT_SUBDIR)
+    assert recorded["grid_id"] == grid.id
+
+
+def test_create_io_monitor_adds_diagnostic_group(
+    grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from icon4py.model.common.io import io as common_io  # noqa: PLC0415
+
+    recorded: dict[str, Any] = {}
+
+    class _RecordingMonitor:
+        def __init__(self, *, config: Any, **kwargs: Any) -> None:
+            recorded["config"] = config
+
+    monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
+
+    driver_io.create_io_monitor(
+        output_path=tmp_path,
+        grid_file_path=tmp_path / "grid.nc",
+        grid=grid,
+        vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+        start_date=dt.datetime(2024, 1, 1),
+        dtime=dt.timedelta(seconds=300),
+        include_diagnostics=True,
+    )
+
+    groups = recorded["config"].field_groups
+    assert len(groups) == 2
+    assert list(groups[0].variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
+    assert list(groups[1].variables) == driver_io.DEFAULT_DIAGNOSTIC_VARIABLES
+    assert groups[0].filename == driver_io.DEFAULT_PROGNOSTIC_FILENAME
+    assert groups[1].filename == driver_io.DEFAULT_DIAGNOSTIC_FILENAME
+
+
+def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
+    """The diagnostic assembly mirrors the prognostic one: correct dims/metadata, host
+    numpy buffers, and the shared CF table is not mutated."""
+    before = copy.deepcopy(state_data.DIAGNOSTIC_CF_ATTRIBUTES)
+
+    # cell/full-level fields, like what compute_diagnostics returns
+    def _zero_cell_k() -> Any:
+        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float)
+
+    fields = {name: _zero_cell_k() for name in driver_io.DEFAULT_DIAGNOSTIC_VARIABLES}
+    state = driver_io.diagnostic_fields_to_dataarrays(fields)
+
+    assert set(state.keys()) == set(driver_io.DEFAULT_DIAGNOSTIC_VARIABLES)
+    for da in state.values():
+        assert da.dims == ("cell", "level")
+        assert da.shape == (grid.num_cells, grid.num_levels)
+        assert isinstance(da.data, np.ndarray)
+
+    assert state["temperature"].attrs["standard_name"] == "air_temperature"
+    assert state["pressure"].attrs["units"] == "Pa"
+    assert state["eastward_wind"].attrs["location"] == "face"
+
+    # shared diagnostic CF table must be untouched
+    assert before == state_data.DIAGNOSTIC_CF_ATTRIBUTES

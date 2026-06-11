@@ -22,37 +22,13 @@ log = logging.getLogger(__name__)
 
 def main(
     *,
-    grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
-    # it may be better to split device from backend,
-    # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
-    # whether to automatically use gpu if cupy is installed can be discussed further
-    icon4py_backend: Annotated[
-        str | model_backends.BackendLike,
-        typer.Option(
-            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
-        ),
-    ],
-    output_path: Annotated[
-        pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
-    ] = pathlib.Path("./output"),
-    log_level: Annotated[
-        str,
-        typer.Option(
-            help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
-        ),
-    ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-    print_distributed_debug_msg: Annotated[
-        bool,
-        typer.Option(
-            help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
-        ),
-    ] = False,
-    force_serial_run: Annotated[
-        bool,
-        typer.Option(
-            help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
-        ),
-    ] = False,
+    grid_file_path: pathlib.Path,
+    icon4py_backend: str | model_backends.BackendLike,
+    output_path: pathlib.Path = pathlib.Path("./output"),
+    log_level: str = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    print_distributed_debug_msg: bool = False,
+    force_serial_run: bool = False,
+    enable_output: bool = False,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -62,17 +38,21 @@ def main(
     The initial condition is generated from the model_initialization_jabw function
 
     The integration can then be executed by calling time_integration function in Icon4pyDriver
+
+    Programmatic entry point: accepts either a backend name (str) or a BackendLike
+    object. The command line interface lives in :func:`cli`.
     """
 
-    icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
+    backend_like = driver_utils.get_backend_from_name(icon4py_backend)
 
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
-        backend_like=icon4py_backend,
+        backend_like=backend_like,
         force_serial_run=force_serial_run,
+        enable_output=enable_output,
     )
 
     log.info("Generating the initial condition")
@@ -101,5 +81,74 @@ def main(
     return ds, icon4py_driver.decomposition_info
 
 
+def cli(
+    *,
+    grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
+    # it may be better to split device from backend,
+    # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
+    # whether to automatically use gpu if cupy is installed can be discussed further
+    icon4py_backend: Annotated[
+        str,
+        typer.Option(
+            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
+        ),
+    ],
+    output_path: Annotated[
+        pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
+    ] = pathlib.Path("./output"),
+    log_level: Annotated[
+        str,
+        typer.Option(
+            help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
+        ),
+    ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    print_distributed_debug_msg: Annotated[
+        bool,
+        typer.Option(
+            help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
+        ),
+    ] = False,
+    force_serial_run: Annotated[
+        bool,
+        typer.Option(
+            help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
+        ),
+    ] = False,
+    enable_output: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Write prognostic (rho, exner, theta_v, w, vn) and diagnostic "
+                "(u, v, temperature, virtual temperature, pressure) fields to "
+                "NETCDF/UGRID output (single node). "
+                "Falls back to prognostics-only if the diagnostic computation "
+                "cannot be set up. Requires the icon4py-common[io] extra."
+            ),
+        ),
+    ] = False,
+) -> None:
+    """Command-line entry point wrapping :func:`main`.
+
+    Kept separate from :func:`main` because Typer cannot parse the
+    `str | BackendLike` Union accepted by the programmatic API: the CLI only takes a
+    backend name, while tests and other callers can pass backend objects to `main`
+    directly.
+    """
+    main(
+        grid_file_path=grid_file_path,
+        icon4py_backend=icon4py_backend,
+        output_path=output_path,
+        log_level=log_level,
+        print_distributed_debug_msg=print_distributed_debug_msg,
+        force_serial_run=force_serial_run,
+        enable_output=enable_output,
+    )
+
+
+def click() -> None:
+    """Console-script entry point (referenced by ``main:click`` in pyproject.toml)."""
+    typer.run(cli)
+
+
 if __name__ == "__main__":
-    typer.run(main)
+    typer.run(cli)
