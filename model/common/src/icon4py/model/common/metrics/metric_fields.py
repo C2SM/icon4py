@@ -16,6 +16,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py.next import (
     abs,  # noqa: A004
+    astype,
     broadcast,
     int32,
     max_over,
@@ -32,14 +33,13 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
-    _cell_2_edge_interpolation,
+    _cell_2_edge_interpolation_dp,
 )
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
 from icon4py.model.common.math.vertical_operations import difference_level_plus1_on_cells
-from icon4py.model.common.type_alias import gtx.float64
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -545,7 +545,7 @@ def compute_wgtfac_e(
         vertical_end: vertical end index
     """
 
-    _cell_2_edge_interpolation(
+    _cell_2_edge_interpolation_dp(
         in_field=wgtfac_c,
         coeff=c_lin_e,
         out=wgtfac_e,
@@ -650,7 +650,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
 
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+    z_me = _cell_2_edge_interpolation_dp(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
@@ -744,13 +744,12 @@ def _compute_horizontal_mask_for_3d_divdamp(
     horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
         1.0
-        / (grf_nudgezone_width - 1.0)
-        * (e_refin_ctrl - (grf_nudge_start_e + grf_nudgezone_width - 1.0)),
+        / astype(grf_nudgezone_width - 1, gtx.float64)
+        * astype(e_refin_ctrl - (grf_nudge_start_e + grf_nudgezone_width - 1), gtx.float64),
         0.0,
     )
     horizontal_mask_for_3d_divdamp = where(
-        (e_refin_ctrl <= 0)
-        | (e_refin_ctrl >= (grf_nudge_start_e + 2.0 * (grf_nudgezone_width - 1.0))),
+        (e_refin_ctrl <= 0) | (e_refin_ctrl >= (grf_nudge_start_e + 2 * (grf_nudgezone_width - 1))),
         1.0,
         horizontal_mask_for_3d_divdamp,
     )
