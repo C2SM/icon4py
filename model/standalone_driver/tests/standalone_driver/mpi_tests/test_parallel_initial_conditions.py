@@ -97,8 +97,8 @@ def test_initial_conditions_compare_single_multi_rank(
     config = driver_config.read_config(config_file_path)
 
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
-    serial_config = config.with_driver_overrides(
-        output_path=tmp_path / "ci_driver_output_serial_rank0"
+    serial_config = config.with_overrides(
+        driver={"output_path": tmp_path / "ci_driver_output_serial_rank0"}
     )
     serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -126,8 +126,8 @@ def test_initial_conditions_compare_single_multi_rank(
         exchange=single_rank_icon4py_driver.exchange,
     )
 
-    mpi_config = config.with_driver_overrides(
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"
+    mpi_config = config.with_overrides(
+        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
     )
     mpi_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

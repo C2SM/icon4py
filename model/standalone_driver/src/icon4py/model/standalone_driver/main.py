@@ -69,7 +69,7 @@ def main(
 
     config = driver_config.read_config(config_file_path)
     if output_path is not None:
-        config = config.with_driver_overrides(output_path=output_path)
+        config = config.with_overrides(driver={"output_path": output_path})
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

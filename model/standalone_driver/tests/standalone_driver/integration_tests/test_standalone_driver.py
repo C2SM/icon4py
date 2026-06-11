@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import datetime
 import pathlib
 
 import pytest
@@ -72,7 +73,14 @@ def test_standalone_driver(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_config(config_file_path)
-    config = config.with_driver_overrides(output_path=tmp_path / "ci_driver_output")
+    config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / "ci_driver_output",
+            "end_date": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
+                tzinfo=datetime.timezone.utc
+            ),
+        }
+    )
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

@@ -101,8 +101,15 @@ class ExperimentConfig:
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
 
-    def with_driver_overrides(self, **overrides: Any) -> ExperimentConfig:
-        return dataclasses.replace(self, driver=dataclasses.replace(self.driver, **overrides))
+    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
+        replacements: dict[str, Any] = {}
+        for key, value in overrides.items():
+            current = getattr(self, key)
+            if isinstance(value, dict):
+                replacements[key] = dataclasses.replace(current, **value)
+            else:
+                replacements[key] = value
+        return dataclasses.replace(self, **replacements)
 
 
 def read_config(
