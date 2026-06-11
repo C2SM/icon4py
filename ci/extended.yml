@@ -17,6 +17,7 @@ test_extended_distributed:
     CUDA_NVCC_FLAGS: "--fmad=false"
     CUPY_TF32: 0
     NVCC_PREPEND_FLAGS: "--fmad=false -Xcompiler=-ffp-contract=off"
+    GT4PY_BUILD_JOBS: 8
   parallel:
     matrix:
       - COMPONENT: [standalone_driver]
