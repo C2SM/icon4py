@@ -396,7 +396,9 @@ class Icon4pyDriver:
 
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
         if self.config.driver.apply_extra_second_order_divdamp:
-            fourth_order_divdamp_factor = self.granules.solve_nonhydro._config.fourth_order_divdamp_factor
+            fourth_order_divdamp_factor = (
+                self.granules.solve_nonhydro._config.fourth_order_divdamp_factor
+            )
             if (
                 self.model_time_variables.elapsed_time_in_seconds
                 <= driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
