@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import (
+    config as driver_config,
     driver_states,
     driver_utils,
     initial_condition,
@@ -92,7 +93,7 @@ def test_initial_conditions_compare_single_multi_rank(
 
     backend = model_options.customize_backend(program=None, backend=backend_like)
     allocator = model_backends.get_allocator(backend)
-    config = standalone_driver.build_config(config_file_path)
+    config = driver_config.read_config(config_file_path)
 
     serial_process_props = decomp_defs.get_process_properties(
         decomp_defs.get_runtype(with_mpi=False)

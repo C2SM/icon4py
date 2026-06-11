@@ -10,7 +10,6 @@ import dataclasses
 import datetime
 import functools
 import logging
-import pathlib
 import types
 from collections.abc import Callable
 
@@ -498,13 +497,6 @@ class Icon4pyDriver:
                 f"{self.global_reductions.mean(theta_v_ndarray):.5e} "
                 f"{self.global_reductions.mean(exner_ndarray):.5e} "
             )
-
-
-def build_config(
-    config_file_path: pathlib.Path,
-    enable_profiling: bool = False,
-) -> driver_config.ExperimentConfig:
-    return driver_config.read_config(config_file_path, enable_profiling)
 
 
 def setup_environment(

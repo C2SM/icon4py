@@ -12,7 +12,12 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
+from icon4py.model.standalone_driver import (
+    config as driver_config,
+    driver_utils,
+    initial_condition,
+    standalone_driver,
+)
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions,
@@ -53,7 +58,7 @@ def test_initial_conditions(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     backend = model_options.customize_backend(program=None, backend=backend_like)
-    config = standalone_driver.build_config(config_file_path)
+    config = driver_config.read_config(config_file_path)
     config = config.with_driver_overrides(output_path=tmp_path / "ci_driver_output")
     allocator = model_backends.get_allocator(backend)
     grid_manager = driver_utils.create_grid_manager(

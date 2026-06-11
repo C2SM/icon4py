@@ -13,7 +13,7 @@ from typing import Annotated
 import typer
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import driver_utils, standalone_driver
+from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 
 
 log = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ def main(
         print_distributed_debug_msg=print_distributed_debug_msg,
     )
 
-    config = standalone_driver.build_config(config_file_path)
+    config = driver_config.read_config(config_file_path)
     if output_path is not None:
         config = config.with_driver_overrides(output_path=output_path)
 

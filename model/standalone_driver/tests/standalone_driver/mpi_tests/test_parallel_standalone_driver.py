@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import driver_utils, standalone_driver
+from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -73,7 +73,7 @@ def test_standalone_driver_compare_single_multi_rank(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = standalone_driver.build_config(config_file_path)
+    config = driver_config.read_config(config_file_path)
 
     serial_process_props = decomp_defs.get_process_properties(
         decomp_defs.get_runtype(with_mpi=False)
