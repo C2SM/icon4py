@@ -13,7 +13,7 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Final
 
-from icon4py.model.atmosphere.advection import advection
+from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
@@ -180,7 +180,7 @@ class ExperimentConfig:
     topography: topography.TopographyConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
-    tracer_advection: advection.AdvectionConfig | None = None
+    tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     initial_condition: initial_condition.InitialConditionConfig
     driver: driver_config.DriverConfig
