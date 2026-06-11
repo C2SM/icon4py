@@ -5,10 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import dataclasses
 import math
+import typing
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -112,7 +114,21 @@ class SingleMomentSixClassIconGraupelConfig:
         # Throw an error if trying to access this config in the granule instead
         # of initializing with default values, which may hide difficult to find
         # bugs.
-        return None
+        return NoMicrophysics()
+
+
+class NoMicrophysics(SingleMomentSixClassIconGraupelConfig):
+    def __getattr__(self, name: str) -> typing.Never:
+        raise NoMicrophysicsError
+
+    def __setattr__(self, name: str, value: Any) -> typing.Never:
+        raise NoMicrophysicsError
+
+
+class NoMicrophysicsError(Exception):
+    """Raise this if microphysics was not configured but the configuration for it is accessed anyway."""
+
+    ...
 
 
 @dataclasses.dataclass
