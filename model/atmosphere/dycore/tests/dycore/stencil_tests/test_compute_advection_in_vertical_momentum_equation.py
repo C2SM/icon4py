@@ -505,6 +505,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             "vertical_start",
             "vertical_end",
             "nflatlev",
+            "skip_compute_predictor_vertical_advection",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
@@ -513,6 +514,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             "vertical_end",
             "end_index_of_damping_layer",
             "nflatlev",
+            "skip_compute_predictor_vertical_advection",
         ),
     }
 
