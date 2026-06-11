@@ -35,7 +35,6 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
-        gfortran \
         gfortran-12 \
         gcc-12 \
         g++-12 \
