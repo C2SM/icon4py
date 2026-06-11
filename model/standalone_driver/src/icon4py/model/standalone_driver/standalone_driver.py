@@ -73,8 +73,6 @@ class Icon4pyDriver:
         self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
         self.granules = granules
-        self.diffusion = granules.diffusion
-        self.solve_nonhydro = granules.solve_nonhydro
         self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
         self.timer_collection = driver_states.TimerCollection(
@@ -180,7 +178,7 @@ class Icon4pyDriver:
         do_prep_adv: bool,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState,
     ) -> None:
-        log.debug(f"Running {self.solve_nonhydro.__class__}")
+        log.debug(f"Running {self.granules.solve_nonhydro.__class__}")
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
@@ -188,15 +186,15 @@ class Icon4pyDriver:
             do_prep_adv,
         )
 
-        if self.diffusion.config.apply_to_horizontal_wind:
-            log.debug(f"Running {self.diffusion.__class__}")
+        if self.granules.diffusion.config.apply_to_horizontal_wind:
+            log.debug(f"Running {self.granules.diffusion.__class__}")
             timer_diffusion = (
                 self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION_FIRST_STEP.value]
                 if self.model_time_variables.is_first_step_in_simulation
                 else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
             )
             with timer_diffusion:
-                self.diffusion.run(
+                self.granules.diffusion.run(
                     diffusion_diagnostic_state,
                     prognostic_states.next,
                     self.model_time_variables.dtime_in_seconds,
@@ -280,7 +278,7 @@ class Icon4pyDriver:
             )
 
             with timer_solve_nh:
-                self.solve_nonhydro.time_step(
+                self.granules.solve_nonhydro.time_step(
                     diagnostic_state_nh=solve_nonhydro_diagnostic_state,
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
@@ -398,7 +396,7 @@ class Icon4pyDriver:
 
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
         if self.config.driver.apply_extra_second_order_divdamp:
-            fourth_order_divdamp_factor = self.solve_nonhydro._config.fourth_order_divdamp_factor
+            fourth_order_divdamp_factor = self.granules.solve_nonhydro._config.fourth_order_divdamp_factor
             if (
                 self.model_time_variables.elapsed_time_in_seconds
                 <= driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
