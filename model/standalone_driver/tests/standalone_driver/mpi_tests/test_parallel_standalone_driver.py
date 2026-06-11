@@ -69,13 +69,13 @@ def test_standalone_driver_compare_single_multi_rank(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    allocator = model_backends.get_allocator(backend)
+
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_config(config_file_path)
-
-    backend = model_options.customize_backend(program=None, backend=backend_like)
-    allocator = model_backends.get_allocator(backend)
 
     serial_process_props = decomp_defs.get_process_properties(
         decomp_defs.get_runtype(with_mpi=False)

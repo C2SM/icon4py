@@ -65,13 +65,15 @@ def test_standalone_driver(
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    allocator = model_backends.get_allocator(backend)
+
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    backend = model_options.customize_backend(program=None, backend=backend_like)
     config = driver_config.read_config(config_file_path)
     config = config.with_driver_overrides(output_path=tmp_path / "ci_driver_output")
-    allocator = model_backends.get_allocator(backend)
+
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=config.vertical_grid,
