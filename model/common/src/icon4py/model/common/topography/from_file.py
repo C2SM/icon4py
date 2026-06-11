@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import serialbox  # type: ignore[import-untyped]
 
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -23,7 +24,6 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import grid_manager as gm
-    from icon4py.model.standalone_driver import driver_states
 
 
 log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def read_from_file(
     grid_manager: gm.GridManager,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> driver_states.DriverStates:
+) -> data_alloc.NDArray:
     """Initialise prognostic state from a serialised ICON initial-condition snapshot.
 
     Reads ``prognostics / initial-state`` from the serialbox archive located at
@@ -53,7 +53,9 @@ def read_from_file(
     ``gauss3d``, …) and can be stored transparently in
     :attr:`~icon4py.model.standalone_driver.initial_condition.InitialConditionConfig.create`.
     """
-    xp = data_alloc.import_array_ns(backend)
+
+    allocator = model_backends.get_allocator(backend)
+    array_ns = data_alloc.import_array_ns(allocator)
 
     fname = f"icon_pydycore_rank{exchange.my_rank()}"
     data_path = config.data_path
@@ -63,6 +65,4 @@ def read_from_file(
     log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
 
     nc = grid_manager.grid.num_cells
-    topo = xp.asarray(xp.squeeze(ser.read("topography", sp).astype(float))[:nc])
-
-    return topo
+    return array_ns.asarray(array_ns.squeeze(ser.read("topography", sp).astype(float))[:nc])

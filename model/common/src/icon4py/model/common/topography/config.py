@@ -50,7 +50,7 @@ class TopographyConfig:
     ) -> TopographyConfig:
         run_nml = atm_dict.get("run_nml", {})
         if not run_nml.get("ltestcase", False):
-            log.info("Reading initial condition from file")
+            log.info("Reading topography from file")
             return cls(
                 config=from_file_topo.FromFileConfig(
                     data_path=data_path / fortran_config.SER_DATA_SUBDIR,
@@ -80,7 +80,7 @@ class TopographyConfig:
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-        return cls(config=config)
+        return cls(config)
 
 
 def create(
