@@ -159,6 +159,9 @@ def read_config(
     )
 
     do_microphysics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
+    # If these two namelists are missing it means that the experiment was run
+    # without microphysics and we have to skip parsing the graupel config which
+    # relies on some of these parameters.
     graupel_config = (
         graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
         if do_microphysics
