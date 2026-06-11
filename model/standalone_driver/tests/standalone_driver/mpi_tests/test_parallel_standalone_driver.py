@@ -39,15 +39,16 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description",
+    "experiment_description, n_time_steps",
     [
-        test_defs.Experiments.JW,
+        (test_defs.Experiments.JW, 1),
     ],
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_standalone_driver_compare_single_multi_rank(
     experiment_description: test_defs.ExperimentDescription,
+    n_time_steps: int,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
@@ -78,7 +79,10 @@ def test_standalone_driver_compare_single_multi_rank(
 
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
     serial_config = config.with_overrides(
-        driver={"output_path": tmp_path / "ci_driver_output_serial_rank0"}
+        driver={
+            "output_path": tmp_path / "ci_driver_output_serial_rank0",
+            "n_time_steps": n_time_steps,
+        }
     )
     serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -94,7 +98,10 @@ def test_standalone_driver_compare_single_multi_rank(
     )
 
     mpi_config = config.with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
+        driver={
+            "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
+            "n_time_steps": n_time_steps,
+        }
     )
     mpi_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

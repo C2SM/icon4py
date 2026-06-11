@@ -54,6 +54,7 @@ class DriverConfig:
     dtime: datetime.timedelta
     start_date: datetime.datetime
     end_date: datetime.datetime
+    n_time_steps: int | None = None  # when set, it overrides date-based computation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
