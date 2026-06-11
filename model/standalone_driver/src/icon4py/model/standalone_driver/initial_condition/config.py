@@ -128,4 +128,4 @@ def create(
                 exchange=exchange,
             )
         case _:
-            raise TypeError(f"Unknown IC config type: {type(config.config)!r}")
+            raise TypeError(f"Unknown initial conditions config type: {type(config.config)!r}")

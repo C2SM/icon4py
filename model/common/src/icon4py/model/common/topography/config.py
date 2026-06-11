@@ -80,7 +80,7 @@ class TopographyConfig:
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-        return cls(config=config)
+        return cls(config)
 
 
 def create(
