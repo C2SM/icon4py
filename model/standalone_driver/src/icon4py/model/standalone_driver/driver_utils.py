@@ -164,11 +164,9 @@ def create_static_field_factories(
 
 def initialize_granules(
     *,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
-    diffusion_config: diffusion.DiffusionConfig,
-    solve_nh_config: solve_nh.NonHydrostaticConfig,
-    advection_config: advection.AdvectionConfig | None,
     static_field_factories: driver_states.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
@@ -321,11 +319,11 @@ def initialize_granules(
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
 
-    diffusion_params = diffusion.DiffusionParams(diffusion_config)
+    diffusion_params = diffusion.DiffusionParams(config.diffusion)
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
-        config=diffusion_config,
+        config=config.diffusion,
         params=diffusion_params,
         vertical_grid=vertical_grid,
         metric_state=diffusion_metric_state,
@@ -336,12 +334,12 @@ def initialize_granules(
         exchange=exchange,
     )
 
-    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nh_config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=grid,
         backend=backend,
-        config=solve_nh_config,
+        config=config.nonhydrostatic,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
         interpolation_state=solve_nonhydro_interpolation_state,
@@ -353,11 +351,12 @@ def initialize_granules(
     )
 
     tracer_advection_granule: advection.Advection | None = None
-    if advection_config is not None:
+    if config.driver.do_tracer_advection:
+        assert config.tracer_advection is not None
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
-            config=advection_config,
+            config=config.tracer_advection,
             interpolation_state=advection_states.AdvectionInterpolationState(
                 geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
                 rbf_vec_coeff_e=interpolation_field_source.get(

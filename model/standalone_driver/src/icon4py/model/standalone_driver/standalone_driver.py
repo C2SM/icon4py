@@ -564,11 +564,9 @@ def initialize_driver(
 
     log.info("initializing granules")
     granules = driver_utils.initialize_granules(
+        config=config,
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
-        diffusion_config=config.diffusion,
-        solve_nh_config=config.nonhydrostatic,
-        advection_config=config.tracer_advection,
         static_field_factories=static_field_factories,
         exchange=exchange,
         owner_mask=gtx.as_field(
