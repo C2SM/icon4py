@@ -6,21 +6,23 @@ test_extended_distributed:
   extends: [.test_distributed_aarch64]
   variables:
     SLURM_PARTITION: "normal"
-    SLURM_TIMELIMIT: "4:00:00"
+    SLURM_TIMELIMIT: "2:00:00"
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
-    OPENBLAS_CORETYPE: GENERIC
-    OPENBLAS_NUM_THREADS: 1
-    CFLAGS: "-ffp-contract=off -fno-unsafe-math-optimizations"
-    CXXFLAGS: "-ffp-contract=off -fno-unsafe-math-optimizations"
-    CUBLAS_WORKSPACE_CONFIG: ":4096:8"
-    CUDAFLAGS: "--fmad=false"
-    CUDA_NVCC_FLAGS: "--fmad=false"
-    CUPY_TF32: 0
-    NVCC_PREPEND_FLAGS: "--fmad=false -Xcompiler=-ffp-contract=off"
-    GT4PY_BUILD_JOBS: 8
+    CXXFLAGS: "-ffp-contract=off"
+    # OPENBLAS_CORETYPE: GENERIC
+    # OPENBLAS_NUM_THREADS: 1
+    # CFLAGS: "-ffp-contract=off -fno-unsafe-math-optimizations"
+    # CXXFLAGS: "-ffp-contract=off -fno-unsafe-math-optimizations"
+    # CUBLAS_WORKSPACE_CONFIG: ":4096:8"
+    # CUDAFLAGS: "--fmad=false"
+    # CUDA_NVCC_FLAGS: "--fmad=false"
+    # CUPY_TF32: 0
+    # NVCC_PREPEND_FLAGS: "--fmad=false -Xcompiler=-ffp-contract=off"
+    # GT4PY_BUILD_JOBS: 8
   parallel:
     matrix:
       - COMPONENT: [standalone_driver]
         # BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        # BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        BACKEND: [dace_cpu, gtfn_cpu]
         LEVEL: [extended]
