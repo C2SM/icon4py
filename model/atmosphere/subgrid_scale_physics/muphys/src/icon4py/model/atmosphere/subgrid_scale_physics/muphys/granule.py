@@ -111,13 +111,12 @@ class MuphysGranule:
         self._nlev = nlev
         self._dt = dt
         self._qnc = qnc
-        # Resolve the backend-like (descriptor / DeviceType / Backend / None) once:
-        # a real backend for running stencils (with_backend), and an allocator for
-        # the buffers. setup_muphys takes the original backend-like and resolves it
-        # itself, so it still gets `backend`.
         self._backend = model_options.customize_backend(None, backend)
+
         allocator = model_backends.get_allocator(backend)
+
         if muphys_step is None:
+            # TODO (Yilu): what does the comment mean?
             # Build the verified separate-path step (graupel + saturation adjustment).
             # setup_muphys only reads `.ncells`/`.nlev` off `inp`, so a sizes shim suffices.
             sizes = types.SimpleNamespace(ncells=ncells, nlev=nlev)
@@ -130,8 +129,6 @@ class MuphysGranule:
             )
         self._muphys_step = muphys_step
 
-        # Output fields must be distinct from the inputs (we subtract input from output
-        # to form tendencies)
         domain = gtx.domain({dims.CellDim: ncells, dims.KDim: nlev})
         self._t_out = gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator)
         self._q_out = Q(
@@ -148,7 +145,7 @@ class MuphysGranule:
         self._pi = gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator)
         self._pg = gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator)
         self._pre = gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator)
-        # tendency buffers, one per returned tendency.
+
         self._tendencies: dict[str, fa.CellKField[ta.wpfloat]] = {
             "tend_temperature": gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator),
             "tend_qv": gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator),
@@ -158,9 +155,7 @@ class MuphysGranule:
             "tend_qi": gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator),
             "tend_qg": gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator),
         }
-        # Input copies handed to muphys. The separate-path step mutates te/qv/qc in
-        # place, so muphys runs on these copies, leaving the caller's `state` pristine
-        # for the (new - old) subtraction and safe from prognostic-tracer corruption.
+
         self._te_in = gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator)
         self._q_in = Q(
             v=gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator),
@@ -171,7 +166,6 @@ class MuphysGranule:
             g=gtx.zeros(domain, dtype=ta.wpfloat, allocator=allocator),
         )
 
-    # function to convert muphy's updated-state output into the tendencies
     def _to_tendency(
         self,
         old: fa.CellKField[ta.wpfloat],
@@ -202,7 +196,7 @@ class MuphysGranule:
         muphys returns updated state (t_out, q_out); this boundary converts it
         to tendencies ``(new - old) / dt`` s. Precip outputs are diagnostics, passed straight through.
         """
-
+        # TODO (Yilu): what does this do?
         # Copy inputs into granule-owned buffers so muphys (which mutates te/qv/qc in
         # place on the separate path) never touches the caller's `state`.
         self._te_in.ndarray[...] = state["te"].ndarray

@@ -84,12 +84,11 @@ class State:
     muphys role
       - input      : fed to muphys via ``as_component_input`` -- dz, rho, q, te, p
       - returned   : muphys updates it; te/q changes come back as tendencies
-                     (tend_T -> exner, tend_q -> tracers). NOTE rho and p are
-                     input-only: muphys returns no updated density or pressure.
-      - internal   : not a muphys field at all -- tv, pressure_ifc -- used only
+                     (tend_T -> exner, tend_q -> tracers).
+                     rho and p are input-only.
+      - internal   : not a muphys fields -- tv, pressure_ifc -- used only
                      to diagnose p and to convert tend_T into an exner increment.
-      - diagnostic : a muphys output stored for reporting, never applied to the
-                     prognostic state -- pflx, pr, ps, pi, pg, pre.
+      - diagnostic : a muphys output stored for reporting -- pflx, pr, ps, pi, pg, pre.
 
     memory ownership
       - reference  : a pointer into the dycore state, no copy -- dz, rho, q.
@@ -106,20 +105,14 @@ class State:
         self._num_cells = grid.num_cells
         self._num_levels = grid.num_levels
         self._backend = backend
-        # muphys INPUT, reference: layer thickness pulled once from the metrics
-        # field source (ddqz_z_full is static, so fetch-at-construction is enough).
-        self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
 
-        # muphys INPUTS, owned: diagnosed each step
+        self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
+        self.rho: fa.CellKField[ta.wpfloat] | None = None
+        self.q: dict[str, fa.CellKField[ta.wpfloat]] = {}
         self.te = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend
         )  # temperature
         self.p = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)  # pressure
-
-        # INTERNAL. tv feeds the pressure diagnosis and the
-        # tend_T -> exner conversion; pressure_ifc is half-level pressure whose extra
-        # surface slot (index num_levels) holds surface pressure -- the
-        # DiagnosticState.surface_pressure idiom.
         self.tv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.pressure_ifc = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -132,13 +125,6 @@ class State:
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
 
-        # muphys INPUTS, references into the dycore state, bound each step by
-        # gather_from_prognostic (None until then). rho is input-only; the q
-        # updates return via tend_q in scatter_to_prognostic.
-        self.rho: fa.CellKField[ta.wpfloat] | None = None
-        self.q: dict[str, fa.CellKField[ta.wpfloat]] = {}
-
-        # muphys DIAGNOSTIC outputs
         self.pflx: fa.CellKField[ta.wpfloat] | None = None  # total precipitation flux
         self.pr: fa.CellKField[ta.wpfloat] | None = None  # surface rain rate
         self.ps: fa.CellKField[ta.wpfloat] | None = None  # surface snow rate
@@ -156,12 +142,10 @@ class State:
         prepare the input fields for muphys from the prognostic state. This includes:
             - binding the references for rho and q (the muphys input fields that are stored prognostically in the dycore state)
             - diagnosing the muphys input fields that aren't stored prognostically (te, p) from the prognostic state.
-
-        This will be called before calling the muphys
         """
         self.rho = prognostic.rho
         self.q = {s: prognostic.tracer[_STUB_TRACER_INDEX[s]] for s in _SPECIES}
-        # After these two lines, the inputs that muphys reads directly (rho, q) are ready. The remaining work is computing the inputs that aren't stored.
+
 
         # Diagnose virtual temperature and temperature (te is not stored prognostically).
         self._run(
@@ -245,7 +229,7 @@ class State:
                 **bounds,
             )
 
-        # 2. tend_T -> exner. new_te = te + tend_T*dt (kept off te in a scratch buffer).
+        # 2. tend_T -> exner. new_te = te + tend_T*dt
         self._run(
             apply_tendency,
             field=self.te,
@@ -255,9 +239,8 @@ class State:
             offset_provider={},
             **bounds,
         )
+
         # dTv/dt from the new temperature and the species just updated in step 1
-        # (read straight from prognostic.tracer to make the data dependency explicit),
-        # with the old Tv = self.tv.
         tracers = prognostic.tracer
         self._run(
             calculate_tendency.calculate_virtual_temperature_tendency,
