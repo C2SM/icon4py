@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import grid_manager as gm
-    from icon4py.model.standalone_driver import driver_states
 
 
 log = logging.getLogger(__name__)
@@ -44,7 +43,7 @@ def read_from_file(
     grid_manager: gm.GridManager,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
- ) -> data_alloc.NDArray:
+) -> data_alloc.NDArray:
     """Initialise prognostic state from a serialised ICON initial-condition snapshot.
 
     Reads ``prognostics / initial-state`` from the serialbox archive located at
