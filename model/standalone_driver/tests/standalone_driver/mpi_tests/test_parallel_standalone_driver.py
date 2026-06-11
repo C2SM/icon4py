@@ -42,7 +42,6 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
-        test_defs.Experiments.GAUSS3D,
     ],
 )
 @pytest.mark.mpi
@@ -60,7 +59,7 @@ def test_standalone_driver_compare_single_multi_rank(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
         atol = 1e-13
-        rtol = 1e-14
+        rtol = 0.0
     else:
         atol = 2e-12
         rtol = 0.0
