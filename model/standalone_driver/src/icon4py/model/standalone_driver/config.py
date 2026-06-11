@@ -152,6 +152,8 @@ def read_config(
         "exclaim_ch_r04b09_dsl" in config_file_path.name
         or "exclaim_ape_R02B04" in config_file_path.name
     )
+    # The experiments above were run in fortran with an advection scheme that
+    # has not been ported to ICON4Py and can therefore not be used for testing.
     advection_config = (
         advection.AdvectionConfig.from_fortran_dict(atm_dict) if do_tracer_advection else None
     )

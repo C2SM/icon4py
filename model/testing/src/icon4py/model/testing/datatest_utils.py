@@ -186,6 +186,8 @@ def create_experiment_configuration(
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.EXCLAIM_APE,
     )
+    # The experiments above were run in fortran with an advection scheme that
+    # has not been ported to ICON4Py and can therefore not be used for testing.
     advection_config = (
         advection.AdvectionConfig.from_fortran_dict(atm_dict) if do_tracer_advection else None
     )
