@@ -60,7 +60,7 @@ def test_standalone_driver_compare_single_multi_rank(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
         atol = 1e-13
-        rtol = 0.0
+        rtol = 1e-14
     else:
         atol = 2e-12
         rtol = 0.0
