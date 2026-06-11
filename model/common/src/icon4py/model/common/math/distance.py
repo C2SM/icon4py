@@ -22,19 +22,18 @@ from gt4py.next import (
 )
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.math.vector_operations import dot_product_on_edges
 
 
 @gtx.field_operator
 def arc_length_on_edges(
-    x0: fa.EdgeField[wpfloat],
-    x1: fa.EdgeField[wpfloat],
-    y0: fa.EdgeField[wpfloat],
-    y1: fa.EdgeField[wpfloat],
-    z0: fa.EdgeField[wpfloat],
-    z1: fa.EdgeField[wpfloat],
-    radius: wpfloat,
+    x0: fa.EdgeField[gtx.float64],
+    x1: fa.EdgeField[gtx.float64],
+    y0: fa.EdgeField[gtx.float64],
+    y1: fa.EdgeField[gtx.float64],
+    z0: fa.EdgeField[gtx.float64],
+    z1: fa.EdgeField[gtx.float64],
+    radius: gtx.float64,
 ):
     """
     Compute the arc length between two points on the sphere.
@@ -59,13 +58,13 @@ def arc_length_on_edges(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def diff_on_edges_torus(
-    x0: fa.EdgeField[wpfloat],
-    x1: fa.EdgeField[wpfloat],
-    y0: fa.EdgeField[wpfloat],
-    y1: fa.EdgeField[wpfloat],
-    domain_length: wpfloat,
-    domain_height: wpfloat,
-) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
+    x0: fa.EdgeField[gtx.float64],
+    x1: fa.EdgeField[gtx.float64],
+    y0: fa.EdgeField[gtx.float64],
+    y1: fa.EdgeField[gtx.float64],
+    domain_length: gtx.float64,
+    domain_height: gtx.float64,
+) -> tuple[fa.EdgeField[gtx.float64], fa.EdgeField[gtx.float64]]:
     """
     Compute the difference between two points on the torus.
 
@@ -85,13 +84,13 @@ def diff_on_edges_torus(
 
     """
     x1 = where(
-        abs(x1 - x0) <= wpfloat(0.5) * domain_length,
+        abs(x1 - x0) <= 0.5 * domain_length,
         x1,
         where(x0 > x1, x1 + domain_length, x1 - domain_length),
     )
 
     y1 = where(
-        abs(y1 - y0) <= wpfloat(0.5) * domain_height,
+        abs(y1 - y0) <= 0.5 * domain_height,
         y1,
         where(y0 > y1, y1 + domain_height, y1 - domain_height),
     )
@@ -101,13 +100,13 @@ def diff_on_edges_torus(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def distance_on_edges_torus(
-    x0: fa.EdgeField[wpfloat],
-    x1: fa.EdgeField[wpfloat],
-    y0: fa.EdgeField[wpfloat],
-    y1: fa.EdgeField[wpfloat],
-    domain_length: wpfloat,
-    domain_height: wpfloat,
-) -> fa.EdgeField[wpfloat]:
+    x0: fa.EdgeField[gtx.float64],
+    x1: fa.EdgeField[gtx.float64],
+    y0: fa.EdgeField[gtx.float64],
+    y1: fa.EdgeField[gtx.float64],
+    domain_length: gtx.float64,
+    domain_height: gtx.float64,
+) -> fa.EdgeField[gtx.float64]:
     """
     Compute the distance between two points on the torus.
 

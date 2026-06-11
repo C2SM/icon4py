@@ -103,7 +103,9 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     primal_normal_x = edge_param.primal_normal[0].ndarray
 
     cell_2_edge_coeff = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().c_lin_e(), allocator=allocator
+        data_provider.from_interpolation_savepoint().c_lin_e(),
+        allocator=allocator,
+        dtype=ta.wpfloat,
     )
     rbf_vec_coeff_c1 = data_alloc.as_field(
         data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(), allocator=allocator

@@ -13,17 +13,17 @@ Contains normal and tangential gradient computations on edges using
 finite difference approximations.
 """
 
-from gt4py import next as gtx
+import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2V
 
 
 @gtx.field_operator
 def grad_fd_norm(
-    psi_c: fa.CellKField[ta.wpfloat],
-    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-) -> fa.EdgeKField[ta.wpfloat]:
+    psi_c: fa.CellKField[gtx.float64],
+    inv_dual_edge_length: fa.EdgeField[gtx.float64],
+) -> fa.EdgeKField[gtx.float64]:
     """
     Calculate the gradient value of adjacent interface levels.
 
@@ -41,9 +41,9 @@ def grad_fd_norm(
 
 @gtx.field_operator
 def _grad_fd_tang(
-    psi_v: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], ta.wpfloat],
-    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
-    tangent_orientation: fa.EdgeField[ta.wpfloat],
-) -> fa.EdgeKField[ta.wpfloat]:
+    psi_v: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], gtx.float64],
+    inv_primal_edge_length: fa.EdgeField[gtx.float64],
+    tangent_orientation: fa.EdgeField[gtx.float64],
+) -> fa.EdgeKField[gtx.float64]:
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e

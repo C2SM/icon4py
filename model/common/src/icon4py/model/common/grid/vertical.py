@@ -18,7 +18,12 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 
 import icon4py.model.common.states.metadata as data
-from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    exceptions,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.type_alias import wpfloat
@@ -120,8 +125,14 @@ class VerticalGridConfig:
     SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = 0.5
 
     def __post_init__(self):
-        ta.config_scalars_to_wp(self, attributes=[field.name for field in self.__dataclass_fields__.values() if "float" in repr(field.type)])
-
+        ta.config_scalars_to_wp(
+            self,
+            attributes=[
+                field.name
+                for field in self.__dataclass_fields__.values()
+                if "float" in repr(field.type)
+            ],
+        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -563,10 +574,10 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     nflatlev: int,
-    model_top_height: wpfloat,
-    SLEVE_decay_scale_1: wpfloat,
-    SLEVE_decay_exponent: wpfloat,
-    SLEVE_decay_scale_2: wpfloat,
+    model_top_height: gtx.float64,
+    SLEVE_decay_scale_1: gtx.float64,
+    SLEVE_decay_exponent: gtx.float64,
+    SLEVE_decay_scale_2: gtx.float64,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
@@ -584,9 +595,9 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
 
     def _decay_func(
         vct_a: data_alloc.NDArray,
-        model_top_height: wpfloat,
-        decay_scale: wpfloat,
-        decay_exponent: wpfloat,
+        model_top_height: gtx.float64,
+        decay_scale: gtx.float64,
+        decay_exponent: gtx.float64,
     ) -> data_alloc.NDArray:
         return array_ns.sinh(
             (model_top_height / decay_scale) ** decay_exponent
@@ -601,7 +612,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         exchange=exchange,
     )
 
-    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=wpfloat)
+    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1))
     vertical_coordinate[:, num_levels] = topography
 
     # Small-scale topography (i.e. full topo - smooth topo)
@@ -636,11 +647,11 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
 def _check_and_correct_layer_thickness(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
-    SLEVE_minimum_layer_thickness_1: wpfloat,
-    SLEVE_minimum_relative_layer_thickness_1: wpfloat,
-    SLEVE_minimum_layer_thickness_2: wpfloat,
-    SLEVE_minimum_relative_layer_thickness_2: wpfloat,
-    lowest_layer_thickness: wpfloat,
+    SLEVE_minimum_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_layer_thickness_2: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_2: gtx.float64,
+    lowest_layer_thickness: gtx.float64,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(vertical_coordinate)
     num_cells = vertical_coordinate.shape[0]
@@ -741,15 +752,15 @@ def compute_vertical_coordinate(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     nflatlev: int,
-    model_top_height: wpfloat,
-    SLEVE_decay_scale_1: wpfloat,
-    SLEVE_decay_exponent: wpfloat,
-    SLEVE_decay_scale_2: wpfloat,
-    SLEVE_minimum_layer_thickness_1: wpfloat,
-    SLEVE_minimum_relative_layer_thickness_1: wpfloat,
-    SLEVE_minimum_layer_thickness_2: wpfloat,
-    SLEVE_minimum_relative_layer_thickness_2: wpfloat,
-    lowest_layer_thickness: wpfloat,
+    model_top_height: gtx.float64,
+    SLEVE_decay_scale_1: gtx.float64,
+    SLEVE_decay_exponent: gtx.float64,
+    SLEVE_decay_scale_2: gtx.float64,
+    SLEVE_minimum_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_layer_thickness_2: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_2: gtx.float64,
+    lowest_layer_thickness: gtx.float64,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """

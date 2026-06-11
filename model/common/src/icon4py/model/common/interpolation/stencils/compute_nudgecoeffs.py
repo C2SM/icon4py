@@ -9,32 +9,31 @@ import gt4py.next as gtx
 from gt4py.next import astype, exp, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
-    max_nudging_coefficient: wpfloat,
-    nudge_efold_width: wpfloat,
+    max_nudging_coefficient: gtx.float64,
+    nudge_efold_width: gtx.float64,
     nudge_zone_width: gtx.int32,
-) -> fa.EdgeField[wpfloat]:
+) -> fa.EdgeField[gtx.float64]:
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
         max_nudging_coefficient
-        * exp((-(astype(refin_ctrl - grf_nudge_start_e, wpfloat))) / (wpfloat(2.0) * nudge_efold_width)),
-        wpfloat(0.0),
+        * exp((-(astype(refin_ctrl - grf_nudge_start_e, gtx.float64))) / (2.0 * nudge_efold_width)),
+        0.0,
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
-    nudging_coefficients_for_edges: fa.EdgeField[wpfloat],
+    nudging_coefficients_for_edges: fa.EdgeField[gtx.float64],
     grf_nudge_start_e: gtx.int32,
-    max_nudging_coefficient: wpfloat,
-    nudge_efold_width: wpfloat,
+    max_nudging_coefficient: gtx.float64,
+    nudge_efold_width: gtx.float64,
     nudge_zone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
