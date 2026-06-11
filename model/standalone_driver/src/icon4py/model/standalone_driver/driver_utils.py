@@ -61,6 +61,13 @@ _LOGGING_LEVELS: dict[str, int] = {
 }
 
 
+@dataclasses.dataclass
+class Granules:
+    diffusion: diffusion.Diffusion
+    solve_nonhydro: solve_nh.SolveNonhydro
+    tracer_advection: advection.Advection | None = None
+
+
 def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
@@ -161,12 +168,12 @@ def initialize_granules(
     vertical_grid: v_grid.VerticalGrid,
     diffusion_config: diffusion.DiffusionConfig,
     solve_nh_config: solve_nh.NonHydrostaticConfig,
-    advection_config: advection.AdvectionConfig,
+    advection_config: advection.AdvectionConfig | None,
     static_field_factories: driver_states.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
-) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection]:
+) -> Granules:
     geometry_field_source = static_field_factories.geometry_field_source
     interpolation_field_source = static_field_factories.interpolation_field_source
     metrics_field_source = static_field_factories.metrics_field_source
@@ -345,42 +352,48 @@ def initialize_granules(
         exchange=exchange,
     )
 
-    advection_granule = advection.convert_config_to_advection(
-        grid=grid,
-        backend=backend,
-        config=advection_config,
-        interpolation_state=advection_states.AdvectionInterpolationState(
-            geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-            rbf_vec_coeff_e=interpolation_field_source.get(
-                interpolation_attributes.RBF_VEC_COEFF_E
+    tracer_advection_granule: advection.Advection | None = None
+    if advection_config is not None:
+        tracer_advection_granule = advection.convert_config_to_advection(
+            grid=grid,
+            backend=backend,
+            config=advection_config,
+            interpolation_state=advection_states.AdvectionInterpolationState(
+                geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+                rbf_vec_coeff_e=interpolation_field_source.get(
+                    interpolation_attributes.RBF_VEC_COEFF_E
+                ),
+                pos_on_tplane_e_1=interpolation_field_source.get(
+                    interpolation_attributes.POS_ON_TPLANE_E_X
+                ),
+                pos_on_tplane_e_2=interpolation_field_source.get(
+                    interpolation_attributes.POS_ON_TPLANE_E_Y
+                ),
             ),
-            pos_on_tplane_e_1=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_X
+            least_squares_state=advection_states.AdvectionLeastSquaresState(
+                lsq_pseudoinv_1=interpolation_field_source.get(
+                    interpolation_attributes.LSQ_PSEUDOINV
+                )[:, 0, :],
+                lsq_pseudoinv_2=interpolation_field_source.get(
+                    interpolation_attributes.LSQ_PSEUDOINV
+                )[:, 1, :],
             ),
-            pos_on_tplane_e_2=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_Y
+            metric_state=advection_states.AdvectionMetricState(
+                deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
+                deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
+                deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
+                ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
             ),
-        ),
-        least_squares_state=advection_states.AdvectionLeastSquaresState(
-            lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 0, :
-            ],
-            lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 1, :
-            ],
-        ),
-        metric_state=advection_states.AdvectionMetricState(
-            deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
-            deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
-            deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
-            ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
-        ),
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        exchange=exchange,
-    )
+            edge_params=edge_geometry,
+            cell_params=cell_geometry,
+            exchange=exchange,
+        )
 
-    return diffusion_granule, solve_nonhydro_granule, advection_granule
+    return Granules(
+        diffusion=diffusion_granule,
+        solve_nonhydro=solve_nonhydro_granule,
+        tracer_advection=tracer_advection_granule,
+    )
 
 
 def find_maximum_from_field(

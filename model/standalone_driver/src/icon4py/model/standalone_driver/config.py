@@ -60,6 +60,8 @@ class DriverConfig:
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     ntracer: int = 0
+    do_tracer_advection: bool = True
+    do_microphysics: bool = True
 
     @classmethod
     def from_fortran_dict(
@@ -96,10 +98,10 @@ class ExperimentConfig:
     topography: topography.TopographyConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
-    advection: advection.AdvectionConfig
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
+    tracer_advection: advection.AdvectionConfig | None = None
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
     def with_driver_overrides(self, **overrides: Any) -> ExperimentConfig:
         return dataclasses.replace(self, driver=dataclasses.replace(self.driver, **overrides))
@@ -133,24 +135,25 @@ def read_config(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig()
-    if not (
-        "exclaim_ch_r04b09_dsl" in config_file_path.name
-        or "exclaim_ape_R02B04" in config_file_path.name
-    ):
-        # The experiments above were run in fortran with an advection scheme
-        # that has not been ported to ICON4Py and can therefore not be used for
-        # testing.
-        # TODO (jcanton): implement a more robust solution for this exception
-        # and remove AdvectionConfig defaults
-        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
-
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+    do_tracer_advection = not (
+        "exclaim_ch_r04b09_dsl" in config_file_path.name
+        or "exclaim_ape_R02B04" in config_file_path.name
+    )
+    advection_config = (
+        advection.AdvectionConfig.from_fortran_dict(atm_dict) if do_tracer_advection else None
+    )
+
+    do_microphysics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
+    graupel_config = (
+        graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+        if do_microphysics
+        else None
+    )
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
@@ -161,6 +164,8 @@ def read_config(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
+        do_tracer_advection=do_tracer_advection,
+        do_microphysics=do_microphysics,
     )
 
     return ExperimentConfig(
@@ -170,7 +175,7 @@ def read_config(
         topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
-        advection=advection_config,
+        tracer_advection=advection_config,
         graupel=graupel_config,
         initial_condition=initial_condition_config,
         driver=driver_cfg,

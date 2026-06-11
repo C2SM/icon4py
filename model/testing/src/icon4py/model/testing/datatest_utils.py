@@ -177,24 +177,25 @@ def create_experiment_configuration(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig()
-    if experiment_description not in (
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ):
-        # The experiments above were run in fortran with an advection scheme
-        # that has not been ported to ICON4Py and can therefore not be used for
-        # testing.
-        # TODO (jcanton): implement a more robust solution for this exception
-        # and remove AdvectionConfig defaults
-        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
-
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+    do_tracer_advection = experiment_description not in (
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.EXCLAIM_APE,
+    )
+    advection_config = (
+        advection.AdvectionConfig.from_fortran_dict(atm_dict) if do_tracer_advection else None
+    )
+
+    do_microphysics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
+    graupel_config = (
+        graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+        if do_microphysics
+        else None
+    )
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=experiment_path
@@ -205,6 +206,8 @@ def create_experiment_configuration(
         master_dict=master_dict,
         profiling_stats=None,
         enable_statistics_output=False,
+        do_tracer_advection=do_tracer_advection,
+        do_microphysics=do_microphysics,
     )
 
     return definitions.ExperimentConfig(
@@ -214,7 +217,7 @@ def create_experiment_configuration(
         topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
-        advection=advection_config,
+        tracer_advection=advection_config,
         graupel=graupel_config,
         initial_condition=initial_condition_config,
         driver=driver_cfg,

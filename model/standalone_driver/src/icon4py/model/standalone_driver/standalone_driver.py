@@ -18,9 +18,9 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.advection import advection_states
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
     dimension as dims,
     model_backends,
@@ -62,10 +62,8 @@ class Icon4pyDriver:
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
-        diffusion_granule: diffusion.Diffusion,
-        solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        granules: driver_utils.Granules,
         vertical_grid_config: v_grid.VerticalGridConfig,
-        tracer_advection_granule: advection.Advection,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
     ):
@@ -74,11 +72,12 @@ class Icon4pyDriver:
         self.grid = grid
         self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
-        self.diffusion = diffusion_granule
-        self.solve_nonhydro = solve_nonhydro_granule
+        self.granules = granules
+        self.diffusion = granules.diffusion
+        self.solve_nonhydro = granules.solve_nonhydro
+        self.tracer_advection = granules.tracer_advection
         self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
-        self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -206,14 +205,15 @@ class Icon4pyDriver:
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
-        for tracer_idx in range(self.config.driver.ntracer):
-            self.tracer_advection.run(
-                diagnostic_state=tracer_advection_diagnostic_state,
-                prep_adv=tracer_prep_adv,
-                p_tracer_now=prognostic_states.current.tracer[tracer_idx],
-                p_tracer_new=prognostic_states.next.tracer[tracer_idx],
-                dtime=self.model_time_variables.dtime_in_seconds,
-            )
+        if self.config.driver.do_tracer_advection and self.tracer_advection is not None:
+            for tracer_idx in range(self.config.driver.ntracer):
+                self.tracer_advection.run(
+                    diagnostic_state=tracer_advection_diagnostic_state,
+                    prep_adv=tracer_prep_adv,
+                    p_tracer_now=prognostic_states.current.tracer[tracer_idx],
+                    p_tracer_new=prognostic_states.next.tracer[tracer_idx],
+                    dtime=self.model_time_variables.dtime_in_seconds,
+                )
 
         prognostic_states.swap()
 
@@ -575,16 +575,12 @@ def initialize_driver(
     )
 
     log.info("initializing granules")
-    (
-        diffusion_granule,
-        solve_nonhydro_granule,
-        tracer_advection_granule,
-    ) = driver_utils.initialize_granules(
+    granules = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         diffusion_config=config.diffusion,
         solve_nh_config=config.nonhydrostatic,
-        advection_config=config.advection,
+        advection_config=config.tracer_advection,
         static_field_factories=static_field_factories,
         exchange=exchange,
         owner_mask=gtx.as_field(
@@ -600,10 +596,8 @@ def initialize_driver(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
-        diffusion_granule=diffusion_granule,
-        solve_nonhydro_granule=solve_nonhydro_granule,
+        granules=granules,
         vertical_grid_config=config.vertical_grid,
-        tracer_advection_granule=tracer_advection_granule,
         exchange=exchange,
         global_reductions=global_reductions,
     )
