@@ -59,8 +59,10 @@ def test_standalone_driver_compare_single_multi_rank(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
         atol = 4e-13
+        rtol = 0.0
     else:
         atol = 2e-12
+        rtol = 0.0
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
@@ -106,4 +108,5 @@ def test_standalone_driver_compare_single_multi_rank(
             local_field=local_field.asnumpy(),
             check_halos=True,
             atol=atol,
+            rtol=rtol,
         )
