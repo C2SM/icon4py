@@ -124,6 +124,12 @@ class NoMicrophysics(SingleMomentSixClassIconGraupelConfig):
     def __setattr__(self, name: str, value: Any) -> typing.Never:
         raise NoMicrophysicsError
 
+    def __copy__(self) -> NoMicrophysics:
+        return NoMicrophysics()
+
+    def __deepcopy__(self, memo: dict) -> NoMicrophysics:
+        return NoMicrophysics()
+
 
 class NoMicrophysicsError(Exception):
     """Raise this if microphysics was not configured but the configuration for it is accessed anyway."""
