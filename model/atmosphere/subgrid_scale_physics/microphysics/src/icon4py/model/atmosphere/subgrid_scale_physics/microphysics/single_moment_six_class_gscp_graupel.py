@@ -116,6 +116,7 @@ class SingleMomentSixClassIconGraupelConfig:
         # bugs.
         return NoMicrophysics()
 
+
 class NoMicrophysics(SingleMomentSixClassIconGraupelConfig):
     def __getattr__(self, name: str) -> typing.Never:
         raise NoMicrophysicsError
@@ -123,9 +124,12 @@ class NoMicrophysics(SingleMomentSixClassIconGraupelConfig):
     def __setattr__(self, name: str, value: Any) -> typing.Never:
         raise NoMicrophysicsError
 
+
 class NoMicrophysicsError(Exception):
     """Raise this if microphysics was not configured but the configuration for it is accessed anyway."""
+
     ...
+
 
 @dataclasses.dataclass
 class MetricStateIconGraupel:
