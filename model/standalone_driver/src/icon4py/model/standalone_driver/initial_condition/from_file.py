@@ -64,8 +64,8 @@ def _read_prognostics_from_serialbox(
     All array manipulation uses only ``numpy`` and the GT4Py field API;
     there is intentionally no dependency on ``icon4py.model.testing``.
     """
-    array_ns = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
+    array_ns = data_alloc.import_array_ns(allocator)
 
     fname = f"icon_pydycore_rank{rank}"
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), fname)

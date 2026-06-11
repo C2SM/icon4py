@@ -14,10 +14,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import model_backends, model_options, topography
-from icon4py.model.common.decomposition import (
-    definitions as decomp_defs,
-    definitions as decomposition,
-)
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -117,7 +114,7 @@ def metrics_field_source(
         config=config,
         grid_manager=grid_manager,
         backend=generic_concrete_backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomposition.single_node_exchange,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
