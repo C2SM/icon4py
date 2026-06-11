@@ -104,7 +104,6 @@ build_distributed:
       variables:
         SLURM_TIMELIMIT: '01:30:00'
         SLURM_PARTITION: "normal"
-        SLURM_NTASKS: 4
     - if: $COMPONENT == 'common'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
