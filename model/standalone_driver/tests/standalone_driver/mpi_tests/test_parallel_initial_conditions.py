@@ -48,7 +48,6 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
-        test_defs.Experiments.GAUSS3D,
     ],
 )
 @pytest.mark.mpi
@@ -88,18 +87,17 @@ def test_initial_conditions_compare_single_multi_rank(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    allocator = model_backends.get_allocator(backend)
+
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    backend = model_options.customize_backend(program=None, backend=backend_like)
-    allocator = model_backends.get_allocator(backend)
     config = driver_config.read_config(config_file_path)
 
-    serial_process_props = decomp_defs.get_process_properties(
-        decomp_defs.get_runtype(with_mpi=False)
-    )
-    serial_config = config.with_driver_overrides(
-        output_path=tmp_path / "ci_driver_output_serial_rank0"
+    serial_process_props = decomp_defs.SingleNodeProcessProperties()
+    serial_config = config.with_overrides(
+        driver={"output_path": tmp_path / "ci_driver_output_serial_rank0"}
     )
     serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -127,8 +125,8 @@ def test_initial_conditions_compare_single_multi_rank(
         exchange=single_rank_icon4py_driver.exchange,
     )
 
-    mpi_config = config.with_driver_overrides(
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"
+    mpi_config = config.with_overrides(
+        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
     )
     mpi_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

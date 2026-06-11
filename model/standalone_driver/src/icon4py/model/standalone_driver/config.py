@@ -54,6 +54,7 @@ class DriverConfig:
     dtime: datetime.timedelta
     start_date: datetime.datetime
     end_date: datetime.datetime
+    n_time_steps: int | None = None  # when set, it overrides date-based computation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
@@ -103,8 +104,15 @@ class ExperimentConfig:
     tracer_advection: advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
-    def with_driver_overrides(self, **overrides: Any) -> ExperimentConfig:
-        return dataclasses.replace(self, driver=dataclasses.replace(self.driver, **overrides))
+    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
+        replacements: dict[str, Any] = {}
+        for key, value in overrides.items():
+            current = getattr(self, key)
+            if isinstance(value, dict):
+                replacements[key] = dataclasses.replace(current, **value)
+            else:
+                replacements[key] = value
+        return dataclasses.replace(self, **replacements)
 
 
 def read_config(

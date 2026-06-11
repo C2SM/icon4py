@@ -95,17 +95,21 @@ class ModelTimeVariables:
     cfl_watch_mode: bool = dataclasses.field(init=False)
 
     def __post_init__(self, config: driver_config.DriverConfig) -> None:
-        self.n_time_steps = int((config.end_date - config.start_date) / config.dtime)
+        if config.n_time_steps is not None:
+            self.n_time_steps = config.n_time_steps
+            self.simulation_date = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+        else:
+            self.n_time_steps = int((config.end_date - config.start_date) / config.dtime)
+            self.simulation_date = config.start_date
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
-        self.simulation_date = config.start_date
         self.ndyn_substeps_var = config.ndyn_substeps
         self.max_ndyn_substeps = config.ndyn_substeps + 7
         self.is_first_step_in_simulation = True
         self.cfl_watch_mode = False
 
-        if self.n_time_steps < 0:
-            raise ValueError("end_date should be larger than start_date. Please check.")
+        if self.n_time_steps <= 0:
+            raise ValueError("n_time_steps must be positive.")
 
     @functools.cached_property
     def dtime_in_seconds(self) -> ta.wpfloat:

@@ -12,7 +12,7 @@ from typing import Annotated
 
 import typer
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 
 
@@ -48,12 +48,6 @@ def main(
             help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
         ),
     ] = False,
-    force_serial_run: Annotated[
-        bool,
-        typer.Option(
-            help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
-        ),
-    ] = False,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.
@@ -63,20 +57,20 @@ def main(
     run.
     """
 
-    icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
+    backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(icon4py_backend)
+    )
+    allocator = model_backends.get_allocator(backend)
 
-    process_props, backend = standalone_driver.setup_environment(
-        force_serial_run=force_serial_run,
+    process_props = standalone_driver.setup_environment(
         log_level=log_level,
-        backend_like=icon4py_backend,
         print_distributed_debug_msg=print_distributed_debug_msg,
     )
 
     config = driver_config.read_config(config_file_path)
     if output_path is not None:
-        config = config.with_driver_overrides(output_path=output_path)
+        config = config.with_overrides(driver={"output_path": output_path})
 
-    allocator = model_backends.get_allocator(backend)
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=config.vertical_grid,
