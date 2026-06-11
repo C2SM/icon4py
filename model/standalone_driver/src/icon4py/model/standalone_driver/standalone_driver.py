@@ -75,7 +75,6 @@ class Icon4pyDriver:
         self.granules = granules
         self.diffusion = granules.diffusion
         self.solve_nonhydro = granules.solve_nonhydro
-        self.tracer_advection = granules.tracer_advection
         self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
         self.timer_collection = driver_states.TimerCollection(
@@ -205,9 +204,10 @@ class Icon4pyDriver:
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
-        if self.config.driver.do_tracer_advection and self.tracer_advection is not None:
+        if self.config.driver.do_tracer_advection:
+            assert self.granules.tracer_advection is not None
             for tracer_idx in range(self.config.driver.ntracer):
-                self.tracer_advection.run(
+                self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
                     p_tracer_now=prognostic_states.current.tracer[tracer_idx],
