@@ -180,10 +180,10 @@ class ExperimentConfig:
     topography: topography.TopographyConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig
     diffusion: diffusion.DiffusionConfig
-    initial_condition: initial_condition.InitialConditionConfig
-    driver: driver_config.DriverConfig
     tracer_advection: advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+    initial_condition: initial_condition.InitialConditionConfig
+    driver: driver_config.DriverConfig
 
 
 @dataclasses.dataclass
