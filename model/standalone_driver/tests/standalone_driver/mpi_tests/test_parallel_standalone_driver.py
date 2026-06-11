@@ -74,6 +74,9 @@ def test_standalone_driver_compare_single_multi_rank(
 
     config = driver_config.read_config(config_file_path)
 
+    backend = model_options.customize_backend(program=None, backend=backend_like)
+    allocator = model_backends.get_allocator(backend)
+
     serial_process_props = decomp_defs.get_process_properties(
         decomp_defs.get_runtype(with_mpi=False)
     )

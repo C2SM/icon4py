@@ -21,13 +21,7 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import (
-    dimension as dims,
-    model_backends,
-    model_options,
-    topography,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, model_backends, topography, type_alias as ta
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
@@ -500,12 +494,10 @@ class Icon4pyDriver:
 
 
 def setup_environment(
-    force_serial_run: bool,
     log_level: str,
-    backend_like: model_backends.BackendLike,
     print_distributed_debug_msg: bool,
-) -> tuple[decomposition_defs.ProcessProperties, gtx.typing.Backend | None]:
-    if force_serial_run or mpi_decomp.mpi4py is None:
+) -> decomposition_defs.ProcessProperties:
+    if mpi_decomp.mpi4py is None:
         with_mpi = False
     else:
         mpi_decomp.init_mpi()
@@ -520,11 +512,7 @@ def setup_environment(
         process_props=process_props,
     )
 
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_like)
-    )
-
-    return process_props, backend
+    return process_props
 
 
 def initialize_driver(
