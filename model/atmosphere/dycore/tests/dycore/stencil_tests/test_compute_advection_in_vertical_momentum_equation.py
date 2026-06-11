@@ -500,7 +500,20 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         "vertical_cfl",
     )
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),  # For now compile time variants triger error in gt4py
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "end_index_of_damping_layer",
+            "nflatlev",
+        ),
     }
 
     @staticmethod
