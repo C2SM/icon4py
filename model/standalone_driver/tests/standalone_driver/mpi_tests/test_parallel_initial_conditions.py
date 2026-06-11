@@ -96,9 +96,7 @@ def test_initial_conditions_compare_single_multi_rank(
 
     config = driver_config.read_config(config_file_path)
 
-    serial_process_props = decomp_defs.get_process_properties(
-        decomp_defs.get_runtype(with_mpi=False)
-    )
+    serial_process_props = decomp_defs.SingleNodeProcessProperties()
     serial_config = config.with_driver_overrides(
         output_path=tmp_path / "ci_driver_output_serial_rank0"
     )
