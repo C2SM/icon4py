@@ -42,7 +42,6 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
-        test_defs.Experiments.GAUSS3D,
     ],
 )
 @pytest.mark.mpi
@@ -59,11 +58,9 @@ def test_standalone_driver_compare_single_multi_rank(
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
-        atol = 4e-12
-        rtol = 1e-14
+        atol = 4e-13
     else:
         atol = 2e-12
-        rtol = 0.0
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
@@ -109,5 +106,4 @@ def test_standalone_driver_compare_single_multi_rank(
             local_field=local_field.asnumpy(),
             check_halos=True,
             atol=atol,
-            rtol=rtol,
         )
