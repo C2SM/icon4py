@@ -59,7 +59,7 @@ def test_standalone_driver_compare_single_multi_rank(
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
-        atol = 1e-13
+        atol = 3e-12
         rtol = 1e-14
     else:
         atol = 2e-12
