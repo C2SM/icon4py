@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.testing import filters
+from icon4py.model.testing import datatest_utils, filters
 
 
 __all__ = [
@@ -256,3 +256,19 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
                 f"{benchmark_name:<{max_name_len}} | {np.mean(gtx_metrics):>10.8f} | {np.median(gtx_metrics):>10.8f} | {np.std(gtx_metrics):>10.8f} | {len(gtx_metrics):>4}"
             )
         terminalreporter.line("-" * len(header), blue=True)
+
+
+@pytest.fixture(autouse=True)
+def auto_download_ser_data(request: pytest.FixtureRequest) -> None:
+    marker = request.node.get_closest_marker("datatest")
+    if marker is None:
+        return
+    if "experiment_description" not in request.fixturenames:
+        return
+    if "process_props" not in request.fixturenames:
+        return
+    if "not datatest" in request.config.getoption("-k", ""):
+        return
+    experiment_description = request.getfixturevalue("experiment_description")
+    process_props = request.getfixturevalue("process_props")
+    datatest_utils.download_experiment(experiment_description, process_props)
