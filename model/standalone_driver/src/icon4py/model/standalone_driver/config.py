@@ -93,7 +93,7 @@ class DriverConfig:
         )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ExperimentConfig:
     # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
     metrics: metrics_factory.MetricsConfig

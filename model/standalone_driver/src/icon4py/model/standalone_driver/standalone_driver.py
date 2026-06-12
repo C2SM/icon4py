@@ -505,7 +505,7 @@ def initialize_driver(
         cli_output_path=None,
         process_props=process_props,
     )
-    config.driver = dataclasses.replace(config.driver, output_path=output_path)
+    config = dataclasses.replace(config, driver=dataclasses.replace(config.driver, output_path=output_path))
 
     allocator = model_backends.get_allocator(backend)
 
