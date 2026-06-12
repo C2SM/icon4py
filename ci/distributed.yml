@@ -115,7 +115,7 @@ build_distributed:
     - if: $COMPONENT == 'standalone_driver'
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
-        SLURM_TIMELIMIT: '03:00:00'
+        SLURM_TIMELIMIT: '02:00:00'
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
