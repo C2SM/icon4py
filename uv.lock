@@ -2857,7 +2857,7 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
-  {name = "icon4py-common"},
+  {name = "icon4py-common", extra = ["io"]},
   {name = "icon4py-testing"},
   {name = "packaging"},
   {name = "typer"}
@@ -2872,7 +2872,7 @@ requires-dist = [
   {name = "gt4py", specifier = "==1.1.10"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
-  {name = "icon4py-common", editable = "model/common"},
+  {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "typer", specifier = ">=0.20.0"}

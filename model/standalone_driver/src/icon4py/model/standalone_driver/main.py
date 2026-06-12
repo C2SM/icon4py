@@ -24,11 +24,11 @@ def main(
     *,
     grid_file_path: pathlib.Path,
     icon4py_backend: str | model_backends.BackendLike,
-    output_path: pathlib.Path = pathlib.Path("./output"),
-    log_level: str = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-    print_distributed_debug_msg: bool = False,
-    force_serial_run: bool = False,
-    enable_output: bool = True,
+    output_path: pathlib.Path,
+    log_level: str,
+    print_distributed_debug_msg: bool,
+    force_serial_run: bool,
+    enable_output: bool,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -40,7 +40,8 @@ def main(
     The integration can then be executed by calling time_integration function in Icon4pyDriver
 
     Programmatic entry point: accepts either a backend name (str) or a BackendLike
-    object. The command line interface lives in :func:`cli`.
+    object. All arguments are required; the defaults live in the command line
+    interface, :func:`cli`.
     """
 
     backend_like = driver_utils.get_backend_from_name(icon4py_backend)

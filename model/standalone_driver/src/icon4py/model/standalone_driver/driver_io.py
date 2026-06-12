@@ -18,33 +18,40 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
   *all* output fields, prognostic and diagnostic alike, written to one file
   (:func:`create_io_monitor`).
 
-The whole module imports the optional ``icon4py-common[io]`` dependencies (xarray,
-netCDF4, uxarray, cftime) lazily, so the driver keeps working without them as long as
-output is not requested.
+Output is enabled by default, so the driver depends on ``icon4py-common[io]``
+unconditionally (see ``pyproject.toml``).
 """
-
-from __future__ import annotations
 
 import dataclasses
 import datetime as dt
 import pathlib
-from typing import TYPE_CHECKING, Any, Final
+from typing import Any, Final
 
+import gt4py.next as gtx
+import xarray as xr
+
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.diagnostic_calculations.stencils import (
+    diagnose_pressure,
+    diagnose_surface_pressure,
+    diagnose_temperature,
+)
+from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
+from icon4py.model.common.io import io as common_io, utils as io_utils
+from icon4py.model.common.metrics import metrics_attributes as metrics_attr
+from icon4py.model.common.states import (
+    data as state_data,
+    model as state_model,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-if TYPE_CHECKING:
-    import xarray as xr
-
-    from icon4py.model.common.decomposition import definitions as decomposition_defs
-    from icon4py.model.common.grid import base as grid_base, vertical as v_grid
-    from icon4py.model.common.io import io as common_io
-    from icon4py.model.common.states import prognostic_state as prognostics
-    from icon4py.model.standalone_driver import driver_states
+from icon4py.model.standalone_driver import driver_states
 
 
 #: Output subfolder created *inside* the driver's run/output directory.
-OUTPUT_SUBDIR: Final[str] = "io"
+OUTPUT_SUBDIR: Final[str] = "output"
 
 #: File-name stub for the (single) output file (a counter + ``.nc`` is appended).
 #: Prognostic and diagnostic fields are written together into this file.
@@ -55,35 +62,39 @@ DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 # Prognostic fields
 # --------------------------------------------------------------------------------------
 
-#: ``state_key -> (prognostic_attr, cf_attributes_key, is_on_interface)``; mirrors the
-#: tested reference in ``model/common/tests/common/io/utils.py::model_state``.
-_PROGNOSTIC_FIELD_SPECS: Final[dict[str, tuple[str, str, bool]]] = {
-    "air_density": ("rho", "air_density", False),
-    "exner_function": ("exner", "exner_function", False),
-    "theta_v": ("theta_v", "virtual_potential_temperature", False),
-    "upward_air_velocity": ("w", "upward_air_velocity", True),
-    "normal_velocity": ("vn", "normal_velocity", False),
+
+@dataclasses.dataclass(frozen=True)
+class _PrognosticFieldSpec:
+    #: attribute name on ``PrognosticState`` holding the field
+    state_attr: str
+    metadata: state_model.FieldMetaData
+
+
+def _prognostic_spec(
+    state_attr: str, cf_attributes_key: str, *, is_on_interface: bool = False
+) -> _PrognosticFieldSpec:
+    """Pair a ``PrognosticState`` attribute with its shared CF attribute entry, extended
+    with the vertical placement of the field."""
+    return _PrognosticFieldSpec(
+        state_attr=state_attr,
+        metadata={
+            **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_attributes_key],
+            "is_on_interface": is_on_interface,
+        },
+    )
+
+
+#: Specs of the prognostic output fields, keyed by output variable name.
+_PROGNOSTIC_FIELD_SPECS: Final[dict[str, _PrognosticFieldSpec]] = {
+    "air_density": _prognostic_spec("rho", "air_density"),
+    "exner_function": _prognostic_spec("exner", "exner_function"),
+    "theta_v": _prognostic_spec("theta_v", "virtual_potential_temperature"),
+    "upward_air_velocity": _prognostic_spec("w", "upward_air_velocity", is_on_interface=True),
+    "normal_velocity": _prognostic_spec("vn", "normal_velocity"),
 }
 
 #: The prognostic output variables.
 PROGNOSTIC_VARIABLES: Final[list[str]] = list(_PROGNOSTIC_FIELD_SPECS.keys())
-
-
-def _to_host_data_array(
-    field: Any, cf_attrs: dict[str, Any], *, is_on_interface: bool
-) -> xr.DataArray:
-    """Wrap a gt4py field as a CF/UGRID-annotated host (numpy) ``xarray.DataArray``.
-
-    ``io.utils.to_data_array`` mutates the ``attrs`` dict it is handed (it adds the UGRID
-    ``location``/``coordinates``/``mesh`` keys), so callers must pass a fresh copy. The data
-    buffer is forced to host via ``data_alloc.as_numpy`` so the path works for GPU backends
-    too (netCDF4 cannot consume a device array).
-    """
-    from icon4py.model.common.io import utils as io_utils  # noqa: PLC0415
-
-    data_array = io_utils.to_data_array(field, cf_attrs, is_on_interface=is_on_interface)
-    data_array.data = data_alloc.as_numpy(field)
-    return data_array
 
 
 def prognostic_state_to_dataarrays(
@@ -91,24 +102,21 @@ def prognostic_state_to_dataarrays(
     variables: list[str] | None = None,
 ) -> dict[str, xr.DataArray]:
     """Assemble a CF/UGRID-annotated model-state dict from a ``PrognosticState``."""
-    from icon4py.model.common.states import data as state_data  # noqa: PLC0415
-
     selected = PROGNOSTIC_VARIABLES if variables is None else variables
 
     state: dict[str, xr.DataArray] = {}
     for key in selected:
         try:
-            prognostic_attr, cf_key, is_on_interface = _PROGNOSTIC_FIELD_SPECS[key]
+            spec = _PROGNOSTIC_FIELD_SPECS[key]
         except KeyError as err:
             raise ValueError(
                 f"Unknown prognostic output variable '{key}'. "
                 f"Known variables are: {PROGNOSTIC_VARIABLES}."
             ) from err
-        field = getattr(prognostic_state, prognostic_attr)
-        attrs = dict(
-            state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key]
-        )  # fresh copy: to_data_array mutates
-        state[key] = _to_host_data_array(field, attrs, is_on_interface=is_on_interface)
+        field = getattr(prognostic_state, spec.state_attr)
+        state[key] = io_utils.to_host_data_array(
+            field, spec.metadata, is_on_interface=spec.metadata.get("is_on_interface", False)
+        )
     return state
 
 
@@ -136,23 +144,20 @@ DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC
 class DiagnosticInputs:
     """Static fields needed to compute the diagnostic output fields.
 
-    Fetched once from the driver's field sources and reused every output step.
+    Fetched once from the driver's field sources and reused every output step. Kept as a
+    plain field container (instead of passing the field factories around) so that
+    :func:`compute_diagnostics` stays usable with bare fields, e.g. in tests.
     """
 
-    ddqz_z_full: Any
-    rbf_vec_coeff_c1: Any
-    rbf_vec_coeff_c2: Any
+    ddqz_z_full: gtx.Field
+    rbf_vec_coeff_c1: gtx.Field
+    rbf_vec_coeff_c2: gtx.Field
 
 
 def fetch_diagnostic_inputs(
     static_field_factories: driver_states.StaticFieldFactories,
 ) -> DiagnosticInputs:
     """Retrieve ``ddqz_z_full`` and the cell rbf coefficients from the field sources."""
-    from icon4py.model.common.interpolation import (  # noqa: PLC0415
-        interpolation_attributes as intp_attr,
-    )
-    from icon4py.model.common.metrics import metrics_attributes as metrics_attr  # noqa: PLC0415
-
     metrics = static_field_factories.metrics_field_source
     interpolation = static_field_factories.interpolation_field_source
     return DiagnosticInputs(
@@ -166,31 +171,20 @@ def compute_diagnostics(
     prognostic_state: prognostics.PrognosticState,
     *,
     grid: grid_base.Grid,
-    backend: Any,
+    backend: gtx.typing.Backend | None,
     inputs: DiagnosticInputs,
-) -> dict[str, Any]:
+) -> dict[str, gtx.Field]:
     """Compute the diagnostic output fields from the prognostic state.
 
-    This transcribes the verified reference sequence in
-    ``model/common/tests/common/diagnostic_calculations/unit_tests/test_diagnostic_calculations.py``
-    (temperature, edge->cell rbf winds, surface pressure, pressure), using the same domain
-    bounds and offset providers. The dry-air path (zero hydrometeors) is assumed.
+    Diagnoses temperature and virtual temperature from ``theta_v``/``exner``, the
+    cell-center wind components by RBF interpolation of ``vn``, and the pressure field
+    by vertical integration from the diagnosed surface pressure. The dry-air path (zero
+    hydrometeors) is assumed.
 
     Returns:
         ``{eastward_wind, northward_wind, temperature, virtual_temperature, pressure}`` as
         gt4py cell/full-level fields.
     """
-    from icon4py.model.common import dimension as dims  # noqa: PLC0415
-    from icon4py.model.common.diagnostic_calculations.stencils import (  # noqa: PLC0415
-        diagnose_pressure,
-        diagnose_surface_pressure,
-        diagnose_temperature,
-    )
-    from icon4py.model.common.grid import horizontal as h_grid  # noqa: PLC0415
-    from icon4py.model.common.interpolation.stencils import (  # noqa: PLC0415
-        edge_2_cell_vector_rbf_interpolation as rbf,
-    )
-
     num_levels = grid.num_levels
     cell_domain = h_grid.domain(dims.CellDim)
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
@@ -198,12 +192,19 @@ def compute_diagnostics(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
-    def _zero_full() -> Any:
-        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-
-    def _zero_interface() -> Any:
+    def _zero_full() -> gtx.Field:
         return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, allocator=backend
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        )
+
+    def _zero_interface() -> gtx.Field:
+        return data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.wpfloat,
+            extend={dims.KDim: 1},
+            allocator=backend,
         )
 
     # dry air: all hydrometeors are zero
@@ -213,7 +214,9 @@ def compute_diagnostics(
     u = _zero_full()
     v = _zero_full()
     pressure = _zero_full()
-    pressure_ifc = _zero_interface()
+    # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
+    # in-place buffer fill below would not type-check against the precise Field type.
+    pressure_ifc: Any = _zero_interface()
     surface_pressure_k = _zero_interface()
 
     diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
@@ -264,7 +267,7 @@ def compute_diagnostics(
     # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
     # in-place buffer fill below would not type-check against the precise Field type.
     surface_pressure: Any = data_alloc.zero_field(
-        grid, dims.CellDim, dtype=float, allocator=backend
+        grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
     )
     surface_pressure.ndarray[:] = surface_pressure_k.ndarray[:, num_levels]
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
@@ -292,16 +295,13 @@ def compute_diagnostics(
 
 
 def diagnostic_fields_to_dataarrays(
-    diagnostic_fields: dict[str, Any],
+    diagnostic_fields: dict[str, gtx.Field],
 ) -> dict[str, xr.DataArray]:
     """Assemble CF/UGRID-annotated DataArrays from computed diagnostic fields."""
-    from icon4py.model.common.states import data as state_data  # noqa: PLC0415
-
-    state: dict[str, xr.DataArray] = {}
-    for key, field in diagnostic_fields.items():
-        attrs = dict(state_data.DIAGNOSTIC_CF_ATTRIBUTES[key])  # fresh copy: to_data_array mutates
-        state[key] = _to_host_data_array(field, attrs, is_on_interface=False)
-    return state
+    return {
+        key: io_utils.to_host_data_array(field, state_data.DIAGNOSTIC_CF_ATTRIBUTES[key])
+        for key, field in diagnostic_fields.items()
+    }
 
 
 # --------------------------------------------------------------------------------------
@@ -318,7 +318,6 @@ def create_io_monitor(
     start_date: dt.datetime,
     dtime: dt.timedelta,
     variables: list[str] | None = None,
-    process_properties: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.
 
@@ -331,13 +330,19 @@ def create_io_monitor(
     time seen at the IO hook is ``start_date + dtime`` (the simulation date is advanced before
     integration), so the field group starts there.
     """
-    from icon4py.model.common.io import io as common_io  # noqa: PLC0415
-
     output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
+
+    interval_seconds = dtime.total_seconds()
+    if interval_seconds <= 0 or not interval_seconds.is_integer():
+        # the common io interval config only resolves whole seconds; rejecting instead of
+        # truncating keeps sub-second time steps from silently producing a zero interval
+        raise ValueError(
+            f"The output interval must be a positive whole number of seconds, got dtime={dtime}."
+        )
 
     io_output_path = output_path / OUTPUT_SUBDIR
     first_output_time = start_date + dtime
-    interval = f"{int(dtime.total_seconds())} SECONDS"
+    interval = f"{int(interval_seconds)} SECONDS"
 
     field_groups = [
         common_io.FieldGroupIOConfig(
@@ -355,6 +360,6 @@ def create_io_monitor(
         config=config,
         vertical_size=vertical_grid,
         horizontal_size=grid.config.horizontal_config,
-        grid_file_name=str(grid_file_path),
+        grid_file_name=grid_file_path,
         grid_id=grid.id,
     )

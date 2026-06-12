@@ -78,15 +78,20 @@ def test_standalone_driver_compare_single_multi_rank(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=tmp_path / "ci_driver_output_serial_rank0",
+        log_level="notset",
+        print_distributed_debug_msg=False,
         force_serial_run=True,
-        enable_output=False,  # IO is single-node only (Phase 0)
+        enable_output=False,
     )
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-        enable_output=False,  # IO is single-node only (Phase 0)
+        log_level="notset",
+        print_distributed_debug_msg=False,
+        force_serial_run=False,
+        enable_output=False,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]

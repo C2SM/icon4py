@@ -12,9 +12,8 @@ import datetime as dt
 import enum
 import logging
 import pathlib
-import uuid
 from collections.abc import Sequence
-from typing import Any, Final
+from typing import Any
 
 from icon4py.model.common import exceptions
 from icon4py.model.common.components import monitor
@@ -32,11 +31,6 @@ class OutputInterval(str, enum.Enum):
     MINUTE = "MINUTE"
     HOUR = "HOUR"
     DAY = "DAY"
-
-
-#: Tolerance used when deciding whether the model clock has reached a scheduled output
-#: time. Guards against sub-second floating point drift accumulating in the model clock.
-_OUTPUT_TIME_TOLERANCE: Final[dt.timedelta] = dt.timedelta(milliseconds=1)
 
 
 def to_delta(value: str) -> dt.timedelta:
@@ -155,8 +149,8 @@ class IOMonitor(monitor.Monitor):
         config: IOConfig,
         vertical_size: v_grid.VerticalGrid,
         horizontal_size: base.HorizontalGridSize,
-        grid_file_name: str,
-        grid_id: uuid.UUID | str,
+        grid_file_name: pathlib.Path | str,
+        grid_id: writers.GridIdentifier,
     ):
         self.config = config
         self._grid_file = grid_file_name
@@ -182,7 +176,7 @@ class IOMonitor(monitor.Monitor):
 
     def _create_output_dir(self) -> None:
         path = pathlib.Path(self.config.output_path)
-        path.mkdir(parents=True, exist_ok=True, mode=0o777)
+        path.mkdir(parents=True, exist_ok=True)
         self._output_path = path
 
     def _write_ugrid(self) -> None:
@@ -225,7 +219,7 @@ class FieldGroupMonitor(monitor.Monitor):
         config: FieldGroupIOConfig,
         vertical: VerticalGrid,
         horizontal: base.HorizontalGridSize,
-        grid_id: uuid.UUID | str,
+        grid_id: writers.GridIdentifier,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
@@ -261,7 +255,7 @@ class FieldGroupMonitor(monitor.Monitor):
     def _handle_output_path(self, output_path: pathlib.Path, filename: str) -> None:
         file = output_path.joinpath(filename).absolute()
         path = file.parent
-        path.mkdir(parents=True, exist_ok=True, mode=0o777)
+        path.mkdir(parents=True, exist_ok=True)
         self._output_path = path
         self._file_name_pattern = file.name
 
@@ -339,11 +333,10 @@ class FieldGroupMonitor(monitor.Monitor):
 
     def _at_capture_time(self, model_time: dt.datetime) -> bool:
         # Capture as soon as the model clock reaches (or passes) the next scheduled
-        # output time, allowing a small tolerance for sub-second drift in the model
-        # clock. This is more robust than requiring an exact match: a step that lands
-        # slightly past the scheduled time still produces output instead of silently
-        # skipping it.
-        return model_time >= self._next_output_time - _OUTPUT_TIME_TOLERANCE
+        # output time. The clock advances by exact `datetime` arithmetic (integer
+        # microseconds), so no float tolerance is needed; `>=` (instead of `==`) keeps
+        # a step that lands past the scheduled time from silently skipping output.
+        return model_time >= self._next_output_time
 
     def close(self) -> None:
         if self._dataset is not None:

@@ -12,7 +12,7 @@ import functools
 import logging
 import pathlib
 import uuid
-from typing import Final, TypedDict
+from typing import Final, TypeAlias, TypedDict
 
 import netCDF4 as nc
 import numpy as np
@@ -24,6 +24,10 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
+
+#: Identifier of the horizontal grid (`uuidOfHGrid`). ICON grid files carry a proper
+#: UUID, but generated grids (e.g. the simple grid) use plain string ids.
+GridIdentifier: TypeAlias = uuid.UUID | str
 
 EDGE: Final[str] = "edge"
 VERTEX: Final[str] = "vertex"
@@ -52,7 +56,7 @@ class GlobalFileAttributes(TypedDict, total=False):
     Conventions: Required[str]  # TODO(halungge): check changelog? latest version is 1.11
 
     #: unique id of the horizontal grid used in the simulation (from grid file)
-    uuidOfHGrid: Required[uuid.UUID | str]
+    uuidOfHGrid: Required[GridIdentifier]
 
     #: institution name
     institution: Required[str]

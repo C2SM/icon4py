@@ -11,7 +11,6 @@ import functools
 import logging
 import pathlib
 import types
-import typing
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -30,6 +29,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
+from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
@@ -40,10 +40,6 @@ from icon4py.model.standalone_driver import (
     driver_states,
     driver_utils,
 )
-
-
-if typing.TYPE_CHECKING:
-    from icon4py.model.common.io import io as common_io
 
 
 log = logging.getLogger(__name__)
@@ -64,8 +60,8 @@ class Icon4pyDriver:
         tracer_advection_granule: advection.Advection,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
-        io_monitor: "common_io.IOMonitor | None" = None,
-        io_diagnostic_inputs: "driver_io.DiagnosticInputs | None" = None,
+        io_monitor: common_io.IOMonitor | None = None,
+        io_diagnostic_inputs: driver_io.DiagnosticInputs | None = None,
     ):
         self.config = config
         self.backend = backend
@@ -716,8 +712,8 @@ def initialize_driver(
     io_monitor = None
     io_diagnostic_inputs = None
     if enable_output and with_mpi:
-        # Phase 0 IO is single-node only: under MPI every rank would construct its own
-        # monitor and write overlapping files. Disable until the distributed IO phase.
+        # IO is single-node only for now: under MPI every rank would construct its own
+        # monitor and write overlapping files. Disable until IO becomes distributed.
         log.warning("output is not supported in distributed (MPI) runs yet: disabling IO")
         enable_output = False
     if enable_output:

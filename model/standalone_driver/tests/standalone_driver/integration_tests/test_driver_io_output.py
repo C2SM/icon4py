@@ -12,11 +12,12 @@ Runs the Jablonowski-Williamson testcase for the default (one) step with
 ``enable_output=True`` and asserts that valid CF/UGRID NetCDF files are produced.
 It exercises the full ``store -> file`` path, not just the in-memory bridge.
 
-Requires the optional ``icon4py-common[io]`` stack and (being a datatest) the JW grid.
+Being a datatest, it requires the JW grid.
 """
 
 import pathlib
 
+import netCDF4 as nc
 import pytest
 
 from icon4py.model.common import model_backends
@@ -25,13 +26,6 @@ from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from ..fixtures import *  # noqa: F403
-
-
-# Skip if the optional IO stack is not installed.
-pytest.importorskip("netCDF4")
-pytest.importorskip("uxarray")
-
-import netCDF4 as nc
 
 
 def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
@@ -56,6 +50,9 @@ def test_standalone_driver_writes_output(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=output_path,
+        log_level="notset",
+        print_distributed_debug_msg=False,
+        force_serial_run=False,
         enable_output=True,
     )
 

@@ -9,33 +9,26 @@
 """Unit tests for the driver-side IO bridge (``driver_io``).
 
 These tests are data-free: they use the ``simple_grid`` and a zero-initialised
-``PrognosticState`` so they need no serialized/grid test data. The optional
-``icon4py-common[io]`` stack (xarray, netcdf4, uxarray, cftime) is required and the
-module is skipped if it is not installed.
+``PrognosticState`` so they need no serialized/grid test data.
 """
 
 import copy
+import dataclasses
 import datetime as dt
 import pathlib
-from typing import Any
 
-import pytest
-
-
-# Skip the whole module if the optional IO stack is not installed.
-pytest.importorskip("xarray")
-pytest.importorskip("netCDF4")
-pytest.importorskip("uxarray")
-pytest.importorskip("cftime")
-
+import gt4py.next as gtx
 import numpy as np
+import pytest
 import xarray as xr
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, simple
+from icon4py.model.common.io import io as common_io
 from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_io
+from icon4py.model.testing.fixtures import backend
 
 
 @pytest.fixture
@@ -43,30 +36,61 @@ def grid() -> base.Grid:
     return simple.simple_grid()
 
 
-@pytest.fixture
-def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
-    # Constructed directly (instead of `initialize_prognostic_state`) so the test works
-    # with the generic `simple_grid` and the default (numpy) allocator.
-    def _cell_k(extend: dict[Any, int] | None = None) -> Any:
-        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, extend=extend)
+def _make_prognostic_state(
+    grid: base.Grid, allocator: gtx.typing.Backend | None = None
+) -> prognostics.PrognosticState:
+    # Constructed directly (instead of `initialize_prognostic_state`) so it works with
+    # the generic `simple_grid`.
+    def _cell_k(extend: dict[gtx.Dimension, int] | None = None) -> gtx.Field:
+        return data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend=extend, allocator=allocator
+        )
 
     return prognostics.PrognosticState(
         rho=_cell_k(),
         w=_cell_k(extend={dims.KDim: 1}),
-        vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=float),
+        vn=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        ),
         exner=_cell_k(),
         theta_v=_cell_k(),
     )
 
 
-#: Expected (dim names, uses interface vertical level) per output variable.
-_EXPECTED = {
-    "air_density": (("cell", "level"), False),
-    "exner_function": (("cell", "level"), False),
-    "theta_v": (("cell", "level"), False),
-    "upward_air_velocity": (("cell", "interface_level"), True),
-    "normal_velocity": (("edge", "level"), False),
+@pytest.fixture
+def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
+    return _make_prognostic_state(grid)
+
+
+@dataclasses.dataclass(frozen=True)
+class _ExpectedLayout:
+    horizontal_dim: gtx.Dimension
+    is_on_interface: bool = False
+
+
+#: Expected layout per output variable.
+_EXPECTED: dict[str, _ExpectedLayout] = {
+    "air_density": _ExpectedLayout(dims.CellDim),
+    "exner_function": _ExpectedLayout(dims.CellDim),
+    "theta_v": _ExpectedLayout(dims.CellDim),
+    "upward_air_velocity": _ExpectedLayout(dims.CellDim, is_on_interface=True),
+    "normal_velocity": _ExpectedLayout(dims.EdgeDim),
 }
+
+#: UGRID dimension names of the horizontal dimensions.
+_UGRID_DIM_NAMES: dict[gtx.Dimension, str] = {
+    dims.CellDim: "cell",
+    dims.EdgeDim: "edge",
+    dims.VertexDim: "vertex",
+}
+
+
+def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
+    return {
+        dims.CellDim: grid.num_cells,
+        dims.EdgeDim: grid.num_edges,
+        dims.VertexDim: grid.num_vertices,
+    }[dim]
 
 
 def test_assembles_all_default_variables(
@@ -77,17 +101,13 @@ def test_assembles_all_default_variables(
     assert set(state.keys()) == set(driver_io.PROGNOSTIC_VARIABLES)
     for name, da in state.items():
         assert isinstance(da, xr.DataArray)
-        expected_dims, on_interface = _EXPECTED[name]
-        assert da.dims == expected_dims
+        expected = _EXPECTED[name]
 
-        horizontal = expected_dims[0]
-        horizontal_size = {
-            "cell": grid.num_cells,
-            "edge": grid.num_edges,
-            "vertex": grid.num_vertices,
-        }[horizontal]
-        vertical_size = grid.num_levels + 1 if on_interface else grid.num_levels
-        assert da.shape == (horizontal_size, vertical_size)
+        vertical_name = "interface_level" if expected.is_on_interface else "level"
+        assert da.dims == (_UGRID_DIM_NAMES[expected.horizontal_dim], vertical_name)
+
+        vertical_size = grid.num_levels + 1 if expected.is_on_interface else grid.num_levels
+        assert da.shape == (_horizontal_size(grid, expected.horizontal_dim), vertical_size)
 
 
 def test_dataarrays_carry_cf_and_ugrid_metadata(
@@ -111,8 +131,8 @@ def test_dataarrays_carry_cf_and_ugrid_metadata(
 def test_does_not_mutate_shared_cf_attributes(
     prognostic_state: prognostics.PrognosticState,
 ) -> None:
-    """`to_data_array` mutates the attrs dict it is handed; the bridge must pass a copy,
-    so the shared module-level CF attribute table must be left untouched."""
+    """`to_data_array` adds UGRID keys to the attrs it is handed; the shared
+    module-level CF attribute table must be left untouched."""
     before = copy.deepcopy(state_data.PROGNOSTIC_CF_ATTRIBUTES)
 
     driver_io.prognostic_state_to_dataarrays(prognostic_state)
@@ -136,8 +156,16 @@ def test_unknown_variable_raises(prognostic_state: prognostics.PrognosticState) 
         driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=["not_a_field"])
 
 
-def test_data_is_host_numpy(prognostic_state: prognostics.PrognosticState) -> None:
-    """The buffer handed to netCDF4 must be a host numpy array, not a device array."""
+def test_data_is_host_numpy(
+    grid: base.Grid,
+    backend: gtx.typing.Backend | None,
+) -> None:
+    """The buffer handed to netCDF4 must be a host numpy array, not a device array.
+
+    Parameterized on the backend (``--backend``) so that with a GPU backend the inputs
+    really are device buffers and the host transfer is exercised.
+    """
+    prognostic_state = _make_prognostic_state(grid, allocator=backend)
     state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
     for da in state.values():
         assert isinstance(da.data, np.ndarray)
@@ -151,19 +179,17 @@ def test_create_io_monitor_derives_matching_time_config(
 
     ``IOMonitor`` is replaced by a recorder so the test needs no real grid file.
     """
-    from icon4py.model.common.io import io as common_io  # noqa: PLC0415
-
-    recorded: dict[str, Any] = {}
+    recorded: dict[str, object] = {}
 
     class _RecordingMonitor:
         def __init__(
             self,
             *,
-            config: Any,
-            vertical_size: Any,
-            horizontal_size: Any,
-            grid_file_name: Any,
-            grid_id: Any,
+            config: common_io.IOConfig,
+            vertical_size: object,
+            horizontal_size: object,
+            grid_file_name: pathlib.Path | str,
+            grid_id: str,
         ) -> None:
             recorded["config"] = config
             recorded["grid_file_name"] = grid_file_name
@@ -184,6 +210,7 @@ def test_create_io_monitor_derives_matching_time_config(
     )
 
     config = recorded["config"]
+    assert isinstance(config, common_io.IOConfig)
     assert len(config.field_groups) == 1
     field_group = config.field_groups[0]
     assert field_group.start_time == "2024-01-01T00:05:00"
@@ -200,16 +227,28 @@ def test_create_io_monitor_derives_matching_time_config(
     assert recorded["grid_id"] == grid.id
 
 
+def test_create_io_monitor_rejects_subsecond_dtime(grid: base.Grid, tmp_path: pathlib.Path) -> None:
+    """Sub-second time steps cannot be expressed as a whole-second output interval and
+    must be rejected instead of silently truncated."""
+    with pytest.raises(ValueError, match="whole number of seconds"):
+        driver_io.create_io_monitor(
+            output_path=tmp_path,
+            grid_file_path=tmp_path / "grid.nc",
+            grid=grid,
+            vertical_grid=None,  # type: ignore[arg-type] # rejected before use
+            start_date=dt.datetime(2024, 1, 1),
+            dtime=dt.timedelta(milliseconds=500),
+        )
+
+
 def test_create_io_monitor_has_no_separate_diagnostic_group(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Prognostics and diagnostics are not split: there is exactly one field group."""
-    from icon4py.model.common.io import io as common_io  # noqa: PLC0415
-
-    recorded: dict[str, Any] = {}
+    recorded: dict[str, common_io.IOConfig] = {}
 
     class _RecordingMonitor:
-        def __init__(self, *, config: Any, **kwargs: Any) -> None:
+        def __init__(self, *, config: common_io.IOConfig, **kwargs: object) -> None:
             recorded["config"] = config
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
@@ -235,8 +274,8 @@ def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
     before = copy.deepcopy(state_data.DIAGNOSTIC_CF_ATTRIBUTES)
 
     # cell/full-level fields, like what compute_diagnostics returns
-    def _zero_cell_k() -> Any:
-        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float)
+    def _zero_cell_k() -> gtx.Field:
+        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
     fields = {name: _zero_cell_k() for name in driver_io.DIAGNOSTIC_VARIABLES}
     state = driver_io.diagnostic_fields_to_dataarrays(fields)

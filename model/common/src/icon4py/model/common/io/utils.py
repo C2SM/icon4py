@@ -12,6 +12,7 @@ from gt4py.next import common as gt_common
 
 from icon4py.model.common.io.ugrid import dimension_mapping, ugrid_attributes
 from icon4py.model.common.states.model import FieldMetaData
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def to_data_array(
@@ -24,16 +25,30 @@ def to_data_array(
     Args:
         field: gt4py field,
         attrs: optional dictionary of metadata attributes to be added to the data array, empty by default.
+            The dictionary is copied, the caller's instance is left untouched.
         is_on_interface: optional boolean flag indicating if the 2d field is defined on the interface, False by default.
     """
-    if attrs is None:
-        attrs = {}
+    attrs = {} if attrs is None else dict(attrs)
     dims = tuple(dimension_mapping(d, is_on_interface) for d in field.domain.dims)
     horizontal_dim = next(d for d in field.domain.dims if _is_horizontal(d))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    assert isinstance(attrs, dict)
     attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
+
+
+def to_host_data_array(
+    field: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
+    attrs: FieldMetaData | dict | None = None,
+    is_on_interface: bool = False,
+) -> xa.DataArray:
+    """Like :func:`to_data_array`, but force the buffer to host (numpy).
+
+    netCDF4 cannot consume device arrays, so fields from GPU backends are copied to
+    host before being handed to the writer.
+    """
+    data_array = to_data_array(field, attrs, is_on_interface)
+    data_array.data = data_alloc.as_numpy(field)
+    return data_array
 
 
 def _is_horizontal(dim: gtx.Dimension) -> bool:
