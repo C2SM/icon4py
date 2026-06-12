@@ -80,7 +80,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
     serial_config = config.with_overrides(
         driver={
-            "output_path": tmp_path / "ci_driver_output_serial_rank0",
+            "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
             "end_simulation": end_simulation,
         }
     )

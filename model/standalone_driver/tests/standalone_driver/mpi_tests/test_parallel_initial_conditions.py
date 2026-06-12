@@ -96,7 +96,7 @@ def test_initial_conditions_compare_single_multi_rank(
 
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
     serial_config = experiment.config.with_overrides(
-        driver={"output_path": tmp_path / "ci_driver_output_serial_rank0"}
+        driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
     )
     serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
