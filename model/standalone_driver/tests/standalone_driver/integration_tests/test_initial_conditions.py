@@ -48,20 +48,19 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 @pytest.mark.datatest
 def test_initial_conditions(
-    experiment_description: definitions.ExperimentDescription,
+    experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+    backend: model_backends.Backend,
 ) -> None:
-    backend = model_options.customize_backend(program=None, backend=backend_like)
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
-    config = config.with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
+    config = experiment.config.with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

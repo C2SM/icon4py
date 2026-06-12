@@ -62,11 +62,11 @@ def test_standalone_driver(
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+    backend: model_backends.Backend,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    backend = model_options.customize_backend(program=None, backend=backend_like)
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)

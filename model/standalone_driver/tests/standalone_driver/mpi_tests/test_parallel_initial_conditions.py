@@ -53,13 +53,14 @@ _log = logging.getLogger(__file__)
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_initial_conditions_compare_single_multi_rank(
-    experiment_description: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+    backend: model_backends.Backend,
     download_ser_data: None,
 ) -> None:
-    if experiment_description.grid.limited_area:
+    if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
@@ -88,21 +89,18 @@ def test_initial_conditions_compare_single_multi_rank(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
-    backend = model_options.customize_backend(program=None, backend=backend_like)
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
-
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
-    serial_config = config.with_overrides(
+    serial_config = experiment.config.with_overrides(
         driver={"output_path": tmp_path / "ci_driver_output_serial_rank0"}
     )
     serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
+        vertical_grid_config=serial_config.vertical_grid,
         allocator=allocator,
         process_props=serial_process_props,
     )
@@ -126,12 +124,12 @@ def test_initial_conditions_compare_single_multi_rank(
         exchange=single_rank_icon4py_driver.exchange,
     )
 
-    mpi_config = config.with_overrides(
+    mpi_config = experiment.config.with_overrides(
         driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
     )
     mpi_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
+        vertical_grid_config=mpi_config.vertical_grid,
         allocator=allocator,
         process_props=process_props,
     )
