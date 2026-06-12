@@ -39,7 +39,8 @@ class ForcingMode(enum.IntEnum):
     APPLY = 1
 
 
-_ACTIVE_TOLERANCE = 1e-6  # relative tolerance on the modulo, in fractions of `interval`
+_ACTIVE_TOLERANCE = 1e-6
+# TODO (Yilu): this should be deleted
 
 
 @dataclasses.dataclass(frozen=True)

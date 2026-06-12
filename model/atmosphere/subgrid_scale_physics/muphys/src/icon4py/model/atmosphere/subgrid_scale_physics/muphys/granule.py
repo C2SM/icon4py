@@ -11,91 +11,60 @@ from __future__ import annotations
 import datetime
 import types
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import gt4py.next as gtx
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import data as muphys_data
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
-from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.diagnostic_calculations.stencils import calculate_tendency
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common import field_type_aliases as fa
     from icon4py.model.common.states import model
 
 _SPECIES = ("v", "c", "r", "s", "i", "g")
 
-_INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
-    "dz": {"standard_name": "layer_thickness", "units": "m"},
-    "te": {"standard_name": "air_temperature", "units": "K"},
-    "p": {"standard_name": "air_pressure", "units": "Pa"},
-    "rho": {"standard_name": "air_density", "units": "kg m-3"},
-    "qv": {"standard_name": "specific_humidity", "units": "kg kg-1"},
-    "qc": {"standard_name": "specific_cloud_water_content", "units": "kg kg-1"},
-    "qr": {"standard_name": "specific_rain_content", "units": "kg kg-1"},
-    "qs": {"standard_name": "specific_snow_content", "units": "kg kg-1"},
-    "qi": {"standard_name": "specific_cloud_ice_content", "units": "kg kg-1"},
-    "qg": {"standard_name": "specific_graupel_content", "units": "kg kg-1"},
-}
 
-_OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
-    "tend_temperature": {
-        "standard_name": "tendency_of_air_temperature",
-        "units": "K s-1",
-        "kind": "tendency",
-    },
-    "tend_qv": {
-        "standard_name": "tendency_of_specific_humidity",
-        "units": "kg kg-1 s-1",
-        "kind": "tendency",
-    },
-    "tend_qc": {
-        "standard_name": "tendency_of_specific_cloud_water_content",
-        "units": "kg kg-1 s-1",
-        "kind": "tendency",
-    },
-    "tend_qr": {
-        "standard_name": "tendency_of_specific_rain_content",
-        "units": "kg kg-1 s-1",
-        "kind": "tendency",
-    },
-    "tend_qs": {
-        "standard_name": "tendency_of_specific_snow_content",
-        "units": "kg kg-1 s-1",
-        "kind": "tendency",
-    },
-    "tend_qi": {
-        "standard_name": "tendency_of_specific_cloud_ice_content",
-        "units": "kg kg-1 s-1",
-        "kind": "tendency",
-    },
-    "tend_qg": {
-        "standard_name": "tendency_of_specific_graupel_content",
-        "units": "kg kg-1 s-1",
-        "kind": "tendency",
-    },
-    "pflx": {"standard_name": "precipitation_flux", "units": "kg m-2 s-1", "kind": "diagnostic"},
-    "pr": {"standard_name": "rainfall_flux", "units": "kg m-2 s-1", "kind": "diagnostic"},
-    "ps": {"standard_name": "snowfall_flux", "units": "kg m-2 s-1", "kind": "diagnostic"},
-    "pi": {"standard_name": "ice_fall_flux", "units": "kg m-2 s-1", "kind": "diagnostic"},
-    "pg": {"standard_name": "graupel_fall_flux", "units": "kg m-2 s-1", "kind": "diagnostic"},
-    "pre": {
-        "standard_name": "precipitation_energy_flux",
-        "units": "W m-2",
-        "kind": "diagnostic",
-    },
-}
+@gtx.field_operator
+def _copy(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
+    return field
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_field(  # noqa: PLR0917  # stencil params referenced in domain specs stay positional
+    field: fa.CellKField[ta.wpfloat],
+    result: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy(
+        field,
+        out=result,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
 
 
 class MuphysGranule:
     """L4 per-process adapter wrapping the muphys microphysics program."""
 
-    inputs_properties = _INPUTS_PROPERTIES
-    outputs_properties = _OUTPUTS_PROPERTIES
+    inputs_properties = muphys_data.INPUTS_PROPERTIES
+    outputs_properties = muphys_data.OUTPUTS_PROPERTIES
 
     def __init__(
         self,
@@ -188,6 +157,21 @@ class MuphysGranule:
             offset_provider={},
         )
 
+    def _copy_into(self, src: fa.CellKField[ta.wpfloat], dst: fa.CellKField[ta.wpfloat]) -> None:
+        """Copy ``src`` into the granule-owned buffer ``dst``."""
+        program = copy_field
+        if self._backend is not None:
+            program = program.with_backend(self._backend)
+        program(
+            field=src,
+            result=dst,
+            horizontal_start=0,
+            horizontal_end=self._ncells,
+            vertical_start=0,
+            vertical_end=self._nlev,
+            offset_provider={},
+        )
+
     def __call__(
         self, state: dict[str, model.DataField], time_step: datetime.datetime
     ) -> dict[str, model.DataField]:
@@ -196,18 +180,19 @@ class MuphysGranule:
         muphys returns updated state (t_out, q_out); this boundary converts it
         to tendencies ``(new - old) / dt`` s. Precip outputs are diagnostics, passed straight through.
         """
-        # TODO (Yilu): what does this do?
-        # Copy inputs into granule-owned buffers so muphys (which mutates te/qv/qc in
-        # place on the separate path) never touches the caller's `state`.
-        self._te_in.ndarray[...] = state["te"].ndarray
+        # cast from generic ``DataFeild`` to bare gt4py fields
+        fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
+
+
+        self._copy_into(fields["te"], self._te_in)
         for s in _SPECIES:
-            getattr(self._q_in, s).ndarray[...] = state[f"q{s}"].ndarray
+            self._copy_into(fields[f"q{s}"], getattr(self._q_in, s))
 
         self._muphys_step(
-            dz=state["dz"],
+            dz=fields["dz"],
             te=self._te_in,
-            p=state["p"],
-            rho=state["rho"],
+            p=fields["p"],
+            rho=fields["rho"],
             q_in=self._q_in,
             q_out=self._q_out,
             t_out=self._t_out,
@@ -219,18 +204,21 @@ class MuphysGranule:
             pre=self._pre,
         )
 
-        self._to_tendency(state["te"], self._t_out, self._tendencies["tend_temperature"])
+        self._to_tendency(fields["te"], self._t_out, self._tendencies["tend_temperature"])
         for s in _SPECIES:
             self._to_tendency(
-                state[f"q{s}"], getattr(self._q_out, s), self._tendencies[f"tend_q{s}"]
+                fields[f"q{s}"], getattr(self._q_out, s), self._tendencies[f"tend_q{s}"]
             )
 
-        return {
-            **self._tendencies,
-            "pflx": self._pflx,
-            "pr": self._pr,
-            "ps": self._ps,
-            "pi": self._pi,
-            "pg": self._pg,
-            "pre": self._pre,
-        }
+        return cast(
+            "dict[str, model.DataField]",
+            {
+                **self._tendencies,
+                "pflx": self._pflx,
+                "pr": self._pr,
+                "ps": self._ps,
+                "pi": self._pi,
+                "pg": self._pg,
+                "pre": self._pre,
+            },
+        )
