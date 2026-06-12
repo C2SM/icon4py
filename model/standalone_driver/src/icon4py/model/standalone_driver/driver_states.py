@@ -72,7 +72,6 @@ class DriverStates(NamedTuple):
     diagnostic: diagnostics.DiagnosticState
 
 
-@dataclasses.dataclass
 class ModelTimeVariables:
     """
     This class contains driver's run-time time or date variables.
@@ -80,18 +79,10 @@ class ModelTimeVariables:
 
     """
 
-    config: dataclasses.InitVar[driver_config.DriverConfig]
+    def __init__(self, config: driver_config.DriverConfig) -> None:
+        self._init_from_config(config)
 
-    n_time_steps: int = dataclasses.field(init=False)
-    dtime: datetime.timedelta = dataclasses.field(init=False)
-    ndyn_substeps_var: int = dataclasses.field(init=False)
-    max_ndyn_substeps: int = dataclasses.field(init=False)
-    elapsed_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
-    simulation_date: datetime.datetime = dataclasses.field(init=False)
-    is_first_step_in_simulation: bool = dataclasses.field(init=False)
-    cfl_watch_mode: bool = dataclasses.field(init=False)
-
-    def __post_init__(self, config: driver_config.DriverConfig) -> None:
+    def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         match config.end_simulation:
             case driver_config.NumTimeSteps(n):
                 self.n_time_steps = n
@@ -134,7 +125,7 @@ class ModelTimeVariables:
         """
         Re-initialize all time-integration-related runtime values from the given config.
         """
-        self.__post_init__(config)
+        self._init_from_config(config)
 
 
 class DriverTimers(enum.Enum):
