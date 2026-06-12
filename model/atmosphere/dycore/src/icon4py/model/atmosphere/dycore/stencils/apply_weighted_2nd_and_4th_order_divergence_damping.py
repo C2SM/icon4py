@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.dycore_utils import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.constants import WP_EPS
 
 
 @gtx.field_operator
@@ -61,15 +60,15 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_weighted_2nd_and_4th_order_divergence_damping(
-        interpolated_fourth_order_divdamp_factor,
-        nudgecoeff_e,
-        z_graddiv2_vn,
-        vn,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
-        max_nudging_coefficient,
-        WP_EPS,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        nudgecoeff_e=nudgecoeff_e,
+        z_graddiv2_vn=z_graddiv2_vn,
+        vn=vn,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        wp_eps=wp_eps,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

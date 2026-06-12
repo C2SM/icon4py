@@ -114,6 +114,7 @@ class TimeLoop:
 
     def time_integration(
         self,
+        *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
@@ -174,12 +175,12 @@ class TimeLoop:
 
             timer.start()
             self._integrate_one_time_step(
-                diffusion_diagnostic_state,
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
-                prep_adv,
-                second_order_divdamp_factor,
-                do_prep_adv,
+                diffusion_diagnostic_state=diffusion_diagnostic_state,
+                solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+                prognostic_states=prognostic_states,
+                prep_adv=prep_adv,
+                second_order_divdamp_factor=second_order_divdamp_factor,
+                do_prep_adv=do_prep_adv,
             )
             device_utils.sync(self._allocator)
             timer.capture()
@@ -201,6 +202,7 @@ class TimeLoop:
 
     def _integrate_one_time_step(
         self,
+        *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
@@ -211,11 +213,11 @@ class TimeLoop:
         # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
-            solve_nonhydro_diagnostic_state,
-            prognostic_states,
-            prep_adv,
-            second_order_divdamp_factor,
-            do_prep_adv,
+            solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+            prognostic_states=prognostic_states,
+            prep_adv=prep_adv,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            do_prep_adv=do_prep_adv,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
@@ -270,6 +272,7 @@ class TimeLoop:
 
     def _do_dyn_substepping(
         self,
+        *,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
@@ -291,8 +294,8 @@ class TimeLoop:
             )
 
             self.solve_nonhydro.time_step(
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
+                diagnostic_state_nh=solve_nonhydro_diagnostic_state,
+                prognostic_states=prognostic_states,
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
@@ -340,6 +343,7 @@ class DriverParams(NamedTuple):
 
 
 def initialize(
+    *,
     file_path: pathlib.Path,
     process_props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
@@ -425,14 +429,14 @@ def initialize(
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(process_props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        grid,
-        config.diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        edge_geometry,
-        cell_geometry,
+        grid=grid,
+        config=config.diffusion_config,
+        params=diffusion_params,
+        vertical_grid=vertical_geometry,
+        metric_state=diffusion_metric_state,
+        interpolation_state=diffusion_interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
         exchange=exchange,
         backend=backend_like,
     )
@@ -542,6 +546,7 @@ def initialize(
     help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_gpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
 )
 def icon4py_driver(
+    *,
     input_path,
     run_path,
     mpi,
@@ -587,12 +592,12 @@ def icon4py_driver(
     ds: DriverStates
     dp: DriverParams
     time_loop, ds, dp = initialize(
-        pathlib.Path(input_path),
-        process_props,
-        serialization_type,
-        experiment_type,
-        pathlib.Path(grid_file),
-        backend_like,
+        file_path=pathlib.Path(input_path),
+        process_props=process_props,
+        serialization_type=serialization_type,
+        experiment_type=experiment_type,
+        grid_file=pathlib.Path(grid_file),
+        backend_like=backend_like,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(
@@ -605,11 +610,11 @@ def icon4py_driver(
     log.info("time loop: START")
 
     time_loop.time_integration(
-        ds.diffusion_diagnostic,
-        ds.solve_nonhydro_diagnostic,
-        ds.prognostics,
-        ds.prep_advection_prognostic,
-        dp.second_order_divdamp_factor,
+        diffusion_diagnostic_state=ds.diffusion_diagnostic,
+        solve_nonhydro_diagnostic_state=ds.solve_nonhydro_diagnostic,
+        prognostic_states=ds.prognostics,
+        prep_adv=ds.prep_advection_prognostic,
+        second_order_divdamp_factor=dp.second_order_divdamp_factor,
         do_prep_adv=False,
         profiling=driver_config.ProfilingConfig(gt4py_metrics_output_file=enable_profiling)
         if enable_profiling

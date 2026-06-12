@@ -135,8 +135,22 @@ def _compute_ppm4gpu_courant_number(
 ) -> fa.CellKField[wpfloat]:
     z_mass = p_dtime * p_mflx_contra_v
 
-    cfl_below = _compute_courant_number_below(p_cellmass_now, z_mass, z_cfl, k, nlev, wp_eps)
-    cfl_above = _compute_courant_number_above(p_cellmass_now, z_mass, z_cfl, k, slevp1_ti, wp_eps)
+    cfl_below = _compute_courant_number_below(
+        p_cellmass_now=p_cellmass_now,
+        z_mass=z_mass,
+        z_cfl=z_cfl,
+        k=k,
+        nlev=nlev,
+        wp_eps=wp_eps,
+    )
+    cfl_above = _compute_courant_number_above(
+        p_cellmass_now=p_cellmass_now,
+        z_mass=z_mass,
+        z_cfl=z_cfl,
+        k=k,
+        slevp1_ti=slevp1_ti,
+        wp_eps=wp_eps,
+    )
 
     z_cfl = cfl_below + cfl_above
 
@@ -159,14 +173,14 @@ def compute_ppm4gpu_courant_number(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_courant_number(
-        p_mflx_contra_v,
-        p_cellmass_now,
-        z_cfl,
-        k,
-        slevp1_ti,
-        nlev,
-        wp_eps,
-        p_dtime,
+        p_mflx_contra_v=p_mflx_contra_v,
+        p_cellmass_now=p_cellmass_now,
+        z_cfl=z_cfl,
+        k=k,
+        slevp1_ti=slevp1_ti,
+        nlev=nlev,
+        wp_eps=wp_eps,
+        p_dtime=p_dtime,
         out=z_cfl,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

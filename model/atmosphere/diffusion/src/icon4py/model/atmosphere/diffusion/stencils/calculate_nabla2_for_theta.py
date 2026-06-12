@@ -42,10 +42,10 @@ def calculate_nabla2_for_theta(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_nabla2_for_theta(
-        kh_smag_e,
-        inv_dual_edge_length,
-        theta_v,
-        geofac_div,
+        kh_smag_e=kh_smag_e,
+        inv_dual_edge_length=inv_dual_edge_length,
+        theta_v=theta_v,
+        geofac_div=geofac_div,
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

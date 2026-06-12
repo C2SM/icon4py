@@ -51,12 +51,12 @@ def apply_4th_order_divergence_damping(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_4th_order_divergence_damping(
-        interpolated_fourth_order_divdamp_factor,
-        z_graddiv2_vn,
-        vn,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        z_graddiv2_vn=z_graddiv2_vn,
+        vn=vn,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         out=vn,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),

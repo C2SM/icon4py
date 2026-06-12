@@ -23,7 +23,9 @@ def _compute_positive_definite_horizontal_multiplicative_flux_factor(
     p_dtime: wpfloat,
     wp_eps: wpfloat,
 ) -> fa.CellKField[wpfloat]:
-    p_m = neighbor_sum(maximum(wpfloat(0.0), p_mflx_tracer_h(C2E) * geofac_div * p_dtime), axis=C2EDim)
+    p_m = neighbor_sum(
+        maximum(wpfloat(0.0), p_mflx_tracer_h(C2E) * geofac_div * p_dtime), axis=C2EDim
+    )
     r_m = minimum(wpfloat(1.0), (p_cc * p_rhodz_now) / (p_m + wp_eps))
     return r_m
 
@@ -43,12 +45,12 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_positive_definite_horizontal_multiplicative_flux_factor(
-        geofac_div,
-        p_cc,
-        p_rhodz_now,
-        p_mflx_tracer_h,
-        p_dtime,
-        wp_eps,
+        geofac_div=geofac_div,
+        p_cc=p_cc,
+        p_rhodz_now=p_rhodz_now,
+        p_mflx_tracer_h=p_mflx_tracer_h,
+        p_dtime=p_dtime,
+        wp_eps=wp_eps,
         out=r_m,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

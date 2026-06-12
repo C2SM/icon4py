@@ -66,7 +66,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 
 
 @gtx.field_operator
-def _calculate_divdamp_fields(
+def _calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: wpfloat,
@@ -89,7 +89,7 @@ def _calculate_divdamp_fields(
 
 
 @gtx.program
-def calculate_divdamp_fields(
+def calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     fourth_order_divdamp_scaling_coeff: fa.KField[wpfloat],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[wpfloat],
@@ -100,12 +100,12 @@ def calculate_divdamp_fields(
     wp_eps: wpfloat,
 ):
     _calculate_divdamp_fields(
-        interpolated_fourth_order_divdamp_factor,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
-        max_nudging_coefficient,
-        wp_eps,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        wp_eps=wp_eps,
         out=(
             fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary,

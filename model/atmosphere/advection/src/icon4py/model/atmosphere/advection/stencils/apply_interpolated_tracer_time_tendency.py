@@ -35,9 +35,9 @@ def apply_interpolated_tracer_time_tendency(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_interpolated_tracer_time_tendency(
-        p_tracer_now,
-        p_grf_tend_tracer,
-        p_dtime,
+        p_tracer_now=p_tracer_now,
+        p_grf_tend_tracer=p_grf_tend_tracer,
+        p_dtime=p_dtime,
         out=p_tracer_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

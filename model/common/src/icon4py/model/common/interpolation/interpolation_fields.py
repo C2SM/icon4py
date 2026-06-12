@@ -97,6 +97,7 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
+    *,
     dual_edge_length: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
@@ -152,6 +153,7 @@ def compute_geofac_n2s(
 
 
 def compute_geofac_grg(
+    *,
     primal_normal_cell_x: data_alloc.NDArray,
     primal_normal_cell_y: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
@@ -203,6 +205,7 @@ def compute_geofac_grg(
 
 
 def compute_geofac_grdiv(
+    *,
     geofac_div: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
@@ -419,6 +422,7 @@ def _compute_c_bln_avg(
 
 
 def _force_mass_conservation_to_c_bln_avg(
+    *,
     c2e2c0: data_alloc.NDArray,
     c_bln_avg: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
@@ -595,6 +599,7 @@ def _compute_uniform_c_bln_avg(
 
 
 def compute_mass_conserving_bilinear_cell_average_weight(
+    *,
     c2e2c0: data_alloc.NDArray,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
@@ -616,17 +621,18 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     exchange.exchange(dims.CellDim, c_bln_avg, stream=decomposition.BLOCK)
 
     return _force_mass_conservation_to_c_bln_avg(
-        c2e2c0,
-        c_bln_avg,
-        cell_areas,
-        cell_owner_mask,
-        divergence_averaging_central_cell_weight,
-        horizontal_start_level_3,
+        c2e2c0=c2e2c0,
+        c_bln_avg=c_bln_avg,
+        cell_areas=cell_areas,
+        cell_owner_mask=cell_owner_mask,
+        divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+        horizontal_start=horizontal_start_level_3,
         exchange=exchange,
     )
 
 
 def compute_mass_conserving_bilinear_cell_average_weight_torus(
+    *,
     c2e2c0: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
@@ -644,12 +650,12 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error
     # with the the following. Is it needed?
     return _force_mass_conservation_to_c_bln_avg(
-        c2e2c0,
-        c_bln_avg,
-        cell_areas,
-        cell_owner_mask,
-        divergence_averaging_central_cell_weight,
-        horizontal_start_level_3,
+        c2e2c0=c2e2c0,
+        c_bln_avg=c_bln_avg,
+        cell_areas=cell_areas,
+        cell_owner_mask=cell_owner_mask,
+        divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+        horizontal_start=horizontal_start_level_3,
         exchange=exchange,
     )
 
@@ -706,6 +712,7 @@ def _create_inverse_neighbor_index(
 
 
 def compute_e_flx_avg(
+    *,
     c_bln_avg: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
@@ -874,6 +881,7 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
+    *,
     dual_area: data_alloc.NDArray,
     edge_vert_length: data_alloc.NDArray,
     edge_cell_length: data_alloc.NDArray,
@@ -964,12 +972,12 @@ def compute_cells_aw_verts(
 
 
 def compute_e_bln_c_s(
+    *,
     c2e: data_alloc.NDArray,
     cells_lat: data_alloc.NDArray,
     cells_lon: data_alloc.NDArray,
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
-    weighting_factor: float,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -998,12 +1006,15 @@ def compute_e_bln_c_s(
         ytemp[i] = edges_lat[c2e[llb:, i]]
         xtemp[i] = edges_lon[c2e[llb:, i]]
 
+    # wgt_loc is hardcoded to 0.0 (actually completely missing) in the Fortran
+    # e_bln_c_s code path (mo_intp_coeffs_lsq_bln.f90:2453-2462); contrast with
+    # c_bln_avg which uses wgt_loc = divavg_cntrwgt (mo_intp_coeffs.f90:181).
     wgt = _weighting_factors(
         ytemp,
         xtemp,
         yloc,
         xloc,
-        weighting_factor,
+        0.0,
     )
 
     e_bln_c_s[:, 0] = wgt[0]
@@ -1029,6 +1040,7 @@ def compute_e_bln_c_s_torus(
 
 
 def compute_pos_on_tplane_e_x_y(
+    *,
     grid_sphere_radius: gtx.float64,
     primal_normal_v1: data_alloc.NDArray,
     primal_normal_v2: data_alloc.NDArray,
@@ -1168,6 +1180,7 @@ def compute_pos_on_tplane_e_x_y_torus(
 
 
 def compute_lsq_pseudoinv(
+    *,
     cell_owner_mask: data_alloc.NDArray,
     z_lsq_mat_c: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
@@ -1222,6 +1235,7 @@ def compute_lsq_weights_c(
 
 
 def compute_z_lsq_mat_c(
+    *,
     cell_owner_mask: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
     z_dist_g: data_alloc.NDArray,
@@ -1250,6 +1264,7 @@ def compute_z_lsq_mat_c(
 
 
 def compute_lsq_coeffs(
+    *,
     cell_center_x: data_alloc.NDArray,
     cell_center_y: data_alloc.NDArray,
     cell_lat: data_alloc.NDArray,
@@ -1288,17 +1303,16 @@ def compute_lsq_coeffs(
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
                 cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
-
                 cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
                 for js in range(lsq_dim_stencil):
                     cc_cell[js, :] = array_ns.asarray(
                         projection.diff_on_edges_torus_numpy(
-                            cell_center_x[jc],
-                            cell_center_y[jc],
-                            cell_center_x[ilc_s][js],
-                            cell_center_y[ilc_s][js],
-                            domain_length,
-                            domain_height,
+                            cc_cv_x=cell_center_x[jc],
+                            cc_cv_y=cell_center_y[jc],
+                            cc_cell_x=cell_center_x[ilc_s][js],
+                            cc_cell_y=cell_center_y[ilc_s][js],
+                            domain_length=domain_length,
+                            domain_height=domain_height,
                         )
                     )
                 z_dist_g[jc, :, :] = cc_cell - cc_cv
@@ -1306,25 +1320,25 @@ def compute_lsq_coeffs(
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_dim_stencil, lsq_wgt_exp)
 
     z_lsq_mat_c = compute_z_lsq_mat_c(
-        cell_owner_mask,
-        lsq_weights_c,
-        z_dist_g,
-        start_idx,
-        min_rlcell_int,
-        lsq_dim_unk,
-        lsq_dim_c,
+        cell_owner_mask=cell_owner_mask,
+        lsq_weights_c=lsq_weights_c,
+        z_dist_g=z_dist_g,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        lsq_dim_unk=lsq_dim_unk,
+        lsq_dim_c=lsq_dim_c,
     )
 
     exchange.exchange(dims.CellDim, lsq_weights_c, stream=decomposition.BLOCK)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
-        cell_owner_mask,
-        z_lsq_mat_c,
-        lsq_weights_c,
-        start_idx,
-        min_rlcell_int,
-        lsq_dim_unk,
-        lsq_dim_c,
+        cell_owner_mask=cell_owner_mask,
+        z_lsq_mat_c=z_lsq_mat_c,
+        lsq_weights_c=lsq_weights_c,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        lsq_dim_unk=lsq_dim_unk,
+        lsq_dim_c=lsq_dim_c,
     )
     exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 0, :], stream=decomposition.BLOCK)
     exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 1, :], stream=decomposition.BLOCK)

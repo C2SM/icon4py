@@ -34,9 +34,9 @@ def average_horizontal_flux_subcycling_3(
     vertical_end: gtx.int32,
 ) -> None:
     _average_horizontal_flux_subcycling_3(
-        z_tracer_mflx_1_dsl,
-        z_tracer_mflx_2_dsl,
-        z_tracer_mflx_3_dsl,
+        z_tracer_mflx_1_dsl=z_tracer_mflx_1_dsl,
+        z_tracer_mflx_2_dsl=z_tracer_mflx_2_dsl,
+        z_tracer_mflx_3_dsl=z_tracer_mflx_3_dsl,
         out=p_out_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

@@ -49,9 +49,9 @@ def limit_vertical_parabola_semi_monotonically(
     vertical_end: gtx.int32,
 ) -> None:
     _limit_vertical_parabola_semi_monotonically(
-        l_limit,
-        p_face,
-        p_cc,
+        l_limit=l_limit,
+        p_face=p_face,
+        p_cc=p_cc,
         out=(p_face_up, p_face_low),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

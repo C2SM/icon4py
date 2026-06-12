@@ -9,8 +9,8 @@
 import gt4py.next as gtx
 from gt4py.next import abs, astype, maximum, where  # noqa: A004
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import wpfloat, vpfloat
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -276,7 +276,9 @@ def _prepare_numerical_quadrature_for_cubic_reconstruction(
     )
 
     z_area = p_quad_vector_sum_1
-    p_dreg_area_out = where(z_area >= wpfloat(0.0), maximum(eps, abs(z_area)), -maximum(eps, abs(z_area)))
+    p_dreg_area_out = where(
+        z_area >= wpfloat(0.0), maximum(eps, abs(z_area)), -maximum(eps, abs(z_area))
+    )
 
     return (
         astype(p_quad_vector_sum_1, vpfloat),
@@ -350,44 +352,44 @@ def prepare_numerical_quadrature_for_cubic_reconstruction(
     vertical_end: gtx.int32,
 ) -> None:
     _prepare_numerical_quadrature_for_cubic_reconstruction(
-        p_coords_dreg_v_1_x,
-        p_coords_dreg_v_2_x,
-        p_coords_dreg_v_3_x,
-        p_coords_dreg_v_4_x,
-        p_coords_dreg_v_1_y,
-        p_coords_dreg_v_2_y,
-        p_coords_dreg_v_3_y,
-        p_coords_dreg_v_4_y,
-        shape_func_1_1,
-        shape_func_2_1,
-        shape_func_3_1,
-        shape_func_4_1,
-        shape_func_1_2,
-        shape_func_2_2,
-        shape_func_3_2,
-        shape_func_4_2,
-        shape_func_1_3,
-        shape_func_2_3,
-        shape_func_3_3,
-        shape_func_4_3,
-        shape_func_1_4,
-        shape_func_2_4,
-        shape_func_3_4,
-        shape_func_4_4,
-        zeta_1,
-        zeta_2,
-        zeta_3,
-        zeta_4,
-        eta_1,
-        eta_2,
-        eta_3,
-        eta_4,
-        wgt_zeta_1,
-        wgt_zeta_2,
-        wgt_eta_1,
-        wgt_eta_2,
-        wp_eps,
-        eps,
+        p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,
+        p_coords_dreg_v_2_x=p_coords_dreg_v_2_x,
+        p_coords_dreg_v_3_x=p_coords_dreg_v_3_x,
+        p_coords_dreg_v_4_x=p_coords_dreg_v_4_x,
+        p_coords_dreg_v_1_y=p_coords_dreg_v_1_y,
+        p_coords_dreg_v_2_y=p_coords_dreg_v_2_y,
+        p_coords_dreg_v_3_y=p_coords_dreg_v_3_y,
+        p_coords_dreg_v_4_y=p_coords_dreg_v_4_y,
+        shape_func_1_1=shape_func_1_1,
+        shape_func_2_1=shape_func_2_1,
+        shape_func_3_1=shape_func_3_1,
+        shape_func_4_1=shape_func_4_1,
+        shape_func_1_2=shape_func_1_2,
+        shape_func_2_2=shape_func_2_2,
+        shape_func_3_2=shape_func_3_2,
+        shape_func_4_2=shape_func_4_2,
+        shape_func_1_3=shape_func_1_3,
+        shape_func_2_3=shape_func_2_3,
+        shape_func_3_3=shape_func_3_3,
+        shape_func_4_3=shape_func_4_3,
+        shape_func_1_4=shape_func_1_4,
+        shape_func_2_4=shape_func_2_4,
+        shape_func_3_4=shape_func_3_4,
+        shape_func_4_4=shape_func_4_4,
+        zeta_1=zeta_1,
+        zeta_2=zeta_2,
+        zeta_3=zeta_3,
+        zeta_4=zeta_4,
+        eta_1=eta_1,
+        eta_2=eta_2,
+        eta_3=eta_3,
+        eta_4=eta_4,
+        wgt_zeta_1=wgt_zeta_1,
+        wgt_zeta_2=wgt_zeta_2,
+        wgt_eta_1=wgt_eta_1,
+        wgt_eta_2=wgt_eta_2,
+        wp_eps=wp_eps,
+        eps=eps,
         out=(
             p_quad_vector_sum_1,
             p_quad_vector_sum_2,

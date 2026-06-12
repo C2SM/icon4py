@@ -22,7 +22,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def init_test_fields(
+def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     z_rho_e: fa.EdgeKField[wpfloat],
     z_theta_v_e: fa.EdgeKField[wpfloat],
     z_dwdz_dd: fa.CellKField[vpfloat],
@@ -45,7 +45,7 @@ def init_test_fields(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def stencils_61_62(
+def stencils_61_62(  # noqa: PLR0917 [too-many-positional-arguments]
     rho_now: fa.CellKField[wpfloat],
     grf_tend_rho: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],

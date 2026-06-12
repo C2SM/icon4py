@@ -55,8 +55,8 @@ def _compute_ppm_slope(
 ) -> fa.CellKField[wpfloat]:
     z_slope = concat_where(
         dims.KDim == elev,
-        _compute_ppm_slope_b(p_cc, p_cellhgt_mc_now),
-        _compute_ppm_slope_a(p_cc, p_cellhgt_mc_now),
+        _compute_ppm_slope_b(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
+        _compute_ppm_slope_a(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
     )
 
     return z_slope
@@ -74,9 +74,9 @@ def compute_ppm_slope(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm_slope(
-        p_cc,
-        p_cellhgt_mc_now,
-        elev,
+        p_cc=p_cc,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        elev=elev,
         out=z_slope,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

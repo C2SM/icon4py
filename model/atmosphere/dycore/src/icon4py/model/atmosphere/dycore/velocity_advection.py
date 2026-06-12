@@ -38,6 +38,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 class VelocityAdvection:
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         metric_state: dycore_states.MetricStateNonHydro,
         interpolation_state: dycore_states.InterpolationState,
@@ -229,6 +230,7 @@ class VelocityAdvection:
 
     def run_predictor_step(
         self,
+        *,
         skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
@@ -320,6 +322,7 @@ class VelocityAdvection:
 
     def run_corrector_step(
         self,
+        *,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],

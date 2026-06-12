@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _en_smag_fac_for_zero_nshift(
+def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
     vect_a: fa.KField[wpfloat],
     hdiff_smag_fac: wpfloat,
     hdiff_smag_fac2: wpfloat,
@@ -44,7 +44,7 @@ def _en_smag_fac_for_zero_nshift(
 
 
 @gtx.program
-def en_smag_fac_for_zero_nshift(
+def en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
     vect_a: fa.KField[wpfloat],
     hdiff_smag_fac: wpfloat,
     hdiff_smag_fac2: wpfloat,
@@ -57,14 +57,14 @@ def en_smag_fac_for_zero_nshift(
     enh_smag_fac: fa.KField[wpfloat],
 ) -> None:
     _en_smag_fac_for_zero_nshift(
-        vect_a,
-        hdiff_smag_fac,
-        hdiff_smag_fac2,
-        hdiff_smag_fac3,
-        hdiff_smag_fac4,
-        hdiff_smag_z,
-        hdiff_smag_z2,
-        hdiff_smag_z3,
-        hdiff_smag_z4,
+        vect_a=vect_a,
+        hdiff_smag_fac=hdiff_smag_fac,
+        hdiff_smag_fac2=hdiff_smag_fac2,
+        hdiff_smag_fac3=hdiff_smag_fac3,
+        hdiff_smag_fac4=hdiff_smag_fac4,
+        hdiff_smag_z=hdiff_smag_z,
+        hdiff_smag_z2=hdiff_smag_z2,
+        hdiff_smag_z3=hdiff_smag_z3,
+        hdiff_smag_z4=hdiff_smag_z4,
         out=enh_smag_fac,
     )

@@ -37,9 +37,9 @@ def compute_ppm4gpu_parabola_coefficients(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_parabola_coefficients(
-        z_face_up,
-        z_face_low,
-        p_cc,
+        z_face_up=z_face_up,
+        z_face_low=z_face_low,
+        p_cc=p_cc,
         out=(z_delta_q, z_a1),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

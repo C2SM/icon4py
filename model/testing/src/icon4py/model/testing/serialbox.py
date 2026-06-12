@@ -168,6 +168,7 @@ class IconSavepoint:
 class IconGridSavepoint(IconSavepoint):
     def __init__(
         self,
+        *,
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         grid_id: str,
@@ -692,10 +693,14 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("nudgecoeff_e", dims.EdgeDim)
 
     def pos_on_tplane_e_x(self):
-        return self._get_field("pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim)[:, 0:2]
+        return self._get_field(
+            "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim, slice_=(slice(None), slice(0, 2))
+        )
 
     def pos_on_tplane_e_y(self):
-        return self._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)[:, 0:2]
+        return self._get_field(
+            "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim, slice_=(slice(None), slice(0, 2))
+        )
 
     def rbf_vec_coeff_e(self):
         return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim, transpose=(1, 0))
@@ -730,10 +735,10 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)
 
     def lsq_pseudoinv_1(self):
-        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.LsqCDim)
+        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
 
     def lsq_pseudoinv_2(self):
-        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.LsqCDim)
+        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
 
 
 class MetricSavepoint(IconSavepoint):
@@ -1975,6 +1980,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
+        *,
         backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
@@ -2016,8 +2022,8 @@ class IconSerialDataProvider:
     def from_savepoint_grid(self, grid_id: str, grid_params: icon.GridParams) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
-            savepoint,
-            self.serializer,
+            sp=savepoint,
+            ser=self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
             grid_params=grid_params,

@@ -39,6 +39,7 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         w_concorr_c: np.ndarray,
         z_contr_w_fl_l: np.ndarray,
         **kwargs: Any,

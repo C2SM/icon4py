@@ -35,8 +35,8 @@ def interpolate_to_cell_center(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_to_cell_center(
-        interpolant,
-        e_bln_c_s,
+        interpolant=interpolant,
+        e_bln_c_s=e_bln_c_s,
         out=interpolation,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -44,9 +44,9 @@ def diagnose_surface_pressure(
     vertical_end: gtx.int32,
 ) -> None:
     _diagnose_surface_pressure(
-        exner,
-        virtual_temperature,
-        ddqz_z_full,
+        exner=exner,
+        virtual_temperature=virtual_temperature,
+        ddqz_z_full=ddqz_z_full,
         out=surface_pressure,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -38,9 +38,9 @@ def set_theta_v_prime_ic_at_lower_boundary(
     vertical_end: gtx.int32,
 ) -> None:
     _set_theta_v_prime_ic_at_lower_boundary(
-        wgtfacq_c,
-        z_rth_pr,
-        theta_ref_ic,
+        wgtfacq_c=wgtfacq_c,
+        z_rth_pr=z_rth_pr,
+        theta_ref_ic=theta_ref_ic,
         out=(z_theta_v_pr_ic, theta_v_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

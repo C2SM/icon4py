@@ -158,7 +158,7 @@ def zonal_and_meridional_components_on_edges(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_components_on_edges(
+def compute_zonal_and_meridional_components_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     lat: fa.EdgeField[gtx.float64],
     lon: fa.EdgeField[gtx.float64],
     x: fa.EdgeField[gtx.float64],
@@ -170,7 +170,13 @@ def compute_zonal_and_meridional_components_on_edges(
     horizontal_end: gtx.int32,
 ):
     zonal_and_meridional_components_on_edges(
-        lat, lon, x, y, z, out=(u, v), domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
+        lat=lat,
+        lon=lon,
+        x=x,
+        y=y,
+        z=z,
+        out=(u, v),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -207,7 +213,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
+def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     edge_lat: fa.EdgeField[gtx.float64],
     edge_lon: fa.EdgeField[gtx.float64],
     u: fa.EdgeField[gtx.float64],
@@ -219,10 +225,10 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
-        edge_lat,
-        edge_lon,
-        u,
-        v,
+        lat=edge_lat,
+        lon=edge_lon,
+        u=u,
+        v=v,
         out=(x, y, z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -261,7 +267,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
+def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_lat: fa.CellField[gtx.float64],
     cell_lon: fa.CellField[gtx.float64],
     u: fa.CellField[gtx.float64],
@@ -273,10 +279,10 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
-        cell_lat,
-        cell_lon,
-        u,
-        v,
+        lat=cell_lat,
+        lon=cell_lon,
+        u=u,
+        v=v,
         out=(x, y, z),
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )

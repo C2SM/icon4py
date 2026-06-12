@@ -49,12 +49,12 @@ def apply_density_increment(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_density_increment(
-        rhodz_in,
-        p_mflx_contra_v,
-        deepatmo_divzl,
-        deepatmo_divzu,
-        p_dtime,
-        even_timestep,
+        rhodz_in=rhodz_in,
+        p_mflx_contra_v=p_mflx_contra_v,
+        deepatmo_divzl=deepatmo_divzl,
+        deepatmo_divzu=deepatmo_divzu,
+        p_dtime=p_dtime,
+        even_timestep=even_timestep,
         out=rhodz_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

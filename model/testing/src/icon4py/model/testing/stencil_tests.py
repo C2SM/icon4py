@@ -96,9 +96,7 @@ def test_and_benchmark(
 
     if not skip_stenciltest_verification:
         reference_outputs = self.reference(
-            _ConnectivityConceptFixer(
-                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-            ),
+            connectivities=_ConnectivityConceptFixer(grid),
             **{
                 k: v.asnumpy() if isinstance(v, gtx.Field) else v
                 for k, v in _properly_allocated_input_data.items()

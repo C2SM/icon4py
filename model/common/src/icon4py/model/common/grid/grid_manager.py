@@ -453,7 +453,7 @@ class GridManager:
         )
 
         self._grid = icon.icon_grid(
-            self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
+            id_=self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
             allocator=allocator,
             config=grid_config,
             neighbor_tables=neighbor_tables,

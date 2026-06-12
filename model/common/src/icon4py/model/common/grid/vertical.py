@@ -108,21 +108,21 @@ class VerticalGridConfig:
     file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
-    # SLEVE. Default values from mo_sleve_nml.
+    # SLEVE. decay_scale_1, decay_scale_2 and decay_exp are from mo_sleve_nml.
     #: Decay scale for large-scale topography component
     SLEVE_decay_scale_1: Final[wpfloat] = 4000.0
     #: Decay scale for small-scale topography component
     SLEVE_decay_scale_2: Final[wpfloat] = 2500.0
     #: Exponent for decay function
     SLEVE_decay_exponent: Final[wpfloat] = 1.2
-    #: minimum absolute layer thickness 1 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_1: Final[wpfloat] = 100.0
-    #: minimum absolute layer thickness 2 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_2: Final[wpfloat] = 500.0
-    #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
-    SLEVE_minimum_relative_layer_thickness_1: Final[wpfloat] = 1.0 / 3.0
-    #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
-    SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = 0.5
+    #: minimum absolute layer thickness 1 for SLEVE coordinates (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_layer_thickness_1: Final[wpfloat] = 100.0
+    #: minimum absolute layer thickness 2 for SLEVE coordinates (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_layer_thickness_2: Final[wpfloat] = 500.0
+    #: minimum relative layer thickness for nominal thicknesses <= _SLEVE_minimum_layer_thickness_1 (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_relative_layer_thickness_1: Final[wpfloat] = 1.0 / 3.0
+    #: minimum relative layer thickness for a nominal thickness of _SLEVE_minimum_layer_thickness_2 (hardcoded in init_vert_coord, not a namelist parameter)
+    _SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = 0.5
 
     def __post_init__(self):
         ta.config_scalars_to_wp(
@@ -568,6 +568,7 @@ def get_vct_a_and_vct_b(
 
 
 def _compute_SLEVE_coordinate_from_vcta_and_topography(
+    *,
     vct_a: data_alloc.NDArray,
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
@@ -645,6 +646,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
 
 
 def _check_and_correct_layer_thickness(
+    *,
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     SLEVE_minimum_layer_thickness_1: gtx.float64,
@@ -746,6 +748,7 @@ def _check_flatness_of_flat_level(
 
 
 def compute_vertical_coordinate(
+    *,
     vct_a: data_alloc.NDArray,
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,

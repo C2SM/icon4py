@@ -54,7 +54,7 @@ def _compute_advection_deepatmo_fields(
 
 
 @gtx.program
-def compute_advection_deepatmo_fields(
+def compute_advection_deepatmo_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     height_u: fa.KField[gtx.float64],
     height_l: fa.KField[gtx.float64],
     deepatmo_divh: fa.KField[gtx.float64],

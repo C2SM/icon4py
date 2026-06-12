@@ -30,7 +30,7 @@ _log = logging.getLogger(__name__)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
+    "experiment_description, istep_init, step_date_init, substep_init, istep_exit, step_date_exit, substep_exit",
     [
         (
             test_defs.Experiments.MCH_CH_R04B09,
@@ -44,20 +44,15 @@ _log = logging.getLogger(__name__)
     ],
 )
 @pytest.mark.mpi
-def test_run_solve_nonhydro_single_step(
+def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init: int,
     istep_exit: int,
     step_date_init: str,
     step_date_exit: str,
     substep_init: int,
     experiment: test_defs.Experiment,
-    ndyn_substeps: int,
     icon_grid: icon.IconGrid,
     savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
-    lowest_layer_thickness: ta.wpfloat,
-    model_top_height: ta.wpfloat,
-    stretch_factor: ta.wpfloat,
-    damping_height: ta.wpfloat,
     is_iau_active: bool,
     iau_wgt_dyn: ta.wpfloat,
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -96,15 +91,9 @@ def test_run_solve_nonhydro_single_step(
         f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = test_defs.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     nonhydro_params = nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.dtime()
     lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
@@ -154,11 +143,11 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
+        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == ndyn_substeps),
+        at_last_substep=(substep_init == experiment.config.diffusion.ndyn_substeps),
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
@@ -176,43 +165,44 @@ def test_run_solve_nonhydro_single_step(
         expected_exner,
         calculated_exner,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_states.next.vn.asnumpy(),
+        atol=1e-14,
         rtol=1e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_states.next.w.asnumpy(),
-        atol=8e-14,
+        atol=1e-14,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_states.next.rho.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,
