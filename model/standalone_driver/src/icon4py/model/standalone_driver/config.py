@@ -69,6 +69,10 @@ class DriverConfig:
     do_tracer_advection: bool = True
     do_physics: bool = True
 
+    def __post_init__(self) -> None:
+        if not self.do_tracer_advection:
+            object.__setattr__(self, "ntracer", 0)
+
     @classmethod
     def from_fortran_dict(
         cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
