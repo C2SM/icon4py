@@ -8,6 +8,7 @@
 
 
 import dataclasses
+import datetime
 import logging
 import os
 import pathlib
@@ -463,8 +464,13 @@ def display_driver_setup_in_log_file(
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
     log.info(f"Start date             : {config.start_date}")
-    log.info(f"End date               : {config.end_date}")
-    log.info(f"Number of timesteps    : {n_time_steps}")
+    match config.end_simulation:
+        case int(n):
+            log.info(f"Number of timesteps    : {n}")
+        case datetime.timedelta() as relative:
+            log.info(f"Simulation duration    : {relative.total_seconds()} s")
+        case datetime.datetime() as absolute:
+            log.info(f"End date               : {absolute}")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
