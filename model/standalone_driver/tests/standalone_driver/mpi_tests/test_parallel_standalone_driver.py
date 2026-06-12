@@ -24,7 +24,6 @@ from icon4py.model.testing import (
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
     download_ser_data,
-    experiment,
     experiment_description,
     process_props,
 )
@@ -46,7 +45,8 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_standalone_driver_compare_single_multi_rank(
+def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+    download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     end_simulation: driver_config.EndSimulation,
     tmp_path: pathlib.Path,
