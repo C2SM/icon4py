@@ -8,6 +8,8 @@
 
 import enum
 from typing import Final
+
+from gt4py.next import float64
 from numpy import finfo as float_info
 
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -111,6 +113,7 @@ _H_SCAL_BG: Final[wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 # Math constants
 WP_EPS = float_info(wpfloat).eps  # EPSILON(1._wp)
 VP_EPS = float_info(vpfloat).eps
+DP_EPS = float_info(float64).eps
 
 # Implementation constants
 #: default dynamics to physics time step ratio

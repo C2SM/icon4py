@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -205,7 +205,7 @@ def init_w(
         grid.num_cells,
     )
 
-    w = array_ns.zeros((grid.num_cells, nlev + 1))
+    w = array_ns.zeros((grid.num_cells, nlev + 1), dtype=ta.wpfloat)
     w[lb_c:ub_c, nlev] = z_wsfc_c[lb_c:ub_c]
     w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 

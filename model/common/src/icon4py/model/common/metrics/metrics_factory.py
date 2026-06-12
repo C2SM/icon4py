@@ -238,7 +238,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation_dp.with_backend(self._backend),
+            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (

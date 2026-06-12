@@ -33,7 +33,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
-    _cell_2_edge_interpolation_dp,
+    _cell_2_edge_interpolation,
 )
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
@@ -545,7 +545,7 @@ def compute_wgtfac_e(
         vertical_end: vertical end index
     """
 
-    _cell_2_edge_interpolation_dp(
+    _cell_2_edge_interpolation(
         in_field=wgtfac_c,
         coeff=c_lin_e,
         out=wgtfac_e,
@@ -650,7 +650,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
 
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    z_me = _cell_2_edge_interpolation_dp(in_field=z_mc, coeff=c_lin_e)
+    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
