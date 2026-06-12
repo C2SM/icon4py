@@ -13,22 +13,10 @@ Contains typed wrappers around standard math operations for use in factories
 and validation, and general-purpose GT4Py field operators.
 """
 
-import math
-
 from gt4py import next as gtx
 from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-
-
-def compute_sqrt(
-    input_val: gtx.float64,
-) -> gtx.float64:
-    """
-    Compute the square root of input_val.
-    math.sqrt is not sufficiently typed for the validation happening in the factories.
-    """
-    return math.sqrt(input_val)
 
 
 @gtx.field_operator
