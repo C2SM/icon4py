@@ -34,6 +34,12 @@ from icon4py.model.standalone_driver import initial_condition
 log = logging.getLogger(__name__)
 
 
+RelativeTime = datetime.timedelta
+AbsoluteTime = datetime.datetime
+NumTimeSteps = int
+EndSimulation = RelativeTime | AbsoluteTime | NumTimeSteps
+
+
 @dataclasses.dataclass
 class ProfilingStats:
     gt4py_metrics_level: int = gtx_metrics.ALL
@@ -53,8 +59,7 @@ class DriverConfig:
     profiling_stats: ProfilingStats | None
     dtime: datetime.timedelta
     start_date: datetime.datetime
-    end_date: datetime.datetime
-    n_time_steps: int | None = None  # when set, it overrides date-based computation
+    end_simulation: EndSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
@@ -81,7 +86,7 @@ class DriverConfig:
             .removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
             start_date=datetime.datetime.fromisoformat(start_date_str.replace("Z", "+00:00")),
-            end_date=datetime.datetime.fromisoformat(end_date_str.replace("Z", "+00:00")),
+            end_simulation=datetime.datetime.fromisoformat(end_date_str.replace("Z", "+00:00")),
             apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
@@ -90,7 +95,7 @@ class DriverConfig:
         )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ExperimentConfig:
     # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
     metrics: metrics_factory.MetricsConfig

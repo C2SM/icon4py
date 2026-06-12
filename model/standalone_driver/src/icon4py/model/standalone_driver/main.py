@@ -62,9 +62,13 @@ def main(
     )
     allocator = model_backends.get_allocator(backend)
 
-    process_props = standalone_driver.setup_environment(
-        log_level=log_level,
+    process_props = decomposition_defs.get_process_properties(
+        decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
+    )
+    driver_utils.configure_logging(
+        logging_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
+        process_props=process_props,
     )
 
     config = driver_config.read_config(config_file_path)

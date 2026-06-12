@@ -493,28 +493,6 @@ class Icon4pyDriver:
             )
 
 
-def setup_environment(
-    log_level: str,
-    print_distributed_debug_msg: bool,
-) -> decomposition_defs.ProcessProperties:
-    if mpi_decomp.mpi4py is None:
-        with_mpi = False
-    else:
-        mpi_decomp.init_mpi()
-        with_mpi = mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1
-
-    process_props = decomposition_defs.get_process_properties(
-        decomposition_defs.get_runtype(with_mpi=with_mpi)
-    )
-    driver_utils.configure_logging(
-        logging_level=log_level,
-        print_distributed_debug_msg=print_distributed_debug_msg,
-        process_props=process_props,
-    )
-
-    return process_props
-
-
 def initialize_driver(
     *,
     config: driver_config.ExperimentConfig,
@@ -527,7 +505,7 @@ def initialize_driver(
         cli_output_path=None,
         process_props=process_props,
     )
-    config.driver = dataclasses.replace(config.driver, output_path=output_path)
+    config = dataclasses.replace(config, driver=dataclasses.replace(config.driver, output_path=output_path))
 
     allocator = model_backends.get_allocator(backend)
 

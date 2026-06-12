@@ -24,7 +24,6 @@ from icon4py.model.testing import (
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
     download_ser_data,
-    experiment,
     experiment_description,
     process_props,
 )
@@ -39,19 +38,21 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description, n_time_steps",
+    "experiment_description, end_simulation",
     [
-        (test_defs.Experiments.JW, 1),
+        (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
     ],
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_standalone_driver_compare_single_multi_rank(
+def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+    download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
-    n_time_steps: int,
+    end_simulation: driver_config.EndSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+    backend: model_backends.Backend,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -69,7 +70,6 @@ def test_standalone_driver_compare_single_multi_rank(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
-    backend = model_options.customize_backend(program=None, backend=backend_like)
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
@@ -80,8 +80,8 @@ def test_standalone_driver_compare_single_multi_rank(
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
     serial_config = config.with_overrides(
         driver={
-            "output_path": tmp_path / "ci_driver_output_serial_rank0",
-            "n_time_steps": n_time_steps,
+            "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
+            "end_simulation": end_simulation,
         }
     )
     serial_grid_manager = driver_utils.create_grid_manager(
@@ -100,7 +100,7 @@ def test_standalone_driver_compare_single_multi_rank(
     mpi_config = config.with_overrides(
         driver={
             "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            "n_time_steps": n_time_steps,
+            "end_simulation": end_simulation,
         }
     )
     mpi_grid_manager = driver_utils.create_grid_manager(

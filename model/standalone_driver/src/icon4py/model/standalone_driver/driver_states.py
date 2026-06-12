@@ -14,7 +14,7 @@ import enum
 import functools
 import logging
 import statistics
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 import devtools
 
@@ -30,10 +30,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-
-
-if TYPE_CHECKING:
-    from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.standalone_driver import config as driver_config
 
 
 log = logging.getLogger(__name__)
@@ -95,12 +92,16 @@ class ModelTimeVariables:
     cfl_watch_mode: bool = dataclasses.field(init=False)
 
     def __post_init__(self, config: driver_config.DriverConfig) -> None:
-        if config.n_time_steps is not None:
-            self.n_time_steps = config.n_time_steps
-            self.simulation_date = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
-        else:
-            self.n_time_steps = int((config.end_date - config.start_date) / config.dtime)
-            self.simulation_date = config.start_date
+        match config.end_simulation:
+            case driver_config.NumTimeSteps(n):
+                self.n_time_steps = n
+                self.simulation_date = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+            case driver_config.RelativeTime() as relative:
+                self.n_time_steps = int(relative / config.dtime)
+                self.simulation_date = config.start_date
+            case driver_config.AbsoluteTime() as absolute:
+                self.n_time_steps = int((absolute - config.start_date) / config.dtime)
+                self.simulation_date = config.start_date
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
         self.ndyn_substeps_var = config.ndyn_substeps
