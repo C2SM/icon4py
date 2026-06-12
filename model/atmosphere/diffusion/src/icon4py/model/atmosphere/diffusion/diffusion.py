@@ -145,6 +145,7 @@ class DiffusionConfig:
 
     def __init__(
         self,
+        *,
         diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w: bool = True,
         hdiff_vn: bool = True,
@@ -399,6 +400,7 @@ class Diffusion:
 
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: DiffusionConfig,
         params: DiffusionParams,

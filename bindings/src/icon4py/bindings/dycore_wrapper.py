@@ -53,7 +53,7 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 @icon4py_export.export
-def solve_nh_init(
+def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -302,7 +302,7 @@ type NumpyFloatArray1D = Annotated[
 
 
 @icon4py_export.export
-def solve_nh_run(
+def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],

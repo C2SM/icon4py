@@ -217,8 +217,8 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
 ) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
-    if dim in (dims.LsqCDim, dims.LsqUnkDim):
-        pytest.skip("LsqCDim and LsqUnkDim are not offset dimensions.")
+    if dim == dims.LsqUnkDim:
+        pytest.skip("LsqUnkDim is not an offset dimension.")
     grid = utils.run_grid_manager(grid_description, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
@@ -351,7 +351,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
         ),
     ],
 )
-def test_grid_params_from_grid_manager(
+def test_grid_params_from_grid_manager(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_description: definitions.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: icon.GeometryType,

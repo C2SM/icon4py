@@ -178,7 +178,7 @@ def create_experiment_configuration(
     json_file_path = (
         definitions.serialized_data_path()
         / experiment_dir
-        / f"{definitions.NAMELIST_ICON_FNAME}.json"
+        / f"{definitions.NAMELIST_ATM_FNAME}.json"
     )
 
     nml_data = _read_namelist_json(json_file_path)

@@ -20,7 +20,7 @@ graupel_program = None
 
 
 @icon4py_export.export
-def graupel_run(
+def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
     ke: gtx.int32,
     ivstart: gtx.int32,
     ivend: gtx.int32,

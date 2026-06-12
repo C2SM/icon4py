@@ -28,6 +28,7 @@ class TestCell2EdgeInterpolation(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         in_field: np.ndarray,
         coeff: np.ndarray,
         **kwargs: Any,

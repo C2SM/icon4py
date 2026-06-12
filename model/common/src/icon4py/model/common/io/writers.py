@@ -88,6 +88,7 @@ class NETCDFWriter:
 
     def __init__(
         self,
+        *,
         file_name: pathlib.Path | str,
         vertical: v_grid.VerticalGrid,
         horizontal: base.HorizontalGridSize,

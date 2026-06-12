@@ -37,6 +37,7 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_graddiv_vn: np.ndarray,
         vn: np.ndarray,
         scal_divdamp_o2: ta.wpfloat,

@@ -12,10 +12,15 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from icon4py.tools.py2fgen import _cli, _utils
+from icon4py.bindings import all_bindings
+from icon4py.tools.py2fgen import _utils
 
 
 logger = _utils.setup_logger(__name__)
+
+# The .c source is not snapshotted: it is bulky CFFI-generated code that
+# varies between cffi versions.
+_SNAPSHOT_SUFFIXES = (".py", ".f90", ".h")
 
 
 @pytest.fixture
@@ -23,70 +28,35 @@ def cli_runner():
     return CliRunner()
 
 
-def reference_path(bindings_name: str) -> pathlib.Path:
-    return pathlib.Path(__file__).parent.resolve() / "references" / bindings_name
+def _reference(suffix: str) -> pathlib.Path:
+    base = pathlib.Path(__file__).parent.resolve() / "references"
+    return base / f"{all_bindings.LIBRARY_NAME}{suffix}"
 
 
-def actual_path(bindings_name: str) -> pathlib.Path:
-    return pathlib.Path(__file__).parent.resolve() / "references_new" / bindings_name
+def _actual(suffix: str) -> pathlib.Path:
+    base = pathlib.Path(__file__).parent.resolve() / "references_new"
+    return base / f"{all_bindings.LIBRARY_NAME}{suffix}"
 
 
-def invoke_cli(cli_runner, module, function, library_name, path):
-    cli_args = [module, function, library_name, "-o", path]
-    result = cli_runner.invoke(_cli.main, cli_args)
-    assert result.exit_code == 0, "CLI execution failed"
-
-
-def diff(reference: pathlib.Path, actual: pathlib.Path):
+def diff(reference: pathlib.Path, actual: pathlib.Path) -> bool:
     with pathlib.Path.open(reference) as f:
         reference_lines = f.readlines()
     with pathlib.Path.open(actual) as f:
         actual_lines = f.readlines()
-    result = difflib.context_diff(reference_lines, actual_lines)
 
     clean = True
-    for line in result:
+    for line in difflib.context_diff(reference_lines, actual_lines):
         logger.info(f"result line: {line}")
         clean = False
-
     return clean
 
 
-def check_generated_files(bindings_name: str) -> None:
-    for suffix in [".h", ".f90", ".py"]:
-        assert diff(
-            reference_path(bindings_name) / f"{bindings_name}{suffix}",
-            actual_path(bindings_name) / f"{bindings_name}{suffix}",
-        )
+def test_references(cli_runner):
+    cli_args = []
+    for suffix in _SNAPSHOT_SUFFIXES:
+        cli_args += [f"--output-{suffix[1:]}", str(_actual(suffix))]
+    result = cli_runner.invoke(all_bindings.main, cli_args)
+    assert result.exit_code == 0, result.output
 
-
-@pytest.mark.parametrize(
-    "bindings_name, module, functions",
-    [
-        (
-            "diffusion",
-            "icon4py.bindings.diffusion_wrapper",
-            "diffusion_run, diffusion_init",
-        ),
-        (
-            "dycore",
-            "icon4py.bindings.dycore_wrapper",
-            "solve_nh_run, solve_nh_init",
-        ),
-        (
-            "grid",
-            "icon4py.bindings.grid_wrapper",
-            "grid_init",
-        ),
-    ],
-    ids=["diffusion", "dycore", "grid"],
-)
-def test_references(cli_runner, bindings_name, module, functions):
-    invoke_cli(
-        cli_runner,
-        module,
-        functions,
-        bindings_name,
-        actual_path(bindings_name),
-    )
-    check_generated_files(bindings_name)
+    for suffix in _SNAPSHOT_SUFFIXES:
+        assert diff(_reference(suffix), _actual(suffix))
