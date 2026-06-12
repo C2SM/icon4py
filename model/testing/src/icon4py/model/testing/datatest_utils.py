@@ -194,13 +194,13 @@ def create_experiment_configuration(
         else None
     )
 
-    do_microphysics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
+    do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
     # without microphysics and we have to skip parsing the graupel config which
     # relies on some of these parameters.
     graupel_config = (
         graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
-        if do_microphysics
+        if do_physics
         else None
     )
 
@@ -214,7 +214,7 @@ def create_experiment_configuration(
         profiling_stats=None,
         enable_statistics_output=False,
         do_tracer_advection=do_tracer_advection,
-        do_microphysics=do_microphysics,
+        do_physics=do_physics,
     )
 
     return definitions.ExperimentConfig(

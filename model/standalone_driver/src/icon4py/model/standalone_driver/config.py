@@ -67,7 +67,7 @@ class DriverConfig:
     enable_statistics_output: bool = False
     ntracer: int = 0
     do_tracer_advection: bool = True
-    do_microphysics: bool = True
+    do_physics: bool = True
 
     @classmethod
     def from_fortran_dict(
@@ -165,13 +165,13 @@ def read_config(
         else None
     )
 
-    do_microphysics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
+    do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
     # without microphysics and we have to skip parsing the graupel config which
     # relies on some of these parameters.
     graupel_config = (
         graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
-        if do_microphysics
+        if do_physics
         else None
     )
 
@@ -185,7 +185,7 @@ def read_config(
         master_dict=master_dict,
         profiling_stats=profiling_stats,
         do_tracer_advection=do_tracer_advection,
-        do_microphysics=do_microphysics,
+        do_physics=do_physics,
     )
 
     return ExperimentConfig(
