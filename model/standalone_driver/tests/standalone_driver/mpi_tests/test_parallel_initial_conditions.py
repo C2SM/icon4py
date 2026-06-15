@@ -9,6 +9,7 @@
 import logging
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, model_options
@@ -57,7 +58,7 @@ def test_initial_conditions_compare_single_multi_rank(
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    backend: model_backends.Backend,
+    backend: gtx_typing.Backend,
     download_ser_data: None,
 ) -> None:
     if experiment.grid.limited_area:
@@ -91,8 +92,7 @@ def test_initial_conditions_compare_single_multi_rank(
 
     allocator = model_backends.get_allocator(backend)
 
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     serial_process_props = decomp_defs.SingleNodeProcessProperties()
     serial_config = experiment.config.with_overrides(
