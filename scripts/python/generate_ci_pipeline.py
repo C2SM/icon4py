@@ -11,12 +11,12 @@
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
 Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
-BACKENDS, LEVELS, GRIDS, MODEL_SUBSET) and writes a child pipeline that
-includes ``ci/base.yml`` and instantiates only the test jobs whose matrix
-entries match the requested filter.
+BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS) or corresponding command-line options
+and writes a child pipeline that includes ``ci/base.yml`` and instantiates only
+the test jobs whose matrix entries match the requested filter.
 
 Each SESSION value maps to a single job template that corresponds to a nox
-session. Parameters like MODEL_SUBPACKAGE and MODEL_SUBSET are passed as nox
+session. Parameters like MODEL_SUBPACKAGES and MODEL_SUBSETS are passed as nox
 session parameters.
 
 This script exists because using rules:if with regexes that are dynamically
@@ -37,7 +37,8 @@ import yaml
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
-# Full matrix dimensions
+ALL_SESSIONS = ["model", "tools", "mpi"]
+ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 ALL_MODEL_SUBPACKAGES = [
     "advection",
     "diffusion",
@@ -56,16 +57,18 @@ ALL_MODEL_MPI_SUBPACKAGES = [
     "common",
     "standalone_driver",
 ]
-
-ALL_SESSIONS = ["model", "tools", "mpi"]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
 ALL_LEVELS = ["any", "unit", "integration"]
-ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 
 
 def _parse_list(raw: str | None) -> list[str]:
-    """Parse a colon- or comma-separated string into a list of tokens."""
+    """Parse a colon- or comma-separated string into a list of tokens.
+
+    Colons are supported as separators because commas can't be used as
+    separators in CSCS CI variables when triggering jobs. The comma is reserved
+    for separating pipeline names in cscs-ci run pipeline1,pipeline2.
+    """
     if not raw:
         return []
     return [x.strip() for x in re.split(r"[,:]", raw) if x.strip()]
@@ -110,9 +113,9 @@ def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[s
 def _generate_child_pipeline(
     *,
     session: str | None = None,
+    model_subsets: str | None = None,
     model_subpackages: str | None = None,
-    mpi_subpackages: str | None = None,
-    model_subset: str | None = None,
+    model_mpi_subpackages: str | None = None,
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
@@ -122,8 +125,8 @@ def _generate_child_pipeline(
     requested_sessions = _resolve_filter(session, "SESSION", "model:tools:mpi")
     _validate_tokens("SESSION", requested_sessions, ALL_SESSIONS)
 
-    requested_model_subsets = _resolve_filter(model_subset, "MODEL_SUBSET", "stencils:datatest")
-    _validate_tokens("MODEL_SUBSET", requested_model_subsets, ALL_MODEL_SUBSETS)
+    requested_model_subsets = _resolve_filter(model_subsets, "MODEL_SUBSETS", "stencils:datatest")
+    _validate_tokens("MODEL_SUBSETS", requested_model_subsets, ALL_MODEL_SUBSETS)
 
     requested_model_subpackages = _resolve_filter(
         model_subpackages,
@@ -132,12 +135,14 @@ def _generate_child_pipeline(
     )
     _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
 
-    requested_mpi_subpackages = _resolve_filter(
-        mpi_subpackages,
+    requested_model_mpi_subpackages = _resolve_filter(
+        model_mpi_subpackages,
         "MODEL_MPI_SUBPACKAGES",
         "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver",
     )
-    _validate_tokens("MODEL_MPI_SUBPACKAGES", requested_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES)
+    _validate_tokens(
+        "MODEL_MPI_SUBPACKAGES", requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
+    )
 
     requested_backends = _resolve_filter(backends, "BACKENDS", "dace_gpu")
     _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
@@ -152,7 +157,6 @@ def _generate_child_pipeline(
         "include": [{"local": "ci/base.yml"}],
     }
 
-    # Model tests (unified job covering stencils, datatest, and basic subsets)
     if "model" in requested_sessions:
         filtered_subpackages = _intersect(requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
@@ -161,14 +165,14 @@ def _generate_child_pipeline(
         if filtered_subpackages and filtered_backends and filtered_subsets:
             matrix: list[dict] = []
 
-            # Stencils subset needs GRID dimension
+            # Stencils subset uses GRID dimension
             if "stencils" in filtered_subsets:
                 filtered_grids = _intersect(requested_grids, ALL_GRIDS)
                 if filtered_grids:
                     matrix.append(
                         {
-                            "MODEL_SUBPACKAGE": filtered_subpackages,
-                            "MODEL_SUBSET": ["stencils"],
+                            "MODEL_SUBPACKAGES": filtered_subpackages,
+                            "MODEL_SUBSETS": ["stencils"],
                             "BACKEND": filtered_backends,
                             "GRID": filtered_grids,
                         }
@@ -181,8 +185,8 @@ def _generate_child_pipeline(
                 if filtered_levels:
                     matrix.append(
                         {
-                            "MODEL_SUBPACKAGE": filtered_subpackages,
-                            "MODEL_SUBSET": level_subsets,
+                            "MODEL_SUBPACKAGES": filtered_subpackages,
+                            "MODEL_SUBSETS": level_subsets,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
                         }
@@ -194,24 +198,24 @@ def _generate_child_pipeline(
                     "parallel": {"matrix": matrix},
                 }
 
-    # Tools test (single job, no matrix)
     if "tools" in requested_sessions:
         pipeline["test_tools_aarch64"] = {
             "extends": ".test_tools_aarch64",
         }
 
-    # MPI tests
     if "mpi" in requested_sessions:
-        filtered_components = _intersect(requested_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES)
+        filtered_subpackages = _intersect(
+            requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
+        )
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-        if filtered_components and filtered_backends and filtered_levels:
+        if filtered_subpackages and filtered_backends and filtered_levels:
             pipeline["test_mpi_aarch64"] = {
                 "extends": ".test_mpi_aarch64",
                 "parallel": {
                     "matrix": [
                         {
-                            "MODEL_SUBPACKAGE": filtered_components,
+                            "MODEL_MPI_SUBPACKAGES": filtered_subpackages,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
                         }
@@ -227,7 +231,7 @@ def _generate_child_pipeline(
         )
         sys.exit(1)
 
-    return yaml.dump(pipeline, default_flow_style=False, sort_keys=False)
+    return yaml.dump(pipeline)
 
 
 @cli.command()
@@ -246,17 +250,17 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             help="Colon/comma-separated model subpackage filter",
         ),
     ] = None,
-    mpi_subpackages: Annotated[
+    model_mpi_subpackages: Annotated[
         str | None,
         typer.Option(
-            "--mpi-subpackages",
+            "--model-mpi-subpackages",
             help="Colon/comma-separated MPI subpackage filter",
         ),
     ] = None,
-    model_subset: Annotated[
+    model_subsets: Annotated[
         str | None,
         typer.Option(
-            "--model-subset",
+            "--model-subsets",
             help="Colon/comma-separated model test subset filter (stencils, datatest, basic)",
         ),
     ] = None,
@@ -283,8 +287,8 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
         _generate_child_pipeline(
             session=session,
             model_subpackages=model_subpackages,
-            mpi_subpackages=mpi_subpackages,
-            model_subset=model_subset,
+            model_mpi_subpackages=model_mpi_subpackages,
+            model_subsets=model_subsets,
             backends=backends,
             levels=levels,
             grids=grids,

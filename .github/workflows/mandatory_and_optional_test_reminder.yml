@@ -18,6 +18,8 @@ jobs:
 
             * `cscs-ci run default`
 
+            This will run a default subset of tests.
+
             You can pass options to override pipeline variables, for example:
 
             * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
@@ -26,6 +28,17 @@ jobs:
             **Avoid running the pipeline for all tests when you are developing.**
 
             All tests will be run on merge through the merge queue.
+
+            Available options are:
+            * `SESSIONS`
+            * `MODEL_SUBSETS`
+            * `MODEL_SUBPACKAGES`
+            * `MODEL_MPI_SUBPACKAGES`
+            * `BACKENDS`
+            * `GRIDS`
+            * `LEVELS`
+
+            See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
 
             **Optional Tests**
 
