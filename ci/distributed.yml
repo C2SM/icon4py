@@ -21,9 +21,6 @@ include:
     FI_PROVIDER: cxi
     OMPI_MCA_pml: cm
     OMPI_MCA_mtl: ofi
-    # TODO(msimberg): these will come from base template after #1292 is merged
-    # (must happen before this branch is merged).
-    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 .test_distributed_aarch64:
   stage: test
