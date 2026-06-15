@@ -55,8 +55,9 @@ def test_initial_conditions(
         allocator=allocator,
         process_props=process_props,
     )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        config=config,
+        config=config,  # type: ignore[arg-type]
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,

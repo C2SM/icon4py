@@ -104,9 +104,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=serial_process_props,
     )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=serial_config,
+            config=serial_config,  # type: ignore[arg-type]
             grid_manager=serial_grid_manager,
             process_props=serial_process_props,
             backend=backend,
@@ -133,9 +134,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=process_props,
     )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=mpi_config,
+            config=mpi_config,  # type: ignore[arg-type]
             grid_manager=mpi_grid_manager,
             process_props=process_props,
             backend=backend,
