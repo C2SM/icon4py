@@ -29,7 +29,6 @@ def calculate_nabla2_for_w_numpy(
     return z_nabla2_c
 
 
-@pytest.mark.embedded_remap_error
 class TestCalculateNabla2ForW(StencilTest):
     PROGRAM = calculate_nabla2_for_w
     OUTPUTS = ("z_nabla2_c",)

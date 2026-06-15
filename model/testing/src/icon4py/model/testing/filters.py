@@ -43,12 +43,6 @@ item_marker_filters: dict[str, ItemFilter] = {
         ),
         action=functools.partial(pytest.skip, "stencil runs only on embedded backend"),
     ),
-    pytest.mark.embedded_remap_error.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
-        action=functools.partial(
-            pytest.xfail, "Embedded backend currently fails in remap function."
-        ),
-    ),
     pytest.mark.embedded_static_args.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(

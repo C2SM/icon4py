@@ -9,10 +9,11 @@ include:
     - if: $BACKEND == 'dace_gpu'
       variables:
         NUM_PROCESSES: 8
-        SLURM_TIMELIMIT: '00:30:00'
+        SLURM_TIMELIMIT: '00:40:00'
+        DACE_compiler_cuda_implementation: experimental
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:15:00'
+        SLURM_TIMELIMIT: '00:35:00'
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
@@ -35,6 +36,7 @@ test_model_stencils_aarch64:
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '00:40:00'
+        DACE_compiler_cuda_implementation: experimental
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:30:00'

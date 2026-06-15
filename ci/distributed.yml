@@ -32,17 +32,20 @@ build_distributed_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_distributed_baseimage]
   variables:
     DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "PYVERSION=$PYVERSION"]'
+    DACE_compiler_cuda_implementation: experimental
 
 .build_distributed_template:
   variables:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
+    DACE_compiler_cuda_implementation: experimental
 
 .build_distributed:
   extends: [.build_distributed_template]
   variables:
     UV_PROJECT_ENVIRONMENT: venv_dist
+    DACE_compiler_cuda_implementation: experimental
 
 build_distributed:
   stage: image
@@ -80,6 +83,7 @@ build_distributed:
     FI_PROVIDER: cxi
     OMPI_MCA_pml: cm
     OMPI_MCA_mtl: ofi
+    DACE_compiler_cuda_implementation: experimental
 
 .test_distributed_aarch64:
   stage: test
@@ -102,9 +106,11 @@ build_distributed:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
+        DACE_compiler_cuda_implementation: experimental
     - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
+        DACE_compiler_cuda_implementation: experimental
     - if: ($COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')) || ($COMPONENT == 'standalone_driver' && $BACKEND == 'dace_gpu')
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
@@ -112,12 +118,15 @@ build_distributed:
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
+        DACE_compiler_cuda_implementation: experimental
     - if: ($COMPONENT == 'atmosphere/dycore' || $COMPONENT == 'atmosphere/advection')
       variables:
         SLURM_TIMELIMIT: '00:15:00'
+        DACE_compiler_cuda_implementation: experimental
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:50:00'
+        DACE_compiler_cuda_implementation: experimental
   artifacts:
     when: always
     paths:

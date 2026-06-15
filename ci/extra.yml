@@ -16,8 +16,10 @@ include:
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '01:00:00'
+        DACE_compiler_cuda_implementation: experimental
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:30:00'
+        DACE_compiler_cuda_implementation: experimental
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
