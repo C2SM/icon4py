@@ -39,6 +39,7 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 ALL_SESSIONS = ["model", "tools", "mpi"]
 ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
+ALL_MODEL_MPI_SUBSETS = ["basic", "datatest"]
 ALL_MODEL_SUBPACKAGES = [
     "advection",
     "diffusion",
@@ -51,9 +52,9 @@ ALL_MODEL_SUBPACKAGES = [
 ]
 
 ALL_MODEL_MPI_SUBPACKAGES = [
-    "atmosphere/advection",
-    "atmosphere/diffusion",
-    "atmosphere/dycore",
+    "advection",
+    "diffusion",
+    "dycore",
     "common",
     "standalone_driver",
 ]
@@ -116,6 +117,7 @@ def _generate_child_pipeline(
     model_subsets: str | None = None,
     model_subpackages: str | None = None,
     model_mpi_subpackages: str | None = None,
+    model_mpi_subsets: str | None = None,
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
@@ -138,11 +140,16 @@ def _generate_child_pipeline(
     requested_model_mpi_subpackages = _resolve_filter(
         model_mpi_subpackages,
         "MODEL_MPI_SUBPACKAGES",
-        "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver",
+        "advection:diffusion:dycore:common:standalone_driver",
     )
     _validate_tokens(
         "MODEL_MPI_SUBPACKAGES", requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
     )
+
+    requested_model_mpi_subsets = _resolve_filter(
+        model_mpi_subsets, "MODEL_MPI_SUBSETS", "basic:datatest"
+    )
+    _validate_tokens("MODEL_MPI_SUBSETS", requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
 
     requested_backends = _resolve_filter(backends, "BACKENDS", "dace_gpu")
     _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
@@ -171,8 +178,8 @@ def _generate_child_pipeline(
                 if filtered_grids:
                     matrix.append(
                         {
-                            "MODEL_SUBPACKAGES": filtered_subpackages,
-                            "MODEL_SUBSETS": ["stencils"],
+                            "MODEL_SUBPACKAGE": filtered_subpackages,
+                            "MODEL_SUBSET": ["stencils"],
                             "BACKEND": filtered_backends,
                             "GRID": filtered_grids,
                         }
@@ -185,8 +192,8 @@ def _generate_child_pipeline(
                 if filtered_levels:
                     matrix.append(
                         {
-                            "MODEL_SUBPACKAGES": filtered_subpackages,
-                            "MODEL_SUBSETS": level_subsets,
+                            "MODEL_SUBPACKAGE": filtered_subpackages,
+                            "MODEL_SUBSET": level_subsets,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
                         }
@@ -201,6 +208,11 @@ def _generate_child_pipeline(
     if "tools" in requested_sessions:
         pipeline["test_tools_aarch64"] = {
             "extends": ".test_tools_aarch64",
+            "parallel": {
+                "matrix": [
+                    {"SELECTION": ["datatest", "unittest"]},
+                ]
+            },
         }
 
     if "mpi" in requested_sessions:
@@ -209,15 +221,17 @@ def _generate_child_pipeline(
         )
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-        if filtered_subpackages and filtered_backends and filtered_levels:
+        filtered_mpi_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
+        if filtered_subpackages and filtered_backends and filtered_levels and filtered_mpi_subsets:
             pipeline["test_mpi_aarch64"] = {
                 "extends": ".test_mpi_aarch64",
                 "parallel": {
                     "matrix": [
                         {
-                            "MODEL_MPI_SUBPACKAGES": filtered_subpackages,
+                            "MODEL_MPI_SUBPACKAGE": filtered_subpackages,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
+                            "SELECTION": filtered_mpi_subsets,
                         }
                     ]
                 },
@@ -257,6 +271,13 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             help="Colon/comma-separated MPI subpackage filter",
         ),
     ] = None,
+    model_mpi_subsets: Annotated[
+        str | None,
+        typer.Option(
+            "--model-mpi-subsets",
+            help="Colon/comma-separated MPI test subset filter (basic, datatest)",
+        ),
+    ] = None,
     model_subsets: Annotated[
         str | None,
         typer.Option(
@@ -288,6 +309,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             session=session,
             model_subpackages=model_subpackages,
             model_mpi_subpackages=model_mpi_subpackages,
+            model_mpi_subsets=model_mpi_subsets,
             model_subsets=model_subsets,
             backends=backends,
             levels=levels,

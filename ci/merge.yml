@@ -3,17 +3,15 @@ include:
 
 variables:
   # See default.yml and generate_ci_pipeline.py for details on how these are
-  # used. This pipeline is triggered on merges through the merge queue and
-  # should generally not be triggered manually.
-  #
-  # The matrix defined by the options below gates PR merges.
+  # used. This pipeline gates merges and variables should not be overridden.
   MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
-  MPI_SUBPACKAGES: "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver"
+  MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   BACKENDS: "embedded:dace_cpu:dace_gpu:gtfn_cpu:gtfn_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
   SESSION: "model:tools:mpi"
-  MODEL_SUBSET: "stencils:datatest"
+  MODEL_SUBSETS: "stencils:datatest"
+  MODEL_MPI_SUBSETS: "basic:datatest"
 
 
 build_baseimage_aarch64:
@@ -21,12 +19,6 @@ build_baseimage_aarch64:
 
 build_image_aarch64:
   extends: [.build_image_aarch64]
-
-build_mpi_baseimage_aarch64:
-  extends: [.build_mpi_baseimage_aarch64]
-
-build_mpi_image_aarch64:
-  extends: [.build_mpi_image_aarch64]
 
 generate_test_child_pipeline:
   extends: [.generate_test_child_pipeline]
