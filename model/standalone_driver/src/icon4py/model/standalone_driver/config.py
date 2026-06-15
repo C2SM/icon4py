@@ -41,3 +41,6 @@ class DriverConfig:
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     ntracer: int = 0
+
+    def __post_init__(self):
+        ta.config_scalars_to_wp(self, attributes=["vertical_cfl_threshold"])

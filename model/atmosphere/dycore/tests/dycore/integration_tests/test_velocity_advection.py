@@ -23,7 +23,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
     compute_diagnostics_from_normal_wind,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    type_alias as ta,
+    utils as common_utils,
+)
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
@@ -31,12 +36,16 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
+
+ATOL_2EPS = 2 * constants.VP_EPS  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
+RTOL_8EPS = 8 * constants.WP_EPS  # for double ≈ 1.78e-15, for single ≈ 9.54e-7
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +59,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
+    rtol: vpfloat = RTOL_8EPS,
+    atol: vpfloat = ATOL_2EPS,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
@@ -57,7 +68,10 @@ def _compare_cfl(
         == icon_result_cfl_clipping[horizontal_start:horizontal_end, vertical_start:vertical_end]
     ).all()
 
-    assert vertical_cfl[horizontal_start:horizontal_end, :].max() == icon_result_max_vcfl_dyn
+    assert (
+        np.abs(vertical_cfl[horizontal_start:horizontal_end, :].max() - icon_result_max_vcfl_dyn)
+        <= atol + rtol * icon_result_max_vcfl_dyn
+    )
 
 
 def create_vertical_params(
@@ -124,7 +138,7 @@ def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments
     grid_savepoint,
     backend,
 ):
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
     vertical_config = experiment.config.vertical_grid
@@ -178,7 +192,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
@@ -322,7 +336,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 ):
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     assert not vn_only
 
@@ -603,7 +617,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
         cell_domain(h_grid.Zone.NUDGING)
@@ -707,6 +721,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
@@ -753,7 +768,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
         cell_domain(h_grid.Zone.NUDGING)
@@ -805,21 +820,16 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-        rtol=1.0e-15,
-        atol=1.0e-15,
+        rtol=RTOL_8EPS,
+        atol=ATOL_2EPS,
     )
-    assert test_utils.dallclose(
-        icon_result_ddt_w_adv.asnumpy()[
-            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
-            :,
-        ],
-        vertical_wind_advective_tendency.asnumpy()[
-            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
-            :,
-        ],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
+
+    start_idx = start_cell_nudging_for_vertical_wind_advective_tendency
+    end_idx = end_cell_local_for_vertical_wind_advective_tendency
+    fortran_res = icon_result_ddt_w_adv[start_idx:end_idx, :].asnumpy()
+    icon4py_res = vertical_wind_advective_tendency[start_idx:end_idx, :].asnumpy()
+
+    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=RTOL_8EPS, atol=ATOL_2EPS)
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
@@ -846,6 +856,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
@@ -884,7 +895,7 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
     icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)
@@ -933,6 +944,6 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
     assert test_utils.dallclose(
         icon_result_ddt_vn_apc.asnumpy(),
         normal_wind_advective_tendency.asnumpy(),
-        rtol=1.0e-15,
-        atol=1.0e-15,
+        rtol=RTOL_8EPS,
+        atol=ATOL_2EPS,
     )

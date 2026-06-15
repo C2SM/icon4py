@@ -95,7 +95,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     nonhydro_params = nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_nonhydro_init.dtime()
     lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=savepoint_nonhydro_init.vn_traj(),

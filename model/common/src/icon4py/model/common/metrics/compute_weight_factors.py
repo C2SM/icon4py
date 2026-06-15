@@ -12,39 +12,38 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @gtx.field_operator
 def _compute_wgtfac_c_nlev(
-    z_ifc: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    z_ifc: fa.CellKField[gtx.float64],
+) -> fa.CellKField[gtx.float64]:
     z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-2]) - z_ifc)
     return z_wgtfac_c
 
 
 @gtx.field_operator
 def _compute_wgtfac_c_0(
-    z_ifc: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    z_ifc: fa.CellKField[gtx.float64],
+) -> fa.CellKField[gtx.float64]:
     z_wgtfac_c = (z_ifc(Koff[+1]) - z_ifc) / (z_ifc(Koff[+2]) - z_ifc)
     return z_wgtfac_c
 
 
 @gtx.field_operator
 def _compute_wgtfac_c_inner(
-    z_ifc: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    z_ifc: fa.CellKField[gtx.float64],
+) -> fa.CellKField[gtx.float64]:
     z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
     return z_wgtfac_c
 
 
 @gtx.field_operator
 def _compute_wgtfac_c(
-    z_ifc: fa.CellKField[wpfloat],
+    z_ifc: fa.CellKField[gtx.float64],
     nlev: gtx.int32,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKField[gtx.float64]:
     wgt_fac_c = concat_where(
         (0 < dims.KDim) & (dims.KDim < nlev),  # noqa: SIM300 [yoda-conditions]
         _compute_wgtfac_c_inner(z_ifc),
@@ -59,8 +58,8 @@ def _compute_wgtfac_c(
 # TODO(halungge): missing test?
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
-    wgtfac_c: fa.CellKField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
+    wgtfac_c: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKField[gtx.float64],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

@@ -11,7 +11,6 @@ import enum
 import functools
 import logging
 import math
-import sys
 from typing import Final
 
 import gt4py.next as gtx
@@ -49,6 +48,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -154,25 +154,25 @@ class DiffusionConfig:
         type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
         type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
-        hdiff_efdt_ratio: float = 36.0,
-        hdiff_w_efdt_ratio: float = 15.0,
-        smagorinski_scaling_factor: float = 0.015,
-        smagorinski_scaling_factor2: float = 2e-6
+        hdiff_efdt_ratio: wpfloat | float = 36.0,
+        hdiff_w_efdt_ratio: wpfloat | float = 15.0,
+        smagorinski_scaling_factor: wpfloat | float = 0.015,
+        smagorinski_scaling_factor2: wpfloat | float = 2e-6
         * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))),
-        smagorinski_scaling_factor3: float = 0.0,
-        smagorinski_scaling_factor4: float = 1.0,
-        smagorinski_scaling_height: float = 32500.0,
-        smagorinski_scaling_height2: float = 1600.0
+        smagorinski_scaling_factor3: wpfloat | float = 0.0,
+        smagorinski_scaling_factor4: wpfloat | float = 1.0,
+        smagorinski_scaling_height: wpfloat | float = 32500.0,
+        smagorinski_scaling_height2: wpfloat | float = 1600.0
         + 50000.0
         + math.sqrt(1600.0 * (1600 + 50000.0)),
-        smagorinski_scaling_height3: float = 50000.0,
-        smagorinski_scaling_height4: float = 90000.0,
+        smagorinski_scaling_height3: wpfloat | float = 50000.0,
+        smagorinski_scaling_height4: wpfloat | float = 90000.0,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
-        velocity_boundary_diffusion_denom: float = 200.0,
-        temperature_boundary_diffusion_denom: float = 135.0,
-        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
-        * 0.02,
+        velocity_boundary_diffusion_denom: wpfloat | float = 200.0,
+        temperature_boundary_diffusion_denom: wpfloat | float = 135.0,
+        max_nudging_coefficient: wpfloat = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
+        * wpfloat(0.02),
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         iforcing: ForcingType = ForcingType.NO_FORCING,
         a_hshr: float = 1.0,
@@ -213,47 +213,47 @@ class DiffusionConfig:
 
         #: Ratio of e-folding time to (2*)time step
         #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
-        self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
+        self.hdiff_efdt_ratio: wpfloat = wpfloat(hdiff_efdt_ratio)
 
         #: Ratio of e-folding time to time step for w diffusion (NH only)
         #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
-        self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
+        self.hdiff_w_efdt_ratio: wpfloat = wpfloat(hdiff_w_efdt_ratio)
 
         # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
         #: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value)
         #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
+        self.smagorinski_scaling_factor: wpfloat = wpfloat(smagorinski_scaling_factor)
 
         #: Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and
         #: start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1).
         #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor2: float = smagorinski_scaling_factor2
+        self.smagorinski_scaling_factor2: wpfloat = wpfloat(smagorinski_scaling_factor2)
 
         #: Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the
         #: quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients.
         #: Called 'hdiff_smag_fac3' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor3: float = smagorinski_scaling_factor3
+        self.smagorinski_scaling_factor3: wpfloat = wpfloat(smagorinski_scaling_factor3)
 
         #: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value).
         #: Also the third control point that defines the quadratic segment together with factor2 and factor3.
         #: Called 'hdiff_smag_fac4' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor4: float = smagorinski_scaling_factor4
+        self.smagorinski_scaling_factor4: wpfloat = wpfloat(smagorinski_scaling_factor4)
 
         #: Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor below this height.
         #: Called 'hdiff_smag_z' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height: float = smagorinski_scaling_height
+        self.smagorinski_scaling_height: wpfloat = wpfloat(smagorinski_scaling_height)
 
         #: Transition height between linear and quadratic segments.
         #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height2: float = smagorinski_scaling_height2
+        self.smagorinski_scaling_height2: wpfloat = wpfloat(smagorinski_scaling_height2)
 
         #: Interior control point height within the quadratic segment (height2 <= height3 <= height4).
         #: Called 'hdiff_smag_z3' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height3: float = smagorinski_scaling_height3
+        self.smagorinski_scaling_height3: wpfloat = wpfloat(smagorinski_scaling_height3)
 
         #: Upper boundary of the quadratic segment: factor is constant at smagorinski_scaling_factor4 above this height.
         #: Called 'hdiff_smag_z4' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height4: float = smagorinski_scaling_height4
+        self.smagorinski_scaling_height4: wpfloat = wpfloat(smagorinski_scaling_height4)
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
@@ -270,13 +270,15 @@ class DiffusionConfig:
 
         #: Denominator for temperature boundary diffusion
         #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-        self.temperature_boundary_diffusion_denominator: float = (
+        self.temperature_boundary_diffusion_denominator: wpfloat = wpfloat(
             temperature_boundary_diffusion_denom
         )
 
         #: Denominator for velocity boundary diffusion
         #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-        self.velocity_boundary_diffusion_denominator: float = velocity_boundary_diffusion_denom
+        self.velocity_boundary_diffusion_denominator: wpfloat = wpfloat(
+            velocity_boundary_diffusion_denom
+        )
 
         # parameters from namelist: mo_interpol_nml.f90
 
@@ -344,7 +346,7 @@ class DiffusionConfig:
 
     @functools.cached_property
     def substep_as_float(self):
-        return float(self.ndyn_substeps)
+        return wpfloat(self.ndyn_substeps)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -352,25 +354,37 @@ class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
     config: dataclasses.InitVar[DiffusionConfig]
-    K2: Final[float] = dataclasses.field(init=False)
-    K4: Final[float] = dataclasses.field(init=False)
-    K6: Final[float] = dataclasses.field(init=False)
-    K4W: Final[float] = dataclasses.field(init=False)
-    smagorinski_factor: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
-    smagorinski_height: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
+    K2: Final[wpfloat] = dataclasses.field(init=False)
+    K4: Final[wpfloat] = dataclasses.field(init=False)
+    K6: Final[wpfloat] = dataclasses.field(init=False)
+    K4W: Final[wpfloat] = dataclasses.field(init=False)
+    smagorinski_factor: Final[tuple[wpfloat, wpfloat, wpfloat, wpfloat]] = dataclasses.field(
+        init=False
+    )
+    smagorinski_height: Final[tuple[wpfloat, wpfloat, wpfloat, wpfloat]] = dataclasses.field(
+        init=False
+    )
 
     def __post_init__(self, config):
         object.__setattr__(
             self,
             "K2",
-            (1.0 / (config.hdiff_efdt_ratio * 8.0) if config.hdiff_efdt_ratio > 0.0 else 0.0),
+            (
+                wpfloat(1.0) / (config.hdiff_efdt_ratio * wpfloat(8.0))
+                if config.hdiff_efdt_ratio > wpfloat(0.0)
+                else wpfloat(0.0)
+            ),
         )
-        object.__setattr__(self, "K4", self.K2 / 8.0)
-        object.__setattr__(self, "K6", self.K2 / 64.0)
+        object.__setattr__(self, "K4", self.K2 / wpfloat(8.0))
+        object.__setattr__(self, "K6", self.K2 / wpfloat(64.0))
         object.__setattr__(
             self,
             "K4W",
-            (1.0 / (config.hdiff_w_efdt_ratio * 36.0) if config.hdiff_w_efdt_ratio > 0 else 0.0),
+            (
+                wpfloat(1.0) / (config.hdiff_w_efdt_ratio * wpfloat(36.0))
+                if config.hdiff_w_efdt_ratio > wpfloat(0.0)
+                else wpfloat(0.0)
+            ),
         )
 
         object.__setattr__(
@@ -429,23 +443,30 @@ class Diffusion:
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange,
         )  # wait on a communication handle
-        self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
-            constants.CPD - constants.GAS_CONSTANT_DRY_AIR
+        self.rd_o_cvd: vpfloat = gtx.astype(
+            constants.GAS_CONSTANT_DRY_AIR / (constants.CPD - constants.GAS_CONSTANT_DRY_AIR),
+            vpfloat,
         )
-        #: threshold temperature deviation from neighboring grid points that activates extra diffusion against runaway cooling
-        self.thresh_tdiff: float = -5.0
+        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self.thresh_tdiff: wpfloat = wpfloat(-5.0)
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.nudgezone_diff: float = 0.04 / (
-            config.max_nudging_coefficient + sys.float_info.epsilon
+        self.nudgezone_diff: vpfloat = gtx.astype(
+            wpfloat(0.04) / (config.max_nudging_coefficient + constants.WP_EPS), vpfloat
         )
-        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
-        self.fac_bdydiff_v: float = (
+        self.bdy_diff: wpfloat = wpfloat(0.015) / (
+            config.max_nudging_coefficient + constants.WP_EPS
+        )
+        self.fac_bdydiff_v: wpfloat = wpfloat(
             math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
-        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
+        self.smag_offset: vpfloat = gtx.astype(
+            wpfloat(0.25) * params.K4 * config.substep_as_float, vpfloat
+        )
+        self.diff_multfac_w: wpfloat = gtx.astype(
+            min(wpfloat(1.0) / wpfloat(48.0), params.K4W * config.substep_as_float), wpfloat
+        )
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
@@ -552,7 +573,7 @@ class Diffusion:
             constant_args={
                 "theta_ref_mc": self._metric_state.theta_ref_mc,
                 "thresh_tdiff": self.thresh_tdiff,
-                "smallest_vpfloat": constants.DBL_EPS,
+                "smallest_vpfloat": constants.VP_EPS,
             },
             horizontal_sizes={
                 "horizontal_start": self._edge_start_nudging,
@@ -614,6 +635,7 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
+
         setup_program(
             backend=backend,
             program=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
@@ -625,10 +647,10 @@ class Diffusion:
                 "vertical_start": 1,
                 "vertical_end": gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
                 "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
-                "heights_1": self._vertical_grid.interface_physical_height.ndarray[1].item(),
-                "heights_nrd_shift": self._vertical_grid.interface_physical_height.ndarray[
+                "heights_1": self._vertical_grid.interface_physical_height[1].as_scalar(),
+                "heights_nrd_shift": self._vertical_grid.interface_physical_height[
                     self._vertical_grid.end_index_of_damping_layer + 1
-                ].item(),
+                ].as_scalar(),
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
@@ -709,7 +731,7 @@ class Diffusion:
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
-        dtime: float,
+        dtime: wpfloat,
         initial_run: bool = False,
     ):
         """
@@ -733,7 +755,7 @@ class Diffusion:
                 diff_multfac_vn,
                 smag_limit,
             )
-            smag_offset = 0.0
+            smag_offset = wpfloat(0.0)
         else:
             diff_multfac_vn = self.diff_multfac_vn
             smag_limit = self.smag_limit

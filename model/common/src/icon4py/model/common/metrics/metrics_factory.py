@@ -20,7 +20,6 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
-    type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -130,7 +129,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: v_grid.VerticalGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography: fa.CellField[ta.wpfloat],
+        topography: fa.CellField[gtx.float64],
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
@@ -156,7 +155,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         log.debug(f"using array_ns {self._xp} ")
         self._config = config
         self._vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
-        self._damping_height = vertical_grid.config.rayleigh_damping_height
+        self._damping_height = gtx.float64(vertical_grid.config.rayleigh_damping_height)
 
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
@@ -175,17 +174,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
         e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
+
+        vct_a_dp = gtx.astype(self._vertical_grid.interface_physical_height, gtx.float64)
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 fields={
                     "topography": topography,
-                    "vct_a": self._vertical_grid.interface_physical_height,
-                    "height_u": self._vertical_grid.interface_physical_height[
-                        : self._grid.num_levels
-                    ],
-                    "height_l": self._vertical_grid.interface_physical_height[
-                        1 : self._grid.num_levels + 1
-                    ],
+                    "vct_a": vct_a_dp,
+                    "height_u": vct_a_dp[: self._grid.num_levels],
+                    "height_l": vct_a_dp[1 : self._grid.num_levels + 1],
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -391,14 +388,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rho_ref_mc": attrs.RHO_REF_MC,
             },
             params={
-                "p0ref": constants.REFERENCE_PRESSURE,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "grav": constants.GRAV,
-                "cpd": constants.CPD,
-                "rd": constants.RD,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "p0ref": gtx.float64(constants.REFERENCE_PRESSURE),
+                "p0sl_bg": gtx.float64(constants.SEA_LEVEL_PRESSURE),
+                "grav": gtx.float64(constants.GRAV),
+                "cpd": gtx.float64(constants.CPD),
+                "rd": gtx.float64(constants.RD),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
+                "t0sl_bg": gtx.float64(constants.SEA_LEVEL_TEMPERATURE),
+                "del_t_bg": gtx.float64(constants.DELTA_TEMPERATURE),
             },
             do_exchange=False,
         )
@@ -422,14 +419,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "theta_ref_me": attrs.THETA_REF_ME,
             },
             params={
-                "p0ref": constants.REFERENCE_PRESSURE,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "grav": constants.GRAV,
-                "cpd": constants.CPD,
-                "rd": constants.RD,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "p0ref": gtx.float64(constants.REFERENCE_PRESSURE),
+                "p0sl_bg": gtx.float64(constants.SEA_LEVEL_PRESSURE),
+                "grav": gtx.float64(constants.GRAV),
+                "cpd": gtx.float64(constants.CPD),
+                "rd": gtx.float64(constants.RD),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
+                "t0sl_bg": gtx.float64(constants.SEA_LEVEL_TEMPERATURE),
+                "del_t_bg": gtx.float64(constants.DELTA_TEMPERATURE),
             },
             do_exchange=True,
         )
@@ -455,15 +452,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "d_exner_dz_ref_ic": attrs.D_EXNER_DZ_REF_IC,
             },
             params={
-                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": constants.DELTA_TEMPERATURE,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "grav": constants.GRAV,
-                "rd": constants.RD,
-                "cpd": constants.CPD,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "rd_o_cpd": constants.RD_O_CPD,
-                "p0ref": constants.REFERENCE_PRESSURE,
+                "t0sl_bg": gtx.float64(constants.SEA_LEVEL_TEMPERATURE),
+                "del_t_bg": gtx.float64(constants.DELTA_TEMPERATURE),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
+                "grav": gtx.float64(constants.GRAV),
+                "rd": gtx.float64(constants.RD),
+                "cpd": gtx.float64(constants.CPD),
+                "p0sl_bg": gtx.float64(constants.SEA_LEVEL_PRESSURE),
+                "rd_o_cpd": gtx.float64(constants.RD_O_CPD),
+                "p0ref": gtx.float64(constants.REFERENCE_PRESSURE),
             },
             do_exchange=False,
         )
@@ -492,10 +489,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 attrs.D2DEXDZ2_FAC2_MC: attrs.D2DEXDZ2_FAC2_MC,
             },
             params={
-                "cpd": constants.CPD,
-                "grav": constants.GRAV,
-                "del_t_bg": constants.DEL_T_BG,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
+                "cpd": gtx.float64(constants.CPD),
+                "grav": gtx.float64(constants.GRAV),
+                "del_t_bg": gtx.float64(constants.DEL_T_BG),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
             },
             do_exchange=False,
         )
@@ -1019,7 +1016,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "height_u": "height_u",
                 "height_l": "height_l",
             },
-            params={"grid_sphere_radius": constants.EARTH_RADIUS},
+            params={"grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS)},
             do_exchange=False,
         )
 

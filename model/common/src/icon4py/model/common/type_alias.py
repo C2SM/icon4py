@@ -15,7 +15,7 @@ import gt4py.next as gtx
 DEFAULT_PRECISION = "double"
 
 # wp: working precision, vp: variable precision
-wpfloat: TypeAlias = gtx.float64
+wpfloat: type[gtx.float32] | type[gtx.float64] = gtx.float64
 vpfloat: type[gtx.float32] | type[gtx.float64] = wpfloat
 anyfloat: TypeAlias = gtx.float32 | gtx.float64
 
@@ -23,15 +23,15 @@ precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
 
 def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
-    global precision  # noqa: PLW0603 [global-statement]
-    global vpfloat  # noqa: PLW0603 [global-statement]
-    global wpfloat  # noqa: PLW0603 [global-statement]
+    global precision, vpfloat, wpfloat  # noqa: PLW0603 [global-statement]
 
     precision = new_precision.lower()
     match precision:
         case "double":
-            vpfloat = wpfloat
+            wpfloat = gtx.float64
+            vpfloat = gtx.float64
         case "mixed":
+            wpfloat = gtx.float64
             vpfloat = gtx.float32
         case "single":
             vpfloat = gtx.float32
@@ -41,3 +41,11 @@ def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
 
 
 set_precision(precision)
+
+
+# TODO(pstark): Figure out a better name and place for this -> open for suggestions
+#               Might be useful for other configs if they are written as dataclasses
+def config_scalars_to_wp(self, attributes: list[str] = []):
+    for name in attributes:
+        if not isinstance(v := object.__getattribute__(self, name), wpfloat):
+            object.__setattr__(self, name, wpfloat(v))

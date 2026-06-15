@@ -229,7 +229,7 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 def _verify_init_values_against_savepoint(
     savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend
 ):
-    dtime = savepoint.get_metadata("dtime")["dtime"]
+    dtime = savepoint.dtime()
 
     assert savepoint.nudgezone_diff() == diffusion_granule.nudgezone_diff
     assert savepoint.bdy_diff() == diffusion_granule.bdy_diff
@@ -339,7 +339,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.dtime()
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -397,7 +397,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.dtime()
 
     vertical_config = experiment.config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)

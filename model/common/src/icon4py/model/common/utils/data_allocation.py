@@ -98,10 +98,11 @@ def as_field(
     field: gtx.Field,
     allocator: gtx_typing.Allocator | None = None,
     embedded_on_host: bool = False,
+    dtype=None,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = field.asnumpy() if embedded_on_host else field.ndarray
-    return gtx.as_field(field.domain, data=data, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+    return gtx.as_field(field.domain, data=data, allocator=allocator, dtype=dtype)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_field(

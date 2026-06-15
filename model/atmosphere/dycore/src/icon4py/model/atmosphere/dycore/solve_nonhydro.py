@@ -51,7 +51,6 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
-    type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -63,6 +62,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -80,31 +80,31 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat]
+    horizontal_pressure_gradient: fa.EdgeKField[vpfloat]
     """
     Declared as z_gradh_exner in ICON.
     """
-    rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
+    rho_at_edges_on_model_levels: fa.EdgeKField[wpfloat]
     """
     Declared as z_rho_e in ICON.
     """
-    theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
+    theta_v_at_edges_on_model_levels: fa.EdgeKField[wpfloat]
     """
     Declared as z_theta_v_e in ICON.
     """
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat]
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat]
     """
     Declared as z_kin_hor_e in ICON.
     """
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat]
+    tangential_wind_on_half_levels: fa.EdgeKField[vpfloat]
     """
     Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
     """
-    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat]
+    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[vpfloat]
     """
     Declared as z_graddiv_vn in ICON.
     """
-    dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
+    dwdz_at_cells_on_model_levels: fa.CellKField[vpfloat]
     """
     Declared as z_dwdz_dd in ICON.
     """
@@ -158,18 +158,18 @@ class NonHydrostaticConfig:
         deepatmos_mode: bool = False,
         iau_init: bool = False,
         extra_diffu: bool = True,
-        rhotheta_offctr: float = -0.1,
-        veladv_offctr: float = 0.25,
-        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
-        * 0.02,
-        fourth_order_divdamp_factor: float = 0.0025,
-        fourth_order_divdamp_factor2: float = 0.004,
-        fourth_order_divdamp_factor3: float = 0.004,
-        fourth_order_divdamp_factor4: float = 0.004,
-        fourth_order_divdamp_z: float = 32500.0,
-        fourth_order_divdamp_z2: float = 40000.0,
-        fourth_order_divdamp_z3: float = 60000.0,
-        fourth_order_divdamp_z4: float = 80000.0,
+        rhotheta_offctr: wpfloat | float = -0.1,
+        veladv_offctr: wpfloat | float = 0.25,
+        max_nudging_coefficient: wpfloat
+        | float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02,
+        fourth_order_divdamp_factor: wpfloat | float = 0.0025,
+        fourth_order_divdamp_factor2: wpfloat | float = 0.004,
+        fourth_order_divdamp_factor3: wpfloat | float = 0.004,
+        fourth_order_divdamp_factor4: wpfloat | float = 0.004,
+        fourth_order_divdamp_z: wpfloat | float = 32500.0,
+        fourth_order_divdamp_z2: wpfloat | float = 40000.0,
+        fourth_order_divdamp_z3: wpfloat | float = 60000.0,
+        fourth_order_divdamp_z4: wpfloat | float = 80000.0,
     ):
         # parameters from namelist nonhydrostatic_nml
         self.itime_scheme: int = itime_scheme
@@ -192,52 +192,52 @@ class NonHydrostaticConfig:
         #: off-centering for density and potential temperature at interface levels.
         #: Specifying a negative value here reduces the amount of vertical
         #: wind off-centering needed for stability of sound waves.
-        self.rhotheta_offctr: float = rhotheta_offctr
+        self.rhotheta_offctr: wpfloat = wpfloat(rhotheta_offctr)
 
         #: off-centering of velocity advection in corrector step
-        self.veladv_offctr: float = veladv_offctr
+        self.veladv_offctr: wpfloat = wpfloat(veladv_offctr)
 
         # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
         #: scaling factor for divergence damping
-        self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
+        self.fourth_order_divdamp_factor: wpfloat = wpfloat(fourth_order_divdamp_factor)
         """
         Declared as divdamp_fac in ICON. It is a scaling factor for fourth order divergence damping between
         heights of fourth_order_divdamp_z and fourth_order_divdamp_z2.
         """
-        self.fourth_order_divdamp_factor2: float = fourth_order_divdamp_factor2
+        self.fourth_order_divdamp_factor2: wpfloat = wpfloat(fourth_order_divdamp_factor2)
         """
         Declared as divdamp_fac2 in ICON. It is a scaling factor for fourth order divergence damping between
         heights of fourth_order_divdamp_z and fourth_order_divdamp_z2. Divergence damping factor reaches
         fourth_order_divdamp_factor2 at fourth_order_divdamp_z2.
         """
-        self.fourth_order_divdamp_factor3: float = fourth_order_divdamp_factor3
+        self.fourth_order_divdamp_factor3: wpfloat = wpfloat(fourth_order_divdamp_factor3)
         """
         Declared as divdamp_fac3 in ICON. It is a scaling factor to determine the quadratic vertical
         profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
         and fourth_order_divdamp_z4.
         """
-        self.fourth_order_divdamp_factor4: float = fourth_order_divdamp_factor4
+        self.fourth_order_divdamp_factor4: wpfloat = wpfloat(fourth_order_divdamp_factor4)
         """
         Declared as divdamp_fac4 in ICON. It is a scaling factor to determine the quadratic vertical
         profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
         and fourth_order_divdamp_z4. Divergence damping factor reaches fourth_order_divdamp_factor4
         at fourth_order_divdamp_z4.
         """
-        self.fourth_order_divdamp_z: float = fourth_order_divdamp_z
+        self.fourth_order_divdamp_z: wpfloat = wpfloat(fourth_order_divdamp_z)
         """
         Declared as divdamp_z in ICON. The upper limit in height where divergence damping factor is a constant.
         """
-        self.fourth_order_divdamp_z2: float = fourth_order_divdamp_z2
+        self.fourth_order_divdamp_z2: wpfloat = wpfloat(fourth_order_divdamp_z2)
         """
         Declared as divdamp_z2 in ICON. The upper limit in height above fourth_order_divdamp_z where divergence
         damping factor decreases as a linear function of height.
         """
-        self.fourth_order_divdamp_z3: float = fourth_order_divdamp_z3
+        self.fourth_order_divdamp_z3: wpfloat = wpfloat(fourth_order_divdamp_z3)
         """
         Declared as divdamp_z3 in ICON. Am intermediate height between fourth_order_divdamp_z2 and
         fourth_order_divdamp_z4 where divergence damping factor decreases quadratically with height.
         """
-        self.fourth_order_divdamp_z4: float = fourth_order_divdamp_z4
+        self.fourth_order_divdamp_z4: wpfloat = wpfloat(fourth_order_divdamp_z4)
         """
         Declared as divdamp_z4 in ICON. The upper limit in height where divergence damping factor decreases
         quadratically with height.
@@ -252,7 +252,7 @@ class NonHydrostaticConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        self.max_nudging_coefficient: float = max_nudging_coefficient
+        self.max_nudging_coefficient: wpfloat = wpfloat(max_nudging_coefficient)
 
         #: from mo_run_nml.f90 (namelist key: lvert_nest).
         #: use vertical nesting
@@ -312,11 +312,15 @@ class NonHydrostaticParams:
         #: Weighting coefficients for velocity advection if tendency averaging is used
         #: The off-centering specified here turned out to be beneficial to numerical
         #: stability in extreme situations
-        self.advection_explicit_weight_parameter: Final[float] = 0.5 - config.veladv_offctr
+        self.advection_explicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(0.5) - config.veladv_offctr
+        )
         """
         Declared as wgt_nnow_vel in ICON.
         """
-        self.advection_implicit_weight_parameter: Final[float] = 0.5 + config.veladv_offctr
+        self.advection_implicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(0.5) + config.veladv_offctr
+        )
         """
         Declared as wgt_nnew_vel in ICON.
         """
@@ -324,12 +328,14 @@ class NonHydrostaticParams:
         #: Weighting coefficients for rho and theta at interface levels in the corrector step
         #: This empirically determined weighting minimizes the vertical wind off-centering
         #: needed for numerical stability of vertical sound wave propagation
-        self.rhotheta_implicit_weight_parameter: Final[float] = 0.5 + config.rhotheta_offctr
+        self.rhotheta_implicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(0.5) + config.rhotheta_offctr
+        )
         """
         Declared as wgt_nnew_rth in ICON.
         """
-        self.rhotheta_explicit_weight_parameter: Final[float] = (
-            1.0 - self.rhotheta_implicit_weight_parameter
+        self.rhotheta_explicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(1.0) - self.rhotheta_implicit_weight_parameter
         )
         """
         Declared as wgt_nnow_rth in ICON.
@@ -353,9 +359,9 @@ class SolveNonhydro:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         self._grid = grid
         self._config = config
@@ -475,9 +481,9 @@ class SolveNonhydro:
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
                 "limited_area": self._grid.limited_area,
                 "divdamp_order": gtx.int32(self._config.divdamp_order),
-                "mean_cell_area": self._cell_params.mean_cell_area,
+                "mean_cell_area": wpfloat(self._cell_params.mean_cell_area),
                 "max_nudging_coefficient": self._config.max_nudging_coefficient,
-                "dbl_eps": constants.DBL_EPS,
+                "wp_eps": constants.WP_EPS,
             },
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
@@ -613,9 +619,7 @@ class SolveNonhydro:
         self._compute_dwdz_for_divergence_damping = setup_program(
             backend=backend,
             program=compute_dwdz_for_divergence_damping,
-            constant_args={
-                "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
-            },
+            constant_args={"inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full},
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
@@ -658,9 +662,7 @@ class SolveNonhydro:
         self._compute_rayleigh_damping_factor = setup_program(
             backend=backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
-            constant_args={
-                "rayleigh_w": self._metric_state_nonhydro.rayleigh_w,
-            },
+            constant_args={"rayleigh_w": self._metric_state_nonhydro.rayleigh_w},
         )
 
         self._compute_perturbed_quantities_and_interpolation = setup_program(
@@ -780,7 +782,7 @@ class SolveNonhydro:
 
         self.p_test_run = False
 
-        self._dtime_previous_substep: float = 0.0
+        self._dtime_previous_substep: wpfloat = wpfloat(0.0)
         """
         Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
         recomputed or not. The substep length should only change in case of high CFL condition.
@@ -791,7 +793,7 @@ class SolveNonhydro:
             self._grid,
             dims.CellDim,
             dims.KDim,
-            dtype=ta.vpfloat,
+            dtype=vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,
         )
@@ -802,7 +804,7 @@ class SolveNonhydro:
             self._grid,
             dims.CellDim,
             dims.KDim,
-            dtype=ta.vpfloat,
+            dtype=vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,
         )
@@ -811,7 +813,7 @@ class SolveNonhydro:
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+                self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
             )
         )
         """
@@ -821,7 +823,7 @@ class SolveNonhydro:
             self._grid,
             dims.CellDim,
             dims.KDim,
-            dtype=ta.vpfloat,
+            dtype=vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,
         )
@@ -830,7 +832,7 @@ class SolveNonhydro:
         Declared as z_theta_v_pr_ic in ICON.
         """
         self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
@@ -839,45 +841,45 @@ class SolveNonhydro:
         term for updating w, and w at model top/bottom is diagnosed.
         """
         self.perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_1 in ICON.
         """
         self.perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_2 in ICON.
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+                self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
             )
         )
         """
         Declared as z_dexner_dz_c_2 in ICON.
         """
         self.z_vn_avg = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, allocator=allocator
         )
         self.theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, allocator=allocator
         )
         """
         Declared as z_theta_v_fl_e in ICON.
         """
         self.z_rho_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=wpfloat, allocator=allocator
         )
         self.z_theta_v_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=wpfloat, allocator=allocator
         )
         self.k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, allocator=allocator
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
@@ -888,7 +890,7 @@ class SolveNonhydro:
                 dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
             },
             allocator=allocator,
-            dtype=ta.vpfloat,
+            dtype=vpfloat,
         )
         # using GT4Py internal API to create a 1D field view from the (num_edges, 1)-sized field
         self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
@@ -899,13 +901,13 @@ class SolveNonhydro:
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.rayleigh_damping_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.KDim, dtype=wpfloat, allocator=allocator
         )
         """
         Declared as z_raylfac in ICON.
         """
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.KDim, dtype=wpfloat, allocator=allocator
         )
         """
         Declared as enh_divdamp_fac in ICON.
@@ -981,8 +983,8 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
-        dtime: float,
+        second_order_divdamp_factor: wpfloat,
+        dtime: wpfloat,
         ndyn_substeps_var: int,
         at_initial_timestep: bool,
         lprep_adv: bool,
@@ -1065,7 +1067,7 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
-        dtime: float,
+        dtime: wpfloat,
         at_initial_timestep: bool,
         at_first_substep: bool,
         is_iau_active: bool,
@@ -1241,9 +1243,9 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
-        second_order_divdamp_factor: float,
+        second_order_divdamp_factor: wpfloat,
         prep_adv: dycore_states.PrepAdvection,
-        dtime: float,
+        dtime: wpfloat,
         ndyn_substeps_var: int,
         lprep_adv: bool,
         at_first_substep: bool,
@@ -1256,14 +1258,17 @@ class SolveNonhydro:
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
+        ndyn_substeps_var_wp = wpfloat(ndyn_substeps_var)
         # Inverse value of ndyn_substeps for tracer advection precomputations
-        r_nsubsteps = 1.0 / ndyn_substeps_var
+        r_nsubsteps = wpfloat(1.0) / ndyn_substeps_var_wp
+
+        second_order_divdamp_factor_wp = wpfloat(second_order_divdamp_factor)
 
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
-        second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._cell_params.mean_cell_area
+        second_order_divdamp_scaling_coeff = second_order_divdamp_factor_wp * wpfloat(
+            self._cell_params.mean_cell_area
         )
 
         log.debug("corrector run velocity advection")
@@ -1296,14 +1301,15 @@ class SolveNonhydro:
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.SECOND_ORDER
             or (
                 self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-                and second_order_divdamp_scaling_coeff > 1.0e-6
+                and second_order_divdamp_scaling_coeff > wpfloat(1.0e-6)
             )
         )
         apply_4th_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
             or (
                 self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-                and second_order_divdamp_factor <= (4.0 * self._config.fourth_order_divdamp_factor)
+                and second_order_divdamp_factor_wp
+                <= (wpfloat(4.0) * self._config.fourth_order_divdamp_factor)
             )
         )
 
@@ -1319,7 +1325,7 @@ class SolveNonhydro:
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
             interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
-            second_order_divdamp_factor=second_order_divdamp_factor,
+            second_order_divdamp_factor=second_order_divdamp_factor_wp,
             second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
             dtime=dtime,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
@@ -1379,7 +1385,7 @@ class SolveNonhydro:
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
-            ndyn_substeps_var=float(ndyn_substeps_var),
+            ndyn_substeps_var=ndyn_substeps_var_wp,
             dtime=dtime,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,

@@ -26,6 +26,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 
@@ -92,7 +93,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     )(
         fourth_order_divdamp_scaling_coeff,
         config.max_nudging_coefficient,
-        constants.DBL_EPS,
+        constants.WP_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
     )
@@ -182,7 +183,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
 
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
@@ -504,7 +505,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
     lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=init_savepoint.vn_traj(),
@@ -697,7 +698,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
@@ -818,7 +819,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
@@ -1211,7 +1212,7 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
 
-    dtime = sp_init.get_metadata("dtime").get("dtime")
+    dtime = sp_init.dtime()
     current_rho = sp_init.rho_now()
     next_rho = sp_init.rho_new()
 
@@ -1226,7 +1227,7 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend, dtype=vpfloat
     )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
@@ -1466,7 +1467,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
@@ -1628,7 +1629,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
         advection_explicit_weight_parameter=savepoint_nonhydro_init.wgt_nnow_vel(),
         advection_implicit_weight_parameter=savepoint_nonhydro_init.wgt_nnew_vel(),
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
@@ -1639,7 +1640,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
         max_nudging_coefficient=config.max_nudging_coefficient,
-        dbl_eps=constants.DBL_EPS,
+        wp_eps=constants.WP_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
         vertical_start=gtx.int32(0),
@@ -2075,7 +2076,7 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         iau_wgt_dyn=iau_wgt_dyn,
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type,
         divdamp_type=divdamp_type,
@@ -2269,7 +2270,7 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(experiment.config.diffusion.ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type,
         at_first_substep=at_first_substep,

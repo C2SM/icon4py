@@ -99,7 +99,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
     exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
     theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
     rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
-    dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
+    dtime = savepoint_diffusion_init.dtime()
 
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
@@ -327,7 +327,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
     exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
     theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
     rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
-    dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
+    dtime = savepoint_diffusion_init.dtime()
 
     ffi = cffi.FFI()
     # Call diffusion_init

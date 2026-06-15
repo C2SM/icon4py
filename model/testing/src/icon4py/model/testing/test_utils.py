@@ -17,6 +17,8 @@ import pytest
 from typing_extensions import Buffer
 
 from icon4py.model.common import model_options
+from icon4py.model.common.constants import VP_EPS
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing import config
 
 
@@ -24,8 +26,8 @@ def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
     *,
-    rtol: float = 1.0e-12,
-    atol: float = 0.0,
+    rtol: vpfloat = 5e3 * VP_EPS,  # for double ≈ 1.11e-12
+    atol: vpfloat = VP_EPS,
     equal_nan: bool = False,
 ) -> bool:
     """

@@ -382,7 +382,7 @@ class Icon4pyDriver:
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
-            0.0, self._allocator
+            ta.wpfloat(0.0), self._allocator
         )
 
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
@@ -413,9 +413,9 @@ class Icon4pyDriver:
                     )
                 )
             else:
-                return ta.wpfloat("0.0")
+                return ta.wpfloat(0.0)
         else:
-            return ta.wpfloat("0.0")
+            return ta.wpfloat(0.0)
 
     def _compute_statistics(
         self, current_dyn_substep: int, prognostic_states: prognostics.PrognosticState
@@ -512,11 +512,11 @@ def _read_config(
         n_substeps=5,
         type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
         type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-        hdiff_efdt_ratio=10.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
+        hdiff_efdt_ratio=ta.wpfloat(10.0),
+        hdiff_w_efdt_ratio=ta.wpfloat(15.0),
+        smagorinski_scaling_factor=ta.wpfloat(0.025),
         zdiffu_t=False,
-        velocity_boundary_diffusion_denom=200.0,
+        velocity_boundary_diffusion_denom=ta.wpfloat(200.0),
     )
 
     # NOTE(ricoh): adjust when switching experiments!
@@ -528,7 +528,7 @@ def _read_config(
         vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
-    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=0.0025)
+    nonhydro_config = solve_nh.NonHydrostaticConfig(fourth_order_divdamp_factor=ta.wpfloat(0.0025))
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 
@@ -539,7 +539,7 @@ def _read_config(
         end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
-        vertical_cfl_threshold=ta.wpfloat("1.05"),
+        vertical_cfl_threshold=1.05,
         enable_statistics_output=True,
         profiling_stats=profiling_stats,
     )
@@ -652,7 +652,7 @@ def initialize_driver(
     log.info("initializing the JW topography")
     cell_topography = topography.jablonowski_williamson(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
-        u0=35.0,
+        u0=ta.wpfloat(35.0),
     )
 
     log.info("initializing the static-field factories")

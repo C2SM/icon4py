@@ -8,6 +8,8 @@
 
 from typing import Final
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
@@ -195,7 +197,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_c",
-        dtype=ta.wpfloat,
+        dtype=gtx.float64,
     ),
     RBF_SCALE_EDGE: dict(
         standard_name=RBF_SCALE_EDGE,
@@ -203,7 +205,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_e",
-        dtype=ta.wpfloat,
+        dtype=gtx.float64,
     ),
     RBF_SCALE_VERTEX: dict(
         standard_name=RBF_SCALE_VERTEX,
@@ -211,7 +213,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_v",
-        dtype=ta.wpfloat,
+        dtype=gtx.float64,
     ),
     LSQ_PSEUDOINV: dict(
         standard_name=LSQ_PSEUDOINV,

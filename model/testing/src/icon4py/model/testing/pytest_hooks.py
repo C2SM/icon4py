@@ -36,20 +36,22 @@ def pytest_configure(config):
         "markers",
         "level(name): marks test as unit or integration tests, mostly applicable where both are available",
     )
-
-    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
-    if config.getoption("--enable-mixed-precision"):
-        os.environ["FLOAT_PRECISION"] = "mixed"
+    config.addinivalue_line(
+        "markers", "single_precision_ready: intended to run if single precision is selected"
+    )
 
     # Handle datatest options: --datatest-only  and --datatest-skip
     if m_option := config.getoption("-m", []):
         m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
     if config.getoption("--datatest-only"):
-        config.option.markexpr = " and ".join(["datatest", *m_option])
-
+        m_option.append("datatest")
     if config.getoption("--datatest-skip"):
-        config.option.markexpr = " and ".join(["not datatest", *m_option])
-
+        m_option.append("not datatest")
+    if os.environ.get("FLOAT_PRECISION", "double").lower() == "single":
+        # if precision is set to single per env variable, only run tests marked as single_precision_ready
+        m_option.append("single_precision_ready")
+    config.option.markexpr = " and ".join(m_option[::-1])
+    
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
     if with_mpi or only_mpi:
@@ -101,14 +103,6 @@ def pytest_addoption(parser: pytest.Parser):
             "--grid",
             action="store",
             help="Grid to use.",
-        )
-
-    with contextlib.suppress(ValueError):
-        parser.addoption(
-            "--enable-mixed-precision",
-            action="store_true",
-            help="Switch unit tests from double to mixed-precision",
-            default=False,
         )
 
     with contextlib.suppress(ValueError):

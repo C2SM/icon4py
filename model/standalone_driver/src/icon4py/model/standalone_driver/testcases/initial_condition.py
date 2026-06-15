@@ -100,8 +100,12 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     cell_area = geometry_field_source.get(geometry_meta.CELL_AREA).ndarray
 
     cell_2_edge_coeff = interpolation_field_source.get(interpolation_attributes.C_LIN_E)
-    rbf_vec_coeff_c1 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1)
-    rbf_vec_coeff_c2 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C2)
+    rbf_vec_coeff_c1 = interpolation_field_source.export_field(
+        interpolation_attributes.RBF_VEC_COEFF_C1
+    )
+    rbf_vec_coeff_c2 = interpolation_field_source.export_field(
+        interpolation_attributes.RBF_VEC_COEFF_C2
+    )
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels
@@ -117,44 +121,36 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    # predefined constants used for Jablonowski-Williamson initial condition
-    p_sfc = ta.wpfloat("100000.0")  # surface pressure (Pa)
-    jw_baroclinic_amplitude = ta.wpfloat(
-        "0.0"
-    )  # if doing baroclinic wave test, please set it to a nonzero value
-    jw_u0 = ta.wpfloat("35.0")  # maximum zonal wind speed (m/s)
-    jw_temp0 = ta.wpfloat("288.0")
-    eta_0 = ta.wpfloat("0.252")
-    eta_t = ta.wpfloat("0.2")  # tropopause
-    gamma = ta.wpfloat("0.005")  # temperature elapse rate (K/m)
-    dtemp = ta.wpfloat("4.8e5")  # empirical temperature difference (K)
-    lon_perturbation_center = math.pi / ta.wpfloat(
-        "9.0"
-    )  # longitude of the perturb centre in baroclinic wave test (jw_baroclinic_amplitude !=0)
-    lat_perturbation_center = (
-        ta.wpfloat("2.0") * lon_perturbation_center
-    )  # latitude of the perturb centre in baroclinic wave test (jw_baroclinic_amplitude !=0)
+    # predefined constants used for Jablonowski-Williamson initial condition (float64 for Newton iteration)
+    p_sfc = 100000.0  # surface pressure (Pa)
+    jw_baroclinic_amplitude = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_u0 = 35.0  # maximum zonal wind speed (m/s)
+    jw_temp0 = 288.0
+    eta_0 = 0.252
+    eta_t = 0.2  # tropopause
+    gamma = 0.005  # temperature elapse rate (K/m)
+    dtemp = 4.8e5  # empirical temperature difference (K)
+    lon_perturbation_center = (
+        math.pi / 9.0
+    )  # longitude of the perturb centre in baroclinic wave test
+    lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
 
     # Initialize prognostic state, diagnostic state and other local fields
-    prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=grid,
-        allocator=allocator,
-    )
+    prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     eta_v = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=gtx.float64
     )
-    eta_v_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator)
+    eta_v_at_edge_dp = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=gtx.float64
+    )
 
-    exner_ndarray = prognostic_state_now.exner.ndarray
-    rho_ndarray = prognostic_state_now.rho.ndarray
-    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
-    temperature_ndarray = diagnostic_state.temperature.ndarray
-    pressure_ndarray = diagnostic_state.pressure.ndarray
+    # Create float64 intermediate arrays for Newton iteration (for numerical stability)
+    exner_dp = xp.zeros((num_cells, num_levels), dtype=gtx.float64)
+    rho_dp = xp.zeros((num_cells, num_levels), dtype=gtx.float64)
+    theta_v_dp = xp.zeros((num_cells, num_levels), dtype=gtx.float64)
+    temperature_dp = xp.zeros((num_cells, num_levels), dtype=gtx.float64)
+    pressure_dp = xp.zeros((num_cells, num_levels), dtype=gtx.float64)
     eta_v_ndarray = eta_v.ndarray
 
     # set surface pressure
@@ -162,25 +158,20 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
-    fac1 = ta.wpfloat("1.0") / ta.wpfloat("6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
-        cos_lat**2 + ta.wpfloat("1.0") / ta.wpfloat("3.0")
-    )
+    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
     fac2 = (
-        (
-            ta.wpfloat("8.0")
-            / ta.wpfloat("5.0")
-            * (cos_lat**3)
-            * (sin_lat**2 + ta.wpfloat("2.0") / ta.wpfloat("3.0"))
-            - ta.wpfloat("0.25") * math.pi
-        )
-        * phy_const.EARTH_RADIUS
-        * phy_const.EARTH_ANGULAR_VELOCITY
+        (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
+        * gtx.float64(phy_const.EARTH_RADIUS)
+        * gtx.float64(phy_const.EARTH_ANGULAR_VELOCITY)
     )
-    lapse_rate = phy_const.RD * gamma / phy_const.GRAV
+    lapse_rate = gtx.float64(phy_const.RD) * gamma / gtx.float64(phy_const.GRAV)
+    initial_guess = 1.0
+    epsilon = gtx.maximum(gtx.float64(phy_const.WP_EPS), 10 * phy_const.DP_EPS)
+    # TODO(pstark): if it is really necessary to run it like in Fortran, revert the change of the initial_guess and set epsilon to WP_EPS (never reached)
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
         log.info(f"In Newton iteration, k = {k_index}")
-        # Newton iteration to determine zeta
+        # Newton iteration to determine zeta (in float64 for numerical stability)
+        eta_old = xp.full(num_cells, fill_value=initial_guess, dtype=gtx.float64)
         for _ in range(100):
             eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
             cos_etav = xp.cos(eta_v_ndarray[:, k_index])
@@ -188,7 +179,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
             temperature_avg = jw_temp0 * (eta_old**lapse_rate)
             geopot_avg = (
-                jw_temp0 * phy_const.GRAV / gamma * (ta.wpfloat("1.0") - eta_old**lapse_rate)
+                jw_temp0 * gtx.float64(phy_const.GRAV) / gamma * (1.0 - eta_old**lapse_rate)
             )
             temperature_avg = xp.where(
                 eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
@@ -196,16 +187,15 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             geopot_avg = xp.where(
                 eta_old < eta_t,
                 geopot_avg
-                - phy_const.RD
+                - gtx.float64(phy_const.RD)
                 * dtemp
                 * (
-                    (xp.log(eta_old / eta_t) + ta.wpfloat("137.0") / ta.wpfloat("60.0"))
-                    * (eta_t**5)
-                    - ta.wpfloat("5.0") * (eta_t**4) * eta_old
-                    + ta.wpfloat("5.0") * (eta_t**3) * (eta_old**2)
-                    - ta.wpfloat("10.0") / ta.wpfloat("3.0") * (eta_t**2) * (eta_old**3)
-                    + ta.wpfloat("1.25") * eta_t * (eta_old**4)
-                    - ta.wpfloat("0.2") * (eta_old**5)
+                    (xp.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                    - 5.0 * (eta_t**4) * eta_old
+                    + 5.0 * (eta_t**3) * (eta_old**2)
+                    - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
+                    + 1.25 * eta_t * (eta_old**4)
+                    - 0.2 * (eta_old**5)
                 ),
                 geopot_avg,
             )
@@ -213,47 +203,64 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             geopot_jw = geopot_avg + jw_u0 * (cos_etav**1.5) * (
                 fac1 * jw_u0 * (cos_etav**1.5) + fac2
             )
-            temperature_jw = temperature_avg + ta.wpfloat(
-                "0.75"
-            ) * eta_old * math.pi * jw_u0 / phy_const.RD * sin_etav * xp.sqrt(cos_etav) * (
-                ta.wpfloat("2.0") * jw_u0 * fac1 * (cos_etav**1.5) + fac2
-            )
+            temperature_jw = temperature_avg + 0.75 * eta_old * math.pi * jw_u0 / gtx.float64(
+                phy_const.RD
+            ) * sin_etav * xp.sqrt(cos_etav) * (2.0 * jw_u0 * fac1 * (cos_etav**1.5) + fac2)
             newton_function = geopot_jw - geopot[:, k_index]
-            newton_function_prime = -phy_const.RD / eta_old * temperature_jw
-            eta_old = eta_old - newton_function / newton_function_prime
+            newton_function_prime = -gtx.float64(phy_const.RD) / eta_old * temperature_jw
+            delta = newton_function / newton_function_prime
+            eta_old = eta_old - delta
+
+            # TODO(pstark) remove this log print:
+            log.info(
+                f"eta_mean,std: {eta_old.mean()}, {eta_old.std()} <-> delta: {delta.mean()}, {delta.std()}"
+            )
+
+            if xp.abs(delta, out=delta).max() < eta_old.max() * epsilon:
+                log.info(f"delta_abs_max={delta.max()}, eta_max={eta_old.max()}, epsilon={epsilon}")
+                break
+
+        log.info(
+            f"potential eps-factor: {xp.abs(delta, out=delta).max() / (eta_old.max() * gtx.float64(phy_const.WP_EPS))}"
+        )
+        initial_guess = eta_old.mean()
 
         # Final update for zeta_v
         eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-        # Use analytic expressions at all model level
-        exner_ndarray[:, k_index] = (eta_old * p_sfc / phy_const.P0REF) ** phy_const.RD_O_CPD
-        theta_v_ndarray[:, k_index] = temperature_jw / exner_ndarray[:, k_index]
-        rho_ndarray[:, k_index] = (
-            exner_ndarray[:, k_index] ** phy_const.CVD_O_RD
-            * phy_const.P0REF
-            / phy_const.RD
-            / theta_v_ndarray[:, k_index]
+        # Use analytic expressions at all model level (in float64)
+        exner_dp[:, k_index] = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(
+            phy_const.RD_O_CPD
         )
-        # initialize diagnose pressure and temperature variables
-        pressure_ndarray[:, k_index] = (
-            phy_const.P0REF * exner_ndarray[:, k_index] ** phy_const.CPD_O_RD
+        theta_v_dp[:, k_index] = temperature_jw / exner_dp[:, k_index]
+        rho_dp[:, k_index] = (
+            exner_dp[:, k_index] ** gtx.float64(phy_const.CVD_O_RD)
+            * gtx.float64(phy_const.P0REF)
+            / gtx.float64(phy_const.RD)
+            / theta_v_dp[:, k_index]
         )
-        temperature_ndarray[:, k_index] = temperature_jw
+        # initialize diagnose pressure and temperature variables (in float64)
+        pressure_dp[:, k_index] = gtx.float64(phy_const.P0REF) * exner_dp[
+            :, k_index
+        ] ** gtx.float64(phy_const.CPD_O_RD)
+        temperature_dp[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         in_field=eta_v,
         coeff=cell_2_edge_coeff,
-        out_field=eta_v_at_edge,
+        out_field=eta_v_at_edge_dp,
         horizontal_start=end_edge_lateral_boundary_level_2,
         horizontal_end=end_edge_end,
         vertical_start=0,
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    eta_v_at_edge = gtx.astype(eta_v_at_edge_dp, ta.wpfloat)
     exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
+    # zonalwind_2_normalwind_ndarray returns float64, cast to wpfloat for vn
+    vn_dp = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
         jw_u0=jw_u0,
         jw_baroclinic_amplitude=jw_baroclinic_amplitude,
@@ -262,8 +269,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         edge_lat=edge_lat,
         edge_lon=edge_lon,
         primal_normal_x=primal_normal_x,
-        eta_v_at_edge=eta_v_at_edge.ndarray,
+        eta_v_at_edge=eta_v_at_edge_dp.ndarray,
     )
+    prognostic_state_now.vn.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
     log.info("U2vn computation completed.")
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -290,9 +298,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
-        rho=rho_ndarray,
-        exner=exner_ndarray,
-        theta_v=theta_v_ndarray,
+        rho=rho_dp,
+        exner=exner_dp,
+        theta_v=theta_v_dp,
         exner_ref_mc=exner_ref_mc,
         d_exner_dz_ref_ic=d_exner_dz_ref_ic,
         theta_ref_mc=theta_ref_mc,
@@ -302,6 +310,14 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
+
+    # Cast float64 arrays to wpfloat for DriverStates
+    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
+    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
+    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
+    diagnostic_state.temperature.ndarray[:] = temperature_dp.astype(ta.wpfloat)
+    diagnostic_state.pressure.ndarray[:] = pressure_dp.astype(ta.wpfloat)
+
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
         w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
@@ -330,7 +346,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
         field_a=prognostic_states.current.exner,
-        field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
+        field_b=metrics_field_source.export_field(metrics_attributes.EXNER_REF_MC),
         output_field=perturbed_exner,
         horizontal_start=0,
         horizontal_end=num_cells,
