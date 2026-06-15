@@ -10,7 +10,7 @@
 
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
-Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, MPI_SUBPACKAGES,
+Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
 BACKENDS, LEVELS, GRIDS, MODEL_SUBSET) and writes a child pipeline that
 includes ``ci/base.yml`` and instantiates only the test jobs whose matrix
 entries match the requested filter.
@@ -38,7 +38,7 @@ import yaml
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 # Full matrix dimensions
-MODEL_COMPONENTS_NOX = [
+ALL_MODEL_SUBPACKAGES = [
     "advection",
     "diffusion",
     "dycore",
@@ -49,7 +49,7 @@ MODEL_COMPONENTS_NOX = [
     "standalone_driver",
 ]
 
-MPI_COMPONENTS = [
+ALL_MODEL_MPI_SUBPACKAGES = [
     "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
@@ -60,10 +60,8 @@ MPI_COMPONENTS = [
 ALL_SESSIONS = ["model", "tools", "mpi"]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
-ALL_LEVELS = ["unit", "integration"]
+ALL_LEVELS = ["any", "unit", "integration"]
 ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
-
-INTEGRATION_LEVEL = ["integration"]
 
 
 def _parse_list(raw: str | None) -> list[str]:
@@ -132,14 +130,14 @@ def _generate_child_pipeline(
         "MODEL_SUBPACKAGES",
         "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver",
     )
-    _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, MODEL_COMPONENTS_NOX)
+    _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
 
     requested_mpi_subpackages = _resolve_filter(
         mpi_subpackages,
-        "MPI_SUBPACKAGES",
+        "MODEL_MPI_SUBPACKAGES",
         "atmosphere/advection:atmosphere/diffusion:atmosphere/dycore:common:standalone_driver",
     )
-    _validate_tokens("MPI_SUBPACKAGES", requested_mpi_subpackages, MPI_COMPONENTS)
+    _validate_tokens("MODEL_MPI_SUBPACKAGES", requested_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES)
 
     requested_backends = _resolve_filter(backends, "BACKENDS", "dace_gpu")
     _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
@@ -156,7 +154,7 @@ def _generate_child_pipeline(
 
     # Model tests (unified job covering stencils, datatest, and basic subsets)
     if "model" in requested_sessions:
-        filtered_subpackages = _intersect(requested_model_subpackages, MODEL_COMPONENTS_NOX)
+        filtered_subpackages = _intersect(requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_subsets = _intersect(requested_model_subsets, ALL_MODEL_SUBSETS)
 
@@ -204,9 +202,9 @@ def _generate_child_pipeline(
 
     # MPI tests
     if "mpi" in requested_sessions:
-        filtered_components = _intersect(requested_mpi_subpackages, MPI_COMPONENTS)
+        filtered_components = _intersect(requested_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
-        filtered_levels = _intersect(requested_levels, INTEGRATION_LEVEL)
+        filtered_levels = _intersect(requested_levels, ALL_LEVELS)
         if filtered_components and filtered_backends and filtered_levels:
             pipeline["test_mpi_aarch64"] = {
                 "extends": ".test_mpi_aarch64",
