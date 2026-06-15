@@ -53,7 +53,7 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_initial_conditions_compare_single_multi_rank(
+def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,

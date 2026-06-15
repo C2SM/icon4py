@@ -36,7 +36,7 @@ from icon4py.model.testing.fixtures.datatest import (
     ],
 )
 @pytest.mark.datatest
-def test_initial_conditions(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_initial_conditions(
     experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,

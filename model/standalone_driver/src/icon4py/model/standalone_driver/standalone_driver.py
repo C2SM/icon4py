@@ -22,10 +22,7 @@ from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, topography, type_alias as ta
-from icon4py.model.common.decomposition import (
-    definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
-)
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,
@@ -505,7 +502,9 @@ def initialize_driver(
         cli_output_path=None,
         process_props=process_props,
     )
-    config = dataclasses.replace(config, driver=dataclasses.replace(config.driver, output_path=output_path))
+    config = dataclasses.replace(
+        config, driver=dataclasses.replace(config.driver, output_path=output_path)
+    )
 
     allocator = model_backends.get_allocator(backend)
 

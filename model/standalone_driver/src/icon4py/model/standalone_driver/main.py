@@ -8,6 +8,7 @@
 
 import logging
 import pathlib
+import sys
 from typing import Annotated
 
 import typer

@@ -13,7 +13,7 @@ import datetime
 import json
 import logging
 import pathlib
-from typing import Any
+from typing import Any, TypeAlias
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
@@ -34,8 +34,8 @@ from icon4py.model.standalone_driver import initial_condition
 log = logging.getLogger(__name__)
 
 
-RelativeTime: TypeAlias = datetime.timedelta: TypeAlias
-AbsoluteTime = datetime.datetime
+RelativeTime: TypeAlias = datetime.timedelta
+AbsoluteTime: TypeAlias = datetime.datetime
 NumTimeSteps: TypeAlias = int
 EndSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
@@ -83,7 +83,9 @@ class DriverConfig:
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
-            start_datetime=datetime.datetime.fromisoformat(start_datetime_str.replace("Z", "+00:00")),
+            start_datetime=datetime.datetime.fromisoformat(
+                start_datetime_str.replace("Z", "+00:00")
+            ),
             end_simulation=datetime.datetime.fromisoformat(end_datetime_str.replace("Z", "+00:00")),
             apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
