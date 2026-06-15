@@ -2326,7 +2326,7 @@ dependencies = [
 ]
 name = "icon4py"
 source = {editable = "."}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.dev-dependencies]
 build = [
@@ -2582,7 +2582,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-advection"
 source = {editable = "model/atmosphere/advection"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2599,7 +2599,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-diffusion"
 source = {editable = "model/atmosphere/diffusion"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2616,7 +2616,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-dycore"
 source = {editable = "model/atmosphere/dycore"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2633,7 +2633,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-microphysics"
 source = {editable = "model/atmosphere/subgrid_scale_physics/microphysics"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2652,7 +2652,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-muphys"
 source = {editable = "model/atmosphere/subgrid_scale_physics/muphys"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2678,7 +2678,7 @@ dependencies = [
 ]
 name = "icon4py-bindings"
 source = {editable = "bindings"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 provides-extras = ["cuda11", "cuda12", "profiling"]
@@ -2724,7 +2724,7 @@ dependencies = [
 ]
 name = "icon4py-common"
 source = {editable = "model/common"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
@@ -2818,7 +2818,7 @@ dependencies = [
 ]
 name = "icon4py-driver"
 source = {editable = "model/driver"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2846,7 +2846,7 @@ dependencies = [
 ]
 name = "icon4py-standalone-driver"
 source = {editable = "model/standalone_driver"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2875,7 +2875,7 @@ dependencies = [
 ]
 name = "icon4py-testing"
 source = {editable = "model/testing"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
@@ -2904,7 +2904,7 @@ dependencies = [
 ]
 name = "icon4py-tools"
 source = {editable = "tools"}
-version = "0.2.0rc2"
+version = "0.2.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling", "rocm7"]
