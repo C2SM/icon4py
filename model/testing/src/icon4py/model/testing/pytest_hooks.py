@@ -347,7 +347,7 @@ class MPISubcommScheduler:
             (i for i in items if i.get_closest_marker("mpi")),
             key=lambda i: i.nodeid,
         )
-        non_mpi_items = [i for i in items if not i.get_closest_marker("mpi")]
+        non_mpi_items = [i for i in items if i not in mpi_items]
 
         valid_mpi_items = [
             item
