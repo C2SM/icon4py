@@ -9,9 +9,10 @@
 import datetime
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
@@ -61,8 +62,7 @@ def test_standalone_driver(
     *,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
-    backend: model_backends.Backend,
+    backend: gtx_typing.Backend,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,

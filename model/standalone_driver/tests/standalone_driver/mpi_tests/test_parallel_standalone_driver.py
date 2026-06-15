@@ -9,6 +9,7 @@
 import logging
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, model_options
@@ -52,7 +53,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    backend: model_backends.Backend,
+    backend: gtx_typing.Backend,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -86,7 +87,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     )
     serial_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
+        vertical_grid_config=serial_config.vertical_grid,
         allocator=allocator,
         process_props=serial_process_props,
     )
@@ -105,7 +106,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     )
     mpi_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
+        vertical_grid_config=mpi_config.vertical_grid,
         allocator=allocator,
         process_props=process_props,
     )
