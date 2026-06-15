@@ -82,6 +82,10 @@ def main(
     return ds, icon4py_driver.decomposition_info
 
 
+app = typer.Typer()
+
+
+@app.command()
 def cli(
     *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
@@ -146,10 +150,5 @@ def cli(
     )
 
 
-def click() -> None:
-    """Console-script entry point (referenced by ``main:click`` in pyproject.toml)."""
-    typer.run(cli)
-
-
 if __name__ == "__main__":
-    typer.run(cli)
+    app()

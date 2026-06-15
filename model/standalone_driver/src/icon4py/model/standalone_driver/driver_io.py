@@ -31,6 +31,7 @@ import gt4py.next as gtx
 import xarray as xr
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure,
     diagnose_surface_pressure,
@@ -63,38 +64,28 @@ DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 # --------------------------------------------------------------------------------------
 
 
-@dataclasses.dataclass(frozen=True)
-class _PrognosticFieldSpec:
-    #: attribute name on ``PrognosticState`` holding the field
-    state_attr: str
-    metadata: state_model.FieldMetaData
+def _prognostic_metadata(
+    cf_attributes_key: str, *, is_on_interface: bool = False
+) -> state_model.FieldMetaData:
+    """Extend a shared CF attribute entry with the vertical placement of the field."""
+    return {
+        **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_attributes_key],
+        "is_on_interface": is_on_interface,
+    }
 
 
-def _prognostic_spec(
-    state_attr: str, cf_attributes_key: str, *, is_on_interface: bool = False
-) -> _PrognosticFieldSpec:
-    """Pair a ``PrognosticState`` attribute with its shared CF attribute entry, extended
-    with the vertical placement of the field."""
-    return _PrognosticFieldSpec(
-        state_attr=state_attr,
-        metadata={
-            **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_attributes_key],
-            "is_on_interface": is_on_interface,
-        },
-    )
-
-
-#: Specs of the prognostic output fields, keyed by output variable name.
-_PROGNOSTIC_FIELD_SPECS: Final[dict[str, _PrognosticFieldSpec]] = {
-    "air_density": _prognostic_spec("rho", "air_density"),
-    "exner_function": _prognostic_spec("exner", "exner_function"),
-    "theta_v": _prognostic_spec("theta_v", "virtual_potential_temperature"),
-    "upward_air_velocity": _prognostic_spec("w", "upward_air_velocity", is_on_interface=True),
-    "normal_velocity": _prognostic_spec("vn", "normal_velocity"),
+#: CF metadata of the prognostic output fields, keyed by output variable name. The CF
+#: key only differs from the output name for ``theta_v``.
+_PROGNOSTIC_METADATA: Final[dict[str, state_model.FieldMetaData]] = {
+    "air_density": _prognostic_metadata("air_density"),
+    "exner_function": _prognostic_metadata("exner_function"),
+    "theta_v": _prognostic_metadata("virtual_potential_temperature"),
+    "upward_air_velocity": _prognostic_metadata("upward_air_velocity", is_on_interface=True),
+    "normal_velocity": _prognostic_metadata("normal_velocity"),
 }
 
 #: The prognostic output variables.
-PROGNOSTIC_VARIABLES: Final[list[str]] = list(_PROGNOSTIC_FIELD_SPECS.keys())
+PROGNOSTIC_VARIABLES: Final[list[str]] = list(_PROGNOSTIC_METADATA.keys())
 
 
 def prognostic_state_to_dataarrays(
@@ -102,20 +93,27 @@ def prognostic_state_to_dataarrays(
     variables: list[str] | None = None,
 ) -> dict[str, xr.DataArray]:
     """Assemble a CF/UGRID-annotated model-state dict from a ``PrognosticState``."""
+    # Direct (type-checked) attribute access, keyed by output variable name.
+    fields: dict[str, gtx.Field] = {
+        "air_density": prognostic_state.rho,
+        "exner_function": prognostic_state.exner,
+        "theta_v": prognostic_state.theta_v,
+        "upward_air_velocity": prognostic_state.w,
+        "normal_velocity": prognostic_state.vn,
+    }
     selected = PROGNOSTIC_VARIABLES if variables is None else variables
 
     state: dict[str, xr.DataArray] = {}
     for key in selected:
         try:
-            spec = _PROGNOSTIC_FIELD_SPECS[key]
+            metadata, field = _PROGNOSTIC_METADATA[key], fields[key]
         except KeyError as err:
             raise ValueError(
                 f"Unknown prognostic output variable '{key}'. "
                 f"Known variables are: {PROGNOSTIC_VARIABLES}."
             ) from err
-        field = getattr(prognostic_state, spec.state_attr)
         state[key] = io_utils.to_host_data_array(
-            field, spec.metadata, is_on_interface=spec.metadata.get("is_on_interface", False)
+            field, metadata, is_on_interface=metadata["is_on_interface"]
         )
     return state
 
@@ -318,6 +316,7 @@ def create_io_monitor(
     start_date: dt.datetime,
     dtime: dt.timedelta,
     variables: list[str] | None = None,
+    process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.
 
@@ -329,7 +328,12 @@ def create_io_monitor(
     ``dtime`` so that the monitor's capture logic fires on every model step. The first model
     time seen at the IO hook is ``start_date + dtime`` (the simulation date is advanced before
     integration), so the field group starts there.
+
+    ``process_props`` is currently unused: IO is single-node only. It is kept on the
+    signature so the distributed path (per-rank IO setup) can be wired in without a
+    signature change.
     """
+    del process_props  # reserved for the distributed IO path; unused while single-node
     output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
     interval_seconds = dtime.total_seconds()

@@ -13,7 +13,6 @@ These tests are data-free: they use the ``simple_grid`` and a zero-initialised
 """
 
 import copy
-import dataclasses
 import datetime as dt
 import pathlib
 
@@ -25,7 +24,11 @@ import xarray as xr
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.states import (
+    data as state_data,
+    model as state_model,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_io
 from icon4py.model.testing.fixtures import backend
@@ -62,19 +65,27 @@ def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
     return _make_prognostic_state(grid)
 
 
-@dataclasses.dataclass(frozen=True)
-class _ExpectedLayout:
-    horizontal_dim: gtx.Dimension
-    is_on_interface: bool = False
+def _expected(
+    cf_key: str, horizontal_dim: gtx.Dimension, *, is_on_interface: bool = False
+) -> state_model.FieldMetaData:
+    """Expected output metadata: the shared CF entry plus the expected dims and vertical
+    placement. ``standard_name``/``units`` come from the shared table rather than being
+    re-spelled here; ``dims`` and ``is_on_interface`` are stated independently of the
+    production code so the assertions stay a genuine check."""
+    return {
+        **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
+        "dims": (horizontal_dim, dims.KDim),
+        "is_on_interface": is_on_interface,
+    }
 
 
-#: Expected layout per output variable.
-_EXPECTED: dict[str, _ExpectedLayout] = {
-    "air_density": _ExpectedLayout(dims.CellDim),
-    "exner_function": _ExpectedLayout(dims.CellDim),
-    "theta_v": _ExpectedLayout(dims.CellDim),
-    "upward_air_velocity": _ExpectedLayout(dims.CellDim, is_on_interface=True),
-    "normal_velocity": _ExpectedLayout(dims.EdgeDim),
+#: Expected output metadata per output variable.
+_EXPECTED: dict[str, state_model.FieldMetaData] = {
+    "air_density": _expected("air_density", dims.CellDim),
+    "exner_function": _expected("exner_function", dims.CellDim),
+    "theta_v": _expected("virtual_potential_temperature", dims.CellDim),
+    "upward_air_velocity": _expected("upward_air_velocity", dims.CellDim, is_on_interface=True),
+    "normal_velocity": _expected("normal_velocity", dims.EdgeDim),
 }
 
 #: UGRID dimension names of the horizontal dimensions.
@@ -102,12 +113,14 @@ def test_assembles_all_default_variables(
     for name, da in state.items():
         assert isinstance(da, xr.DataArray)
         expected = _EXPECTED[name]
+        horizontal_dim = next(d for d in expected["dims"] if d.kind == gtx.DimensionKind.HORIZONTAL)
+        on_interface = expected["is_on_interface"]
 
-        vertical_name = "interface_level" if expected.is_on_interface else "level"
-        assert da.dims == (_UGRID_DIM_NAMES[expected.horizontal_dim], vertical_name)
+        vertical_name = "interface_level" if on_interface else "level"
+        assert da.dims == (_UGRID_DIM_NAMES[horizontal_dim], vertical_name)
 
-        vertical_size = grid.num_levels + 1 if expected.is_on_interface else grid.num_levels
-        assert da.shape == (_horizontal_size(grid, expected.horizontal_dim), vertical_size)
+        vertical_size = grid.num_levels + 1 if on_interface else grid.num_levels
+        assert da.shape == (_horizontal_size(grid, horizontal_dim), vertical_size)
 
 
 def test_dataarrays_carry_cf_and_ugrid_metadata(
@@ -188,7 +201,7 @@ def test_create_io_monitor_derives_matching_time_config(
             config: common_io.IOConfig,
             vertical_size: object,
             horizontal_size: object,
-            grid_file_name: pathlib.Path | str,
+            grid_file_name: pathlib.Path,
             grid_id: str,
         ) -> None:
             recorded["config"] = config

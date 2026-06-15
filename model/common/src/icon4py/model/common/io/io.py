@@ -149,7 +149,7 @@ class IOMonitor(monitor.Monitor):
         config: IOConfig,
         vertical_size: v_grid.VerticalGrid,
         horizontal_size: base.HorizontalGridSize,
-        grid_file_name: pathlib.Path | str,
+        grid_file_name: pathlib.Path,
         grid_id: writers.GridIdentifier,
     ):
         self.config = config
