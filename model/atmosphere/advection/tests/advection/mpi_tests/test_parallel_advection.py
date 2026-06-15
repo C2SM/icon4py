@@ -52,14 +52,6 @@ from ..utils import (
 )
 
 
-try:
-    import mpi4py
-
-    mpi_decomposition.init_mpi()
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
-
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
