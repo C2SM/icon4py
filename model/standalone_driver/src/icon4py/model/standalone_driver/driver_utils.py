@@ -456,21 +456,23 @@ def display_icon4py_logo_in_log_file() -> None:
 
 
 def display_driver_setup_in_log_file(
-    n_time_steps: int,
-    vertical_params: v_grid.VerticalGrid,
     config: driver_config.DriverConfig,
+    model_time_variables: driver_states.ModelTimeVariables,
+    vertical_params: v_grid.VerticalGrid,
 ) -> None:
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
-    log.info(f"Start date             : {config.start_date}")
+    log.info(f"Start date             : {model_time_variables.simulation_date}")
+    log.info(f"End date               : {model_time_variables.end_date}")
+    log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
     match config.end_simulation:
-        case int(n):
-            log.info(f"Number of timesteps    : {n}")
-        case datetime.timedelta() as relative:
-            log.info(f"Simulation duration    : {relative.total_seconds()} s")
-        case datetime.datetime() as absolute:
-            log.info(f"End date               : {absolute}")
+        case driver_config.NumTimeSteps():
+            log.info("Running mode           : num_timesteps")
+        case driver_config.RelativeTime():
+            log.info("Running mode           : relative_time")
+        case driver_config.AbsoluteTime():
+            log.info("Running mode           : absolute_time")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")

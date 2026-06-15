@@ -57,8 +57,8 @@ class DriverConfig:
 
     experiment_name: str
     profiling_stats: ProfilingStats | None
-    dtime: datetime.timedelta
-    start_date: datetime.datetime
+    dtime: RelativeTime
+    start_date: AbsoluteTime
     end_simulation: EndSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False

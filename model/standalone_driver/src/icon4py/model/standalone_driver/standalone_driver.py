@@ -80,9 +80,9 @@ class Icon4pyDriver:
         self.global_reductions = global_reductions
 
         driver_utils.display_driver_setup_in_log_file(
-            self.model_time_variables.n_time_steps,
-            self.static_field_factories.metrics_field_source._vertical_grid,
-            self.config.driver,
+            config=self.config.driver,
+            model_time_variables=self.model_time_variables,
+            vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
         )
 
     @functools.cached_property

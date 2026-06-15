@@ -75,9 +75,18 @@ class DriverStates(NamedTuple):
 @dataclasses.dataclass
 class ModelTimeVariables:
     """
-    This class contains driver's run-time time or date variables.
-    It tracks the current simulation date, substepping information, and cfl watch mode.
+    Runtime time/date variables derived from config at initialisation.
 
+    Attributes:
+        n_time_steps: Total number of time steps for the simulation.
+        dtime: Time step duration.
+        ndyn_substeps_var: Current number of dynamics substeps.
+        max_ndyn_substeps: Maximum allowed dynamics substeps.
+        elapsed_time_in_seconds: Accumulated simulation time.
+        simulation_date: Current simulation datetime (advances each step).
+        end_date: Simulation end datetime (computed from config.end_simulation).
+        is_first_step_in_simulation: Whether the next step is the first.
+        cfl_watch_mode: Whether CFL watch mode is active.
     """
 
     config: dataclasses.InitVar[driver_config.DriverConfig]
@@ -88,6 +97,7 @@ class ModelTimeVariables:
     max_ndyn_substeps: int = dataclasses.field(init=False)
     elapsed_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
     simulation_date: datetime.datetime = dataclasses.field(init=False)
+    end_date: datetime.datetime = dataclasses.field(init=False)
     is_first_step_in_simulation: bool = dataclasses.field(init=False)
     cfl_watch_mode: bool = dataclasses.field(init=False)
 
@@ -95,13 +105,16 @@ class ModelTimeVariables:
         match config.end_simulation:
             case driver_config.NumTimeSteps(n):
                 self.n_time_steps = n
-                self.simulation_date = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+                self.simulation_date = config.start_date
+                self.end_date = config.start_date + n * config.dtime
             case driver_config.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
                 self.simulation_date = config.start_date
+                self.end_date = config.start_date + relative
             case driver_config.AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_date) / config.dtime)
                 self.simulation_date = config.start_date
+                self.end_date = absolute
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
         self.ndyn_substeps_var = config.ndyn_substeps
