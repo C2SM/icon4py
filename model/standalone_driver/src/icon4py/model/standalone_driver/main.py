@@ -18,7 +18,7 @@ from icon4py.model.standalone_driver import config as driver_config, driver_util
 
 log = logging.getLogger(__name__)
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 @app.command()
