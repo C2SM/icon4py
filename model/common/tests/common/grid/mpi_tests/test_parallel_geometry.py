@@ -69,7 +69,7 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         (attrs.EDGE_TANGENT_VERTEX_V, "dual_normal_vert_y"),
     ],
 )
-def test_distributed_geometry_attrs(
+def test_distributed_geometry_attrs(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
@@ -96,7 +96,7 @@ def test_distributed_geometry_attrs(
         ("inverse_of_" + attrs.EDGE_LENGTH, "inverse_primal_edge_lengths", lb_local),
     ),
 )
-def test_distributed_geometry_attrs_for_inverse(
+def test_distributed_geometry_attrs_for_inverse(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
@@ -140,7 +140,7 @@ def test_distributed_geometry_attrs_for_inverse(
         (attrs.EDGE_NORMAL_Z, "primal_cart_normal_z"),
     ],
 )
-def test_geometry_attr_no_halos(
+def test_geometry_attr_no_halos(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
@@ -168,7 +168,7 @@ def test_geometry_attr_no_halos(
         (attrs.VERTEX_X, attrs.VERTEX_Y, attrs.VERTEX_Z, dims.VertexDim),
     ],
 )
-def test_cartesian_geometry_attr_no_halos(
+def test_cartesian_geometry_attr_no_halos(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
     process_props: decomp_defs.ProcessProperties,

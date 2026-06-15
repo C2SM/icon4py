@@ -263,7 +263,7 @@ def test_compute_exner_exfac(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_exner_w_implicit_weight_parameter(
+def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-positional-arguments]
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,

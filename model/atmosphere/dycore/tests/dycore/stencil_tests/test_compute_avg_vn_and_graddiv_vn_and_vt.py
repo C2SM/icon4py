@@ -50,6 +50,7 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
         geofac_grdiv: np.ndarray,

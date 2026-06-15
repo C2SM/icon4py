@@ -45,6 +45,9 @@ Use the `bump-versions` script to update all packages to the new version:
 ./scripts/run bump-versions <new_version>
 ```
 
+Note that the version should not include a `v` prefix. Only the version tag that
+is created later should include a `v` prefix.
+
 This updates `version` in every `pyproject.toml` and `__init__.py`, and also
 updates cross-package dependency constraints (e.g., `icon4py-common~=0.1.0` ->
 `icon4py-common~=0.2.0`).
@@ -82,6 +85,9 @@ Publishing the GitHub Release automatically triggers the
 
    **Note:** TestPyPI may not have all transitive dependencies. Use
    `--extra-index-url https://pypi.org/simple/` as a fallback.
+   You may also need `--index-strategy unsafe-best-match` to allow picking the
+   best match from pypi.org and test.pypi.org. Finally, `--refresh` may be
+   needed to update cached package information.
 
    Test in dependent projects if needed, like in ICON.
 

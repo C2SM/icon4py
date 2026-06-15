@@ -46,6 +46,7 @@ log = logging.getLogger(__name__)
 class Icon4pyDriver:
     def __init__(
         self,
+        *,
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
@@ -134,13 +135,13 @@ class Icon4pyDriver:
             self.model_time_variables.next_simulation_date()
 
             self._integrate_one_time_step(
-                diffusion_diagnostic_state,
-                solve_nonhydro_diagnostic_state,
-                tracer_advection_diagnostic_state,
-                prognostic_states,
-                prep_adv,
-                do_prep_adv,
-                tracer_prep_adv,
+                diffusion_diagnostic_state=diffusion_diagnostic_state,
+                solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+                tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
+                prognostic_states=prognostic_states,
+                prep_adv=prep_adv,
+                do_prep_adv=do_prep_adv,
+                tracer_prep_adv=tracer_prep_adv,
             )
             device_utils.sync(self.backend)
 
@@ -162,6 +163,7 @@ class Icon4pyDriver:
 
     def _integrate_one_time_step(
         self,
+        *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState,
@@ -269,8 +271,8 @@ class Icon4pyDriver:
 
             with timer_solve_nh:
                 self.solve_nonhydro.time_step(
-                    solve_nonhydro_diagnostic_state,
-                    prognostic_states,
+                    diagnostic_state_nh=solve_nonhydro_diagnostic_state,
+                    prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
                     dtime=self.model_time_variables.substep_timestep,
@@ -490,6 +492,9 @@ class Icon4pyDriver:
 def _read_config(
     output_path: pathlib.Path,
     enable_profiling: bool,
+    # TODO(msimberg): This is only for temporary testing. Sync with config and
+    # test changes of @jcanton.
+    end_date: datetime.datetime,
 ) -> tuple[
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
@@ -534,7 +539,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        end_date=end_date,
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
@@ -552,10 +557,12 @@ def _read_config(
 
 
 def initialize_driver(
+    *,
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
     backend_like: model_backends.BackendLike,
+    end_date: datetime.datetime,
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
 ) -> Icon4pyDriver:
@@ -624,6 +631,7 @@ def initialize_driver(
         _read_config(
             output_path=output_path,
             enable_profiling=False,
+            end_date=end_date,
         )
     )
 

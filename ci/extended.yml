@@ -1,0 +1,23 @@
+include:
+  - local: 'ci/base.yml'
+
+variables:
+  MODEL_SUBPACKAGES: "standalone_driver"
+  BACKENDS: "dace_cpu:gtfn_cpu"
+  LEVELS: "extended"
+  SESSION: "model"
+  ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
+  CXXFLAGS: "-ffp-contract=off"
+
+
+build_baseimage_aarch64:
+  extends: [.build_baseimage_aarch64]
+
+build_image_aarch64:
+  extends: [.build_image_aarch64]
+
+generate_test_child_pipeline:
+  extends: [.generate_test_child_pipeline]
+
+trigger_test_child_pipeline:
+  extends: [.trigger_test_child_pipeline]

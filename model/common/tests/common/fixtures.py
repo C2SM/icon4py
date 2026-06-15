@@ -96,6 +96,7 @@ def geometry_from_savepoint(
 
 @pytest.fixture
 def interpolation_factory_from_savepoint(
+    *,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -119,6 +120,7 @@ def interpolation_factory_from_savepoint(
 
 @pytest.fixture
 def metrics_factory_from_savepoint(
+    *,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,

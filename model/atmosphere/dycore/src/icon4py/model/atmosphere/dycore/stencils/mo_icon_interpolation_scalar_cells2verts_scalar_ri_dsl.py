@@ -33,8 +33,8 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     vertical_end: gtx.int32,
 ) -> None:
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-        p_cell_in,
-        c_intp,
+        p_cell_in=p_cell_in,
+        c_intp=c_intp,
         out=p_vert_out,
         domain={
             dims.VertexDim: (horizontal_start, horizontal_end),

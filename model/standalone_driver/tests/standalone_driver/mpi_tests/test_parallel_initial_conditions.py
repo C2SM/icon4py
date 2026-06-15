@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import datetime
 import logging
 import pathlib
 
@@ -41,6 +42,7 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.level("integration")
 def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
@@ -85,6 +87,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             log_level="info",
             backend_like=backend_like,
             force_serial_run=True,
+            end_date=datetime.datetime(2008, 9, 1, 0, 5, 0),
         )
     )
 
@@ -107,6 +110,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             grid_file_path=grid_file_path,
             log_level="info",
             backend_like=backend_like,
+            end_date=datetime.datetime(2008, 9, 1, 0, 5, 0),
         )
     )
 

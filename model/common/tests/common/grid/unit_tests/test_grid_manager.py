@@ -657,7 +657,7 @@ def test_local_connectivity(
         if dim == dims.EdgeDim
         else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
     )
-    level_index = np.where(
+    level_index = np.nonzero(
         data_alloc.as_numpy(decomposition_info.halo_levels(dim)) == last_halo_level.value
     )
     if (

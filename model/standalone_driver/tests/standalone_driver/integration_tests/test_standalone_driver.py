@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import datetime
 import pathlib
 
 import pytest
@@ -52,6 +53,7 @@ def test_standalone_driver(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_like,
         output_path=output_path,
+        end_date=datetime.datetime(2008, 9, 1, 0, 5, 0),
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

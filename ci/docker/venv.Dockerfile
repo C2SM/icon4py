@@ -6,14 +6,16 @@ WORKDIR /icon4py
 
 ARG PYVERSION
 ENV UV_CACHE_DIR=/opt/uv-cache
+ENV MPI4PY_BUILD_BACKEND=scikit-build-core
+ENV GHEX_USE_GPU=ON
+ENV GHEX_GPU_TYPE=NVIDIA
+ENV GHEX_GPU_ARCH=90
+ENV GHEX_TRANSPORT_BACKEND=MPI
 RUN uv sync \
     --no-dev \
+    --extra all \
     --extra cuda12 \
-    --extra fortran \
-    --extra io \
-    --extra profiling \
-    --extra testing \
     --group test \
     --python $PYVERSION && \
-    rm -rf .venv && \
     chmod -R a+rwX "$UV_CACHE_DIR"
+ENV PATH="/icon4py/.venv/bin:$PATH"
