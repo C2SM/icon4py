@@ -14,6 +14,7 @@ import functools
 import logging
 import math
 import sys
+import typing
 from typing import Any, Final
 
 import gt4py.next as gtx
@@ -133,6 +134,20 @@ class ForcingType(int, enum.Enum):
     NWP = 3  #: Numerical Weather Prediction forcing (inwp)
 
 
+# TODO(ricoh): move up to common config before merging
+@dataclasses.dataclass
+class InitAlias:
+    name: str
+
+
+# TODO(ricoh): move up to common config before merging
+@dataclasses.dataclass
+class FortranConfCoord:
+    name: str
+    path: tuple[str, ...]
+    list_to_value: bool = False
+
+
 @dataclasses.dataclass(kw_only=True)
 class DiffusionConfig:
     """
@@ -148,90 +163,130 @@ class DiffusionConfig:
 
     # parameters from namelist diffusion_nml
 
-    diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type: typing.Annotated[
+        DiffusionType, FortranConfCoord("hdiff_order", ("diffusion_nml",))
+    ] = DiffusionType.SMAGORINSKY_4TH_ORDER
 
     #: If True, apply diffusion on the vertical wind field
     #: Called 'lhdiff_w' in mo_diffusion_nml.f90
-    apply_to_vertical_wind: bool = dataclasses.field(init=False, default=True)
+    apply_to_vertical_wind: typing.Annotated[
+        bool, InitAlias("hdiff_w"), FortranConfCoord("lhdiff_w", ("diffusion_nml",))
+    ] = dataclasses.field(init=False, default=True)
     hdiff_w: dataclasses.InitVar[bool] = True
 
     #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
     #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
-    apply_to_horizontal_wind: bool = dataclasses.field(init=False, default=True)
+    apply_to_horizontal_wind: typing.Annotated[
+        bool, InitAlias("hdiff_vn"), FortranConfCoord("lhdiff_vn", ("diffusion_nml",))
+    ] = dataclasses.field(init=False, default=True)
     hdiff_vn: dataclasses.InitVar[bool] = True
 
     #:  If True, apply horizontal diffusion to temperature field
     #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
-    apply_to_temperature: bool = dataclasses.field(init=False, default=True)
+    apply_to_temperature: typing.Annotated[
+        bool, InitAlias("hdiff_temp"), FortranConfCoord("lhdiff_temp", ("diffusion_nml",))
+    ] = dataclasses.field(init=False, default=True)
     hdiff_temp: dataclasses.InitVar[bool] = True
 
     #: If True, compute Smagorinsky diffusion to vertical wind field
     #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
-    apply_smag_diff_to_vertical_wind: bool = dataclasses.field(init=False, default=False)
+    apply_smag_diff_to_vertical_wind: typing.Annotated[
+        bool,
+        InitAlias("hdiff_smag_w"),
+        FortranConfCoord("lhdiff_smag_w", ("diffusion_nml",), list_to_value=True),
+    ] = dataclasses.field(init=False, default=False)
     hdiff_smag_w: dataclasses.InitVar[bool] = False
 
     #: If True, compute 3D Smagorinsky diffusion coefficient
     #: Called 'lsmag_3d' in mo_diffusion_nml.f90
-    compute_3d_smag_coeff: bool = dataclasses.field(init=False, default=False)
+    compute_3d_smag_coeff: typing.Annotated[
+        bool,
+        InitAlias("smag_3d"),
+        FortranConfCoord("lsmag_3d", ("diffusion_nml",), list_to_value=True),
+    ] = dataclasses.field(init=False, default=False)
     smag_3d: dataclasses.InitVar[bool] = False
 
     #: Options for discretizing the Smagorinsky momentum diffusion
     #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
-    type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES
+    type_vn_diffu: typing.Annotated[
+        SmagorinskyStencilType, FortranConfCoord("itype_vn_diffu", ("diffusion_nml",))
+    ] = SmagorinskyStencilType.DIAMOND_VERTICES
 
     #: Options for discretizing the Smagorinsky temperature diffusion
     #: Called 'itype_t_diffu' in mo_diffusion_nml.f90
-    type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS
+    type_t_diffu: typing.Annotated[
+        TemperatureDiscretizationType, FortranConfCoord("itype_t_diffu", ("diffusion_nml",))
+    ] = TemperatureDiscretizationType.HETEROGENEOUS
 
     #: Ratio of e-folding time to (2*)time step
     #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
-    hdiff_efdt_ratio: float = 36.0
+    hdiff_efdt_ratio: typing.Annotated[
+        float, FortranConfCoord("hdiff_efdt_ratio", ("diffusion_nml",))
+    ] = 36.0
 
     #: Ratio of e-folding time to time step for w diffusion (NH only)
     #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
-    hdiff_w_efdt_ratio: float = 15.0
+    hdiff_w_efdt_ratio: typing.Annotated[
+        float, FortranConfCoord("hdiff_w_efdt_ratio", ("diffusion_nml",))
+    ] = 15.0
 
     # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
     #: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value)
     #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
-    smagorinski_scaling_factor: float = 0.015
+    smagorinski_scaling_factor: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_fac", ("diffusion_nml",))
+    ] = 0.015
 
     #: Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and
     #: start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1).
     #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
-    smagorinski_scaling_factor2: float = 2e-6 * (
-        1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
-    )
+    smagorinski_scaling_factor2: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_fac2", ("diffusion_nml",))
+    ] = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
 
     #: Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the
     #: quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients.
     #: Called 'hdiff_smag_fac3' in mo_diffusion_nml.f90
-    smagorinski_scaling_factor3: float = 0.0
+    smagorinski_scaling_factor3: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_fac3", ("diffusion_nml",))
+    ] = 0.0
 
     #: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value).
     #: Also the third control point that defines the quadratic segment together with factor2 and factor3.
     #: Called 'hdiff_smag_fac4' in mo_diffusion_nml.f90
-    smagorinski_scaling_factor4: float = 1.0
+    smagorinski_scaling_factor4: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_fac4", ("diffusion_nml",))
+    ] = 1.0
 
     #: Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor below this height.
     #: Called 'hdiff_smag_z' in mo_diffusion_nml.f90
-    smagorinski_scaling_height: float = 32500.0
+    smagorinski_scaling_height: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_z", ("diffusion_nml",))
+    ] = 32500.0
 
     #: Transition height between linear and quadratic segments.
     #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
-    smagorinski_scaling_height2: float = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
+    smagorinski_scaling_height2: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_z2", ("diffusion_nml",))
+    ] = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
 
     #: Interior control point height within the quadratic segment (height2 <= height3 <= height4).
     #: Called 'hdiff_smag_z3' in mo_diffusion_nml.f90
-    smagorinski_scaling_height3: float = 50000.0
+    smagorinski_scaling_height3: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_z3", ("diffusion_nml",))
+    ] = 50000.0
 
     #: Upper boundary of the quadratic segment: factor is constant at smagorinski_scaling_factor4 above this height.
     #: Called 'hdiff_smag_z4' in mo_diffusion_nml.f90
-    smagorinski_scaling_height4: float = 90000.0
+    smagorinski_scaling_height4: typing.Annotated[
+        float, FortranConfCoord("hdiff_smag_z4", ("diffusion_nml",))
+    ] = 90000.0
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes
     #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
-    apply_zdiffusion_t: bool = dataclasses.field(init=False, default=True)
+    apply_zdiffusion_t: typing.Annotated[
+        bool, InitAlias("zdiffu_t"), FortranConfCoord("l_zdiffu_t", ("nonhydrostatic_nml",))
+    ] = dataclasses.field(init=False, default=True)
     zdiffu_t: dataclasses.InitVar[bool] = True
 
     # from other namelists:
@@ -239,19 +294,29 @@ class DiffusionConfig:
 
     #: Number of dynamics substeps per fast-physics step
     #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
-    ndyn_substeps: int = dataclasses.field(init=False, default=5)
+    ndyn_substeps: typing.Annotated[
+        int, InitAlias("n_substeps"), FortranConfCoord("ndyn_substeps", ("nonhydrostatic_nml",))
+    ] = dataclasses.field(init=False, default=5)
     n_substeps: dataclasses.InitVar[int] = 5
 
     # namelist mo_gridref_nml.f90
 
     #: Denominator for temperature boundary diffusion
     #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-    temperature_boundary_diffusion_denominator: float = dataclasses.field(init=False, default=135.0)
+    temperature_boundary_diffusion_denominator: typing.Annotated[
+        float,
+        InitAlias("temperature_boundary_diffusion_denom"),
+        FortranConfCoord("denom_diffu_t", ("gridref_nml",)),
+    ] = dataclasses.field(init=False, default=135.0)
     temperature_boundary_diffusion_denom: dataclasses.InitVar[float] = 135.0
 
     #: Denominator for velocity boundary diffusion
     #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-    velocity_boundary_diffusion_denominator: float = dataclasses.field(init=False, default=200.0)
+    velocity_boundary_diffusion_denominator: typing.Annotated[
+        float,
+        InitAlias("velocity_boundary_diffusion_denom"),
+        FortranConfCoord("denom_diffu_v", ("gridref_nml",)),
+    ] = dataclasses.field(init=False, default=200.0)
     velocity_boundary_diffusion_denom: dataclasses.InitVar[float] = 200.0
 
     # parameters from namelist: mo_interpol_nml.f90
@@ -265,15 +330,19 @@ class DiffusionConfig:
 
     #: Type of shear forcing used in turbulence
     #: Called 'itype_sher' in mo_turbdiff_nml.f90
-    shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
+    shear_type: typing.Annotated[
+        TurbulenceShearForcingType, FortranConfCoord("itype_sher", ("turbdiff_nml",))
+    ] = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
 
     #: Type of physics forcing
     #: Called 'iforcing' in mo_run_nml.f90
-    iforcing: ForcingType = ForcingType.NO_FORCING
+    iforcing: typing.Annotated[ForcingType, FortranConfCoord("iforcing", ("run_nml",))] = (
+        ForcingType.NO_FORCING
+    )
 
     #: Scaling factor for horizontal shear production term
     #: Called 'a_hshr' in mo_turbdiff_nml.f90
-    a_hshr: float = 1.0
+    a_hshr: typing.Annotated[float, FortranConfCoord("a_hshr", ("turbdiff_nml",))] = 1.0
 
     #: Output flag for horizontal shear
     #: Called 'loutshs' in mo_turbdiff_nml.f90
@@ -304,39 +373,72 @@ class DiffusionConfig:
 
         self._validate()
 
+    # TODO(ricoh): move up to common config before merging
+    @classmethod
+    def get_ctor_alias(cls, field: dataclasses.Field) -> str:
+        annotations = typing.get_type_hints(cls, include_extras=True)
+        metadatae: tuple[InitAlias | FortranConfCoord, ...]
+        if metadatae := getattr(annotations[field.name], "__metadata__", tuple()):
+            init_aliases = [meta for meta in metadatae if isinstance(meta, InitAlias)]
+            if init_aliases:
+                return init_aliases[0].name
+        return field.name
+
+    # TODO(ricoh): move up to common config before merging
+    @classmethod
+    def get_fortran_coords(cls, field: dataclasses.Field) -> FortranConfCoord | None:
+        annotations = typing.get_type_hints(cls, include_extras=True)
+        field_type = annotations[field.name]
+
+        metadatae: tuple[InitAlias | FortranConfCoord, ...]
+        if metadatae := getattr(field_type, "__metadata__", tuple()):
+            conf_coords = [meta for meta in metadatae if isinstance(meta, FortranConfCoord)]
+            if conf_coords:
+                return conf_coords[0]
+        return None
+
+    # TODO(ricoh): move up to common config before merging
+    @classmethod
+    def get_raw_fortran_value(cls, field: dataclasses.Field, fortran_dict: dict[str, Any]) -> Any:
+        if coords := cls.get_fortran_coords(field):
+            data = fortran_dict
+            for subsection in coords.path:
+                data = data[subsection]
+            return data[coords.name]
+        return fortran_dict[field.name]
+
+    # TODO(ricoh): move up to common config before merging
+    @classmethod
+    def get_fortran_value(cls, field: dataclasses.Field, fortran_dict: dict[str, Any]) -> Any:
+        annotations = typing.get_type_hints(cls, include_extras=True)
+        field_type = annotations[field.name]
+        coords = cls.get_fortran_coords(field)
+        raw_value = cls.get_raw_fortran_value(field, fortran_dict)
+        de_listified = (
+            raw_value
+            if not (coords and coords.list_to_value)
+            else fortran_config.list_to_value(raw_value)
+        )
+        return field_type(de_listified)
+
+    # TODO(ricoh): rename and use to replace current __init__ for backwards compat
+    @classmethod
+    def old_ctor(cls, **kwargs: Any) -> DiffusionConfig:
+        """Backwards-compatibility wrapper around __init__."""
+
+        translated_kw = {}
+        for name, field in cls.__dataclass_fields__.items():
+            translated_kw[name] = kwargs[cls.get_ctor_alias(field)]
+        return cls(**translated_kw)
+
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> DiffusionConfig:
-        diffusion_nml = atmo_dict["diffusion_nml"]
-        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
-        gridref_nml = atmo_dict["gridref_nml"]
-        turbdiff_nml = atmo_dict["turbdiff_nml"]
-        run_nml = atmo_dict["run_nml"]
+        fields = [field for field in dataclasses.fields(cls) if cls.get_fortran_coords(field)]
         return cls(
-            diffusion_type=DiffusionType(diffusion_nml["hdiff_order"]),
-            hdiff_w=diffusion_nml["lhdiff_w"],
-            hdiff_vn=diffusion_nml["lhdiff_vn"],
-            hdiff_temp=diffusion_nml["lhdiff_temp"],
-            hdiff_smag_w=fortran_config.list_to_value(diffusion_nml["lhdiff_smag_w"]),
-            type_vn_diffu=SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"]),
-            smag_3d=fortran_config.list_to_value(diffusion_nml["lsmag_3d"]),
-            type_t_diffu=TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"]),
-            hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
-            hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
-            smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
-            smagorinski_scaling_factor2=diffusion_nml["hdiff_smag_fac2"],
-            smagorinski_scaling_factor3=diffusion_nml["hdiff_smag_fac3"],
-            smagorinski_scaling_factor4=diffusion_nml["hdiff_smag_fac4"],
-            smagorinski_scaling_height=diffusion_nml["hdiff_smag_z"],
-            smagorinski_scaling_height2=diffusion_nml["hdiff_smag_z2"],
-            smagorinski_scaling_height3=diffusion_nml["hdiff_smag_z3"],
-            smagorinski_scaling_height4=diffusion_nml["hdiff_smag_z4"],
-            n_substeps=nonhydrostatic_nml["ndyn_substeps"],
-            zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
-            velocity_boundary_diffusion_denom=gridref_nml["denom_diffu_v"],
-            temperature_boundary_diffusion_denom=gridref_nml["denom_diffu_t"],
-            shear_type=TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
-            iforcing=ForcingType(run_nml["iforcing"]),
-            a_hshr=turbdiff_nml["a_hshr"],
+            **{
+                cls.get_ctor_alias(field): cls.get_fortran_value(field, atmo_dict)
+                for field in fields
+            },
             **overrides,
         )
 
