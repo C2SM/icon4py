@@ -71,7 +71,7 @@ def read_config(
         )
 
     def _mch_ch_r04b09_diffusion_config():
-        return diffusion.DiffusionConfig(
+        return diffusion.DiffusionConfig.from_init_aliases(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
@@ -101,7 +101,7 @@ def read_config(
         )
 
     def _jabw_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig(
+        return diffusion.DiffusionConfig.from_init_aliases(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
@@ -163,7 +163,7 @@ def read_config(
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig(
+        return diffusion.DiffusionConfig.from_init_aliases(
             n_substeps=n_substeps,
         )
 

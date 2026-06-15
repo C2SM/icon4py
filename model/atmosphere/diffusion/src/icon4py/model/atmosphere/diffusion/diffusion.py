@@ -171,22 +171,19 @@ class DiffusionConfig:
     #: Called 'lhdiff_w' in mo_diffusion_nml.f90
     apply_to_vertical_wind: typing.Annotated[
         bool, InitAlias("hdiff_w"), FortranConfCoord("lhdiff_w", ("diffusion_nml",))
-    ] = dataclasses.field(init=False, default=True)
-    hdiff_w: dataclasses.InitVar[bool] = True
+    ] = True
 
     #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
     #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
     apply_to_horizontal_wind: typing.Annotated[
         bool, InitAlias("hdiff_vn"), FortranConfCoord("lhdiff_vn", ("diffusion_nml",))
-    ] = dataclasses.field(init=False, default=True)
-    hdiff_vn: dataclasses.InitVar[bool] = True
+    ] = True
 
     #:  If True, apply horizontal diffusion to temperature field
     #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
     apply_to_temperature: typing.Annotated[
         bool, InitAlias("hdiff_temp"), FortranConfCoord("lhdiff_temp", ("diffusion_nml",))
-    ] = dataclasses.field(init=False, default=True)
-    hdiff_temp: dataclasses.InitVar[bool] = True
+    ] = True
 
     #: If True, compute Smagorinsky diffusion to vertical wind field
     #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
@@ -194,8 +191,7 @@ class DiffusionConfig:
         bool,
         InitAlias("hdiff_smag_w"),
         FortranConfCoord("lhdiff_smag_w", ("diffusion_nml",), list_to_value=True),
-    ] = dataclasses.field(init=False, default=False)
-    hdiff_smag_w: dataclasses.InitVar[bool] = False
+    ] = False
 
     #: If True, compute 3D Smagorinsky diffusion coefficient
     #: Called 'lsmag_3d' in mo_diffusion_nml.f90
@@ -203,8 +199,7 @@ class DiffusionConfig:
         bool,
         InitAlias("smag_3d"),
         FortranConfCoord("lsmag_3d", ("diffusion_nml",), list_to_value=True),
-    ] = dataclasses.field(init=False, default=False)
-    smag_3d: dataclasses.InitVar[bool] = False
+    ] = False
 
     #: Options for discretizing the Smagorinsky momentum diffusion
     #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
@@ -286,8 +281,7 @@ class DiffusionConfig:
     #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
     apply_zdiffusion_t: typing.Annotated[
         bool, InitAlias("zdiffu_t"), FortranConfCoord("l_zdiffu_t", ("nonhydrostatic_nml",))
-    ] = dataclasses.field(init=False, default=True)
-    zdiffu_t: dataclasses.InitVar[bool] = True
+    ] = True
 
     # from other namelists:
     # from parent namelist mo_nonhydrostatic_nml
@@ -296,8 +290,7 @@ class DiffusionConfig:
     #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
     ndyn_substeps: typing.Annotated[
         int, InitAlias("n_substeps"), FortranConfCoord("ndyn_substeps", ("nonhydrostatic_nml",))
-    ] = dataclasses.field(init=False, default=5)
-    n_substeps: dataclasses.InitVar[int] = 5
+    ] = 5
 
     # namelist mo_gridref_nml.f90
 
@@ -307,8 +300,7 @@ class DiffusionConfig:
         float,
         InitAlias("temperature_boundary_diffusion_denom"),
         FortranConfCoord("denom_diffu_t", ("gridref_nml",)),
-    ] = dataclasses.field(init=False, default=135.0)
-    temperature_boundary_diffusion_denom: dataclasses.InitVar[float] = 135.0
+    ] = 135.0
 
     #: Denominator for velocity boundary diffusion
     #: Called 'denom_diffu_v' in mo_gridref_nml.f90
@@ -316,8 +308,7 @@ class DiffusionConfig:
         float,
         InitAlias("velocity_boundary_diffusion_denom"),
         FortranConfCoord("denom_diffu_v", ("gridref_nml",)),
-    ] = dataclasses.field(init=False, default=200.0)
-    velocity_boundary_diffusion_denom: dataclasses.InitVar[float] = 200.0
+    ] = 200.0
 
     # parameters from namelist: mo_interpol_nml.f90
 
@@ -349,33 +340,15 @@ class DiffusionConfig:
     #: not a namelist parameter: its default is FALSE and only set to true in fortran `IF (.NOT. ldynamics)`
     loutshs: bool = False
 
-    def __post_init__(  # noqa: PLR0917 # TODO(ricoh): remove and replace with classmethod generated from annotations
+    def __post_init__(
         self,
-        hdiff_w: bool,
-        hdiff_vn: bool,
-        hdiff_temp: bool,
-        hdiff_smag_w: bool,
-        smag_3d: bool,
-        zdiffu_t: bool,
-        n_substeps: int,
-        temperature_boundary_diffusion_denom: float,
-        velocity_boundary_diffusion_denom: float,
     ) -> None:
-        self.apply_to_vertical_wind = hdiff_w
-        self.apply_to_horizontal_wind = hdiff_vn
-        self.apply_to_temperature = hdiff_temp
-        self.apply_smag_diff_to_vertical_wind = hdiff_smag_w
-        self.compute_3d_smag_coeff = smag_3d
-        self.apply_zdiffusion_t = zdiffu_t
-        self.ndyn_substeps = n_substeps
-        self.temperature_boundary_diffusion_denominator = temperature_boundary_diffusion_denom
-        self.velocity_boundary_diffusion_denominator = velocity_boundary_diffusion_denom
 
         self._validate()
 
     # TODO(ricoh): move up to common config before merging
     @classmethod
-    def get_ctor_alias(cls, field: dataclasses.Field) -> str:
+    def get_init_alias(cls, field: dataclasses.Field) -> str:
         annotations = typing.get_type_hints(cls, include_extras=True)
         metadatae: tuple[InitAlias | FortranConfCoord, ...]
         if metadatae := getattr(annotations[field.name], "__metadata__", tuple()):
@@ -421,14 +394,12 @@ class DiffusionConfig:
         )
         return field_type(de_listified)
 
-    # TODO(ricoh): rename and use to replace current __init__ for backwards compat
     @classmethod
-    def old_ctor(cls, **kwargs: Any) -> DiffusionConfig:
+    def from_init_aliases(cls, **kwargs: Any) -> DiffusionConfig:
         """Backwards-compatibility wrapper around __init__."""
 
-        translated_kw = {}
-        for name, field in cls.__dataclass_fields__.items():
-            translated_kw[name] = kwargs[cls.get_ctor_alias(field)]
+        alias_map = {cls.get_init_alias(field): field.name for field in dataclasses.fields(cls)}
+        translated_kw = {alias_map[key]: value for key, value in kwargs.items()}
         return cls(**translated_kw)
 
     @classmethod
@@ -436,7 +407,7 @@ class DiffusionConfig:
         fields = [field for field in dataclasses.fields(cls) if cls.get_fortran_coords(field)]
         return cls(
             **{
-                cls.get_ctor_alias(field): cls.get_fortran_value(field, atmo_dict)
+                cls.get_init_alias(field): cls.get_fortran_value(field, atmo_dict)
                 for field in fields
             },
             **overrides,

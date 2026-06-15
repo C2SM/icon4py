@@ -116,7 +116,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters
-    config = DiffusionConfig(
+    config = DiffusionConfig.from_init_aliases(
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,

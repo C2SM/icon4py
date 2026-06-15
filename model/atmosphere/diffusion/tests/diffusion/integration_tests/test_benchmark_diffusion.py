@@ -51,7 +51,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     allocator = model_backends.get_allocator(backend_like)
     dtime = 10.0
 
-    config = diffusion.DiffusionConfig(
+    config = diffusion.DiffusionConfig.from_init_aliases(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
