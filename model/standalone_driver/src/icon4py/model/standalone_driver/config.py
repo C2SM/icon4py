@@ -58,7 +58,7 @@ class DriverConfig:
     experiment_name: str
     profiling_stats: ProfilingStats | None
     dtime: RelativeTime
-    start_date: AbsoluteTime
+    start_datetime: AbsoluteTime
     end_simulation: EndSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
@@ -76,15 +76,15 @@ class DriverConfig:
         master_time_control_nml = master_dict["master_time_control_nml"]
         master_model_nml = master_dict["master_model_nml"]
         dtime = run_nml["dtime"]
-        start_date_str = master_time_control_nml["experimentstartdate"]
-        end_date_str = master_time_control_nml["experimentstopdate"]
+        start_datetime_str = master_time_control_nml["experimentstartdate"]
+        end_datetime_str = master_time_control_nml["experimentstopdate"]
         return cls(
             experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
-            start_date=datetime.datetime.fromisoformat(start_date_str.replace("Z", "+00:00")),
-            end_simulation=datetime.datetime.fromisoformat(end_date_str.replace("Z", "+00:00")),
+            start_datetime=datetime.datetime.fromisoformat(start_datetime_str.replace("Z", "+00:00")),
+            end_simulation=datetime.datetime.fromisoformat(end_datetime_str.replace("Z", "+00:00")),
             apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],

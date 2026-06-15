@@ -132,11 +132,11 @@ class Icon4pyDriver:
 
             log.info(
                 f"\n"
-                f"simulation date : {self.model_time_variables.simulation_date}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
+                f"simulation date : {self.model_time_variables.simulation_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
                 f"\n"
             )
 
-            self.model_time_variables.next_simulation_date()
+            self.model_time_variables.next_simulation_datetime()
 
             self._integrate_one_time_step(
                 diffusion_diagnostic_state=diffusion_diagnostic_state,
