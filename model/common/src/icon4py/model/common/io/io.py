@@ -12,6 +12,7 @@ import datetime as dt
 import enum
 import logging
 import pathlib
+import uuid
 from collections.abc import Sequence
 from typing import Any
 
@@ -150,7 +151,7 @@ class IOMonitor(monitor.Monitor):
         vertical_size: v_grid.VerticalGrid,
         horizontal_size: base.HorizontalGridSize,
         grid_file_name: pathlib.Path,
-        grid_id: writers.GridIdentifier,
+        grid_id: uuid.UUID,
     ):
         self.config = config
         self._grid_file = grid_file_name
@@ -219,7 +220,7 @@ class FieldGroupMonitor(monitor.Monitor):
         config: FieldGroupIOConfig,
         vertical: VerticalGrid,
         horizontal: base.HorizontalGridSize,
-        grid_id: writers.GridIdentifier,
+        grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,

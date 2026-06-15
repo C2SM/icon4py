@@ -25,6 +25,7 @@ unconditionally (see ``pyproject.toml``).
 import dataclasses
 import datetime as dt
 import pathlib
+import uuid
 from typing import Any, Final
 
 import gt4py.next as gtx
@@ -365,5 +366,6 @@ def create_io_monitor(
         vertical_size=vertical_grid,
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=grid_file_path,
-        grid_id=grid.id,
+        # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
+        grid_id=uuid.UUID(grid.id),
     )

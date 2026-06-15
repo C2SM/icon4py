@@ -13,8 +13,10 @@ These tests are data-free: they use the ``simple_grid`` and a zero-initialised
 """
 
 import copy
+import dataclasses
 import datetime as dt
 import pathlib
+import uuid
 
 import gt4py.next as gtx
 import numpy as np
@@ -32,6 +34,11 @@ from icon4py.model.common.states import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_io
 from icon4py.model.testing.fixtures import backend
+
+
+#: A real grid's ``id`` is the file's ``uuidOfHGrid`` (a UUID); the synthetic simple grid
+#: uses a plain string, so the monitor tests stamp a UUID onto it.
+_FAKE_GRID_UUID = uuid.UUID("12345678-1234-5678-1234-567812345678")
 
 
 @pytest.fixture
@@ -202,7 +209,7 @@ def test_create_io_monitor_derives_matching_time_config(
             vertical_size: object,
             horizontal_size: object,
             grid_file_name: pathlib.Path,
-            grid_id: str,
+            grid_id: uuid.UUID,
         ) -> None:
             recorded["config"] = config
             recorded["grid_file_name"] = grid_file_name
@@ -210,6 +217,8 @@ def test_create_io_monitor_derives_matching_time_config(
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
 
+    # the monitor requires a UUID grid id; stamp one onto the synthetic grid
+    grid = dataclasses.replace(grid, id=str(_FAKE_GRID_UUID))
     start_date = dt.datetime(2024, 1, 1, 0, 0, 0)
     dtime = dt.timedelta(seconds=300)
 
@@ -237,7 +246,7 @@ def test_create_io_monitor_derives_matching_time_config(
     assert field_group.filename == driver_io.DEFAULT_OUTPUT_FILENAME
     # output is written to the dedicated subfolder of the run directory
     assert config.output_path == str(tmp_path / driver_io.OUTPUT_SUBDIR)
-    assert recorded["grid_id"] == grid.id
+    assert recorded["grid_id"] == _FAKE_GRID_UUID
 
 
 def test_create_io_monitor_rejects_subsecond_dtime(grid: base.Grid, tmp_path: pathlib.Path) -> None:
@@ -266,6 +275,7 @@ def test_create_io_monitor_has_no_separate_diagnostic_group(
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
 
+    grid = dataclasses.replace(grid, id=str(_FAKE_GRID_UUID))
     driver_io.create_io_monitor(
         output_path=tmp_path,
         grid_file_path=tmp_path / "grid.nc",
