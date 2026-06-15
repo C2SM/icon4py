@@ -13,6 +13,10 @@ from typing import Annotated
 import typer
 
 from icon4py.model.common import model_backends, model_options
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 
 
