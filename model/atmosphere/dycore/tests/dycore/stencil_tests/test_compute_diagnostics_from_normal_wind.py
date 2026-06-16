@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -37,6 +38,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def compute_diagnostics_from_normal_wind_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     tangential_wind: np.ndarray,
@@ -106,14 +108,14 @@ def compute_diagnostics_from_normal_wind_numpy(
         horizontal_advection_of_w_at_edges_on_half_levels = np.where(
             k_nlev >= vertical_start,
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                connectivities,
-                vn_on_half_levels[:, : nlevp1 - 1],
-                inv_dual_edge_length,
-                w,
-                tangential_wind_on_half_levels,
-                inv_primal_edge_length,
-                tangent_orientation,
-                w_at_vertices,
+                connectivities=connectivities,
+                vn_ie=vn_on_half_levels[:, : nlevp1 - 1],
+                inv_dual_edge_length=inv_dual_edge_length,
+                w=w,
+                z_vt_ie=tangential_wind_on_half_levels,
+                inv_primal_edge_length=inv_primal_edge_length,
+                tangent_orientation=tangent_orientation,
+                z_w_v=w_at_vertices,
             ),
             horizontal_advection_of_w_at_edges_on_half_levels,
         )
@@ -182,6 +184,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
     def reference(
         cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         tangential_wind: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,
@@ -205,6 +208,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
+        **kwargs: object,
     ) -> dict:
         initial_tangential_wind = tangential_wind.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()

@@ -72,7 +72,7 @@ def test_edge_control_area(
     expected = grid_savepoint.edge_areas()
     geometry_source = grid_utils.get_grid_geometry(backend, experiment)
     result = geometry_source.get(attrs.EDGE_AREA)
-    assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol)
+    assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.datatest
@@ -468,7 +468,12 @@ def test_create_auxiliary_orientation_coordinates(
     edge_lat = coordinates[dims.EdgeDim]["lat"]
     edge_lon = coordinates[dims.EdgeDim]["lon"]
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
-        grid, cell_lat, cell_lon, edge_lat, edge_lon, allocator=backend
+        grid=grid,
+        cell_lat=cell_lat,
+        cell_lon=cell_lon,
+        edge_lat=edge_lat,
+        edge_lon=edge_lon,
+        allocator=backend,
     )
     connectivity = grid.get_connectivity(dims.E2C).asnumpy()
     has_boundary_edges = np.count_nonzero(connectivity == -1)
@@ -478,10 +483,10 @@ def test_create_auxiliary_orientation_coordinates(
         assert test_utils.dallclose(lon_0.asnumpy(), cell_lon.asnumpy()[connectivity[:, 0]])
         assert test_utils.dallclose(lon_1.asnumpy(), cell_lon.asnumpy()[connectivity[:, 1]])
 
-    edge_coordinates_0 = np.where(connectivity[:, 0] < 0)
-    edge_coordinates_1 = np.where(connectivity[:, 1] < 0)
-    cell_coordinates_0 = np.where(connectivity[:, 0] >= 0)
-    cell_coordinates_1 = np.where(connectivity[:, 1] >= 0)
+    edge_coordinates_0 = np.nonzero(connectivity[:, 0] < 0)
+    edge_coordinates_1 = np.nonzero(connectivity[:, 1] < 0)
+    cell_coordinates_0 = np.nonzero(connectivity[:, 0] >= 0)
+    cell_coordinates_1 = np.nonzero(connectivity[:, 1] >= 0)
     assert test_utils.dallclose(
         lat_0.asnumpy()[edge_coordinates_0], edge_lat.asnumpy()[edge_coordinates_0]
     )

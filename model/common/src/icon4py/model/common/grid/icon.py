@@ -172,6 +172,7 @@ def _should_replace_skip_values(
 
 
 def icon_grid(
+    *,
     id_: str,
     allocator: gtx_typing.Allocator | None,
     config: base.GridConfig,

@@ -119,6 +119,7 @@ class InterpolationConfig:
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
@@ -148,7 +149,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
-                {
+                fields={
                     "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
                 }
             )
@@ -161,7 +162,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry,))
+        return factory.CompositeSource(me=self, others=(self._geometry,))
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
@@ -301,7 +302,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=self._exchange,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
-            domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
+            domain=(dims.CellDim, dims.LsqUnkDim, dims.C2E2CDim),
             deps={
                 "cell_center_x": geometry_attrs.CELL_CENTER_X,
                 "cell_center_y": geometry_attrs.CELL_CENTER_Y,

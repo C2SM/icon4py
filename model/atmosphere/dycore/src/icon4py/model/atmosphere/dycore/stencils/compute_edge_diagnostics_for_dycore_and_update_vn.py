@@ -99,8 +99,8 @@ def _compute_horizontal_pressure_gradient(
 ) -> fa.EdgeKField[ta.wpfloat]:
     # Note: we only support `TAYLOR_HYDRO`
     horizontal_pressure_gradient = apply_on_vertical_level(
-        nflatlev,
-        nflat_gradp,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
         on_flatlevels=_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,

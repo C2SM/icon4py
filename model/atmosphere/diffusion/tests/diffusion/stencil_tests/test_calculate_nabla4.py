@@ -16,6 +16,7 @@ from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilT
 
 
 def calculate_nabla4_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     u_vert: np.ndarray,
     v_vert: np.ndarray,
@@ -76,6 +77,7 @@ class TestCalculateNabla4(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
         primal_normal_vert_v1: np.ndarray,
@@ -86,14 +88,14 @@ class TestCalculateNabla4(StencilTest):
         **kwargs,
     ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
-            connectivities,
-            u_vert,
-            v_vert,
-            primal_normal_vert_v1,
-            primal_normal_vert_v2,
-            z_nabla2_e,
-            inv_vert_vert_length,
-            inv_primal_edge_length,
+            connectivities=connectivities,
+            u_vert=u_vert,
+            v_vert=v_vert,
+            primal_normal_vert_v1=primal_normal_vert_v1,
+            primal_normal_vert_v2=primal_normal_vert_v2,
+            z_nabla2_e=z_nabla2_e,
+            inv_vert_vert_length=inv_vert_vert_length,
+            inv_primal_edge_length=inv_primal_edge_length,
         )
         return dict(z_nabla4_e2=z_nabla4_e2)
 

@@ -63,6 +63,7 @@ def run_fortran_executable(library_name, env):
 
 
 def run_test_case(
+    *,
     cli,
     module,
     function,
@@ -78,13 +79,13 @@ def run_test_case(
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
         invoke_cli(cli, module, function, library_name)
         compile_and_run_fortran(
-            library_name,
-            samples_path,
-            fortran_driver,
-            compiler,
-            extra_compiler_flags,
-            expected_error_code,
-            env_vars,
+            library_name=library_name,
+            samples_path=samples_path,
+            fortran_driver=fortran_driver,
+            compiler=compiler,
+            extra_compiler_flags=extra_compiler_flags,
+            expected_error_code=expected_error_code,
+            env_vars=env_vars,
         )
 
 
@@ -100,6 +101,7 @@ def invoke_cli(cli, module: types.ModuleType, function, library_name, extra_args
 
 
 def compile_and_run_fortran(
+    *,
     library_name,
     samples_path,
     fortran_driver,
@@ -110,7 +112,11 @@ def compile_and_run_fortran(
 ):
     try:
         compile_fortran_code(
-            library_name, samples_path, fortran_driver, compiler, extra_compiler_flags
+            library_name=library_name,
+            samples_path=samples_path,
+            fortran_driver=fortran_driver,
+            compiler=compiler,
+            extra_compiler_flags=extra_compiler_flags,
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Compilation failed: {e}\n{e.stderr}\n{e.stdout}")
@@ -134,7 +140,7 @@ def compile_and_run_fortran(
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
     ],
 )
-def test_py2fgen_compilation_and_execution_square_cpu(
+def test_py2fgen_compilation_and_execution_square_cpu(  # noqa: PLR0917 [too-many-positional-arguments]
     cli_runner,
     run_backend,
     samples_path,
@@ -147,13 +153,13 @@ def test_py2fgen_compilation_and_execution_square_cpu(
     Also tests embedding multiple functions in one shared library.
     """
     run_test_case(
-        cli_runner,
-        square_wrapper_module,
-        "square_from_function",
-        "square_plugin",
-        samples_path,
-        "test_square",
-        test_temp_dir,
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function="square_from_function",
+        library_name="square_plugin",
+        samples_path=samples_path,
+        fortran_driver="test_square",
+        test_temp_dir=test_temp_dir,
         extra_compiler_flags=extra_flags,
     )
 
@@ -163,15 +169,30 @@ def test_py2fgen_python_error_propagation_to_fortran(
 ):
     """Tests that Exceptions triggered in Python propagate an error code (1) up to Fortran."""
     run_test_case(
-        cli_runner,
-        square_wrapper_module,
-        "square_error",
-        "square_plugin",
-        samples_path,
-        "test_square",
-        test_temp_dir,
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function="square_error",
+        library_name="square_plugin",
+        samples_path=samples_path,
+        fortran_driver="test_square",
+        test_temp_dir=test_temp_dir,
         extra_compiler_flags=("-DUSE_SQUARE_ERROR",),
         expected_error_code=1,
+    )
+
+
+def test_py2fgen_compilation_and_execution_bool_cpu(
+    cli_runner, samples_path, square_wrapper_module, test_temp_dir, fortran_subprocess_env
+):
+    """Tests boolean scalar passing and boolean-array writeback end-to-end."""
+    run_test_case(
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function="fill_mask",
+        library_name="bool_plugin",
+        samples_path=samples_path,
+        fortran_driver="test_bool",
+        test_temp_dir=test_temp_dir,
     )
 
 
@@ -187,7 +208,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
         ),
     ],
 )
-def test_py2fgen_compilation_and_execution_gpu(
+def test_py2fgen_compilation_and_execution_gpu(  # noqa: PLR0917 [too-many-positional-arguments]
     cli_runner,
     function_name,
     library_name,
@@ -199,14 +220,14 @@ def test_py2fgen_compilation_and_execution_gpu(
     fortran_subprocess_env,
 ):
     run_test_case(
-        cli_runner,
-        square_wrapper_module,
-        function_name,
-        library_name,
-        samples_path,
-        test_name,
-        test_temp_dir,
-        os.environ["NVFORTRAN_COMPILER"],
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function=function_name,
+        library_name=library_name,
+        samples_path=samples_path,
+        fortran_driver=test_name,
+        test_temp_dir=test_temp_dir,
+        compiler=os.environ["NVFORTRAN_COMPILER"],
         extra_compiler_flags=extra_flags,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )
@@ -218,7 +239,7 @@ def test_py2fgen_compilation_and_execution_gpu(
         ("-DPROFILE_SQUARE_FROM_FUNCTION",),
     ],
 )
-def test_py2fgen_compilation_and_profiling(
+def test_py2fgen_compilation_and_profiling(  # noqa: PLR0917 [too-many-positional-arguments]
     cli_runner,
     samples_path,
     square_wrapper_module,
@@ -238,13 +259,13 @@ def test_py2fgen_compilation_and_profiling(
     # would duplicate ~80 lines for nothing.
 
     run_test_case(
-        cli_runner,
-        square_wrapper_module,
-        "square_from_function",
-        "square_plugin",
-        samples_path,
-        "test_square",
-        test_temp_dir,
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function="square_from_function",
+        library_name="square_plugin",
+        samples_path=samples_path,
+        fortran_driver="test_square",
+        test_temp_dir=test_temp_dir,
         extra_compiler_flags=extra_flags,
         env_vars={
             "PY2FGEN_EXTRA_CALLABLES": "icon4py.bindings.viztracer_plugin:init",
@@ -303,10 +324,10 @@ def test_py2fgen_regenerate_forces_recompilation(
         assert "Skipping compilation" not in regen_log
 
 
-def test_py2fgen_skip_compilation_generates_c_and_header(
+def test_py2fgen_skip_compilation_generates_c(
     cli_runner, square_wrapper_module, test_temp_dir, caplog
 ):
-    """Test that --skip-compilation generates .c, .h, .py, .f90 files but no shared library."""
+    """Test that --skip-compilation writes .c, .py, .f90 but no shared library."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
@@ -319,12 +340,11 @@ def test_py2fgen_skip_compilation_generates_c_and_header(
             )
             log = caplog.text
 
-        assert "Generating C source and header files" in log
+        assert "Generating C source file" in log
         assert "Compiling CFFI dynamic library" not in log
 
         assert pathlib.Path("square_plugin.py").exists()
         assert pathlib.Path("square_plugin.f90").exists()
-        assert pathlib.Path("square_plugin.h").exists()
         assert pathlib.Path("square_plugin.c").exists()
         assert not pathlib.Path("libsquare_plugin.so").exists()
 
@@ -355,7 +375,7 @@ def test_py2fgen_skip_compilation_skips_when_up_to_date(
             )
             second_log = caplog.text
         assert "Skipping C code generation" in second_log
-        assert "Generating C source and header files" not in second_log
+        assert "Generating C source file" not in second_log
 
 
 def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
@@ -387,5 +407,5 @@ def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
                 extra_args=["--skip-compilation"],
             )
             regen_log = caplog.text
-        assert "Generating C source and header files" in regen_log
+        assert "Generating C source file" in regen_log
         assert pathlib.Path("square_plugin.c").exists()

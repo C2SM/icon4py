@@ -25,6 +25,7 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_out_e_hybrid_2: np.ndarray,
         p_mass_flx_e: np.ndarray,
         z_dreg_area: np.ndarray,

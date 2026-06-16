@@ -135,6 +135,7 @@ def build(
 
 @cli.command()
 def proxy(
+    *,
     version: Annotated[
         str,
         typer.Option("--version", "-V", help="Version string for the proxy packages."),

@@ -22,6 +22,7 @@ from gt4py.next.program_processors.runners.dace import transformations as gtx_tr
 
 
 def _cleanup_local_self_update(
+    *,
     scan_sdfg: dace.SDFG,
     if_stmt_node: dace.sdfg.state.ConditionalBlock,
     if_stmt_conn: str,
@@ -147,6 +148,7 @@ def _replace_scan_input(
 
 
 def _cleanup_global_self_update(
+    *,
     sdfg: dace.SDFG,
     state: dace.SDFGState,
     if_stmt_node: dace_nodes.NestedSDFG,
@@ -252,7 +254,8 @@ def _cleanup_global_self_update(
     )
 
 
-def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915
+def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915 [too-many-branches, too-many-statements]
+    *,
     sdfg: dace.SDFG,
     state: dace.SDFGState,
     scan_node: dace_nodes.NestedSDFG,
@@ -464,7 +467,12 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
     ]
     for if_stmt_node in if_stmt_nodes:
         _graupel_run_self_copy_removal_inside_if_stmt(
-            sdfg, st, scan_nsdfg_node, scan_compute_st, scan_update_st, if_stmt_node
+            sdfg=sdfg,
+            state=st,
+            scan_node=scan_nsdfg_node,
+            scan_compute_st=scan_compute_st,
+            scan_update_st=scan_update_st,
+            if_stmt_node=if_stmt_node,
         )
 
     for input_access_nodes in ["te", "q_in_2", "q_in_3", "q_in_4", "q_in_5"]:
