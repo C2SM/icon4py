@@ -49,7 +49,7 @@ _log = logging.getLogger(__file__)
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
-    end_simulation: driver_config.EndSimulation,
+    end_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,

@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 RelativeTime: TypeAlias = datetime.timedelta
 AbsoluteTime: TypeAlias = datetime.datetime
 NumTimeSteps: TypeAlias = int
-EndSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
+EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
 @dataclasses.dataclass
@@ -58,8 +58,8 @@ class DriverConfig:
     experiment_name: str
     profiling_stats: ProfilingStats | None
     dtime: RelativeTime
-    start_datetime: AbsoluteTime
-    end_simulation: EndSimulation
+    start_of_simulation: AbsoluteTime
+    end_of_simulation: EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))

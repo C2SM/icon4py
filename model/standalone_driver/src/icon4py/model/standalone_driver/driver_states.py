@@ -100,24 +100,26 @@ class ModelTimeVariables:
     max_ndyn_substeps: int = dataclasses.field(init=False)
     elapsed_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
     simulation_datetime: datetime.datetime = dataclasses.field(init=False)
-    end_datetime: datetime.datetime = dataclasses.field(init=False)
+    simulation_start_datetime: datetime.datetime = dataclasses.field(init=False)
+    simulation_end_datetime: datetime.datetime = dataclasses.field(init=False)
     is_first_step_in_simulation: bool = dataclasses.field(init=False)
     cfl_watch_mode: bool = dataclasses.field(init=False)
 
     def __post_init__(self, config: driver_config.DriverConfig) -> None:
-        match config.end_simulation:
+        self.simulation_start_datetime = config.start_of_simulation
+        match config.end_of_simulation:
             case driver_config.NumTimeSteps(n):
                 self.n_time_steps = n
-                self.simulation_datetime = config.start_datetime
-                self.end_datetime = config.start_datetime + n * config.dtime
+                self.simulation_datetime = config.start_of_simulation
+                self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
             case driver_config.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_datetime = config.start_datetime
-                self.end_datetime = config.start_datetime + relative
+                self.simulation_datetime = config.start_of_simulation
+                self.simulation_end_datetime = config.start_of_simulation + relative
             case driver_config.AbsoluteTime() as absolute:
-                self.n_time_steps = int((absolute - config.start_datetime) / config.dtime)
-                self.simulation_datetime = config.start_datetime
-                self.end_datetime = absolute
+                self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
+                self.simulation_datetime = config.start_of_simulation
+                self.simulation_end_datetime = absolute
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
         self.ndyn_substeps_var = config.ndyn_substeps

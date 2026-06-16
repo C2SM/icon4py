@@ -461,11 +461,11 @@ def display_driver_setup_in_log_file(
 ) -> None:
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
-    log.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
-    log.info(f"Start date             : {model_time_variables.simulation_datetime}")
-    log.info(f"End date               : {model_time_variables.end_datetime}")
+    log.info(f"Time step              : {config.dtime.total_seconds()} s")
+    log.info(f"Start of simulation    : {model_time_variables.simulation_start_datetime}")
+    log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
     log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
-    match config.end_simulation:
+    match config.end_of_simulation:
         case driver_config.NumTimeSteps():
             log.info("Running mode           : num_timesteps")
         case driver_config.RelativeTime():
