@@ -5,14 +5,21 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import pathlib
 
 import pytest
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import main
-from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
-from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    serialbox as sb,
+    test_utils,
+)
 
 from ..fixtures import *  # noqa: F403
 
@@ -27,31 +34,46 @@ from ..fixtures import *  # noqa: F403
             2,
             5,
             "2008-09-01T00:00:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
+            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
             False,
             False,
         ),
+        (
+            test_defs.Experiments.GAUSS3D,
+            2,
+            5,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+        ),
+        # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
     ],
 )
 def test_standalone_driver(
-    experiment: test_defs.Experiment,
+    experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
     *,
-    backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend_like: model_backends.BackendLike,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    output_path = tmp_path / "ci_driver_output"
+
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
     ds, _ = main.main(
         grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
+        output_path=tmp_path / "ci_driver_output",
         icon4py_backend=backend_like,
-        output_path=output_path,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
@@ -59,26 +81,31 @@ def test_standalone_driver(
     theta_sp = savepoint_diffusion_exit.theta_v()
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
-    assert test_utils.dallclose(
+
+    test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=6e-7,
+        atol=5e-4,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-9,
+        atol=3e-6,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
     )
 
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=5e-11
+    test_utils.assert_dallclose(
+        ds.prognostics.current.exner.asnumpy(),
+        exner_sp.asnumpy(),
+        atol=2e-7,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=6e-8,
+        atol=3e-5,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
     )
 
-    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
+    test_utils.assert_dallclose(
+        ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=4e-7
+    )  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304

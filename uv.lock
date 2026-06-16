@@ -2738,6 +2738,7 @@ dependencies = [
   {name = "numpy", version = "2.2.6", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
   {name = "numpy", version = "2.4.6", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
   {name = "packaging"},
+  {name = "serialbox4py"},
   {name = "typing-extensions"}
 ]
 name = "icon4py-common"
@@ -2766,6 +2767,7 @@ requires-dist = [
   {name = "packaging", specifier = ">=20.0"},
   {name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1"},
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
+  {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "typing-extensions", specifier = ">=4.11.0"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
   {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0,<2026.4"}
@@ -2860,6 +2862,7 @@ dependencies = [
   {name = "icon4py-common"},
   {name = "icon4py-testing"},
   {name = "packaging"},
+  {name = "serialbox4py"},
   {name = "typer"}
 ]
 name = "icon4py-standalone-driver"
@@ -2875,6 +2878,7 @@ requires-dist = [
   {name = "icon4py-common", editable = "model/common"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "packaging", specifier = ">=20.0"},
+  {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "typer", specifier = ">=0.20.0"}
 ]
 
