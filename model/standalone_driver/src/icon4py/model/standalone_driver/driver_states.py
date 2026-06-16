@@ -14,7 +14,7 @@ import enum
 import functools
 import logging
 import statistics
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import devtools
 
@@ -30,7 +30,10 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.standalone_driver import config as driver_config
+
+
+if TYPE_CHECKING:
+    from icon4py.model.standalone_driver import config as driver_config
 
 
 log = logging.getLogger(__name__)

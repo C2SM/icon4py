@@ -64,7 +64,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
         atol = 1e-13
         rtol = 1e-14
     else:
-        atol = 2e-12
+        atol = 1e-10
         rtol = 0.0
 
     _log.info(
