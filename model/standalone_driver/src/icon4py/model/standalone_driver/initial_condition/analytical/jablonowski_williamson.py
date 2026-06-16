@@ -74,7 +74,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> None:
+) -> prognostics.PrognosticState:
     """
     Initial condition for Jablonowski-Williamson test.
     Set jw_baroclinic_amplitude to values larger than 0.01 if you want to run
@@ -253,3 +253,4 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
+    return prognostic_state_now

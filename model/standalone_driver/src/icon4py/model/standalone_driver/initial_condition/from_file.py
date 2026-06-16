@@ -47,7 +47,7 @@ def _fill_prognostics_from_serialbox(
     backend: gtx_typing.Backend | None,
     prognostic_state: prognostics.PrognosticState,
     ntracer: int,
-) -> None:
+) -> prognostics.PrognosticState:
     """Fill a pre-allocated PrognosticState from a serialbox snapshot."""
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
@@ -78,6 +78,7 @@ def _fill_prognostics_from_serialbox(
             prognostic_state.tracer[i].ndarray[:, :] = array_ns.asarray(
                 tracers_raw[:num_cells, :, i]
             )
+    return prognostic_state
 
 
 def read_from_file(
@@ -87,9 +88,9 @@ def read_from_file(
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> None:
+) -> prognostics.PrognosticState:
     """Initialise prognostic state from a serialised ICON initial-condition snapshot."""
-    _fill_prognostics_from_serialbox(
+    return _fill_prognostics_from_serialbox(
         data_path=config.data_path,
         rank=exchange.my_rank(),
         grid=grid,

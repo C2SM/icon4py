@@ -13,7 +13,10 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -69,7 +72,7 @@ def test_initial_conditions(
         allocator=allocator,
         ntracer=icon4py_driver.config.driver.ntracer,
     )
-    initial_condition.create(
+    prognostic_state_now = initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,

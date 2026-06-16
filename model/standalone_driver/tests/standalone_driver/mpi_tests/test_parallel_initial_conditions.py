@@ -124,10 +124,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         ntracer=single_rank_icon4py_driver.config.driver.ntracer,
     )
-    single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
-    )
-    initial_condition.create(
+    single_rank_prognostic = initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
@@ -135,6 +132,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=single_rank_prognostic,
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
+    )
+    single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
+        grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
     single_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
         grid=single_rank_icon4py_driver.grid,
@@ -171,10 +171,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         ntracer=multi_rank_icon4py_driver.config.driver.ntracer,
     )
-    multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
-        grid=multi_rank_icon4py_driver.grid, allocator=allocator
-    )
-    initial_condition.create(
+    multi_rank_prognostic = initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
@@ -182,6 +179,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=multi_rank_prognostic,
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
+    )
+    multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     multi_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
         grid=multi_rank_icon4py_driver.grid,

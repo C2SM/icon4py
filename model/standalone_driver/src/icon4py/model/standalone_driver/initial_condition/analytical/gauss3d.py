@@ -55,7 +55,7 @@ def gauss3d(
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> None:
+) -> prognostics.PrognosticState:
     """
     Initial condition for Gauss 3D test case.
 
@@ -145,3 +145,4 @@ def gauss3d(
         nlev=num_levels,
     )
     exchange.exchange(dims.CellDim, prognostic_state_now.w)
+    return prognostic_state_now
