@@ -64,8 +64,8 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 @dataclasses.dataclass
 class Granules:
-    diffusion: diffusion.Diffusion | None = None
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
+    diffusion: diffusion.Diffusion | None = None
     tracer_advection: advection.Advection | None = None
 
 
@@ -329,22 +329,6 @@ def initialize_granules(
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
 
-    diffusion_granule: diffusion.Diffusion | None = None
-    if config.diffusion is not None and config.diffusion.enabled:
-        diffusion_params = diffusion.DiffusionParams(config.diffusion)
-        diffusion_granule = diffusion.Diffusion(
-            grid=grid,
-            config=config.diffusion,
-            params=diffusion_params,
-            vertical_grid=vertical_grid,
-            metric_state=diffusion_metric_state,
-            interpolation_state=diffusion_interpolation_state,
-            edge_params=edge_geometry,
-            cell_params=cell_geometry,
-            backend=backend,
-            exchange=exchange,
-        )
-
     solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
     if config.nonhydrostatic is not None and config.nonhydrostatic.enabled:
         nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
@@ -359,6 +343,22 @@ def initialize_granules(
             edge_geometry=edge_geometry,
             cell_geometry=cell_geometry,
             owner_mask=owner_mask,
+            exchange=exchange,
+        )
+
+    diffusion_granule: diffusion.Diffusion | None = None
+    if config.diffusion is not None and config.diffusion.enabled:
+        diffusion_params = diffusion.DiffusionParams(config.diffusion)
+        diffusion_granule = diffusion.Diffusion(
+            grid=grid,
+            config=config.diffusion,
+            params=diffusion_params,
+            vertical_grid=vertical_grid,
+            metric_state=diffusion_metric_state,
+            interpolation_state=diffusion_interpolation_state,
+            edge_params=edge_geometry,
+            cell_params=cell_geometry,
+            backend=backend,
             exchange=exchange,
         )
 
@@ -400,8 +400,8 @@ def initialize_granules(
         )
 
     return Granules(
-        diffusion=diffusion_granule,
         solve_nonhydro=solve_nonhydro_granule,
+        diffusion=diffusion_granule,
         tracer_advection=tracer_advection_granule,
     )
 
