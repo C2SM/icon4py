@@ -9,6 +9,7 @@
 
 import dataclasses
 import logging
+import os
 import pathlib
 import sys
 import time
@@ -44,10 +45,11 @@ from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
-from icon4py.model.testing import config as testing_config
 
 
 log = logging.getLogger(__name__)
+
+DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
 
 _LOGGING_LEVELS: dict[str, int] = {
     "notset": logging.NOTSET,
@@ -110,6 +112,8 @@ def create_static_field_factories(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    interpolation_config: interpolation_factory.InterpolationConfig,
+    metrics_config: metrics_factory.MetricsConfig,
 ) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
@@ -123,7 +127,7 @@ def create_static_field_factories(
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        config=interpolation_factory.InterpolationConfig(),
+        config=interpolation_config,
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
@@ -141,14 +145,7 @@ def create_static_field_factories(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        config=metrics_factory.MetricsConfig(
-            rayleigh_type=constants.RayleighType.KLEMP,
-            rayleigh_coeff=0.1,
-            exner_expol=1.0 / 3.0,
-            vwind_offctr=0.15,
-            thslp_zdiffu=0.025,
-            thhgtd_zdiffu=200.0,
-        ),
+        config=metrics_config,
         exchange=exchange,
         global_reductions=global_reductions,
     )
@@ -575,9 +572,8 @@ def configure_logging(
     )
     driver_module_name = __name__[: __name__.rindex(".")]
     logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
-    # TODO (ongchia): not ideal to import testing_config.DRIVER_LOGGING_LEVEL, waiting for proper logging config
     logging.getLogger(driver_module_name).setLevel(
-        _LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL]
+        _LOGGING_LEVELS.get(DRIVER_LOGGING_LEVEL, logging.DEBUG)
     )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
