@@ -8,7 +8,7 @@ This repository hosts a work-in-progress Python implementation of the ICON clima
 
 ## Project Structure
 
-The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. An `icon4py` Python package is defined at the root folder with the purpose to collect specific versions of the different components as package dependencies. The component can also be installed independently, although since they are not (yet) available from a package repository, they need to be installed from their specific location within this repository.
+The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. The `icon4py` root package collects specific versions of the different components as dependencies. `icon4py` is published on PyPI as a meta-package. Individual namespace packages are also available on PyPI and can be installed independently.
 
 ## License
 
@@ -16,20 +16,36 @@ ICON4Py is licensed under the terms of the BSD-3-Clause.
 
 ## Installation Instructions
 
-Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution package through PyPI. The installation procedure involves cloning the [ICON4Py GitHub repository](https://github.com/C2SM/icon4py) and installing it in a Python virtual environment (_venv_).
+All ICON4Py packages can be installed through PyPI with the [`icon4py` meta package](https://pypi.org/project/icon4py/).
 
-ICON4Py uses the [`uv`](https://docs.astral.sh/uv/) project manager for development workflow. `uv` is a versatile tool that consolidates functionality previously distributed across different applications into subcommands.
-
-- The `uv pip` subcommand provides a _fast_ Python package manager, emulating [`pip`](https://pip.pypa.io/en/stable/).
-- The `uv export | lock | sync` subcommands manage dependency versions in a manner similar to the [`pip-tools`](https://pip-tools.readthedocs.io/en/stable/) command suite.
-- The `uv init | add | remove | build | publish | ...` subcommands facilitate project development workflows, akin to [`hatch`](https://hatch.pypa.io/latest/).
-- The `uv tool` subcommand serves as a runner for Python applications in isolation, similar to [`pipx`](https://pipx.pypa.io/stable/).
-- The `uv python` subcommands manage different Python installations and versions, much like [`pyenv`](https://github.com/pyenv/pyenv).
-
-`uv` can be installed in various ways (see its [installation instructions](https://docs.astral.sh/uv/getting-started/installation/)), with the recommended method being the standalone installer:
+We recommend using [`uv`](https://docs.astral.sh/uv/) for both regular installation and development workflows. See the [installation instructions](https://docs.astral.sh/uv/getting-started/installation/) for details on installing `uv`.
 
 ```bash
-$ curl -LsSf https://astral.sh/uv/install.sh | sh 
+uv pip install --prerelease=allow icon4py
+```
+
+**Note:** `--prerelease=allow` is currently required for the `dace` dependency, which is pinned to a prerelease version.
+
+### Extras
+
+The `icon4py` meta-package provides the following optional extras. The same extras apply in development workflows by using `uv sync --extra <name1> --extra <name2> ...`.
+
+| Extra         | Description                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `all`         | All extras listed below, except the GPU extras.                                                                                                        |
+| `cuda12`      | Required for CUDA support with CUDA version 12. Requires the CUDA toolkit to be installed.                                                             |
+| `cuda13`      | Same as `cuda12` for CUDA version 13.                                                                                                                  |
+| `rocm7`       | Same as `cuda*` for ROCm on AMD GPUs.                                                                                                                  |
+| `distributed` | Enables support for distributed multi-node runs. Requires an MPI implementation and Boost headers. See below for fixes to installation issues on Alps. |
+| `fortran`     | Enables `icon4py-bindings` as a dependency, which provides an interface between ICON4Py and ICON Fortran. Requires C and Fortran compilers.            |
+| `io`          | Enables I/O dependencies such as NetCDF.                                                                                                               |
+| `testing`     | Enables `icon4py-testing` as a dependency, providing utilities for testing ICON4Py.                                                                    |
+| `profiling`   | Enables `viztracer` as a dependency for profiling.                                                                                                     |
+
+For example, to install icon4py with MPI and CUDA support:
+
+```bash
+uv pip install "icon4py[distributed,cuda12]"
 ```
 
 ### ICON4Py Development Environment
