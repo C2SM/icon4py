@@ -63,44 +63,41 @@ def test_initial_conditions(
         backend=backend,
     )
 
-    ds = initial_condition.create(
+    prognostic_state_now, _ = initial_condition.create(
         config=icon4py_driver.config.initial_condition,
-        experiment_config=icon4py_driver.config,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
-        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+        static_fields=icon4py_driver.static_field_factories,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
     test_utils.assert_dallclose(
-        ds.prognostics.current.rho.asnumpy(),
+        prognostic_state_now.rho.asnumpy(),
         prognostics_savepoint.rho_now().asnumpy(),
     )
 
     test_utils.assert_dallclose(
-        ds.prognostics.current.exner.asnumpy(),
+        prognostic_state_now.exner.asnumpy(),
         prognostics_savepoint.exner_now().asnumpy(),
         atol=1e-14,
     )
 
     test_utils.assert_dallclose(
-        ds.prognostics.current.theta_v.asnumpy(),
+        prognostic_state_now.theta_v.asnumpy(),
         prognostics_savepoint.theta_v_now().asnumpy(),
         atol=1e-11,
     )
 
     test_utils.assert_dallclose(
-        ds.prognostics.current.vn.asnumpy(),
+        prognostic_state_now.vn.asnumpy(),
         prognostics_savepoint.vn_now().asnumpy(),
         atol=1e-12,
     )
 
     test_utils.assert_dallclose(
-        ds.prognostics.current.w.asnumpy(),
+        prognostic_state_now.w.asnumpy(),
         prognostics_savepoint.w_now().asnumpy(),
         atol=1e-12,
     )

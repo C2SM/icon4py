@@ -25,14 +25,12 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
-    from icon4py.model.common.grid import (
-        geometry as grid_geometry,
-        icon as icon_grid,
-        vertical as v_grid,
+    from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
+    from icon4py.model.common.states import (
+        diagnostic_state as diagnostics,
+        prognostic_state as prognostics,
     )
-    from icon4py.model.common.interpolation import interpolation_factory
-    from icon4py.model.common.metrics import metrics_factory
-    from icon4py.model.standalone_driver import config as driver_config, driver_states
+    from icon4py.model.standalone_driver import driver_states
 
 log = logging.getLogger(__name__)
 
@@ -86,48 +84,36 @@ class InitialConditionConfig:
 def create(
     *,
     config: InitialConditionConfig,
-    experiment_config: driver_config.ExperimentConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    geometry_field_source: grid_geometry.GridGeometry,
-    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
-    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+    static_fields: driver_states.StaticFieldFactories,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> driver_states.DriverStates:
+) -> tuple[prognostics.PrognosticState, diagnostics.DiagnosticState]:
     """Create initial driver states by dispatching on the type of ``config.config``."""
     match config.config:
         case jw_ic.JablonowskiWilliamsonConfig():
             return jw_ic.jablonowski_williamson(
                 config=config.config,
-                experiment_config=experiment_config,
                 vertical_config=vertical_config,
                 grid=grid,
-                geometry_field_source=geometry_field_source,
-                interpolation_field_source=interpolation_field_source,
-                metrics_field_source=metrics_field_source,
+                static_fields=static_fields,
                 backend=backend,
                 exchange=exchange,
             )
         case gauss_ic.Gauss3DConfig():
             return gauss_ic.gauss3d(
                 config=config.config,
-                experiment_config=experiment_config,
                 vertical_config=vertical_config,
                 grid=grid,
-                geometry_field_source=geometry_field_source,
-                interpolation_field_source=interpolation_field_source,
-                metrics_field_source=metrics_field_source,
+                static_fields=static_fields,
                 backend=backend,
                 exchange=exchange,
             )
         case from_file_ic.FromFileConfig():
             return from_file_ic.read_from_file(
                 config=config.config,
-                experiment_config=experiment_config,
                 grid=grid,
-                interpolation_field_source=interpolation_field_source,
-                metrics_field_source=metrics_field_source,
                 backend=backend,
                 exchange=exchange,
             )

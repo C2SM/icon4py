@@ -115,16 +115,23 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         )
     )
 
-    single_rank_ds: driver_states.DriverStates = initial_condition.create(
+    single_rank_prognostic, single_rank_diagnostic = initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
-        experiment_config=single_rank_icon4py_driver.config,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
-        geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=single_rank_icon4py_driver.static_field_factories.metrics_field_source,
+        static_fields=single_rank_icon4py_driver.static_field_factories,
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
+    )
+    single_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
+        grid=single_rank_icon4py_driver.grid,
+        allocator=allocator,
+        backend=single_rank_icon4py_driver.backend,
+        exchange=single_rank_icon4py_driver.exchange,
+        static_fields=single_rank_icon4py_driver.static_field_factories,
+        prognostic_state_now=single_rank_prognostic,
+        diagnostic_state=single_rank_diagnostic,
+        experiment_config=single_rank_icon4py_driver.config,
     )
 
     multi_rank_config = experiment.config.with_overrides(
@@ -146,16 +153,23 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         )
     )
 
-    multi_rank_ds: driver_states.DriverStates = initial_condition.create(
+    multi_rank_prognostic, multi_rank_diagnostic = initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
-        experiment_config=multi_rank_icon4py_driver.config,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
-        geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=multi_rank_icon4py_driver.static_field_factories.metrics_field_source,
+        static_fields=multi_rank_icon4py_driver.static_field_factories,
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
+    )
+    multi_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
+        grid=multi_rank_icon4py_driver.grid,
+        allocator=allocator,
+        backend=multi_rank_icon4py_driver.backend,
+        exchange=multi_rank_icon4py_driver.exchange,
+        static_fields=multi_rank_icon4py_driver.static_field_factories,
+        prognostic_state_now=multi_rank_prognostic,
+        diagnostic_state=multi_rank_diagnostic,
+        experiment_config=multi_rank_icon4py_driver.config,
     )
 
     fields_to_check: list[tuple[str, object, object]] = [

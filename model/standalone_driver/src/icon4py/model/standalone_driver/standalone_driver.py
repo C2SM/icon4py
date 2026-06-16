@@ -75,7 +75,7 @@ class Icon4pyDriver:
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
-            vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
+            vertical_params=self.static_field_factories.metrics._vertical_grid,
         )
 
     @functools.cached_property
@@ -467,10 +467,10 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.driver.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry_field_source.get(
+            cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
             ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
+            cell_thickness_ndarray = self.static_field_factories.metrics.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
             local_mass = (
@@ -591,16 +591,24 @@ def run_driver(
         process_props=process_props,
         backend=backend,
     )
-    ds = initial_condition.create(
+    allocator = model_backends.get_allocator(backend)
+    prognostic_state_now, diagnostic_state = initial_condition.create(
         config=icon4py_driver.config.initial_condition,
-        experiment_config=icon4py_driver.config,
-        grid=icon4py_driver.grid,
         vertical_config=icon4py_driver.config.vertical_grid,
-        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+        grid=icon4py_driver.grid,
+        static_fields=icon4py_driver.static_field_factories,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+    )
+    ds = driver_states.assemble_driver_states(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
+        backend=icon4py_driver.backend,
+        exchange=icon4py_driver.exchange,
+        static_fields=icon4py_driver.static_field_factories,
+        prognostic_state_now=prognostic_state_now,
+        diagnostic_state=diagnostic_state,
+        experiment_config=icon4py_driver.config,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,
