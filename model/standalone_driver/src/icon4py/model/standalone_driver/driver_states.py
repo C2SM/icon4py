@@ -14,7 +14,7 @@ import enum
 import functools
 import logging
 import statistics
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import devtools
 
@@ -30,7 +30,10 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.standalone_driver import config as driver_config
+
+
+if TYPE_CHECKING:
+    from icon4py.model.standalone_driver import config as driver_config
 
 
 log = logging.getLogger(__name__)
@@ -74,9 +77,18 @@ class DriverStates(NamedTuple):
 
 class ModelTimeVariables:
     """
-    This class contains driver's run-time time or date variables.
-    It tracks the current simulation date, substepping information, and cfl watch mode.
+    Runtime time/date variables derived from config at initialisation.
 
+    Attributes:
+        n_time_steps: Total number of time steps for the simulation.
+        dtime: Time step duration.
+        ndyn_substeps_var: Current number of dynamics substeps.
+        max_ndyn_substeps: Maximum allowed dynamics substeps.
+        elapsed_time_in_seconds: Accumulated simulation time.
+        simulation_datetime: Current simulation datetime (advances each step).
+        end_datetime: Simulation end datetime (computed from config.end_simulation).
+        is_first_step_in_simulation: Whether the next step is the first.
+        cfl_watch_mode: Whether CFL watch mode is active.
     """
     simulation_date: driver_config.AbsoluteTime
     n_time_steps: driver_config.NumTimeSteps
@@ -94,13 +106,16 @@ class ModelTimeVariables:
         match config.end_simulation:
             case driver_config.NumTimeSteps(n):
                 self.n_time_steps = n
-                self.simulation_date = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+                self.simulation_datetime = config.start_datetime
+                self.end_datetime = config.start_datetime + n * config.dtime
             case driver_config.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_date = config.start_date
+                self.simulation_datetime = config.start_datetime
+                self.end_datetime = config.start_datetime + relative
             case driver_config.AbsoluteTime() as absolute:
-                self.n_time_steps = int((absolute - config.start_date) / config.dtime)
-                self.simulation_date = config.start_date
+                self.n_time_steps = int((absolute - config.start_datetime) / config.dtime)
+                self.simulation_datetime = config.start_datetime
+                self.end_datetime = absolute
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
         self.ndyn_substeps_var = config.ndyn_substeps
@@ -119,8 +134,8 @@ class ModelTimeVariables:
     def substep_timestep(self) -> ta.wpfloat:
         return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
-    def next_simulation_date(self) -> None:
-        self.simulation_date += self.dtime
+    def next_simulation_datetime(self) -> None:
+        self.simulation_datetime += self.dtime
         self.elapsed_time_in_seconds += self.dtime_in_seconds
 
     def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:

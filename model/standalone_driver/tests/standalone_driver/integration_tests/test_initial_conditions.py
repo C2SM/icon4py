@@ -8,26 +8,15 @@
 
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import (
-    config as driver_config,
-    driver_utils,
-    initial_condition,
-    standalone_driver,
-)
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    definitions,
-    grid_utils,
-    serialbox as sb,
-    test_utils,
-)
+from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
+from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
-    backend_like,
     data_provider,
     download_ser_data,
     experiment,
@@ -52,13 +41,11 @@ def test_initial_conditions(
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
-    backend: model_backends.Backend,
+    backend: gtx_typing.Backend,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     config = experiment.config.with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
 
@@ -68,8 +55,9 @@ def test_initial_conditions(
         allocator=allocator,
         process_props=process_props,
     )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        config=config,
+        config=config,  # type: ignore[arg-type]
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,

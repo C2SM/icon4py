@@ -22,10 +22,7 @@ from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, model_backends, topography, type_alias as ta
-from icon4py.model.common.decomposition import (
-    definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
-)
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,
@@ -76,9 +73,9 @@ class Icon4pyDriver:
         self.global_reductions = global_reductions
 
         driver_utils.display_driver_setup_in_log_file(
-            self.model_time_variables.n_time_steps,
-            self.static_field_factories.metrics_field_source._vertical_grid,
-            self.config.driver,
+            config=self.config.driver,
+            model_time_variables=self.model_time_variables,
+            vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
         )
 
     @functools.cached_property
@@ -128,11 +125,11 @@ class Icon4pyDriver:
 
             log.info(
                 f"\n"
-                f"simulation date : {self.model_time_variables.simulation_date}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
+                f"simulation date : {self.model_time_variables.simulation_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
                 f"\n"
             )
 
-            self.model_time_variables.next_simulation_date()
+            self.model_time_variables.next_simulation_datetime()
 
             self._integrate_one_time_step(
                 diffusion_diagnostic_state=diffusion_diagnostic_state,
@@ -505,7 +502,9 @@ def initialize_driver(
         cli_output_path=None,
         process_props=process_props,
     )
-    config = dataclasses.replace(config, driver=dataclasses.replace(config.driver, output_path=output_path))
+    config = dataclasses.replace(
+        config, driver=dataclasses.replace(config.driver, output_path=output_path)
+    )
 
     allocator = model_backends.get_allocator(backend)
 
