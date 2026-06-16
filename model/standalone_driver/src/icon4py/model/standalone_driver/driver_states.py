@@ -79,17 +79,6 @@ class DriverStates(NamedTuple):
 class ModelTimeVariables:
     """
     Runtime time/date variables derived from config at initialisation.
-
-    Attributes:
-        n_time_steps: Total number of time steps for the simulation.
-        dtime: Time step duration.
-        ndyn_substeps_var: Current number of dynamics substeps.
-        max_ndyn_substeps: Maximum allowed dynamics substeps.
-        elapsed_time_in_seconds: Accumulated simulation time.
-        simulation_datetime: Current simulation datetime (advances each step).
-        end_datetime: Simulation end datetime (computed from config.end_simulation).
-        is_first_step_in_simulation: Whether the next step is the first.
-        cfl_watch_mode: Whether CFL watch mode is active.
     """
 
     config: dataclasses.InitVar[driver_config.DriverConfig]

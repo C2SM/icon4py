@@ -40,7 +40,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description, end_simulation",
+    "experiment_description, end_of_simulation",
     [
         (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
     ],
@@ -50,7 +50,7 @@ _log = logging.getLogger(__file__)
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
-    end_simulation: driver_config.EndOfSimulation,
+    end_of_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
@@ -83,7 +83,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     single_rank_config = config.with_overrides(
         driver={
             "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
-            "end_simulation": end_simulation,
+            "end_of_simulation": end_of_simulation,
         }
     )
     single_rank_grid_manager = driver_utils.create_grid_manager(
@@ -102,7 +102,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     multi_rank_config = config.with_overrides(
         driver={
             "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            "end_simulation": end_simulation,
+            "end_of_simulation": end_of_simulation,
         }
     )
     multi_rank_grid_manager = driver_utils.create_grid_manager(
