@@ -9,12 +9,11 @@
 from __future__ import annotations
 
 import dataclasses
-import datetime
 import enum
 import functools
 import logging
 import statistics
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 import devtools
 
@@ -30,10 +29,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-
-
-if TYPE_CHECKING:
-    from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.standalone_driver import config as driver_config
 
 
 log = logging.getLogger(__name__)
@@ -54,6 +50,15 @@ class StaticFieldFactories(NamedTuple):
     metrics_field_source: metrics_factory.MetricsFieldsFactory
 
 
+@dataclasses.dataclass(frozen=True)
+class EnabledGranules:
+    """Flags indicating which granules are enabled for a simulation."""
+
+    diffusion: bool
+    solve_nonhydro: bool
+    tracer_advection: bool
+
+
 class DriverStates(NamedTuple):
     """
     Initialized states for the driver run.
@@ -62,15 +67,17 @@ class DriverStates(NamedTuple):
         prep_advection_prognostic: Fields collecting data for advection during the solve nonhydro timestep.
         solve_nonhydro_diagnostic: Initial state for solve_nonhydro diagnostic variables.
         diffusion_diagnostic: Initial state for diffusion diagnostic variables.
+        tracer_advection_diagnostic: Initial state for tracer advection diagnostic variables.
+        prep_tracer_advection_prognostic: Precalculated fields for tracer advection.
         prognostics: Initial state for prognostic variables (double buffered).
         diagnostic: Initial state for global diagnostic variables.
     """
 
-    prep_advection_prognostic: dycore_states.PrepAdvection
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
-    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState
-    prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState
-    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
+    prep_advection_prognostic: dycore_states.PrepAdvection | None
+    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro | None
+    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
+    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState | None
+    prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
 
@@ -90,6 +97,7 @@ class ModelTimeVariables:
         is_first_step_in_simulation: Whether the next step is the first.
         cfl_watch_mode: Whether CFL watch mode is active.
     """
+
     simulation_date: driver_config.AbsoluteTime
     n_time_steps: driver_config.NumTimeSteps
     dtime: driver_config.RelativeTime

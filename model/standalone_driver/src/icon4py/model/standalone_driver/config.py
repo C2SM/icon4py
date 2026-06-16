@@ -66,12 +66,6 @@ class DriverConfig:
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     ntracer: int = 0
-    do_tracer_advection: bool = True
-    do_physics: bool = True
-
-    def __post_init__(self) -> None:
-        if not self.do_tracer_advection:
-            object.__setattr__(self, "ntracer", 0)
 
     @classmethod
     def from_fortran_dict(
@@ -96,7 +90,6 @@ class DriverConfig:
             apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
-            ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
             **overrides,
         )
 
@@ -108,12 +101,12 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
-    tracer_advection: tracer_advection.AdvectionConfig | None = None
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
+    diffusion: diffusion.DiffusionConfig | None = None
+    tracer_advection: tracer_advection.AdvectionConfig | None = None
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}
@@ -190,8 +183,9 @@ def read_config(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
-        do_tracer_advection=do_tracer_advection,
-        do_physics=do_physics,
+        ntracer=fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"])
+        if do_tracer_advection
+        else 0,
     )
 
     return ExperimentConfig(

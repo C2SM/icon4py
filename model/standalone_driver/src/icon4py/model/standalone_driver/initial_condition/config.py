@@ -86,6 +86,7 @@ class InitialConditionConfig:
 def create(
     *,
     config: InitialConditionConfig,
+    enabled_granules: driver_states.EnabledGranules,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
@@ -99,6 +100,7 @@ def create(
         case jw_ic.JablonowskiWilliamsonConfig():
             return jw_ic.jablonowski_williamson(
                 config=config.config,
+                enabled_granules=enabled_granules,
                 vertical_config=vertical_config,
                 grid=grid,
                 geometry_field_source=geometry_field_source,
@@ -110,6 +112,7 @@ def create(
         case gauss_ic.Gauss3DConfig():
             return gauss_ic.gauss3d(
                 config=config.config,
+                enabled_granules=enabled_granules,
                 vertical_config=vertical_config,
                 grid=grid,
                 geometry_field_source=geometry_field_source,
@@ -121,6 +124,7 @@ def create(
         case from_file_ic.FromFileConfig():
             return from_file_ic.read_from_file(
                 config=config.config,
+                enabled_granules=enabled_granules,
                 grid=grid,
                 interpolation_field_source=interpolation_field_source,
                 metrics_field_source=metrics_field_source,

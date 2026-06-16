@@ -54,6 +54,7 @@ class Gauss3DConfig:
 def gauss3d(
     *,
     config: Gauss3DConfig,
+    enabled_granules: driver_states.EnabledGranules,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
@@ -156,4 +157,5 @@ def gauss3d(
         metrics_field_source=metrics_field_source,
         prognostic_state_now=prognostic_state_now,
         diagnostic_state=diagnostic_state,
+        enabled_granules=enabled_granules,
     )

@@ -178,12 +178,12 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
-    tracer_advection: tracer_advection.AdvectionConfig | None = None
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     initial_condition: initial_condition.InitialConditionConfig
     driver: driver_config.DriverConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
+    diffusion: diffusion.DiffusionConfig | None = None
+    tracer_advection: tracer_advection.AdvectionConfig | None = None
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}

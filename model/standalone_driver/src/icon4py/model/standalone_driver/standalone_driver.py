@@ -144,7 +144,8 @@ class Icon4pyDriver:
 
             self.model_time_variables.is_first_step_in_simulation = False
 
-            self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
+            if solve_nonhydro_diagnostic_state is not None:
+                self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
             # TODO(OngChia): simple IO enough for JW test
 
@@ -161,40 +162,48 @@ class Icon4pyDriver:
     def _integrate_one_time_step(
         self,
         *,
-        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro | None,
+        tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        prep_adv: dycore_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection | None,
         do_prep_adv: bool,
-        tracer_prep_adv: advection_states.AdvectionPrepAdvState,
+        tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
     ) -> None:
-        log.debug(f"Running {self.granules.solve_nonhydro.__class__}")
-        self._do_dyn_substepping(
-            solve_nonhydro_diagnostic_state,
-            prognostic_states,
-            prep_adv,
-            do_prep_adv,
-        )
-
-        if self.granules.diffusion.config.apply_to_horizontal_wind:
-            log.debug(f"Running {self.granules.diffusion.__class__}")
-            timer_diffusion = (
-                self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION_FIRST_STEP.value]
-                if self.model_time_variables.is_first_step_in_simulation
-                else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
+        if self.granules.solve_nonhydro is not None:
+            log.debug(f"Running {self.granules.solve_nonhydro.__class__}")
+            assert solve_nonhydro_diagnostic_state is not None
+            assert prep_adv is not None
+            self._do_dyn_substepping(
+                solve_nonhydro_diagnostic_state,
+                prognostic_states,
+                prep_adv,
+                do_prep_adv,
             )
-            with timer_diffusion:
-                self.granules.diffusion.run(
-                    diffusion_diagnostic_state,
-                    prognostic_states.next,
-                    self.model_time_variables.dtime_in_seconds,
+
+        if self.granules.diffusion is not None:
+            assert diffusion_diagnostic_state is not None
+            if self.granules.diffusion.config.apply_to_horizontal_wind:
+                log.debug(f"Running {self.granules.diffusion.__class__}")
+                timer_diffusion = (
+                    self.timer_collection.timers[
+                        driver_states.DriverTimers.DIFFUSION_FIRST_STEP.value
+                    ]
+                    if self.model_time_variables.is_first_step_in_simulation
+                    else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
                 )
+                with timer_diffusion:
+                    self.granules.diffusion.run(
+                        diffusion_diagnostic_state,
+                        prognostic_states.next,
+                        self.model_time_variables.dtime_in_seconds,
+                    )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
-        if self.config.driver.do_tracer_advection:
-            assert self.granules.tracer_advection is not None
+        if self.granules.tracer_advection is not None:
+            assert tracer_advection_diagnostic_state is not None
+            assert tracer_prep_adv is not None
             for tracer_idx in range(self.config.driver.ntracer):
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
@@ -252,6 +261,7 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
     ) -> None:
+        assert self.granules.solve_nonhydro is not None
         # TODO(OngChia): compute airmass for prognostic_state here
 
         timer_solve_nh = (
@@ -387,9 +397,8 @@ class Icon4pyDriver:
 
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
         if self.config.driver.apply_extra_second_order_divdamp:
-            fourth_order_divdamp_factor = (
-                self.config.driver.fourth_order_divdamp_factor
-            )
+            assert self.config.nonhydrostatic is not None
+            fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
             if (
                 self.model_time_variables.elapsed_time_in_seconds
                 <= driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
@@ -583,6 +592,7 @@ def run_driver(
     )
     ds = initial_condition.create(
         config=icon4py_driver.config.initial_condition,
+        enabled_granules=driver_utils.enabled_granules(icon4py_driver.config),
         grid=icon4py_driver.grid,
         vertical_config=icon4py_driver.config.vertical_grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,

@@ -327,6 +327,7 @@ def assemble_driver_states(
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
+    enabled_granules: driver_states.EnabledGranules,
 ) -> driver_states.DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -363,22 +364,38 @@ def assemble_driver_states(
         offset_provider={},
     )
 
-    diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
-        grid=grid, allocator=allocator
+    diffusion_diagnostic_state = (
+        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
+        if enabled_granules.diffusion
+        else None
     )
-    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
-        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
-        grid=grid,
-        allocator=allocator,
+    solve_nonhydro_diagnostic_state = (
+        dycore_states.initialize_solve_nonhydro_diagnostic_state(
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+            grid=grid,
+            allocator=allocator,
+        )
+        if enabled_granules.solve_nonhydro
+        else None
     )
-    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-    tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
-        grid=grid, allocator=allocator
+    prep_adv = (
+        dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+        if enabled_granules.solve_nonhydro
+        else None
     )
-    prep_tracer_adv = advection_states.AdvectionPrepAdvState(
-        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+    tracer_advection_diagnostic_state = (
+        advection_states.initialize_advection_diagnostic_state(grid=grid, allocator=allocator)
+        if enabled_granules.tracer_advection
+        else None
+    )
+    prep_tracer_adv = (
+        advection_states.AdvectionPrepAdvState(
+            vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+            mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+            mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+        )
+        if enabled_granules.tracer_advection
+        else None
     )
 
     return driver_states.DriverStates(

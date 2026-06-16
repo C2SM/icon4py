@@ -213,8 +213,9 @@ def create_experiment_configuration(
         master_dict=master_dict,
         profiling_stats=None,
         enable_statistics_output=False,
-        do_tracer_advection=do_tracer_advection,
-        do_physics=do_physics,
+        ntracer=fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"])
+        if do_tracer_advection
+        else 0,
     )
 
     return definitions.ExperimentConfig(

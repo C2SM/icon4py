@@ -116,6 +116,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
 
     single_rank_ds: driver_states.DriverStates = initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
+        enabled_granules=driver_utils.enabled_granules(single_rank_icon4py_driver.config),
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
@@ -146,6 +147,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
 
     multi_rank_ds: driver_states.DriverStates = initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
+        enabled_granules=driver_utils.enabled_granules(multi_rank_icon4py_driver.config),
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,

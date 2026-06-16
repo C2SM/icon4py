@@ -92,6 +92,8 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     )
 
     config = experiment.config.nonhydrostatic
+    assert config is not None
+    assert experiment.config.diffusion is not None
     nonhydro_params = nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)

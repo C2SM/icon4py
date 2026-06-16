@@ -99,6 +99,7 @@ def _read_prognostics_from_serialbox(
 def read_from_file(
     *,
     config: FromFileConfig,
+    enabled_granules: driver_states.EnabledGranules,
     grid: icon_grid.IconGrid,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
@@ -133,4 +134,5 @@ def read_from_file(
         metrics_field_source=metrics_field_source,
         prognostic_state_now=prognostic_state_now,
         diagnostic_state=diagnostic_state,
+        enabled_granules=enabled_granules,
     )

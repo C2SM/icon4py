@@ -148,6 +148,7 @@ class DiffusionConfig:
     def __init__(
         self,
         *,
+        enabled: bool = True,
         diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w: bool = True,
         hdiff_vn: bool = True,
@@ -182,6 +183,9 @@ class DiffusionConfig:
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
+
+        #: Master switch that enables/disables the diffusion granule.
+        self.enabled: bool = enabled
 
         self.diffusion_type: int = diffusion_type
 

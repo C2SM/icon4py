@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
 
 import dataclasses
 import logging
@@ -63,9 +64,18 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 @dataclasses.dataclass
 class Granules:
-    diffusion: diffusion.Diffusion
-    solve_nonhydro: solve_nh.SolveNonhydro
+    diffusion: diffusion.Diffusion | None = None
+    solve_nonhydro: solve_nh.SolveNonhydro | None = None
     tracer_advection: advection.Advection | None = None
+
+
+def enabled_granules(config: driver_config.ExperimentConfig) -> driver_states.EnabledGranules:
+    """Return which granules should be initialized/run for the given experiment config."""
+    return driver_states.EnabledGranules(
+        diffusion=config.diffusion is not None and config.diffusion.enabled,
+        solve_nonhydro=config.nonhydrostatic is not None and config.nonhydrostatic.enabled,
+        tracer_advection=config.tracer_advection is not None and config.tracer_advection.enabled,
+    )
 
 
 def create_grid_manager(
@@ -319,40 +329,41 @@ def initialize_granules(
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
 
-    diffusion_params = diffusion.DiffusionParams(config.diffusion)
+    diffusion_granule: diffusion.Diffusion | None = None
+    if config.diffusion is not None and config.diffusion.enabled:
+        diffusion_params = diffusion.DiffusionParams(config.diffusion)
+        diffusion_granule = diffusion.Diffusion(
+            grid=grid,
+            config=config.diffusion,
+            params=diffusion_params,
+            vertical_grid=vertical_grid,
+            metric_state=diffusion_metric_state,
+            interpolation_state=diffusion_interpolation_state,
+            edge_params=edge_geometry,
+            cell_params=cell_geometry,
+            backend=backend,
+            exchange=exchange,
+        )
 
-    diffusion_granule = diffusion.Diffusion(
-        grid=grid,
-        config=config.diffusion,
-        params=diffusion_params,
-        vertical_grid=vertical_grid,
-        metric_state=diffusion_metric_state,
-        interpolation_state=diffusion_interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        backend=backend,
-        exchange=exchange,
-    )
-
-    nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
-
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=grid,
-        backend=backend,
-        config=config.nonhydrostatic,
-        params=nonhydro_params,
-        metric_state_nonhydro=solve_nonhydro_metric_state,
-        interpolation_state=solve_nonhydro_interpolation_state,
-        vertical_params=vertical_grid,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=owner_mask,
-        exchange=exchange,
-    )
+    solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
+    if config.nonhydrostatic is not None and config.nonhydrostatic.enabled:
+        nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
+        solve_nonhydro_granule = solve_nh.SolveNonhydro(
+            grid=grid,
+            backend=backend,
+            config=config.nonhydrostatic,
+            params=nonhydro_params,
+            metric_state_nonhydro=solve_nonhydro_metric_state,
+            interpolation_state=solve_nonhydro_interpolation_state,
+            vertical_params=vertical_grid,
+            edge_geometry=edge_geometry,
+            cell_geometry=cell_geometry,
+            owner_mask=owner_mask,
+            exchange=exchange,
+        )
 
     tracer_advection_granule: advection.Advection | None = None
-    if config.driver.do_tracer_advection:
-        assert config.tracer_advection is not None
+    if config.tracer_advection is not None and config.tracer_advection.enabled:
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
