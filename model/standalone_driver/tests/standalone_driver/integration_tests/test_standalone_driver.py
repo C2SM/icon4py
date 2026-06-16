@@ -76,7 +76,7 @@ def test_standalone_driver(
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
-            "end_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
+            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
                 tzinfo=datetime.timezone.utc
             ),
         }
