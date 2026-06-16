@@ -86,7 +86,9 @@ class DriverConfig:
             start_of_simulation=datetime.datetime.fromisoformat(
                 start_datetime_str.replace("Z", "+00:00")
             ),
-            end_of_simulation=datetime.datetime.fromisoformat(end_datetime_str.replace("Z", "+00:00")),
+            end_of_simulation=datetime.datetime.fromisoformat(
+                end_datetime_str.replace("Z", "+00:00")
+            ),
             apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
