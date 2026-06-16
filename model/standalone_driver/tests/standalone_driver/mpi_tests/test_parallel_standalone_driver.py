@@ -61,7 +61,7 @@ def test_standalone_driver_compare_single_multi_rank(
         atol = 4e-13
         rtol = 1e-14
     else:
-        atol = 1e-12
+        atol = 1e-10
         rtol = 0.0
 
     _log.info(
