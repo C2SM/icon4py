@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     )
     from icon4py.model.common.interpolation import interpolation_factory
     from icon4py.model.common.metrics import metrics_factory
-    from icon4py.model.standalone_driver import driver_states
+    from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class InitialConditionConfig:
 def create(
     *,
     config: InitialConditionConfig,
-    enabled_granules: driver_states.EnabledGranules,
+    experiment_config: driver_config.ExperimentConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
@@ -100,7 +100,7 @@ def create(
         case jw_ic.JablonowskiWilliamsonConfig():
             return jw_ic.jablonowski_williamson(
                 config=config.config,
-                enabled_granules=enabled_granules,
+                experiment_config=experiment_config,
                 vertical_config=vertical_config,
                 grid=grid,
                 geometry_field_source=geometry_field_source,
@@ -112,7 +112,7 @@ def create(
         case gauss_ic.Gauss3DConfig():
             return gauss_ic.gauss3d(
                 config=config.config,
-                enabled_granules=enabled_granules,
+                experiment_config=experiment_config,
                 vertical_config=vertical_config,
                 grid=grid,
                 geometry_field_source=geometry_field_source,
@@ -124,7 +124,7 @@ def create(
         case from_file_ic.FromFileConfig():
             return from_file_ic.read_from_file(
                 config=config.config,
-                enabled_granules=enabled_granules,
+                experiment_config=experiment_config,
                 grid=grid,
                 interpolation_field_source=interpolation_field_source,
                 metrics_field_source=metrics_field_source,

@@ -64,18 +64,54 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 @dataclasses.dataclass
 class Granules:
-    solve_nonhydro: solve_nh.SolveNonhydro | None = None
     diffusion: diffusion.Diffusion | None = None
+    solve_nonhydro: solve_nh.SolveNonhydro | None = None
     tracer_advection: advection.Advection | None = None
 
 
-def enabled_granules(config: driver_config.ExperimentConfig) -> driver_states.EnabledGranules:
-    """Return which granules should be initialized/run for the given experiment config."""
-    return driver_states.EnabledGranules(
-        diffusion=config.diffusion is not None and config.diffusion.enabled,
-        solve_nonhydro=config.nonhydrostatic is not None and config.nonhydrostatic.enabled,
-        tracer_advection=config.tracer_advection is not None and config.tracer_advection.enabled,
-    )
+def validate_granule_state_consistency(
+    config: driver_config.ExperimentConfig,
+    granules: Granules,
+    states: driver_states.DriverStates,
+) -> None:
+    """
+    Validate that enabled granules have their required states allocated.
+
+    Raises:
+        ValueError: if a granule is enabled but a state it requires is None.
+    """
+
+    def _is_enabled(cfg: driver_config.ExperimentConfig, name: str) -> bool:
+        granule_config = getattr(cfg, name)
+        return granule_config is not None and granule_config.enabled
+
+    if _is_enabled(config, "diffusion") and granules.diffusion is None:
+        raise ValueError("diffusion is enabled but granules.diffusion is None.")
+    if _is_enabled(config, "nonhydrostatic") and granules.solve_nonhydro is None:
+        raise ValueError("solve_nonhydro is enabled but granules.solve_nonhydro is None.")
+    if _is_enabled(config, "tracer_advection") and granules.tracer_advection is None:
+        raise ValueError("tracer_advection is enabled but granules.tracer_advection is None.")
+
+    if granules.diffusion is not None and states.diffusion_diagnostic is None:
+        raise ValueError("diffusion granule is present but diffusion_diagnostic state is None.")
+    if granules.solve_nonhydro is not None:
+        if states.solve_nonhydro_diagnostic is None:
+            raise ValueError(
+                "solve_nonhydro granule is present but solve_nonhydro_diagnostic state is None."
+            )
+        if states.prep_advection_prognostic is None:
+            raise ValueError(
+                "solve_nonhydro granule is present but prep_advection_prognostic state is None."
+            )
+    if granules.tracer_advection is not None:
+        if states.tracer_advection_diagnostic is None:
+            raise ValueError(
+                "tracer_advection granule is present but tracer_advection_diagnostic state is None."
+            )
+        if states.prep_tracer_advection_prognostic is None:
+            raise ValueError(
+                "tracer_advection granule is present but prep_tracer_advection_prognostic state is None."
+            )
 
 
 def create_grid_manager(

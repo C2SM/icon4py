@@ -65,7 +65,7 @@ def test_initial_conditions(
 
     ds = initial_condition.create(
         config=icon4py_driver.config.initial_condition,
-        enabled_granules=driver_utils.enabled_granules(icon4py_driver.config),
+        experiment_config=icon4py_driver.config,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,

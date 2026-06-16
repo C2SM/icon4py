@@ -32,7 +32,7 @@ from icon4py.model.standalone_driver.initial_condition.analytical import utils a
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.standalone_driver import driver_states
+    from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class Gauss3DConfig:
 def gauss3d(
     *,
     config: Gauss3DConfig,
-    enabled_granules: driver_states.EnabledGranules,
+    experiment_config: driver_config.ExperimentConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
@@ -157,5 +157,5 @@ def gauss3d(
         metrics_field_source=metrics_field_source,
         prognostic_state_now=prognostic_state_now,
         diagnostic_state=diagnostic_state,
-        enabled_granules=enabled_granules,
+        experiment_config=experiment_config,
     )

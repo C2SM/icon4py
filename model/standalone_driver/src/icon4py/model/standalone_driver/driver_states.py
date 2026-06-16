@@ -50,15 +50,6 @@ class StaticFieldFactories(NamedTuple):
     metrics_field_source: metrics_factory.MetricsFieldsFactory
 
 
-@dataclasses.dataclass(frozen=True)
-class EnabledGranules:
-    """Flags indicating which granules are enabled for a simulation."""
-
-    diffusion: bool
-    solve_nonhydro: bool
-    tracer_advection: bool
-
-
 class DriverStates(NamedTuple):
     """
     Initialized states for the driver run.

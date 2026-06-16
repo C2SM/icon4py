@@ -40,6 +40,8 @@ from icon4py.model.standalone_driver import driver_states
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.standalone_driver import config as driver_config
+
 
 def apply_hydrostatic_adjustment_ndarray(
     *,
@@ -327,7 +329,7 @@ def assemble_driver_states(
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
-    enabled_granules: driver_states.EnabledGranules,
+    experiment_config: driver_config.ExperimentConfig,
 ) -> driver_states.DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -364,9 +366,20 @@ def assemble_driver_states(
         offset_provider={},
     )
 
+    diffusion_enabled = (
+        experiment_config.diffusion is not None and experiment_config.diffusion.enabled
+    )
+    solve_nonhydro_enabled = (
+        experiment_config.nonhydrostatic is not None and experiment_config.nonhydrostatic.enabled
+    )
+    tracer_advection_enabled = (
+        experiment_config.tracer_advection is not None
+        and experiment_config.tracer_advection.enabled
+    )
+
     diffusion_diagnostic_state = (
         diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
-        if enabled_granules.diffusion
+        if diffusion_enabled
         else None
     )
     solve_nonhydro_diagnostic_state = (
@@ -375,17 +388,17 @@ def assemble_driver_states(
             grid=grid,
             allocator=allocator,
         )
-        if enabled_granules.solve_nonhydro
+        if solve_nonhydro_enabled
         else None
     )
     prep_adv = (
         dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-        if enabled_granules.solve_nonhydro
+        if solve_nonhydro_enabled
         else None
     )
     tracer_advection_diagnostic_state = (
         advection_states.initialize_advection_diagnostic_state(grid=grid, allocator=allocator)
-        if enabled_granules.tracer_advection
+        if tracer_advection_enabled
         else None
     )
     prep_tracer_adv = (
@@ -394,7 +407,7 @@ def assemble_driver_states(
             mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
             mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
         )
-        if enabled_granules.tracer_advection
+        if tracer_advection_enabled
         else None
     )
 
