@@ -78,6 +78,14 @@ class ModelTimeVariables:
     It tracks the current simulation date, substepping information, and cfl watch mode.
 
     """
+    simulation_date: driver_config.AbsoluteTime
+    n_time_steps: driver_config.NumTimeSteps
+    dtime: driver_config.RelativeTime
+    ndyn_substeps_var: int
+    max_ndyn_substeps: int
+    elapsed_time_in_seconds: ta.wpfloat
+    is_first_step_in_simulation: bool
+    cfl_watch_mode: bool
 
     def __init__(self, config: driver_config.DriverConfig) -> None:
         self._init_from_config(config)
