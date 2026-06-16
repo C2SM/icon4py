@@ -66,7 +66,7 @@ def setup_graupel(
     vertical_start: int,
     vertical_end: int,
     enable_masking: bool = True,
-    enable_dace_hooks: bool = True,
+    enable_dace_hooks: bool = False,
 ):
     if enable_dace_hooks:
         assert model_backends.is_backend_descriptor(backend)

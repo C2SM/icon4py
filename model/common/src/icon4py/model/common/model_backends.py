@@ -111,6 +111,7 @@ def make_custom_dace_backend(
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         cached=cached,
+        apply_common_transform=True,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,
