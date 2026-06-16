@@ -29,6 +29,7 @@ from icon4py.model.testing import (
     test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
     backend_like,
     download_ser_data,
     experiment,
