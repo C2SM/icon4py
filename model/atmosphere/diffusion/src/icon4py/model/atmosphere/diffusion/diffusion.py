@@ -134,7 +134,7 @@ class ForcingType(int, enum.Enum):
     NWP = 3  #: Numerical Weather Prediction forcing (inwp)
 
 
-# TODO(ricoh): move up to common config before merging
+# TODO(ricoh): remove before merging, after replacing old style constructors
 @dataclasses.dataclass
 class InitAlias:
     name: str
@@ -346,7 +346,7 @@ class DiffusionConfig:
 
         self._validate()
 
-    # TODO(ricoh): move up to common config before merging
+    # TODO(ricoh): remove before merging (after replacing old style constructors)
     @classmethod
     def get_init_alias(cls, field: dataclasses.Field) -> str:
         annotations = typing.get_type_hints(cls, include_extras=True)
@@ -394,6 +394,7 @@ class DiffusionConfig:
         )
         return field_type(de_listified)
 
+    # TODO(ricoh): remove before merging (after replacing old style constructors)
     @classmethod
     def from_init_aliases(cls, **kwargs: Any) -> DiffusionConfig:
         """Backwards-compatibility wrapper around __init__."""
@@ -407,7 +408,7 @@ class DiffusionConfig:
         fields = [field for field in dataclasses.fields(cls) if cls.get_fortran_coords(field)]
         return cls(
             **{
-                cls.get_init_alias(field): cls.get_fortran_value(field, atmo_dict)
+                field.name: cls.get_fortran_value(field, atmo_dict)
                 for field in fields
             },
             **overrides,
