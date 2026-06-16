@@ -133,7 +133,7 @@ class Icon4pyDriver:
                 f"\n"
             )
 
-            self.model_time_variables.next_simulation_datetime()
+            self.model_time_variables.advance_simulation_datetime()
 
             self._integrate_one_time_step(
                 diffusion_diagnostic_state=diffusion_diagnostic_state,

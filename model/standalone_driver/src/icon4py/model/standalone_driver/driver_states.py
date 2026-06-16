@@ -138,7 +138,7 @@ class ModelTimeVariables:
     def substep_timestep(self) -> ta.wpfloat:
         return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
-    def next_simulation_datetime(self) -> None:
+    def advance_simulation_datetime(self) -> None:
         self.simulation_datetime += self.dtime
         self.elapsed_time_in_seconds += self.dtime_in_seconds
 
