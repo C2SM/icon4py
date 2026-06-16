@@ -30,7 +30,10 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -592,13 +595,22 @@ def run_driver(
         backend=backend,
     )
     allocator = model_backends.get_allocator(backend)
-    prognostic_state_now, diagnostic_state = initial_condition.create(
+    prognostic_state_now = prognostics.initialize_prognostic_state(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
+        ntracer=icon4py_driver.config.driver.ntracer,
+    )
+    initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
+        prognostic_state_now=prognostic_state_now,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+    )
+    diagnostic_state = diagnostics.initialize_diagnostic_state(
+        grid=icon4py_driver.grid, allocator=allocator
     )
     ds = driver_states.assemble_driver_states(
         grid=icon4py_driver.grid,

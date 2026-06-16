@@ -28,10 +28,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
 from icon4py.model.standalone_driver.initial_condition.analytical import utils as testcases_utils
@@ -74,9 +71,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: driver_states.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> tuple[prognostics.PrognosticState, diagnostics.DiagnosticState]:
+) -> None:
     """
     Initial condition for Jablonowski-Williamson test.
     Set jw_baroclinic_amplitude to values larger than 0.01 if you want to run
@@ -123,8 +121,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     num_cells = grid.num_cells
     num_levels = grid.num_levels
 
-    prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
-    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     eta_v = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
@@ -133,11 +129,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
     theta_v_ndarray = prognostic_state_now.theta_v.ndarray
-    temperature_ndarray = diagnostic_state.temperature.ndarray
-    pressure_ndarray = diagnostic_state.pressure.ndarray
     eta_v_ndarray = eta_v.ndarray
-
-    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
 
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
@@ -205,10 +197,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             / phy_const.RD
             / theta_v_ndarray[:, k_index]
         )
-        pressure_ndarray[:, k_index] = (
-            phy_const.P0REF * exner_ndarray[:, k_index] ** phy_const.CPD_O_RD
-        )
-        temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
@@ -265,5 +253,3 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
-
-    return prognostic_state_now, diagnostic_state

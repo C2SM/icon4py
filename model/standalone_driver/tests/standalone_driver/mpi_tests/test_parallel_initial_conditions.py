@@ -14,6 +14,10 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_states,
@@ -115,11 +119,20 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         )
     )
 
-    single_rank_prognostic, single_rank_diagnostic = initial_condition.create(
+    single_rank_prognostic = prognostics.initialize_prognostic_state(
+        grid=single_rank_icon4py_driver.grid,
+        allocator=allocator,
+        ntracer=single_rank_icon4py_driver.config.driver.ntracer,
+    )
+    single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
+        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    )
+    initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
+        prognostic_state_now=single_rank_prognostic,
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
     )
@@ -153,11 +166,20 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         )
     )
 
-    multi_rank_prognostic, multi_rank_diagnostic = initial_condition.create(
+    multi_rank_prognostic = prognostics.initialize_prognostic_state(
+        grid=multi_rank_icon4py_driver.grid,
+        allocator=allocator,
+        ntracer=multi_rank_icon4py_driver.config.driver.ntracer,
+    )
+    multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    )
+    initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
+        prognostic_state_now=multi_rank_prognostic,
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
     )

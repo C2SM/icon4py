@@ -26,10 +26,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-    from icon4py.model.common.states import (
-        diagnostic_state as diagnostics,
-        prognostic_state as prognostics,
-    )
+    from icon4py.model.common.states import prognostic_state as prognostics
     from icon4py.model.standalone_driver import driver_states
 
 log = logging.getLogger(__name__)
@@ -87,33 +84,37 @@ def create(
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: driver_states.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> tuple[prognostics.PrognosticState, diagnostics.DiagnosticState]:
-    """Create initial driver states by dispatching on the type of ``config.config``."""
+) -> None:
+    """Fill a pre-allocated PrognosticState by dispatching on the type of ``config.config``."""
     match config.config:
         case jw_ic.JablonowskiWilliamsonConfig():
-            return jw_ic.jablonowski_williamson(
+            jw_ic.jablonowski_williamson(
                 config=config.config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
                 backend=backend,
                 exchange=exchange,
             )
         case gauss_ic.Gauss3DConfig():
-            return gauss_ic.gauss3d(
+            gauss_ic.gauss3d(
                 config=config.config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
                 backend=backend,
                 exchange=exchange,
             )
         case from_file_ic.FromFileConfig():
-            return from_file_ic.read_from_file(
+            from_file_ic.read_from_file(
                 config=config.config,
                 grid=grid,
+                prognostic_state_now=prognostic_state_now,
                 backend=backend,
                 exchange=exchange,
             )

@@ -20,10 +20,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
 from icon4py.model.standalone_driver.initial_condition.analytical import utils as testcases_utils
@@ -55,9 +52,10 @@ def gauss3d(
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: driver_states.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> tuple[prognostics.PrognosticState, diagnostics.DiagnosticState]:
+) -> None:
     """
     Initial condition for Gauss 3D test case.
 
@@ -90,9 +88,6 @@ def gauss3d(
     u0 = config.u0
     t0 = config.t0
     brunt_vais = config.brunt_vais
-
-    prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
-    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
@@ -150,5 +145,3 @@ def gauss3d(
         nlev=num_levels,
     )
     exchange.exchange(dims.CellDim, prognostic_state_now.w)
-
-    return prognostic_state_now, diagnostic_state
