@@ -129,3 +129,75 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
         icon_var_name="pres_sfc",
     ),
 )
+
+# CF attributes of microphysics precipitation-flux diagnostics.
+# Shared across microphysics schemes (muphys, NWP graupel)
+MICROPHYSICS_PRECIP_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    precipitation_flux=dict(
+        standard_name="precipitation_flux",
+        long_name="precipitation flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    rainfall_flux=dict(
+        standard_name="rainfall_flux",
+        long_name="rainfall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    snowfall_flux=dict(
+        standard_name="snowfall_flux",
+        long_name="snowfall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    graupel_fall_flux=dict(
+        standard_name="graupel_fall_flux",
+        long_name="graupel fall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    ice_fall_flux=dict(
+        standard_name="ice_fall_flux",
+        long_name="ice fall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    precipitation_energy_flux=dict(
+        standard_name="precipitation_energy_flux",
+        long_name="precipitation energy flux",
+        units="W m-2",
+        kind="diagnostic",
+    ),
+)
+
+
+def tendency_of(base: model.FieldMetaData) -> model.FieldMetaData:
+    """Derive generic tendency metadata for ``base`` (CF ``tendency_of_<name>``).
+
+    The tendency carries ``kind="tendency"`` and ``base``'s units per second; a
+    dimensionless base (``units="1"``) yields ``"s-1"`` rather than ``"1 s-1"``.
+    """
+    base_units = base["units"]
+    units = "s-1" if base_units == "1" else f"{base_units} s-1"
+    tendency: model.FieldMetaData = dict(
+        standard_name=f"tendency_of_{base['standard_name']}",
+        units=units,
+        kind="tendency",
+    )
+    long_name = base.get("long_name")
+    if long_name is not None:
+        tendency["long_name"] = f"tendency of {long_name}"
+    return tendency
+
+
+# Generic tendencies of the temperature and tracer fields, derived from their base identities so names/units never drift.
+TENDENCY_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    temperature=tendency_of(DIAGNOSTIC_CF_ATTRIBUTES["temperature"]),
+    specific_humidity=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_humidity"]),
+    specific_cloud=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_cloud"]),
+    specific_rain=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_rain"]),
+    specific_snow=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_snow"]),
+    specific_ice=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_ice"]),
+    specific_graupel=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_graupel"]),
+)

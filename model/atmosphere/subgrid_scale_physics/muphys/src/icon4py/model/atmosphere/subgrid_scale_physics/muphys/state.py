@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
@@ -19,6 +19,7 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_surface_pressure,
     diagnose_temperature,
 )
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -33,50 +34,9 @@ if TYPE_CHECKING:
 #: muphys species keys, in the order of the muphys ``Q`` tuple.
 _SPECIES = ("v", "c", "r", "s", "i", "g")
 
-#: STUB (scope-4): placeholder species -> tracer-index map.
-# TODO (Yilu): this should be identical to the mapping in the warm_bubble_init_conditon branch
-_STUB_TRACER_INDEX: dict[str, int] = {"v": 0, "c": 1, "r": 2, "s": 3, "i": 4, "g": 5}
-
-
-@gtx.field_operator
-def _add_scaled_tendency(
-    field: fa.CellKField[ta.wpfloat],
-    tendency: fa.CellKField[ta.wpfloat],
-    dt: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
-    return field + tendency * dt
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_tendency(  # noqa: PLR0917  # stencil params referenced in domain specs must stay positional
-    field: fa.CellKField[ta.wpfloat],
-    tendency: fa.CellKField[ta.wpfloat],
-    dt: ta.wpfloat,
-    result: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    """``result = field + tendency * dt`` (Lie-Trotter split-update).
-
-    Pass ``result=field`` for an in-place update, or a distinct buffer to keep
-    the original (e.g. computing the new temperature without clobbering ``te``).
-    """
-    _add_scaled_tendency(
-        field,
-        tendency,
-        dt,
-        out=result,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
 
 class State:
-    """L1 physics state adapter
+    """The muphys physics State adapter.
 
     Bridges the dycore's prognostic state and the muphys Component contract.
     Two independent axes describe each field:
@@ -100,11 +60,37 @@ class State:
         self,
         grid: base_grid.Grid,
         metrics: factory.FieldSource,
+        tracer_index: dict[str, int],
         backend: gtx_typing.Backend | None = None,
     ) -> None:
+
+        self._tracer_index = tracer_index
         self._num_cells = grid.num_cells
         self._num_levels = grid.num_levels
         self._backend = backend
+
+        self._diagnose_temperature_program = (
+            diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(
+                self._backend
+            )
+        )
+        self._diagnose_surface_pressure_program = (
+            diagnose_surface_pressure.diagnose_surface_pressure.with_backend(self._backend)
+        )
+        self._diagnose_pressure_program = diagnose_pressure.diagnose_pressure.with_backend(
+            self._backend
+        )
+        self._apply_tendency_program = (
+            generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k.with_backend(
+                self._backend
+            )
+        )
+        self._virtual_temperature_tendency_program = (
+            calculate_tendency.calculate_virtual_temperature_tendency.with_backend(self._backend)
+        )
+        self._exner_tendency_program = calculate_tendency.calculate_exner_tendency.with_backend(
+            self._backend
+        )
 
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
@@ -132,11 +118,6 @@ class State:
         self.pg: fa.CellKField[ta.wpfloat] | None = None  # surface graupel rate
         self.pre: fa.CellKField[ta.wpfloat] | None = None  # surface precip energy flux
 
-    def _run(self, program: Any, **kwargs: Any) -> None:
-        if self._backend is not None:
-            program = program.with_backend(self._backend)
-        program(**kwargs)
-
     def gather_from_prognostic(self, prognostic: prognostics.PrognosticState) -> None:
         """
         prepare the input fields for muphys from the prognostic state. This includes:
@@ -144,12 +125,10 @@ class State:
             - diagnosing the muphys input fields that aren't stored prognostically (te, p) from the prognostic state.
         """
         self.rho = prognostic.rho
-        self.q = {s: prognostic.tracer[_STUB_TRACER_INDEX[s]] for s in _SPECIES}
-
+        self.q = {s: prognostic.tracer[self._tracer_index[s]] for s in _SPECIES}
 
         # Diagnose virtual temperature and temperature (te is not stored prognostically).
-        self._run(
-            diagnose_temperature.diagnose_virtual_temperature_and_temperature,
+        self._diagnose_temperature_program(
             qv=self.q["v"],
             qc=self.q["c"],
             qi=self.q["i"],
@@ -168,8 +147,7 @@ class State:
         )
 
         # Diagnose surface pressure into the surface slot of pressure_ifc, ...
-        self._run(
-            diagnose_surface_pressure.diagnose_surface_pressure,
+        self._diagnose_surface_pressure_program(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,
@@ -184,8 +162,7 @@ class State:
         surface_pressure = gtx.as_field(
             (dims.CellDim,), self.pressure_ifc.ndarray[:, -1], allocator=self._backend
         )
-        self._run(
-            diagnose_pressure.diagnose_pressure,
+        self._diagnose_pressure_program(
             ddqz_z_full=self.dz,
             virtual_temperature=self.tv,
             surface_pressure=surface_pressure,
@@ -209,73 +186,76 @@ class State:
         This will be called before calling the muphys.
         output is got from muphys, and the tendencies in output will be applied to the prognostic state.
         """
-        bounds = dict(
+        # 1. Apply moisture tendencies to the tracers (in place).
+        for s in _SPECIES:
+            tracer = prognostic.tracer[self._tracer_index[s]]
+            self._apply_tendency_program(
+                field_a=tracer,
+                coeff=dt,
+                field_b=outputs[f"tend_q{s}"],
+                output_field=tracer,
+                offset_provider={},
+                horizontal_start=0,
+                horizontal_end=self._num_cells,
+                vertical_start=0,
+                vertical_end=self._num_levels,
+            )
+
+        # 2. tend_T -> exner. new_te = te + tend_T*dt
+        self._apply_tendency_program(
+            field_a=self.te,
+            coeff=dt,
+            field_b=outputs["tend_temperature"],
+            output_field=self._new_te,
+            offset_provider={},
             horizontal_start=0,
             horizontal_end=self._num_cells,
             vertical_start=0,
             vertical_end=self._num_levels,
         )
 
-        # 1. Apply moisture tendencies to the tracers (in place).
-        for s in _SPECIES:
-            tracer = prognostic.tracer[_STUB_TRACER_INDEX[s]]
-            self._run(
-                apply_tendency,
-                field=tracer,
-                tendency=outputs[f"tend_q{s}"],
-                dt=dt,
-                result=tracer,
-                offset_provider={},
-                **bounds,
-            )
-
-        # 2. tend_T -> exner. new_te = te + tend_T*dt
-        self._run(
-            apply_tendency,
-            field=self.te,
-            tendency=outputs["tend_temperature"],
-            dt=dt,
-            result=self._new_te,
-            offset_provider={},
-            **bounds,
-        )
-
         # dTv/dt from the new temperature and the species just updated in step 1
         tracers = prognostic.tracer
-        self._run(
-            calculate_tendency.calculate_virtual_temperature_tendency,
+        self._virtual_temperature_tendency_program(
             dtime=dt,
-            qv=tracers[_STUB_TRACER_INDEX["v"]],
-            qc=tracers[_STUB_TRACER_INDEX["c"]],
-            qi=tracers[_STUB_TRACER_INDEX["i"]],
-            qr=tracers[_STUB_TRACER_INDEX["r"]],
-            qs=tracers[_STUB_TRACER_INDEX["s"]],
-            qg=tracers[_STUB_TRACER_INDEX["g"]],
+            qv=tracers[self._tracer_index["v"]],
+            qc=tracers[self._tracer_index["c"]],
+            qi=tracers[self._tracer_index["i"]],
+            qr=tracers[self._tracer_index["r"]],
+            qs=tracers[self._tracer_index["s"]],
+            qg=tracers[self._tracer_index["g"]],
             temperature=self._new_te,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
             offset_provider={},
-            **bounds,
+            horizontal_start=0,
+            horizontal_end=self._num_cells,
+            vertical_start=0,
+            vertical_end=self._num_levels,
         )
         # d(exner)/dt from dTv/dt, then exner += d(exner)/dt * dt.
-        self._run(
-            calculate_tendency.calculate_exner_tendency,
+        self._exner_tendency_program(
             dtime=dt,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
             exner=prognostic.exner,
             exner_tendency=self._exner_tendency,
             offset_provider={},
-            **bounds,
+            horizontal_start=0,
+            horizontal_end=self._num_cells,
+            vertical_start=0,
+            vertical_end=self._num_levels,
         )
-        self._run(
-            apply_tendency,
-            field=prognostic.exner,
-            tendency=self._exner_tendency,
-            dt=dt,
-            result=prognostic.exner,
+        self._apply_tendency_program(
+            field_a=prognostic.exner,
+            coeff=dt,
+            field_b=self._exner_tendency,
+            output_field=prognostic.exner,
             offset_provider={},
-            **bounds,
+            horizontal_start=0,
+            horizontal_end=self._num_cells,
+            vertical_start=0,
+            vertical_end=self._num_levels,
         )
 
         # 3. Store precip diagnostics (references; never applied to prognostic state).

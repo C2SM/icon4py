@@ -56,7 +56,7 @@ def test_granule_matches_direct_muphys(
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,
-        muphys_step=muphys_program,
+        step=muphys_program,
     )
     state = {
         "dz": inp.dz,
