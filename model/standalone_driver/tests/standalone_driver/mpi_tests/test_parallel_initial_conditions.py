@@ -61,7 +61,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     backend: gtx_typing.Backend,
     download_ser_data: None,
 ) -> None:
-    if experiment_description.grid.limited_area:
+    if experiment.description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
