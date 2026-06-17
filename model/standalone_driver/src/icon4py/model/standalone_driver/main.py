@@ -53,6 +53,12 @@ def main(
             help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
         ),
     ] = False,
+    granule_timers: Annotated[
+        bool,
+        typer.Option(
+            help="Enable granule timers for performance profiling with sync points after each granule.",
+        ),
+    ] = False,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -73,6 +79,7 @@ def main(
         print_distributed_debug_msg=print_distributed_debug_msg,
         backend_like=icon4py_backend,
         force_serial_run=force_serial_run,
+        granule_timers=granule_timers,
     )
 
     log.info("Generating the initial condition")
