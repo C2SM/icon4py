@@ -51,7 +51,7 @@ export GT4PY_SKIP_DACE_WARNINGS=0
 
 export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
-export NVTX_MARKERS_ENABLED=1
+export ICON4PY_NVTX_MARKERS_ENABLED=1
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_nsys
 
