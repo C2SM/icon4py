@@ -3,9 +3,11 @@ include:
 
 variables:
   MODEL_SUBPACKAGES: "standalone_driver"
+  MODEL_MPI_SUBPACKAGES: "standalone_driver"
   BACKENDS: "dace_cpu:gtfn_cpu"
   LEVELS: "extended"
-  SESSION: "model"
+  MODEL_MPI_SUBSETS: "datatest"
+  SESSION: "mpi"
 
 
 build_baseimage_aarch64:
