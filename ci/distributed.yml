@@ -10,7 +10,6 @@ include:
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_NTASKS: 4
-    NUM_PROCESSES: 0
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
     USE_MPI: NO
@@ -32,17 +31,18 @@ include:
     - source ci/scripts/start-cuda-mps.sh
     - source ci/scripts/gt4py-cache.sh
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-3.13($SELECTION, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common, standalone_driver]
+      - COMPONENT: [diffusion, dycore, advection, common, standalone_driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
+        SELECTION: [basic, datatest]
   rules:
-    - if: $COMPONENT == 'atmosphere/diffusion'
+    - if: $COMPONENT == 'diffusion'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
+    - if: $COMPONENT == 'dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - if: $COMPONENT == 'common' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
