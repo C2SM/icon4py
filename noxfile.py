@@ -39,8 +39,12 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
 ]
 
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
+MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+]
+ToolsBindingsTestsSubset: TypeAlias = Literal["datatest", "unittest"]
+TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    nox.param(arg, id=arg, tags=[arg]) for arg in ToolsBindingsTestsSubset.__args__
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
@@ -173,26 +177,17 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 # Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
-@nox.parametrize(
-    "datatest",
-    [
-        nox.param(True, id="datatest", tags=["datatest"]),
-        nox.param(
-            False,
-            id="unittest",
-        ),
-    ],
-)
-def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
+@nox.parametrize("selection", TOOLS_BINDINGS_TESTS_SUBSETS)
+def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsSubset) -> None:
     """Run tests for the Fortran bindings and integration tools."""
     _install_session_venv(
         session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
     )
 
-    datatest_flag = "--datatest-only" if datatest else "--datatest-skip"
+    datatest_flag = "--datatest-only" if selection == "datatest" else "--datatest-skip"
     pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
-    if not datatest:
-        # tools/ has no datatest-marked tests, so skip it in datatest mode
+    if selection == "unittest":
+        # tools/ only has unit tests, so skip it in datatest mode
         with session.chdir("tools"):
             session.run(*pytest_base.split(), *session.posargs)
     with session.chdir("bindings"):
