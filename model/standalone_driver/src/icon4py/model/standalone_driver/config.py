@@ -89,7 +89,10 @@ class DriverConfig:
             end_of_simulation=datetime.datetime.fromisoformat(
                 end_datetime_str.replace("Z", "+00:00")
             ),
-            apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
+            # apply_extra_second_order_divdamp does not have a namelist
+            # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
+            # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
+            apply_extra_second_order_divdamp=not run_nml.get("ltestcase", False),
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
