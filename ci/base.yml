@@ -155,6 +155,8 @@ variables:
       variables:
         SLURM_TIMELIMIT: "2:00:00"
         SLURM_PARTITION: "normal"
+        ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
+        CXXFLAGS: "-ffp-contract=off"
     - if: $MODEL_MPI_SUBPACKAGE == 'advection'
       variables:
         SLURM_TIMELIMIT: '00:10:00'

@@ -6,8 +6,6 @@ variables:
   BACKENDS: "dace_cpu:gtfn_cpu"
   LEVELS: "extended"
   SESSION: "model"
-  ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
-  CXXFLAGS: "-ffp-contract=off"
 
 
 build_baseimage_aarch64:
