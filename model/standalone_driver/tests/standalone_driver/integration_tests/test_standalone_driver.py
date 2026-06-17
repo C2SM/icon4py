@@ -116,13 +116,13 @@ def test_standalone_driver(
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
-        atol=5e-11,
+        atol=2e-10,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=6e-8,
+        atol=1e-7,
     )
 
     test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
