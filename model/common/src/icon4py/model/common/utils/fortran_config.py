@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Any, Final
 
+
 NAMELIST_INPUT_FNAME: Final = "NAMELIST_expname"
 NAMELIST_ATM_FNAME: Final = "NAMELIST_ICON_output_atm"
 NAMELIST_MASTER_FNAME: Final = "icon_master.namelist"
