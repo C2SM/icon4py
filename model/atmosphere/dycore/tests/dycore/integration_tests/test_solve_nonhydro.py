@@ -1311,7 +1311,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.uses_as_offset
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
