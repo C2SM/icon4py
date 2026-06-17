@@ -10,7 +10,6 @@ include:
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_NTASKS: 4
-    NUM_PROCESSES: 0
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
     USE_MPI: NO
