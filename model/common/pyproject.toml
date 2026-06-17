@@ -27,7 +27,6 @@ dependencies = [
   'array-api-compat>=1.13.0',
   'gt4py==1.1.10',
   'packaging>=20.0',
-  'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
   "serialbox4py>=2.6.2"  # needed to read topography from file until IO is done
 ]

@@ -9,10 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Final, TypeVar
-
-
-_T = TypeVar("_T")
+from typing import Any, Final
 
 NAMELIST_INPUT_FNAME: Final = "NAMELIST_expname"
 NAMELIST_ATM_FNAME: Final = "NAMELIST_ICON_output_atm"
@@ -25,7 +22,7 @@ INPUT_DICT_FNAME: Final = f"{NAMELIST_INPUT_FNAME}.json"
 SER_DATA_SUBDIR: Final = "ser_data"
 
 
-def list_to_value(obj: list[_T] | _T) -> _T:
+def list_to_value[T](obj: list[T] | T) -> T:
     # Some parameters are allocated as `max_dom`-sized lists, with one value
     # per domain. ICON4Py (for now) only runs on one domain.
     # Most parameters have the same value for all elements, others (such as
@@ -51,7 +48,7 @@ def _translate_fields(
     return params
 
 
-def config_dataclass_from_dict(cls: type[_T], source: dict[str, Any]) -> _T:
+def config_dataclass_from_dict[T](cls: type[T], source: dict[str, Any]) -> T:
     """Construct a dataclass from a Fortran namelist dict.
 
     This is used by the topography and initial_condition Config classes which

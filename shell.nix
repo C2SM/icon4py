@@ -1,0 +1,1 @@
+/home/mjs/src/icon4py/shell.nix
