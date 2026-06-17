@@ -2199,7 +2199,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/egparedes/gt4py?branch=refactor%2Ffingerprinting-tree-cata#7f4bd3ccdc174e295e6fd84eab3e9fd3594b86cb"}
+source = {git = "https://github.com/egparedes/gt4py?branch=refactor%2Ffingerprinting-tree-cata#106217febf8434955ea085c424e4d67cfd769dd3"}
 version = "1.1.10+unknown.version.details"
 
 [package.optional-dependencies]
