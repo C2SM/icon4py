@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=JW4Py_multinode_benchmark
+#SBATCH --job-name=wall_JW4Py
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=08:00:00
@@ -51,9 +51,17 @@ export GT4PY_SKIP_DACE_WARNINGS=0
 
 export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
-srun -u --cpu-bind=cores --gpus-per-task=1 \
-    bash -c "printenv TMPDIR; ./mps-wrapper.sh $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
+export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
+
+echo "Executing JW4Py to check the WALL CLOCK timer reported at the end of the run"
+
+rm -rf ${OUTPUT_PATH}*
+
+srun -u --cpu-bind=cores \
+    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
     --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-    --output-path $(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall"
+    --output-path ${OUTPUT_PATH}'
+
+rm -rf ${OUTPUT_PATH}

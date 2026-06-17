@@ -151,7 +151,7 @@ class TimerCollection:
     def show_timer_report(
         self,
     ) -> None:
-        log.info("===== ICON4Py timer report =====")
+        log.warning("===== ICON4Py timer report =====")
         table_titles = (
             f"|{'timer name':^30}|"
             f"{'no. of times called':^23}|"
@@ -160,8 +160,8 @@ class TimerCollection:
             f"{'min time (s)':^23}|"
             f"{'max time (s)':^23}|"
         )
-        log.info(table_titles)
-        log.info("-" * len(table_titles))
+        log.warning(table_titles)
+        log.warning("-" * len(table_titles))
         for timer_name, timer in self.timers.items():
             times = []
             for r in timer.results:
@@ -169,7 +169,7 @@ class TimerCollection:
                     r.capture()
                 times.append(r.elapsed())
             if len(times) > 0:
-                log.info(
+                log.warning(
                     f"|{timer_name:^30}|"
                     f"{len(times):^23}|"
                     f"{statistics.mean(times):^23.8f}|"
@@ -178,6 +178,6 @@ class TimerCollection:
                     f"{max(times):^23.8f}|"
                 )
             else:
-                log.info(
+                log.warning(
                     f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )

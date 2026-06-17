@@ -120,6 +120,7 @@ class Icon4pyDriver:
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
         )
+        log.warning(f"Granule timers enabled: {self.config.granule_timers}\nNVTX_MARKERS_ENABLED: {NVTX_MARKERS_ENABLED}")
         if NVTX_MARKERS_ENABLED:
             device_utils.sync(self.backend)
             nvtx.push_range("time_integration", color=nvtx.colors.green)
@@ -178,7 +179,7 @@ class Icon4pyDriver:
         if NVTX_MARKERS_ENABLED:
             device_utils.sync(self.backend)
             nvtx.pop_range()
-        log.info(
+        log.warning(
             f"\n"
             f"[FINAL] simulation date : {self.model_time_variables.simulation_date}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
             f"\n"
@@ -541,6 +542,7 @@ class Icon4pyDriver:
 def _read_config(
     output_path: pathlib.Path,
     enable_profiling: bool,
+    granule_timers: bool,
 ) -> tuple[
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
@@ -591,6 +593,7 @@ def _read_config(
         vertical_cfl_threshold=ta.wpfloat("1.05"),
         enable_statistics_output=False,
         profiling_stats=profiling_stats,
+        granule_timers=granule_timers,
     )
 
     return (
@@ -679,9 +682,9 @@ def initialize_driver(
         _read_config(
             output_path=output_path,
             enable_profiling=False,
+            granule_timers=granule_timers,
         )
     )
-    driver_config.granule_timers = granule_timers
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
     grid_manager = driver_utils.create_grid_manager(

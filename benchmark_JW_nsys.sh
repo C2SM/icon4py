@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=JW4Py_multinode_benchmark
+#SBATCH --job-name=nsys_JW4Py
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=08:00:00
@@ -53,9 +53,17 @@ export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export NVTX_MARKERS_ENABLED=1
 
-srun -u --cpu-bind=cores --gpus-per-task=1 \
-    bash -c "printenv TMPDIR; ./mps-wrapper.sh nsys profile -t cuda,nvtx,osrt -o JW4Py.%q{SLURM_PROCID}.%q{SLURM_JOBID} $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
+export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_nsys
+
+echo "Executing JW4Py with nsys profile and NVTX markers"
+
+rm -rf ${OUTPUT_PATH}*
+
+srun -u --cpu-bind=cores \
+    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; nsys profile -t cuda,nvtx,osrt -o JW4Py.%q{SLURM_PROCID}.%q{SLURM_JOBID} $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
-    --log-level warning \
-    --output-path $(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_nsys"
+    --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
+    --output-path ${OUTPUT_PATH}'
+
+rm -rf ${OUTPUT_PATH}
