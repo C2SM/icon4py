@@ -157,32 +157,32 @@ def _compute_horizontal_advection_of_rho_and_theta(
     )
 
     (p_distv_bary_1, p_distv_bary_2) = _compute_backward_trajectory_from_edge_center(
-        p_vn,
-        p_vt,
-        pos_on_tplane_e_1,
-        pos_on_tplane_e_2,
-        primal_normal_cell_1,
-        dual_normal_cell_1,
-        primal_normal_cell_2,
-        dual_normal_cell_2,
-        p_dthalf,
+        p_vn=p_vn,
+        p_vt=p_vt,
+        pos_on_tplane_e_1=pos_on_tplane_e_1,
+        pos_on_tplane_e_2=pos_on_tplane_e_2,
+        primal_normal_cell_1=primal_normal_cell_1,
+        dual_normal_cell_1=dual_normal_cell_1,
+        primal_normal_cell_2=primal_normal_cell_2,
+        dual_normal_cell_2=dual_normal_cell_2,
+        p_dthalf=p_dthalf,
     )
 
     (
         rho_at_edges_on_model_levels,
         theta_at_edges_on_model_levels,
     ) = _compute_upwind_values_of_rho_and_theta_v_at_edges(
-        p_vn,
-        rho_ref_me,
-        theta_ref_me,
-        p_distv_bary_1,
-        p_distv_bary_2,
-        ddx_perturbed_rho,
-        ddy_perturbed_rho,
-        ddx_perturbed_theta_v,
-        ddy_perturbed_theta_v,
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
+        p_vn=p_vn,
+        rho_ref_me=rho_ref_me,
+        theta_ref_me=theta_ref_me,
+        p_distv_bary_1=p_distv_bary_1,
+        p_distv_bary_2=p_distv_bary_2,
+        z_grad_rth_1=ddx_perturbed_rho,
+        z_grad_rth_2=ddy_perturbed_rho,
+        z_grad_rth_3=ddx_perturbed_theta_v,
+        z_grad_rth_4=ddy_perturbed_theta_v,
+        z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
+        z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
     )
 
     return rho_at_edges_on_model_levels, theta_at_edges_on_model_levels

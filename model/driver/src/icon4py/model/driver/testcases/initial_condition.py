@@ -48,7 +48,7 @@ from icon4py.model.driver.testcases import utils as testcases_utils
 log = logging.getLogger(__name__)
 
 
-def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
+def jablonowski_williamson(  # noqa: PLR0915,PLR0917 [too-many-statements, too-many-positional-arguments]
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -254,8 +254,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
-        jw_u0=jw_u0,
-        jw_baroclinic_amplitude=jw_baroclinic_amplitude,
+        u0=jw_u0,
+        baroclinic_amplitude=jw_baroclinic_amplitude,
         lat_perturbation_center=lat_perturbation_center,
         lon_perturbation_center=lon_perturbation_center,
         edge_lat=edge_lat,

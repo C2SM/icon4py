@@ -10,9 +10,16 @@ import pathlib
 import pytest
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.driver import driver, driver_utils
 from icon4py.model.driver.testcases import initial_condition
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions,
+    grid_utils,
+    serialbox as sb,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -30,12 +37,16 @@ from icon4py.model.testing.fixtures.datatest import (
 def test_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
+    process_props: decomp_defs.ProcessProperties,
     data_provider: sb.IconSerialDataProvider,
 ) -> None:
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
     icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
+        grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
         output_path=tmp_path / "ci_driver_output",
-        grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_like=backend_like,
     )

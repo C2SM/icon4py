@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 import pathlib
 from typing import Annotated
@@ -13,15 +14,20 @@ import typer
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.driver import driver, driver_states, driver_utils
-from icon4py.model.driver.testcases import initial_condition
+from icon4py.model.driver import driver, driver_states, driver_utils, initial_condition
 
 
 log = logging.getLogger(__name__)
 
 
 def main(
+    *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
+    config_file_path: Annotated[pathlib.Path, typer.Option(help="Configuration file path.")],
+    output_path: Annotated[
+        pathlib.Path | None,
+        typer.Option(help="Optional override output path. Normally read from config."),
+    ] = None,
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -31,9 +37,6 @@ def main(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.BACKENDS.keys()])}",
         ),
     ],
-    output_path: Annotated[
-        pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
-    ] = pathlib.Path("./output"),
     log_level: Annotated[
         str,
         typer.Option(
@@ -66,8 +69,9 @@ def main(
     icon4py_backend = driver_utils.get_backend_from_name(icon4py_backend)
 
     icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
-        output_path=output_path,
         grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
+        output_path=output_path,
         log_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
         backend_like=icon4py_backend,
@@ -75,16 +79,14 @@ def main(
     )
 
     log.info("Generating the initial condition")
-    ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+    ds: driver_states.DriverStates = initial_condition.create(
+        config=icon4py_driver.config.initial_condition,
         grid=icon4py_driver.grid,
+        vertical_config=icon4py_driver.config.vertical_grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
-        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=icon4py_driver.exchange,
     )
 

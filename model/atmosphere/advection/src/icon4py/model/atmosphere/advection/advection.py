@@ -6,10 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -36,7 +39,7 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 """
@@ -94,37 +97,33 @@ class VerticalAdvectionLimiter(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionConfig:
-    horizontal_advection_type: HorizontalAdvectionType
-    horizontal_advection_limiter: HorizontalAdvectionLimiter
-    vertical_advection_type: VerticalAdvectionType
-    vertical_advection_limiter: VerticalAdvectionLimiter
+    horizontal_advection_type: HorizontalAdvectionType = HorizontalAdvectionType.NO_ADVECTION
+    horizontal_advection_limiter: HorizontalAdvectionLimiter = HorizontalAdvectionLimiter.NO_LIMITER
+    vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.NO_ADVECTION
+    vertical_advection_limiter: VerticalAdvectionLimiter = VerticalAdvectionLimiter.NO_LIMITER
 
     """
     Contains necessary parameters to configure an advection run.
     """
 
-    def __post_init__(self) -> None:
-        self._validate()
-
-    def _validate(self) -> None:
-        """Apply consistency checks and validation on configuration parameters."""
-
-        if not hasattr(HorizontalAdvectionType, self.horizontal_advection_type.name):
-            raise NotImplementedError(
-                f"Horizontal advection type {self.horizontal_advection_type} not implemented."
-            )
-        if not hasattr(HorizontalAdvectionLimiter, self.horizontal_advection_limiter.name):
-            raise NotImplementedError(
-                f"Horizontal advection limiter {self.horizontal_advection_limiter} not implemented."
-            )
-        if not hasattr(VerticalAdvectionType, self.vertical_advection_type.name):
-            raise NotImplementedError(
-                f"Vertical advection type {self.vertical_advection_type} not implemented."
-            )
-        if not hasattr(VerticalAdvectionLimiter, self.vertical_advection_limiter.name):
-            raise NotImplementedError(
-                f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
-            )
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
+        transport_nml = atmo_dict["transport_nml"]
+        return cls(
+            horizontal_advection_type=HorizontalAdvectionType(
+                fortran_config.list_to_value(transport_nml["ihadv_tracer"])
+            ),
+            horizontal_advection_limiter=HorizontalAdvectionLimiter(
+                fortran_config.list_to_value(transport_nml["itype_hlimit"])
+            ),
+            vertical_advection_type=VerticalAdvectionType(
+                fortran_config.list_to_value(transport_nml["ivadv_tracer"])
+            ),
+            vertical_advection_limiter=VerticalAdvectionLimiter(
+                fortran_config.list_to_value(transport_nml["itype_vlimit"])
+            ),
+            **overrides,
+        )
 
 
 class Advection(ABC):
@@ -140,6 +139,7 @@ class Advection(ABC):
     @abstractmethod
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -198,6 +198,7 @@ class NoAdvection(Advection):
 
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -205,7 +206,6 @@ class NoAdvection(Advection):
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("advection run - start")
-
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
         self._exchange.exchange(
             dims.CellDim, prep_adv.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
@@ -227,6 +227,7 @@ class GodunovSplittingAdvection(Advection):
 
     def __init__(
         self,
+        *,
         horizontal_advection: advection_horizontal.HorizontalAdvection,
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
@@ -306,6 +307,7 @@ class GodunovSplittingAdvection(Advection):
 
     def run(
         self,
+        *,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -401,13 +403,13 @@ class GodunovSplittingAdvection(Advection):
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
-        log.debug("communication of advection cell field: p_tracer_new - start")
+        log.debug("communication of tracer advection field: p_tracer_new - start")
         self._exchange.exchange(
             dims.CellDim,
             p_tracer_new,
             stream=decomposition.DEFAULT_STREAM,
         )
-        log.debug("communication of advection cell field: p_tracer_new - end")
+        log.debug("communication of tracer advection field: p_tracer_new - end")
 
         # finalize step
         self._even_timestep = not self._even_timestep
@@ -416,6 +418,7 @@ class GodunovSplittingAdvection(Advection):
 
 
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
+    *,
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,
@@ -460,7 +463,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 edge_params=edge_params,
                 cell_params=cell_params,
                 backend=backend,
-                exchange=exchange,
             )
         case _:
             raise NotImplementedError("Unknown horizontal advection type.")
@@ -502,6 +504,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
 
 def convert_config_to_advection(
+    *,
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,

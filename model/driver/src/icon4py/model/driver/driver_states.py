@@ -6,13 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import datetime
 import enum
 import functools
 import logging
 import statistics
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import devtools
 
@@ -28,7 +30,10 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.driver import config as driver_config
+
+
+if TYPE_CHECKING:
+    from icon4py.model.driver import config as driver_config
 
 
 log = logging.getLogger(__name__)

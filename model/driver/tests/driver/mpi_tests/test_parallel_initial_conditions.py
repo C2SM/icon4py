@@ -13,9 +13,14 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.driver import driver, driver_states
-from icon4py.model.driver.testcases import initial_condition
-from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
+from icon4py.model.driver import driver, driver_states, initial_condition
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    parallel_helpers,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend_like,
     download_ser_data,
@@ -41,13 +46,13 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
-    experiment: test_defs.Experiment,
+def test_initial_conditions_compare_single_multi_rank(
+    experiment_description: test_defs.ExperimentDescription,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    if experiment.grid.limited_area:
+    if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
@@ -76,46 +81,45 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     single_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
-        output_path=tmp_path / "ci_driver_output_for_backend_serial_rank0",
         grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
         log_level="info",
+        output_path=tmp_path / "ci_driver_output_serial_rank0",
         backend_like=backend_like,
         force_serial_run=True,
     )
 
-    single_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+    single_rank_ds: driver_states.DriverStates = initial_condition.create(
+        config=single_rank_icon4py_driver.config.initial_condition,
+        vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=single_rank_icon4py_driver.static_field_factories.metrics_field_source,
         backend=single_rank_icon4py_driver.backend,
-        lowest_layer_thickness=single_rank_icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=single_rank_icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=single_rank_icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=single_rank_icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=single_rank_icon4py_driver.exchange,
     )
 
     multi_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
         grid_file_path=grid_file_path,
+        config_file_path=config_file_path,
         log_level="info",
+        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
         backend_like=backend_like,
     )
 
-    multi_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
+    multi_rank_ds: driver_states.DriverStates = initial_condition.create(
+        config=multi_rank_icon4py_driver.config.initial_condition,
+        vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=multi_rank_icon4py_driver.static_field_factories.metrics_field_source,
         backend=multi_rank_icon4py_driver.backend,
-        lowest_layer_thickness=multi_rank_icon4py_driver.vertical_grid_config.lowest_layer_thickness,
-        model_top_height=multi_rank_icon4py_driver.vertical_grid_config.model_top_height,
-        stretch_factor=multi_rank_icon4py_driver.vertical_grid_config.stretch_factor,
-        damping_height=multi_rank_icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         exchange=multi_rank_icon4py_driver.exchange,
     )
 

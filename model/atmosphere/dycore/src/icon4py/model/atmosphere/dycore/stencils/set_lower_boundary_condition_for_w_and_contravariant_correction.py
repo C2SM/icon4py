@@ -38,7 +38,7 @@ def set_lower_boundary_condition_for_w_and_contravariant_correction(
     vertical_end: gtx.int32,
 ) -> None:
     _set_lower_boundary_condition_for_w_and_contravariant_correction(
-        w_concorr_c,
+        w_concorr_c=w_concorr_c,
         out=(w_nnew, z_contr_w_fl_l),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -50,9 +50,9 @@ def compute_contravariant_correction_of_w(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_contravariant_correction_of_w(
-        e_bln_c_s,
-        z_w_concorr_me,
-        wgtfac_c,
+        e_bln_c_s=e_bln_c_s,
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfac_c=wgtfac_c,
         out=w_concorr_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -6,9 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import logging
-from typing import Final
+from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -147,6 +149,7 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
+        *,
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
@@ -270,6 +273,36 @@ class NonHydrostaticConfig:
 
         self._validate()
 
+    @classmethod
+    def from_fortran_dict(cls, atm_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
+        nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
+        run_nml = atm_dict["run_nml"]
+        dynamics_nml = atm_dict["dynamics_nml"]
+        return cls(
+            itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
+            iadv_rhotheta=dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"]),
+            igradp_method=dycore_states.HorizontalPressureDiscretizationType(
+                nonhydrostatic_nml["igradp_method"]
+            ),
+            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
+            divdamp_order=dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"]),
+            divdamp_type=dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"]),
+            l_vert_nested=run_nml["lvert_nest"],
+            deepatmos_mode=dynamics_nml["ldeepatmo"],
+            extra_diffu=nonhydrostatic_nml["lextra_diffu"],
+            rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
+            veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
+            fourth_order_divdamp_factor=nonhydrostatic_nml["divdamp_fac"],
+            fourth_order_divdamp_factor2=nonhydrostatic_nml["divdamp_fac2"],
+            fourth_order_divdamp_factor3=nonhydrostatic_nml["divdamp_fac3"],
+            fourth_order_divdamp_factor4=nonhydrostatic_nml["divdamp_fac4"],
+            fourth_order_divdamp_z=nonhydrostatic_nml["divdamp_z"],
+            fourth_order_divdamp_z2=nonhydrostatic_nml["divdamp_z2"],
+            fourth_order_divdamp_z3=nonhydrostatic_nml["divdamp_z3"],
+            fourth_order_divdamp_z4=nonhydrostatic_nml["divdamp_z4"],
+            **overrides,
+        )
+
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
 
@@ -338,6 +371,7 @@ class NonHydrostaticParams:
 class SolveNonhydro:
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
@@ -762,12 +796,12 @@ class SolveNonhydro:
         )
 
         self.velocity_advection = VelocityAdvection(
-            grid,
-            metric_state_nonhydro,
-            interpolation_state,
-            vertical_params,
-            edge_geometry,
-            owner_mask,
+            grid=grid,
+            metric_state=metric_state_nonhydro,
+            interpolation_state=interpolation_state,
+            vertical_params=vertical_params,
+            edge_params=edge_geometry,
+            owner_mask=owner_mask,
             backend=backend,
         )
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -975,6 +1009,7 @@ class SolveNonhydro:
 
     def time_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
@@ -1058,6 +1093,7 @@ class SolveNonhydro:
 
     def run_predictor_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
@@ -1233,6 +1269,7 @@ class SolveNonhydro:
 
     def run_corrector_step(
         self,
+        *,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,

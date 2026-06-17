@@ -59,13 +59,13 @@ def compute_ppm_all_face_values(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm_all_face_values(
-        p_cc,
-        p_cellhgt_mc_now,
-        p_face_in,
-        slev,
-        elev,
-        slevp1,
-        elevp1,
+        p_cc=p_cc,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        p_face_in=p_face_in,
+        slev=slev,
+        elev=elev,
+        slevp1=slevp1,
+        elevp1=elevp1,
         out=p_face,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
