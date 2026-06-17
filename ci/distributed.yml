@@ -21,6 +21,11 @@ include:
     FI_PROVIDER: cxi
     OMPI_MCA_pml: cm
     OMPI_MCA_mtl: ofi
+    # Test if this reduces memory requirements for the duplicated venvs for
+    # each rank. This should be safe in a CI setting where the cache isn't
+    # going to get wiped from below the venvs, but this should not be set
+    # normally for uv sync.
+    UV_LINK_MODE: symlink
 
 .test_distributed_aarch64:
   stage: test
