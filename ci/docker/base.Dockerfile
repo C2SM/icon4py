@@ -35,7 +35,6 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
-        gfortran \
         gfortran-12 \
         gcc-12 \
         g++-12 \
@@ -49,10 +48,14 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-ENV CC=gcc-12
-ENV CXX=g++-12
-ENV FC=gfortran-12
-ENV CUDAHOSTCXX=g++-12
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 && \
+    update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-12 100
+
+ENV CC=gcc
+ENV CXX=g++
+ENV FC=gfortran
+ENV CUDAHOSTCXX=g++
 
 # Install Rust using rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

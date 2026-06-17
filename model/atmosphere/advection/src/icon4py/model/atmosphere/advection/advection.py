@@ -6,10 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -36,7 +39,7 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 """
@@ -94,37 +97,33 @@ class VerticalAdvectionLimiter(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionConfig:
-    horizontal_advection_type: HorizontalAdvectionType
-    horizontal_advection_limiter: HorizontalAdvectionLimiter
-    vertical_advection_type: VerticalAdvectionType
-    vertical_advection_limiter: VerticalAdvectionLimiter
+    horizontal_advection_type: HorizontalAdvectionType = HorizontalAdvectionType.NO_ADVECTION
+    horizontal_advection_limiter: HorizontalAdvectionLimiter = HorizontalAdvectionLimiter.NO_LIMITER
+    vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.NO_ADVECTION
+    vertical_advection_limiter: VerticalAdvectionLimiter = VerticalAdvectionLimiter.NO_LIMITER
 
     """
     Contains necessary parameters to configure an advection run.
     """
 
-    def __post_init__(self) -> None:
-        self._validate()
-
-    def _validate(self) -> None:
-        """Apply consistency checks and validation on configuration parameters."""
-
-        if not hasattr(HorizontalAdvectionType, self.horizontal_advection_type.name):
-            raise NotImplementedError(
-                f"Horizontal advection type {self.horizontal_advection_type} not implemented."
-            )
-        if not hasattr(HorizontalAdvectionLimiter, self.horizontal_advection_limiter.name):
-            raise NotImplementedError(
-                f"Horizontal advection limiter {self.horizontal_advection_limiter} not implemented."
-            )
-        if not hasattr(VerticalAdvectionType, self.vertical_advection_type.name):
-            raise NotImplementedError(
-                f"Vertical advection type {self.vertical_advection_type} not implemented."
-            )
-        if not hasattr(VerticalAdvectionLimiter, self.vertical_advection_limiter.name):
-            raise NotImplementedError(
-                f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
-            )
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
+        transport_nml = atmo_dict["transport_nml"]
+        return cls(
+            horizontal_advection_type=HorizontalAdvectionType(
+                fortran_config.list_to_value(transport_nml["ihadv_tracer"])
+            ),
+            horizontal_advection_limiter=HorizontalAdvectionLimiter(
+                fortran_config.list_to_value(transport_nml["itype_hlimit"])
+            ),
+            vertical_advection_type=VerticalAdvectionType(
+                fortran_config.list_to_value(transport_nml["ivadv_tracer"])
+            ),
+            vertical_advection_limiter=VerticalAdvectionLimiter(
+                fortran_config.list_to_value(transport_nml["itype_vlimit"])
+            ),
+            **overrides,
+        )
 
 
 class Advection(ABC):
