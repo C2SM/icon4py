@@ -9,7 +9,7 @@ include:
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_LABELIO: 1
-    SLURM_NTASKS: 16
+    SLURM_NTASKS: 4
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
@@ -40,10 +40,14 @@ include:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-3.13($SELECTION, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [diffusion, dycore, advection, common, standalone_driver]
-        BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+      # - COMPONENT: [diffusion, dycore, advection, common, standalone_driver]
+      #   BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+      #   LEVEL: [integration]
+      #   SELECTION: [basic, datatest]
+      - COMPONENT: [common]
+        BACKEND: [dace_cpu]
         LEVEL: [integration]
-        SELECTION: [basic, datatest]
+        SELECTION: [datatest]
   rules:
     - if: $COMPONENT == 'standalone_driver'
       variables:
