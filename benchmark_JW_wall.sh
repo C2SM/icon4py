@@ -56,4 +56,4 @@ srun -u --cpu-bind=cores --gpus-per-task=1 \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
     --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-    --output-path $(pwd)/standalone_driver_output_${SUFFIX}_${SLURM_NNODES}nodes"
+    --output-path $(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall"
