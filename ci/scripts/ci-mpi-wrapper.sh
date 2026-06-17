@@ -30,7 +30,7 @@ fi
 
 if [[ "${subcomm_rank}" -eq 0 ]]; then
     echo "Starting pytest on rank ${rank}, logging to stdout and ${log_file}"
-    $@ |& tee "${log_file}"
+    "$@" |& tee "${log_file}"
 else
     echo "Starting job on rank ${rank}, logging to ${log_file}"
     "$@" >& "${log_file}"
