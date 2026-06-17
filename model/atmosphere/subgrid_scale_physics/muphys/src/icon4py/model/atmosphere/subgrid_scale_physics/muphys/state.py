@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory, prognostic_state as prognostics
+    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_state
 
 
 #: muphys species keys, in the order of the muphys ``Q`` tuple.
@@ -60,11 +60,8 @@ class State:
         self,
         grid: base_grid.Grid,
         metrics: factory.FieldSource,
-        tracer_index: dict[str, int],
         backend: gtx_typing.Backend | None = None,
     ) -> None:
-
-        self._tracer_index = tracer_index
         self._num_cells = grid.num_cells
         self._num_levels = grid.num_levels
         self._backend = backend
@@ -118,14 +115,23 @@ class State:
         self.pg: fa.CellKField[ta.wpfloat] | None = None  # surface graupel rate
         self.pre: fa.CellKField[ta.wpfloat] | None = None  # surface precip energy flux
 
-    def gather_from_prognostic(self, prognostic: prognostics.PrognosticState) -> None:
+    def gather_from_prognostic(
+        self, prognostic: prognostics.PrognosticState, tracers: tracer_state.TracerState
+    ) -> None:
         """
         prepare the input fields for muphys from the prognostic state. This includes:
             - binding the references for rho and q (the muphys input fields that are stored prognostically in the dycore state)
             - diagnosing the muphys input fields that aren't stored prognostically (te, p) from the prognostic state.
         """
         self.rho = prognostic.rho
-        self.q = {s: prognostic.tracer[self._tracer_index[s]] for s in _SPECIES}
+        self.q = {
+            "v": tracers.qv,
+            "c": tracers.qc,
+            "r": tracers.qr,
+            "s": tracers.qs,
+            "i": tracers.qi,
+            "g": tracers.qg,
+        }
 
         # Diagnose virtual temperature and temperature (te is not stored prognostically).
         self._diagnose_temperature_program(
@@ -186,9 +192,9 @@ class State:
         This will be called before calling the muphys.
         output is got from muphys, and the tendencies in output will be applied to the prognostic state.
         """
-        # 1. Apply moisture tendencies to the tracers (in place).
+        # 1. Apply moisture tendencies to the tracers (in place; self.q was bound in gather).
         for s in _SPECIES:
-            tracer = prognostic.tracer[self._tracer_index[s]]
+            tracer = self.q[s]
             self._apply_tendency_program(
                 field_a=tracer,
                 coeff=dt,
@@ -215,15 +221,14 @@ class State:
         )
 
         # dTv/dt from the new temperature and the species just updated in step 1
-        tracers = prognostic.tracer
         self._virtual_temperature_tendency_program(
             dtime=dt,
-            qv=tracers[self._tracer_index["v"]],
-            qc=tracers[self._tracer_index["c"]],
-            qi=tracers[self._tracer_index["i"]],
-            qr=tracers[self._tracer_index["r"]],
-            qs=tracers[self._tracer_index["s"]],
-            qg=tracers[self._tracer_index["g"]],
+            qv=self.q["v"],
+            qc=self.q["c"],
+            qi=self.q["i"],
+            qr=self.q["r"],
+            qs=self.q["s"],
+            qg=self.q["g"],
             temperature=self._new_te,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,

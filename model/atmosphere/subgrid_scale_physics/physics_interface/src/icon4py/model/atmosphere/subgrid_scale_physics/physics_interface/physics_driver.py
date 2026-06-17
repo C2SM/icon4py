@@ -108,13 +108,14 @@ class PhysicsDriver:
     def run(
         self,
         prognostic: Any,
+        tracers: Any,
         dt: float,
         now: datetime.datetime,
     ) -> None:
         # TODO (Yilu): currently, ForcingMode is not applied, because muphys is always APPLY mode.
         # TODO (Yilu): later on, when a non-APPLY process exits
         for proc in self._processes:
-            self._physics_state.gather_from_prognostic(prognostic)
+            self._physics_state.gather_from_prognostic(prognostic, tracers)
             tc = proc.time_control
             if not tc.enable_process:
                 continue

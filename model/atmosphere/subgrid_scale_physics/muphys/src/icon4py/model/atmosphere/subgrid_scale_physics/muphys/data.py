@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Field metadata for the MuphysGranule (Component) input/output contract.
-"""
+"""Field metadata for the MuphysGranule (Component) input/output contract."""
 
 from __future__ import annotations
 
 from icon4py.model.common.states import data, model
+
 
 _SPECIES = ("v", "c", "r", "s", "i", "g")
 
