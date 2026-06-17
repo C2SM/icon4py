@@ -54,6 +54,8 @@ variables:
   timeout: 8h
   extends: .container-runner-santis-gh200
   variables:
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
+    CXXFLAGS: "-ffp-contract=off"
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
     SLURM_PARTITION: "shared"
@@ -155,8 +157,6 @@ variables:
       variables:
         SLURM_TIMELIMIT: "2:00:00"
         SLURM_PARTITION: "normal"
-        ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
-        CXXFLAGS: "-ffp-contract=off"
     - if: $MODEL_MPI_SUBPACKAGE == 'advection'
       variables:
         SLURM_TIMELIMIT: '00:10:00'
