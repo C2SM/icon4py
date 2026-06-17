@@ -59,6 +59,7 @@ class Icon4pyDriver:
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
     ):
+        log.debug(f"Config = {config}")
         self.config = config
         self.backend = backend
         self.grid = grid
@@ -110,7 +111,7 @@ class Icon4pyDriver:
         prognostic_states = ds.prognostics
         prep_adv = ds.prep_advection_prognostic
         tracer_prep_adv = ds.prep_tracer_advection_prognostic
-
+        log.debug(f"{self.config}")
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
         )
@@ -535,12 +536,12 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        dtime=datetime.timedelta(seconds=150.0),
+        end_date=datetime.datetime(1, 1, 8, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("1.05"),
-        enable_statistics_output=True,
+        enable_statistics_output=False,
         profiling_stats=profiling_stats,
     )
 
@@ -608,7 +609,9 @@ def initialize_driver(
                 output_path.parent
                 / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
             )
-        output_path.mkdir(parents=True, exist_ok=False)
+        #output_path.mkdir(parents=True, exist_ok=False)
+        if not with_mpi or mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_rank() == 0:
+            output_path.mkdir(parents=True, exist_ok=True)
     if with_mpi:
         # broadcast (possibly changed) output_path
         comm = mpi_decomp.mpi4py.MPI.COMM_WORLD
