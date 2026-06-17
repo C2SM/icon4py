@@ -398,7 +398,8 @@ url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
 # dace = {index = "gridtools"}
-gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+dace = {git = "https://github.com/GridTools/dace", branch = "dev-sorted_depends_on"}
+gt4py = {git = "https://github.com/edopao/gt4py", branch = "dev-toolchain_deterministic"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
