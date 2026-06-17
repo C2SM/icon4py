@@ -34,7 +34,10 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    DiffusionType,
     ForcingType,
+    SmagorinskyStencilType,
+    TemperatureDiscretizationType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -116,14 +119,14 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters
-    config = DiffusionConfig.from_init_aliases(
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
+    config = DiffusionConfig(
+        diffusion_type=DiffusionType(diffusion_type),
+        apply_to_vertical_wind=hdiff_w,
+        apply_to_horizontal_wind=hdiff_vn,
+        apply_smag_diff_to_vertical_wind=hdiff_smag_w,
+        apply_zdiffusion_t=zdiffu_t,
+        type_t_diffu=TemperatureDiscretizationType(type_t_diffu),
+        type_vn_diffu=SmagorinskyStencilType(type_vn_diffu),
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
@@ -134,9 +137,9 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_height2=smagorinski_scaling_height2,
         smagorinski_scaling_height3=smagorinski_scaling_height3,
         smagorinski_scaling_height4=smagorinski_scaling_height4,
-        hdiff_temp=hdiff_temp,
-        n_substeps=ndyn_substeps,
-        velocity_boundary_diffusion_denom=denom_diffu_v,
+        apply_to_temperature=hdiff_temp,
+        ndyn_substeps=int(ndyn_substeps),
+        velocity_boundary_diffusion_denominator=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
         iforcing=ForcingType(iforcing),

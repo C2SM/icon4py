@@ -135,12 +135,6 @@ class ForcingType(int, enum.Enum):
     NWP = 3  #: Numerical Weather Prediction forcing (inwp)
 
 
-# TODO(ricoh): remove before merging, after replacing old style constructors
-@dataclasses.dataclass
-class InitAlias:
-    name: str
-
-
 @dataclasses.dataclass(kw_only=True)
 class DiffusionConfig:
     """
@@ -164,7 +158,6 @@ class DiffusionConfig:
 
     apply_to_vertical_wind: typing.Annotated[
         bool,
-        InitAlias("hdiff_w"),
         common_conf_opt.ConfigOption(
             description="If True, apply diffusion to the vertical wind field.",
             icon_equivalent=common_conf_opt.IconOption("lhdiff_w", ("diffusion_nml",)),
@@ -173,7 +166,6 @@ class DiffusionConfig:
 
     apply_to_horizontal_wind: typing.Annotated[
         bool,
-        InitAlias("hdiff_vn"),
         common_conf_opt.ConfigOption(
             description="If true, apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90.",
             icon_equivalent=common_conf_opt.IconOption("lhdiff_vn", ("diffusion_nml",)),
@@ -182,7 +174,6 @@ class DiffusionConfig:
 
     apply_to_temperature: typing.Annotated[
         bool,
-        InitAlias("hdiff_temp"),
         common_conf_opt.ConfigOption(
             description="If True, apply horizontal diffusion to temperature field.",
             icon_equivalent=common_conf_opt.IconOption("lhdiff_temp", ("diffusion_nml",)),
@@ -191,7 +182,6 @@ class DiffusionConfig:
 
     apply_smag_diff_to_vertical_wind: typing.Annotated[
         bool,
-        InitAlias("hdiff_smag_w"),
         common_conf_opt.ConfigOption(
             description="If True, apply Smagorinsky diffusion to vertical wind field.",
             icon_equivalent=common_conf_opt.IconOption(
@@ -202,7 +192,6 @@ class DiffusionConfig:
 
     compute_3d_smag_coeff: typing.Annotated[
         bool,
-        InitAlias("smag_3d"),
         common_conf_opt.ConfigOption(
             description="If True, compute 3D Smagorinsky diffusion coefficient.",
             icon_equivalent=common_conf_opt.IconOption(
@@ -325,7 +314,6 @@ class DiffusionConfig:
 
     apply_zdiffusion_t: typing.Annotated[
         bool,
-        InitAlias("zdiffu_t"),
         common_conf_opt.ConfigOption(
             description="If True, apply truly horizontal temperature diffusion over steep slopes.",
             icon_equivalent=common_conf_opt.IconOption("l_zdiffu_t", ("nonhydrostatic_nml",)),
@@ -334,7 +322,6 @@ class DiffusionConfig:
 
     ndyn_substeps: typing.Annotated[
         int,
-        InitAlias("n_substeps"),
         common_conf_opt.ConfigOption(
             description="Number of dynamics substeps per fast-physics step.",
             icon_equivalent=common_conf_opt.IconOption("ndyn_substeps", ("nonhydrostatic_nml",)),
@@ -343,7 +330,6 @@ class DiffusionConfig:
 
     temperature_boundary_diffusion_denominator: typing.Annotated[
         float,
-        InitAlias("temperature_boundary_diffusion_denom"),
         common_conf_opt.ConfigOption(
             description="Denominator for temperature boundary diffusion.",
             icon_equivalent=common_conf_opt.IconOption("denom_diffu_t", ("gridref_nml",)),
@@ -352,7 +338,6 @@ class DiffusionConfig:
 
     velocity_boundary_diffusion_denominator: typing.Annotated[
         float,
-        InitAlias("velocity_boundary_diffusion_denom"),
         common_conf_opt.ConfigOption(
             description="Denominator for velocity boundary diffusion.",
             icon_equivalent=common_conf_opt.IconOption("denom_diffu_v", ("gridref_nml",)),
@@ -409,31 +394,9 @@ class DiffusionConfig:
         ),
     ] = False
 
-    def __post_init__(
-        self,
-    ) -> None:
+    def __post_init__(self) -> None:
 
         self._validate()
-
-    # TODO(ricoh): remove before merging (after replacing old style constructors)
-    @classmethod
-    def get_init_alias(cls, field: dataclasses.Field) -> str:
-        annotations = typing.get_type_hints(cls, include_extras=True)
-        metadatae: tuple[InitAlias | common_conf_opt.IconOption, ...]
-        if metadatae := getattr(annotations[field.name], "__metadata__", tuple()):
-            init_aliases = [meta for meta in metadatae if isinstance(meta, InitAlias)]
-            if init_aliases:
-                return init_aliases[0].name
-        return field.name
-
-    # TODO(ricoh): remove before merging (after replacing old style constructors)
-    @classmethod
-    def from_init_aliases(cls, **kwargs: Any) -> DiffusionConfig:
-        """Backwards-compatibility wrapper around __init__."""
-
-        alias_map = {cls.get_init_alias(field): field.name for field in dataclasses.fields(cls)}
-        translated_kw = {alias_map[key]: value for key, value in kwargs.items()}
-        return cls(**translated_kw)
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> DiffusionConfig:
