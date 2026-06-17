@@ -29,6 +29,7 @@ from icon4py.model.testing import (
     test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
     backend_like,
     download_ser_data,
     experiment,
@@ -94,22 +95,22 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
 
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
-    serial_process_props = decomp_defs.SingleNodeProcessProperties()
-    serial_config = experiment.config.with_overrides(
+    single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
+    single_rank_config = experiment.config.with_overrides(
         driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
     )
-    serial_grid_manager = driver_utils.create_grid_manager(
+    single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=serial_config.vertical_grid,
+        vertical_grid_config=single_rank_config.vertical_grid,
         allocator=allocator,
-        process_props=serial_process_props,
+        process_props=single_rank_process_props,
     )
     # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=serial_config,  # type: ignore[arg-type]
-            grid_manager=serial_grid_manager,
-            process_props=serial_process_props,
+            config=single_rank_config,  # type: ignore[arg-type]
+            grid_manager=single_rank_grid_manager,
+            process_props=single_rank_process_props,
             backend=backend,
         )
     )
@@ -126,20 +127,20 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         exchange=single_rank_icon4py_driver.exchange,
     )
 
-    mpi_config = experiment.config.with_overrides(
+    multi_rank_config = experiment.config.with_overrides(
         driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
     )
-    mpi_grid_manager = driver_utils.create_grid_manager(
+    multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=mpi_config.vertical_grid,
+        vertical_grid_config=multi_rank_config.vertical_grid,
         allocator=allocator,
         process_props=process_props,
     )
     # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=mpi_config,  # type: ignore[arg-type]
-            grid_manager=mpi_grid_manager,
+            config=multi_rank_config,  # type: ignore[arg-type]
+            grid_manager=multi_rank_grid_manager,
             process_props=process_props,
             backend=backend,
         )

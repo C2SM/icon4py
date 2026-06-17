@@ -99,10 +99,7 @@ def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescript
     ],
     ids=lambda r: r.name,
 )
-def experiment_description(
-    request: pytest.FixtureRequest,
-    download_ser_data: None,  # downloads data as side-effect, needed for configs
-) -> definitions.ExperimentDescription:
+def experiment_description(request: pytest.FixtureRequest) -> definitions.ExperimentDescription:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""

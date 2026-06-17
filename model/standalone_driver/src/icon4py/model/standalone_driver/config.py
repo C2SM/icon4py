@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 RelativeTime: TypeAlias = datetime.timedelta
 AbsoluteTime: TypeAlias = datetime.datetime
 NumTimeSteps: TypeAlias = int
-EndSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
+EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
 @dataclasses.dataclass
@@ -58,8 +58,8 @@ class DriverConfig:
     experiment_name: str
     profiling_stats: ProfilingStats | None
     dtime: RelativeTime
-    start_datetime: AbsoluteTime
-    end_simulation: EndSimulation
+    start_of_simulation: AbsoluteTime
+    end_of_simulation: EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
@@ -83,11 +83,16 @@ class DriverConfig:
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
-            start_datetime=datetime.datetime.fromisoformat(
+            start_of_simulation=datetime.datetime.fromisoformat(
                 start_datetime_str.replace("Z", "+00:00")
             ),
-            end_simulation=datetime.datetime.fromisoformat(end_datetime_str.replace("Z", "+00:00")),
-            apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
+            end_of_simulation=datetime.datetime.fromisoformat(
+                end_datetime_str.replace("Z", "+00:00")
+            ),
+            # apply_extra_second_order_divdamp does not have a namelist
+            # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
+            # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
+            apply_extra_second_order_divdamp=not run_nml.get("ltestcase", False),
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             **overrides,

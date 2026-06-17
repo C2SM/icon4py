@@ -23,6 +23,7 @@ from icon4py.model.testing import (
     test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
     backend_like,
     download_ser_data,
     experiment_description,
@@ -39,7 +40,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description, end_simulation",
+    "experiment_description, end_of_simulation",
     [
         (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
     ],
@@ -49,7 +50,7 @@ _log = logging.getLogger(__file__)
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
-    end_simulation: driver_config.EndSimulation,
+    end_of_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
@@ -78,47 +79,47 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
 
     config = driver_config.read_config(config_file_path)
 
-    serial_process_props = decomp_defs.SingleNodeProcessProperties()
-    serial_config = config.with_overrides(
+    single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
+    single_rank_config = config.with_overrides(
         driver={
             "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
-            "end_simulation": end_simulation,
+            "end_of_simulation": end_of_simulation,
         }
     )
-    serial_grid_manager = driver_utils.create_grid_manager(
+    single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=serial_config.vertical_grid,
+        vertical_grid_config=single_rank_config.vertical_grid,
         allocator=allocator,
-        process_props=serial_process_props,
+        process_props=single_rank_process_props,
     )
     single_rank_ds, _ = standalone_driver.run_driver(
-        config=serial_config,
-        grid_manager=serial_grid_manager,
-        process_props=serial_process_props,
+        config=single_rank_config,
+        grid_manager=single_rank_grid_manager,
+        process_props=single_rank_process_props,
         backend=backend,
     )
 
-    mpi_config = config.with_overrides(
+    multi_rank_config = config.with_overrides(
         driver={
             "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            "end_simulation": end_simulation,
+            "end_of_simulation": end_of_simulation,
         }
     )
-    mpi_grid_manager = driver_utils.create_grid_manager(
+    multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        vertical_grid_config=mpi_config.vertical_grid,
+        vertical_grid_config=multi_rank_config.vertical_grid,
         allocator=allocator,
         process_props=process_props,
     )
     multi_rank_ds, multi_rank_driver = standalone_driver.run_driver(
-        config=mpi_config,
-        grid_manager=mpi_grid_manager,
+        config=multi_rank_config,
+        grid_manager=multi_rank_grid_manager,
         process_props=process_props,
         backend=backend,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
-    serial_reference_fields: dict[str, object] = {
+    single_rank_reference_fields: dict[str, object] = {
         field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
         for field_name in fields
     }
@@ -126,7 +127,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     for field_name in fields:
         print(f"\nverifying field {field_name}")
         global_reference_field = process_props.comm.bcast(
-            serial_reference_fields.get(field_name),
+            single_rank_reference_fields.get(field_name),
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)

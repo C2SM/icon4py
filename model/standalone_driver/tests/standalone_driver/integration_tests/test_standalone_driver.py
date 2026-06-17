@@ -36,8 +36,8 @@ from ..fixtures import *  # noqa: F403
             2,
             5,
             "2008-09-01T00:00:00.000",
-            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
-            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
             False,
             False,
         ),
@@ -76,7 +76,7 @@ def test_standalone_driver(
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
-            "end_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
+            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
                 tzinfo=datetime.timezone.utc
             ),
         }
@@ -104,25 +104,25 @@ def test_standalone_driver(
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=5e-4,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=6e-7,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=3e-6,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=8e-9,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
-        atol=5e-11,
+        atol=2e-10,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=3e-5,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=1e-7,
     )
 
     test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
