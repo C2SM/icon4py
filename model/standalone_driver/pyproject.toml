@@ -33,7 +33,8 @@ dependencies = [
   "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.1.10",
-  "packaging>=20.0"
+  "packaging>=20.0",
+  "serialbox4py>=2.6.2"  # needed to read IC from file until IO is done
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}
