@@ -21,7 +21,7 @@ from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.standalone_driver import config as driver_config, initial_condition
+from icon4py.model.driver import config as driver_config, initial_condition
 from icon4py.model.testing import config
 
 
@@ -173,7 +173,7 @@ class ExperimentDescription:
 
 @dataclasses.dataclass
 class ExperimentConfig:
-    # NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
+    # NOTE: This has a duplicate in driver/config.py to avoid circular imports.
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig

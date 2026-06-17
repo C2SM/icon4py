@@ -51,7 +51,7 @@ def read_from_file(
     ignored so that this function shares the same call signature as the
     analytical initial-condition functions (``jablonowski_williamson``,
     ``gauss3d``, …) and can be stored transparently in
-    :attr:`~icon4py.model.standalone_driver.initial_condition.InitialConditionConfig.create`.
+    :attr:`~icon4py.model.driver.initial_condition.InitialConditionConfig.create`.
     """
 
     allocator = model_backends.get_allocator(backend)

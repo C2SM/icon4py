@@ -32,11 +32,11 @@ dependencies = [
   "icon4py-common~=0.2.0",
   "icon4py-testing~=0.2.0",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
-  "click>=8.0.1",
+  "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.1.10",
   "packaging>=20.0",
-  "numpy>=1.23.3"
+  "serialbox4py>=2.6.2"  # needed to read IC from file until IO is done
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}
@@ -47,7 +47,7 @@ requires-python = ">=3.10"
 version = "0.2.0"
 
 [project.scripts]
-icon4py_driver = "icon4py.model.driver.icon4py_driver:main"
+icon4py-driver = "icon4py.model.driver.main:main"
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"

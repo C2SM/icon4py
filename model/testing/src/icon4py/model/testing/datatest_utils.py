@@ -27,7 +27,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver import config as driver_config, initial_condition
+from icon4py.model.driver import config as driver_config, initial_condition
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 
@@ -148,7 +148,7 @@ def create_experiment_configuration(
     experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> definitions.ExperimentConfig:
-    # NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
+    # NOTE: This has a duplicate in driver/config.py to avoid circular imports.
 
     experiment_path = get_path_for_experiment(
         experiment_description,
