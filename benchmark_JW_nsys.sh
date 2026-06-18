@@ -13,6 +13,10 @@ cd $ICON4PY_GIT_ROOT
 
 source .venv/bin/activate
 
+export CUDA_BUFFER_PAGE_IN_THRESHOLD_MS=0.001
+export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=0
+export FI_CXI_RX_MATCH_MODE=software
+export FI_MR_CACHE_MONITOR=disabled
 export MPICH_GPU_SUPPORT_ENABLED=1
 export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
 
@@ -32,7 +36,6 @@ export GHEX_GPU_TYPE=NVIDIA
 export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export CUDA_CACHE_DISABLE=1
-
 
 export ICON_GRID="./icon_grid_0004_R02B07_G.nc"
 #export ICON_GRID="./icon_grid_0013_R02B04_R.nc"
@@ -55,12 +58,12 @@ export ICON4PY_NVTX_MARKERS_ENABLED=1
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_nsys
 
-echo "Executing JW4Py with nsys profile and NVTX markers"
+echo "Executing JW4Py on GH200 with nsys profile and NVTX markers"
 
 rm -rf ${OUTPUT_PATH}*
 
 srun -u --cpu-bind=cores \
-    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; nsys profile -t cuda,nvtx,osrt -o JW4Py.%q{SLURM_PROCID}.%q{SLURM_JOBID} $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
+    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; nsys profile -t cuda,nvtx,osrt,mpi --mpi-impl mpich -o JW4Py.%q{SLURM_PROCID}.%q{SLURM_JOBID} --stats true $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
     --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \

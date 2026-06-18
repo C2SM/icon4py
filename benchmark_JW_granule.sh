@@ -13,6 +13,10 @@ cd $ICON4PY_GIT_ROOT
 
 source .venv/bin/activate
 
+export CUDA_BUFFER_PAGE_IN_THRESHOLD_MS=0.001
+export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=0
+export FI_CXI_RX_MATCH_MODE=software
+export FI_MR_CACHE_MONITOR=disabled
 export MPICH_GPU_SUPPORT_ENABLED=1
 export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
 
@@ -33,7 +37,6 @@ export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export CUDA_CACHE_DISABLE=1
 
-
 export ICON_GRID="./icon_grid_0004_R02B07_G.nc"
 #export ICON_GRID="./icon_grid_0013_R02B04_R.nc"
 SUFFIX=""
@@ -53,7 +56,7 @@ export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_granule
 
-echo "Executing JW4Py to check the granule timers in the output table"
+echo "Executing JW4Py on GH200 to check the granule timers in the output table"
 
 rm -rf ${OUTPUT_PATH}*
 
