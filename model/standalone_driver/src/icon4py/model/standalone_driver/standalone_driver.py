@@ -125,7 +125,7 @@ class Icon4pyDriver:
 
             log.info(
                 f"\n"
-                f"simulation date : {self.model_time_variables.simulation_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
+                f"simulation date : {self.model_time_variables.simulation_current_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
                 f"\n"
             )
 
