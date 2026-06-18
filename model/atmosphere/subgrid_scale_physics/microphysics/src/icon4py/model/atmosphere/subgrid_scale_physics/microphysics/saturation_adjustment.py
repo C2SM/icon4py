@@ -32,7 +32,7 @@ class SaturationAdjustmentConfig:
     #: in ICON, 10 is always used for max iteration when subroutine satad_v_3D is called.
     max_iter: int = 10
     #: in ICON, 1.e-3 is always used for the tolerance when subroutine satad_v_3D is called.
-    tolerance: ta.wpfloat = 1.0e-3
+    tolerance: ta.wpfloat = ta.wpfloat(1.0e-3)
 
 
 @dataclasses.dataclass

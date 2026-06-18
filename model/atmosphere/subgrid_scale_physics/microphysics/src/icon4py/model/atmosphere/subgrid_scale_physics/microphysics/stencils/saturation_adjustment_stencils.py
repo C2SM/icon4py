@@ -45,7 +45,7 @@ def _new_temperature_in_newton_iteration(
         updated temperature [K]
     """
     ft = next_temperature - temperature + lwdocvd * (qsat_rho(next_temperature, rho) - qv)
-    dft = 1.0 + lwdocvd * dqsatdT_rho(next_temperature, qsat_rho(next_temperature, rho))
+    dft = ta.wpfloat(1.0) + lwdocvd * dqsatdT_rho(next_temperature, qsat_rho(next_temperature, rho))
 
     return next_temperature - ft / dft
 
@@ -226,7 +226,7 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
     current_temperature = where(
         subsaturated_mask,
         temperature_after_all_qc_evaporated,
-        temperature - 2.0 * tolerance,
+        temperature - ta.wpfloat(2.0) * tolerance,
     )
     next_temperature = where(subsaturated_mask, temperature_after_all_qc_evaporated, temperature)
     newton_iteration_mask = where(subsaturated_mask, False, True)
@@ -293,7 +293,7 @@ def _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
     newton_iteration_mask = where(
         abs(current_temperature - next_temperature) > tolerance, True, False
     )
-    new_temperature = where(newton_iteration_mask, 0.0, current_temperature)
+    new_temperature = where(newton_iteration_mask, ta.wpfloat(0.0), current_temperature)
     return newton_iteration_mask, new_temperature
 
 

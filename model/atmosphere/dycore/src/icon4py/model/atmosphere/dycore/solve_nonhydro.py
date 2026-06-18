@@ -991,7 +991,7 @@ class SolveNonhydro:
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool = False,
-        iau_wgt_dyn: float = 0.0,
+        iau_wgt_dyn: wpfloat = wpfloat(0.0),
     ):
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -1071,7 +1071,7 @@ class SolveNonhydro:
         at_initial_timestep: bool,
         at_first_substep: bool,
         is_iau_active: bool,
-        iau_wgt_dyn: float,
+        iau_wgt_dyn: wpfloat,
     ):
         """
         Runs the predictor step of the non-hydrostatic solver.
@@ -1251,7 +1251,7 @@ class SolveNonhydro:
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool,
-        iau_wgt_dyn: float,
+        iau_wgt_dyn: wpfloat,
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
