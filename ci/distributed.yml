@@ -26,6 +26,8 @@ include:
     # going to get wiped from below the venvs, but this should not be set
     # normally for uv sync.
     UV_LINK_MODE: symlink
+    # Avoid too many concurrent build jobs.
+    GT4PY_BUILD_JOBS: 1
 
 .test_distributed_aarch64:
   stage: test
