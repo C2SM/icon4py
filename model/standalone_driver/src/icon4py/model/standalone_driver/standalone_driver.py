@@ -123,13 +123,13 @@ class Icon4pyDriver:
         log.warning(f"Granule timers enabled: {self.config.granule_timers}\nNVTX_MARKERS_ENABLED: {NVTX_MARKERS_ENABLED}")
         if NVTX_MARKERS_ENABLED:
             device_utils.sync(self.backend)
-            nvtx.push_range("time_integration", color=nvtx.colors.green)
+            nvtx.push_range("time_integration", color="green")
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
         wall_clock_starting_time = datetime.datetime.now()
         if NVTX_MARKERS_ENABLED:
-            nvtx.push_range("time_loop", color=nvtx.colors.blue)
+            nvtx.push_range("time_loop", color="blue")
 
         for time_step in range(self.model_time_variables.n_time_steps):
             if self.config.profiling_stats is not None:
@@ -147,7 +147,7 @@ class Icon4pyDriver:
             self.model_time_variables.next_simulation_date()
 
             if NVTX_MARKERS_ENABLED:
-                nvtx.push_range("_integrate_one_time_step", color=nvtx.colors.red)
+                nvtx.push_range("_integrate_one_time_step", color="red")
             self._integrate_one_time_step(
                 diffusion_diagnostic_state=diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
@@ -164,7 +164,7 @@ class Icon4pyDriver:
             self.model_time_variables.is_first_step_in_simulation = False
 
             if NVTX_MARKERS_ENABLED:
-                nvtx.push_range("_adjust_ndyn_substeps_var", color=nvtx.colors.orange)
+                nvtx.push_range("_adjust_ndyn_substeps_var", color="orange")
             self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
             if NVTX_MARKERS_ENABLED:
                 device_utils.sync(self.backend)
@@ -205,7 +205,7 @@ class Icon4pyDriver:
     ) -> None:
         log.debug(f"Running {self.solve_nonhydro.__class__}")
         if NVTX_MARKERS_ENABLED:
-            nvtx.push_range("_do_dyn_substepping", color=nvtx.colors.yellow)
+            nvtx.push_range("_do_dyn_substepping", color="yellow")
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
@@ -224,7 +224,7 @@ class Icon4pyDriver:
                 else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
             )
             if NVTX_MARKERS_ENABLED:
-                nvtx.push_range("diffusion,run", color=nvtx.colors.purple)
+                nvtx.push_range("diffusion,run", color="purple")
             with timer_diffusion:
                 self.diffusion.run(
                     diffusion_diagnostic_state,
@@ -238,7 +238,7 @@ class Icon4pyDriver:
                 nvtx.pop_range()
 
         if NVTX_MARKERS_ENABLED:
-            nvtx.push_range("tracers", color=nvtx.colors.cyan)
+            nvtx.push_range("tracers", color="cyan")
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
         for tracer_idx in range(self.config.ntracer):
