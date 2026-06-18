@@ -27,6 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,

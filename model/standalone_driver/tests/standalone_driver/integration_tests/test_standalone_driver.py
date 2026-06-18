@@ -9,7 +9,7 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, type_alias as ta
 from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
@@ -19,6 +19,7 @@ from ..fixtures import *  # noqa: F403
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
@@ -59,26 +60,22 @@ def test_standalone_driver(
     theta_sp = savepoint_diffusion_exit.theta_v()
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
-    assert test_utils.dallclose(
+
+    isdouble = ta.precision == "double"
+    test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=6e-7,
+        atol=6e-7 if isdouble else 1e-4,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-9,
+        atol=8e-9 if isdouble else 4e-5,
     )
 
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=5e-11
-    )
+    test_utils.assert_dallclose(ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy())
 
-    assert test_utils.dallclose(
-        ds.prognostics.current.theta_v.asnumpy(),
-        theta_sp.asnumpy(),
-        atol=6e-8,
-    )
+    test_utils.assert_dallclose(ds.prognostics.current.theta_v.asnumpy(), theta_sp.asnumpy())
 
-    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
+    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy())
