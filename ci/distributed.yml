@@ -9,7 +9,7 @@ include:
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_LABELIO: 1
-    SLURM_NTASKS: 12
+    SLURM_NTASKS: 16
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
