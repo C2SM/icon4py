@@ -87,7 +87,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> prognostics.PrognosticState:
+) -> None:
     """Fill a PrognosticState by dispatching on the type of ``config.config``."""
     match config.config:
         case jw_ic.JablonowskiWilliamsonConfig():
@@ -120,4 +120,3 @@ def create(
             )
         case _:
             raise TypeError(f"Unknown initial conditions config type: {type(config.config)!r}")
-    return prognostic_state_now

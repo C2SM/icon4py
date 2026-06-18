@@ -600,7 +600,7 @@ def run_driver(
         allocator=allocator,
         ntracer=icon4py_driver.config.driver.ntracer,
     )
-    prognostic_state_now = initial_condition.create(
+    initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
