@@ -11,7 +11,7 @@ from __future__ import annotations
 import copy
 import dataclasses
 import pathlib
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
@@ -184,6 +184,16 @@ class ExperimentConfig:
     graupel: graupel.SingleMomentSixClassIconGraupelConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: driver_config.DriverConfig
+
+    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
+        replacements: dict[str, Any] = {}
+        for key, value in overrides.items():
+            current = getattr(self, key)
+            if isinstance(value, dict):
+                replacements[key] = dataclasses.replace(current, **value)
+            else:
+                replacements[key] = value
+        return dataclasses.replace(self, **replacements)
 
 
 @dataclasses.dataclass
