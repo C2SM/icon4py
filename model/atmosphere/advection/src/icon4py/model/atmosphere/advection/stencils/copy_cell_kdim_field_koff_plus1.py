@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): move this highly generic stencil to common
@@ -20,7 +20,7 @@ from icon4py.model.common.dimension import Koff
 def _copy_cell_kdim_field_koff_plus1(
     field_in: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    return field_in(Koff[1])
+    return field_in(KDim + 1)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
