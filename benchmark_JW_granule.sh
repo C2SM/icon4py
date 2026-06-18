@@ -56,7 +56,7 @@ export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_granule
 
-echo "Executing JW4Py on GH200 to check the granule timers in the output table"
+echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes to check the granule timers in the output table"
 
 rm -rf ${OUTPUT_PATH}*
 

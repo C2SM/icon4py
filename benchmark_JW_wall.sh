@@ -56,7 +56,7 @@ export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
 
-echo "Executing JW4Py on GH200 to check the WALL CLOCK timer reported at the end of the run"
+echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes to check the WALL CLOCK timer reported at the end of the run"
 
 rm -rf ${OUTPUT_PATH}*
 

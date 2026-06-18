@@ -58,7 +58,7 @@ export ICON4PY_NVTX_MARKERS_ENABLED=1
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_nsys
 
-echo "Executing JW4Py on GH200 with nsys profile and NVTX markers"
+echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes with nsys profile and NVTX markers"
 
 rm -rf ${OUTPUT_PATH}*
 
