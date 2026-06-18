@@ -76,20 +76,18 @@ def validate_granule_state_consistency(
 ) -> None:
     """
     Validate that enabled granules have their required states allocated.
+    The graupel granule is currently not checked as it will be moved to the
+    physics interface.
 
     Raises:
         ValueError: if a granule is enabled but a state it requires is None.
     """
 
-    def _is_enabled(cfg: driver_config.ExperimentConfig, name: str) -> bool:
-        granule_config = getattr(cfg, name)
-        return granule_config is not None and granule_config.enabled
-
-    if _is_enabled(config, "diffusion") and granules.diffusion is None:
+    if config.diffusion is not None and config.diffusion.enabled and granules.diffusion is None:
         raise ValueError("diffusion is enabled but granules.diffusion is None.")
-    if _is_enabled(config, "nonhydrostatic") and granules.solve_nonhydro is None:
+    if config.nonhydrostatic is not None and config.nonhydrostatic.enabled and granules.solve_nonhydro is None:
         raise ValueError("solve_nonhydro is enabled but granules.solve_nonhydro is None.")
-    if _is_enabled(config, "tracer_advection") and granules.tracer_advection is None:
+    if config.tracer_advection is not None and config.tracer_advection.enabled and granules.tracer_advection is None:
         raise ValueError("tracer_advection is enabled but granules.tracer_advection is None.")
 
     if granules.diffusion is not None and states.diffusion_diagnostic is None:
