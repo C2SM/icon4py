@@ -83,11 +83,11 @@ def validate_granule_state_consistency(
         ValueError: if a granule is enabled but a state it requires is None.
     """
 
-    if config.diffusion is not None and config.diffusion.enabled and granules.diffusion is None:
+    if config.diffusion is not None and granules.diffusion is None:
         raise ValueError("diffusion is enabled but granules.diffusion is None.")
-    if config.nonhydrostatic is not None and config.nonhydrostatic.enabled and granules.solve_nonhydro is None:
+    if config.nonhydrostatic is not None and granules.solve_nonhydro is None:
         raise ValueError("solve_nonhydro is enabled but granules.solve_nonhydro is None.")
-    if config.tracer_advection is not None and config.tracer_advection.enabled and granules.tracer_advection is None:
+    if config.tracer_advection is not None and granules.tracer_advection is None:
         raise ValueError("tracer_advection is enabled but granules.tracer_advection is None.")
 
     if granules.diffusion is not None and states.diffusion_diagnostic is None:
@@ -364,7 +364,7 @@ def initialize_granules(
     )
 
     solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
-    if config.nonhydrostatic is not None and config.nonhydrostatic.enabled:
+    if config.nonhydrostatic is not None:
         nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
         solve_nonhydro_granule = solve_nh.SolveNonhydro(
             grid=grid,
@@ -381,7 +381,7 @@ def initialize_granules(
         )
 
     diffusion_granule: diffusion.Diffusion | None = None
-    if config.diffusion is not None and config.diffusion.enabled:
+    if config.diffusion is not None:
         diffusion_params = diffusion.DiffusionParams(config.diffusion)
         diffusion_granule = diffusion.Diffusion(
             grid=grid,
@@ -397,7 +397,7 @@ def initialize_granules(
         )
 
     tracer_advection_granule: advection.Advection | None = None
-    if config.tracer_advection is not None and config.tracer_advection.enabled:
+    if config.tracer_advection is not None:
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,

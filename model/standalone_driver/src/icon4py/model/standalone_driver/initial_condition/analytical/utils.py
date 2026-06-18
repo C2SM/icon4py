@@ -366,22 +366,10 @@ def assemble_driver_states(
         offset_provider={},
     )
 
-    diffusion_enabled = (
-        experiment_config.diffusion is not None and experiment_config.diffusion.enabled
-    )
-    solve_nonhydro_enabled = (
-        experiment_config.nonhydrostatic is not None and experiment_config.nonhydrostatic.enabled
-    )
-    tracer_advection_enabled = (
-        experiment_config.tracer_advection is not None
-        and experiment_config.tracer_advection.enabled
-    )
+    solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
+    diffusion_enabled = experiment_config.diffusion is not None
+    tracer_advection_enabled = experiment_config.tracer_advection is not None
 
-    diffusion_diagnostic_state = (
-        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
-        if diffusion_enabled
-        else None
-    )
     solve_nonhydro_diagnostic_state = (
         dycore_states.initialize_solve_nonhydro_diagnostic_state(
             perturbed_exner_at_cells_on_model_levels=perturbed_exner,
@@ -394,6 +382,11 @@ def assemble_driver_states(
     prep_adv = (
         dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
         if solve_nonhydro_enabled
+        else None
+    )
+    diffusion_diagnostic_state = (
+        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
+        if diffusion_enabled
         else None
     )
     tracer_advection_diagnostic_state = (

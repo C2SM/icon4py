@@ -150,7 +150,6 @@ class NonHydrostaticConfig:
     def __init__(
         self,
         *,
-        enabled: bool = True,
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
@@ -175,9 +174,6 @@ class NonHydrostaticConfig:
         fourth_order_divdamp_z4: float = 80000.0,
     ):
         # parameters from namelist nonhydrostatic_nml
-
-        #: Master switch that enables/disables the solve_nonhydro granule.
-        self.enabled: bool = enabled
 
         self.itime_scheme: int = itime_scheme
 

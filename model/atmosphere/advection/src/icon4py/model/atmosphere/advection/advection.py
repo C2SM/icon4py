@@ -105,7 +105,6 @@ class AdvectionConfig:
     horizontal_advection_limiter: HorizontalAdvectionLimiter
     vertical_advection_type: VerticalAdvectionType
     vertical_advection_limiter: VerticalAdvectionLimiter
-    enabled: bool = True
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:

@@ -59,8 +59,6 @@ class SingleMomentSixClassIconGraupelConfig:
     The COSMO microphysics documentation "A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations" can be downloaded via this link: https://www.cosmo-model.org/content/model/cosmo/coreDocumentation/cosmo_physics_6.00.pdf
     """
 
-    #: Master switch that enables/disables the graupel granule.
-    enabled: bool = True
     #: liquid auto conversion mode. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
     liquid_autoconversion_option: mphys_options.LiquidAutoConversionType = (
         mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG
