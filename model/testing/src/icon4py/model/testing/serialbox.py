@@ -780,8 +780,8 @@ class MetricSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def pg_exdist(self):
-        return self.xp.squeeze(self.serializer.read("pg_exdist", self.savepoint).asdtype(vpfloat))
-    
+        return self.xp.squeeze(self.serializer.read("pg_exdist", self.savepoint).astype(vpfloat))
+
     def pg_exdist_dsl(self):
         pg_edgeidx = self.pg_edgeidx()
         pg_vertidx = self.pg_vertidx()
@@ -849,9 +849,7 @@ class MetricSavepoint(IconSavepoint):
         )
 
     def zdiff_gradp(self):
-        return self._get_field(
-            "zdiff_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=vpfloat
-        )
+        return self._get_field("zdiff_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=vpfloat)
 
     def vertoffset_gradp(self):
         # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
@@ -1047,7 +1045,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("exner", dims.CellDim, dims.KDim)
 
     def diff_multfac_smag(self):
-        return self.xp.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint).astype(vpfloat))
+        return self.xp.squeeze(
+            self.serializer.read("diff_multfac_smag", self.savepoint).astype(vpfloat)
+        )
 
     def enh_smag_fac(self):
         return self.xp.squeeze(self.serializer.read("enh_smag_fac", self.savepoint).astype(vpfloat))
@@ -1056,7 +1056,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self.xp.squeeze(self.serializer.read("smag_limit", self.savepoint).astype(vpfloat))
 
     def diff_multfac_n2w(self):
-        return self.xp.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint).astype(wpfloat))
+        return self.xp.squeeze(
+            self.serializer.read("diff_multfac_n2w", self.savepoint).astype(wpfloat)
+        )
 
     def nudgezone_diff(self):
         return self.serializer.read("nudgezone_diff", self.savepoint).astype(vpfloat)[0]

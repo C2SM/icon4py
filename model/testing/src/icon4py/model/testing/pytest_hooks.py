@@ -41,8 +41,10 @@ def pytest_configure(config):
     )
 
     # Handle datatest options: --datatest-only  and --datatest-skip
-    if m_option := config.getoption("-m", []):
-        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
+    m_expr = config.getoption("-m", default="")
+    m_option = (
+        [f"({m_expr})"] if m_expr else []
+    )  # add parenthesis around original k_option just in case
     if config.getoption("--datatest-only"):
         m_option.append("datatest")
     if config.getoption("--datatest-skip"):
@@ -51,7 +53,7 @@ def pytest_configure(config):
         # if precision is set to single per env variable, only run tests marked as single_precision_ready
         m_option.append("single_precision_ready")
     config.option.markexpr = " and ".join(m_option[::-1])
-    
+
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
     if with_mpi or only_mpi:

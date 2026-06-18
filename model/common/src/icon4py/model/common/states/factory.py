@@ -756,7 +756,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             obj = inspect.unwrap(obj.func)
         annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
-            parameter_annotation = annotations.get(dep_key)
+            parameter_annotation = annotations.get(dep_key, gtx.float64)
             checked = _is_compatible_union(
                 parameter_annotation, expected=data_alloc.NDArray | np.float64
             )
@@ -767,7 +767,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
         supported_scalars = state_utils.IntegerType | state_utils.FloatType
         for param_key, param_value in self._params.items():
-            parameter_annotation = annotations.get(param_key)
+            parameter_annotation = annotations.get(param_key, gtx.float64)
             checked = _is_compatible_union(
                 parameter_annotation, expected=supported_scalars
             ) and _is_compatible_value(param_value, expected=supported_scalars)
