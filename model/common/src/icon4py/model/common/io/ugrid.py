@@ -58,13 +58,13 @@ def extract_horizontal_coordinates(
     )
 
 
-def dimension_mapping(dim: gtx.Dimension, is_on_interface: bool) -> str:
+def dimension_mapping(dim: gtx.Dimension, is_on_half_levels: bool) -> str:
     assert dim.kind in (
         gtx.DimensionKind.HORIZONTAL,
         gtx.DimensionKind.VERTICAL,
     ), "only horizontal and vertical dimensions are supported."
     if dim.kind == gtx.DimensionKind.VERTICAL:
-        return "interface_level" if is_on_interface else "level"
+        return "interface_level" if is_on_half_levels else "level"
     else:
         return HORIZONTAL_DIMENSION_MAPPING[dim]
 

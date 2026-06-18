@@ -14,16 +14,11 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
 - computes the standard diagnostic output fields (u, v, temperature, virtual temperature,
   pressure) from the prognostic state (:func:`compute_diagnostics`) and assembles them
   (:func:`diagnostic_fields_to_dataarrays`),
-- provides a factory that builds an ``IOMonitor`` with a single field group containing
-  *all* output fields, prognostic and diagnostic alike, written to one file
+- builds an ``IOMonitor`` that writes all requested fields to one file
   (:func:`create_io_monitor`).
-
-Output is enabled by default, so the driver depends on ``icon4py-common[io]``
-unconditionally (see ``pyproject.toml``).
 """
 
 import dataclasses
-import datetime as dt
 import pathlib
 import uuid
 from typing import Any, Final
@@ -43,11 +38,7 @@ from icon4py.model.common.interpolation import interpolation_attributes as intp_
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import (
-    data as state_data,
-    model as state_model,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
 
@@ -55,8 +46,7 @@ from icon4py.model.standalone_driver import driver_states
 #: Output subfolder created *inside* the driver's run/output directory.
 OUTPUT_SUBDIR: Final[str] = "output"
 
-#: File-name stub for the (single) output file (a counter + ``.nc`` is appended).
-#: Prognostic and diagnostic fields are written together into this file.
+#: File-name stub for the output file (a counter + ``.nc`` is appended).
 DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 
 
@@ -65,28 +55,18 @@ DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 # --------------------------------------------------------------------------------------
 
 
-def _prognostic_metadata(
-    cf_attributes_key: str, *, is_on_interface: bool = False
-) -> state_model.FieldMetaData:
-    """Extend a shared CF attribute entry with the vertical placement of the field."""
-    return {
-        **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_attributes_key],
-        "is_on_interface": is_on_interface,
-    }
-
-
-#: CF metadata of the prognostic output fields, keyed by output variable name. The CF
-#: key only differs from the output name for ``theta_v``.
-_PROGNOSTIC_METADATA: Final[dict[str, state_model.FieldMetaData]] = {
-    "air_density": _prognostic_metadata("air_density"),
-    "exner_function": _prognostic_metadata("exner_function"),
-    "theta_v": _prognostic_metadata("virtual_potential_temperature"),
-    "upward_air_velocity": _prognostic_metadata("upward_air_velocity", is_on_interface=True),
-    "normal_velocity": _prognostic_metadata("normal_velocity"),
-}
-
-#: The prognostic output variables.
-PROGNOSTIC_VARIABLES: Final[list[str]] = list(_PROGNOSTIC_METADATA.keys())
+#: Default prognostic output variables, selected by CF name from the
+#: ``states.data.PROGNOSTIC_CF_ATTRIBUTES`` catalog (which also holds fields the driver does
+#: not output, e.g. ``tangential_velocity``). The metadata, the state attribute
+#: (``icon_var_name``) and the vertical placement (``is_on_half_levels``) all come from that
+#: catalog; this list only selects which entries to emit.
+PROGNOSTIC_VARIABLES: Final[list[str]] = [
+    "air_density",
+    "exner_function",
+    "virtual_potential_temperature",
+    "upward_air_velocity",
+    "normal_velocity",
+]
 
 
 def prognostic_state_to_dataarrays(
@@ -94,27 +74,23 @@ def prognostic_state_to_dataarrays(
     variables: list[str] | None = None,
 ) -> dict[str, xr.DataArray]:
     """Assemble a CF/UGRID-annotated model-state dict from a ``PrognosticState``."""
-    # Direct (type-checked) attribute access, keyed by output variable name.
-    fields: dict[str, gtx.Field] = {
-        "air_density": prognostic_state.rho,
-        "exner_function": prognostic_state.exner,
-        "theta_v": prognostic_state.theta_v,
-        "upward_air_velocity": prognostic_state.w,
-        "normal_velocity": prognostic_state.vn,
-    }
     selected = PROGNOSTIC_VARIABLES if variables is None else variables
 
     state: dict[str, xr.DataArray] = {}
-    for key in selected:
+    for name in selected:
         try:
-            metadata, field = _PROGNOSTIC_METADATA[key], fields[key]
+            metadata = state_data.PROGNOSTIC_CF_ATTRIBUTES[name]
         except KeyError as err:
             raise ValueError(
-                f"Unknown prognostic output variable '{key}'. "
+                f"Unknown prognostic output variable '{name}'. "
                 f"Known variables are: {PROGNOSTIC_VARIABLES}."
             ) from err
-        state[key] = io_utils.to_host_data_array(
-            field, metadata, is_on_interface=metadata["is_on_interface"]
+        field = getattr(prognostic_state, metadata["icon_var_name"])
+        state[name] = io_utils.to_data_array(
+            field,
+            metadata,
+            is_on_half_levels=metadata.get("is_on_half_levels", False),
+            to_host=True,
         )
     return state
 
@@ -134,13 +110,12 @@ DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "pressure",
 ]
 
-#: All output variables (prognostic + diagnostic). There is no distinction between the
-#: two groups at the IO level: they are always written together, into the same file.
+#: All output variables (prognostic + diagnostic), written together into the same file.
 DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
 
 
 @dataclasses.dataclass
-class DiagnosticInputs:
+class DiagnosticFields:
     """Static fields needed to compute the diagnostic output fields.
 
     Fetched once from the driver's field sources and reused every output step. Kept as a
@@ -153,13 +128,13 @@ class DiagnosticInputs:
     rbf_vec_coeff_c2: gtx.Field
 
 
-def fetch_diagnostic_inputs(
+def fetch_diagnostic_fields(
     static_field_factories: driver_states.StaticFieldFactories,
-) -> DiagnosticInputs:
+) -> DiagnosticFields:
     """Retrieve ``ddqz_z_full`` and the cell rbf coefficients from the field sources."""
     metrics = static_field_factories.metrics_field_source
     interpolation = static_field_factories.interpolation_field_source
-    return DiagnosticInputs(
+    return DiagnosticFields(
         ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
         rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
         rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
@@ -171,7 +146,7 @@ def compute_diagnostics(
     *,
     grid: grid_base.Grid,
     backend: gtx.typing.Backend | None,
-    inputs: DiagnosticInputs,
+    inputs: DiagnosticFields,
 ) -> dict[str, gtx.Field]:
     """Compute the diagnostic output fields from the prognostic state.
 
@@ -297,10 +272,16 @@ def diagnostic_fields_to_dataarrays(
     diagnostic_fields: dict[str, gtx.Field],
 ) -> dict[str, xr.DataArray]:
     """Assemble CF/UGRID-annotated DataArrays from computed diagnostic fields."""
-    return {
-        key: io_utils.to_host_data_array(field, state_data.DIAGNOSTIC_CF_ATTRIBUTES[key])
-        for key, field in diagnostic_fields.items()
-    }
+    state: dict[str, xr.DataArray] = {}
+    for name, field in diagnostic_fields.items():
+        metadata = state_data.DIAGNOSTIC_CF_ATTRIBUTES[name]
+        state[name] = io_utils.to_data_array(
+            field,
+            metadata,
+            is_on_half_levels=metadata.get("is_on_half_levels", False),
+            to_host=True,
+        )
+    return state
 
 
 # --------------------------------------------------------------------------------------
@@ -314,21 +295,14 @@ def create_io_monitor(
     grid_file_path: pathlib.Path,
     grid: grid_base.Grid,
     vertical_grid: v_grid.VerticalGrid,
-    start_date: dt.datetime,
-    dtime: dt.timedelta,
     variables: list[str] | None = None,
+    output_interval_steps: int = 1,
     process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.
 
-    Prognostic and diagnostic fields are not distinguished at the IO level: they form a
-    single field group and are written together into the same NetCDF file
-    (``DEFAULT_OUTPUT_FILENAME``).
-
-    The output interval and start time are derived from the driver's ``start_date`` and
-    ``dtime`` so that the monitor's capture logic fires on every model step. The first model
-    time seen at the IO hook is ``start_date + dtime`` (the simulation date is advanced before
-    integration), so the field group starts there.
+    Output is written every ``output_interval_steps`` model steps (default: every step),
+    so the schedule is independent of the time step length.
 
     ``process_props`` is currently unused: IO is single-node only. It is kept on the
     signature so the distributed path (per-rank IO setup) can be wired in without a
@@ -337,26 +311,14 @@ def create_io_monitor(
     del process_props  # reserved for the distributed IO path; unused while single-node
     output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
-    interval_seconds = dtime.total_seconds()
-    if interval_seconds <= 0 or not interval_seconds.is_integer():
-        # the common io interval config only resolves whole seconds; rejecting instead of
-        # truncating keeps sub-second time steps from silently producing a zero interval
-        raise ValueError(
-            f"The output interval must be a positive whole number of seconds, got dtime={dtime}."
-        )
-
     io_output_path = output_path / OUTPUT_SUBDIR
-    first_output_time = start_date + dtime
-    interval = f"{int(interval_seconds)} SECONDS"
-
     field_groups = [
         common_io.FieldGroupIOConfig(
-            output_interval=interval,
-            start_time=first_output_time.isoformat(),
+            output_interval_steps=output_interval_steps,
             filename=DEFAULT_OUTPUT_FILENAME,
             variables=output_variables,
-            nc_title="ICON4Py standalone driver output",
-            nc_comment=("Prognostic and diagnostic fields from the ICON4Py standalone driver."),
+            nc_title="ICON4Py output",
+            nc_comment="Fields computed by ICON4Py.",
         )
     ]
 

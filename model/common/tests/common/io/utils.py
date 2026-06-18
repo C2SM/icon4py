@@ -47,15 +47,15 @@ def model_state(grid: base.Grid) -> dict[str, xr.DataArray]:
         "theta_v": utils.to_data_array(
             theta_v,
             data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
-            is_on_interface=False,
+            is_on_half_levels=False,
         ),
         "upward_air_velocity": utils.to_data_array(
             w,
             data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
-            is_on_interface=True,
+            is_on_half_levels=True,
         ),
         "normal_velocity": utils.to_data_array(
-            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_interface=False
+            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_half_levels=False
         ),
     }
 

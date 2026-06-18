@@ -43,36 +43,34 @@ The IO module is configurable and can be configured with:
 
 Field groups are stored in the same file and share a common setting of
 
-- `start_time` (optional, default is model init time): A timestamp (string in iso format, for example "2024-01-01T12:00:00") when to start with the output, should be after model init time.
-- `output_interval`: String, one of ["DAY", "HOUR", "MINUTE", "SECOND"] (or plural) combined with a positive number, eg "10 HOURS", "1 DAY", describing how often the fields will be written to file.
+- `output_interval_steps`: positive integer N; the fields are written every N model steps (i.e. every N calls to `store`).
 - `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
-- `variables`: List of variables names to be output. Variable names are the `short_name` of the CF conventions used in the model state.
+- `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
 - `nc_title` (optional): Title field of the generated netcdf file.
 - `nc_comment` (optional): Comment to be put to generated netcdf file.
 
-All fields in the `variables` list will be written out to the same file at regular
-`output_intervals` starting from the `start_time`. The output times **must exactly match a model time step**.
+All fields in the `variables` list are written to the same file every `output_interval_steps`
+model steps. Scheduling by step count means output always lands on exact step boundaries.
 
 As we have no general handling of configuration files in `ICON4Py` yet, the configuration needs to
 be instantiated as Python dataclasses for now. A valid configuration could look like this:
 
 ```python
 prognostic_group = FieldGroupIOConfig(
-    start_time="2024-01-01T12:00:00",
-    output_interval="2 HOURS",
+    output_interval_steps=12,
     filename="icon4py_prognostics",
-    timsteps_per_file=12,
-    variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
+    timesteps_per_file=12,
+    variables=["air_density", "exner_function", "upward_air_velocity"],
     nc_title="prognostics from my experiment",
     nc_comment="Writing prognostic fields data from icon4py ",
 )
 
 wind_group = FieldGroupIOConfig(
-    output_interval="1 HOUR",
+    output_interval_steps=1,
     filename="icon4py_diagnostics",
-    timsteps_per_file=24,
-    variables=["eastward_wind", "tendency_of_eastward_wind"],
+    timesteps_per_file=24,
+    variables=["eastward_wind", "northward_wind"],
     nc_comment="Writing additional wind fields data from icon4py",
 )
 

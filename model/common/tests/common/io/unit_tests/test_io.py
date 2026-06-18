@@ -27,7 +27,6 @@ from icon4py.model.common.io.io import (
     IOConfig,
     IOMonitor,
     generate_name,
-    to_delta,
 )
 from icon4py.model.common.states import data
 from icon4py.model.testing import datatest_utils, definitions, grid_utils
@@ -38,32 +37,6 @@ from .. import utils as test_io_utils
 
 # setting backend to fieldview embedded here.
 backend = None
-
-
-@pytest.mark.parametrize("num", range(1, 6))
-@pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
-def test_to_delta_days(num, slot):
-    assert to_delta("DAY") == dt.timedelta(days=1)
-    assert to_delta(f"{num} {slot}") == dt.timedelta(days=num)
-
-
-@pytest.mark.parametrize("num", range(1, 5))
-@pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour", "hours", "HOURS"])
-def test_to_delta_hours(num, slot):
-    assert to_delta("HOUR") == dt.timedelta(hours=1)
-    assert to_delta(f"{num} {slot}") == dt.timedelta(hours=num)
-
-
-@pytest.mark.parametrize("num", [0, 2, 44, 4, 5])
-@pytest.mark.parametrize("slot", ["second", "SECOND", "SEConds", "SECONDS"])
-def test_to_delta_secs(num, slot):
-    assert to_delta(f"{num} {slot}") == dt.timedelta(seconds=num)
-
-
-@pytest.mark.parametrize("num", [0, 2, 3, 4, 5])
-@pytest.mark.parametrize("slot", ["MINUTE", "Minute", "minutes", "MINUTES"])
-def test_to_delta_mins(num, slot):
-    assert to_delta(f"{num} {slot}") == dt.timedelta(minutes=num)
 
 
 @pytest.mark.parametrize(
@@ -159,11 +132,9 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     )
 
     state = test_io_utils.model_state(grid)
-    configured_output_start = "2024-01-01T12:00:00"
     field_configs = [
         FieldGroupIOConfig(
-            output_interval="HOUR",
-            start_time=configured_output_start,
+            output_interval_steps=1,
             filename="icon4py_dummy_output",
             variables=variables,
             nc_comment="Writing dummy data from icon4py for testing.",
@@ -177,14 +148,10 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         grid_file_name=test_io_utils.grid_file,
         grid_id=grid.id,
     )
-    start_time = dt.datetime.fromisoformat(configured_output_start)
-    monitor.store(state, start_time)
-    time = start_time + dt.timedelta(minutes=30)
-    monitor.store(state, time)
-    time = time + dt.timedelta(minutes=30)
-    monitor.store(state, time)
-    time = time + dt.timedelta(minutes=60)
-    monitor.store(state, time)
+    time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
+    for _ in range(3):
+        monitor.store(state, time)
+        time = time + dt.timedelta(hours=1)
     monitor.close()
 
     assert len([f for f in monitor.path.iterdir() if f.is_file()]) == 1 + len(field_configs)
@@ -214,11 +181,9 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     )
 
     state = test_io_utils.model_state(grid)
-    configured_output_start = "2024-01-01T12:00:00"
     filename_stub = "icon4py_dummy_output"
     config = FieldGroupIOConfig(
-        output_interval="HOUR",
-        start_time=configured_output_start,
+        output_interval_steps=1,
         filename=filename_stub,
         variables=["air_density", "exner_function", "upward_air_velocity"],
         timesteps_per_file=1,
@@ -230,7 +195,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
         grid_id=grid.id,
         output_path=test_path,
     )
-    time = dt.datetime.fromisoformat(configured_output_start)
+    time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(4):
         monitor.store(state, time)
         time = time + dt.timedelta(hours=1)
@@ -275,61 +240,23 @@ def read_back_as_uxarray(path: pathlib.Path):
     return uxds
 
 
-def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
-    config, group_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid)
-    configured_start_time = dt.datetime.fromisoformat(config.start_time)
-    step_time = configured_start_time
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
-    group_monitor.store(state, step_time)
-    assert group_monitor.next_output_time > configured_start_time
-    one_hour_later = step_time + dt.timedelta(hours=1)
-    assert group_monitor.next_output_time == one_hour_later
-
-
-def test_fieldgroup_monitor_no_output_on_not_matching_time(test_path):
-    start_time_str = "2024-01-01T00:00:00"
-    config, group_monitor = create_field_group_monitor(
-        test_path, test_io_utils.simple_grid, start_time_str
-    )
-    start_time = dt.datetime.fromisoformat(config.start_time)
-    step_time = start_time
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
-    group_monitor.store(state, step_time)
-    assert group_monitor.next_output_time > start_time
-    one_hour_later = step_time + dt.timedelta(hours=1)
-    assert group_monitor.next_output_time == one_hour_later
-    ten_minutes_later = step_time + dt.timedelta(minutes=10)
-    group_monitor.store(state, ten_minutes_later)
-    assert group_monitor.next_output_time == one_hour_later
-
-
-def test_fieldgroup_monitor_output_time_initialized_from_config(test_path):
-    configured_start_time = "2024-01-01T00:00:00"
+def test_fieldgroup_monitor_no_output_between_step_intervals(test_path):
+    # output every 3rd step: the first two stores must not produce any output
     _, group_monitor = create_field_group_monitor(
-        test_path, test_io_utils.simple_grid, configured_start_time
+        test_path, test_io_utils.simple_grid, output_interval_steps=3
     )
-    assert group_monitor.next_output_time == dt.datetime.fromisoformat(configured_start_time)
-
-
-def test_fieldgroup_monitor_no_output_before_start_time(test_path):
-    configured_start_time = "2024-01-01T00:00:00"
-    start_time = dt.datetime.fromisoformat(configured_start_time)
-    _, group_monitor = create_field_group_monitor(
-        test_path, test_io_utils.simple_grid, configured_start_time
-    )
-    step_time = dt.datetime.fromisoformat("2023-12-12T00:12:00")
-    assert start_time > step_time
-    group_monitor.store(test_io_utils.model_state(test_io_utils.simple_grid), step_time)
-    assert group_monitor.next_output_time == start_time
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    group_monitor.store(state, step_time)
+    group_monitor.store(state, step_time + dt.timedelta(hours=1))
     group_monitor.close()
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
 
 
-def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"):
+def create_field_group_monitor(test_path, grid, output_interval_steps=1):
     config = FieldGroupIOConfig(
-        start_time=start_time,
         filename="test_empty.nc",
-        output_interval="1 HOUR",
+        output_interval_steps=output_interval_steps,
         variables=["exner_function", "air_density"],
     )
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
@@ -352,44 +279,39 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
 
 
 @pytest.mark.parametrize(
-    "start_time, filename, interval, variables, message",
+    "filename, output_interval_steps, variables, message",
     [
         (
-            "2023-04-04T11:00:00",
             "",
-            "1 HOUR",
+            1,
             ["exner_function", "air_density"],
             "Output filename is missing.",
         ),
         (
-            "2023-04-04T11:00:00",
             "/vars/prognostics.nc",
-            "1 HOUR",
+            1,
             ["exner_function", "air_density"],
             "absolute path",
         ),
         (
-            "2023-04-04T11:00:00",
             "vars/prognostics.nc",
-            "1 HOUR",
+            1,
             [],
             "No variables provided for output.",
         ),
         (
-            "2023-04-04T11:00:00",
             "vars/prognostics.nc",
-            "",
+            0,
             ["air_density, exner_function"],
-            "No output interval provided.",
+            "Output interval in steps must be positive",
         ),
     ],
 )
-def test_fieldgroup_config_validate_filename(start_time, filename, interval, variables, message):
+def test_fieldgroup_config_validate_filename(filename, output_interval_steps, variables, message):
     with pytest.raises(errors.InvalidConfigError) as err:
         FieldGroupIOConfig(
-            start_time=start_time,
             filename=filename,
-            output_interval=interval,
+            output_interval_steps=output_interval_steps,
             variables=variables,
         )
     assert message in str(err.value)
@@ -397,9 +319,8 @@ def test_fieldgroup_config_validate_filename(start_time, filename, interval, var
 
 def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
     config = FieldGroupIOConfig(
-        start_time="2023-04-04T11:00:00",
         filename="vars/prognostics.nc",
-        output_interval="1 HOUR",
+        output_interval_steps=1,
         variables=["exner_function", "air_density"],
     )
     vertical_size = test_io_utils.simple_grid.config.vertical_size
@@ -419,9 +340,8 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
 
 def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
     config = FieldGroupIOConfig(
-        start_time="2023-04-04T11:00:00",
         filename="vars/prognostics.nc",
-        output_interval="1 HOUR",
+        output_interval_steps=1,
         variables=["exner_function", "air_density", "foo"],
     )
     vertical_size = test_io_utils.simple_grid.config.vertical_size

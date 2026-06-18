@@ -14,7 +14,6 @@ These tests are data-free: they use the ``simple_grid`` and a zero-initialised
 
 import copy
 import dataclasses
-import datetime as dt
 import pathlib
 import uuid
 
@@ -73,25 +72,25 @@ def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
 
 
 def _expected(
-    cf_key: str, horizontal_dim: gtx.Dimension, *, is_on_interface: bool = False
+    cf_key: str, horizontal_dim: gtx.Dimension, *, is_on_half_levels: bool = False
 ) -> state_model.FieldMetaData:
     """Expected output metadata: the shared CF entry plus the expected dims and vertical
     placement. ``standard_name``/``units`` come from the shared table rather than being
-    re-spelled here; ``dims`` and ``is_on_interface`` are stated independently of the
+    re-spelled here; ``dims`` and ``is_on_half_levels`` are stated independently of the
     production code so the assertions stay a genuine check."""
     return {
         **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
         "dims": (horizontal_dim, dims.KDim),
-        "is_on_interface": is_on_interface,
+        "is_on_half_levels": is_on_half_levels,
     }
 
 
-#: Expected output metadata per output variable.
+#: Expected output metadata per output variable (keyed by CF name).
 _EXPECTED: dict[str, state_model.FieldMetaData] = {
     "air_density": _expected("air_density", dims.CellDim),
     "exner_function": _expected("exner_function", dims.CellDim),
-    "theta_v": _expected("virtual_potential_temperature", dims.CellDim),
-    "upward_air_velocity": _expected("upward_air_velocity", dims.CellDim, is_on_interface=True),
+    "virtual_potential_temperature": _expected("virtual_potential_temperature", dims.CellDim),
+    "upward_air_velocity": _expected("upward_air_velocity", dims.CellDim, is_on_half_levels=True),
     "normal_velocity": _expected("normal_velocity", dims.EdgeDim),
 }
 
@@ -121,7 +120,7 @@ def test_assembles_all_default_variables(
         assert isinstance(da, xr.DataArray)
         expected = _EXPECTED[name]
         horizontal_dim = next(d for d in expected["dims"] if d.kind == gtx.DimensionKind.HORIZONTAL)
-        on_interface = expected["is_on_interface"]
+        on_interface = expected["is_on_half_levels"]
 
         vertical_name = "interface_level" if on_interface else "level"
         assert da.dims == (_UGRID_DIM_NAMES[horizontal_dim], vertical_name)
@@ -191,11 +190,10 @@ def test_data_is_host_numpy(
         assert isinstance(da.data, np.ndarray)
 
 
-def test_create_io_monitor_derives_matching_time_config(
+def test_create_io_monitor_builds_single_field_group(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The monitor's field group must start at ``start_date + dtime`` with an interval
-    equal to ``dtime`` so the capture logic fires on every step.
+    """The monitor holds one field group with all output fields, capturing every step.
 
     ``IOMonitor`` is replaced by a recorder so the test needs no real grid file.
     """
@@ -219,24 +217,20 @@ def test_create_io_monitor_derives_matching_time_config(
 
     # the monitor requires a UUID grid id; stamp one onto the synthetic grid
     grid = dataclasses.replace(grid, id=str(_FAKE_GRID_UUID))
-    start_date = dt.datetime(2024, 1, 1, 0, 0, 0)
-    dtime = dt.timedelta(seconds=300)
 
     driver_io.create_io_monitor(
         output_path=tmp_path,
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
-        start_date=start_date,
-        dtime=dtime,
     )
 
     config = recorded["config"]
     assert isinstance(config, common_io.IOConfig)
     assert len(config.field_groups) == 1
     field_group = config.field_groups[0]
-    assert field_group.start_time == "2024-01-01T00:05:00"
-    assert field_group.output_interval == "300 SECONDS"
+    # default cadence: capture on every model step
+    assert field_group.output_interval_steps == 1
     # a single group holding all fields, prognostic + diagnostic, in one file
     assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
     assert list(field_group.variables) == [
@@ -246,21 +240,8 @@ def test_create_io_monitor_derives_matching_time_config(
     assert field_group.filename == driver_io.DEFAULT_OUTPUT_FILENAME
     # output is written to the dedicated subfolder of the run directory
     assert config.output_path == str(tmp_path / driver_io.OUTPUT_SUBDIR)
+    # the string grid id is converted to a UUID at the IO boundary
     assert recorded["grid_id"] == _FAKE_GRID_UUID
-
-
-def test_create_io_monitor_rejects_subsecond_dtime(grid: base.Grid, tmp_path: pathlib.Path) -> None:
-    """Sub-second time steps cannot be expressed as a whole-second output interval and
-    must be rejected instead of silently truncated."""
-    with pytest.raises(ValueError, match="whole number of seconds"):
-        driver_io.create_io_monitor(
-            output_path=tmp_path,
-            grid_file_path=tmp_path / "grid.nc",
-            grid=grid,
-            vertical_grid=None,  # type: ignore[arg-type] # rejected before use
-            start_date=dt.datetime(2024, 1, 1),
-            dtime=dt.timedelta(milliseconds=500),
-        )
 
 
 def test_create_io_monitor_has_no_separate_diagnostic_group(
@@ -281,8 +262,6 @@ def test_create_io_monitor_has_no_separate_diagnostic_group(
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
-        start_date=dt.datetime(2024, 1, 1),
-        dtime=dt.timedelta(seconds=300),
     )
 
     groups = recorded["config"].field_groups

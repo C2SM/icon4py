@@ -34,7 +34,7 @@ class OptionalMetaData(TypedDict, total=False):
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
     #: whether the vertical dimension of the field lives on interface (half) levels
     #: rather than full levels
-    is_on_interface: bool
+    is_on_half_levels: bool
 
 
 class RequiredMetaData(TypedDict, total=True):

@@ -9,7 +9,6 @@
 import abc
 import dataclasses
 import datetime as dt
-import enum
 import logging
 import pathlib
 import uuid
@@ -25,33 +24,6 @@ from icon4py.model.common.io.writers import GlobalFileAttributes
 
 
 log = logging.getLogger(__name__)
-
-
-class OutputInterval(str, enum.Enum):
-    SECOND = "SECOND"
-    MINUTE = "MINUTE"
-    HOUR = "HOUR"
-    DAY = "DAY"
-
-
-def to_delta(value: str) -> dt.timedelta:
-    vals = value.split(" ")
-    num = 1 if not vals[0].isnumeric() else int(vals[0])
-    assert num >= 0, f"Delta value must be positive: {num}"
-
-    value = vals[0].upper() if len(vals) < 2 else vals[1].upper()
-    value = value[:-1] if value.endswith("S") else value
-
-    if value == OutputInterval.HOUR:
-        return dt.timedelta(hours=num)
-    elif value == OutputInterval.DAY:
-        return dt.timedelta(days=num)
-    elif value == OutputInterval.MINUTE:
-        return dt.timedelta(minutes=num)
-    elif value == OutputInterval.SECOND:
-        return dt.timedelta(seconds=num)
-    else:
-        raise NotImplementedError(f" Delta '{value}' is not supported.")
 
 
 class Config(abc.ABC):
@@ -86,8 +58,9 @@ class FieldGroupIOConfig(Config):
 
     """
 
-    output_interval: str
-    start_time: str  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
+    #: Output is written every ``output_interval_steps`` model steps (i.e. every N calls
+    #: to ``store``).
+    output_interval_steps: int
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
@@ -106,8 +79,10 @@ class FieldGroupIOConfig(Config):
             )
 
     def validate(self) -> None:
-        if not self.output_interval:
-            raise exceptions.InvalidConfigError("No output interval provided.")
+        if self.output_interval_steps <= 0:
+            raise exceptions.InvalidConfigError(
+                f"Output interval in steps must be positive: {self.output_interval_steps}."
+            )
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
         self._validate_filename()
@@ -206,14 +181,6 @@ class FieldGroupMonitor(monitor.Monitor):
     This monitor is responsible for storing a group of fields that are output at the same time intervals.
     """
 
-    @property
-    def next_output_time(self) -> dt.datetime:
-        return self._next_output_time
-
-    @property
-    def time_delta(self) -> dt.timedelta:
-        return self._time_delta
-
     def __init__(
         self,
         *,
@@ -243,8 +210,8 @@ class FieldGroupMonitor(monitor.Monitor):
         self._horizontal_size = horizontal
         self._field_names = config.variables
         self._handle_output_path(output_path, config.filename)
-        self._next_output_time = dt.datetime.fromisoformat(config.start_time)
-        self._time_delta = to_delta(config.output_interval)
+        self._output_interval_steps = config.output_interval_steps
+        self._step_counter = 0
         self._file_counter = 0
         self._current_timesteps_in_file = 0
         self._dataset: writers.NETCDFWriter | None = None
@@ -286,9 +253,6 @@ class FieldGroupMonitor(monitor.Monitor):
         df.initialize_dataset()
         self._dataset = df
 
-    def _update_fetch_times(self) -> None:
-        self._next_output_time = self._next_output_time + self._time_delta
-
     def store(
         self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
     ) -> None:
@@ -298,26 +262,26 @@ class FieldGroupMonitor(monitor.Monitor):
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
-        # TODO(halungge): how to handle non time matches? That is if the model time jumps over the output time
-        if self._at_capture_time(model_time):
-            # TODO(halungge): this should do a deep copy of the data
-            try:
-                state_to_store = {field: state[field] for field in self._field_names}
-            except KeyError as e:
-                log.error(f"Field '{e.args[0]}' is missing in state.")
-                self.close()
-                raise exceptions.IncompleteStateError(e.args[0]) from e
+        self._step_counter += 1
+        if not self._at_capture_step():
+            return
+        # TODO(halungge): this should do a deep copy of the data
+        try:
+            state_to_store = {field: state[field] for field in self._field_names}
+        except KeyError as e:
+            log.error(f"Field '{e.args[0]}' is missing in state.")
+            self.close()
+            raise exceptions.IncompleteStateError(e.args[0]) from e
 
-            log.info(f"Storing fields {state_to_store.keys()} at {model_time}")
-            self._update_fetch_times()
+        log.info(f"Storing fields {state_to_store.keys()} at {model_time}")
 
-            if self._do_initialize_new_file():
-                self._init_dataset(self._vertical_size, self._horizontal_size)
-            self._append_data(state_to_store, model_time)
+        if self._do_initialize_new_file():
+            self._init_dataset(self._vertical_size, self._horizontal_size)
+        self._append_data(state_to_store, model_time)
 
-            self._update_current_file_count()
-            if self._is_file_limit_reached():
-                self.close()
+        self._update_current_file_count()
+        if self._is_file_limit_reached():
+            self.close()
 
     def _update_current_file_count(self) -> None:
         self._current_timesteps_in_file = self._current_timesteps_in_file + 1
@@ -332,12 +296,8 @@ class FieldGroupMonitor(monitor.Monitor):
         assert self._dataset is not None
         self._dataset.append(state_to_store, model_time)
 
-    def _at_capture_time(self, model_time: dt.datetime) -> bool:
-        # Capture as soon as the model clock reaches (or passes) the next scheduled
-        # output time. The clock advances by exact `datetime` arithmetic (integer
-        # microseconds), so no float tolerance is needed; `>=` (instead of `==`) keeps
-        # a step that lands past the scheduled time from silently skipping output.
-        return model_time >= self._next_output_time
+    def _at_capture_step(self) -> bool:
+        return self._step_counter % self._output_interval_steps == 0
 
     def close(self) -> None:
         if self._dataset is not None:

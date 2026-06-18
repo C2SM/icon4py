@@ -61,7 +61,7 @@ class Icon4pyDriver:
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
         io_monitor: common_io.IOMonitor | None = None,
-        io_diagnostic_inputs: driver_io.DiagnosticInputs | None = None,
+        output_initial_state: bool = False,
     ):
         self.config = config
         self.backend = backend
@@ -79,7 +79,7 @@ class Icon4pyDriver:
         self.exchange = exchange
         self.global_reductions = global_reductions
         self.io_monitor = io_monitor
-        self.io_diagnostic_inputs = io_diagnostic_inputs
+        self.output_initial_state = output_initial_state
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
@@ -90,6 +90,26 @@ class Icon4pyDriver:
     @functools.cached_property
     def _allocator(self) -> gtx.typing.Backend:
         return model_backends.get_allocator(self.backend)
+
+    @functools.cached_property
+    def _diagnostic_fields(self) -> driver_io.DiagnosticFields:
+        """Static fields for the diagnostics, fetched once from the field factories."""
+        return driver_io.fetch_diagnostic_fields(self.static_field_factories)
+
+    def _store_output(
+        self, prognostic_state: prognostics.PrognosticState, model_time: datetime.datetime
+    ) -> None:
+        """Assemble the prognostic and diagnostic fields and hand them to the IO monitor."""
+        assert self.io_monitor is not None
+        state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+        diagnostic_fields = driver_io.compute_diagnostics(
+            prognostic_state,
+            grid=self.grid,
+            backend=self.backend,
+            inputs=self._diagnostic_fields,
+        )
+        state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        self.io_monitor.store(state_to_store, model_time)
 
     @functools.cached_property
     def _xp(self) -> types.ModuleType:
@@ -125,6 +145,10 @@ class Icon4pyDriver:
 
         wall_clock_starting_time = datetime.datetime.now()
 
+        if self.io_monitor is not None and self.output_initial_state:
+            # the simulation date is still the start date here (advanced below per step)
+            self._store_output(prognostic_states.current, self.model_time_variables.simulation_date)
+
         for time_step in range(self.model_time_variables.n_time_steps):
             if self.config.profiling_stats is not None:
                 if not self.config.profiling_stats.skip_first_timestep or time_step > 0:
@@ -156,19 +180,9 @@ class Icon4pyDriver:
             self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
             if self.io_monitor is not None:
-                # Prognostic and diagnostic fields are always written together (one field
-                # group, one file): assemble the prognostics, compute the diagnostics from
-                # them, and store the merged state.
-                assert self.io_diagnostic_inputs is not None
-                state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_states.current)
-                diagnostic_fields = driver_io.compute_diagnostics(
-                    prognostic_states.current,
-                    grid=self.grid,
-                    backend=self.backend,
-                    inputs=self.io_diagnostic_inputs,
+                self._store_output(
+                    prognostic_states.current, self.model_time_variables.simulation_date
                 )
-                state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
-                self.io_monitor.store(state_to_store, self.model_time_variables.simulation_date)
 
         if self.io_monitor is not None:
             self.io_monitor.close()
@@ -584,6 +598,7 @@ def initialize_driver(
     print_distributed_debug_msg: bool = False,
     force_serial_run: bool = False,
     enable_output: bool = True,
+    output_initial_state: bool = False,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -710,7 +725,6 @@ def initialize_driver(
         backend=backend,
     )
     io_monitor = None
-    io_diagnostic_inputs = None
     if enable_output and with_mpi:
         # IO is single-node only for now: under MPI every rank would construct its own
         # monitor and write overlapping files. Disable until IO becomes distributed.
@@ -722,7 +736,6 @@ def initialize_driver(
         # diagnostic computation is exercised once on a throw-away zero state so that a
         # structurally broken diagnostic path fails fast at initialization (and the
         # stencils are compiled before the time loop starts).
-        io_diagnostic_inputs = driver_io.fetch_diagnostic_inputs(static_field_factories)
         trial_state = prognostics.initialize_prognostic_state(
             grid_manager.grid, allocator=model_backends.get_allocator(backend)
         )
@@ -730,7 +743,7 @@ def initialize_driver(
             trial_state,
             grid=grid_manager.grid,
             backend=backend,
-            inputs=io_diagnostic_inputs,
+            inputs=driver_io.fetch_diagnostic_fields(static_field_factories),
         )
 
         io_monitor = driver_io.create_io_monitor(
@@ -738,8 +751,6 @@ def initialize_driver(
             grid_file_path=grid_file_path,
             grid=grid_manager.grid,
             vertical_grid=vertical_grid,
-            start_date=driver_config.start_date,
-            dtime=driver_config.dtime,
         )
 
     icon4py_driver = Icon4pyDriver(
@@ -755,7 +766,7 @@ def initialize_driver(
         exchange=exchange,
         global_reductions=global_reductions,
         io_monitor=io_monitor,
-        io_diagnostic_inputs=io_diagnostic_inputs,
+        output_initial_state=output_initial_state,
     )
 
     return icon4py_driver
