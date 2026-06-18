@@ -195,6 +195,16 @@ class ExperimentConfig:
                 replacements[key] = value
         return dataclasses.replace(self, **replacements)
 
+    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
+        replacements: dict[str, Any] = {}
+        for key, value in overrides.items():
+            current = getattr(self, key)
+            if isinstance(value, dict):
+                replacements[key] = dataclasses.replace(current, **value)
+            else:
+                replacements[key] = value
+        return dataclasses.replace(self, **replacements)
+
 
 @dataclasses.dataclass
 class Experiment:
