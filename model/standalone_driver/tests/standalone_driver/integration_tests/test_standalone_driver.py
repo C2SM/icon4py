@@ -49,7 +49,26 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
-        # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            2,
+            2,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            True,
+            False,
+        ),
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            2,
+            2,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            False,
+            False,
+        ),
     ],
 )
 def test_standalone_driver(

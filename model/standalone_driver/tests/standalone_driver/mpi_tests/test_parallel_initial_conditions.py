@@ -42,6 +42,8 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
+        test_defs.Experiments.GAUSS3D,
+        test_defs.Experiments.MCH_CH_R04B09,
     ],
 )
 @pytest.mark.mpi
