@@ -4,14 +4,17 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=08:00:00
 #SBATCH --gres=gpu:4
-#SBATCH --uenv=icon/25.2:v4
+#SBATCH --uenv=prgenv-gnu/7.2.3:2579601092
 #SBATCH -A csstaff
 #SBATCH --view=default
+#SBATCH --partition mi300
 
 ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
 cd $ICON4PY_GIT_ROOT
 
-source .venv/bin/activate
+source setup_amd_env.sh
+
+source venv_mi300/bin/activate
 
 export MPICH_GPU_SUPPORT_ENABLED=1
 export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
@@ -22,7 +25,6 @@ export PYTHONOPTIMIZE=2
 
 export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
 export CC=$(which gcc)
 export CXX=$(which g++)
 export MPICH_CC=$(which gcc)
@@ -43,7 +45,7 @@ elif [[ "$ICON_GRID" == *"R02B07"* ]]; then
     SUFFIX="R02B07"
 fi
 
-export GT4PY_BUILD_CACHE_DIR="amd_profiling_JW_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
+export GT4PY_BUILD_CACHE_DIR="MI300A_JW_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
 
 export GT4PY_SKIP_DACE_WARNINGS=0
 
@@ -51,12 +53,12 @@ export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
 
-echo "Executing JW4Py to check the WALL CLOCK timer reported at the end of the run"
+echo "Executing JW4Py on MI300A to check the WALL CLOCK timer reported at the end of the run"
 
 rm -rf ${OUTPUT_PATH}*
 
 srun -u --cpu-bind=cores \
-    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
+    bash -c 'printenv TMPDIR; ROCR_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${ROCR_VISIBLE_DEVICES}"; $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
     --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \

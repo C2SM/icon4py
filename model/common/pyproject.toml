@@ -44,7 +44,7 @@ version = "0.2.0"
 all = ["icon4py-common[distributed,io]"]
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]', 'nvtx']
 cuda13 = ['gt4py[cuda13]', 'nvtx']
-distributed = ["ghex>=0.5.1", "mpi4py>=3.1.5"]
+distributed = ["ghex", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
   "cartopy>=0.22.0",
@@ -69,6 +69,9 @@ rocm7 = ['gt4py[rocm7]']
 repository = "https://github.com/C2SM/icon4py"
 
 # -- bumpversion --
+[tool.uv.sources]
+ghex = {git = "https://github.com/ghex-org/GHEX", branch = "bump-hwmalloc-oomph-rocm-fixes"}
+
 [tool.bumpversion]
 allow_dirty = false
 commit = false
