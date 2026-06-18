@@ -99,7 +99,11 @@ class Icon4pyDriver:
     def _store_output(
         self, prognostic_state: prognostics.PrognosticState, model_time: datetime.datetime
     ) -> None:
-        """Assemble the prognostic and diagnostic fields and hand them to the IO monitor."""
+        """Assemble the prognostic and diagnostic fields and hand them to the IO monitor.
+
+        The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
+        so they must be written here and now -- before the next step mutates the state.
+        """
         assert self.io_monitor is not None
         state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
         diagnostic_fields = driver_io.compute_diagnostics(

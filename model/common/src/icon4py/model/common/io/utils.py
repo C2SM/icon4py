@@ -30,6 +30,11 @@ def to_data_array(
         is_on_half_levels: optional boolean flag indicating if the 2d field is defined on the half (interface) levels, False by default.
         to_host: if True, copy the data buffer to host (numpy). netCDF4 cannot consume
             device arrays, so set this when the result is written from a GPU backend.
+
+    Note:
+        The data buffer is not copied: the result usually references ``field`` (a view).
+        ``to_host=True`` is a copy only on GPU; on CPU it still references ``field``.
+        Callers that keep the DataArray past the next mutation of ``field`` must copy it.
     """
     attrs = {} if attrs is None else dict(attrs)
     dims = tuple(dimension_mapping(d, is_on_half_levels) for d in field.domain.dims)

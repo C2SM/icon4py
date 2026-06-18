@@ -99,9 +99,7 @@ def prognostic_state_to_dataarrays(
 # Diagnostic fields
 # --------------------------------------------------------------------------------------
 
-#: Diagnostic output variables. All are cell/full-level fields, i.e. they ride the same
-#: (proven) write path as ``air_density``. ``surface_pressure`` is intentionally omitted
-#: for now: it is a horizontal-only field and the horizontal-only write path is untested.
+
 DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "eastward_wind",
     "northward_wind",
