@@ -113,7 +113,7 @@ DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC
 
 
 @dataclasses.dataclass
-class DiagnosticFields:
+class DiagnosticInputFields:
     """Static fields needed to compute the diagnostic output fields.
 
     Fetched once from the driver's field sources and reused every output step. Kept as a
@@ -126,13 +126,13 @@ class DiagnosticFields:
     rbf_vec_coeff_c2: gtx.Field
 
 
-def fetch_diagnostic_fields(
+def fetch_diagnostic_input_fields(
     static_field_factories: driver_states.StaticFieldFactories,
-) -> DiagnosticFields:
+) -> DiagnosticInputFields:
     """Retrieve ``ddqz_z_full`` and the cell rbf coefficients from the field sources."""
     metrics = static_field_factories.metrics_field_source
     interpolation = static_field_factories.interpolation_field_source
-    return DiagnosticFields(
+    return DiagnosticInputFields(
         ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
         rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
         rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
@@ -144,7 +144,7 @@ def compute_diagnostics(
     *,
     grid: grid_base.Grid,
     backend: gtx.typing.Backend | None,
-    inputs: DiagnosticFields,
+    inputs: DiagnosticInputFields,
 ) -> dict[str, gtx.Field]:
     """Compute the diagnostic output fields from the prognostic state.
 

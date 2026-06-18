@@ -92,9 +92,9 @@ class Icon4pyDriver:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property
-    def _diagnostic_fields(self) -> driver_io.DiagnosticFields:
+    def _diagnostic_input_fields(self) -> driver_io.DiagnosticInputFields:
         """Static fields for the diagnostics, fetched once from the field factories."""
-        return driver_io.fetch_diagnostic_fields(self.static_field_factories)
+        return driver_io.fetch_diagnostic_input_fields(self.static_field_factories)
 
     def _store_output(
         self, prognostic_state: prognostics.PrognosticState, model_time: datetime.datetime
@@ -110,7 +110,7 @@ class Icon4pyDriver:
             prognostic_state,
             grid=self.grid,
             backend=self.backend,
-            inputs=self._diagnostic_fields,
+            inputs=self._diagnostic_input_fields,
         )
         state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
         self.io_monitor.store(state_to_store, model_time)
@@ -747,7 +747,7 @@ def initialize_driver(
             trial_state,
             grid=grid_manager.grid,
             backend=backend,
-            inputs=driver_io.fetch_diagnostic_fields(static_field_factories),
+            inputs=driver_io.fetch_diagnostic_input_fields(static_field_factories),
         )
 
         io_monitor = driver_io.create_io_monitor(
