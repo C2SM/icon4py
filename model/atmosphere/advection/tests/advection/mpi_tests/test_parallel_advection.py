@@ -12,7 +12,7 @@ from gt4py.next import typing as gtx_typing
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
@@ -50,14 +50,6 @@ from ..utils import (
     construct_prep_adv,
     log_serialized,
 )
-
-
-try:
-    import mpi4py
-
-    mpi_decomposition.init_mpi()
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
 @pytest.mark.parametrize("process_props", [True], indirect=True)

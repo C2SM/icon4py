@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, E2VDim, Koff
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, E2VDim, KDim
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
@@ -68,7 +68,7 @@ def _compute_advective_normal_wind_tendency(
         neighbor_sum(
             c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=E2CDim
         )
-        * astype((vn_on_half_levels - vn_on_half_levels(Koff[1])), wpfloat)
+        * astype((vn_on_half_levels - vn_on_half_levels(KDim + 1)), wpfloat)
         / ddqz_z_full_e_wp
     )
 
