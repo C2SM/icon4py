@@ -78,7 +78,9 @@ class ModelTimeVariables:
     Runtime time/date variables derived from config at initialisation.
     """
 
-    simulation_date: driver_config.AbsoluteTime
+    simulation_current_datetime: driver_config.AbsoluteTime
+    simulation_start_datetime: driver_config.AbsoluteTime
+    simulation_end_datetime: driver_config.AbsoluteTime
     n_time_steps: driver_config.NumTimeSteps
     dtime: driver_config.RelativeTime
     ndyn_substeps_var: int
@@ -91,18 +93,19 @@ class ModelTimeVariables:
         self._init_from_config(config)
 
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
-        match config.end_simulation:
+        self.simulation_start_datetime = config.start_of_simulation
+        match config.end_of_simulation:
             case driver_config.NumTimeSteps(n):
                 self.n_time_steps = n
-                self.simulation_datetime = config.start_of_simulation
+                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
             case driver_config.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_datetime = config.start_of_simulation
+                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + relative
             case driver_config.AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
-                self.simulation_datetime = config.start_of_simulation
+                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = absolute
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
@@ -123,7 +126,7 @@ class ModelTimeVariables:
         return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
     def advance_simulation_datetime(self) -> None:
-        self.simulation_datetime += self.dtime
+        self.simulation_current_datetime += self.dtime
         self.elapsed_time_in_seconds += self.dtime_in_seconds
 
     def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
