@@ -96,8 +96,6 @@ class SingleMomentSixClassIconGraupelConfig:
 
         nwp_phy_nml = atmo_dict.get("nwp_phy_nml")
         nwp_tuning_nml = atmo_dict.get("nwp_tuning_nml")
-        if nwp_phy_nml is None or nwp_tuning_nml is None:
-            raise KeyError("nwp_phy_nml and nwp_tuning_nml required.")
         return cls(
             do_latent_heat_nudging=run_nml["ldass_lhn"],
             use_constant_latent_heat=fortran_config.list_to_value(nwp_phy_nml["ithermo_water"])
