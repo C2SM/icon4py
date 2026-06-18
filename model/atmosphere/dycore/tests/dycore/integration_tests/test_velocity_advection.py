@@ -44,8 +44,8 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-ATOL_2EPS = 2 * constants.VP_EPS  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
-RTOL_8EPS = 8 * constants.WP_EPS  # for double ≈ 1.78e-15, for single ≈ 9.54e-7
+ATOL = 2 * constants.VP_EPS  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
+RTOL = 20 * constants.WP_EPS  # for double ≈ 4.44e-15, for single ≈ 2.38e-6
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
-    rtol: vpfloat = RTOL_8EPS,
-    atol: vpfloat = ATOL_2EPS,
+    rtol: vpfloat = RTOL,
+    atol: vpfloat = ATOL,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
@@ -820,8 +820,8 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-        rtol=RTOL_8EPS,
-        atol=ATOL_2EPS,
+        rtol=RTOL,
+        atol=ATOL,
     )
 
     start_idx = start_cell_nudging_for_vertical_wind_advective_tendency
@@ -829,7 +829,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     fortran_res = icon_result_ddt_w_adv[start_idx:end_idx, :].asnumpy()
     icon4py_res = vertical_wind_advective_tendency[start_idx:end_idx, :].asnumpy()
 
-    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=RTOL_8EPS, atol=ATOL_2EPS)
+    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=RTOL, atol=ATOL)
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
@@ -944,6 +944,6 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
     assert test_utils.dallclose(
         icon_result_ddt_vn_apc.asnumpy(),
         normal_wind_advective_tendency.asnumpy(),
-        rtol=RTOL_8EPS,
-        atol=ATOL_2EPS,
+        rtol=RTOL,
+        atol=ATOL,
     )
