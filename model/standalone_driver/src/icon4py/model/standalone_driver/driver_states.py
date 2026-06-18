@@ -141,6 +141,15 @@ class ModelTimeVariables:
         """
         self._init_from_config(config)
 
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"simulation_current_datetime={self.simulation_current_datetime!r}, "
+            f"n_time_steps={self.n_time_steps}, "
+            f"dtime={self.dtime}, "
+            f"is_first_step={self.is_first_step_in_simulation})"
+        )
+
 
 class DriverTimers(enum.Enum):
     SOLVE_NH_FIRST_STEP = "solve_nh_first_step"
