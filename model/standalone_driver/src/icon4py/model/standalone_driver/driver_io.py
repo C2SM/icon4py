@@ -39,9 +39,6 @@ from icon4py.model.common.states import data as state_data, prognostic_state as 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-#: Output subfolder created *inside* the driver's run/output directory.
-OUTPUT_SUBDIR: Final[str] = "output"
-
 #: File-name stub for the output file (a counter + ``.nc`` is appended).
 DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 
@@ -280,7 +277,6 @@ def create_io_monitor(
     del process_props  # reserved for the distributed IO path; unused while single-node
     output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
-    io_output_path = output_path / OUTPUT_SUBDIR
     field_groups = [
         common_io.FieldGroupIOConfig(
             output_interval_steps=output_interval_steps,
@@ -291,7 +287,7 @@ def create_io_monitor(
         )
     ]
 
-    config = common_io.IOConfig(output_path=str(io_output_path), field_groups=field_groups)
+    config = common_io.IOConfig(output_path=str(output_path), field_groups=field_groups)
     return common_io.IOMonitor(
         config=config,
         vertical_size=vertical_grid,

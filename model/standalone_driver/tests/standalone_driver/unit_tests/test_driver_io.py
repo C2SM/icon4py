@@ -238,8 +238,8 @@ def test_create_io_monitor_builds_single_field_group(
         *driver_io.DIAGNOSTIC_VARIABLES,
     ]
     assert field_group.filename == driver_io.DEFAULT_OUTPUT_FILENAME
-    # output is written to the dedicated subfolder of the run directory
-    assert config.output_path == str(tmp_path / driver_io.OUTPUT_SUBDIR)
+    # output is written directly into the run output directory
+    assert config.output_path == str(tmp_path)
     # the string grid id is converted to a UUID at the IO boundary
     assert recorded["grid_id"] == _FAKE_GRID_UUID
 
