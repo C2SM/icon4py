@@ -11,7 +11,7 @@ import pytest
 
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
@@ -66,6 +66,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
@@ -166,7 +167,9 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         exchange=decomposition.single_node_exchange,
     )
 
-    least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
+    least_squares_state = construct_least_squares_state(
+        ta.wpfloat(least_squares_coeffs), backend=backend
+    )
 
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
