@@ -163,6 +163,8 @@ def read_config(
     )
     # The experiments above were run in fortran with a tracer advection scheme
     # that has not been ported to ICON4Py and can not be used for testing.
+    # TODO (jcanton): this isn't the right place to keep a special case
+    # handling. Either fix these experiments or move the special case handling.
     tracer_advection_config = (
         tracer_advection.AdvectionConfig.from_fortran_dict(atm_dict)
         if do_tracer_advection
