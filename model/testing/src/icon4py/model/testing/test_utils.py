@@ -17,16 +17,31 @@ import pytest
 from typing_extensions import Buffer
 
 from icon4py.model.common import model_options
-from icon4py.model.common.constants import VP_EPS
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.constants import DP_EPS, VP_EPS
+from icon4py.model.common.type_alias import precision, vpfloat
 from icon4py.model.testing import config
+
+
+if precision == "double":
+
+    def scale_tol(x):
+        """identity for double-precision"""
+        return x
+else:
+    _scale_const = np.log2(VP_EPS) / np.log2(DP_EPS)
+
+    def scale_tol(x):
+        """scale relative factors according to the reduced range
+
+        Maps 1->1, \\epsilon_d->\\epsilon_s"""
+        return np.exp(_scale_const * np.log(x))
 
 
 def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
     *,
-    rtol: vpfloat = 5e3 * VP_EPS,  # for double ≈ 1.11e-12
+    rtol: vpfloat = scale_tol(5e3) * VP_EPS,  # for double ≈ 1.11e-12
     atol: vpfloat = VP_EPS,
     equal_nan: bool = False,
 ) -> bool:
@@ -40,7 +55,7 @@ def assert_dallclose(
     actual: npt.ArrayLike,
     desired: npt.ArrayLike,
     *,
-    rtol: vpfloat = 5e3 * VP_EPS,  # for double ≈ 1.11e-12
+    rtol: vpfloat = scale_tol(5e3) * VP_EPS,  # for double ≈ 1.11e-12
     atol: vpfloat = VP_EPS,
     equal_nan: bool = False,
     err_msg: str = "",
