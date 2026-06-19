@@ -163,6 +163,11 @@ class IOMonitor(monitor.Monitor):
         dtime: DeltaT,
     ):
         self.config = config
+        # ``grid_file_name`` is the source grid NetCDF, used solely to regenerate the UGRID
+        # topology file (`_write_ugrid`); the grid identity comes from ``grid_id`` (the
+        # ``Grid`` object), not from the file.
+        # TODO(kotsaloscv): build the UGRID topology from ``Grid``/``GridGeometry`` so the
+        # monitor no longer needs the source file path at all.
         self._grid_file = grid_file_name
         self._initialize_output()
         self._group_monitors = [
@@ -176,10 +181,6 @@ class IOMonitor(monitor.Monitor):
             )
             for conf in config.field_groups
         ]
-
-    def _read_grid_attrs(self) -> dict:
-        with ugrid.load_data_file(self._grid_file) as ds:
-            return ds.attrs
 
     def _initialize_output(self) -> None:
         self._create_output_dir()
