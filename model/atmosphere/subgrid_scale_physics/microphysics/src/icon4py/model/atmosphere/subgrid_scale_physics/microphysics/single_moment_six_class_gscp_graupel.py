@@ -92,8 +92,8 @@ class SingleMomentSixClassIconGraupelConfig:
     ) -> SingleMomentSixClassIconGraupelConfig:
         run_nml = atmo_dict["run_nml"]
 
-        nwp_phy_nml = atmo_dict.get("nwp_phy_nml")
-        nwp_tuning_nml = atmo_dict.get("nwp_tuning_nml")
+        nwp_phy_nml = atmo_dict["nwp_phy_nml"]
+        nwp_tuning_nml = atmo_dict["nwp_tuning_nml"]
         return cls(
             do_latent_heat_nudging=run_nml["ldass_lhn"],
             use_constant_latent_heat=fortran_config.list_to_value(nwp_phy_nml["ithermo_water"])
