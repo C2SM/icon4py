@@ -124,7 +124,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         ntracer=single_rank_icon4py_driver.config.driver.ntracer,
     )
-    single_rank_prognostic = initial_condition.create(
+    initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
@@ -171,7 +171,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         ntracer=multi_rank_icon4py_driver.config.driver.ntracer,
     )
-    multi_rank_prognostic = initial_condition.create(
+    initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
