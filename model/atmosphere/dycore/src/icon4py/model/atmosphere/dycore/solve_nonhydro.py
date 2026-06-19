@@ -779,7 +779,7 @@ class SolveNonhydro:
                 "hdiff_smag_z3": self._config.fourth_order_divdamp_z3,
                 "hdiff_smag_z4": self._config.fourth_order_divdamp_z4,
             },
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
         self._init_test_fields = setup_program(
             backend=backend,
