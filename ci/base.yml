@@ -11,6 +11,7 @@ stages:
 
 variables:
   PYVERSION: 3.13.13
+  PYVERSION_SHORT: 3.13
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:
@@ -50,11 +51,13 @@ variables:
 
 
 .test_runner_base:
+  stage: test
   timeout: 8h
   extends: .container-runner-santis-gh200
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
+    SLURM_NTASKS: 1
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_TIMELIMIT: '00:30:00'
@@ -76,6 +79,11 @@ variables:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PYTEST_ADDOPTS: "--durations=0"
+    PY2F_GPU_TESTS: 1
+    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
@@ -101,13 +109,6 @@ variables:
 .test_runner_serial:
   extends: .test_runner_base
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  variables:
-    SLURM_NTASKS: 1
-    PY2F_GPU_TESTS: 1
-    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
-    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
-    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 .test_runner_mpi:
   extends: .test_runner_base
@@ -116,14 +117,13 @@ variables:
     SLURM_NTASKS: 4
 
 .test_model_aarch64:
-  stage: test
-  extends: .test_runner_serial
+  extends: [.test_runner_serial, .test_template_aarch64]
   script:
     - |
       NOX_ARGS="--backend=$BACKEND"
       if [ -n "${GRID:-}" ]; then NOX_ARGS="$NOX_ARGS --grid=$GRID"; fi
       if [ -n "${LEVEL:-}" ]; then NOX_ARGS="$NOX_ARGS --level=$LEVEL"; fi
-      nox -s "test_model-3.13($MODEL_SUBSET, $MODEL_SUBPACKAGE)" -- $NOX_ARGS
+      nox -s "test_model-${PYVERSION_SHORT}($MODEL_SUBSET, $MODEL_SUBPACKAGE)" -- $NOX_ARGS
   rules:
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
@@ -140,16 +140,14 @@ variables:
         SLURM_TIMELIMIT: '00:30:00'
 
 .test_tools_aarch64:
-  stage: test
-  extends: .test_runner_serial
+  extends: [.test_runner_serial, .test_template_aarch64]
   script:
-    - nox -s "test_tools_and_bindings-3.13($SELECTION)"
+    - nox -s "test_tools_and_bindings-${PYVERSION_SHORT}($SELECTION)"
 
 .test_model_mpi_aarch64:
-  stage: test
-  extends: .test_runner_mpi
+  extends: [.test_runner_mpi, .test_template_aarch64]
   script:
-    - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-3.13($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
+    - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
     - if: $MODEL_MPI_SUBPACKAGE == 'advection'
       variables:

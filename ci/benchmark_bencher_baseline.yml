@@ -5,12 +5,12 @@ include:
 benchmark_bencher_stencils_baseline_aarch64:
   extends: [.test_runner_serial, .benchmark_nox_job]
   variables:
-    NOX_SESSION: "__bencher_baseline_CI-3.13"
+    NOX_SESSION: "__bencher_baseline_CI-${PYVERSION_SHORT}"
     TEST_SELECTION: "${STENCIL_TEST_SELECTION}"
     GT4PY_COLLECT_METRICS_LEVEL: 10
 
 benchmark_bencher_granules_baseline_aarch64:
   extends: [.test_runner_serial, .benchmark_nox_job]
   variables:
-    NOX_SESSION: "__bencher_baseline_CI-3.13"
+    NOX_SESSION: "__bencher_baseline_CI-${PYVERSION_SHORT}"
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
