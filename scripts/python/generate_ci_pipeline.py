@@ -10,7 +10,7 @@
 
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
-Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
+Reads the pipeline variables (SESSIONS, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
 BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS) or corresponding command-line options
 and writes a child pipeline that includes ``ci/base.yml`` and instantiates only
 the test jobs whose matrix entries match the requested filter.
@@ -113,7 +113,7 @@ def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[s
 
 def _generate_child_pipeline(
     *,
-    session: str | None = None,
+    sessions: str | None = None,
     model_subsets: str | None = None,
     model_subpackages: str | None = None,
     model_mpi_subpackages: str | None = None,
@@ -124,8 +124,8 @@ def _generate_child_pipeline(
 ) -> str:
     """Return the child pipeline YAML as a string."""
     # Fallback defaults match ci/default.yml pipeline variables.
-    requested_sessions = _resolve_filter(session, "SESSION", "model:tools:mpi")
-    _validate_tokens("SESSION", requested_sessions, ALL_SESSIONS)
+    requested_sessions = _resolve_filter(sessions, "SESSIONS", "model:tools:mpi")
+    _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
 
     requested_model_subsets = _resolve_filter(model_subsets, "MODEL_SUBSETS", "stencils:datatest")
     _validate_tokens("MODEL_SUBSETS", requested_model_subsets, ALL_MODEL_SUBSETS)
@@ -250,10 +250,10 @@ def _generate_child_pipeline(
 
 @cli.command()
 def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
-    session: Annotated[
+    sessions: Annotated[
         str | None,
         typer.Option(
-            "--session",
+            "--sessions",
             help="Colon/comma-separated nox session filter (model, tools, mpi)",
         ),
     ] = None,
@@ -306,7 +306,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
     """
     sys.stdout.write(
         _generate_child_pipeline(
-            session=session,
+            sessions=sessions,
             model_subpackages=model_subpackages,
             model_mpi_subpackages=model_mpi_subpackages,
             model_mpi_subsets=model_mpi_subsets,
