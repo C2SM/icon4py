@@ -37,7 +37,7 @@ import yaml
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
-ALL_SESSIONS = ["model", "tools", "mpi"]
+ALL_SESSIONS = ["model", "model_mpi", "tools"]
 ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 ALL_MODEL_MPI_SUBSETS = ["basic", "datatest"]
 ALL_MODEL_SUBPACKAGES = [
@@ -99,7 +99,9 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
         sys.exit(1)
 
 
-def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[str]:
+def _resolve_filter(
+    cli_value: str | None, env_var: str, *, default: list[str] | None = None
+) -> list[str]:
     """Resolve a filter value from CLI arg, env var, or built-in default.
 
     When *cli_value* is provided (including empty string) it takes
@@ -108,7 +110,10 @@ def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[s
     """
     if cli_value is not None:
         return _parse_list(cli_value)
-    return _parse_list(os.environ.get(env_var)) or _parse_list(default)
+    env_parsed = _parse_list(os.environ.get(env_var))
+    if env_parsed:
+        return env_parsed
+    return list(default) if default else []
 
 
 def _generate_child_pipeline(
@@ -124,40 +129,42 @@ def _generate_child_pipeline(
 ) -> str:
     """Return the child pipeline YAML as a string."""
     # Fallback defaults match ci/default.yml pipeline variables.
-    requested_sessions = _resolve_filter(sessions, "SESSIONS", "model:tools:mpi")
+    requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
     _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
 
-    requested_model_subsets = _resolve_filter(model_subsets, "MODEL_SUBSETS", "stencils:datatest")
+    requested_model_subsets = _resolve_filter(
+        model_subsets, "MODEL_SUBSETS", default=ALL_MODEL_SUBSETS
+    )
     _validate_tokens("MODEL_SUBSETS", requested_model_subsets, ALL_MODEL_SUBSETS)
 
     requested_model_subpackages = _resolve_filter(
         model_subpackages,
         "MODEL_SUBPACKAGES",
-        "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver",
+        default=ALL_MODEL_SUBPACKAGES,
     )
     _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
 
     requested_model_mpi_subpackages = _resolve_filter(
         model_mpi_subpackages,
         "MODEL_MPI_SUBPACKAGES",
-        "advection:diffusion:dycore:common:standalone_driver",
+        default=ALL_MODEL_MPI_SUBPACKAGES,
     )
     _validate_tokens(
         "MODEL_MPI_SUBPACKAGES", requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
     )
 
     requested_model_mpi_subsets = _resolve_filter(
-        model_mpi_subsets, "MODEL_MPI_SUBSETS", "basic:datatest"
+        model_mpi_subsets, "MODEL_MPI_SUBSETS", default=ALL_MODEL_MPI_SUBSETS
     )
     _validate_tokens("MODEL_MPI_SUBSETS", requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
 
-    requested_backends = _resolve_filter(backends, "BACKENDS", "dace_gpu")
+    requested_backends = _resolve_filter(backends, "BACKENDS", default=ALL_BACKENDS)
     _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
 
-    requested_levels = _resolve_filter(levels, "LEVELS", "integration")
+    requested_levels = _resolve_filter(levels, "LEVELS", default=ALL_LEVELS)
     _validate_tokens("LEVELS", requested_levels, ALL_LEVELS)
 
-    requested_grids = _resolve_filter(grids, "GRIDS", "simple:icon_regional")
+    requested_grids = _resolve_filter(grids, "GRIDS", default=ALL_GRIDS)
     _validate_tokens("GRIDS", requested_grids, ALL_GRIDS)
 
     pipeline: dict = {
@@ -215,14 +222,19 @@ def _generate_child_pipeline(
             },
         }
 
-    if "mpi" in requested_sessions:
+    if "model_mpi" in requested_sessions:
         filtered_subpackages = _intersect(
             requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
         )
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-        filtered_mpi_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
-        if filtered_subpackages and filtered_backends and filtered_levels and filtered_mpi_subsets:
+        filtered_model_mpi_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
+        if (
+            filtered_subpackages
+            and filtered_backends
+            and filtered_levels
+            and filtered_model_mpi_subsets
+        ):
             pipeline["test_model_mpi_aarch64"] = {
                 "extends": ".test_model_mpi_aarch64",
                 "parallel": {
@@ -231,7 +243,7 @@ def _generate_child_pipeline(
                             "MODEL_MPI_SUBPACKAGE": filtered_subpackages,
                             "BACKEND": filtered_backends,
                             "LEVEL": filtered_levels,
-                            "SELECTION": filtered_mpi_subsets,
+                            "SELECTION": filtered_model_mpi_subsets,
                         }
                     ]
                 },
@@ -254,7 +266,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
         str | None,
         typer.Option(
             "--sessions",
-            help="Colon/comma-separated nox session filter (model, tools, mpi)",
+            help="Colon/comma-separated nox session filter (model, model_mpi, tools)",
         ),
     ] = None,
     model_subpackages: Annotated[
