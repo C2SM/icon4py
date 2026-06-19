@@ -180,7 +180,7 @@ variables:
 .generate_test_child_pipeline:
   stage: generate_test
   extends: .container-runner-lightweight-gh200
-  image: ghcr.io/astral-sh/uv:python3.12-trixie-slim
+  image: ghcr.io/astral-sh/uv:0.11.15-python3.12-trixie-slim
   timeout: 5m
   variables:
     GIT_STRATEGY: fetch
