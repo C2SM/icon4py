@@ -191,7 +191,8 @@ def test_model_mpi(
     session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
 ) -> None:
     """Run MPI tests for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
+    # TODO: temporarily disabled
+    # _install_session_venv(session, extras=["all"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
