@@ -127,7 +127,6 @@ def _generate_child_pipeline(
     grids: str | None = None,
 ) -> str:
     """Return the child pipeline YAML as a string."""
-    # Fallback defaults match ci/default.yml pipeline variables.
     requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
     _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
 
