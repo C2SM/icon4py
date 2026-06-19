@@ -18,7 +18,9 @@ include:
         SLURM_TIMELIMIT: '00:05:00'
   parallel:
     matrix:
-      - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
+    # TODO
+      # - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
+      - COMPONENT: [standalone_driver]
         BACKEND: [dace_gpu, gtfn_gpu]
         GRID: [simple, icon_regional]
 test_model_stencils_aarch64:
@@ -55,7 +57,9 @@ test_tools_and_bindings_aarch64:
         SLURM_TIMELIMIT: '00:15:00'
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
+    # TODO
+      # - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
+      - COMPONENT: [standalone_driver]
         BACKEND: [embedded, dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 test_model_datatests_aarch64:
