@@ -223,8 +223,8 @@ def _generate_child_pipeline(
         filtered_levels = _intersect(requested_levels, ALL_LEVELS)
         filtered_mpi_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
         if filtered_subpackages and filtered_backends and filtered_levels and filtered_mpi_subsets:
-            pipeline["test_mpi_aarch64"] = {
-                "extends": ".test_mpi_aarch64",
+            pipeline["test_model_mpi_aarch64"] = {
+                "extends": ".test_model_mpi_aarch64",
                 "parallel": {
                     "matrix": [
                         {

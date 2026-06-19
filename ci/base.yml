@@ -147,7 +147,7 @@ variables:
   script:
     - nox -s "test_tools_and_bindings-3.13($SELECTION)"
 
-.test_mpi_aarch64:
+.test_model_mpi_aarch64:
   stage: test
   extends: .test_runner_mpi
   script:
