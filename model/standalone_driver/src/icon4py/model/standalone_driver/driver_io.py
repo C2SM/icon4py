@@ -18,7 +18,6 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
   (:func:`create_io_monitor`).
 """
 
-import dataclasses
 import pathlib
 import uuid
 from typing import Any, Final
@@ -34,13 +33,10 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_temperature,
 )
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
-from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
-from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states
 
 
 #: Output subfolder created *inside* the driver's run/output directory.
@@ -112,39 +108,14 @@ DIAGNOSTIC_VARIABLES: Final[list[str]] = [
 DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
 
 
-@dataclasses.dataclass
-class DiagnosticInputFields:
-    """Static fields needed to compute the diagnostic output fields.
-
-    Fetched once from the driver's field sources and reused every output step. Kept as a
-    plain field container (instead of passing the field factories around) so that
-    :func:`compute_diagnostics` stays usable with bare fields, e.g. in tests.
-    """
-
-    ddqz_z_full: gtx.Field
-    rbf_vec_coeff_c1: gtx.Field
-    rbf_vec_coeff_c2: gtx.Field
-
-
-def fetch_diagnostic_input_fields(
-    static_field_factories: driver_states.StaticFieldFactories,
-) -> DiagnosticInputFields:
-    """Retrieve ``ddqz_z_full`` and the cell rbf coefficients from the field sources."""
-    metrics = static_field_factories.metrics_field_source
-    interpolation = static_field_factories.interpolation_field_source
-    return DiagnosticInputFields(
-        ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-        rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-        rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
-    )
-
-
 def compute_diagnostics(
     prognostic_state: prognostics.PrognosticState,
     *,
     grid: grid_base.Grid,
     backend: gtx.typing.Backend | None,
-    inputs: DiagnosticInputFields,
+    ddqz_z_full: gtx.Field,
+    rbf_vec_coeff_c1: gtx.Field,
+    rbf_vec_coeff_c2: gtx.Field,
 ) -> dict[str, gtx.Field]:
     """Compute the diagnostic output fields from the prognostic state.
 
@@ -211,8 +182,8 @@ def compute_diagnostics(
 
     rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
         p_e_in=prognostic_state.vn,
-        ptr_coeff_1=inputs.rbf_vec_coeff_c1,
-        ptr_coeff_2=inputs.rbf_vec_coeff_c2,
+        ptr_coeff_1=rbf_vec_coeff_c1,
+        ptr_coeff_2=rbf_vec_coeff_c2,
         p_u_out=u,
         p_v_out=v,
         horizontal_start=cell_lateral_boundary_level_2,
@@ -225,13 +196,13 @@ def compute_diagnostics(
     diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
         exner=prognostic_state.exner,
         virtual_temperature=virtual_temperature,
-        ddqz_z_full=inputs.ddqz_z_full,
+        ddqz_z_full=ddqz_z_full,
         surface_pressure=surface_pressure_k,
         horizontal_start=0,
         horizontal_end=end_cell_end,
         vertical_start=num_levels,
         vertical_end=num_levels + 1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     # surface pressure lives at the bottom interface; extract it as a cell field,
@@ -245,7 +216,7 @@ def compute_diagnostics(
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
 
     diagnose_pressure.diagnose_pressure.with_backend(backend)(
-        inputs.ddqz_z_full,
+        ddqz_z_full,
         virtual_temperature,
         surface_pressure,
         pressure,

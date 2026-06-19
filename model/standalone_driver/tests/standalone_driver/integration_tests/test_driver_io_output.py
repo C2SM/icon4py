@@ -8,22 +8,28 @@
 
 """Integration test for single-node output from the standalone driver.
 
-Runs the Jablonowski-Williamson testcase for the default (one) step with
-``enable_output=True`` and asserts that valid CF/UGRID NetCDF files are produced.
-It exercises the full ``store -> file`` path, not just the in-memory bridge.
+Runs the Jablonowski-Williamson testcase for one step with output enabled and asserts
+that valid CF/UGRID NetCDF files are produced. It exercises the full ``store -> file``
+path, not just the in-memory bridge.
 
-Being a datatest, it requires the JW grid.
+Being a datatest, it requires the JW grid and experiment configuration.
 """
 
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import netCDF4 as nc
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import driver_io, main
-from icon4py.model.testing import definitions as test_defs, grid_utils
-from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.standalone_driver import (
+    config as driver_config,
+    driver_io,
+    driver_utils,
+    standalone_driver,
+)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -38,33 +44,44 @@ def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_standalone_driver_writes_output(
-    experiment: test_defs.Experiment,
+    experiment_description: test_defs.ExperimentDescription,
     *,
-    backend_like: model_backends.BackendLike,
+    download_ser_data: None,
     tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
 ) -> None:
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    output_path = tmp_path / "io_driver_output"
+    allocator = model_backends.get_allocator(backend)
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    main.main(
-        grid_file_path=grid_file_path,
-        icon4py_backend=backend_like,
-        output_path=output_path,
-        log_level="notset",
-        print_distributed_debug_msg=False,
-        force_serial_run=False,
-        enable_output=True,
+    config = driver_config.read_config(config_file_path)
+    config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / "io_driver_output",
+            "enable_output": True,
+            "end_of_simulation": driver_config.NumTimeSteps(1),
+        }
     )
 
-    io_dir = output_path / driver_io.OUTPUT_SUBDIR
-    assert io_dir.is_dir(), f"expected output subfolder at {io_dir}"
+    grid_manager = driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    standalone_driver.run_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
+    )
 
     # the UGRID grid file is written on monitor init
-    _find_one(io_dir, "*_ugrid.nc")
+    _find_one(tmp_path, "*_ugrid.nc")
 
-    # single data file: all prognostic AND diagnostic fields together, with the expected
-    # shapes and a single time slice (output is on by default; no group split)
-    output_file = _find_one(io_dir, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*.nc")
+    # single data file: all prognostic AND diagnostic fields together, one time slice
+    output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*.nc")
     with nc.Dataset(output_file) as ds:
         assert ds.Conventions == "CF-1.7"
         for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
