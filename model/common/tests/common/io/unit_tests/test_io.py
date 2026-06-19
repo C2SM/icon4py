@@ -10,7 +10,6 @@
 import datetime as dt
 import pathlib
 import re
-from typing import Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -27,7 +26,6 @@ from icon4py.model.common.io.io import (
     IOConfig,
     IOMonitor,
     generate_name,
-    to_delta,
 )
 from icon4py.model.common.states import data
 from icon4py.model.testing import datatest_utils, definitions, grid_utils
@@ -38,32 +36,6 @@ from .. import utils as test_io_utils
 
 # setting backend to fieldview embedded here.
 backend = None
-
-
-@pytest.mark.parametrize("num", range(1, 6))
-@pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
-def test_to_delta_days(num, slot):
-    assert to_delta("DAY") == dt.timedelta(days=1)
-    assert to_delta(f"{num} {slot}") == dt.timedelta(days=num)
-
-
-@pytest.mark.parametrize("num", range(1, 5))
-@pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour", "hours", "HOURS"])
-def test_to_delta_hours(num, slot):
-    assert to_delta("HOUR") == dt.timedelta(hours=1)
-    assert to_delta(f"{num} {slot}") == dt.timedelta(hours=num)
-
-
-@pytest.mark.parametrize("num", [0, 2, 44, 4, 5])
-@pytest.mark.parametrize("slot", ["second", "SECOND", "SEConds", "SECONDS"])
-def test_to_delta_secs(num, slot):
-    assert to_delta(f"{num} {slot}") == dt.timedelta(seconds=num)
-
-
-@pytest.mark.parametrize("num", [0, 2, 3, 4, 5])
-@pytest.mark.parametrize("slot", ["MINUTE", "Minute", "minutes", "MINUTES"])
-def test_to_delta_mins(num, slot):
-    assert to_delta(f"{num} {slot}") == dt.timedelta(minutes=num)
 
 
 @pytest.mark.parametrize(
@@ -107,6 +79,7 @@ def test_io_monitor_create_output_path(test_path):
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id=test_io_utils.simple_grid.id,
+        dtime=dt.timedelta(hours=1),
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -130,6 +103,7 @@ def test_io_monitor_write_ugrid_file(test_path):
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id="simple_grid",
+        dtime=dt.timedelta(hours=1),
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
@@ -161,7 +135,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     state = test_io_utils.model_state(grid)
     field_configs = [
         FieldGroupIOConfig(
-            output_interval_steps=1,
+            output_interval=1,
             filename="icon4py_dummy_output",
             variables=variables,
             nc_comment="Writing dummy data from icon4py for testing.",
@@ -174,6 +148,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id=grid.id,
+        dtime=dt.timedelta(hours=1),
     )
     time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(3):
@@ -210,7 +185,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     state = test_io_utils.model_state(grid)
     filename_stub = "icon4py_dummy_output"
     config = FieldGroupIOConfig(
-        output_interval_steps=1,
+        output_interval=1,
         filename=filename_stub,
         variables=["air_density", "exner_function", "upward_air_velocity"],
         timesteps_per_file=1,
@@ -221,6 +196,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
         horizontal=grid.config.horizontal_config,
         grid_id=grid.id,
         output_path=test_path,
+        dtime=dt.timedelta(hours=1),
     )
     time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(4):
@@ -254,6 +230,21 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
                 )
 
 
+def test_fieldgroup_monitor_refuses_to_overwrite_existing_output(test_path):
+    # a first run writes ..._0001.nc; a second run sharing the directory must not
+    # silently overwrite it -- the per-run file counter restarts at 0.
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+
+    _, first_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid)
+    first_monitor.store(state, time)
+    first_monitor.close()
+
+    _, second_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid)
+    with pytest.raises(errors.InvalidConfigError, match="already exists"):
+        second_monitor.store(state, time)
+
+
 def read_back_as_uxarray(path: pathlib.Path):
     ugrid_file = None
     data_files = []
@@ -270,7 +261,7 @@ def read_back_as_uxarray(path: pathlib.Path):
 def test_fieldgroup_monitor_no_output_between_step_intervals(test_path):
     # output every 3rd step: the first two stores must not produce any output
     _, group_monitor = create_field_group_monitor(
-        test_path, test_io_utils.simple_grid, output_interval_steps=3
+        test_path, test_io_utils.simple_grid, output_interval=3
     )
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
@@ -280,10 +271,10 @@ def test_fieldgroup_monitor_no_output_between_step_intervals(test_path):
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
 
 
-def create_field_group_monitor(test_path, grid, output_interval_steps=1):
+def create_field_group_monitor(test_path, grid, output_interval=1, dtime=dt.timedelta(hours=1)):
     config = FieldGroupIOConfig(
         filename="test_empty.nc",
-        output_interval_steps=output_interval_steps,
+        output_interval=output_interval,
         variables=["exner_function", "air_density"],
     )
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
@@ -301,12 +292,13 @@ def create_field_group_monitor(test_path, grid, output_interval_steps=1):
         horizontal=grid.config.horizontal_config,
         grid_id=grid.id,
         output_path=test_path,
+        dtime=dtime,
     )
     return config, group_monitor
 
 
 @pytest.mark.parametrize(
-    "filename, output_interval_steps, variables, message",
+    "filename, output_interval, variables, message",
     [
         (
             "",
@@ -330,15 +322,15 @@ def create_field_group_monitor(test_path, grid, output_interval_steps=1):
             "vars/prognostics.nc",
             0,
             ["air_density, exner_function"],
-            "Output interval in steps must be positive",
+            "Output interval must be positive",
         ),
     ],
 )
-def test_fieldgroup_config_validate_filename(filename, output_interval_steps, variables, message):
+def test_fieldgroup_config_validate_filename(filename, output_interval, variables, message):
     with pytest.raises(errors.InvalidConfigError) as err:
         FieldGroupIOConfig(
             filename=filename,
-            output_interval_steps=output_interval_steps,
+            output_interval=output_interval,
             variables=variables,
         )
     assert message in str(err.value)
@@ -347,7 +339,7 @@ def test_fieldgroup_config_validate_filename(filename, output_interval_steps, va
 def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
     config = FieldGroupIOConfig(
         filename="vars/prognostics.nc",
-        output_interval_steps=1,
+        output_interval=1,
         variables=["exner_function", "air_density"],
     )
     vertical_size = test_io_utils.simple_grid.config.vertical_size
@@ -358,6 +350,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
         horizontal=horizontal_size,
         grid_id=test_io_utils.simple_grid.id,
         output_path=test_path,
+        dtime=dt.timedelta(hours=1),
     )
     assert group_monitor.output_path == test_path.joinpath("vars")
     assert group_monitor.output_path.exists()
@@ -368,7 +361,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
 def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
     config = FieldGroupIOConfig(
         filename="vars/prognostics.nc",
-        output_interval_steps=1,
+        output_interval=1,
         variables=["exner_function", "air_density", "foo"],
     )
     vertical_size = test_io_utils.simple_grid.config.vertical_size
@@ -379,6 +372,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         horizontal=horizontal_size,
         grid_id=test_io_utils.simple_grid.id,
         output_path=test_path,
+        dtime=dt.timedelta(hours=1),
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
@@ -387,46 +381,41 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         )
 
 
-def test_fieldgroup_config_requires_exactly_one_schedule():
-    # neither schedule set
-    with pytest.raises(errors.InvalidConfigError, match="exactly one"):
-        FieldGroupIOConfig(filename="a.nc", variables=["air_density"])
-    # both schedules set
-    with pytest.raises(errors.InvalidConfigError, match="exactly one"):
+def test_fieldgroup_config_rejects_invalid_interval():
+    # a string interval is no longer supported: only int (steps) or timedelta
+    with pytest.raises(errors.InvalidConfigError, match=r"int \(steps\) or a timedelta"):
         FieldGroupIOConfig(
             filename="a.nc",
             variables=["air_density"],
-            output_interval_steps=1,
-            output_interval="1 HOUR",
-            start_time="2024-01-01T00:00:00",
+            output_interval="1 HOUR",  # type: ignore[arg-type]
         )
 
 
-def test_fieldgroup_config_time_based_requires_start_time():
-    with pytest.raises(errors.InvalidConfigError, match="start_time is required"):
-        FieldGroupIOConfig(filename="a.nc", variables=["air_density"], output_interval="1 HOUR")
-
-
-def test_fieldgroup_monitor_time_based_capture(test_path):
-    # time-based schedule; 'foo' is missing so a *capture* raises IncompleteStateError --
-    # this lets us assert the capture decision without writing a file.
-    config = FieldGroupIOConfig(
-        filename="vars/prognostics.nc",
-        output_interval="1 HOUR",
-        start_time="2024-01-01T00:00:00",
-        variables=["air_density", "foo"],
-    )
-    group_monitor = FieldGroupMonitor(
-        config=config,
-        vertical=test_io_utils.simple_grid.config.vertical_size,
-        horizontal=test_io_utils.simple_grid.config.horizontal_config,
-        grid_id=test_io_utils.simple_grid.id,
-        output_path=test_path,
+def test_fieldgroup_monitor_time_interval_normalized_to_steps(test_path):
+    # a 3-hour interval with a 1-hour time step fires every 3rd step
+    _, group_monitor = create_field_group_monitor(
+        test_path,
+        test_io_utils.simple_grid,
+        output_interval=dt.timedelta(hours=3),
+        dtime=dt.timedelta(hours=1),
     )
     state = test_io_utils.model_state(test_io_utils.simple_grid)
-    start = dt.datetime.fromisoformat("2024-01-01T00:00:00")
-    # before the scheduled start: no capture, no error
-    group_monitor.store(state, start - dt.timedelta(minutes=10))
-    # at the scheduled time: capture -> missing field raises
-    with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
-        group_monitor.store(state, start)
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    # first two steps: no output
+    group_monitor.store(state, step_time)
+    group_monitor.store(state, step_time + dt.timedelta(hours=1))
+    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
+    # third step: output is written
+    group_monitor.store(state, step_time + dt.timedelta(hours=2))
+    group_monitor.close()
+    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
+
+
+def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(test_path):
+    with pytest.raises(errors.InvalidConfigError, match="shorter than the model time step"):
+        create_field_group_monitor(
+            test_path,
+            test_io_utils.simple_grid,
+            output_interval=dt.timedelta(minutes=30),
+            dtime=dt.timedelta(hours=1),
+        )

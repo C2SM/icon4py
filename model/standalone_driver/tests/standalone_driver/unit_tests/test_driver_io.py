@@ -14,6 +14,7 @@ These tests are data-free: they use the ``simple_grid`` and a zero-initialised
 
 import copy
 import dataclasses
+import datetime
 import pathlib
 import uuid
 
@@ -36,13 +37,13 @@ from icon4py.model.testing.fixtures import backend
 
 
 #: A real grid's ``id`` is the file's ``uuidOfHGrid`` (a UUID); the synthetic simple grid
-#: uses a plain string, so the monitor tests stamp a UUID onto it.
+#: uses a plain string, so the ``grid`` fixture stamps a UUID onto it.
 _FAKE_GRID_UUID = uuid.UUID("12345678-1234-5678-1234-567812345678")
 
 
 @pytest.fixture
 def grid() -> base.Grid:
-    return simple.simple_grid()
+    return dataclasses.replace(simple.simple_grid(), id=str(_FAKE_GRID_UUID))
 
 
 def _make_prognostic_state(
@@ -208,6 +209,7 @@ def test_create_io_monitor_builds_single_field_group(
             horizontal_size: object,
             grid_file_name: pathlib.Path,
             grid_id: uuid.UUID,
+            dtime: datetime.timedelta,
         ) -> None:
             recorded["config"] = config
             recorded["grid_file_name"] = grid_file_name
@@ -215,14 +217,12 @@ def test_create_io_monitor_builds_single_field_group(
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
 
-    # the monitor requires a UUID grid id; stamp one onto the synthetic grid
-    grid = dataclasses.replace(grid, id=str(_FAKE_GRID_UUID))
-
     driver_io.create_io_monitor(
         output_path=tmp_path,
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+        dtime=datetime.timedelta(seconds=1),
     )
 
     config = recorded["config"]
@@ -230,7 +230,7 @@ def test_create_io_monitor_builds_single_field_group(
     assert len(config.field_groups) == 1
     field_group = config.field_groups[0]
     # default cadence: capture on every model step
-    assert field_group.output_interval_steps == 1
+    assert field_group.output_interval == 1
     # a single group holding all fields, prognostic + diagnostic, in one file
     assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
     assert list(field_group.variables) == [
@@ -256,12 +256,12 @@ def test_create_io_monitor_has_no_separate_diagnostic_group(
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
 
-    grid = dataclasses.replace(grid, id=str(_FAKE_GRID_UUID))
     driver_io.create_io_monitor(
         output_path=tmp_path,
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+        dtime=datetime.timedelta(seconds=1),
     )
 
     groups = recorded["config"].field_groups

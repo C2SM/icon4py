@@ -18,6 +18,7 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
   (:func:`create_io_monitor`).
 """
 
+import datetime
 import pathlib
 import uuid
 from typing import Any, Final
@@ -272,14 +273,15 @@ def create_io_monitor(
     grid_file_path: pathlib.Path,
     grid: grid_base.Grid,
     vertical_grid: v_grid.VerticalGrid,
+    dtime: datetime.timedelta,
     variables: list[str] | None = None,
-    output_interval_steps: int = 1,
+    output_interval: common_io.OutputInterval = 1,
     process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.
 
-    Output is written every ``output_interval_steps`` model steps (default: every step),
-    so the schedule is independent of the time step length.
+    ``output_interval`` is either a number of model steps or a simulation-time delta
+    (normalized to steps using ``dtime``); it defaults to every step.
 
     ``process_props`` is currently unused: IO is single-node only. It is kept on the
     signature so the distributed path (per-rank IO setup) can be wired in without a
@@ -290,7 +292,7 @@ def create_io_monitor(
 
     field_groups = [
         common_io.FieldGroupIOConfig(
-            output_interval_steps=output_interval_steps,
+            output_interval=output_interval,
             filename=DEFAULT_OUTPUT_FILENAME,
             variables=output_variables,
             nc_title="ICON4Py output",
@@ -306,4 +308,5 @@ def create_io_monitor(
         grid_file_name=grid_file_path,
         # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
         grid_id=uuid.UUID(grid.id),
+        dtime=dtime,
     )

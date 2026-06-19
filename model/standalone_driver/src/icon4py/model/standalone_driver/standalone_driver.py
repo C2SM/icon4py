@@ -624,6 +624,7 @@ def initialize_driver(
                 grid_file_path=pathlib.Path(grid_manager.file_path),
                 grid=grid_manager.grid,
                 vertical_grid=vertical_grid,
+                dtime=config.driver.dtime,
                 process_props=process_props,
             )
 

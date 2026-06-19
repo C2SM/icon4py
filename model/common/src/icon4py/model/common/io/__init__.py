@@ -43,9 +43,7 @@ The IO module is configurable and can be configured with:
 
 Field groups are stored in the same file and share a common setting of
 
-- the output schedule, given as **exactly one** of:
-  - `output_interval_steps`: positive integer N; the fields are written every N model steps (i.e. every N calls to `store`). Lands on exact step boundaries regardless of the time step length.
-  - `output_interval` (+ `start_time`): a time string, one of ["DAY", "HOUR", "MINUTE", "SECOND"] (or plural) combined with a positive number, e.g. "10 HOURS", "1 DAY"; the fields are written once the model clock reaches the scheduled time, starting at `start_time` (ISO timestamp).
+- `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step.
 - `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
@@ -56,9 +54,10 @@ As we have no general handling of configuration files in `ICON4Py` yet, the conf
 be instantiated as Python dataclasses for now. A valid configuration could look like this:
 
 ```python
+import datetime
+
 prognostic_group = FieldGroupIOConfig(
-    output_interval="2 HOURS",
-    start_time="2024-01-01T12:00:00",
+    output_interval=datetime.timedelta(hours=2),
     filename="icon4py_prognostics",
     timesteps_per_file=12,
     variables=["air_density", "exner_function", "upward_air_velocity"],
@@ -67,7 +66,7 @@ prognostic_group = FieldGroupIOConfig(
 )
 
 wind_group = FieldGroupIOConfig(
-    output_interval_steps=1,
+    output_interval=1,
     filename="icon4py_diagnostics",
     timesteps_per_file=24,
     variables=["eastward_wind", "northward_wind"],
