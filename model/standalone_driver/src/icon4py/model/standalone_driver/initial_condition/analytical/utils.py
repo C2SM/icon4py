@@ -334,6 +334,7 @@ def assemble_driver_states(
         exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
         rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
         theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+        tracer=[data_alloc.as_field(f, allocator=allocator) for f in prognostic_state_now.tracer],
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
