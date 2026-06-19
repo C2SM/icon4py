@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import math
-import typing
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -93,48 +92,21 @@ class SingleMomentSixClassIconGraupelConfig:
     ) -> SingleMomentSixClassIconGraupelConfig:
         run_nml = atmo_dict["run_nml"]
 
-        nwp_phy_nml = atmo_dict.get("nwp_phy_nml")
-        nwp_tuning_nml = atmo_dict.get("nwp_tuning_nml")
-        if nwp_phy_nml is not None and nwp_tuning_nml is not None:
-            return cls(
-                do_latent_heat_nudging=run_nml["ldass_lhn"],
-                use_constant_latent_heat=fortran_config.list_to_value(nwp_phy_nml["ithermo_water"])
-                == 0,
-                ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
-                power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
-                exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
-                power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
-                rain_mu=nwp_phy_nml["mu_rain"],
-                rain_n0=nwp_phy_nml["rain_n0_factor"],
-                snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
-                **overrides,
-            )
-        # If the required namelists are not present it means that this
-        # experiment was not run with microphysics.
-        # Throw an error if trying to access this config in the granule instead
-        # of initializing with default values, which may hide difficult to find
-        # bugs.
-        return NoMicrophysics()
-
-
-class NoMicrophysics(SingleMomentSixClassIconGraupelConfig):
-    def __getattr__(self, name: str) -> typing.Never:
-        raise NoMicrophysicsError
-
-    def __setattr__(self, name: str, value: Any) -> typing.Never:
-        raise NoMicrophysicsError
-
-    def __copy__(self) -> NoMicrophysics:
-        return NoMicrophysics()
-
-    def __deepcopy__(self, memo: dict) -> NoMicrophysics:
-        return NoMicrophysics()
-
-
-class NoMicrophysicsError(Exception):
-    """Raise this if microphysics was not configured but the configuration for it is accessed anyway."""
-
-    ...
+        nwp_phy_nml = atmo_dict["nwp_phy_nml"]
+        nwp_tuning_nml = atmo_dict["nwp_tuning_nml"]
+        return cls(
+            do_latent_heat_nudging=run_nml["ldass_lhn"],
+            use_constant_latent_heat=fortran_config.list_to_value(nwp_phy_nml["ithermo_water"])
+            == 0,
+            ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
+            power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
+            exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
+            power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
+            rain_mu=nwp_phy_nml["mu_rain"],
+            rain_n0=nwp_phy_nml["rain_n0_factor"],
+            snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
+            **overrides,
+        )
 
 
 @dataclasses.dataclass

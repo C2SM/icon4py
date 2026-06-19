@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import dataclasses
-import datetime
 import enum
 import functools
 import logging
@@ -59,52 +58,54 @@ class DriverStates(NamedTuple):
         prep_advection_prognostic: Fields collecting data for advection during the solve nonhydro timestep.
         solve_nonhydro_diagnostic: Initial state for solve_nonhydro diagnostic variables.
         diffusion_diagnostic: Initial state for diffusion diagnostic variables.
+        tracer_advection_diagnostic: Initial state for tracer advection diagnostic variables.
+        prep_tracer_advection_prognostic: Precalculated fields for tracer advection.
         prognostics: Initial state for prognostic variables (double buffered).
         diagnostic: Initial state for global diagnostic variables.
     """
 
-    prep_advection_prognostic: dycore_states.PrepAdvection
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
-    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState
-    prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState
-    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
+    prep_advection_prognostic: dycore_states.PrepAdvection | None
+    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro | None
+    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
+    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState | None
+    prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
 
 
-@dataclasses.dataclass
 class ModelTimeVariables:
     """
     Runtime time/date variables derived from config at initialisation.
     """
 
-    config: dataclasses.InitVar[driver_config.DriverConfig]
+    simulation_current_datetime: driver_config.AbsoluteTime
+    simulation_start_datetime: driver_config.AbsoluteTime
+    simulation_end_datetime: driver_config.AbsoluteTime
+    n_time_steps: driver_config.NumTimeSteps
+    dtime: driver_config.RelativeTime
+    ndyn_substeps_var: int
+    max_ndyn_substeps: int
+    elapsed_time_in_seconds: ta.wpfloat
+    is_first_step_in_simulation: bool
+    cfl_watch_mode: bool
 
-    n_time_steps: int = dataclasses.field(init=False)
-    dtime: datetime.timedelta = dataclasses.field(init=False)
-    ndyn_substeps_var: int = dataclasses.field(init=False)
-    max_ndyn_substeps: int = dataclasses.field(init=False)
-    elapsed_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
-    simulation_datetime: datetime.datetime = dataclasses.field(init=False)
-    simulation_start_datetime: datetime.datetime = dataclasses.field(init=False)
-    simulation_end_datetime: datetime.datetime = dataclasses.field(init=False)
-    is_first_step_in_simulation: bool = dataclasses.field(init=False)
-    cfl_watch_mode: bool = dataclasses.field(init=False)
+    def __init__(self, config: driver_config.DriverConfig) -> None:
+        self._init_from_config(config)
 
-    def __post_init__(self, config: driver_config.DriverConfig) -> None:
+    def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
         match config.end_of_simulation:
-            case driver_config.NumTimeSteps(n):
+            case driver_config.NumTimeSteps() as n:
                 self.n_time_steps = n
-                self.simulation_datetime = config.start_of_simulation
+                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
             case driver_config.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_datetime = config.start_of_simulation
+                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + relative
             case driver_config.AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
-                self.simulation_datetime = config.start_of_simulation
+                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = absolute
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
@@ -125,7 +126,7 @@ class ModelTimeVariables:
         return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
     def advance_simulation_datetime(self) -> None:
-        self.simulation_datetime += self.dtime
+        self.simulation_current_datetime += self.dtime
         self.elapsed_time_in_seconds += self.dtime_in_seconds
 
     def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
@@ -138,7 +139,16 @@ class ModelTimeVariables:
         """
         Re-initialize all time-integration-related runtime values from the given config.
         """
-        self.__post_init__(config)
+        self._init_from_config(config)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"simulation_current_datetime={self.simulation_current_datetime!r}, "
+            f"n_time_steps={self.n_time_steps}, "
+            f"dtime={self.dtime}, "
+            f"is_first_step={self.is_first_step_in_simulation})"
+        )
 
 
 class DriverTimers(enum.Enum):
