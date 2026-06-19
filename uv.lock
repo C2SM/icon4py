@@ -2699,15 +2699,17 @@ source = {editable = "bindings"}
 version = "0.2.0"
 
 [package.metadata]
-provides-extras = ["cuda11", "cuda12", "profiling"]
+provides-extras = ["cuda11", "cuda12", "cuda13", "profiling"]
 requires-dist = [
   {name = "cffi", specifier = ">=1.5"},
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
+  {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "gt4py", specifier = "==1.1.10"},
   {name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2726,6 +2728,10 @@ cuda11 = [
 cuda12 = [
   {name = "cupy-cuda12x"},
   {name = "gt4py", extra = ["cuda12"]}
+]
+cuda13 = [
+  {name = "cupy-cuda13x"},
+  {name = "gt4py", extra = ["cuda13"]}
 ]
 profiling = [
   {name = "viztracer"}
@@ -2752,6 +2758,7 @@ requires-dist = [
   {name = "cartopy", marker = "extra == 'io'", specifier = ">=0.22.0"},
   {name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
+  {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.5.1"},
   {name = "gt4py", specifier = "==1.1.10"},
@@ -2797,6 +2804,7 @@ cuda12 = [
   {name = "gt4py", extra = ["cuda12"]}
 ]
 cuda13 = [
+  {name = "cupy-cuda13x"},
   {name = "gt4py", extra = ["cuda13"]}
 ]
 distributed = [

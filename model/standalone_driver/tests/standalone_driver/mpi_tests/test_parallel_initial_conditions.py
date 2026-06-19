@@ -9,11 +9,18 @@
 import logging
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import driver_states, initial_condition, standalone_driver
+from icon4py.model.standalone_driver import (
+    config as driver_config,
+    driver_states,
+    driver_utils,
+    initial_condition,
+    standalone_driver,
+)
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -22,6 +29,7 @@ from icon4py.model.testing import (
     test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
     backend_like,
     download_ser_data,
     experiment,
@@ -48,13 +56,15 @@ _log = logging.getLogger(__file__)
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_initial_conditions_compare_single_multi_rank(
-    experiment_description: test_defs.ExperimentDescription,
+def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+    experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+    backend: gtx_typing.Backend,
+    download_ser_data: None,
 ) -> None:
-    if experiment_description.grid.limited_area:
+    if experiment.description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
@@ -83,17 +93,27 @@ def test_initial_conditions_compare_single_multi_rank(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    allocator = model_backends.get_allocator(backend)
 
+    grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
+
+    single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
+    single_rank_config = experiment.config.with_overrides(
+        driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
+    )
+    single_rank_grid_manager = driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=single_rank_config.vertical_grid,
+        allocator=allocator,
+        process_props=single_rank_process_props,
+    )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            grid_file_path=grid_file_path,
-            config_file_path=config_file_path,
-            log_level="info",
-            output_path=tmp_path / "ci_driver_output_serial_rank0",
-            backend_like=backend_like,
-            force_serial_run=True,
+            config=single_rank_config,  # type: ignore[arg-type]
+            grid_manager=single_rank_grid_manager,
+            process_props=single_rank_process_props,
+            backend=backend,
         )
     )
 
@@ -108,13 +128,22 @@ def test_initial_conditions_compare_single_multi_rank(
         exchange=single_rank_icon4py_driver.exchange,
     )
 
+    multi_rank_config = experiment.config.with_overrides(
+        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
+    )
+    multi_rank_grid_manager = driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=multi_rank_config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            grid_file_path=grid_file_path,
-            config_file_path=config_file_path,
-            log_level="info",
-            output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            backend_like=backend_like,
+            config=multi_rank_config,  # type: ignore[arg-type]
+            grid_manager=multi_rank_grid_manager,
+            process_props=process_props,
+            backend=backend,
         )
     )
 
