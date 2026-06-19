@@ -155,7 +155,7 @@ variables:
   rules:
     - if: $LEVEL == 'extended'
       variables:
-        SLURM_TIMELIMIT: "2:00:00"
+        SLURM_TIMELIMIT: "4:00:00"
         SLURM_PARTITION: "normal"
     - if: $MODEL_MPI_SUBPACKAGE == 'advection'
       variables:
