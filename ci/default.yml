@@ -13,10 +13,10 @@ variables:
   MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   MODEL_SUBSETS: "stencils:datatest"
   MODEL_MPI_SUBSETS: "basic:datatest"
-  BACKENDS: "dace_gpu"
+  BACKENDS: "gtfn_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
-  SESSIONS: "model:tools:mpi"
+  SESSIONS: "model:model_mpi:tools"
 
 
 build_baseimage_aarch64:
