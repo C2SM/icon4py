@@ -5,11 +5,11 @@ include:
   extends: [.test_template_aarch64]
   variables:
     SLURM_JOB_NUM_NODES: 1
-    SLURM_GPUS_PER_NODE: 1
+    SLURM_GPUS_PER_NODE: 2
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_LABELIO: 1
-    SLURM_NTASKS: 16
+    SLURM_NTASKS: 24
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
     # Do not use libfabric from the host system. Libfabric with slingshot
     # support is built into the container image.
@@ -26,8 +26,6 @@ include:
     # going to get wiped from below the venvs, but this should not be set
     # normally for uv sync.
     UV_LINK_MODE: symlink
-    # Avoid too many concurrent build jobs.
-    GT4PY_BUILD_JOBS: 1
 
 .test_distributed_aarch64:
   stage: test
