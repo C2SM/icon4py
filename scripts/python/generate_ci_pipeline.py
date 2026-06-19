@@ -85,8 +85,7 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
     """Validate that all tokens are members of valid.
 
     Exits with a descriptive error message and status 1 if any token is not
-    recognised, helping users catch typos early instead of silently producing
-    an empty pipeline.
+    recognised.
     """
     invalid = [t for t in tokens if t not in valid]
     if invalid:
@@ -105,7 +104,7 @@ def _resolve_filter(
     """Resolve a filter value from CLI arg, env var, or built-in default.
 
     When *cli_value* is provided (including empty string) it takes
-    precedence.  Otherwise the environment variable is consulted,
+    precedence.  Otherwise the environment variable is checked,
     falling back to *default*.
     """
     if cli_value is not None:
