@@ -81,7 +81,6 @@ variables:
 
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_runner_base]
-  needs: [build_image_aarch64]
   before_script:
     - cd /icon4py
     - source .venv/bin/activate # For nox etc. not for the testing venv itself
