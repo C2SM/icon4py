@@ -31,7 +31,7 @@ from icon4py.model.standalone_driver.initial_condition.analytical import utils a
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.standalone_driver import driver_states
+    from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 
 log = logging.getLogger(__name__)
@@ -99,6 +99,7 @@ def _read_prognostics_from_serialbox(
 def read_from_file(
     *,
     config: FromFileConfig,
+    experiment_config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
@@ -133,4 +134,5 @@ def read_from_file(
         metrics_field_source=metrics_field_source,
         prognostic_state_now=prognostic_state_now,
         diagnostic_state=diagnostic_state,
+        experiment_config=experiment_config,
     )
