@@ -245,7 +245,7 @@ def _generate_child_pipeline(
         )
         sys.exit(1)
 
-    return yaml.dump(pipeline)
+    return yaml.safe_dump(pipeline)
 
 
 @cli.command()
