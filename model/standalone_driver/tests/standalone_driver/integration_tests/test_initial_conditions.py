@@ -8,21 +8,15 @@
 
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    definitions,
-    grid_utils,
-    serialbox as sb,
-    test_utils,
-)
+from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
-    backend_like,
     data_provider,
     download_ser_data,
     experiment,
@@ -42,21 +36,30 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 @pytest.mark.datatest
 def test_initial_conditions(
-    experiment_description: definitions.ExperimentDescription,
+    experiment: definitions.Experiment,
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
+    backend: gtx_typing.Backend,
 ) -> None:
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    allocator = model_backends.get_allocator(backend)
 
-    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+
+    config = experiment.config.with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
+
+    grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        config_file_path=config_file_path,
-        log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
-        output_path=tmp_path / "ci_driver_output",
-        backend_like=backend_like,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
+    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
+        config=config,  # type: ignore[arg-type]
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     ds = initial_condition.create(

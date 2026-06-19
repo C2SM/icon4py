@@ -77,7 +77,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         config.fourth_order_divdamp_z3,
         config.fourth_order_divdamp_z4,
         interpolated_fourth_order_divdamp_factor,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
     dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
         interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
@@ -1111,9 +1111,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         end_cell_halo_level_2=end_cell_halo_level_2,
         model_top=0,
         surface_level=icon_grid.num_levels + 1,
-        offset_provider={
-            "Koff": dims.KDim,
-        },
+        offset_provider={},
     )
     lb = start_cell_lateral_boundary_level_3
 
@@ -1270,9 +1268,7 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
         horizontal_end=end_cell_local,
         vertical_start=1,
         vertical_end=icon_grid.num_levels,
-        offset_provider={
-            "Koff": dims.KDim,
-        },
+        offset_provider={},
     )
 
     assert test_utils.dallclose(
@@ -1417,7 +1413,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
             vertical_end=icon_grid.num_levels,
             offset_provider={
                 "E2C": icon_grid.get_connectivity("E2C"),
-                "Koff": dims.KDim,
             },
         )
         lowest_level = icon_grid.num_levels - 1
@@ -1480,7 +1475,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -1598,7 +1592,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
         config.fourth_order_divdamp_z3,
         config.fourth_order_divdamp_z4,
         interpolated_fourth_order_divdamp_factor,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
@@ -1642,7 +1636,6 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -1759,7 +1752,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "E2C2E": icon_grid.get_connectivity("E2C2E"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -1900,7 +1892,6 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -2027,7 +2018,6 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "Koff": dims.KDim,
     }
 
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
@@ -2217,7 +2207,6 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "Koff": dims.KDim,
     }
 
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(

@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_valu
     _compute_ppm_quadratic_face_values,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): this stencil is imported but never called
@@ -39,7 +39,7 @@ def _compute_ppm_all_face_values(
 
     p_face = concat_where(dims.KDim == slev, p_cc, p_face)
 
-    p_face = concat_where(dims.KDim == elevp1, p_cc(Koff[-1]), p_face)
+    p_face = concat_where(dims.KDim == elevp1, p_cc(KDim - 1), p_face)
 
     return p_face
 

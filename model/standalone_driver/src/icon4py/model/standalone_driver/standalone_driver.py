@@ -10,7 +10,6 @@ import dataclasses
 import datetime
 import functools
 import logging
-import pathlib
 import types
 from collections.abc import Callable
 
@@ -22,18 +21,13 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import (
-    dimension as dims,
-    model_backends,
-    model_options,
-    topography,
-    type_alias as ta,
+from icon4py.model.common import dimension as dims, model_backends, topography, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.grid import (
+    geometry_attributes as geom_attr,
+    grid_manager as gm,
+    vertical as v_grid,
 )
-from icon4py.model.common.decomposition import (
-    definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
-)
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -43,6 +37,7 @@ from icon4py.model.standalone_driver import (
     driver_constants,
     driver_states,
     driver_utils,
+    initial_condition,
 )
 
 
@@ -82,9 +77,9 @@ class Icon4pyDriver:
         self.global_reductions = global_reductions
 
         driver_utils.display_driver_setup_in_log_file(
-            self.model_time_variables.n_time_steps,
-            self.static_field_factories.metrics_field_source._vertical_grid,
-            self.config.driver,
+            config=self.config.driver,
+            model_time_variables=self.model_time_variables,
+            vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
         )
 
     @functools.cached_property
@@ -134,11 +129,11 @@ class Icon4pyDriver:
 
             log.info(
                 f"\n"
-                f"simulation date : {self.model_time_variables.simulation_date}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
+                f"simulation date : {self.model_time_variables.simulation_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
                 f"\n"
             )
 
-            self.model_time_variables.next_simulation_date()
+            self.model_time_variables.advance_simulation_datetime()
 
             self._integrate_one_time_step(
                 diffusion_diagnostic_state=diffusion_diagnostic_state,
@@ -497,81 +492,22 @@ class Icon4pyDriver:
 
 def initialize_driver(
     *,
-    grid_file_path: pathlib.Path,
-    config_file_path: pathlib.Path,
-    output_path: pathlib.Path | None,
-    log_level: str,
-    backend_like: model_backends.BackendLike,
-    print_distributed_debug_msg: bool = False,
-    force_serial_run: bool = False,
+    config: driver_config.ExperimentConfig,
+    grid_manager: gm.GridManager,
+    process_props: decomposition_defs.ProcessProperties,
+    backend: gtx.typing.Backend | None,
 ) -> Icon4pyDriver:
-    """
-    Initialize the driver:
-    - load the configuration
-    - load the grid manager and decomposition info
-    - load the topography (eventually all external parameters)
-    - create the static field factories
-    - initialize the components selected by the configuration (diffusion and solve_nh)
-    - create the driver object
-    Args:
-        grid_file_path: path of the grid file
-        config_file_path: path to the directory containing the configuration files
-        log_level: logging level
-        backend_like: backend-like
-        print_distributed_debug_msg: whether to print debug messages for all ranks
-        force_serial_run: force single-node run even if MPI is available
-    Returns:
-        Driver: driver object
-    """
-
-    # Detect if we're running under MPI (not just if mpi4py is installed).
-    # - mpi4py not installed → serial
-    # - mpi4py installed but COMM_WORLD.Get_size() == 1 → serial
-    # - mpi4py installed and COMM_WORLD.Get_size() > 1 → MPI mode
-    # - force_serial_run=True → always serial (reserved for single vs distributed tests)
-    if force_serial_run or mpi_decomp.mpi4py is None:
-        with_mpi = False
-    else:
-        mpi_decomp.init_mpi()
-        with_mpi = mpi_decomp.mpi4py.MPI.COMM_WORLD.Get_size() > 1
-
-    process_props = decomposition_defs.get_process_properties(
-        decomposition_defs.get_runtype(with_mpi=with_mpi)
-    )
-    driver_utils.configure_logging(
-        logging_level=log_level,
-        print_distributed_debug_msg=print_distributed_debug_msg,
-        process_props=process_props,
-    )
-
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_like)
-    )
-    allocator = model_backends.get_allocator(backend)
-
-    log.info("Initializing the driver")
-    config = driver_config.read_config(
-        config_file_path=config_file_path,
-        enable_profiling=False,
-    )
-
-    # Override output_path from config with CLI-arg provided, and the time- (and possibly MPI-) adjusted one
     output_path = driver_config.prepare_output_directory(
         config_output_path=config.driver.output_path,
-        cli_output_path=output_path,
+        cli_output_path=None,
         process_props=process_props,
     )
-    config.driver = dataclasses.replace(config.driver, output_path=output_path)
-
-    log.info(f"initializing the grid manager from '{grid_file_path}'")
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-        process_props=process_props,
+    config = dataclasses.replace(
+        config, driver=dataclasses.replace(config.driver, output_path=output_path)
     )
 
-    log.info("creating the decomposition info")
+    allocator = model_backends.get_allocator(backend)
+
     decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
     global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
@@ -638,3 +574,30 @@ def initialize_driver(
     )
 
     return icon4py_driver
+
+
+def run_driver(
+    *,
+    config: driver_config.ExperimentConfig,
+    grid_manager: gm.GridManager,
+    process_props: decomposition_defs.ProcessProperties,
+    backend: gtx.typing.Backend | None,
+) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
+    icon4py_driver = initialize_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
+    )
+    ds = initial_condition.create(
+        config=icon4py_driver.config.initial_condition,
+        grid=icon4py_driver.grid,
+        vertical_config=icon4py_driver.config.vertical_grid,
+        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
+        interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
+        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+        backend=icon4py_driver.backend,
+        exchange=icon4py_driver.exchange,
+    )
+    icon4py_driver.time_integration(ds, do_prep_adv=False)
+    return ds, icon4py_driver

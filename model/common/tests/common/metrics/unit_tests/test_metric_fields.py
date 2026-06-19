@@ -69,7 +69,7 @@ def test_compute_ddq_z_half(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlevp1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
@@ -95,7 +95,7 @@ def test_compute_ddqz_z_full_and_inverse(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
@@ -123,7 +123,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
         divdamp_type=divdamp_type,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(
@@ -186,7 +186,7 @@ def test_compute_coeff_dwdz(
         horizontal_end=icon_grid.num_cells,
         vertical_start=1,
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
@@ -418,7 +418,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": dims.KDim,
         },
     )
 

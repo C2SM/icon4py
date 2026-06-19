@@ -64,7 +64,7 @@ def test_compute_wgtfac_c(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=vertical_end + 1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert test_utils.dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
