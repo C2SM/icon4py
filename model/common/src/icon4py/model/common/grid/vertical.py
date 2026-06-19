@@ -125,7 +125,7 @@ class VerticalGridConfig:
     _SLEVE_minimum_relative_layer_thickness_2: Final[wpfloat] = 0.5
 
     def __post_init__(self):
-        ta.config_scalars_to_wp(
+        ta.dataclass_scalars_to_wp(
             self,
             attributes=[
                 field.name

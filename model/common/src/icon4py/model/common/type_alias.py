@@ -45,7 +45,7 @@ set_precision(precision)
 
 # TODO(pstark): Figure out a better name and place for this -> open for suggestions
 #               Might be useful for other configs if they are written as dataclasses
-def config_scalars_to_wp(self, attributes: list[str] = []):
+def dataclass_scalars_to_wp(self, attributes: list[str] = []):
     for name in attributes:
         if not isinstance(v := object.__getattribute__(self, name), wpfloat):
             object.__setattr__(self, name, wpfloat(v))

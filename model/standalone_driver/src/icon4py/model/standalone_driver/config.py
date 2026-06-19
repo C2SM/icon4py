@@ -43,4 +43,4 @@ class DriverConfig:
     ntracer: int = 0
 
     def __post_init__(self):
-        ta.config_scalars_to_wp(self, attributes=["vertical_cfl_threshold"])
+        ta.dataclass_scalars_to_wp(self, attributes=["vertical_cfl_threshold"])
