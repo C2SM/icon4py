@@ -53,7 +53,6 @@ variables:
 .test_runner_base:
   stage: test
   timeout: 8h
-  extends: .container-runner-santis-gh200
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
