@@ -174,6 +174,7 @@ class NonHydrostaticConfig:
         fourth_order_divdamp_z4: float = 80000.0,
     ):
         # parameters from namelist nonhydrostatic_nml
+
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta

@@ -40,6 +40,8 @@ from icon4py.model.standalone_driver import driver_states
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.standalone_driver import config as driver_config
+
 
 def apply_hydrostatic_adjustment_ndarray(
     *,
@@ -327,6 +329,7 @@ def assemble_driver_states(
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
+    experiment_config: driver_config.ExperimentConfig,
 ) -> driver_states.DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -363,22 +366,42 @@ def assemble_driver_states(
         offset_provider={},
     )
 
-    diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
-        grid=grid, allocator=allocator
+    solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
+    diffusion_enabled = experiment_config.diffusion is not None
+    tracer_advection_enabled = experiment_config.tracer_advection is not None
+
+    solve_nonhydro_diagnostic_state = (
+        dycore_states.initialize_solve_nonhydro_diagnostic_state(
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+            grid=grid,
+            allocator=allocator,
+        )
+        if solve_nonhydro_enabled
+        else None
     )
-    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
-        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
-        grid=grid,
-        allocator=allocator,
+    prep_adv = (
+        dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+        if solve_nonhydro_enabled
+        else None
     )
-    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-    tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
-        grid=grid, allocator=allocator
+    diffusion_diagnostic_state = (
+        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
+        if diffusion_enabled
+        else None
     )
-    prep_tracer_adv = advection_states.AdvectionPrepAdvState(
-        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+    tracer_advection_diagnostic_state = (
+        advection_states.initialize_advection_diagnostic_state(grid=grid, allocator=allocator)
+        if tracer_advection_enabled
+        else None
+    )
+    prep_tracer_adv = (
+        advection_states.AdvectionPrepAdvState(
+            vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+            mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+            mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+        )
+        if tracer_advection_enabled
+        else None
     )
 
     return driver_states.DriverStates(
