@@ -44,7 +44,6 @@ variables:
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
     DOCKERFILE: ci/docker/checkout.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE"]'
-
 .build_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_image]
   needs: [build_baseimage_aarch64]
@@ -67,6 +66,7 @@ variables:
     OMPI_MCA_mtl: ofi
     CUDA_DEVICE_MAX_CONNECTIONS: 8
     CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
+
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
@@ -74,6 +74,13 @@ variables:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PYTEST_ADDOPTS: "--durations=0"
+
+.test_template_aarch64:
+  extends: [.container-runner-santis-gh200, .test_template]
+  needs: [build_image_aarch64]
+  variables:
+    RUNNER: "ci-runner"
+    SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH","/iopsstor/scratch/cscs/svc_cwci02_cicd_ext:$ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR"]'
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
@@ -83,8 +90,6 @@ variables:
     NUM_PROCESSES: 32
     GT4PY_BUILD_JOBS: 8
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
-    RUNNER: "ci-runner"
-    SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
 
 .test_runner_serial:
   extends: .test_runner_base
