@@ -106,6 +106,11 @@ class Icon4pyDriver:
     def _full_name(self, func: Callable) -> str:
         return f"{self.__class__.__name__}:{func.__name__}"
 
+    @functools.cached_property
+    def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
+        """Reuses its scratch/output buffers across output steps (allocated once)."""
+        return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
+
     def _store_output(
         self, prognostic_state: prognostics.PrognosticState, model_time: datetime.datetime
     ) -> None:
@@ -119,10 +124,8 @@ class Icon4pyDriver:
         metrics = self.static_field_factories.metrics_field_source
         interpolation = self.static_field_factories.interpolation_field_source
         state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-        diagnostic_fields = driver_io.compute_diagnostics(
+        diagnostic_fields = self._diagnostics_computer.compute(
             prognostic_state,
-            grid=self.grid,
-            backend=self.backend,
             ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
             rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
             rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
@@ -609,7 +612,7 @@ def initialize_driver(
             # monitor and write overlapping files. Disable until IO becomes distributed.
             log.warning("output is not supported in distributed (MPI) runs yet: disabling IO")
         else:
-            log.info("initializing single-node IO monitor")
+            log.info("Initializing single-node IO monitor")
             io_monitor = driver_io.create_io_monitor(
                 output_path=config.driver.output_path,
                 grid_file_path=pathlib.Path(grid_manager.file_path),

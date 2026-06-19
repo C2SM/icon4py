@@ -12,7 +12,7 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
 - assembles the prognostic model state into the ``dict[str, xarray.DataArray]`` consumed
   by ``IOMonitor.store`` (:func:`prognostic_state_to_dataarrays`),
 - computes the standard diagnostic output fields (u, v, temperature, virtual temperature,
-  pressure) from the prognostic state (:func:`compute_diagnostics`) and assembles them
+  pressure) from the prognostic state (:class:`DiagnosticsComputer`) and assembles them
   (:func:`diagnostic_fields_to_dataarrays`),
 - builds an ``IOMonitor`` that writes all requested fields to one file
   (:func:`create_io_monitor`).
@@ -105,133 +105,144 @@ DIAGNOSTIC_VARIABLES: Final[list[str]] = [
 DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
 
 
-def compute_diagnostics(
-    prognostic_state: prognostics.PrognosticState,
-    *,
-    grid: grid_base.Grid,
-    backend: gtx.typing.Backend | None,
-    ddqz_z_full: gtx.Field,
-    rbf_vec_coeff_c1: gtx.Field,
-    rbf_vec_coeff_c2: gtx.Field,
-) -> dict[str, gtx.Field]:
-    """Compute the diagnostic output fields from the prognostic state.
+class DiagnosticsComputer:
+    """Computes the diagnostic output fields from the prognostic state.
 
-    Diagnoses temperature and virtual temperature from ``theta_v``/``exner``, the
-    cell-center wind components by RBF interpolation of ``vn``, and the pressure field
-    by vertical integration from the diagnosed surface pressure. The dry-air path (zero
-    hydrometeors) is assumed.
-
-    Returns:
-        ``{eastward_wind, northward_wind, temperature, virtual_temperature, pressure}`` as
-        gt4py cell/full-level fields.
+    The ~14 scratch/output buffers are allocated **once** and reused on every
+    :meth:`compute` call, avoiding per-step allocation (significant on GPU backends,
+    since output is written every step). The static inputs (``ddqz_z_full`` and the cell
+    rbf coefficients) are passed to :meth:`compute` so callers fetch them from their field
+    factories; tests can pass artificial fields.
     """
-    num_levels = grid.num_levels
-    cell_domain = h_grid.domain(dims.CellDim)
-    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
-    cell_lateral_boundary_level_2 = grid.end_index(
-        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
 
-    def _zero_full() -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    def __init__(self, *, grid: grid_base.Grid, backend: gtx.typing.Backend | None) -> None:
+        self._grid = grid
+        self._backend = backend
+        self._num_levels = grid.num_levels
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
+        self._cell_lateral_boundary_level_2 = grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
 
-    def _zero_interface() -> gtx.Field:
-        return data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            dtype=ta.wpfloat,
-            extend={dims.KDim: 1},
-            allocator=backend,
+        def _zero_full() -> gtx.Field:
+            return data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+            )
+
+        def _zero_interface() -> gtx.Field:
+            return data_alloc.zero_field(
+                grid,
+                dims.CellDim,
+                dims.KDim,
+                dtype=ta.wpfloat,
+                extend={dims.KDim: 1},
+                allocator=backend,
+            )
+
+        # dry air: all hydrometeors stay zero (never written, so allocated once)
+        self._qv, self._qc, self._qi, self._qr, self._qs, self._qg = (
+            _zero_full() for _ in range(6)
+        )
+        self._temperature = _zero_full()
+        self._virtual_temperature = _zero_full()
+        self._u = _zero_full()
+        self._v = _zero_full()
+        self._pressure = _zero_full()
+        # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
+        # in-place buffer fills below would not type-check against the precise Field type.
+        self._pressure_ifc: Any = _zero_interface()
+        self._surface_pressure_k = _zero_interface()
+        self._surface_pressure: Any = data_alloc.zero_field(
+            grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
         )
 
-    # dry air: all hydrometeors are zero
-    qv, qc, qi, qr, qs, qg = (_zero_full() for _ in range(6))
-    temperature = _zero_full()
-    virtual_temperature = _zero_full()
-    u = _zero_full()
-    v = _zero_full()
-    pressure = _zero_full()
-    # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
-    # in-place buffer fill below would not type-check against the precise Field type.
-    pressure_ifc: Any = _zero_interface()
-    surface_pressure_k = _zero_interface()
+    def compute(
+        self,
+        prognostic_state: prognostics.PrognosticState,
+        *,
+        ddqz_z_full: gtx.Field,
+        rbf_vec_coeff_c1: gtx.Field,
+        rbf_vec_coeff_c2: gtx.Field,
+    ) -> dict[str, gtx.Field]:
+        """Diagnose temperature/virtual temperature from ``theta_v``/``exner``, the cell
+        winds by RBF interpolation of ``vn``, and pressure by vertical integration from the
+        diagnosed surface pressure (dry-air path). Buffers are overwritten in place.
 
-    diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
-        qv=qv,
-        qc=qc,
-        qi=qi,
-        qr=qr,
-        qs=qs,
-        qg=qg,
-        theta_v=prognostic_state.theta_v,
-        exner=prognostic_state.exner,
-        virtual_temperature=virtual_temperature,
-        temperature=temperature,
-        horizontal_start=0,
-        horizontal_end=end_cell_end,
-        vertical_start=0,
-        vertical_end=num_levels,
-        offset_provider={},
-    )
+        Returns:
+            ``{eastward_wind, northward_wind, temperature, virtual_temperature, pressure}``.
+        """
+        backend = self._backend
+        num_levels = self._num_levels
+        end_cell_end = self._end_cell_end
 
-    rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=prognostic_state.vn,
-        ptr_coeff_1=rbf_vec_coeff_c1,
-        ptr_coeff_2=rbf_vec_coeff_c2,
-        p_u_out=u,
-        p_v_out=v,
-        horizontal_start=cell_lateral_boundary_level_2,
-        horizontal_end=end_cell_end,
-        vertical_start=0,
-        vertical_end=num_levels,
-        offset_provider={"C2E2C2E": grid.get_connectivity("C2E2C2E")},
-    )
+        diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
+            qv=self._qv,
+            qc=self._qc,
+            qi=self._qi,
+            qr=self._qr,
+            qs=self._qs,
+            qg=self._qg,
+            theta_v=prognostic_state.theta_v,
+            exner=prognostic_state.exner,
+            virtual_temperature=self._virtual_temperature,
+            temperature=self._temperature,
+            horizontal_start=0,
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={},
+        )
 
-    diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
-        exner=prognostic_state.exner,
-        virtual_temperature=virtual_temperature,
-        ddqz_z_full=ddqz_z_full,
-        surface_pressure=surface_pressure_k,
-        horizontal_start=0,
-        horizontal_end=end_cell_end,
-        vertical_start=num_levels,
-        vertical_end=num_levels + 1,
-        offset_provider={},
-    )
+        rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+            p_e_in=prognostic_state.vn,
+            ptr_coeff_1=rbf_vec_coeff_c1,
+            ptr_coeff_2=rbf_vec_coeff_c2,
+            p_u_out=self._u,
+            p_v_out=self._v,
+            horizontal_start=self._cell_lateral_boundary_level_2,
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
+        )
 
-    # surface pressure lives at the bottom interface; extract it as a cell field,
-    # allocated with the model allocator so the buffer stays on the right device.
-    # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
-    # in-place buffer fill below would not type-check against the precise Field type.
-    surface_pressure: Any = data_alloc.zero_field(
-        grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
-    )
-    surface_pressure.ndarray[:] = surface_pressure_k.ndarray[:, num_levels]
-    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
+        diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+            exner=prognostic_state.exner,
+            virtual_temperature=self._virtual_temperature,
+            ddqz_z_full=ddqz_z_full,
+            surface_pressure=self._surface_pressure_k,
+            horizontal_start=0,
+            horizontal_end=end_cell_end,
+            vertical_start=num_levels,
+            vertical_end=num_levels + 1,
+            offset_provider={},
+        )
 
-    diagnose_pressure.diagnose_pressure.with_backend(backend)(
-        ddqz_z_full,
-        virtual_temperature,
-        surface_pressure,
-        pressure,
-        pressure_ifc,
-        horizontal_start=0,
-        horizontal_end=end_cell_end,
-        vertical_start=0,
-        vertical_end=num_levels,
-        offset_provider={},
-    )
+        # surface pressure lives at the bottom interface; extract it as a cell field
+        self._surface_pressure.ndarray[:] = self._surface_pressure_k.ndarray[:, num_levels]
+        self._pressure_ifc.ndarray[:, -1] = self._surface_pressure.ndarray
 
-    return {
-        "eastward_wind": u,
-        "northward_wind": v,
-        "temperature": temperature,
-        "virtual_temperature": virtual_temperature,
-        "pressure": pressure,
-    }
+        diagnose_pressure.diagnose_pressure.with_backend(backend)(
+            ddqz_z_full,
+            self._virtual_temperature,
+            self._surface_pressure,
+            self._pressure,
+            self._pressure_ifc,
+            horizontal_start=0,
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={},
+        )
+
+        return {
+            "eastward_wind": self._u,
+            "northward_wind": self._v,
+            "temperature": self._temperature,
+            "virtual_temperature": self._virtual_temperature,
+            "pressure": self._pressure,
+        }
 
 
 def diagnostic_fields_to_dataarrays(

@@ -27,6 +27,7 @@ from icon4py.model.common.io.io import (
     IOConfig,
     IOMonitor,
     generate_name,
+    to_delta,
 )
 from icon4py.model.common.states import data
 from icon4py.model.testing import datatest_utils, definitions, grid_utils
@@ -37,6 +38,32 @@ from .. import utils as test_io_utils
 
 # setting backend to fieldview embedded here.
 backend = None
+
+
+@pytest.mark.parametrize("num", range(1, 6))
+@pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
+def test_to_delta_days(num, slot):
+    assert to_delta("DAY") == dt.timedelta(days=1)
+    assert to_delta(f"{num} {slot}") == dt.timedelta(days=num)
+
+
+@pytest.mark.parametrize("num", range(1, 5))
+@pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour", "hours", "HOURS"])
+def test_to_delta_hours(num, slot):
+    assert to_delta("HOUR") == dt.timedelta(hours=1)
+    assert to_delta(f"{num} {slot}") == dt.timedelta(hours=num)
+
+
+@pytest.mark.parametrize("num", [0, 2, 44, 4, 5])
+@pytest.mark.parametrize("slot", ["second", "SECOND", "SEConds", "SECONDS"])
+def test_to_delta_secs(num, slot):
+    assert to_delta(f"{num} {slot}") == dt.timedelta(seconds=num)
+
+
+@pytest.mark.parametrize("num", [0, 2, 3, 4, 5])
+@pytest.mark.parametrize("slot", ["MINUTE", "Minute", "minutes", "MINUTES"])
+def test_to_delta_mins(num, slot):
+    assert to_delta(f"{num} {slot}") == dt.timedelta(minutes=num)
 
 
 @pytest.mark.parametrize(
@@ -358,3 +385,48 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
             test_io_utils.model_state(test_io_utils.simple_grid),
             dt.datetime.fromisoformat("2023-04-04T11:00:00"),
         )
+
+
+def test_fieldgroup_config_requires_exactly_one_schedule():
+    # neither schedule set
+    with pytest.raises(errors.InvalidConfigError, match="exactly one"):
+        FieldGroupIOConfig(filename="a.nc", variables=["air_density"])
+    # both schedules set
+    with pytest.raises(errors.InvalidConfigError, match="exactly one"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            output_interval_steps=1,
+            output_interval="1 HOUR",
+            start_time="2024-01-01T00:00:00",
+        )
+
+
+def test_fieldgroup_config_time_based_requires_start_time():
+    with pytest.raises(errors.InvalidConfigError, match="start_time is required"):
+        FieldGroupIOConfig(filename="a.nc", variables=["air_density"], output_interval="1 HOUR")
+
+
+def test_fieldgroup_monitor_time_based_capture(test_path):
+    # time-based schedule; 'foo' is missing so a *capture* raises IncompleteStateError --
+    # this lets us assert the capture decision without writing a file.
+    config = FieldGroupIOConfig(
+        filename="vars/prognostics.nc",
+        output_interval="1 HOUR",
+        start_time="2024-01-01T00:00:00",
+        variables=["air_density", "foo"],
+    )
+    group_monitor = FieldGroupMonitor(
+        config=config,
+        vertical=test_io_utils.simple_grid.config.vertical_size,
+        horizontal=test_io_utils.simple_grid.config.horizontal_config,
+        grid_id=test_io_utils.simple_grid.id,
+        output_path=test_path,
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    start = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    # before the scheduled start: no capture, no error
+    group_monitor.store(state, start - dt.timedelta(minutes=10))
+    # at the scheduled time: capture -> missing field raises
+    with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
+        group_monitor.store(state, start)

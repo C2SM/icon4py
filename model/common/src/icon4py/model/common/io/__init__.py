@@ -43,22 +43,22 @@ The IO module is configurable and can be configured with:
 
 Field groups are stored in the same file and share a common setting of
 
-- `output_interval_steps`: positive integer N; the fields are written every N model steps (i.e. every N calls to `store`).
+- the output schedule, given as **exactly one** of:
+  - `output_interval_steps`: positive integer N; the fields are written every N model steps (i.e. every N calls to `store`). Lands on exact step boundaries regardless of the time step length.
+  - `output_interval` (+ `start_time`): a time string, one of ["DAY", "HOUR", "MINUTE", "SECOND"] (or plural) combined with a positive number, e.g. "10 HOURS", "1 DAY"; the fields are written once the model clock reaches the scheduled time, starting at `start_time` (ISO timestamp).
 - `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
 - `nc_title` (optional): Title field of the generated netcdf file.
 - `nc_comment` (optional): Comment to be put to generated netcdf file.
 
-All fields in the `variables` list are written to the same file every `output_interval_steps`
-model steps. Scheduling by step count means output always lands on exact step boundaries.
-
 As we have no general handling of configuration files in `ICON4Py` yet, the configuration needs to
 be instantiated as Python dataclasses for now. A valid configuration could look like this:
 
 ```python
 prognostic_group = FieldGroupIOConfig(
-    output_interval_steps=12,
+    output_interval="2 HOURS",
+    start_time="2024-01-01T12:00:00",
     filename="icon4py_prognostics",
     timesteps_per_file=12,
     variables=["air_density", "exner_function", "upward_air_velocity"],

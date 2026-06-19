@@ -9,6 +9,7 @@
 import abc
 import dataclasses
 import datetime as dt
+import enum
 import logging
 import pathlib
 import uuid
@@ -24,6 +25,33 @@ from icon4py.model.common.io.writers import GlobalFileAttributes
 
 
 log = logging.getLogger(__name__)
+
+
+class OutputInterval(str, enum.Enum):
+    SECOND = "SECOND"
+    MINUTE = "MINUTE"
+    HOUR = "HOUR"
+    DAY = "DAY"
+
+
+def to_delta(value: str) -> dt.timedelta:
+    vals = value.split(" ")
+    num = 1 if not vals[0].isnumeric() else int(vals[0])
+    assert num >= 0, f"Delta value must be positive: {num}"
+
+    value = vals[0].upper() if len(vals) < 2 else vals[1].upper()
+    value = value[:-1] if value.endswith("S") else value
+
+    if value == OutputInterval.HOUR:
+        return dt.timedelta(hours=num)
+    elif value == OutputInterval.DAY:
+        return dt.timedelta(days=num)
+    elif value == OutputInterval.MINUTE:
+        return dt.timedelta(minutes=num)
+    elif value == OutputInterval.SECOND:
+        return dt.timedelta(seconds=num)
+    else:
+        raise NotImplementedError(f" Delta '{value}' is not supported.")
 
 
 class Config(abc.ABC):
@@ -58,11 +86,18 @@ class FieldGroupIOConfig(Config):
 
     """
 
-    #: Output is written every ``output_interval_steps`` model steps (i.e. every N calls
-    #: to ``store``).
-    output_interval_steps: int
     filename: str
     variables: list[str]
+    #: Step-based schedule: output every N calls to ``store``. Fires at exact step
+    #: boundaries regardless of the time step length. Mutually exclusive with
+    #: ``output_interval``.
+    output_interval_steps: int | None = None
+    #: Time-based schedule: a time string (e.g. "10 HOURS", "1 DAY"); output fires when
+    #: the model clock reaches the scheduled time, starting at ``start_time``. Mutually
+    #: exclusive with ``output_interval_steps``.
+    output_interval: str | None = None
+    #: ISO start time for the time-based schedule (required with ``output_interval``).
+    start_time: str | None = None
     timesteps_per_file: int = 10
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
@@ -79,9 +114,19 @@ class FieldGroupIOConfig(Config):
             )
 
     def validate(self) -> None:
-        if self.output_interval_steps <= 0:
+        step_based = self.output_interval_steps is not None
+        time_based = self.output_interval is not None
+        if step_based == time_based:
+            raise exceptions.InvalidConfigError(
+                "Set exactly one of output_interval_steps or output_interval."
+            )
+        if self.output_interval_steps is not None and self.output_interval_steps <= 0:
             raise exceptions.InvalidConfigError(
                 f"Output interval in steps must be positive: {self.output_interval_steps}."
+            )
+        if time_based and not self.start_time:
+            raise exceptions.InvalidConfigError(
+                "start_time is required with a time-based output_interval."
             )
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
@@ -210,8 +255,15 @@ class FieldGroupMonitor(monitor.Monitor):
         self._horizontal_size = horizontal
         self._field_names = config.variables
         self._handle_output_path(output_path, config.filename)
-        self._output_interval_steps = config.output_interval_steps
-        self._step_counter = 0
+        # Exactly one scheduling mode is set (enforced by the config validation).
+        self._step_based = config.output_interval_steps is not None
+        if config.output_interval_steps is not None:
+            self._output_interval_steps = config.output_interval_steps
+            self._step_counter = 0
+        else:
+            assert config.output_interval is not None and config.start_time is not None
+            self._next_output_time = dt.datetime.fromisoformat(config.start_time)
+            self._time_delta = to_delta(config.output_interval)
         self._file_counter = 0
         self._current_timesteps_in_file = 0
         self._dataset: writers.NETCDFWriter | None = None
@@ -262,8 +314,7 @@ class FieldGroupMonitor(monitor.Monitor):
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
-        self._step_counter += 1
-        if not self._at_capture_step():
+        if not self._at_capture_time(model_time):
             return
         # TODO(halungge): this should do a deep copy of the data
         try:
@@ -296,8 +347,19 @@ class FieldGroupMonitor(monitor.Monitor):
         assert self._dataset is not None
         self._dataset.append(state_to_store, model_time)
 
-    def _at_capture_step(self) -> bool:
-        return self._step_counter % self._output_interval_steps == 0
+    def _at_capture_time(self, model_time: dt.datetime) -> bool:
+        if self._step_based:
+            # fire every N calls to ``store`` (one call == one model step)
+            self._step_counter += 1
+            return self._step_counter % self._output_interval_steps == 0
+        # time-based: capture as soon as the model clock reaches (or passes) the next
+        # scheduled time, then advance the schedule. ``>=`` (not ``==``) so a step that
+        # lands slightly past the scheduled time still produces output. The clock advances
+        # by exact ``datetime`` arithmetic, so this is robust.
+        if model_time >= self._next_output_time:
+            self._next_output_time = self._next_output_time + self._time_delta
+            return True
+        return False
 
     def close(self) -> None:
         if self._dataset is not None:
