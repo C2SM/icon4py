@@ -131,7 +131,7 @@ def setup_muphys(
                     "vertical_start": gtx.int32(0),
                     "vertical_end": gtx.int32(inp.nlev),
                 },
-                offset_provider={"Koff": dims.KDim},
+                offset_provider={},
             )
             gtx.wait_for_compilation()
             return muphys_program
