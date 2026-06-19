@@ -79,11 +79,6 @@ variables:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PYTEST_ADDOPTS: "--durations=0"
-    PY2F_GPU_TESTS: 1
-    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
-    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
-    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_runner_base]
@@ -105,6 +100,11 @@ variables:
     NUM_PROCESSES: 32
     GT4PY_BUILD_JOBS: 8
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
+    PY2F_GPU_TESTS: 1
+    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 .test_runner_serial:
   extends: .test_runner_base
