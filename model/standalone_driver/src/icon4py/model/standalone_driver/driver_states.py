@@ -274,16 +274,9 @@ def assemble_driver_states(
         offset_provider={},
     )
 
-    diffusion_enabled = (
-        experiment_config.diffusion is not None and experiment_config.diffusion.enabled
-    )
-    solve_nonhydro_enabled = (
-        experiment_config.nonhydrostatic is not None and experiment_config.nonhydrostatic.enabled
-    )
-    tracer_advection_enabled = (
-        experiment_config.tracer_advection is not None
-        and experiment_config.tracer_advection.enabled
-    )
+    diffusion_enabled = experiment_config.diffusion is not None
+    solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
+    tracer_advection_enabled = experiment_config.tracer_advection is not None
 
     diffusion_diagnostic_state = (
         diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
