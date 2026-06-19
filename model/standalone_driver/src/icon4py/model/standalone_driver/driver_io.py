@@ -111,7 +111,7 @@ class DiagnosticsComputer:
 
     The ~14 scratch/output buffers are allocated **once** and reused on every
     :meth:`compute` call, avoiding per-step allocation (significant on GPU backends,
-    since output is written every step). The static inputs (``ddqz_z_full`` and the cell
+    since output is written every step). The static fields (``ddqz_z_full`` and the cell
     rbf coefficients) are passed to :meth:`compute` so callers fetch them from their field
     factories; tests can pass artificial fields.
     """
