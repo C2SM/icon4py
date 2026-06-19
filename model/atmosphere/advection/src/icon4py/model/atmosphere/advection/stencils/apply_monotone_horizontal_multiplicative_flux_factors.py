@@ -29,7 +29,7 @@ def _apply_monotone_horizontal_multiplicative_flux_factors(
         minimum(r_m(E2C[0]), r_p(E2C[1])),
         minimum(r_m(E2C[1]), r_p(E2C[0])),
     )
-    return z_mflx_low + minimum(1.0, r_frac) * z_anti
+    return z_mflx_low + minimum(wpfloat(1.0), r_frac) * z_anti
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

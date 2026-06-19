@@ -11,7 +11,7 @@ from gt4py.next import astype, maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E, C2EDim
-from icon4py.model.common.type_alias import wpfloat, vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -34,12 +34,16 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     z_mflx_anti_2 = astype(p_dtime * geofac_div[C2EDim(1)] / p_rhodz_new * z_anti(C2E[1]), vpfloat)
     z_mflx_anti_3 = astype(p_dtime * geofac_div[C2EDim(2)] / p_rhodz_new * z_anti(C2E[2]), vpfloat)
 
-    z_mflx_anti_in = -1.0 * (
-        minimum(0.0, z_mflx_anti_1) + minimum(0.0, z_mflx_anti_2) + minimum(0.0, z_mflx_anti_3)
+    z_mflx_anti_in = wpfloat(-1.0) * (
+        minimum(wpfloat(0.0), z_mflx_anti_1)
+        + minimum(wpfloat(0.0), z_mflx_anti_2)
+        + minimum(wpfloat(0.0), z_mflx_anti_3)
     )
 
     z_mflx_anti_out = (
-        maximum(0.0, z_mflx_anti_1) + maximum(0.0, z_mflx_anti_2) + maximum(0.0, z_mflx_anti_3)
+        maximum(wpfloat(0.0), z_mflx_anti_1)
+        + maximum(wpfloat(0.0), z_mflx_anti_2)
+        + maximum(wpfloat(0.0), z_mflx_anti_3)
     )
 
     z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div, axis=dims.C2EDim)
