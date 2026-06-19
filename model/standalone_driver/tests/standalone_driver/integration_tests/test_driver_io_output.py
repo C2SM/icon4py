@@ -80,7 +80,8 @@ def test_standalone_driver_writes_output(
     # the UGRID grid file is written on monitor init
     _find_one(tmp_path, "*_ugrid.nc")
 
-    # single data file: all prognostic AND diagnostic fields together, one time slice
+    # single data file: all prognostic AND diagnostic fields together. Two time slices:
+    # the initial state (always written) plus the one integrated step.
     output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*.nc")
     with nc.Dataset(output_file) as ds:
         assert ds.Conventions == "CF-1.7"
@@ -88,10 +89,10 @@ def test_standalone_driver_writes_output(
             assert name in ds.variables, f"{name} missing from output"
             var = ds.variables[name]
             assert var.dimensions[0] == "time"
-            assert var.shape[0] == 1
+            assert var.shape[0] == 2
         # vertical placement: w on interface levels, the rest on full levels
         assert "interface_level" in ds.variables["upward_air_velocity"].dimensions
         assert "edge" in ds.variables["normal_velocity"].dimensions
         # diagnostics live on cells/full levels
         assert "cell" in ds.variables["temperature"].dimensions
-        assert len(ds.dimensions["time"]) == 1
+        assert len(ds.dimensions["time"]) == 2

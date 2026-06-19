@@ -67,8 +67,6 @@ class DriverConfig:
     enable_statistics_output: bool = False
     #: write the prognostic + diagnostic fields to NetCDF/UGRID output (single node only).
     enable_output: bool = False
-    #: also write the initial state (before the first step) when output is enabled.
-    output_initial_state: bool = False
     ntracer: int = 0
 
     @classmethod

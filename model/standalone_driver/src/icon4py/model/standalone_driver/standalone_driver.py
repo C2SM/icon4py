@@ -154,8 +154,9 @@ class Icon4pyDriver:
         wall_clock_starting_time = datetime.datetime.now()
 
         try:
-            if self.io_monitor is not None and self.config.driver.output_initial_state:
-                # the simulation datetime is still the start here (advanced below per step)
+            if self.io_monitor is not None:
+                # write the initial state; the simulation datetime is still the start here
+                # (it is advanced below, per step)
                 self._store_output(
                     prognostic_states.current, self.model_time_variables.simulation_datetime
                 )
