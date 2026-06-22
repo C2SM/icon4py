@@ -33,6 +33,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.states.tracer_state import TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
 
@@ -337,6 +338,12 @@ def assemble_driver_states(
         exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
         rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
         theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+        tracer=TracerState(
+            **{
+                name: data_alloc.as_field(f, allocator=allocator)
+                for name, f in prognostic_state_now.tracer.active_fields()
+            }
+        ),
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
