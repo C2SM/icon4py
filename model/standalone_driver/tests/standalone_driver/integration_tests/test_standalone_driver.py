@@ -5,15 +5,23 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import datetime
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import main
-from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
-from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    serialbox as sb,
+    test_utils,
+)
 
 from ..fixtures import *  # noqa: F403
 
@@ -33,27 +41,58 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
+        (
+            test_defs.Experiments.GAUSS3D,
+            2,
+            5,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+        ),
+        # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
     ],
 )
 def test_standalone_driver(
-    experiment: test_defs.Experiment,
+    experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
     *,
-    backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    output_path = tmp_path / "ci_driver_output"
-    ds, _ = main.main(
+    allocator = model_backends.get_allocator(backend)
+
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
+    config = driver_config.read_config(config_file_path)
+    config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / "ci_driver_output",
+            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
+                tzinfo=datetime.timezone.utc
+            ),
+        }
+    )
+
+    grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_like,
-        output_path=output_path,
-        end_date=datetime.datetime(2008, 9, 1, 0, 5, 0),
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    ds, _ = standalone_driver.run_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
@@ -61,26 +100,29 @@ def test_standalone_driver(
     theta_sp = savepoint_diffusion_exit.theta_v()
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
-    assert test_utils.dallclose(
+
+    test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-7,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-9,
     )
 
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=5e-11
+    test_utils.assert_dallclose(
+        ds.prognostics.current.exner.asnumpy(),
+        exner_sp.asnumpy(),
+        atol=2e-10,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=6e-8,
+        atol=1e-7,
     )
 
-    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
+    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)

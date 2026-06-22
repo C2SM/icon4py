@@ -9,7 +9,7 @@ variables:
   BACKENDS: "embedded:dace_cpu:dace_gpu:gtfn_cpu:gtfn_gpu"
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
-  SESSION: "model:tools:mpi"
+  SESSIONS: "model:model_mpi:tools"
   MODEL_SUBSETS: "stencils:datatest"
   MODEL_MPI_SUBSETS: "basic:datatest"
 
