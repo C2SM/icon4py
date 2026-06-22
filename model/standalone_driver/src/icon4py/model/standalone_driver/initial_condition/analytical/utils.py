@@ -340,8 +340,8 @@ def assemble_driver_states(
         theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
         tracer=TracerState(
             **{
-                name: data_alloc.as_field(f, allocator=allocator)
-                for name, f in prognostic_state_now.tracer.active_fields()
+                tracer.name: data_alloc.as_field(tracer.field, allocator=allocator)
+                for tracer in prognostic_state_now.tracer.active_fields()
             }
         ),
     )

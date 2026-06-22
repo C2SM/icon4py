@@ -11,9 +11,16 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Iterator
+from typing import NamedTuple
 
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.states.data import COMMON_TRACER_CF_ATTRIBUTES
+from icon4py.model.common.utils import TimeStepPair
+
+
+class TracerField(NamedTuple):
+    name: str
+    field: fa.CellKField[ta.wpfloat]
 
 
 #: Tracer names sorted by their Fortran index (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5).
@@ -105,17 +112,15 @@ class TracerState:
     #: specific graupel content [kg/kg] at cell center
     qg: fa.CellKField[ta.wpfloat] | None = None
 
-    def active_fields(self) -> Iterator[tuple[str, fa.CellKField[ta.wpfloat]]]:
-        """Yield ``(name, field)`` for each non-``None`` tracer field."""
+    def active_fields(self) -> Iterator[TracerField]:
+        """Yield a ``TracerField`` for each non-``None`` tracer field."""
         for name in _TRACER_FIELDS:
             field = getattr(self, name)
             if field is not None:
-                yield name, field
+                yield TracerField(name=name, field=field)
 
-    def active_pairs(
-        self, new: TracerState
-    ) -> Iterator[tuple[str, fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]]:
-        """Yield ``(name, now_field, new_field)`` for each tracer active in both states."""
+    def active_pairs(self, new: TracerState) -> Iterator[TimeStepPair[TracerField]]:
+        """Yield a ``TimeStepPair`` of ``TracerField`` for each tracer active in both states."""
         for name in _TRACER_FIELDS:
             self_field = getattr(self, name)
             new_field = getattr(new, name)
@@ -125,4 +130,7 @@ class TracerState:
                     f"self={self_field is not None}, new={new_field is not None}"
                 )
             if self_field is not None:
-                yield name, self_field, new_field
+                yield TimeStepPair(
+                    TracerField(name=name, field=self_field),
+                    TracerField(name=name, field=new_field),
+                )

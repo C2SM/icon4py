@@ -94,8 +94,8 @@ def _read_prognostics_from_serialbox(
 
     if ntracer > 0:
         tracers_raw = array_ns.squeeze(ser.read("tracers_now", sp).astype(float))
-        for i, (_, field) in enumerate(state.tracer.active_fields()):
-            field.ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
+        for i, tracer in enumerate(state.tracer.active_fields()):
+            tracer.field.ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
 
     return state
 
