@@ -29,7 +29,7 @@ jobs:
             * `SESSIONS`: `model`, `model_mpi`, or `tools` (correspond to nox sessions)
             * `MODEL_SUBSETS`: `datatest`, `basic`, or `stencils` (correspond nox session selections)
             * `MODEL_SUBPACKAGES`: subpackages for non-MPI tests (last component, e.g. `diffusion`, `standalone_driver`)
-            * `MODEL_MPI_SUBPACKAGES` subpackages for MPI tests (as above)
+            * `MODEL_MPI_SUBPACKAGES`: subpackages for MPI tests (as above)
             * `BACKENDS`: backends
             * `GRIDS`: grids for stencil tests (`simple` or `icon_regional`)
             * `LEVELS`: testing level for non-stencil tests (`any`, `unit`, or `integration`)
