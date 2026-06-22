@@ -90,6 +90,10 @@ class TracerConfig:
     def __bool__(self) -> bool:
         return self.nactive > 0
 
+    def __str__(self) -> str:
+        names = ", ".join(self.active_names)
+        return names if names else "none"
+
 
 @dataclasses.dataclass
 class TracerState:

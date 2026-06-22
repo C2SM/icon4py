@@ -537,7 +537,7 @@ def display_driver_setup_in_log_file(
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
     log.info(f"Statistics enabled     : {config.enable_statistics_output}")
-    log.info(f"Active tracers         : {tracer_config.active_names or 'none'}")
+    log.info(f"Active tracers         : {tracer_config}")
     log.info("")
 
     log.info("==== Vertical Grid Parameters ====")
