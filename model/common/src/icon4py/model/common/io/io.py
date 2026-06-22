@@ -102,10 +102,10 @@ class FieldGroupIOConfig(Config):
     def validate(self) -> None:
         # bool is a subclass of int, but is not a valid interval
         if isinstance(self.output_interval, bool) or not isinstance(
-            self.output_interval, (int, DeltaT)
+            self.output_interval, OutputInterval
         ):
             raise exceptions.InvalidConfigError(
-                f"Output interval must be an int (steps) or a timedelta: {self.output_interval!r}."
+                f"Output interval must be of type {OutputInterval}: {self.output_interval!r}."
             )
         positive = (
             self.output_interval > DeltaT(0)

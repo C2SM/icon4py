@@ -383,7 +383,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
 
 def test_fieldgroup_config_rejects_invalid_interval():
     # a string interval is no longer supported: only int (steps) or timedelta
-    with pytest.raises(errors.InvalidConfigError, match=r"int \(steps\) or a timedelta"):
+    with pytest.raises(errors.InvalidConfigError, match="must be of type"):
         FieldGroupIOConfig(
             filename="a.nc",
             variables=["air_density"],
