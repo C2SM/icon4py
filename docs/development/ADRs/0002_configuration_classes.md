@@ -119,7 +119,23 @@ diffusion_config = construct_config_from_icon(icon_config)
 - Pro: allow free evolution of ICON4Py internals, decoupled from ICON
 - Con: more complicated, less (for now) helpful information immediately available
 
-This could be achieved, however, by simply moving all the instances of `IconOption` out of `ConfigOption` annotations and into a separate (per-module) dictionary, keyed by the name (or class AND name) of the option it belongs to.
+This could be achieved, however, by moving all the instances of `IconOption` out of `ConfigOption` annotations and into a separate (per-module) dictionary, keyed by the name (or class AND name) of the option it belongs to.
+
+Example:
+
+```python
+class DiffusionConfig:
+    diffusion_type: Annotated[DiffusionType, ConfigOption(description="...", validation=...)]
+    ...
+```
+
+And in `icon4py.model.atmosphere.diffusion.fortran_icon_mappings`:
+
+```python
+CONFIC_OPTIONS: {DiffusionConfig: {"diffusion_type": ...}}
+```
+
+To arrive at the same usability, `icon4py.common.fortan_icon_mappings` could contain some infrastructure to find the relevant mapping for each configuration class (via module path heuristics or entry points or similar), so that a different version of `icon4py.common.config.options.construct_config_from_icon` could be provided.
 
 ### Use `dataclasses.field` instead of `typing.Annotated`
 
