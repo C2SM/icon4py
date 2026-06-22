@@ -56,7 +56,6 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
-    SLURM_NTASKS: 1
     SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_TIMELIMIT: '00:30:00'
@@ -107,6 +106,8 @@ variables:
 .test_runner_serial:
   extends: .test_runner_base
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  variables:
+    SLURM_NTASKS: 1
 
 .test_runner_mpi:
   extends: .test_runner_base
