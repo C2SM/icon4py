@@ -44,7 +44,7 @@ include:
         LEVEL: [integration]
         SELECTION: [basic, datatest]
   rules:
-    - if: ($COMPONENT == 'standalone_driver' || $COMPONENT == 'common') && $BACKEND == 'dace_gpu'
+    - if: ($COMPONENT == 'standalone_driver' || $COMPONENT == 'common') && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
