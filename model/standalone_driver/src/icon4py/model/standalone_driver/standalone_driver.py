@@ -206,14 +206,16 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
-            for tracer_states in prognostic_states.current.tracer.active_pairs(
-                prognostic_states.next.tracer
-            ):
+            for tracer_current in prognostic_states.current.tracer.active_fields():
+                tracer_next_field = getattr(prognostic_states.next.tracer, tracer_current.name)
+                assert tracer_next_field is not None, (
+                    f"tracer '{tracer_current.name}' active in current state but missing in next state"
+                )
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
-                    p_tracer_now=tracer_states.current.field,
-                    p_tracer_new=tracer_states.next.field,
+                    p_tracer_now=tracer_current.field,
+                    p_tracer_new=tracer_next_field,
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
 

@@ -15,7 +15,6 @@ from typing import NamedTuple
 
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.states.data import COMMON_TRACER_CF_ATTRIBUTES
-from icon4py.model.common.utils import TimeStepPair
 
 
 class TracerField(NamedTuple):
@@ -118,19 +117,3 @@ class TracerState:
             field = getattr(self, name)
             if field is not None:
                 yield TracerField(name=name, field=field)
-
-    def active_pairs(self, new: TracerState) -> Iterator[TimeStepPair[TracerField]]:
-        """Yield a ``TimeStepPair`` of ``TracerField`` for each tracer active in both states."""
-        for name in _TRACER_FIELDS:
-            self_field = getattr(self, name)
-            new_field = getattr(new, name)
-            if (self_field is None) != (new_field is None):
-                raise ValueError(
-                    f"tracer '{name}' is active in one state but not the other: "
-                    f"self={self_field is not None}, new={new_field is not None}"
-                )
-            if self_field is not None:
-                yield TimeStepPair(
-                    TracerField(name=name, field=self_field),
-                    TracerField(name=name, field=new_field),
-                )
