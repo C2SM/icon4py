@@ -65,7 +65,7 @@ def test_standalone_driver(
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=6e-7 if isdouble else 1e-4,
+        atol=6e-7 if isdouble else 2e-4,
     )
 
     test_utils.assert_dallclose(

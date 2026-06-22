@@ -55,29 +55,31 @@ def test_standalone_driver_initial_condition(
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.rho.asnumpy(),
         jabw_exit_savepoint.rho().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         jabw_exit_savepoint.vn().asnumpy(),
-        atol=1e-12,
+        atol=test_utils.scale_tol(1e-12),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         jabw_exit_savepoint.w().asnumpy(),
-        atol=1e-12,
+        atol=test_utils.scale_tol(1e-12),
     )
 
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), jabw_exit_savepoint.exner().asnumpy(), atol=1e-14
+    test_utils.assert_dallclose(
+        ds.prognostics.current.exner.asnumpy(),
+        jabw_exit_savepoint.exner().asnumpy(),
+        atol=test_utils.scale_tol(1e-14),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         jabw_exit_savepoint.theta_v().asnumpy(),
-        atol=1e-11,
+        atol=test_utils.scale_tol(1e-11),
     )
