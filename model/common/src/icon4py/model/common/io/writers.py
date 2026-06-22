@@ -23,6 +23,7 @@ import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 EDGE: Final[str] = "edge"
@@ -171,7 +172,7 @@ class NETCDFWriter:
         heights.standard_name = (
             icon4py.model.common.states.metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
         )
-        heights[:] = self._vertical_params.interface_physical_height.ndarray
+        heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
@@ -199,7 +200,7 @@ class NETCDFWriter:
                 new_var = self.dataset.createVariable(
                     var_name, canonical_new_slice.dtype, dimensions
                 )
-                new_var[0, :] = canonical_new_slice.data
+                new_var[0, :] = data_alloc.as_numpy(canonical_new_slice.data)
                 new_var.units = canonical_new_slice.units
                 new_var.standard_name = canonical_new_slice.standard_name
                 new_var.long_name = canonical_new_slice.long_name
@@ -224,7 +225,9 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
-                self.dataset.variables[actual_var_name][slices] = canonical_new_slice.data
+                self.dataset.variables[actual_var_name][slices] = data_alloc.as_numpy(
+                    canonical_new_slice.data
+                )
 
     def close(self) -> None:
         assert self.dataset is not None
