@@ -16,6 +16,7 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.states.data import COMMON_TRACER_CF_ATTRIBUTES
 
 
+#: Tracer names sorted by their Fortran index (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5).
 _TRACER_FIELDS: tuple[str, ...] = tuple(
     sorted(
         COMMON_TRACER_CF_ATTRIBUTES,
@@ -34,14 +35,14 @@ class TracerConfig:
 
     qv: bool = False
     qc: bool = False
-    qr: bool = False
     qi: bool = False
+    qr: bool = False
     qs: bool = False
     qg: bool = False
 
     @classmethod
     def all(cls) -> TracerConfig:
-        return cls(qv=True, qc=True, qr=True, qi=True, qs=True, qg=True)
+        return cls(qv=True, qc=True, qi=True, qr=True, qs=True, qg=True)
 
     @classmethod
     def none(cls) -> TracerConfig:
@@ -88,10 +89,10 @@ class TracerState:
     qv: fa.CellKField[ta.wpfloat] | None = None
     #: specific cloud water content [kg/kg] at cell center
     qc: fa.CellKField[ta.wpfloat] | None = None
-    #: specific rain content [kg/kg] at cell center
-    qr: fa.CellKField[ta.wpfloat] | None = None
     #: specific cloud ice content [kg/kg] at cell center
     qi: fa.CellKField[ta.wpfloat] | None = None
+    #: specific rain content [kg/kg] at cell center
+    qr: fa.CellKField[ta.wpfloat] | None = None
     #: specific snow content [kg/kg] at cell center
     qs: fa.CellKField[ta.wpfloat] | None = None
     #: specific graupel content [kg/kg] at cell center
