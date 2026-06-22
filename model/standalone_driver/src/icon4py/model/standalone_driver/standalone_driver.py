@@ -76,6 +76,7 @@ class Icon4pyDriver:
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
             vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
+            tracer_config=self.config.tracer_config,
         )
 
     @functools.cached_property
@@ -205,12 +206,16 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
-            for tracer_idx in range(self.config.driver.ntracer):
+            for (
+                _,
+                tracer_field_now,
+                tracer_field_new,
+            ) in prognostic_states.current.tracer.active_pairs(prognostic_states.next.tracer):
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
-                    p_tracer_now=prognostic_states.current.tracer[tracer_idx],
-                    p_tracer_new=prognostic_states.next.tracer[tracer_idx],
+                    p_tracer_now=tracer_field_now,
+                    p_tracer_new=tracer_field_new,
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
 

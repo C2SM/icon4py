@@ -27,6 +27,7 @@ from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import initial_condition
 
@@ -110,6 +111,7 @@ class ExperimentConfig:
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
+    tracer_config: TracerConfig = dataclasses.field(default_factory=TracerConfig.none)
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
@@ -195,6 +197,8 @@ def read_config(
         else 0,
     )
 
+    tracer_config = TracerConfig.from_ntracer(driver_cfg.ntracer)
+
     return ExperimentConfig(
         metrics=metrics_config,
         interpolation=interpolation_config,
@@ -202,6 +206,7 @@ def read_config(
         topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
+        tracer_config=tracer_config,
         tracer_advection=tracer_advection_config,
         graupel=graupel_config,
         initial_condition=initial_condition_config,

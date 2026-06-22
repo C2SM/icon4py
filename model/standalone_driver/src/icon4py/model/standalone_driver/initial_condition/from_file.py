@@ -24,6 +24,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver.initial_condition.analytical import utils as testcases_utils
 
@@ -81,7 +82,10 @@ def _read_prognostics_from_serialbox(
     def read_edge_k(name: str) -> data_alloc.NDArray:
         return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:num_edges, :])
 
-    state = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator, ntracer=ntracer)
+    tracer_config = TracerConfig.from_ntracer(ntracer)
+    state = prognostics.initialize_prognostic_state(
+        grid=grid, allocator=allocator, tracer_config=tracer_config
+    )
     state.rho.ndarray[:, :] = read_cell_k("rho_now")
     state.exner.ndarray[:, :] = read_cell_k("exner_now")
     state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
@@ -90,8 +94,8 @@ def _read_prognostics_from_serialbox(
 
     if ntracer > 0:
         tracers_raw = array_ns.squeeze(ser.read("tracers_now", sp).astype(float))
-        for i in range(ntracer):
-            state.tracer[i].ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
+        for i, (_, field) in enumerate(state.tracer.active_fields()):
+            field.ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
 
     return state
 

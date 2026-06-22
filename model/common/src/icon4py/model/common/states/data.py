@@ -50,43 +50,57 @@ PROGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     ),
 )
 
+#: index of tracer variables in the serialized fortran list
+QV: Final[int] = 0
+QC: Final[int] = 1
+QI: Final[int] = 2
+QR: Final[int] = 3
+QS: Final[int] = 4
+QG: Final[int] = 5
+
 #: CF attributes of common tracer variables
 COMMON_TRACER_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    specific_humidity=dict(
+    qv=dict(
         standard_name="specific_humidity",
         long_name="ratio of water vapor mass to total moist air parcel mass",
         units="1",
         icon_var_name="qv",
+        icon_var_list_index=QV,
     ),
-    specific_cloud=dict(
+    qc=dict(
         standard_name="specific_cloud_content",
         long_name="ratio of cloud water mass to total moist air parcel mass",
         units="1",
         icon_var_name="qc",
+        icon_var_list_index=QC,
     ),
-    specific_ice=dict(
+    qi=dict(
         standard_name="specific_ice_content",
         long_name="ratio of cloud ice mass to total moist air parcel mass",
         units="1",
         icon_var_name="qi",
+        icon_var_list_index=QI,
     ),
-    specific_rain=dict(
+    qr=dict(
         standard_name="specific_rain_content",
         long_name="ratio of rain mass to total moist air parcel mass",
         units="1",
         icon_var_name="qr",
+        icon_var_list_index=QR,
     ),
-    specific_snow=dict(
+    qs=dict(
         standard_name="specific_snow_content",
         long_name="ratio of snow mass to total moist air parcel mass",
         units="1",
         icon_var_name="qs",
+        icon_var_list_index=QS,
     ),
-    specific_graupel=dict(
+    qg=dict(
         standard_name="specific_graupel_content",
         long_name="ratio of graupel mass to total moist air parcel mass",
         units="1",
         icon_var_name="qg",
+        icon_var_list_index=QG,
     ),
 )
 
