@@ -17,10 +17,11 @@ from icon4py.model.common.states.data import COMMON_TRACER_CF_ATTRIBUTES
 
 
 #: Tracer names sorted by their Fortran index (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5).
+#: Every tracer must define ``icon_var_list_index``; a missing key raises ``KeyError``.
 _TRACER_FIELDS: tuple[str, ...] = tuple(
     sorted(
         COMMON_TRACER_CF_ATTRIBUTES,
-        key=lambda k: COMMON_TRACER_CF_ATTRIBUTES[k].get("icon_var_list_index", 0),  # type: ignore[arg-type]
+        key=lambda k: COMMON_TRACER_CF_ATTRIBUTES[k]["icon_var_list_index"],  # type: ignore[index]
     )
 )
 
