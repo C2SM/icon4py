@@ -183,7 +183,7 @@ class ExperimentConfig:
     driver: driver_config.DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: TracerConfig = dataclasses.field(default_factory=TracerConfig.none)
+    tracer_config: TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
