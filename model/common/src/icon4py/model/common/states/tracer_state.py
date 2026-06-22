@@ -54,7 +54,13 @@ class TracerConfig:
 
         Fortran ICON uses a fixed tracer ordering: QV=0, QC=1, QI=2, QR=3, QS=4, QG=5.
         The first *ntracer* entries in this order are considered active.
+
+        Raises:
+            ValueError: if ntracer is outside the valid range.
         """
+        n = len(_TRACER_FIELDS)
+        if not 0 <= ntracer <= n:
+            raise ValueError(f"ntracer must be between 0 and {n}, got {ntracer}")
         return cls(**{name: i < ntracer for i, name in enumerate(_TRACER_FIELDS)})
 
     @property
