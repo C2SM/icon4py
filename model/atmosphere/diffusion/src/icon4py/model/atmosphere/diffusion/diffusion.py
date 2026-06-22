@@ -167,7 +167,7 @@ class DiffusionConfig:
     apply_to_horizontal_wind: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
-            description="If true, apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90.",
+            description="If true, apply diffusion on the horizontal wind field.",
             icon_equivalent=common_conf_opt.IconOption("lhdiff_vn", ("diffusion_nml",)),
         ),
     ] = True
