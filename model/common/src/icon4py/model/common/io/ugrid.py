@@ -64,7 +64,7 @@ def dimension_mapping(dim: gtx.Dimension, is_on_half_levels: bool) -> str:
         gtx.DimensionKind.VERTICAL,
     ), "only horizontal and vertical dimensions are supported."
     if dim.kind == gtx.DimensionKind.VERTICAL:
-        return "interface_level" if is_on_half_levels else "level"
+        return "half_level" if is_on_half_levels else "level"
     else:
         return HORIZONTAL_DIMENSION_MAPPING[dim]
 

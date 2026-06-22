@@ -13,7 +13,6 @@ These tests are data-free: they use the ``simple_grid`` and a zero-initialised
 """
 
 import copy
-import dataclasses
 import datetime
 import pathlib
 import uuid
@@ -36,14 +35,9 @@ from icon4py.model.standalone_driver import driver_io
 from icon4py.model.testing.fixtures import backend
 
 
-#: A real grid's ``id`` is the file's ``uuidOfHGrid`` (a UUID); the synthetic simple grid
-#: uses a plain string, so the ``grid`` fixture stamps a UUID onto it.
-_FAKE_GRID_UUID = uuid.UUID("12345678-1234-5678-1234-567812345678")
-
-
 @pytest.fixture
 def grid() -> base.Grid:
-    return dataclasses.replace(simple.simple_grid(), id=str(_FAKE_GRID_UUID))
+    return simple.simple_grid()
 
 
 def _make_prognostic_state(
@@ -121,12 +115,12 @@ def test_assembles_all_default_variables(
         assert isinstance(da, xr.DataArray)
         expected = _EXPECTED[name]
         horizontal_dim = next(d for d in expected["dims"] if d.kind == gtx.DimensionKind.HORIZONTAL)
-        on_interface = expected["is_on_half_levels"]
+        on_half_levels = expected["is_on_half_levels"]
 
-        vertical_name = "interface_level" if on_interface else "level"
+        vertical_name = "half_level" if on_half_levels else "level"
         assert da.dims == (_UGRID_DIM_NAMES[horizontal_dim], vertical_name)
 
-        vertical_size = grid.num_levels + 1 if on_interface else grid.num_levels
+        vertical_size = grid.num_levels + 1 if on_half_levels else grid.num_levels
         assert da.shape == (_horizontal_size(grid, horizontal_dim), vertical_size)
 
 
@@ -241,7 +235,7 @@ def test_create_io_monitor_builds_single_field_group(
     # output is written directly into the run output directory
     assert config.output_path == str(tmp_path)
     # the string grid id is converted to a UUID at the IO boundary
-    assert recorded["grid_id"] == _FAKE_GRID_UUID
+    assert recorded["grid_id"] == uuid.UUID(grid.id)
 
 
 def test_create_io_monitor_has_no_separate_diagnostic_group(

@@ -83,7 +83,7 @@ class FieldGroupIOConfig(Config):
     #: Output schedule: either a number of model steps (``int``) or a simulation-time
     #: delta (``datetime.timedelta``); a delta is normalized to steps using the model time
     #: step. Defaults to every step.
-    output_interval: OutputInterval = 1
+    output_interval: OutputInterval = NumTimeSteps(1)  # noqa: RUF009 [NumTimeSteps is immutable (int)]
     timesteps_per_file: int = 10
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
@@ -289,6 +289,7 @@ class FieldGroupMonitor(monitor.Monitor):
         # The per-run file counter restarts at 0, so file names (``..._0001.nc``) would
         # collide with -- and silently overwrite -- output from a previous run sharing this
         # directory. Refuse to overwrite: fail loudly so prior results are never lost.
+        # TODO (jcanton): take care of this when implementing restart
         if filename_path.exists():
             raise exceptions.InvalidConfigError(
                 f"Output file '{filename_path}' already exists; refusing to overwrite output "
@@ -313,6 +314,7 @@ class FieldGroupMonitor(monitor.Monitor):
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
+        self._step_counter += 1
         if not self._at_capture_time():
             return
         # TODO(halungge): this should do a deep copy of the data
@@ -347,8 +349,7 @@ class FieldGroupMonitor(monitor.Monitor):
         self._dataset.append(state_to_store, model_time)
 
     def _at_capture_time(self) -> bool:
-        # fire every N model steps (one call to ``store`` == one model step)
-        self._step_counter += 1
+        # fire every N model steps
         return self._step_counter % self._output_interval_steps == 0
 
     def close(self) -> None:

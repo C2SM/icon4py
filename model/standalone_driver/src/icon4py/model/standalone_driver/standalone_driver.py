@@ -108,7 +108,9 @@ class Icon4pyDriver:
         return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
 
     def _store_output(
-        self, prognostic_state: prognostics.PrognosticState, model_time: datetime.datetime
+        self,
+        prognostic_state: prognostics.PrognosticState,
+        simulation_current_datetime: driver_config.AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
 
@@ -127,7 +129,7 @@ class Icon4pyDriver:
             rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
         )
         state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
-        self.io_monitor.store(state_to_store, model_time)
+        self.io_monitor.store(state_to_store, simulation_current_datetime)
 
     def time_integration(
         self,
@@ -149,7 +151,7 @@ class Icon4pyDriver:
 
         wall_clock_starting_time = datetime.datetime.now()
 
-        try:
+        try:  # fail gracefully and close `io_monitor` if something goes wrong
             if self.io_monitor is not None:
                 # write the initial state; the simulation datetime is still the start here
                 # (it is advanced below, per step)

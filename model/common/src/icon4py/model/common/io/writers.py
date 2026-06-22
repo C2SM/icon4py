@@ -29,7 +29,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 EDGE: Final[str] = "edge"
 VERTEX: Final[str] = "vertex"
 CELL: Final[str] = "cell"
-MODEL_INTERFACE_LEVEL: Final[str] = "interface_level"
+MODEL_HALF_LEVEL: Final[str] = "half_level"
 MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
@@ -133,7 +133,7 @@ class NETCDFWriter:
         ## create dimensions all except time are fixed
         self.dataset.createDimension(TIME, None)
         self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
-        self.dataset.createDimension(MODEL_INTERFACE_LEVEL, self.num_interfaces)
+        self.dataset.createDimension(MODEL_HALF_LEVEL, self.num_interfaces)
         self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
         self.dataset.createDimension(VERTEX, self._horizontal_size.num_vertices)
         self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
@@ -153,18 +153,16 @@ class NETCDFWriter:
         levels.standard_name = cf_utils.LEVEL_STANDARD_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
 
-        interface_levels = self.dataset.createVariable(
-            MODEL_INTERFACE_LEVEL, np.int32, (MODEL_INTERFACE_LEVEL,)
-        )
-        interface_levels.units = "1"
-        interface_levels.positive = "down"
-        interface_levels.long_name = "model interface level index"
-        interface_levels.standard_name = (
+        half_levels = self.dataset.createVariable(MODEL_HALF_LEVEL, np.int32, (MODEL_HALF_LEVEL,))
+        half_levels.units = "1"
+        half_levels.positive = "down"
+        half_levels.long_name = "model half level index"
+        half_levels.standard_name = (
             icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
         )
-        interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
+        half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
-        heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
+        heights = self.dataset.createVariable("height", np.float64, (MODEL_HALF_LEVEL,))
         heights.units = "m"
         heights.positive = "up"
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME

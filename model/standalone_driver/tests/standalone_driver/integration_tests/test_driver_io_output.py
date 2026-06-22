@@ -90,8 +90,8 @@ def test_standalone_driver_writes_output(
             var = ds.variables[name]
             assert var.dimensions[0] == "time"
             assert var.shape[0] == 2
-        # vertical placement: w on interface levels, the rest on full levels
-        assert "interface_level" in ds.variables["upward_air_velocity"].dimensions
+        # vertical placement: w on half (interface) levels, the rest on full levels
+        assert "half_level" in ds.variables["upward_air_velocity"].dimensions
         assert "edge" in ds.variables["normal_velocity"].dimensions
         # diagnostics live on cells/full levels
         assert "cell" in ds.variables["temperature"].dimensions

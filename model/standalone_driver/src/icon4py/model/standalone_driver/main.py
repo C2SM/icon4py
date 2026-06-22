@@ -60,7 +60,7 @@ def main(
         bool,
         typer.Option(
             "--enable-output/--no-enable-output",
-            help="Write prognostic + diagnostic fields to NetCDF/UGRID output (single node only).",
+            help="Write the prognostic and diagnostic fields to output.",
         ),
     ] = False,
 ) -> None:

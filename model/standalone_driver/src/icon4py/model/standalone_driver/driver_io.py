@@ -114,6 +114,11 @@ class DiagnosticsComputer:
     since output is written every step). The static fields (``ddqz_z_full`` and the cell
     rbf coefficients) are passed to :meth:`compute` so callers fetch them from their field
     factories; tests can pass artificial fields.
+
+    TODO(kotsaloscv): refactor once the driver groups model state -- derive these diagnostic
+    buffers from that shared grouping instead of recomputing them here. Physics relies
+    heavily on the same diagnostic variables, so they should be shared rather than
+    duplicated across IO and physics.
     """
 
     def __init__(self, *, grid: grid_base.Grid, backend: gtx.typing.Backend | None) -> None:
@@ -275,7 +280,7 @@ def create_io_monitor(
     vertical_grid: v_grid.VerticalGrid,
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
-    output_interval: common_io.OutputInterval = 1,
+    output_interval: common_io.OutputInterval = common_io.NumTimeSteps(1),
     process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.
