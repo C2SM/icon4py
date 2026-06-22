@@ -33,7 +33,6 @@ from icon4py.model.testing.fixtures.datatest import (
         definitions.Experiments.JW,
         definitions.Experiments.GAUSS3D,
         definitions.Experiments.MCH_CH_R04B09,
-        # TODO (jcanton): open a separate PR to enable EXCLAIM_APE which currently does not verify vn
     ],
 )
 @pytest.mark.datatest
