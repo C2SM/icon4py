@@ -9,15 +9,13 @@ tags: [config, fortran, icon]
 - **Created**: 2026-06-17
 - **Updated**: 2026-06-17
 
-(Wh)Y-statement: In the context of [use case/user story u], facing [concern c] we decided for [option o] and neglected [other options], to achieve [system qualities/desired consequences], accepting [downside/undesired consequences].
-
-While making Icon4Py user-configurable, facing code duplication between modules, we decided to provide a standard way to declaratively encode common attributes of configuration options alongside utilities that can then be reused across modules.
+While making ICON4Py user-configurable, facing code duplication between modules, we decided to provide a standard way to declaratively encode common attributes of configuration options alongside utilities that can then be reused across modules.
 
 ## Context
 
-We notice that currently, each module has a class, which contains it's configuration. Each of these classes knows how to construct itself from a dictionary that represents an ICON namelist. The mapping is contained implicitly in a classmethod. Usually the class attributes that have an equivalent in ICON are annotated with documentation comments (where to find in ICON namelists and what it does).
+At the time of writing each module has a class which contains its configuration. Each of these classes knows how to construct itself from a dictionary that represents an ICON namelist. The mapping is contained implicitly in a class method. Usually the class attributes that have an equivalent in ICON are annotated with documentation comments (where to find in ICON namelists and what it does).
 
-Really, given the mapping for each configuration option in each of those classes, the logic is the same for all of them.
+Given the mapping for each configuration option in each of those classes, the logic is the same for all of them.
 
 Extrapolating from this case of duplication we find the same for:
 
@@ -26,7 +24,7 @@ Extrapolating from this case of duplication we find the same for:
 
 ## Decision
 
-The chosen pattern is for configuration classes to look as Follows
+The chosen pattern is for configuration classes to look as follows
 
 ```python
 import dataclasses
@@ -40,7 +38,7 @@ class MyModuleConfig:
     some_configuration_option: typing.Annotated[
         int,
         common_conf_opt.ConfigOption(
-            description="This is help telling the user what `some_configuration_option` does.",
+            description="Describe what `some_configuration_option` does.",
             icon_equivalent=common_conf_opt.IconOption(
                 name="isomcfgop",
                 path=("diffusion_nml",),  # for nested sections: ("toplevel_nml", "sublevel_nml")
@@ -84,26 +82,41 @@ class MyModuleConfig:
 
 ## Consequences
 
-Code for mapping from ICON inputs to Icon4Py configurations can be shared between modules.
+Code for mapping from ICON inputs to ICON4Py configurations can be shared between modules.
 
-It becomes possible to automatically provide helpful (for users) information for all available configuration options (for a given set of modules).
+It becomes possible to automatically provide helpful information for all available configuration options.
 
-Different user facing utilities for configuring / inspecting Icon4Py runs will not have to duplicate logic for
+Different user facing utilities for configuring / inspecting ICON4Py runs will not have to duplicate logic for
 
 - mapping to / from ICON (fortran)
 - validation
 - documentation
 - etc
 
-The current solution will not achieve maximum separation isolation between Icon4Py internals and their mapping to and from ICON concepts. However it provides a structured path towards it.
+The current solution will not achieve maximum separation between internals and their mapping to and from ICON concepts. However it provides a structured path towards it.
 
-Another downside is a certain loss of type checking when using the provided utilities. This can be made up for in tests.
+Another downside is a loss of static type checking when using the provided utilities. This is considered minor, because the provided utilities are only envisioned to be used when dealing with user input. Example:
+
+```python
+# This might occur in a test
+diff_cfg = icon4py.common.config.options.construct_config_from_icon(
+    DiffusionConfig, {"diffusion_nml": {"itype_vn_diffu": 1}}
+)  # no static type checking can be performed here, because the mapping logic is run-time only
+```
+
+As opposed to hand-mapping, where type checkers can infer the required types at least to some degree.
+
+```python
+# More likely usage, where static type checking is not a concern
+icon_config: dict[str, Any] = read_namelists()
+diffusion_config = construct_config_from_icon(icon_config)
+```
 
 ## Alternatives Considered
 
 ### Separating (fortran-) ICON mapping information from the rest
 
-- Pro: allow free evolution of Icon4Py internals, decoupled from ICON
+- Pro: allow free evolution of ICON4Py internals, decoupled from ICON
 - Con: more complicated, less (for now) helpful information immediately available
 
 This could be achieved, however, by simply moving all the instances of `IconOption` out of `ConfigOption` annotations and into a separate (per-module) dictionary, keyed by the name (or class AND name) of the option it belongs to.
