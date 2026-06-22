@@ -216,14 +216,11 @@ def create_experiment_configuration(
         master_dict=master_dict,
         profiling_stats=None,
         enable_statistics_output=False,
-        ntracer=fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"])
-        if do_tracer_advection
-        else 0,
     )
 
-    run_nml = atm_dict["run_nml"]
-    ntracer_count = fortran_config.list_to_value(run_nml.get("ntracer", 0))
-    tracer_config = TracerConfig.from_ntracer(ntracer_count)
+    tracer_config = TracerConfig.from_ntracer(
+        fortran_config.list_to_value(atm_dict["run_nml"].get("ntracer", 0))
+    )
 
     return definitions.ExperimentConfig(
         metrics=metrics_config,

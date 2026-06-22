@@ -66,7 +66,6 @@ class DriverConfig:
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
-    ntracer: int = 0
 
     @classmethod
     def from_fortran_dict(
@@ -188,16 +187,16 @@ def read_config(
     )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
+    ntracer = (
+        fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
+    )
     driver_cfg = DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
-        ntracer=fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"])
-        if do_tracer_advection
-        else 0,
     )
 
-    tracer_config = TracerConfig.from_ntracer(driver_cfg.ntracer)
+    tracer_config = TracerConfig.from_ntracer(ntracer)
 
     return ExperimentConfig(
         metrics=metrics_config,
