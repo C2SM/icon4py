@@ -114,9 +114,14 @@ class TracerState:
     def active_pairs(
         self, new: TracerState
     ) -> Iterator[tuple[str, fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]]:
-        """Yield ``(name, now_field, new_field)`` for each non-``None`` tracer in both states."""
+        """Yield ``(name, now_field, new_field)`` for each tracer active in both states."""
         for name in _TRACER_FIELDS:
             self_field = getattr(self, name)
             new_field = getattr(new, name)
-            if self_field is not None and new_field is not None:
+            if (self_field is None) != (new_field is None):
+                raise ValueError(
+                    f"tracer '{name}' is active in one state but not the other: "
+                    f"self={self_field is not None}, new={new_field is not None}"
+                )
+            if self_field is not None:
                 yield name, self_field, new_field
