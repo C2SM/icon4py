@@ -14,6 +14,7 @@ import pathlib
 
 import pytest
 
+from icon4py.model.common import type_alias as ta
 from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
@@ -37,6 +38,9 @@ class MuphysExperiment:
     type: ExperimentType
     dt: float = 30.0
     qnc: float = 100.0
+
+    def __post_init__(self):
+        ta.dataclass_scalars_to_wp(self, attributes=["dt", "qnc"])
 
     @property
     def input_file(self) -> pathlib.Path:

@@ -15,7 +15,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
@@ -41,6 +41,7 @@ class Experiments:
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment",
     [
@@ -64,7 +65,9 @@ def test_full_muphys(
         pytest.xfail("Single program version currently fails verification. Needs investigation.")
 
     inp = common.GraupelInput.load(
-        filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.input_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=ta.wpfloat,
     )
 
     muphys_program = run_full_muphys.setup_muphys(
@@ -89,6 +92,7 @@ def test_full_muphys(
             "qg": inp.qg,
             "t": inp.t,
         },
+        dtype=ta.wpfloat,
     )
 
     muphys_program(
@@ -108,16 +112,17 @@ def test_full_muphys(
     )
 
     ref = common.GraupelOutput.load(
-        filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.reference_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=ta.wpfloat,
     )
 
-    rtol = 1e-14
-    atol = 1e-16
+    rtol = test_utils.scale_tol(1e-14)
 
-    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), rtol=rtol)
+    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), rtol=rtol)
+    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), rtol=rtol)
+    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), rtol=rtol)
+    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), rtol=rtol)
+    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), rtol=rtol)
+    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), rtol=rtol)
