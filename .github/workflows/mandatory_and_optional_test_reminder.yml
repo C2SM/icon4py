@@ -16,7 +16,7 @@ jobs:
 
             **Before merging, run the `merge` pipeline with `cscs-ci run merge`. Merging is blocked unless this pipeline passes.**
 
-            When developing, You can test your changes on CSCS CI before merge with the `default` pipeline: `cscs-ci run default`. This will run a default subset of tests.
+            When developing, you can test your changes on CSCS CI before merge with the `default` pipeline: `cscs-ci run default`. This will run a default subset of tests.
 
             You can pass options to override pipeline variables, for example:
 
