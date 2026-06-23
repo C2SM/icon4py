@@ -10,7 +10,7 @@ variables:
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
   SESSIONS: "model:model_mpi:tools"
-  MODEL_SUBSETS: "stencils:datatest"
+  MODEL_SUBSETS: "stencils:basic:datatest"
   MODEL_MPI_SUBSETS: "basic:datatest"
 
 
