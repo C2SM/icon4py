@@ -11,11 +11,12 @@ variables:
   # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSIONS=model;MODEL_SUBSETS=datatest
   MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
   MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
-  MODEL_SUBSETS: "stencils:datatest"
-  MODEL_MPI_SUBSETS: "basic:datatest"
+  MODEL_SUBSETS: "datatest"
+  MODEL_MPI_SUBSETS: "datatest"
+  TOOLS_SUBSETS: "datatest:unittest"
   BACKENDS: "gtfn_gpu"
   LEVELS: "integration"
-  GRIDS: "simple:icon_regional"
+  GRIDS: "icon_regional"
   SESSIONS: "model:model_mpi:tools"
 
 
