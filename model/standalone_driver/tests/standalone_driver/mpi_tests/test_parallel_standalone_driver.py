@@ -75,7 +75,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     "experiment_description, end_of_simulation",
     [
         # TODO(msimberg): RelativeTime
-        (test_defs.Experiments.JW, datetime.timedelta(days=1)),
+        (test_defs.Experiments.JW, datetime.timedelta(days=3)),
     ],
 )
 @pytest.mark.mpi
