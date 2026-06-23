@@ -203,7 +203,7 @@ class DiffusionConfig:
     type_vn_diffu: typing.Annotated[
         SmagorinskyStencilType,
         common_conf_opt.ConfigOption(
-            description="Options for discretizing the Smagorinsky momentum diffusion.",
+            description="Reconstruction method used for Smagorinsky diffusion.",
             icon_equivalent=common_conf_opt.IconOption("itype_vn_diffu", ("diffusion_nml",)),
         ),
     ] = SmagorinskyStencilType.DIAMOND_VERTICES
