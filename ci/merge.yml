@@ -10,8 +10,9 @@ variables:
   LEVELS: "integration"
   GRIDS: "simple:icon_regional"
   SESSIONS: "model:model_mpi:tools"
-  MODEL_SUBSETS: "stencils:basic:datatest"
-  MODEL_MPI_SUBSETS: "basic:datatest"
+  MODEL_SUBSETS: "stencils:datatest"
+  MODEL_MPI_SUBSETS: "datatest"
+  TOOLS_SUBSETS: "datatest:unittest"
 
 
 build_baseimage_aarch64:
