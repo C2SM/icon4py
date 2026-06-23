@@ -11,7 +11,7 @@
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
 Reads the pipeline variables (SESSIONS, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
-BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS) or corresponding command-line options
+BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS, TOOLS_SUBSETS) or corresponding command-line options
 and writes a child pipeline that includes ``ci/base.yml`` and instantiates only
 the test jobs whose matrix entries match the requested filter.
 
@@ -61,6 +61,7 @@ ALL_MODEL_MPI_SUBPACKAGES = [
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
 ALL_LEVELS = ["any", "unit", "integration"]
+ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 
 
 def _parse_list(raw: str | None) -> list[str]:
@@ -98,21 +99,36 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
         sys.exit(1)
 
 
-def _resolve_filter(
-    cli_value: str | None, env_var: str, *, default: list[str] | None = None
-) -> list[str]:
+def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) -> list[str]:
     """Resolve a filter value from CLI arg, env var, or built-in default.
 
     When *cli_value* is provided (including empty string) it takes
     precedence.  Otherwise the environment variable is checked,
     falling back to *default*.
+
+    The token ``all`` expands to the full *default* list.  It must not be
+    combined with other values.
     """
     if cli_value is not None:
-        return _parse_list(cli_value)
-    env_parsed = _parse_list(os.environ.get(env_var))
-    if env_parsed:
-        return env_parsed
-    return list(default) if default else []
+        tokens = _parse_list(cli_value)
+    else:
+        env_parsed = _parse_list(os.environ.get(env_var))
+        if env_parsed:
+            tokens = env_parsed
+        else:
+            return list(default)
+
+    if "all" in tokens:
+        if len(tokens) > 1:
+            print(
+                f"ERROR: '{env_var}' contains 'all' but also other values. "
+                "Use 'all' alone or list individual values.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        return list(default)
+
+    return tokens
 
 
 def _generate_child_pipeline(
@@ -122,6 +138,7 @@ def _generate_child_pipeline(
     model_subpackages: str | None = None,
     model_mpi_subpackages: str | None = None,
     model_mpi_subsets: str | None = None,
+    tools_subsets: str | None = None,
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
@@ -164,6 +181,11 @@ def _generate_child_pipeline(
 
     requested_grids = _resolve_filter(grids, "GRIDS", default=ALL_GRIDS)
     _validate_tokens("GRIDS", requested_grids, ALL_GRIDS)
+
+    requested_tools_subsets = _resolve_filter(
+        tools_subsets, "TOOLS_SUBSETS", default=ALL_TOOLS_SUBSETS
+    )
+    _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
     pipeline: dict = {
         "include": [{"local": "ci/base.yml"}],
@@ -211,14 +233,16 @@ def _generate_child_pipeline(
                 }
 
     if "tools" in requested_sessions:
-        pipeline["test_tools_aarch64"] = {
-            "extends": ".test_tools_aarch64",
-            "parallel": {
-                "matrix": [
-                    {"SELECTION": ["datatest", "unittest"]},
-                ]
-            },
-        }
+        filtered_tools_subsets = _intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS)
+        if filtered_tools_subsets:
+            pipeline["test_tools_aarch64"] = {
+                "extends": ".test_tools_aarch64",
+                "parallel": {
+                    "matrix": [
+                        {"SELECTION": filtered_tools_subsets},
+                    ]
+                },
+            }
 
     if "model_mpi" in requested_sessions:
         filtered_subpackages = _intersect(
@@ -295,6 +319,13 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             help="Colon/comma-separated model test subset filter (stencils, datatest, basic)",
         ),
     ] = None,
+    tools_subsets: Annotated[
+        str | None,
+        typer.Option(
+            "--tools-subsets",
+            help="Colon/comma-separated tools/b bindings test subset filter (datatest, unittest)",
+        ),
+    ] = None,
     backends: Annotated[
         str | None,
         typer.Option("--backends", help="Colon/comma-separated backend filter"),
@@ -321,6 +352,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             model_mpi_subpackages=model_mpi_subpackages,
             model_mpi_subsets=model_mpi_subsets,
             model_subsets=model_subsets,
+            tools_subsets=tools_subsets,
             backends=backends,
             levels=levels,
             grids=grids,

@@ -9,15 +9,15 @@ variables:
   # jobs. They are meant to be overridden with e.g.
   #
   # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSIONS=model;MODEL_SUBSETS=datatest
+  SESSIONS: "model:model_mpi:tools"
   MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
-  MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   MODEL_SUBSETS: "datatest"
+  MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   MODEL_MPI_SUBSETS: "datatest"
-  TOOLS_SUBSETS: "datatest:unittest"
   BACKENDS: "gtfn_gpu"
   LEVELS: "integration"
   GRIDS: "icon_regional"
-  SESSIONS: "model:model_mpi:tools"
+  TOOLS_SUBSETS: "datatest:unittest"
 
 
 build_baseimage_aarch64:
