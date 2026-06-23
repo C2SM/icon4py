@@ -7,25 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import (
-    geometry as grid_geometry,
-    geometry_attributes as geometry_meta,
-    horizontal as h_grid,
-    icon as icon_grid,
-)
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.math.stencils import (
-    generic_math_operations as gt4py_math_op,
-    generic_math_operations_array_ns,
-)
-from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
-from icon4py.model.common.states.tracer_state import TracerState
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

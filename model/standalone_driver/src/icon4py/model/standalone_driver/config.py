@@ -112,7 +112,7 @@ class ExperimentConfig:
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: TracerConfig | None = None
+    tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 

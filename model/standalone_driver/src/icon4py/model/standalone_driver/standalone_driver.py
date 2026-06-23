@@ -123,8 +123,8 @@ class Icon4pyDriver:
         static diagnostic inputs are fetched directly from the field factories.
         """
         assert self.io_monitor is not None
-        metrics = self.static_field_factories.metrics_field_source
-        interpolation = self.static_field_factories.interpolation_field_source
+        metrics = self.static_field_factories.metrics
+        interpolation = self.static_field_factories.interpolation
         state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
         diagnostic_fields = self._diagnostics_computer.compute(
             prognostic_state,

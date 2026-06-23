@@ -18,13 +18,7 @@ import serialbox  # type: ignore[import-untyped]
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
-from icon4py.model.common.states.tracer_state import TracerConfig
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -82,7 +76,6 @@ def _fill_prognostics_from_serialbox(
         tracers_raw = array_ns.squeeze(ser.read("tracers_now", sp).astype(float))
         for i, tracer in enumerate(prognostic_state.tracer.active_fields()):
             tracer.field.ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
-
 
 
 def read_from_file(
