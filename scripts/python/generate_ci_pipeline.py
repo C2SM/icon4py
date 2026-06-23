@@ -131,7 +131,7 @@ def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) 
     return tokens
 
 
-def _generate_child_pipeline(  # noqa: PLR0912 [too-many-branches]
+def _generate_child_pipeline(
     *,
     sessions: str | None = None,
     model_subsets: str | None = None,
@@ -143,7 +143,13 @@ def _generate_child_pipeline(  # noqa: PLR0912 [too-many-branches]
     levels: str | None = None,
     grids: str | None = None,
 ) -> str:
-    """Return the child pipeline YAML as a string."""
+    """Return the child pipeline YAML as a string.
+
+    Each subset is expanded into a separate job definition with a
+    ``parallel:matrix`` for the remaining dimensions.  This keeps
+    every matrix under GitLab's 200-instance limit while producing a
+    clean, grouped pipeline view.
+    """
     requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
     _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
 
@@ -200,43 +206,47 @@ def _generate_child_pipeline(  # noqa: PLR0912 [too-many-branches]
 
         # Stencils subset uses GRID dimension
         if "stencils" in filtered_subsets and filtered_grids:
-            for subpackage in filtered_subpackages:
-                for backend in filtered_backends:
-                    for grid in filtered_grids:
-                        job_name = f"test_model_stencils_{subpackage}_{backend}_{grid}_aarch64"
-                        pipeline[job_name] = {
-                            "extends": ".test_model_aarch64",
-                            "variables": {
-                                "MODEL_SUBSET": "stencils",
-                                "MODEL_SUBPACKAGE": subpackage,
-                                "BACKEND": backend,
-                                "GRID": grid,
-                            },
+            pipeline["test_model_stencils_aarch64"] = {
+                "extends": ".test_model_aarch64",
+                "variables": {"MODEL_SUBSET": "stencils"},
+                "parallel": {
+                    "matrix": [
+                        {
+                            "MODEL_SUBPACKAGE": filtered_subpackages,
+                            "BACKEND": filtered_backends,
+                            "GRID": filtered_grids,
                         }
+                    ]
+                },
+            }
 
         # Datatest and basic subsets need LEVEL dimension
         for subset in ("datatest", "basic"):
             if subset in filtered_subsets and filtered_levels:
-                for subpackage in filtered_subpackages:
-                    for backend in filtered_backends:
-                        for level in filtered_levels:
-                            job_name = f"test_model_{subset}_{subpackage}_{backend}_{level}_aarch64"
-                            pipeline[job_name] = {
-                                "extends": ".test_model_aarch64",
-                                "variables": {
-                                    "MODEL_SUBSET": subset,
-                                    "MODEL_SUBPACKAGE": subpackage,
-                                    "BACKEND": backend,
-                                    "LEVEL": level,
-                                },
+                pipeline[f"test_model_{subset}_aarch64"] = {
+                    "extends": ".test_model_aarch64",
+                    "variables": {"MODEL_SUBSET": subset},
+                    "parallel": {
+                        "matrix": [
+                            {
+                                "MODEL_SUBPACKAGE": filtered_subpackages,
+                                "BACKEND": filtered_backends,
+                                "LEVEL": filtered_levels,
                             }
+                        ]
+                    },
+                }
 
     if "tools" in requested_sessions:
         filtered_tools_subsets = _intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS)
-        for selection in filtered_tools_subsets:
-            pipeline[f"test_tools_{selection}_aarch64"] = {
+        if filtered_tools_subsets:
+            pipeline["test_tools_aarch64"] = {
                 "extends": ".test_tools_aarch64",
-                "variables": {"SELECTION": selection},
+                "parallel": {
+                    "matrix": [
+                        {"SELECTION": filtered_tools_subsets},
+                    ]
+                },
             }
 
     if "model_mpi" in requested_sessions:
@@ -246,23 +256,21 @@ def _generate_child_pipeline(  # noqa: PLR0912 [too-many-branches]
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, ALL_LEVELS)
         filtered_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
-        if filtered_subpackages and filtered_backends and filtered_levels and filtered_subsets:
-            for subset in filtered_subsets:
-                for subpackage in filtered_subpackages:
-                    for backend in filtered_backends:
-                        for level in filtered_levels:
-                            job_name = (
-                                f"test_model_mpi_{subset}_{subpackage}_{backend}_{level}_aarch64"
-                            )
-                            pipeline[job_name] = {
-                                "extends": ".test_model_mpi_aarch64",
-                                "variables": {
-                                    "SELECTION": subset,
-                                    "MODEL_MPI_SUBPACKAGE": subpackage,
-                                    "BACKEND": backend,
-                                    "LEVEL": level,
-                                },
+        for subset in filtered_subsets:
+            if filtered_subpackages and filtered_backends and filtered_levels:
+                pipeline[f"test_model_mpi_{subset}_aarch64"] = {
+                    "extends": ".test_model_mpi_aarch64",
+                    "variables": {"SELECTION": subset},
+                    "parallel": {
+                        "matrix": [
+                            {
+                                "MODEL_MPI_SUBPACKAGE": filtered_subpackages,
+                                "BACKEND": filtered_backends,
+                                "LEVEL": filtered_levels,
                             }
+                        ]
+                    },
+                }
 
     test_jobs = [k for k in pipeline if k != "include"]
     if not test_jobs:
