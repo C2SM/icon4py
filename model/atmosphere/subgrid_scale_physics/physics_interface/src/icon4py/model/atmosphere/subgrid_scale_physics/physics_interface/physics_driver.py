@@ -42,7 +42,7 @@ class ForcingMode(enum.IntEnum):
     DIAGNOSTIC = 0
     APPLY = 1
 
-
+# TODO (Yilu): this can belong to a standalone file (with the exception of ForcingMode.APPLY)?
 @dataclasses.dataclass(frozen=True)
 class ProcessTimeControl:
     """icon4py analogue of the per-process fields in AES `aes_phy_tc`.
@@ -86,14 +86,17 @@ class ProcessTimeControl:
 
 @dataclasses.dataclass
 class PhysicsProcess:
-    """A registered physics process: a granule plus its time control.
+    """A registered physics process: a granule, its state adapter, and its time control.
 
     The granule is the per-process adapter (e.g. ``MuphysGranule``); it
     implements the generic ``Component`` protocol, which is how the driver types it.
+    The state adapter is process-specific (it translates the prognostic state to/from
+    *this* granule's contract), so it is bundled per process rather than shared.
     """
 
     name: str
     granule: Component
+    state: PhysicsStateProtocol
     time_control: ProcessTimeControl
 
 
@@ -103,10 +106,8 @@ class PhysicsDriver:
     def __init__(
         self,
         processes: list[PhysicsProcess],
-        physics_state: PhysicsStateProtocol,
     ) -> None:
         self._processes = processes
-        self._physics_state = physics_state
         self._recycle_cache: dict[str, dict[str, Any]] = {}
 
     def run(
@@ -119,14 +120,15 @@ class PhysicsDriver:
         # TODO (Yilu): currently, ForcingMode is not applied, because muphys is always APPLY mode.
         # TODO (Yilu): later on, when a non-APPLY process exits
         for proc in self._processes:
-            self._physics_state.gather_from_prognostic(prognostic, tracers)
+            state = proc.state
+            state.gather_from_prognostic(prognostic, tracers)
             tc = proc.time_control
             if not tc.enable_process:
                 continue
             in_window = tc.is_in_window(now)
             if in_window and tc.is_active(now):
-                # compute: run the granule (e.g. muphys) on the current physics state
-                outputs = proc.granule(self._physics_state.as_component_input(), now)
+                # compute: run the granule (e.g. muphys) on this process's physics state
+                outputs = proc.granule(state.as_component_input(), now)
                 self._recycle_cache[proc.name] = outputs
             elif in_window:
                 # recycle
@@ -134,4 +136,4 @@ class PhysicsDriver:
             else:
                 # no forcing
                 continue
-            self._physics_state.scatter_to_prognostic(prognostic, outputs, dt)
+            state.scatter_to_prognostic(prognostic, outputs, dt)
