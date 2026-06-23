@@ -8,7 +8,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.states import prognostic_state, tracer_state
 
 
 class PhysicsStateProtocol(Protocol):
@@ -21,8 +25,12 @@ class PhysicsStateProtocol(Protocol):
     stays decoupled from any specific physics state.
     """
 
-    def gather_from_prognostic(self, prognostic: Any, tracers: Any) -> None: ...
+    def gather_from_prognostic(
+        self,
+        prognostic: prognostic_state.PrognosticState,
+        tracers: tracer_state.TracerState,
+    ) -> None: ...
     def as_component_input(self) -> dict[str, Any]: ...
     def scatter_to_prognostic(
-        self, prognostic: Any, outputs: dict[str, Any], dt: float
+        self, prognostic: prognostic_state.PrognosticState, outputs: dict[str, Any], dt: float
     ) -> None: ...

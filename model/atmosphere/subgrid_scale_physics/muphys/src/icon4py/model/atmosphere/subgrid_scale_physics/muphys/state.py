@@ -162,7 +162,7 @@ class State:
             horizontal_end=self._num_cells,
             vertical_start=self._num_levels,
             vertical_end=self._num_levels + 1,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={"Koff": dims.KDim},  # type: ignore[dict-item]
         )
         # diagnose full-level pressure p
         surface_pressure = gtx.as_field(
@@ -189,7 +189,7 @@ class State:
     ) -> None:
         """Outbound translation: apply muphys output (tendencies) back to the prognostic state.
 
-        This will be called before calling the muphys.
+        This will be called after calling the muphys.
         output is got from muphys, and the tendencies in output will be applied to the prognostic state.
         """
         # 1. Apply moisture tendencies to the tracers (in place; self.q was bound in gather).

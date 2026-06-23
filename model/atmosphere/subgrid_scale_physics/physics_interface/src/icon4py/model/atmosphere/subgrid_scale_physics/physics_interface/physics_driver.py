@@ -13,10 +13,14 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.components.components import Component
 from icon4py.model.common.components.physics_state import PhysicsStateProtocol
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.states import prognostic_state, tracer_state
 
 
 class ForcingMode(enum.IntEnum):
@@ -107,8 +111,8 @@ class PhysicsDriver:
 
     def run(
         self,
-        prognostic: Any,
-        tracers: Any,
+        prognostic: prognostic_state.PrognosticState,
+        tracers: tracer_state.TracerState,
         dt: float,
         now: datetime.datetime,
     ) -> None:
