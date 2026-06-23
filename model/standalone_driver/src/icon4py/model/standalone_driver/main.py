@@ -56,6 +56,13 @@ def main(
             help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
         ),
     ] = False,
+    enable_output: Annotated[
+        bool,
+        typer.Option(
+            "--enable-output/--no-enable-output",
+            help="Write the prognostic and diagnostic fields to output.",
+        ),
+    ] = False,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.
@@ -80,8 +87,10 @@ def main(
     )
 
     config = driver_config.read_config(config_file_path)
+    driver_overrides: dict[str, object] = {"enable_output": enable_output}
     if output_path is not None:
-        config = config.with_overrides(driver={"output_path": output_path})
+        driver_overrides["output_path"] = output_path
+    config = config.with_overrides(driver=driver_overrides)
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
