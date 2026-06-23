@@ -132,13 +132,13 @@ def iter_pairs_from_icon(
             data = icon_config
             for subsection in opt.icon_equivalent.path:
                 data = data[subsection]
-                raw_value = data[opt.icon_equivalent.name]
-                de_listified = (
-                    fortran_config.list_to_value(raw_value)
-                    if opt.icon_equivalent.list_to_value
-                    else raw_value
-                )
-                yield name, annotations[name](de_listified)
+            raw_value = data[opt.icon_equivalent.name]
+            de_listified = (
+                fortran_config.list_to_value(raw_value)
+                if opt.icon_equivalent.list_to_value
+                else raw_value
+            )
+            yield name, annotations[name](de_listified)
 
 
 def construct_config_from_icon(

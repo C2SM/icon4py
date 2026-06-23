@@ -34,6 +34,7 @@ class ConfigClass:
             icon_equivalent=options.IconOption(name="lsomflg", path=(), list_to_value=True),
         ),
     ]
+    other: typing.Annotated[int, options.ConfigOption(description="Non-ICON config choice.")] = 5
 
 
 def test_config_option_from_annotated_type_hint() -> None:
@@ -105,7 +106,8 @@ def test_construct_config_from_icon() -> None:
     result = options.construct_config_from_icon(
         config_cls=ConfigClass,
         icon_config={"nested_1": {"nested_2": {"isomchce": 42}}, "lsomflg": [False, False, False]},
-        overrides={"choice": 43},
+        other=3,
     )
-    assert result.choice == 43
+    assert result.choice == 42
     assert result.flag is False
+    assert result.other == 3
