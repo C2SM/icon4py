@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import pathlib
@@ -28,6 +29,7 @@ from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import config as driver_config, initial_condition
+from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 
@@ -209,6 +211,14 @@ def create_experiment_configuration(
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=experiment_path
     )
+
+    if not do_tracer_advection and isinstance(
+        initial_condition_config.config, from_file_ic.FromFileConfig
+    ):
+        initial_condition_config = dataclasses.replace(
+            initial_condition_config,
+            config=dataclasses.replace(initial_condition_config.config, ntracer=0),
+        )
 
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,

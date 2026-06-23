@@ -21,25 +21,21 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
-    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
-from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.standalone_driver import driver_states
 from icon4py.model.standalone_driver.initial_condition.analytical import utils as testcases_utils
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 log = logging.getLogger(__name__)
 
@@ -72,15 +68,13 @@ class JablonowskiWilliamsonConfig:
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     *,
     config: JablonowskiWilliamsonConfig,
-    experiment_config: driver_config.ExperimentConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    geometry_field_source: grid_geometry.GridGeometry,
-    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
-    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+    static_fields: driver_states.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-) -> driver_states.DriverStates:
+) -> None:
     """
     Initial condition for Jablonowski-Williamson test.
     Set jw_baroclinic_amplitude to values larger than 0.01 if you want to run
@@ -92,9 +86,25 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
 
-    metrics = testcases_utils.extract_metrics(metrics_field_source)
-    geometry = testcases_utils.extract_geometry(geometry_field_source)
-    interp = testcases_utils.extract_interpolation(interpolation_field_source)
+    geometry = static_fields.geometry
+    metrics = static_fields.metrics
+    cell_lat = geometry.get(geometry_meta.CELL_LAT).ndarray
+    edge_lat = geometry.get(geometry_meta.EDGE_LAT).ndarray
+    edge_lon = geometry.get(geometry_meta.EDGE_LON).ndarray
+    primal_normal_x = geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray
+    inv_dual_edge_length = geometry.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}").ndarray
+    edge_cell_distance = geometry.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray
+    primal_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray
+    cell_area = geometry.get(geometry_meta.CELL_AREA).ndarray
+    geopot = phy_const.GRAV * metrics.get(metrics_attributes.Z_MC).ndarray
+    z_ifc = metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
+    exner_ref_mc = metrics.get(metrics_attributes.EXNER_REF_MC).ndarray
+    d_exner_dz_ref_ic = metrics.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
+    theta_ref_mc = metrics.get(metrics_attributes.THETA_REF_MC).ndarray
+    theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
+    wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
+    ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
+    c_lin_e = static_fields.interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 
     p_sfc = config.p_sfc
@@ -111,8 +121,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     num_cells = grid.num_cells
     num_levels = grid.num_levels
 
-    prognostic_state_now = prognostics.initialize_prognostic_state(grid=grid, allocator=allocator)
-    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     eta_v = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
@@ -121,14 +129,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
     theta_v_ndarray = prognostic_state_now.theta_v.ndarray
-    temperature_ndarray = diagnostic_state.temperature.ndarray
-    pressure_ndarray = diagnostic_state.pressure.ndarray
     eta_v_ndarray = eta_v.ndarray
 
-    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
-
-    sin_lat = array_ns.sin(geometry["cell_lat"])
-    cos_lat = array_ns.cos(geometry["cell_lat"])
+    sin_lat = array_ns.sin(cell_lat)
+    cos_lat = array_ns.cos(cell_lat)
     fac1 = ta.wpfloat("1.0") / ta.wpfloat("6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
         cos_lat**2 + ta.wpfloat("1.0") / ta.wpfloat("3.0")
     )
@@ -180,7 +184,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             ) * eta_old * math.pi * u0 / phy_const.RD * sin_etav * array_ns.sqrt(cos_etav) * (
                 ta.wpfloat("2.0") * u0 * fac1 * (cos_etav**1.5) + fac2
             )
-            newton_function = geopot_jw - metrics["geopot"][:, k_index]
+            newton_function = geopot_jw - geopot[:, k_index]
             newton_function_prime = -phy_const.RD / eta_old * temperature_jw
             eta_old = eta_old - newton_function / newton_function_prime
 
@@ -193,15 +197,11 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             / phy_const.RD
             / theta_v_ndarray[:, k_index]
         )
-        pressure_ndarray[:, k_index] = (
-            phy_const.P0REF * exner_ndarray[:, k_index] ** phy_const.CPD_O_RD
-        )
-        temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         in_field=eta_v,
-        coeff=interp["c_lin_e"],
+        coeff=c_lin_e,
         out_field=eta_v_at_edge,
         horizontal_start=zone_idx["end_edge_lateral_boundary_level_2"],
         horizontal_end=zone_idx["end_edge_end"],
@@ -218,9 +218,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         baroclinic_amplitude=jw_baroclinic_amplitude,
         lat_perturbation_center=lat_perturbation_center,
         lon_perturbation_center=lon_perturbation_center,
-        edge_lat=geometry["edge_lat"],
-        edge_lon=geometry["edge_lon"],
-        primal_normal_x=geometry["primal_normal_x"],
+        edge_lat=edge_lat,
+        edge_lon=edge_lon,
+        primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge.ndarray,
     )
     log.info("U2vn computation completed.")
@@ -229,11 +229,11 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
-        z_ifc=metrics["z_ifc"],
-        inv_dual_edge_length=geometry["inv_dual_edge_length"],
-        edge_cell_distance=geometry["edge_cell_distance"],
-        primal_edge_length=geometry["primal_edge_length"],
-        cell_area=geometry["cell_area"],
+        z_ifc=z_ifc,
+        inv_dual_edge_length=inv_dual_edge_length,
+        edge_cell_distance=edge_cell_distance,
+        primal_edge_length=primal_edge_length,
+        cell_area=cell_area,
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
@@ -244,25 +244,12 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         rho=rho_ndarray,
         exner=exner_ndarray,
         theta_v=theta_v_ndarray,
-        exner_ref_mc=metrics["exner_ref_mc"],
-        d_exner_dz_ref_ic=metrics["d_exner_dz_ref_ic"],
-        theta_ref_mc=metrics["theta_ref_mc"],
-        theta_ref_ic=metrics["theta_ref_ic"],
-        wgtfac_c=metrics["wgtfac_c"],
-        ddqz_z_half=metrics["ddqz_z_half"],
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
-
-    return testcases_utils.assemble_driver_states(
-        grid=grid,
-        allocator=allocator,
-        backend=backend,
-        exchange=exchange,
-        interpolation=interp,
-        zone_indices_map=zone_idx,
-        metrics_field_source=metrics_field_source,
-        prognostic_state_now=prognostic_state_now,
-        diagnostic_state=diagnostic_state,
-        experiment_config=experiment_config,
-    )

@@ -33,7 +33,10 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -81,7 +84,7 @@ class Icon4pyDriver:
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
-            vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
+            vertical_params=self.static_field_factories.metrics._vertical_grid,
         )
 
     @functools.cached_property
@@ -517,10 +520,10 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.driver.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry_field_source.get(
+            cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
             ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
+            cell_thickness_ndarray = self.static_field_factories.metrics.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
             local_mass = (
@@ -659,16 +662,33 @@ def run_driver(
         process_props=process_props,
         backend=backend,
     )
-    ds = initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        experiment_config=icon4py_driver.config,
+    allocator = model_backends.get_allocator(backend)
+    prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
+        allocator=allocator,
+        ntracer=icon4py_driver.config.driver.ntracer,
+    )
+    initial_condition.create(
+        config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
-        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+        grid=icon4py_driver.grid,
+        static_fields=icon4py_driver.static_field_factories,
+        prognostic_state_now=prognostic_state_now,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+    )
+    diagnostic_state = diagnostics.initialize_diagnostic_state(
+        grid=icon4py_driver.grid, allocator=allocator
+    )
+    ds = driver_states.assemble_driver_states(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
+        backend=icon4py_driver.backend,
+        exchange=icon4py_driver.exchange,
+        static_fields=icon4py_driver.static_field_factories,
+        prognostic_state_now=prognostic_state_now,
+        diagnostic_state=diagnostic_state,
+        experiment_config=icon4py_driver.config,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,
