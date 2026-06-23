@@ -6,13 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import datetime
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import main
+from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -34,8 +36,8 @@ from ..fixtures import *  # noqa: F403
             2,
             5,
             "2008-09-01T00:00:00.000",
-            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
-            "2008-09-01T00:15:00.000",  # TODO (jcanton) restore 1-timestep dates in https://github.com/C2SM/icon4py/pull/1304
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
             False,
             False,
         ),
@@ -60,20 +62,37 @@ def test_standalone_driver(
     *,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
+    backend: gtx_typing.Backend,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
+    allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    ds, _ = main.main(
+    config = driver_config.read_config(config_file_path)
+    config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / "ci_driver_output",
+            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
+                tzinfo=datetime.timezone.utc
+            ),
+        }
+    )
+
+    grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        config_file_path=config_file_path,
-        output_path=tmp_path / "ci_driver_output",
-        icon4py_backend=backend_like,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    ds, _ = standalone_driver.run_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
@@ -85,27 +104,25 @@ def test_standalone_driver(
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=5e-4,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=6e-7,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=3e-6,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=8e-9,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
-        atol=2e-7,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=2e-10,
     )
 
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=3e-5,  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+        atol=1e-7,
     )
 
-    test_utils.assert_dallclose(
-        ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=4e-7
-    )  # TODO (jcanton) restore or parameterize tolerances in https://github.com/C2SM/icon4py/pull/1304
+    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
