@@ -16,31 +16,27 @@ import pytest
 from icon4py.model.common.config import options
 
 
-@pytest.fixture
-def full_config_class(request):
-    _ = request
+@dataclasses.dataclass
+class ConfigClass:
+    """A configuration class for testing."""
 
-    @dataclasses.dataclass
-    class ConfigClass:
-        choice: typing.Annotated[
-            int,
-            options.ConfigOption(
-                description="A choice of methods.",
-                icon_equivalent=options.IconOption(name="isomchce", path=("nested_1", "nested_2")),
-            ),
-        ]
-        flag: typing.Annotated[
-            bool,
-            options.ConfigOption(
-                description="A configuration flag.",
-                icon_equivalent=options.IconOption(name="lsomflg", path=(), list_to_value=True),
-            ),
-        ]
-
-    return ConfigClass
+    choice: typing.Annotated[
+        int,
+        options.ConfigOption(
+            description="A choice of methods.",
+            icon_equivalent=options.IconOption(name="isomchce", path=("nested_1", "nested_2")),
+        ),
+    ]
+    flag: typing.Annotated[
+        bool,
+        options.ConfigOption(
+            description="A configuration flag.",
+            icon_equivalent=options.IconOption(name="lsomflg", path=(), list_to_value=True),
+        ),
+    ]
 
 
-def test_config_option_from_annotated_type_hint():
+def test_config_option_from_annotated_type_hint() -> None:
     class TesteeConfig:
         testee: typing.Annotated[int, options.ConfigOption(description="Just for testing.")]
 
@@ -50,7 +46,7 @@ def test_config_option_from_annotated_type_hint():
     assert result
 
 
-def test_config_option_from_unannotated_type_hint_fails():
+def test_config_option_from_unannotated_type_hint_fails() -> None:
     class TesteeConfig:
         testee: int
 
@@ -60,7 +56,7 @@ def test_config_option_from_unannotated_type_hint_fails():
         )
 
 
-def test_config_option_from_wrongly_annotated_type_hint_fails():
+def test_config_option_from_wrongly_annotated_type_hint_fails() -> None:
     class TesteeConfig:
         no_option: typing.Annotated[int, "Just for testing."]
         more_than_one_option: typing.Annotated[
@@ -78,7 +74,7 @@ def test_config_option_from_wrongly_annotated_type_hint_fails():
         )
 
 
-def test_iter_config_options_from_config_class():
+def test_iter_config_options_from_config_class() -> None:
     @dataclasses.dataclass
     class TesteeConfig:
         testee_choice: typing.Annotated[int, options.ConfigOption(description="Just for testing.")]
@@ -90,10 +86,10 @@ def test_iter_config_options_from_config_class():
     assert "testee_flag" in result
 
 
-def test_iter_pairs_from_icon(full_config_class):
+def test_iter_pairs_from_icon() -> None:
     result = dict(
         options.iter_pairs_from_icon(
-            config_cls=full_config_class,
+            config_cls=ConfigClass,
             icon_config={
                 "nested_1": {"nested_2": {"isomchce": 42}},
                 "lsomflg": [False, False, False],
@@ -105,9 +101,9 @@ def test_iter_pairs_from_icon(full_config_class):
     assert not result["flag"]
 
 
-def test_construct_config_from_icon(full_config_class):
+def test_construct_config_from_icon() -> None:
     result = options.construct_config_from_icon(
-        config_cls=full_config_class,
+        config_cls=ConfigClass,
         icon_config={"nested_1": {"nested_2": {"isomchce": 42}}, "lsomflg": [False, False, False]},
         overrides={"choice": 43},
     )
