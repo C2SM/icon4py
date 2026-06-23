@@ -60,7 +60,13 @@ ALL_MODEL_MPI_SUBPACKAGES = [
 ]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
-ALL_LEVELS = ["any", "unit", "integration"]
+# Note that ALL_LEVELS does _not_ include "any", even though it's a valid option
+# for --level, because the implicit "all" generates test jobs for "unit" and
+# "integration". We don't want "any", "unit", and "integration" all to be
+# enabled since that would run the same tests in multiple jobs.
+# TODO(msimberg): Revisit this to see if the levels, names, or something else
+# should be changed to simplify this.
+ALL_LEVELS = ["unit", "integration"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 
 
