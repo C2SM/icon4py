@@ -21,6 +21,7 @@ from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.states import tracer_state
 from icon4py.model.standalone_driver import config as driver_config, initial_condition
 from icon4py.model.testing import config
 
@@ -182,6 +183,7 @@ class ExperimentConfig:
     driver: driver_config.DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
+    tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 

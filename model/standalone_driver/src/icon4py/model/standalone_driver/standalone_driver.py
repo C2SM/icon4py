@@ -85,6 +85,7 @@ class Icon4pyDriver:
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
             vertical_params=self.static_field_factories.metrics._vertical_grid,
+            tracer_config=self.config.tracer_config,
         )
 
     @functools.cached_property
@@ -122,8 +123,8 @@ class Icon4pyDriver:
         static diagnostic inputs are fetched directly from the field factories.
         """
         assert self.io_monitor is not None
-        metrics = self.static_field_factories.metrics_field_source
-        interpolation = self.static_field_factories.interpolation_field_source
+        metrics = self.static_field_factories.metrics
+        interpolation = self.static_field_factories.interpolation
         state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
         diagnostic_fields = self._diagnostics_computer.compute(
             prognostic_state,
@@ -258,12 +259,16 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
-            for tracer_idx in range(self.config.driver.ntracer):
+            for tracer_current in prognostic_states.current.tracer.active_fields():
+                tracer_next_field = getattr(prognostic_states.next.tracer, tracer_current.name)
+                assert tracer_next_field is not None, (
+                    f"tracer '{tracer_current.name}' active in current state but missing in next state"
+                )
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
-                    p_tracer_now=prognostic_states.current.tracer[tracer_idx],
-                    p_tracer_new=prognostic_states.next.tracer[tracer_idx],
+                    p_tracer_now=tracer_current.field,
+                    p_tracer_new=tracer_next_field,
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
 
@@ -666,7 +671,7 @@ def run_driver(
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
-        ntracer=icon4py_driver.config.driver.ntracer,
+        tracer_config=icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,

@@ -44,6 +44,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
@@ -515,7 +516,10 @@ def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
+    tracer_config: TracerConfig | None = None,
 ) -> None:
+    if tracer_config is None:
+        tracer_config = TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")
@@ -533,7 +537,7 @@ def display_driver_setup_in_log_file(
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
     log.info(f"Statistics enabled     : {config.enable_statistics_output}")
-    log.info(f"Number of tracers      : {config.ntracer}")
+    log.info(f"Active tracers         : {tracer_config}")
     log.info("")
 
     log.info("==== Vertical Grid Parameters ====")
