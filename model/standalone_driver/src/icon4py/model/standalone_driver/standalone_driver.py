@@ -10,6 +10,7 @@ import dataclasses
 import datetime
 import functools
 import logging
+import pathlib
 import types
 from collections.abc import Callable
 
@@ -29,12 +30,18 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
+from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_constants,
+    driver_io,
     driver_states,
     driver_utils,
     initial_condition,
@@ -57,8 +64,10 @@ class Icon4pyDriver:
         vertical_grid_config: v_grid.VerticalGridConfig,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
+        io_monitor: common_io.IOMonitor | None = None,
     ):
         self.config = config
+        self.io_monitor = io_monitor
         self.backend = backend
         self.grid = grid
         self.decomposition_info = decomposition_info
@@ -75,7 +84,7 @@ class Icon4pyDriver:
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
-            vertical_params=self.static_field_factories.metrics_field_source._vertical_grid,
+            vertical_params=self.static_field_factories.metrics._vertical_grid,
             tracer_config=self.config.tracer_config,
         )
 
@@ -97,6 +106,35 @@ class Icon4pyDriver:
     def _full_name(self, func: Callable) -> str:
         return f"{self.__class__.__name__}:{func.__name__}"
 
+    @functools.cached_property
+    def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
+        """Reuses its scratch/output buffers across output steps (allocated once)."""
+        return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
+
+    def _store_output(
+        self,
+        prognostic_state: prognostics.PrognosticState,
+        simulation_current_datetime: driver_config.AbsoluteTime,
+    ) -> None:
+        """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
+
+        The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
+        so they must be written here and now -- before the next step mutates the state. The
+        static diagnostic inputs are fetched directly from the field factories.
+        """
+        assert self.io_monitor is not None
+        metrics = self.static_field_factories.metrics_field_source
+        interpolation = self.static_field_factories.interpolation_field_source
+        state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+        diagnostic_fields = self._diagnostics_computer.compute(
+            prognostic_state,
+            ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
+            rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
+            rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+        )
+        state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        self.io_monitor.store(state_to_store, simulation_current_datetime)
+
     def time_integration(
         self,
         ds: driver_states.DriverStates,
@@ -117,39 +155,54 @@ class Icon4pyDriver:
 
         wall_clock_starting_time = datetime.datetime.now()
 
-        for time_step in range(self.model_time_variables.n_time_steps):
-            if self.config.driver.profiling_stats is not None:
-                if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
-                    gtx_config.COLLECT_METRICS_LEVEL = (
-                        self.config.driver.profiling_stats.gt4py_metrics_level
+        try:  # fail gracefully and close `io_monitor` if something goes wrong
+            if self.io_monitor is not None:
+                # write the initial state; the simulation datetime is still the start here
+                # (it is advanced below, per step)
+                self._store_output(
+                    prognostic_states.current, self.model_time_variables.simulation_current_datetime
+                )
+
+            for time_step in range(self.model_time_variables.n_time_steps):
+                if self.config.driver.profiling_stats is not None:
+                    if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
+                        gtx_config.COLLECT_METRICS_LEVEL = (
+                            self.config.driver.profiling_stats.gt4py_metrics_level
+                        )
+
+                log.info(
+                    f"\n"
+                    f"simulation date : {self.model_time_variables.simulation_current_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
+                    f"\n"
+                )
+
+                self.model_time_variables.advance_simulation_datetime()
+
+                self._integrate_one_time_step(
+                    diffusion_diagnostic_state=diffusion_diagnostic_state,
+                    solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+                    tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
+                    prognostic_states=prognostic_states,
+                    prep_adv=prep_adv,
+                    do_prep_adv=do_prep_adv,
+                    tracer_prep_adv=tracer_prep_adv,
+                )
+                device_utils.sync(self.backend)
+
+                self.model_time_variables.is_first_step_in_simulation = False
+
+                if self.config.nonhydrostatic is not None:
+                    assert solve_nonhydro_diagnostic_state is not None
+                    self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
+
+                if self.io_monitor is not None:
+                    self._store_output(
+                        prognostic_states.current,
+                        self.model_time_variables.simulation_current_datetime,
                     )
-
-            log.info(
-                f"\n"
-                f"simulation date : {self.model_time_variables.simulation_current_datetime}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
-                f"\n"
-            )
-
-            self.model_time_variables.advance_simulation_datetime()
-
-            self._integrate_one_time_step(
-                diffusion_diagnostic_state=diffusion_diagnostic_state,
-                solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-                tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
-                prognostic_states=prognostic_states,
-                prep_adv=prep_adv,
-                do_prep_adv=do_prep_adv,
-                tracer_prep_adv=tracer_prep_adv,
-            )
-            device_utils.sync(self.backend)
-
-            self.model_time_variables.is_first_step_in_simulation = False
-
-            if self.config.nonhydrostatic is not None:
-                assert solve_nonhydro_diagnostic_state is not None
-                self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
-
-            # TODO(OngChia): simple IO enough for JW test
+        finally:
+            if self.io_monitor is not None:
+                self.io_monitor.close()
 
         self._compute_mean_at_final_time_step(prognostic_states.current)
 
@@ -472,10 +525,10 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.driver.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry_field_source.get(
+            cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
             ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
+            cell_thickness_ndarray = self.static_field_factories.metrics.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
             local_mass = (
@@ -568,6 +621,23 @@ def initialize_driver(
         ),
         backend=backend,
     )
+    io_monitor = None
+    if config.driver.enable_output:
+        if process_props.comm_size > 1:
+            # IO is single-node only for now: under MPI every rank would construct its own
+            # monitor and write overlapping files. Disable until IO becomes distributed.
+            log.warning("output is not supported in distributed (MPI) runs yet: disabling IO")
+        else:
+            log.info("Initializing single-node IO monitor")
+            io_monitor = driver_io.create_io_monitor(
+                output_path=config.driver.output_path,
+                grid_file_path=pathlib.Path(grid_manager.file_path),
+                grid=grid_manager.grid,
+                vertical_grid=vertical_grid,
+                dtime=config.driver.dtime,
+                process_props=process_props,
+            )
+
     icon4py_driver = Icon4pyDriver(
         config=config,
         backend=backend,
@@ -578,6 +648,7 @@ def initialize_driver(
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,
+        io_monitor=io_monitor,
     )
 
     return icon4py_driver
@@ -596,16 +667,33 @@ def run_driver(
         process_props=process_props,
         backend=backend,
     )
-    ds = initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        experiment_config=icon4py_driver.config,
+    allocator = model_backends.get_allocator(backend)
+    prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
+        allocator=allocator,
+        tracer_config=icon4py_driver.config.tracer_config,
+    )
+    initial_condition.create(
+        config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
-        geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
-        interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
-        metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
+        grid=icon4py_driver.grid,
+        static_fields=icon4py_driver.static_field_factories,
+        prognostic_state_now=prognostic_state_now,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+    )
+    diagnostic_state = diagnostics.initialize_diagnostic_state(
+        grid=icon4py_driver.grid, allocator=allocator
+    )
+    ds = driver_states.assemble_driver_states(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
+        backend=icon4py_driver.backend,
+        exchange=icon4py_driver.exchange,
+        static_fields=icon4py_driver.static_field_factories,
+        prognostic_state_now=prognostic_state_now,
+        diagnostic_state=diagnostic_state,
+        experiment_config=icon4py_driver.config,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

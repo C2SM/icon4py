@@ -30,6 +30,7 @@ from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import initial_condition
+from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
 
 
 log = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ class DriverConfig:
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
+    enable_output: bool = False
 
     @classmethod
     def from_fortran_dict(
@@ -189,6 +191,14 @@ def read_config(
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
+
+    if not do_tracer_advection and isinstance(
+        initial_condition_config.config, from_file_ic.FromFileConfig
+    ):
+        initial_condition_config = dataclasses.replace(
+            initial_condition_config,
+            config=dataclasses.replace(initial_condition_config.config, ntracer=0),
+        )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
     driver_cfg = DriverConfig.from_fortran_dict(

@@ -217,9 +217,9 @@ def initialize_granules(
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
 ) -> Granules:
-    geometry_field_source = static_field_factories.geometry_field_source
-    interpolation_field_source = static_field_factories.interpolation_field_source
-    metrics_field_source = static_field_factories.metrics_field_source
+    geometry_field_source = static_field_factories.geometry
+    interpolation_field_source = static_field_factories.interpolation
+    metrics_field_source = static_field_factories.metrics
 
     log.info("creating cell geometry")
     cell_geometry = grid_states.CellParams(
