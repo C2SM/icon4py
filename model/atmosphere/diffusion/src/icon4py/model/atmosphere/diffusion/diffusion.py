@@ -699,7 +699,7 @@ class Diffusion:
         self.init_diffusion_local_fields_for_regular_timestep = setup_program(
             backend=backend,
             program=init_diffusion_local_fields_for_regular_timestep,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
 
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -713,7 +713,7 @@ class Diffusion:
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
         setup_program(
             backend=backend,

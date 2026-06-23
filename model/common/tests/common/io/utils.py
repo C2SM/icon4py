@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Iterator
+
 import numpy as np
 import xarray as xr
 
@@ -27,7 +29,7 @@ global_grid = grid_utils.get_grid_manager_from_identifier(
     definitions.Experiments.EXCLAIM_APE.grid,
     num_levels=60,
     keep_skip_values=True,
-    allocator=backend,
+    allocator=backend,  # type: ignore[arg-type]  # None selects the embedded backend
 ).grid
 
 
@@ -47,19 +49,19 @@ def model_state(grid: base.Grid) -> dict[str, xr.DataArray]:
         "theta_v": utils.to_data_array(
             theta_v,
             data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
-            is_on_interface=False,
+            is_on_half_levels=False,
         ),
         "upward_air_velocity": utils.to_data_array(
             w,
             data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
-            is_on_interface=True,
+            is_on_half_levels=True,
         ),
         "normal_velocity": utils.to_data_array(
-            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_interface=False
+            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_half_levels=False
         ),
     }
 
 
-def state_values() -> xr.DataArray:
+def state_values() -> Iterator[xr.DataArray]:
     state = model_state(simple_grid)
     yield from state.values()

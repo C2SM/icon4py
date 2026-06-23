@@ -40,9 +40,7 @@ def test_create_single_node_runtime_without_mpi(process_props):  # fixture
 def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
     grid = simple.simple_grid()
     neighbor_tables = {
-        k: v.ndarray
-        for k, v in grid.connectivities.items()
-        if gtx_common.is_neighbor_connectivity(v)
+        k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     return neighbor_tables
 

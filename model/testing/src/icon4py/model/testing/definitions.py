@@ -13,7 +13,7 @@ import dataclasses
 import pathlib
 from typing import TYPE_CHECKING, Any, Final
 
-from icon4py.model.atmosphere.advection import advection
+from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
@@ -21,6 +21,7 @@ from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.states import tracer_state
 from icon4py.model.standalone_driver import config as driver_config, initial_condition
 from icon4py.model.testing import config
 
@@ -178,12 +179,13 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
-    advection: advection.AdvectionConfig
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: driver_config.DriverConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
+    diffusion: diffusion.DiffusionConfig | None = None
+    tracer_config: tracer_state.TracerConfig | None = None
+    tracer_advection: tracer_advection.AdvectionConfig | None = None
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}

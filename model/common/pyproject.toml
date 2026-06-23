@@ -27,7 +27,7 @@ classifiers = [
 ]
 dependencies = [
   'array-api-compat>=1.13.0',
-  'gt4py==1.1.10',
+  'gt4py==1.1.11',
   'packaging>=20.0',
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
@@ -45,7 +45,7 @@ version = "0.2.0"
 all = ["icon4py-common[distributed,io]"]
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 cuda13 = ['cupy-cuda13x>=14.0', 'gt4py[cuda13]']
-distributed = ["ghex>=0.5.1", "mpi4py>=3.1.5"]
+distributed = ["ghex>=0.7.0", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
   "cartopy>=0.22.0",

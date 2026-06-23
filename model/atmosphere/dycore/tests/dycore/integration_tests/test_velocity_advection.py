@@ -501,7 +501,6 @@ def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positi
             "E2V": icon_grid.get_connectivity("E2V"),
             "V2C": icon_grid.get_connectivity("V2C"),
             "E2C2E": icon_grid.get_connectivity("E2C2E"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -647,7 +646,6 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
             "V2C": icon_grid.get_connectivity("V2C"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2V": icon_grid.get_connectivity("E2V"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -798,7 +796,6 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
             "V2C": icon_grid.get_connectivity("V2C"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2V": icon_grid.get_connectivity("E2V"),
-            "Koff": dims.KDim,
         },
     )
 
@@ -926,7 +923,6 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "C2E": icon_grid.get_connectivity("C2E"),
-            "Koff": dims.KDim,
         },
     )
 
