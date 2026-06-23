@@ -27,7 +27,7 @@ from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states.tracer_state import TracerConfig
+from icon4py.model.common.states import tracer_state
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import initial_condition
 
@@ -171,6 +171,10 @@ def read_config(
         if do_tracer_advection
         else None
     )
+    ntracer = (
+        fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
+    )
+    tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
@@ -187,16 +191,11 @@ def read_config(
     )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
-    ntracer = (
-        fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
-    )
     driver_cfg = DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
     )
-
-    tracer_config = TracerConfig.from_ntracer(ntracer)
 
     return ExperimentConfig(
         metrics=metrics_config,
