@@ -13,11 +13,11 @@ import datetime
 import json
 import logging
 import pathlib
-from typing import Any
+from typing import Any, TypeAlias
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
-from icon4py.model.atmosphere.advection import advection
+from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
@@ -29,9 +29,16 @@ from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import initial_condition
+from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
 
 
 log = logging.getLogger(__name__)
+
+
+RelativeTime: TypeAlias = datetime.timedelta
+AbsoluteTime: TypeAlias = datetime.datetime
+NumTimeSteps: TypeAlias = int
+EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
 @dataclasses.dataclass
@@ -51,14 +58,16 @@ class DriverConfig:
 
     experiment_name: str
     profiling_stats: ProfilingStats | None
-    dtime: datetime.timedelta
-    start_date: datetime.datetime
-    end_date: datetime.datetime
+    dtime: RelativeTime
+    start_of_simulation: AbsoluteTime
+    end_of_simulation: EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
+    #: write the prognostic + diagnostic fields to NetCDF/UGRID output (single node only).
+    enable_output: bool = False
     ntracer: int = 0
 
     @classmethod
@@ -70,36 +79,52 @@ class DriverConfig:
         master_time_control_nml = master_dict["master_time_control_nml"]
         master_model_nml = master_dict["master_model_nml"]
         dtime = run_nml["dtime"]
-        start_date_str = master_time_control_nml["experimentstartdate"]
-        end_date_str = master_time_control_nml["experimentstopdate"]
+        start_datetime_str = master_time_control_nml["experimentstartdate"]
+        end_datetime_str = master_time_control_nml["experimentstopdate"]
         return cls(
             experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=datetime.timedelta(seconds=dtime),
-            start_date=datetime.datetime.fromisoformat(start_date_str.replace("Z", "+00:00")),
-            end_date=datetime.datetime.fromisoformat(end_date_str.replace("Z", "+00:00")),
-            apply_extra_second_order_divdamp=nonhydrostatic_nml["lextra_diffu"],
+            start_of_simulation=datetime.datetime.fromisoformat(
+                start_datetime_str.replace("Z", "+00:00")
+            ),
+            end_of_simulation=datetime.datetime.fromisoformat(
+                end_datetime_str.replace("Z", "+00:00")
+            ),
+            # apply_extra_second_order_divdamp does not have a namelist
+            # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
+            # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
+            apply_extra_second_order_divdamp=not run_nml.get("ltestcase", False),
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
-            ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
             **overrides,
         )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ExperimentConfig:
     # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
-    advection: advection.AdvectionConfig
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
+    diffusion: diffusion.DiffusionConfig | None = None
+    tracer_advection: tracer_advection.AdvectionConfig | None = None
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+
+    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
+        replacements: dict[str, Any] = {}
+        for key, value in overrides.items():
+            current = getattr(self, key)
+            if isinstance(value, dict):
+                replacements[key] = dataclasses.replace(current, **value)
+            else:
+                replacements[key] = value
+        return dataclasses.replace(self, **replacements)
 
 
 def read_config(
@@ -130,34 +155,55 @@ def read_config(
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    advection_config = advection.AdvectionConfig()
-    if not (
-        "exclaim_ch_r04b09_dsl" in config_file_path.name
-        or "exclaim_ape_R02B04" in config_file_path.name
-    ):
-        # The experiments above were run in fortran with an advection scheme
-        # that has not been ported to ICON4Py and can therefore not be used for
-        # testing.
-        # TODO (jcanton): implement a more robust solution for this exception
-        # and remove AdvectionConfig defaults
-        advection_config = advection.AdvectionConfig.from_fortran_dict(atm_dict)
-
     diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
         max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+    do_tracer_advection = not (
+        "exclaim_ch_r04b09_dsl" in config_file_path.name
+        or "exclaim_ape_R02B04" in config_file_path.name
+    )
+    # The experiments above were run in fortran with a tracer advection scheme
+    # that has not been ported to ICON4Py and can not be used for testing.
+    # TODO (jcanton): this isn't the right place to keep a special case
+    # handling. Either fix these experiments or move the special case handling.
+    tracer_advection_config = (
+        tracer_advection.AdvectionConfig.from_fortran_dict(atm_dict)
+        if do_tracer_advection
+        else None
+    )
+
+    do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
+    # If these two namelists are missing it means that the experiment was run
+    # without microphysics and we have to skip parsing the graupel config which
+    # relies on some of these parameters.
+    graupel_config = (
+        graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
+        if do_physics
+        else None
+    )
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
+
+    if not do_tracer_advection and isinstance(
+        initial_condition_config.config, from_file_ic.FromFileConfig
+    ):
+        initial_condition_config = dataclasses.replace(
+            initial_condition_config,
+            config=dataclasses.replace(initial_condition_config.config, ntracer=0),
+        )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
     driver_cfg = DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
+        ntracer=fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"])
+        if do_tracer_advection
+        else 0,
     )
 
     return ExperimentConfig(
@@ -167,7 +213,7 @@ def read_config(
         topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
-        advection=advection_config,
+        tracer_advection=tracer_advection_config,
         graupel=graupel_config,
         initial_condition=initial_condition_config,
         driver=driver_cfg,

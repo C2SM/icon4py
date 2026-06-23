@@ -32,6 +32,9 @@ class OptionalMetaData(TypedDict, total=False):
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+    #: whether the vertical dimension of the field lives on interface (half) levels
+    #: rather than full levels
+    is_on_half_levels: bool
     #: physics-component output category: "tendency" applied as field += val*dt; "diagnostic" stored unscaled
     kind: Literal["tendency", "diagnostic"]
 
