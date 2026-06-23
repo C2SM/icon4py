@@ -65,6 +65,8 @@ class DriverConfig:
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
+    #: write the prognostic + diagnostic fields to NetCDF/UGRID output (single node only).
+    enable_output: bool = False
     ntracer: int = 0
 
     @classmethod
