@@ -34,7 +34,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit or integration tests, mostly applicable where both are available",
+        "level(name): marks test as unit or integration tests. tests without this marker are implicitly treated as 'unit'.",
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
@@ -116,7 +116,7 @@ def pytest_addoption(parser: pytest.Parser):
             "--level",
             action="store",
             choices=_TEST_LEVELS,
-            help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
+            help="Set level (unit, integration) of the tests to run. Tests without a level marker are implicitly 'unit'. Defaults to 'any'.",
             default="any",
         )
     with contextlib.suppress(ValueError):
@@ -134,7 +134,8 @@ def pytest_collection_modifyitems(config, items):
     if test_level == "any":
         return
     for item in items:
-        if (marker := item.get_closest_marker("level")) is not None:
+        marker = item.get_closest_marker("level")
+        if marker is not None:
             assert all(level in _TEST_LEVELS for level in marker.args), (
                 f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             )
@@ -144,6 +145,12 @@ def pytest_collection_modifyitems(config, items):
                         reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
                     )
                 )
+        elif test_level != "unit":
+            item.add_marker(
+                pytest.mark.skip(
+                    reason=f"Selected level '{test_level}' does not match the implicit level 'unit' for this test."
+                )
+            )
 
 
 @pytest.hookimpl(trylast=True)
