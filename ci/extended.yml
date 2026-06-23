@@ -5,7 +5,7 @@ variables:
   MODEL_SUBPACKAGES: "standalone_driver"
   MODEL_MPI_SUBPACKAGES: "standalone_driver"
   BACKENDS: "dace_cpu:gtfn_cpu"
-  LEVELS: "extended"
+  LEVELS: "validation"
   MODEL_MPI_SUBSETS: "datatest"
   SESSION: "mpi"
 

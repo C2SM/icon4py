@@ -80,8 +80,8 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-@pytest.mark.level("extended")
-def test_standalone_driver_compare_single_multi_rank_extended(  # noqa: PLR0917 [too-many-positional-arguments]
+@pytest.mark.level("validation")
+def test_standalone_driver_compare_single_multi_rank_validation(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: driver_config.EndOfSimulation,

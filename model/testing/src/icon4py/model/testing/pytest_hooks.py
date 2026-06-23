@@ -25,7 +25,7 @@ __all__ = [
     "pytest_sessionfinish",
 ]
 
-_TEST_LEVELS = ("any", "unit", "integration", "extended")
+_TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
 def pytest_configure(config):
@@ -35,7 +35,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit, integration, or extended tests. extended tests are excluded by default and must be explicitly requested with --level=extended",
+        "level(name): marks test as unit, integration, or validation tests. validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
@@ -100,7 +100,7 @@ def pytest_addoption(parser: pytest.Parser):
             "--level",
             action="store",
             choices=_TEST_LEVELS,
-            help="Set level (unit, integration, extended) of the tests to run. Defaults to 'any', which excludes extended tests.",
+            help="Set level (unit, integration, validation) of the tests to run. Defaults to 'any', which excludes validation tests.",
             default="any",
         )
     with contextlib.suppress(ValueError):
@@ -138,11 +138,11 @@ def pytest_collection_modifyitems(config, items):
                 f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             )
             if test_level == "any":
-                # Default mode: run unit and integration, but exclude extended tests
-                if "extended" in marker.args:
+                # Default mode: run unit and integration, but exclude validation tests
+                if "validation" in marker.args:
                     item.add_marker(
                         pytest.mark.skip(
-                            reason="Extended tests must be explicitly requested with --level=extended."
+                            reason="Validation tests must be explicitly requested with --level=validation."
                         )
                     )
             elif test_level not in marker.args:

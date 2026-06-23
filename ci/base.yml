@@ -131,7 +131,7 @@ variables:
       if [ -n "${LEVEL:-}" ]; then PYTEST_ARGS="$PYTEST_ARGS --level=$LEVEL"; fi
       nox -s "test_model-${PYVERSION_SHORT}($LEVEL, $MODEL_SUBSET, $MODEL_SUBPACKAGE)" -- $PYTEST_ARGS
   rules:
-    - if: $LEVEL == 'extended'
+    - if: $LEVEL == 'validation'
       variables:
         SLURM_TIMELIMIT: "2:00:00"
         SLURM_PARTITION: "normal"
@@ -159,7 +159,7 @@ variables:
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $LEVEL == 'extended'
+    - if: $LEVEL == 'validation'
       variables:
         SLURM_TIMELIMIT: "4:00:00"
         SLURM_PARTITION: "normal"

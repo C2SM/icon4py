@@ -60,7 +60,7 @@ TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
-TestLevel: TypeAlias = Literal["any", "unit", "integration", "extended"]
+TestLevel: TypeAlias = Literal["any", "unit", "integration", "validation"]
 TEST_LEVELS: Final[Sequence[nox.Param]] = [nox.param(arg, id=arg) for arg in TestLevel.__args__]
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`

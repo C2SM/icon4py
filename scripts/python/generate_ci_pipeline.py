@@ -60,7 +60,7 @@ ALL_MODEL_MPI_SUBPACKAGES = [
 ]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
-ALL_LEVELS = ["any", "unit", "integration", "extended"]
+ALL_LEVELS = ["any", "unit", "integration", "validation"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 
 
