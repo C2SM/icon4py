@@ -50,10 +50,10 @@ variables:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/docker/venv.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE"]'
     CSCS_REBUILD_POLICY: if-not-exists
 
-build_venv_aarch64:
+.build_venv_aarch64:
   extends: [.container-builder-cscs-gh200, .build_venv]
   needs: [build_baseimage_aarch64]
 
