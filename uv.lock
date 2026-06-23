@@ -1570,9 +1570,8 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/c3/f8/2401889078017475ce1293af212b76cfdb8a5771ece179851d441ef363f3/dace-2.0.0a3.tar.gz", hash = "sha256:94cbaac4b1f4ef312d24f4151b0905a0e6292a9cfdf9c8b643dabdb2e95b02fa", size = 6005767, upload-time = "2026-05-11T14:49:16.021Z"}
-source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a3"
+source = {git = "https://github.com/spcl/dace?branch=main#853d8b5bf20b3bb413b08d593f3d3f439e03549d"}
+version = "2.0.0a4"
 
 [[package]]
 dependencies = [
@@ -2200,12 +2199,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/31/ac/b44c6e62b282d601921d51a45cf32fceeb907b12c84b9534d38eb0e4aaee/gt4py-1.1.11.tar.gz", hash = "sha256:82a8eccc1e3a16e6661357361613b01424a32fae8bc93bf214cc208163ffabb8", size = 835514, upload-time = "2026-06-18T19:15:08.064Z"}
-source = {registry = "https://pypi.org/simple"}
-version = "1.1.11"
-wheels = [
-  {url = "https://files.pythonhosted.org/packages/63/51/5322b424cb806901898f8aad026ae6a817b5cb6cae5f5df05e46ace250de/gt4py-1.1.11-py3-none-any.whl", hash = "sha256:1c4dbc80d490f5df0527bcb704c1b718e4603ef34b852d5e0da46ed44fec0817", size = 1050945, upload-time = "2026-06-18T19:15:06.331Z"}
-]
+source = {git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic#504b95f24558f67c41a75678853bf6b63df4aa5f"}
+version = "1.1.11+unknown.version.details"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2605,7 +2600,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2622,7 +2617,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2639,7 +2634,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2656,7 +2651,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2675,7 +2670,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2707,10 +2702,10 @@ requires-dist = [
   {name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.1.11"},
-  {name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
+  {name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2762,10 +2757,10 @@ requires-dist = [
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
-  {name = "gt4py", specifier = "==1.1.11"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
-  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
+  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0"},
   {name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common"},
   {name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5"},
@@ -2853,7 +2848,7 @@ version = "0.2.0"
 requires-dist = [
   {name = "click", specifier = ">=8.0.1"},
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", editable = "model/common"},
@@ -2881,7 +2876,7 @@ version = "0.2.0"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
@@ -2911,7 +2906,7 @@ version = "0.2.0"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2945,7 +2940,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dev-toolchain_deterministic"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
