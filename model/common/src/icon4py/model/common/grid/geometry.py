@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+import math
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
@@ -182,6 +183,57 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(input_fields_provider)
         self._register_computed_fields()
 
+    def _compute_analytical_means(self) -> dict[str, float] | None:
+        """Compute mean geometry values analytically from grid parameters.
+
+        For regular grids (global icosahedron and torus) the mean cell area,
+        edge length and their dual counterparts can be computed directly from
+        the grid parameters, avoiding non-deterministic global reductions.
+
+        Returns:
+            A dictionary of scalar mean values, or None if analytical
+            computation is not possible (e.g. limited-area grids).
+        """
+        grid_params = self._grid.grid_params
+        geometry_type = self._geometry_type
+
+        if geometry_type == icon.GeometryType.ICOSAHEDRON:
+            if self._grid.config.limited_area:
+                return None
+            subdivision = grid_params.subdivision
+            if subdivision is None:
+                return None
+            radius = grid_params.radius
+            if radius is None:
+                return None
+            root = subdivision.root
+            level = subdivision.level
+            num_cells = 20 * root**2 * 4**level
+            num_vertices = num_cells // 2 + 2
+            mean_cell_area = 4.0 * math.pi * radius**2 / num_cells
+            mean_dual_area = 4.0 * math.pi * radius**2 / num_vertices
+            mean_edge_length = math.sqrt(4.0 * mean_cell_area / math.sqrt(3.0))
+            mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
+        elif geometry_type == icon.GeometryType.TORUS:
+            domain_length = grid_params.domain_length
+            domain_height = grid_params.domain_height
+            if domain_length is None or domain_height is None:
+                return None
+            num_cells = self._grid.num_cells
+            mean_cell_area = domain_length * domain_height / num_cells
+            mean_dual_area = 2.0 * mean_cell_area
+            mean_edge_length = math.sqrt(4.0 * mean_cell_area / math.sqrt(3.0))
+            mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
+        else:
+            return None
+
+        return {
+            attrs.MEAN_CELL_AREA: mean_cell_area,
+            attrs.MEAN_DUAL_AREA: mean_dual_area,
+            attrs.MEAN_EDGE_LENGTH: mean_edge_length,
+            attrs.MEAN_DUAL_EDGE_LENGTH: mean_dual_edge_length,
+        }
+
     def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
@@ -314,45 +366,50 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(edge_areas)
 
-        mean_edge_length_np = factory.NumpyDataProvider(
-            func=self._global_reductions.mean,
-            domain=(),
-            deps={
-                "buffer": attrs.EDGE_LENGTH,
-            },
-            fields=(attrs.MEAN_EDGE_LENGTH,),
-        )
-        self.register_provider(mean_edge_length_np)
+        analytical_means = self._compute_analytical_means()
+        if analytical_means is not None:
+            mean_provider = factory.PrecomputedFieldProvider(analytical_means)
+            self.register_provider(mean_provider)
+        else:
+            mean_edge_length_np = factory.NumpyDataProvider(
+                func=self._global_reductions.mean,
+                domain=(),
+                deps={
+                    "buffer": attrs.EDGE_LENGTH,
+                },
+                fields=(attrs.MEAN_EDGE_LENGTH,),
+            )
+            self.register_provider(mean_edge_length_np)
 
-        mean_dual_edge_length_np = factory.NumpyDataProvider(
-            func=self._global_reductions.mean,
-            domain=(),
-            deps={
-                "buffer": attrs.DUAL_EDGE_LENGTH,
-            },
-            fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
-        )
-        self.register_provider(mean_dual_edge_length_np)
+            mean_dual_edge_length_np = factory.NumpyDataProvider(
+                func=self._global_reductions.mean,
+                domain=(),
+                deps={
+                    "buffer": attrs.DUAL_EDGE_LENGTH,
+                },
+                fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
+            )
+            self.register_provider(mean_dual_edge_length_np)
 
-        mean_cell_area_np = factory.NumpyDataProvider(
-            func=self._global_reductions.mean,
-            domain=(),
-            deps={
-                "buffer": attrs.CELL_AREA,
-            },
-            fields=(attrs.MEAN_CELL_AREA,),
-        )
-        self.register_provider(mean_cell_area_np)
+            mean_cell_area_np = factory.NumpyDataProvider(
+                func=self._global_reductions.mean,
+                domain=(),
+                deps={
+                    "buffer": attrs.CELL_AREA,
+                },
+                fields=(attrs.MEAN_CELL_AREA,),
+            )
+            self.register_provider(mean_cell_area_np)
 
-        mean_dual_cell_area_np = factory.NumpyDataProvider(
-            func=self._global_reductions.mean,
-            domain=(),
-            deps={
-                "buffer": attrs.DUAL_AREA,
-            },
-            fields=(attrs.MEAN_DUAL_AREA,),
-        )
-        self.register_provider(mean_dual_cell_area_np)
+            mean_dual_cell_area_np = factory.NumpyDataProvider(
+                func=self._global_reductions.mean,
+                domain=(),
+                deps={
+                    "buffer": attrs.DUAL_AREA,
+                },
+                fields=(attrs.MEAN_DUAL_AREA,),
+            )
+            self.register_provider(mean_dual_cell_area_np)
 
         characteristic_length_np = factory.NumpyDataProvider(
             func=math_utils.compute_sqrt,
