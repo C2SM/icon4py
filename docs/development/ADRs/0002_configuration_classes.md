@@ -80,6 +80,70 @@ class MyModuleConfig:
     ] = 4
 ```
 
+Another possible extension could be decoupling configuration choice enums from fortran ICON equivalents:
+
+```python
+# model.atmosphere.diffusion.diffusion
+# CURRENTLY
+
+
+class DiffusionType(int, enum.Enum):
+    """
+    Order of nabla operator for diffusion.
+
+    Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 5.
+    """
+
+    NO_DIFFUSION = -1  #: no diffusion
+    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
+    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
+    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
+    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+
+
+@dataclasses.dataclass(kw_only=True)
+class DiffusionConfig:
+    ...
+
+    def _validate(self) -> None:
+        """Apply consistency checks and validation on configuration parameters."""
+        if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
+            raise NotImplementedError(
+                "Only diffusion type 5 = `Smagorinsky diffusion with fourth-order background "
+                "diffusion` is implemented"
+            )
+```
+
+This encodes five choices, only one of which is actually implemented. Also, the integer values for each choice are tied to the fortran ICON equivalent. Instead this could become:
+
+```python
+class DiffusionType(int, enum.Enum):
+    SMAGORINSKY_4TH_ORDER = enum.auto()
+
+
+def unkown_icon_diffusion_type(icon_option: common_conf_opt.IconOption, value: int) -> typing.Never:
+    raise NotImplementedError(f"value {icon_diffusion_type} for "{icon_option.name} is not supported in ICON4Py.")
+
+
+@dataclasses.dataclass(kw_only=True)
+class DiffusionConfig:
+
+    diffusion_type: typing.Annotated[
+        DiffusionType,
+        common_conf_opt.ConfigOption(
+            description="Order of Nabla operator for diffusion.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="hdiff_order",
+                path=("diffusion_nml",),
+                value_map={5: DiffusionType.SMAGORINSKY_4TH_ORDER},
+                unmapped_value_callback=unkown_icon_diffusion_type
+            ),
+        ),
+    ] = DiffusionType.SMAGORINSKY_4TH_ORDER
+    ...
+```
+
 ## Consequences
 
 Code for mapping from ICON inputs to ICON4Py configurations can be shared between modules.
