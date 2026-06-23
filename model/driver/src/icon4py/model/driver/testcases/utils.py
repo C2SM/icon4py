@@ -204,8 +204,8 @@ def compute_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_end: gtx.int32,
 ) -> None:
     _compute_perturbed_exner(
-        exner,
-        reference_exner,
+        exner=exner,
+        reference_exner=reference_exner,
         out=perturbed_exner,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

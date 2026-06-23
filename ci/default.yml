@@ -8,15 +8,16 @@ variables:
   # IDs. These are the defaults for the pipeline and don't include all possible
   # jobs. They are meant to be overridden with e.g.
   #
-  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSION=model;MODEL_SUBSETS=datatest
+  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSIONS=model;MODEL_SUBSETS=datatest
+  SESSIONS: "model:model_mpi:tools"
   MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
+  MODEL_SUBSETS: "datatest"
   MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
-  MODEL_SUBSETS: "stencils:datatest"
-  MODEL_MPI_SUBSETS: "basic:datatest"
-  BACKENDS: "dace_gpu"
-  LEVELS: "integration"
-  GRIDS: "simple:icon_regional"
-  SESSION: "model:tools:mpi"
+  MODEL_MPI_SUBSETS: "datatest"
+  BACKENDS: "gtfn_gpu"
+  LEVELS: "unit"
+  GRIDS: "icon_regional"
+  TOOLS_SUBSETS: "unittest"
 
 
 build_baseimage_aarch64:

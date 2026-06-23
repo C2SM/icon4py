@@ -13,7 +13,7 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends, model_options, topography
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -21,9 +21,9 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization import topography
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.topography.analytical import jablonowski_williamson as jw_topo
 
 
 @pytest.fixture(
@@ -107,9 +107,14 @@ def metrics_field_source(
         vct_b=vct_b,
     )
 
-    topo_c = topography.jablonowski_williamson(
-        cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
-        u0=35.0,
+    config = topography.TopographyConfig(
+        config=jw_topo.JablonowskiWilliamsonConfig(),
+    )
+    topo_c = topography.create(
+        config=config,
+        grid_manager=grid_manager,
+        backend=generic_concrete_backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(

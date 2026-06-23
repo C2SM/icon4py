@@ -10,8 +10,8 @@
 
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
-Reads the pipeline variables (SESSION, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
-BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS) or corresponding command-line options
+Reads the pipeline variables (SESSIONS, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
+BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS, TOOLS_SUBSETS) or corresponding command-line options
 and writes a child pipeline that includes ``ci/base.yml`` and instantiates only
 the test jobs whose matrix entries match the requested filter.
 
@@ -37,7 +37,7 @@ import yaml
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
-ALL_SESSIONS = ["model", "tools", "mpi"]
+ALL_SESSIONS = ["model", "model_mpi", "tools"]
 ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 ALL_MODEL_MPI_SUBSETS = ["basic", "datatest"]
 ALL_MODEL_SUBPACKAGES = [
@@ -60,7 +60,14 @@ ALL_MODEL_MPI_SUBPACKAGES = [
 ]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional"]
-ALL_LEVELS = ["any", "unit", "integration", "extended"]
+# Note that ALL_LEVELS does _not_ include "any", even though it's a valid option
+# for --level, because the implicit "all" generates test jobs for "unit" and
+# "integration". We don't want "any", "unit", and "integration" all to be
+# enabled since that would run the same tests in multiple jobs.
+# TODO(msimberg): Revisit this to see if the levels, names, or something else
+# should be changed to simplify this.
+ALL_LEVELS = ["unit", "integration", "extended"]
+ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 
 
 def _parse_list(raw: str | None) -> list[str]:
@@ -85,8 +92,7 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
     """Validate that all tokens are members of valid.
 
     Exits with a descriptive error message and status 1 if any token is not
-    recognised, helping users catch typos early instead of silently producing
-    an empty pipeline.
+    recognised.
     """
     invalid = [t for t in tokens if t not in valid]
     if invalid:
@@ -99,66 +105,99 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
         sys.exit(1)
 
 
-def _resolve_filter(cli_value: str | None, env_var: str, default: str) -> list[str]:
+def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) -> list[str]:
     """Resolve a filter value from CLI arg, env var, or built-in default.
 
     When *cli_value* is provided (including empty string) it takes
-    precedence.  Otherwise the environment variable is consulted,
+    precedence.  Otherwise the environment variable is checked,
     falling back to *default*.
+
+    The token ``all`` expands to the full *default* list.  It must not be
+    combined with other values.
     """
     if cli_value is not None:
-        return _parse_list(cli_value)
-    return _parse_list(os.environ.get(env_var)) or _parse_list(default)
+        tokens = _parse_list(cli_value)
+    else:
+        env_parsed = _parse_list(os.environ.get(env_var))
+        if env_parsed:
+            tokens = env_parsed
+        else:
+            return list(default)
+
+    if "all" in tokens:
+        if len(tokens) > 1:
+            print(
+                f"ERROR: '{env_var}' contains 'all' but also other values. "
+                "Use 'all' alone or list individual values.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        return list(default)
+
+    return tokens
 
 
 def _generate_child_pipeline(
     *,
-    session: str | None = None,
+    sessions: str | None = None,
     model_subsets: str | None = None,
     model_subpackages: str | None = None,
     model_mpi_subpackages: str | None = None,
     model_mpi_subsets: str | None = None,
+    tools_subsets: str | None = None,
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
 ) -> str:
-    """Return the child pipeline YAML as a string."""
-    # Fallback defaults match ci/default.yml pipeline variables.
-    requested_sessions = _resolve_filter(session, "SESSION", "model:tools:mpi")
-    _validate_tokens("SESSION", requested_sessions, ALL_SESSIONS)
+    """Return the child pipeline YAML as a string.
 
-    requested_model_subsets = _resolve_filter(model_subsets, "MODEL_SUBSETS", "stencils:datatest")
+    Each subset is expanded into a separate job definition with a
+    ``parallel:matrix`` for the remaining dimensions.  This keeps
+    every matrix under GitLab's 200-instance limit while producing a
+    clean, grouped pipeline view.
+    """
+    requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
+    _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
+
+    requested_model_subsets = _resolve_filter(
+        model_subsets, "MODEL_SUBSETS", default=ALL_MODEL_SUBSETS
+    )
     _validate_tokens("MODEL_SUBSETS", requested_model_subsets, ALL_MODEL_SUBSETS)
 
     requested_model_subpackages = _resolve_filter(
         model_subpackages,
         "MODEL_SUBPACKAGES",
-        "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver",
+        default=ALL_MODEL_SUBPACKAGES,
     )
     _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
 
     requested_model_mpi_subpackages = _resolve_filter(
         model_mpi_subpackages,
         "MODEL_MPI_SUBPACKAGES",
-        "advection:diffusion:dycore:common:standalone_driver",
+        default=ALL_MODEL_MPI_SUBPACKAGES,
     )
     _validate_tokens(
         "MODEL_MPI_SUBPACKAGES", requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
     )
 
     requested_model_mpi_subsets = _resolve_filter(
-        model_mpi_subsets, "MODEL_MPI_SUBSETS", "basic:datatest"
+        model_mpi_subsets, "MODEL_MPI_SUBSETS", default=ALL_MODEL_MPI_SUBSETS
     )
     _validate_tokens("MODEL_MPI_SUBSETS", requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
 
-    requested_backends = _resolve_filter(backends, "BACKENDS", "dace_gpu")
+    requested_backends = _resolve_filter(backends, "BACKENDS", default=ALL_BACKENDS)
     _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
 
-    requested_levels = _resolve_filter(levels, "LEVELS", "integration")
+    requested_levels = _resolve_filter(levels, "LEVELS", default=ALL_LEVELS)
     _validate_tokens("LEVELS", requested_levels, ALL_LEVELS)
 
-    requested_grids = _resolve_filter(grids, "GRIDS", "simple:icon_regional")
+    requested_grids = _resolve_filter(grids, "GRIDS", default=ALL_GRIDS)
     _validate_tokens("GRIDS", requested_grids, ALL_GRIDS)
+
+    requested_tools_subsets = _resolve_filter(
+        tools_subsets, "TOOLS_SUBSETS", default=ALL_TOOLS_SUBSETS
+    )
+    _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
     pipeline: dict = {
         "include": [{"local": "ci/base.yml"}],
@@ -168,74 +207,76 @@ def _generate_child_pipeline(
         filtered_subpackages = _intersect(requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_subsets = _intersect(requested_model_subsets, ALL_MODEL_SUBSETS)
+        filtered_grids = _intersect(requested_grids, ALL_GRIDS)
+        filtered_levels = _intersect(requested_levels, ALL_LEVELS)
 
-        if filtered_subpackages and filtered_backends and filtered_subsets:
-            matrix: list[dict] = []
-
-            # Stencils subset uses GRID dimension
-            if "stencils" in filtered_subsets:
-                filtered_grids = _intersect(requested_grids, ALL_GRIDS)
-                if filtered_grids:
-                    matrix.append(
+        # Stencils subset uses GRID dimension
+        if "stencils" in filtered_subsets and filtered_grids:
+            pipeline["test_model_stencils_aarch64"] = {
+                "extends": ".test_model_aarch64",
+                "variables": {"MODEL_SUBSET": "stencils"},
+                "parallel": {
+                    "matrix": [
                         {
                             "MODEL_SUBPACKAGE": filtered_subpackages,
-                            "MODEL_SUBSET": ["stencils"],
                             "BACKEND": filtered_backends,
                             "GRID": filtered_grids,
                         }
-                    )
+                    ]
+                },
+            }
 
-            # Datatest and basic subsets need LEVEL dimension
-            level_subsets = [s for s in filtered_subsets if s in ("datatest", "basic")]
-            if level_subsets:
-                filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-                if filtered_levels:
-                    matrix.append(
-                        {
-                            "MODEL_SUBPACKAGE": filtered_subpackages,
-                            "MODEL_SUBSET": level_subsets,
-                            "BACKEND": filtered_backends,
-                            "LEVEL": filtered_levels,
-                        }
-                    )
-
-            if matrix:
-                pipeline["test_model_aarch64"] = {
+        # Datatest and basic subsets need LEVEL dimension
+        for subset in ("datatest", "basic"):
+            if subset in filtered_subsets and filtered_levels:
+                pipeline[f"test_model_{subset}_aarch64"] = {
                     "extends": ".test_model_aarch64",
-                    "parallel": {"matrix": matrix},
+                    "variables": {"MODEL_SUBSET": subset},
+                    "parallel": {
+                        "matrix": [
+                            {
+                                "MODEL_SUBPACKAGE": filtered_subpackages,
+                                "BACKEND": filtered_backends,
+                                "LEVEL": filtered_levels,
+                            }
+                        ]
+                    },
                 }
 
     if "tools" in requested_sessions:
-        pipeline["test_tools_aarch64"] = {
-            "extends": ".test_tools_aarch64",
-            "parallel": {
-                "matrix": [
-                    {"SELECTION": ["datatest", "unittest"]},
-                ]
-            },
-        }
+        filtered_tools_subsets = _intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS)
+        if filtered_tools_subsets:
+            pipeline["test_tools_aarch64"] = {
+                "extends": ".test_tools_aarch64",
+                "parallel": {
+                    "matrix": [
+                        {"SELECTION": filtered_tools_subsets},
+                    ]
+                },
+            }
 
-    if "mpi" in requested_sessions:
+    if "model_mpi" in requested_sessions:
         filtered_subpackages = _intersect(
             requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
         )
         filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
         filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-        filtered_mpi_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
-        if filtered_subpackages and filtered_backends and filtered_levels and filtered_mpi_subsets:
-            pipeline["test_mpi_aarch64"] = {
-                "extends": ".test_mpi_aarch64",
-                "parallel": {
-                    "matrix": [
-                        {
-                            "MODEL_MPI_SUBPACKAGE": filtered_subpackages,
-                            "BACKEND": filtered_backends,
-                            "LEVEL": filtered_levels,
-                            "SELECTION": filtered_mpi_subsets,
-                        }
-                    ]
-                },
-            }
+        filtered_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
+        for subset in filtered_subsets:
+            if filtered_subpackages and filtered_backends and filtered_levels:
+                pipeline[f"test_model_mpi_{subset}_aarch64"] = {
+                    "extends": ".test_model_mpi_aarch64",
+                    "variables": {"SELECTION": subset},
+                    "parallel": {
+                        "matrix": [
+                            {
+                                "MODEL_MPI_SUBPACKAGE": filtered_subpackages,
+                                "BACKEND": filtered_backends,
+                                "LEVEL": filtered_levels,
+                            }
+                        ]
+                    },
+                }
 
     test_jobs = [k for k in pipeline if k != "include"]
     if not test_jobs:
@@ -245,16 +286,16 @@ def _generate_child_pipeline(
         )
         sys.exit(1)
 
-    return yaml.dump(pipeline)
+    return yaml.safe_dump(pipeline)
 
 
 @cli.command()
 def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
-    session: Annotated[
+    sessions: Annotated[
         str | None,
         typer.Option(
-            "--session",
-            help="Colon/comma-separated nox session filter (model, tools, mpi)",
+            "--sessions",
+            help="Colon/comma-separated nox session filter (model, model_mpi, tools)",
         ),
     ] = None,
     model_subpackages: Annotated[
@@ -285,6 +326,13 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             help="Colon/comma-separated model test subset filter (stencils, datatest, basic)",
         ),
     ] = None,
+    tools_subsets: Annotated[
+        str | None,
+        typer.Option(
+            "--tools-subsets",
+            help="Colon/comma-separated tools/b bindings test subset filter (datatest, unittest)",
+        ),
+    ] = None,
     backends: Annotated[
         str | None,
         typer.Option("--backends", help="Colon/comma-separated backend filter"),
@@ -306,11 +354,12 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
     """
     sys.stdout.write(
         _generate_child_pipeline(
-            session=session,
+            sessions=sessions,
             model_subpackages=model_subpackages,
             model_mpi_subpackages=model_mpi_subpackages,
             model_mpi_subsets=model_mpi_subsets,
             model_subsets=model_subsets,
+            tools_subsets=tools_subsets,
             backends=backends,
             levels=levels,
             grids=grids,
