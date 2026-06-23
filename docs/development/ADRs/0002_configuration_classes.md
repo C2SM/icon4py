@@ -7,7 +7,7 @@ tags: [config, fortran, icon]
 - **Status**: valid
 - **Authors**: Rico Häuselmann (@DropD)
 - **Created**: 2026-06-17
-- **Updated**: 2026-06-17
+- **Updated**: 2026-06-23
 
 While making ICON4Py user-configurable, facing code duplication between modules, we decided to provide a standard way to declaratively encode common attributes of configuration options alongside utilities that can then be reused across modules.
 
