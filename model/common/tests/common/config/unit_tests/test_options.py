@@ -1,0 +1,115 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import dataclasses
+import typing
+
+import pytest
+
+from icon4py.model.common.config import options
+
+
+@pytest.fixture
+def full_config_class(request):
+    _ = request
+
+    @dataclasses.dataclass
+    class ConfigClass:
+        choice: typing.Annotated[
+            int,
+            options.ConfigOption(
+                description="A choice of methods.",
+                icon_equivalent=options.IconOption(name="isomchce", path=("nested_1", "nested_2")),
+            ),
+        ]
+        flag: typing.Annotated[
+            bool,
+            options.ConfigOption(
+                description="A configuration flag.",
+                icon_equivalent=options.IconOption(name="lsomflg", path=(), list_to_value=True),
+            ),
+        ]
+
+    return ConfigClass
+
+
+def test_config_option_from_annotated_type_hint():
+    class TesteeConfig:
+        testee: typing.Annotated[int, options.ConfigOption(description="Just for testing.")]
+
+    result = options.ConfigOption.from_type_hint(
+        typing.get_type_hints(TesteeConfig, include_extras=True)["testee"]
+    )
+    assert result
+
+
+def test_config_option_from_unannotated_type_hint_fails():
+    class TesteeConfig:
+        testee: int
+
+    with pytest.raises(options.MissingConfigOptionAnnotationError):
+        options.ConfigOption.from_type_hint(
+            typing.get_type_hints(TesteeConfig, include_extras=True)["testee"]
+        )
+
+
+def test_config_option_from_wrongly_annotated_type_hint_fails():
+    class TesteeConfig:
+        no_option: typing.Annotated[int, "Just for testing."]
+        more_than_one_option: typing.Annotated[
+            bool, options.ConfigOption(description="foo"), options.ConfigOption(description="bar")
+        ]
+
+    with pytest.raises(options.MissingConfigOptionAnnotationError):
+        options.ConfigOption.from_type_hint(
+            typing.get_type_hints(TesteeConfig, include_extras=True)["no_option"]
+        )
+
+    with pytest.raises(options.MultipleOptionAnnotationsError):
+        options.ConfigOption.from_type_hint(
+            typing.get_type_hints(TesteeConfig, include_extras=True)["more_than_one_option"]
+        )
+
+
+def test_iter_config_options_from_config_class():
+    @dataclasses.dataclass
+    class TesteeConfig:
+        testee_choice: typing.Annotated[int, options.ConfigOption(description="Just for testing.")]
+        testee_flag: typing.Annotated[bool, options.ConfigOption(description="Just for testing.")]
+
+    result = dict(options.ConfigOption.iter_from_config_class(TesteeConfig))
+
+    assert "testee_choice" in result
+    assert "testee_flag" in result
+
+
+def test_iter_pairs_from_icon(full_config_class):
+    result = dict(
+        options.iter_pairs_from_icon(
+            config_cls=full_config_class,
+            icon_config={
+                "nested_1": {"nested_2": {"isomchce": 42}},
+                "lsomflg": [False, False, False],
+            },
+        )
+    )
+
+    assert result["choice"] == 42
+    assert not result["flag"]
+
+
+def test_construct_config_from_icon(full_config_class):
+    result = options.construct_config_from_icon(
+        config_cls=full_config_class,
+        icon_config={"nested_1": {"nested_2": {"isomchce": 42}}, "lsomflg": [False, False, False]},
+        overrides={"choice": 43},
+    )
+    assert result.choice == 43
+    assert result.flag is False
