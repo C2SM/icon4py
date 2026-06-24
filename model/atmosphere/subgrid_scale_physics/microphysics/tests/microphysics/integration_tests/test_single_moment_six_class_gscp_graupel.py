@@ -91,6 +91,7 @@ def test_graupel(
     )
 
     graupel_config = experiment.config.graupel
+    assert graupel_config is not None, "expected microphysics configuration for this experiment"
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
         graupel_config=graupel_config,

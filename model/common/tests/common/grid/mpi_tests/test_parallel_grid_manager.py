@@ -82,11 +82,7 @@ def test_grid_manager_validate_decomposer(
 
 
 def _get_neighbor_tables(grid: base.Grid) -> dict:
-    return {
-        k: v.ndarray
-        for k, v in grid.connectivities.items()
-        if gtx_common.is_neighbor_connectivity(v)
-    }
+    return {k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)}
 
 
 # These fields can't be computed with the embedded backend for one reason or
@@ -762,7 +758,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     )
     distributed_grid = multi_rank_grid_manager.grid
     for k, c in distributed_grid.connectivities.items():
-        if gtx_common.is_neighbor_connectivity(c):
+        if gtx_common.is_neighbor_table(c):
             skip_values_in_table = np.count_nonzero(c.asnumpy() == c.skip_value)
             found_skips = skip_values_in_table > 0
             assert found_skips == (c.skip_value is not None), (

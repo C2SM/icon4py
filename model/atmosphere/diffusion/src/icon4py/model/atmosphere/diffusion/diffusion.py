@@ -6,13 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import enum
 import functools
 import logging
 import math
 import sys
-from typing import Final
+from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -49,7 +51,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 """
@@ -305,6 +307,42 @@ class DiffusionConfig:
         self.loutshs: bool = loutshs
 
         self._validate()
+
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> DiffusionConfig:
+        diffusion_nml = atmo_dict["diffusion_nml"]
+        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
+        gridref_nml = atmo_dict["gridref_nml"]
+        turbdiff_nml = atmo_dict["turbdiff_nml"]
+        run_nml = atmo_dict["run_nml"]
+        return cls(
+            diffusion_type=DiffusionType(diffusion_nml["hdiff_order"]),
+            hdiff_w=diffusion_nml["lhdiff_w"],
+            hdiff_vn=diffusion_nml["lhdiff_vn"],
+            hdiff_temp=diffusion_nml["lhdiff_temp"],
+            hdiff_smag_w=fortran_config.list_to_value(diffusion_nml["lhdiff_smag_w"]),
+            type_vn_diffu=SmagorinskyStencilType(diffusion_nml["itype_vn_diffu"]),
+            smag_3d=fortran_config.list_to_value(diffusion_nml["lsmag_3d"]),
+            type_t_diffu=TemperatureDiscretizationType(diffusion_nml["itype_t_diffu"]),
+            hdiff_efdt_ratio=diffusion_nml["hdiff_efdt_ratio"],
+            hdiff_w_efdt_ratio=diffusion_nml["hdiff_w_efdt_ratio"],
+            smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
+            smagorinski_scaling_factor2=diffusion_nml["hdiff_smag_fac2"],
+            smagorinski_scaling_factor3=diffusion_nml["hdiff_smag_fac3"],
+            smagorinski_scaling_factor4=diffusion_nml["hdiff_smag_fac4"],
+            smagorinski_scaling_height=diffusion_nml["hdiff_smag_z"],
+            smagorinski_scaling_height2=diffusion_nml["hdiff_smag_z2"],
+            smagorinski_scaling_height3=diffusion_nml["hdiff_smag_z3"],
+            smagorinski_scaling_height4=diffusion_nml["hdiff_smag_z4"],
+            n_substeps=nonhydrostatic_nml["ndyn_substeps"],
+            zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
+            velocity_boundary_diffusion_denom=gridref_nml["denom_diffu_v"],
+            temperature_boundary_diffusion_denom=gridref_nml["denom_diffu_t"],
+            shear_type=TurbulenceShearForcingType(turbdiff_nml["itype_sher"]),
+            iforcing=ForcingType(run_nml["iforcing"]),
+            a_hshr=turbdiff_nml["a_hshr"],
+            **overrides,
+        )
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
@@ -598,7 +636,7 @@ class Diffusion:
         self.init_diffusion_local_fields_for_regular_timestep = setup_program(
             backend=backend,
             program=init_diffusion_local_fields_for_regular_timestep,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
 
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -612,7 +650,7 @@ class Diffusion:
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
         setup_program(
             backend=backend,

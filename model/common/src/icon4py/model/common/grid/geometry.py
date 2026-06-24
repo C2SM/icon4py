@@ -415,7 +415,7 @@ class GridGeometry(factory.FieldSource):
             func=math_utils.compute_sqrt,
             domain=(),
             deps={
-                "input_val": attrs.MEAN_DUAL_AREA,
+                "input_val": attrs.MEAN_CELL_AREA,
             },
             fields=(attrs.CHARACTERISTIC_LENGTH,),
         )
