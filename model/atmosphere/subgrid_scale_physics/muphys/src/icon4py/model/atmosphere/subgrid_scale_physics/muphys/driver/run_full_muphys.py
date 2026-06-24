@@ -140,7 +140,6 @@ def setup_muphys(
         graupel_run_program = run_graupel_only.setup_graupel(
             dt=dt,
             qnc=qnc,
-            itime=itime,
             backend=backend,
             horizontal_start=0,
             horizontal_end=inp.ncells,
