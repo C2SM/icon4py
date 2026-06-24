@@ -26,7 +26,7 @@ jobs:
 
             Available options are:
             * `SESSIONS`: `model`, `model_mpi`, or `tools` (correspond to nox sessions)
-            * `MODEL_SUBSETS`: `datatest`, `basic`, or `stencils` (correspond nox session selections)
+            * `MODEL_SUBSETS`: `datatest`, `basic`, or `stencils` (correspond to nox session selections)
             * `MODEL_SUBPACKAGES`: subpackages for non-MPI tests (last component, e.g. `diffusion`, `standalone_driver`)
             * `MODEL_MPI_SUBPACKAGES`: subpackages for MPI tests (as above)
             * `BACKENDS`: backends
