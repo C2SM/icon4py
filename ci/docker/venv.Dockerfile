@@ -19,3 +19,7 @@ RUN uv sync \
     --python $PYVERSION && \
     chmod -R a+rwX "$UV_CACHE_DIR"
 ENV PATH="/icon4py/.venv/bin:$PATH"
+
+# Propagate base image info so child images (checkout) and cache scripts can use it
+ARG BASE_IMAGE
+ENV BASE_IMAGE=$BASE_IMAGE
