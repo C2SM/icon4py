@@ -85,7 +85,6 @@ def setup_graupel(
             constant_args={
                 "dt": ta.wpfloat(dt),
                 "qnc": ta.wpfloat(qnc),
-                "itime": gtx.int32,
                 "enable_masking": enable_masking,
             },
             horizontal_sizes={
