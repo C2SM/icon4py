@@ -99,7 +99,6 @@ def test_full_muphys(
     )
 
     muphys_program(
-        itime=experiment.itime,
         dz=inp.dz,
         te=inp.t,
         p=inp.p,
