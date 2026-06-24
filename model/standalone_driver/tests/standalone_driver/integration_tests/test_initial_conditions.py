@@ -66,7 +66,7 @@ def test_initial_conditions(
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
-        ntracer=icon4py_driver.config.driver.ntracer,
+        tracer_config=icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,

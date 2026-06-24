@@ -122,7 +122,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_prognostic = prognostics.initialize_prognostic_state(
         grid=single_rank_icon4py_driver.grid,
         allocator=allocator,
-        ntracer=single_rank_icon4py_driver.config.driver.ntracer,
+        tracer_config=single_rank_icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
@@ -169,7 +169,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     multi_rank_prognostic = prognostics.initialize_prognostic_state(
         grid=multi_rank_icon4py_driver.grid,
         allocator=allocator,
-        ntracer=multi_rank_icon4py_driver.config.driver.ntracer,
+        tracer_config=multi_rank_icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
