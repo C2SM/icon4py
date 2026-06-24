@@ -60,7 +60,6 @@ def setup_graupel(
     *,
     dt: float,
     qnc: float,
-    itime: int,
     backend: model_backends.BackendLike,
     horizontal_start: int,
     horizontal_end: int,

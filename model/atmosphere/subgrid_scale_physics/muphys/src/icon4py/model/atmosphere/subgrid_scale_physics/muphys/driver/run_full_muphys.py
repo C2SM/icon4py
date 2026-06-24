@@ -123,7 +123,7 @@ def setup_muphys(
             muphys_program = model_options.setup_program(
                 backend=backend,
                 program=muphys.muphys_run,
-                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc), "itime": itime},
+                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc)},
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
                     "horizontal_end": inp.ncells,
