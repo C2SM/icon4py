@@ -21,8 +21,7 @@ jobs:
             You can pass options to override pipeline variables, for example:
 
             * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
-            * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSION=model`
-
+            * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
             **Avoid running the pipeline for all tests when you are developing.**
 
             Available options are:
