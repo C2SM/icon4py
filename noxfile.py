@@ -60,8 +60,6 @@ TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
-TestLevel: TypeAlias = Literal["any", "unit", "integration", "extended"]
-TEST_LEVELS: Final[Sequence[nox.Param]] = [nox.param(arg, id=arg) for arg in TestLevel.__args__]
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
 #: is not guaranteed to be available in the venv where `nox` is running.
@@ -165,19 +163,15 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
-@nox.parametrize("level", TEST_LEVELS)
 def test_model(
     session: nox.Session,
     selection: ModelTestsSubset,
     subpackage: ModelSubpackagePath,
-    level: TestLevel,
 ) -> None:
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
-    if level != "any":
-        pytest_args.extend([f"--level={level}"])
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
@@ -218,9 +212,7 @@ def test_model_mpi(
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
-    session.notify(
-        f"test_model-{session.python}(selection='{selection}', subpackage='testing', level='any')"
-    )
+    session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
 
 
 # Bindings test sessions (includes py2fgen tool tests)
