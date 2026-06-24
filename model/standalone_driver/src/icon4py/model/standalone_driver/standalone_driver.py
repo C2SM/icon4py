@@ -272,6 +272,16 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
 
+        # Fast physics (muphys): runs after dynamics + diffusion + transport, on the
+        # n+1 state (prognostic_states.next + its tracers), before the swap.
+        if self.granules.physics_component is not None:
+            self.granules.physics_component.run(
+                prognostic=prognostic_states.next,
+                tracers=prognostic_states.next.tracer,
+                dt=self.model_time_variables.dtime_in_seconds,
+                now=self.model_time_variables.simulation_current_datetime,
+            )
+
         prognostic_states.swap()
 
     def _update_time_levels_for_velocity_tendencies(

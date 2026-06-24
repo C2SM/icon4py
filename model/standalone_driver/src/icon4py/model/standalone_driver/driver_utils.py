@@ -22,6 +22,11 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
+    component as muphys_component,
+    state as muphys_state,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface import physics_driver
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
@@ -68,6 +73,7 @@ class Granules:
     diffusion: diffusion.Diffusion | None = None
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
     tracer_advection: advection.Advection | None = None
+    physics_component: physics_driver.PhysicsDriver | None = None
 
 
 def validate_granule_state_consistency(
@@ -434,10 +440,36 @@ def initialize_granules(
             exchange=exchange,
         )
 
+    physics_component: physics_driver.PhysicsDriver | None = None
+    if config.muphys is not None:
+        muphys_process = physics_driver.PhysicsProcess(
+            name="muphys",
+            granule=muphys_component.MuphysComponent(
+                ncells=grid.num_cells,
+                nlev=grid.num_levels,
+                dt=config.driver.dtime.total_seconds(),
+                qnc=config.muphys.qnc,
+                backend=backend,
+            ),
+            state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
+            time_control=physics_driver.ProcessTimeControl(
+                interval=config.driver.dtime,
+                start_date=config.driver.start_of_simulation,
+                end_date=driver_config.resolve_end_of_simulation(
+                    config.driver.start_of_simulation,
+                    config.driver.dtime,
+                    config.driver.end_of_simulation,
+                ),
+                enable_process=True,
+            ),
+        )
+        physics_component = physics_driver.PhysicsDriver([muphys_process])
+
     return Granules(
         solve_nonhydro=solve_nonhydro_granule,
         diffusion=diffusion_granule,
         tracer_advection=tracer_advection_granule,
+        physics_component=physics_component,
     )
 
 

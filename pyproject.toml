@@ -162,7 +162,7 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_interface/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/granule.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
