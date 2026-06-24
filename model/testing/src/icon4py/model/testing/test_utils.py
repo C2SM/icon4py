@@ -42,7 +42,7 @@ def dallclose(
     b: npt.ArrayLike,
     *,
     rtol: vpfloat = scale_tol(5e3) * VP_EPS,  # for double ≈ 1.11e-12
-    atol: vpfloat = VP_EPS,
+    atol: vpfloat = 0.0,
     equal_nan: bool = False,
 ) -> bool:
     """
@@ -56,7 +56,7 @@ def assert_dallclose(
     desired: npt.ArrayLike,
     *,
     rtol: vpfloat = scale_tol(5e3) * VP_EPS,  # for double ≈ 1.11e-12
-    atol: vpfloat = VP_EPS,
+    atol: vpfloat = 0.0,
     equal_nan: bool = False,
     err_msg: str = "",
     verbose: bool = True,
