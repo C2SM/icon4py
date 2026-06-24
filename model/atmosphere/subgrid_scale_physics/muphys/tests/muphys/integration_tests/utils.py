@@ -37,6 +37,7 @@ class MuphysExperiment:
     type: ExperimentType
     dt: float = 30.0
     qnc: float = 100.0
+    itime: int = 0
 
     @property
     def input_file(self) -> pathlib.Path:

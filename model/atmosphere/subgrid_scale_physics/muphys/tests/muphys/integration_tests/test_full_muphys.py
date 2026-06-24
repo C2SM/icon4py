@@ -36,6 +36,12 @@ class Experiments:
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.FULL_MUPHYS,
+        itime=4,
+    )
+    R2B04: Final = utils.MuphysExperiment(
+        name="R2B04",
+        type=utils.ExperimentType.FULL_MUPHYS,
+        itime=4,
     )
 
 
@@ -44,9 +50,9 @@ class Experiments:
 @pytest.mark.parametrize(
     "experiment",
     [
-        Experiments.MINI,
+        Experiments.R2B04,
+        # Experiments.MINI,
         # TODO(havogt): references need to be checked, currently they are not verifying
-        # Experiments.R2B04,
         # Experiments.R2B04_MAXFRAC,
         # Experiments.R2B05,
     ],

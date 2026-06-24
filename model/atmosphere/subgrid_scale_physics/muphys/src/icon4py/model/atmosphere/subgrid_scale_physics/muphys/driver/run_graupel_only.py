@@ -60,6 +60,7 @@ def setup_graupel(
     *,
     dt: float,
     qnc: float,
+    itime: int,
     backend: model_backends.BackendLike,
     horizontal_start: int,
     horizontal_end: int,
@@ -84,6 +85,7 @@ def setup_graupel(
             constant_args={
                 "dt": ta.wpfloat(dt),
                 "qnc": ta.wpfloat(qnc),
+                "itime": gtx.int32,
                 "enable_masking": enable_masking,
             },
             horizontal_sizes={
@@ -137,6 +139,7 @@ def main():
     graupel_run_program = setup_graupel(
         dt=args.dt,
         qnc=args.qnc,
+        itime=args.itime,
         backend=backend,
         horizontal_start=0,
         horizontal_end=inp.ncells,

@@ -112,6 +112,7 @@ def setup_muphys(
     inp: common.GraupelInput,
     dt: float,
     qnc: float,
+    itime: int,
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
@@ -122,7 +123,7 @@ def setup_muphys(
             muphys_program = model_options.setup_program(
                 backend=backend,
                 program=muphys.muphys_run,
-                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc)},
+                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc), "itime": gtx.int32},
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
                     "horizontal_end": inp.ncells,
@@ -139,6 +140,7 @@ def setup_muphys(
         graupel_run_program = run_graupel_only.setup_graupel(
             dt=dt,
             qnc=qnc,
+            itime=itime,
             backend=backend,
             horizontal_start=0,
             horizontal_end=inp.ncells,
@@ -204,7 +206,7 @@ def main():
 
     # TODO(havogt): once we see single program being equally fast, remove the other implementation
     muphys_step = setup_muphys(
-        inp=inp, dt=args.dt, qnc=args.qnc, backend=backend, single_program=False
+        inp=inp, dt=args.dt, qnc=args.qnc, itime=args.itime, backend=backend, single_program=False
     )
 
     start_time = None
