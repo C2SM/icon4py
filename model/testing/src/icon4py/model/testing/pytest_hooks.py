@@ -34,7 +34,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit or integration tests. tests without this marker are implicitly treated as 'unit'.",
+        "level(name): marks test as unit or integration tests, tests without this marker are implicitly treated as 'unit'",
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
