@@ -56,6 +56,11 @@ variables:
   variables:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
     CXXFLAGS: "-ffp-contract=off"
+    # Signal to (selected) tests that they should expect bitwise identical
+    # results between single- and multi-rank runs. This goes hand-in-hand with
+    # compiler flags like -ffp-contract=off and others that may be required to
+    # actually get bitwise identical results.
+    ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE: "1"
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
     SLURM_PARTITION: "shared"
