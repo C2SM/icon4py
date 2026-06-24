@@ -137,7 +137,6 @@ def main():
     graupel_run_program = setup_graupel(
         dt=args.dt,
         qnc=args.qnc,
-        itime=args.itime,
         backend=backend,
         horizontal_start=0,
         horizontal_end=inp.ncells,
