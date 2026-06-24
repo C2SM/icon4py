@@ -180,10 +180,13 @@ diffusion_config = construct_config_from_icon(icon_config)
 
 ### Separating (fortran-) ICON mapping information from the rest
 
-- Pro: allow for free evolution of ICON4Py internals, decoupled from ICON
-- Con: more complicated, less (for now) helpful information immediately available
+It is considered a long term goal to isolate all the logic and data used to map between fortran ICON and ICON4Py concepts, such as configuration options from the ICON4Py implementation of those concepts.
+The decision made here was to prioritize solving the code duplication issue. However, we think this solution will not block the long term goal.
 
-This could be achieved, however, by moving all the instances of `IconOption` out of `ConfigOption` annotations and into a separate (per-module) dictionary, keyed by the name (or class AND name) of the option it belongs to.
+- Pro: allow for free evolution of ICON4Py internals quicker, decoupled from ICON
+- Con: takes longer, less (for now) helpful information immediately available
+
+The declarative annotation system provides a clear path towards maximum decoupling. All the instances of `IconOption` can be moved to a separate dictionary, keyed by the name (or class AND name) of the option it belongs to. This would have to be done once per ICON4Py module.
 
 Example:
 
@@ -200,6 +203,8 @@ CONFIC_OPTIONS: {DiffusionConfig: {"diffusion_type": ...}}
 ```
 
 To arrive at the same usability, `icon4py.common.fortan_icon_mappings` could contain some infrastructure to find the relevant mapping for each configuration class (via module path heuristics or entry points or similar), so that a different version of `icon4py.common.config.options.construct_config_from_icon` could be provided.
+
+From there the mapping should be decoupled enough to be refactored without touching the configuration classes.
 
 ### Use `dataclasses.field` instead of `typing.Annotated`
 
