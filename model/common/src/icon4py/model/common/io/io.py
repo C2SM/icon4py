@@ -83,7 +83,7 @@ class FieldGroupIOConfig(Config):
     #: Output schedule: either a number of model steps (``int``) or a simulation-time
     #: delta (``datetime.timedelta``); a delta is normalized to steps using the model time
     #: step. Defaults to every step.
-    output_interval: OutputInterval = NumTimeSteps(1)  # noqa: RUF009 [NumTimeSteps is immutable (int)]
+    output_interval: OutputInterval = NumTimeSteps(1)  # noqa: RUF009 [function-call-in-dataclass-default-argument] NumTimeSteps is immutable (int)
     timesteps_per_file: int = 10
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
