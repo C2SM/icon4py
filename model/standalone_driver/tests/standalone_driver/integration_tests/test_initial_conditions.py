@@ -26,7 +26,6 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description",
     [
