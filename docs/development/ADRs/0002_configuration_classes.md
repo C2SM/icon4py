@@ -180,7 +180,7 @@ diffusion_config = construct_config_from_icon(icon_config)
 
 ### Separating (fortran-) ICON mapping information from the rest
 
-- Pro: allow free evolution of ICON4Py internals, decoupled from ICON
+- Pro: allow for free evolution of ICON4Py internals, decoupled from ICON
 - Con: more complicated, less (for now) helpful information immediately available
 
 This could be achieved, however, by moving all the instances of `IconOption` out of `ConfigOption` annotations and into a separate (per-module) dictionary, keyed by the name (or class AND name) of the option it belongs to.
