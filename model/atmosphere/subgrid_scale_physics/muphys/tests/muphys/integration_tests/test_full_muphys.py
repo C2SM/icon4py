@@ -77,6 +77,7 @@ def test_full_muphys(
         inp=inp,
         dt=experiment.dt,
         qnc=experiment.qnc,
+        itime=experiment.itime,
         backend=backend_like,
         single_program=single_program,
     )
