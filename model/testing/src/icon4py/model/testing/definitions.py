@@ -169,7 +169,7 @@ class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 6
+    version: int = 5
 
 
 @dataclasses.dataclass
@@ -227,6 +227,11 @@ class Experiments:
     EXCLAIM_APE: Final = ExperimentDescription(
         name="exclaim_ape_R02B04",
         long_name="EXCLAIM Aquaplanet experiment",
+        grid=Grids.R02B04_GLOBAL,
+    )
+    EXCLAIM_APE_AES: Final = ExperimentDescription(
+        name="exclaim_ape_aesPhys",
+        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
