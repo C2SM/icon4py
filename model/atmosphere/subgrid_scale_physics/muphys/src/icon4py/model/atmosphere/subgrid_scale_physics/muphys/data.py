@@ -36,7 +36,7 @@ _PRECIP_KEY = dict(
 )
 
 INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
-    "dz": dict(standard_name="layer_thickness", units="m"),
+    "dz": dict(standard_name="layer_thickness", units="m"), # TODO (Yilu): this we can get from metrics attrbute, need to check it is on half levels or full levels
     "te": data.DIAGNOSTIC_CF_ATTRIBUTES["temperature"],
     "p": data.DIAGNOSTIC_CF_ATTRIBUTES["pressure"],
     "rho": data.PROGNOSTIC_CF_ATTRIBUTES["air_density"],

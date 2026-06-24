@@ -35,9 +35,11 @@ if TYPE_CHECKING:
     from icon4py.model.common.states import model
 
 _SPECIES = ("v", "c", "r", "s", "i", "g")
+# TODO (Yilu): avoid duplicating specieis
 
 
-class MuphysGranule:
+class MuphysComponent:
+    # TODO (Yilu): later on this should be cleared that it inherit from the component protocol
     """The muphys Granule: a per-process adapter wrapping the muphys microphysics program."""
 
     inputs_properties = muphys_data.INPUTS_PROPERTIES

@@ -42,6 +42,7 @@ class ForcingMode(enum.IntEnum):
     DIAGNOSTIC = 0
     APPLY = 1
 
+
 # TODO (Yilu): this can belong to a standalone file (with the exception of ForcingMode.APPLY)?
 @dataclasses.dataclass(frozen=True)
 class ProcessTimeControl:
