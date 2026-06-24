@@ -35,6 +35,18 @@ if TYPE_CHECKING:
 _SPECIES = ("v", "c", "r", "s", "i", "g")
 
 
+def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKField[ta.wpfloat]:
+    """Return ``field``, or raise if it is inactive (``None``).
+
+    muphys needs all six moisture species; ``TracerState`` fields are optional
+    (a tracer may be inactive per ``TracerConfig``), so we fail loudly here rather
+    than feed ``None`` into the microphysics.
+    """
+    if field is None:
+        raise ValueError(f"muphys requires tracer '{name}' to be active in the TracerState")
+    return field
+
+
 class State:
     """The muphys physics State adapter.
 
@@ -125,12 +137,12 @@ class State:
         """
         self.rho = prognostic.rho
         self.q = {
-            "v": tracers.qv,
-            "c": tracers.qc,
-            "r": tracers.qr,
-            "s": tracers.qs,
-            "i": tracers.qi,
-            "g": tracers.qg,
+            "v": _require(tracers.qv, "qv"),
+            "c": _require(tracers.qc, "qc"),
+            "r": _require(tracers.qr, "qr"),
+            "s": _require(tracers.qs, "qs"),
+            "i": _require(tracers.qi, "qi"),
+            "g": _require(tracers.qg, "qg"),
         }
 
         # Diagnose virtual temperature and temperature (te is not stored prognostically).

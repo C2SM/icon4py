@@ -209,10 +209,10 @@ def tendency_of(base: model.FieldMetaData) -> model.FieldMetaData:
 # Generic tendencies of the temperature and tracer fields, derived from their base identities so names/units never drift.
 TENDENCY_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     temperature=tendency_of(DIAGNOSTIC_CF_ATTRIBUTES["temperature"]),
-    specific_humidity=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_humidity"]),
-    specific_cloud=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_cloud"]),
-    specific_rain=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_rain"]),
-    specific_snow=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_snow"]),
-    specific_ice=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_ice"]),
-    specific_graupel=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["specific_graupel"]),
+    qv=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qv"]),
+    qc=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qc"]),
+    qi=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qi"]),
+    qr=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qr"]),
+    qs=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qs"]),
+    qg=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qg"]),
 )

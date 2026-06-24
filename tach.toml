@@ -63,7 +63,11 @@ depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.standalone_driver"
-depends_on = [{ path = "icon4py.model.common" }]
+depends_on = [
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys" },
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_interface" },
+    { path = "icon4py.model.common" },
+]
 
 [[modules]]
 path = "icon4py.model.common"

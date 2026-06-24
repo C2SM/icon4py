@@ -89,7 +89,7 @@ class ProcessTimeControl:
 class PhysicsProcess:
     """A registered physics process: a granule, its state adapter, and its time control.
 
-    The granule is the per-process adapter (e.g. ``MuphysGranule``); it
+    The granule is the per-process adapter (e.g. ``MuphysComponent``); it
     implements the generic ``Component`` protocol, which is how the driver types it.
     The state adapter is process-specific (it translates the prognostic state to/from
     *this* granule's contract), so it is bundled per process rather than shared.

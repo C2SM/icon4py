@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Field metadata for the MuphysGranule (Component) input/output contract."""
+"""Field metadata for the MuphysComponent input/output contract."""
 
 from __future__ import annotations
 
@@ -14,16 +14,6 @@ from icon4py.model.common.states import data, model
 
 
 _SPECIES = ("v", "c", "r", "s", "i", "g")
-
-# muphys species key -> common tracer-registry key.
-_TRACER_KEY = dict(
-    v="specific_humidity",
-    c="specific_cloud",
-    r="specific_rain",
-    s="specific_snow",
-    i="specific_ice",
-    g="specific_graupel",
-)
 
 # muphys precip port -> common precip-registry key.
 _PRECIP_KEY = dict(
@@ -36,15 +26,17 @@ _PRECIP_KEY = dict(
 )
 
 INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
-    "dz": dict(standard_name="layer_thickness", units="m"), # TODO (Yilu): this we can get from metrics attrbute, need to check it is on half levels or full levels
+    "dz": dict(
+        standard_name="layer_thickness", units="m"
+    ),  # TODO (Yilu): this we can get from metrics attrbute, need to check it is on half levels or full levels
     "te": data.DIAGNOSTIC_CF_ATTRIBUTES["temperature"],
     "p": data.DIAGNOSTIC_CF_ATTRIBUTES["pressure"],
     "rho": data.PROGNOSTIC_CF_ATTRIBUTES["air_density"],
-    **{f"q{s}": data.COMMON_TRACER_CF_ATTRIBUTES[_TRACER_KEY[s]] for s in _SPECIES},
+    **{f"q{s}": data.COMMON_TRACER_CF_ATTRIBUTES[f"q{s}"] for s in _SPECIES},
 }
 
 OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "tend_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
-    **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[_TRACER_KEY[s]] for s in _SPECIES},
+    **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[f"q{s}"] for s in _SPECIES},
     **{port: data.MICROPHYSICS_PRECIP_CF_ATTRIBUTES[key] for port, key in _PRECIP_KEY.items()},
 }

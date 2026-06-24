@@ -14,7 +14,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.granule import MuphysGranule
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.granule import MuphysComponent
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
@@ -50,7 +50,7 @@ def test_granule_matches_direct_muphys(
         single_program=False,
     )
 
-    granule = MuphysGranule(
+    granule = MuphysComponent(
         ncells=inp.ncells,
         nlev=inp.nlev,
         dt=experiment.dt,
