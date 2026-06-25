@@ -126,15 +126,16 @@ class PhysicsDriver:
             tc = proc.time_control
             if not tc.enable_process:
                 continue
-            in_window = tc.is_in_window(simulation_current_datetime)
-            if in_window and tc.is_active(simulation_current_datetime):
-                # compute: run the component (e.g. muphys) on this process's physics state
+            if not tc.is_in_window(simulation_current_datetime):
+                # outside the process window: no forcing
+                continue
+            # Compute on a firing (active) step, and also on the first in-window step -- when
+            # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
+            if tc.is_active(simulation_current_datetime) or proc.name not in self._recycle_cache:
+                # compute
                 outputs = proc.component(state.as_component_input(), simulation_current_datetime)
                 self._recycle_cache[proc.name] = outputs
-            elif in_window:
+            else:
                 # recycle
                 outputs = self._recycle_cache[proc.name]
-            else:
-                # no forcing
-                continue
             state.scatter_to_prognostic(prognostic, outputs, dt)
