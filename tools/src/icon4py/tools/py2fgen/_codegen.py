@@ -206,7 +206,9 @@ def {{ func.name }}_wrapper(
                     logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 
-            {% if func.args %}
+            {% set ns = namespace(has_array=false) %}
+            {% for arg in func.args.values() %}{% if is_array(arg) %}{% set ns.has_array = true %}{% endif %}{% endfor %}
+            {% if ns.has_array %}
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
                     {% for name, arg in func.args.items() %}

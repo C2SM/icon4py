@@ -77,6 +77,24 @@ bar = Func(
 )
 
 
+scalar_only = Func(
+    name="scalar_only",
+    module_name="libtest",
+    args={
+        "a": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
+        "b": py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT64),
+    },
+)
+
+
+def test_python_wrapper_for_scalar_only_function_is_valid_python():
+    # An all-scalar function used to emit an empty `if logger.isEnabledFor(...)`
+    # block, producing invalid Python that only failed at CFFI compile time.
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[scalar_only])
+    wrapper = generate_python_wrapper(plugin)
+    compile(wrapper, "<generated>", "exec")
+
+
 def test_cheader_generation_for_single_function():
     plugin = BindingsLibrary(library_name="libtest_plugin", functions=[foo])
 
