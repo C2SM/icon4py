@@ -8,7 +8,6 @@
 
 import datetime
 import logging
-import os
 import pathlib
 
 import gt4py.next.typing as gtx_typing
@@ -37,47 +36,6 @@ if mpi_decomposition.mpi4py is None:
     pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__file__)
-
-
-def _get_mpi_comparison_tolerance(
-    backend: gtx_typing.Backend,
-    *,
-    expect_bitwise: bool = False,
-) -> tuple[float, float]:
-    """Return (atol, rtol) for single-rank vs multi-rank field comparisons.
-
-    Bitwise exact comparison (``atol=rtol=0``) is only used when
-    *expect_bitwise* is ``True``, the environment signals
-    reproducible-floating-point compilation (via
-    ``ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE``), and the backend is a known-good
-    CPU backend (currently ``gtfn`` or ``dace``).
-    """
-    is_known_good = model_backends.is_cpu_backend(backend) and (
-        test_utils.is_gtfn_backend(backend) or test_utils.is_dace(backend)
-    )
-
-    if expect_bitwise and os.environ.get("ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE") == "1":
-        if is_known_good:
-            _log.info(
-                "Expecting MPI-reproducible result for backend %s (ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE=1)",
-                backend.name if backend else "embedded",
-            )
-            return 0.0, 0.0
-        _log.warning(
-            "MPI-reproducible result requested but not enabled for backend %s (known_good=%s)",
-            backend.name if backend else "embedded",
-            is_known_good,
-        )
-    elif expect_bitwise:
-        _log.info(
-            "MPI-reproducible result requested but skipped: ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE not set"
-        )
-
-    # Default backend-aware tolerances
-    is_cpu = model_backends.is_cpu_backend(backend)
-    if is_cpu and test_utils.is_gtfn_backend(backend):
-        return 1e-13, 1e-14
-    return 1e-10, 0.0
 
 
 @pytest.mark.datatest
@@ -137,7 +95,6 @@ def test_standalone_driver_compare_single_multi_rank_validation(  # noqa: PLR091
         process_props=process_props,
         backend_like=backend_like,
         backend=backend,
-        expect_bitwise=True,
     )
 
 
@@ -148,12 +105,11 @@ def _run_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
     backend: gtx_typing.Backend,
-    expect_bitwise: bool = False,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    atol, rtol = _get_mpi_comparison_tolerance(backend, expect_bitwise=expect_bitwise)
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-13, rtol=1e-14)
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
