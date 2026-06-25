@@ -241,7 +241,11 @@ class NonHydrostaticConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="Start from DWD analysis with incremental analysis update.",
-            icon_equivalent=None,  # TODO(ricoh): this could be read from initicon_nml.init_mode but would require a conversion callback (init_mode==5 -> True else False)
+            icon_equivalent=common_conf_opt.IconOption(
+                name="init_mode",
+                path=("initicon_nml",),
+                converter=lambda init_mode: bool(init_mode == 5),
+            ),
         ),
     ] = False
 
