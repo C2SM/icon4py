@@ -1,0 +1,27 @@
+include:
+  - local: 'ci/base.yml'
+
+variables:
+  # See default.yml and generate_ci_pipeline.py for details on how these are
+  # used. This pipeline is a convenience shorthand for testing dace backends.
+  SESSIONS: "model:model_mpi"
+  MODEL_SUBPACKAGES: "common:standalone_driver"
+  MODEL_SUBSETS: "datatest"
+  MODEL_MPI_SUBPACKAGES: "common:standalone_driver"
+  MODEL_MPI_SUBSETS: "datatest"
+  BACKENDS: "dace_cpu:dace_gpu"
+  LEVELS: "unit:integration"
+  GRIDS: "icon_regional"
+
+
+build_baseimage_aarch64:
+  extends: [.build_baseimage_aarch64]
+
+build_image_aarch64:
+  extends: [.build_image_aarch64]
+
+generate_test_child_pipeline:
+  extends: [.generate_test_child_pipeline]
+
+trigger_test_child_pipeline:
+  extends: [.trigger_test_child_pipeline]
