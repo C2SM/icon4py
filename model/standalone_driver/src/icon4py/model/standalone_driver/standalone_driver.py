@@ -61,6 +61,7 @@ class Icon4pyDriver:
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
         granules: driver_utils.Granules,
+        model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
@@ -74,7 +75,7 @@ class Icon4pyDriver:
         self.static_field_factories = static_field_factories
         self.granules = granules
         self.vertical_grid_config = vertical_grid_config
-        self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
+        self.model_time_variables = model_time_variables
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -274,8 +275,8 @@ class Icon4pyDriver:
 
         # Fast physics (muphys): runs after dynamics + diffusion + transport, on the
         # n+1 state (prognostic_states.next + its tracers), before the swap.
-        if self.granules.physics_component is not None:
-            self.granules.physics_component.run(
+        if self.granules.physics is not None:
+            self.granules.physics.run(
                 prognostic=prognostic_states.next,
                 tracers=prognostic_states.next.tracer,
                 dt=self.model_time_variables.dtime_in_seconds,
@@ -617,12 +618,15 @@ def initialize_driver(
         metrics_config=config.metrics,
     )
 
+    model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
+
     log.info("initializing granules")
     granules = driver_utils.initialize_granules(
         config=config,
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         static_field_factories=static_field_factories,
+        model_time_variables=model_time_variables,
         exchange=exchange,
         owner_mask=gtx.as_field(
             (dims.CellDim,),
@@ -655,6 +659,7 @@ def initialize_driver(
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         granules=granules,
+        model_time_variables=model_time_variables,
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,

@@ -108,9 +108,13 @@ class ModelTimeVariables:
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
         self.simulation_current_datetime = config.start_of_simulation
-        self.simulation_end_datetime = driver_config.resolve_end_of_simulation(
-            config.start_of_simulation, config.dtime, config.end_of_simulation
-        )
+        match config.end_of_simulation:
+            case driver_config.NumTimeSteps() as n:
+                self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
+            case driver_config.RelativeTime() as relative:
+                self.simulation_end_datetime = config.start_of_simulation + relative
+            case driver_config.AbsoluteTime() as absolute:
+                self.simulation_end_datetime = absolute
         self.n_time_steps = int(
             (self.simulation_end_datetime - config.start_of_simulation) / config.dtime
         )

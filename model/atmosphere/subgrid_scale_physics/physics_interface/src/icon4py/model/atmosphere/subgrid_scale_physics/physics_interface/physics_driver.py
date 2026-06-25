@@ -87,16 +87,16 @@ class ProcessTimeControl:
 
 @dataclasses.dataclass
 class PhysicsProcess:
-    """A registered physics process: a granule, its state adapter, and its time control.
+    """A registered physics process: a component, its state adapter, and its time control.
 
-    The granule is the per-process adapter (e.g. ``MuphysComponent``); it
+    The component is the per-process adapter (e.g. ``MuphysComponent``); it
     implements the generic ``Component`` protocol, which is how the driver types it.
     The state adapter is process-specific (it translates the prognostic state to/from
-    *this* granule's contract), so it is bundled per process rather than shared.
+    *this* component's contract), so it is bundled per process rather than shared.
     """
 
     name: str
-    granule: Component
+    component: Component
     state: PhysicsStateProtocol
     time_control: ProcessTimeControl
 
@@ -128,8 +128,8 @@ class PhysicsDriver:
                 continue
             in_window = tc.is_in_window(now)
             if in_window and tc.is_active(now):
-                # compute: run the granule (e.g. muphys) on this process's physics state
-                outputs = proc.granule(state.as_component_input(), now)
+                # compute: run the component (e.g. muphys) on this process's physics state
+                outputs = proc.component(state.as_component_input(), now)
                 self._recycle_cache[proc.name] = outputs
             elif in_window:
                 # recycle

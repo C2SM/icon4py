@@ -43,21 +43,6 @@ NumTimeSteps: TypeAlias = int
 EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
-def resolve_end_of_simulation(
-    start: AbsoluteTime, dtime: RelativeTime, end: EndOfSimulation
-) -> datetime.datetime:
-    """
-    Resolve the ``EndOfSimulation`` union into an absolute datetime.
-    """
-    match end:
-        case NumTimeSteps() as n:
-            return start + n * dtime
-        case RelativeTime() as relative:
-            return start + relative
-        case AbsoluteTime() as absolute:
-            return absolute
-
-
 @dataclasses.dataclass
 class ProfilingStats:
     gt4py_metrics_level: int = gtx_metrics.ALL
@@ -84,6 +69,9 @@ class DriverConfig:
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     enable_output: bool = False
+
+    # TODO (Yilu): we can add a post_int()
+    # TODO (Yilu): use the name from ModelTimeVariables
 
     @classmethod
     def from_fortran_dict(
@@ -115,6 +103,8 @@ class DriverConfig:
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             **overrides,
         )
+
+
 
 
 @dataclasses.dataclass(frozen=True)
