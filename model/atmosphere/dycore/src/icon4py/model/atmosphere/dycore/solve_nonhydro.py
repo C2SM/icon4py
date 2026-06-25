@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import typing
 from typing import Any, Final
 
 import gt4py.next as gtx
@@ -55,6 +56,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as grid_def,
@@ -138,6 +140,7 @@ class IntermediateFields:
         )
 
 
+@dataclasses.dataclass
 class NonHydrostaticConfig:
     """
     Contains necessary parameter to configure a nonhydro run.
@@ -147,162 +150,255 @@ class NonHydrostaticConfig:
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
 
-    def __init__(
+    itime_scheme: typing.Annotated[
+        dycore_states.TimeSteppingScheme,
+        common_conf_opt.ConfigOption(
+            description="Options for predictor-corrector time-stepping scheme.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="itime_scheme", path=("nonhydrostatic_nml",)
+            ),
+        ),
+    ] = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
+
+    iadv_rhotheta: typing.Annotated[
+        dycore_states.RhoThetaAdvectionType,
+        common_conf_opt.ConfigOption(
+            description="Advection method for rho and theta.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="iadv_rhotheta", path=("nonhydrostatic_nml",)
+            ),
+        ),
+    ] = dycore_states.RhoThetaAdvectionType.MIURA
+
+    igradp_method: typing.Annotated[
+        dycore_states.HorizontalPressureDiscretizationType,
+        common_conf_opt.ConfigOption(
+            description=("Discretization of horizontal pressure gradient."),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="igradp_method", path=("nonhydrostatic_nml",)
+            ),
+        ),
+    ] = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+
+    rayleigh_type: typing.Annotated[
+        constants.RayleighType,
+        common_conf_opt.ConfigOption(
+            description="Type of Rayleigh damping.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="rayleigh_type",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = constants.RayleighType.KLEMP
+
+    divdamp_order: typing.Annotated[
+        dycore_states.DivergenceDampingOrder,
+        common_conf_opt.ConfigOption(
+            description="Order of divergence damping.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_order",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = dycore_states.DivergenceDampingOrder.COMBINED  # the ICON default is 4,
+
+    divdamp_type: typing.Annotated[
+        dycore_states.DivergenceDampingType,
+        common_conf_opt.ConfigOption(
+            description="Type of divergence damping.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_type",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL
+
+    l_vert_nested: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Whether to use vertical nesting (variable number of vertical levels).",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="lvert_nest",
+                path=("run_nml",),
+            ),
+        ),
+    ] = False
+
+    deepatmos_mode: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Deep atmosphere mode.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="ldeepatmo",
+                path=("dynamics_nml",),
+            ),
+        ),
+    ] = False
+
+    iau_init: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Start from DWD analysis with incremental analysis update.",
+            icon_equivalent=None,  # TODO(ricoh): this could be read from initicon_nml.init_mode but would require a conversion callback (init_mode==5 -> True else False)
+        ),
+    ] = False
+
+    extra_diffu: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Apply additional momentum diffusion at grid points close to the stability "
+                "limit for vertical advection."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="lextra_diffu",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = True
+
+    rhotheta_offctr: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Off-centering of density and potential temperature at interface level."
+                "Specifying a negative value here reduces the amount of vertical "
+                "wind off-centering needed for stability of sound waves."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="rhotheta_offctr",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = -0.1
+
+    veladv_offctr: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Off-centering of velocity advection in corrector step.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="veladv_offctr",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 0.25
+
+    max_nudging_coefficient: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum relaxation coefficient for lateral boundary nudging",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
+            ),
+        ),
+    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
+
+    # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
+    fourth_order_divdamp_factor: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z' and below.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_fac",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 0.0025
+
+    fourth_order_divdamp_factor2: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z2'.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_fac2",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 0.004
+
+    fourth_order_divdamp_factor3: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z3'.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_fac3",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 0.004
+
+    fourth_order_divdamp_factor4: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z4 and higher'.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_fac4",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 0.004
+
+    fourth_order_divdamp_z: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Height up to which divdamp_fac is used, and where the linear profile "
+                "up to height 'fourth_order_divdamp_z2' starts"
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_z",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 32500.0
+
+    fourth_order_divdamp_z2: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Height with scaling factor 'fourth_order_divdamp_factor2' where the linear profile starting at "
+                "'fourth_order_divdamp_z' ends, and where the quadratic profile up to 'fourth_order_divdamp_z4' starts."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_z2",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 40000.0
+
+    fourth_order_divdamp_z3: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Height with scaling factor 'fourth_order_divdamp_factor3'. Needed to determine the quadratic function "
+                " between 'fourth_order_divdamp_z2' and 'fourth_order_divdamp_z4'."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_z3",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 60000.0
+
+    fourth_order_divdamp_z4: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Height from which scaling factor 'fourth_order_divdamp_factor4' is used.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divdamp_z4",
+                path=("nonhydrostatic_nml",),
+            ),
+        ),
+    ] = 80000.0
+
+    def __post_init__(
         self,
-        *,
-        itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
-        iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
-        igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
-        divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
-        divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
-        l_vert_nested: bool = False,
-        deepatmos_mode: bool = False,
-        iau_init: bool = False,
-        extra_diffu: bool = True,
-        rhotheta_offctr: float = -0.1,
-        veladv_offctr: float = 0.25,
-        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
-        * 0.02,
-        fourth_order_divdamp_factor: float = 0.0025,
-        fourth_order_divdamp_factor2: float = 0.004,
-        fourth_order_divdamp_factor3: float = 0.004,
-        fourth_order_divdamp_factor4: float = 0.004,
-        fourth_order_divdamp_z: float = 32500.0,
-        fourth_order_divdamp_z2: float = 40000.0,
-        fourth_order_divdamp_z3: float = 60000.0,
-        fourth_order_divdamp_z4: float = 80000.0,
     ):
-        # parameters from namelist nonhydrostatic_nml
-
-        self.itime_scheme: int = itime_scheme
-
-        #: Miura scheme for advection of rho and theta
-        self.iadv_rhotheta: dycore_states.RhoThetaAdvectionType = iadv_rhotheta
-        #: Use truly horizontal pressure-gradient computation to ensure numerical
-        #: stability without heavy orography smoothing
-        self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
-
-        #: type of Rayleigh damping (namelist key: rayleigh_type)
-        self.rayleigh_type: constants.RayleighType = rayleigh_type
-
-        #: order of divergence damping
-        self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
-
-        #: type of divergence damping
-        self.divdamp_type: dycore_states.DivergenceDampingType = divdamp_type
-
-        #: off-centering for density and potential temperature at interface levels.
-        #: Specifying a negative value here reduces the amount of vertical
-        #: wind off-centering needed for stability of sound waves.
-        self.rhotheta_offctr: float = rhotheta_offctr
-
-        #: off-centering of velocity advection in corrector step
-        self.veladv_offctr: float = veladv_offctr
-
-        # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
-        #: scaling factor for divergence damping
-        self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
-        """
-        Declared as divdamp_fac in ICON. It is a scaling factor for fourth order divergence damping between
-        heights of fourth_order_divdamp_z and fourth_order_divdamp_z2.
-        """
-        self.fourth_order_divdamp_factor2: float = fourth_order_divdamp_factor2
-        """
-        Declared as divdamp_fac2 in ICON. It is a scaling factor for fourth order divergence damping between
-        heights of fourth_order_divdamp_z and fourth_order_divdamp_z2. Divergence damping factor reaches
-        fourth_order_divdamp_factor2 at fourth_order_divdamp_z2.
-        """
-        self.fourth_order_divdamp_factor3: float = fourth_order_divdamp_factor3
-        """
-        Declared as divdamp_fac3 in ICON. It is a scaling factor to determine the quadratic vertical
-        profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
-        and fourth_order_divdamp_z4.
-        """
-        self.fourth_order_divdamp_factor4: float = fourth_order_divdamp_factor4
-        """
-        Declared as divdamp_fac4 in ICON. It is a scaling factor to determine the quadratic vertical
-        profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
-        and fourth_order_divdamp_z4. Divergence damping factor reaches fourth_order_divdamp_factor4
-        at fourth_order_divdamp_z4.
-        """
-        self.fourth_order_divdamp_z: float = fourth_order_divdamp_z
-        """
-        Declared as divdamp_z in ICON. The upper limit in height where divergence damping factor is a constant.
-        """
-        self.fourth_order_divdamp_z2: float = fourth_order_divdamp_z2
-        """
-        Declared as divdamp_z2 in ICON. The upper limit in height above fourth_order_divdamp_z where divergence
-        damping factor decreases as a linear function of height.
-        """
-        self.fourth_order_divdamp_z3: float = fourth_order_divdamp_z3
-        """
-        Declared as divdamp_z3 in ICON. Am intermediate height between fourth_order_divdamp_z2 and
-        fourth_order_divdamp_z4 where divergence damping factor decreases quadratically with height.
-        """
-        self.fourth_order_divdamp_z4: float = fourth_order_divdamp_z4
-        """
-        Declared as divdamp_z4 in ICON. The upper limit in height where divergence damping factor decreases
-        quadratically with height.
-        """
-
-        #: parameters from other namelists:
-
-        #: from mo_interpol_nml.f90
-
-        #: Parameter describing the lateral boundary nudging in limited area mode.
-        #:
-        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
-        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        self.max_nudging_coefficient: float = max_nudging_coefficient
-
-        #: from mo_run_nml.f90 (namelist key: lvert_nest).
-        #: use vertical nesting
-        self.l_vert_nested: bool = l_vert_nested
-
-        #: from dynamics_nml.f90 (namelist key: ldeepatmo).
-        #: deep atmosphere mode, originally defined as ldeepatmo in ICON
-        self.deepatmos_mode: bool = deepatmos_mode
-
-        #: incremental analysis init mode, set to init_mode == MODE_IAU (5) in Fortran.
-        self.iau_init: bool = iau_init
-
-        #: Apply additional diffusion at grid points close to CFL limit
-        #: Called 'lextra_diffu' in mo_nonhydrostatic_nml.f90
-        self.extra_diffu: bool = extra_diffu
-
         self._validate()
 
     @classmethod
-    def from_fortran_dict(cls, atm_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
-        nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
-        run_nml = atm_dict["run_nml"]
-        dynamics_nml = atm_dict["dynamics_nml"]
-        return cls(
-            itime_scheme=dycore_states.TimeSteppingScheme(nonhydrostatic_nml["itime_scheme"]),
-            iadv_rhotheta=dycore_states.RhoThetaAdvectionType(nonhydrostatic_nml["iadv_rhotheta"]),
-            igradp_method=dycore_states.HorizontalPressureDiscretizationType(
-                nonhydrostatic_nml["igradp_method"]
-            ),
-            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
-            divdamp_order=dycore_states.DivergenceDampingOrder(nonhydrostatic_nml["divdamp_order"]),
-            divdamp_type=dycore_states.DivergenceDampingType(nonhydrostatic_nml["divdamp_type"]),
-            l_vert_nested=run_nml["lvert_nest"],
-            deepatmos_mode=dynamics_nml["ldeepatmo"],
-            extra_diffu=nonhydrostatic_nml["lextra_diffu"],
-            rhotheta_offctr=nonhydrostatic_nml["rhotheta_offctr"],
-            veladv_offctr=nonhydrostatic_nml["veladv_offctr"],
-            fourth_order_divdamp_factor=nonhydrostatic_nml["divdamp_fac"],
-            fourth_order_divdamp_factor2=nonhydrostatic_nml["divdamp_fac2"],
-            fourth_order_divdamp_factor3=nonhydrostatic_nml["divdamp_fac3"],
-            fourth_order_divdamp_factor4=nonhydrostatic_nml["divdamp_fac4"],
-            fourth_order_divdamp_z=nonhydrostatic_nml["divdamp_z"],
-            fourth_order_divdamp_z2=nonhydrostatic_nml["divdamp_z2"],
-            fourth_order_divdamp_z3=nonhydrostatic_nml["divdamp_z3"],
-            fourth_order_divdamp_z4=nonhydrostatic_nml["divdamp_z4"],
-            **overrides,
-        )
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
+        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
