@@ -183,49 +183,50 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(input_fields_provider)
         self._register_computed_fields()
 
-    def _compute_analytical_means(self) -> dict[str, float] | None:
+    def _compute_analytical_means(self) -> dict[str, float]:
         """Compute mean geometry values analytically from grid parameters.
 
         For regular grids (global icosahedron and torus) the mean cell area,
         edge length and their dual counterparts can be computed directly from
         the grid parameters, avoiding non-deterministic global reductions.
 
+        These values are computed from the *global* grid counts, so they are
+        identical regardless of whether the grid is full-sphere or a
+        limited-area cut from the same global grid, and regardless of whether
+        the run is single- or multi-rank.
+
+        For the torus all triangles are assumed equilateral and identical.
+
         Returns:
-            A dictionary of scalar mean values, or None if analytical
-            computation is not possible (e.g. limited-area grids).
+            A dictionary of scalar mean values.
         """
         grid_params = self._grid.grid_params
-        geometry_type = self._geometry_type
 
-        if geometry_type == icon.GeometryType.ICOSAHEDRON:
-            if self._grid.config.limited_area:
-                return None
-            subdivision = grid_params.subdivision
-            if subdivision is None:
-                return None
-            radius = grid_params.radius
-            if radius is None:
-                return None
-            root = subdivision.root
-            level = subdivision.level
-            num_cells = 20 * root**2 * 4**level
-            num_vertices = num_cells // 2 + 2
-            mean_cell_area = 4.0 * math.pi * radius**2 / num_cells
-            mean_dual_area = 4.0 * math.pi * radius**2 / num_vertices
-            mean_edge_length = math.sqrt(4.0 * mean_cell_area / math.sqrt(3.0))
-            mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
-        elif geometry_type == icon.GeometryType.TORUS:
-            domain_length = grid_params.domain_length
-            domain_height = grid_params.domain_height
-            if domain_length is None or domain_height is None:
-                return None
-            num_cells = self._grid.num_cells
-            mean_cell_area = domain_length * domain_height / num_cells
-            mean_dual_area = 2.0 * mean_cell_area
-            mean_edge_length = math.sqrt(4.0 * mean_cell_area / math.sqrt(3.0))
-            mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
-        else:
-            return None
+        match self._geometry_type:
+            case icon.GeometryType.ICOSAHEDRON:
+                radius = grid_params.radius
+                subdivision = grid_params.subdivision
+                root = subdivision.root
+                level = subdivision.level
+                num_cells = 20 * root**2 * 4**level
+                num_vertices = num_cells // 2 + 2
+                mean_cell_area = 4.0 * math.pi * radius**2 / num_cells
+                mean_dual_area = 4.0 * math.pi * radius**2 / num_vertices
+                mean_edge_length = math.sqrt(4.0 * mean_cell_area / math.sqrt(3.0))
+                mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
+            case icon.GeometryType.TORUS:
+                # For a uniform torus grid all cells are identical equilateral
+                # triangles. Read the common edge length directly from the edge
+                # length field (the grid file stores it on every edge).
+                # TODO(msimberg): Check if we can should get it from the grid
+                # file directly instead (e.g. via
+                # MPIMPropertyName.MEAN_EDGE_LENGTH).
+                mean_edge_length = float(self.get(attrs.EDGE_LENGTH).ndarray[0])
+                mean_cell_area = mean_edge_length**2 * math.sqrt(3.0) / 4.0
+                mean_dual_area = 2.0 * mean_cell_area
+                mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
+            case _:
+                raise ValueError(f"Invalid geometry type {self._geometry_type}")
 
         return {
             attrs.MEAN_CELL_AREA: mean_cell_area,
@@ -366,8 +367,11 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(edge_areas)
 
-        analytical_means = self._compute_analytical_means()
-        if analytical_means is not None:
+        # TODO(msimberg): Should this be a config option, or is analytical
+        # computation always the right choice?
+        use_analytical_means = True
+        if use_analytical_means:
+            analytical_means = self._compute_analytical_means()
             mean_provider = factory.PrecomputedFieldProvider(analytical_means)
             self.register_provider(mean_provider)
         else:
