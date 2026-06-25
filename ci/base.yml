@@ -160,7 +160,7 @@ variables:
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: ($MODEL_MPI_SUBPACKAGE == 'standalone_driver' || $MODEL_MPI_SUBPACKAGE == 'common' || $MODEL_MPI_SUBPACKAGE == 'dycore') && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
+    - if: ($MODEL_MPI_SUBPACKAGE == 'standalone_driver' || $MODEL_MPI_SUBPACKAGE == 'common') && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
       variables:
         # TODO: Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
