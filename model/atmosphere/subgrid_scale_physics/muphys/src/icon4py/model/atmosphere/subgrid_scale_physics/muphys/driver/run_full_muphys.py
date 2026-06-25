@@ -112,7 +112,6 @@ def setup_muphys(
     inp: common.GraupelInput,
     dt: float,
     qnc: float,
-    itime: int,
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
@@ -205,7 +204,7 @@ def main():
 
     # TODO(havogt): once we see single program being equally fast, remove the other implementation
     muphys_step = setup_muphys(
-        inp=inp, dt=args.dt, qnc=args.qnc, itime=args.itime, backend=backend, single_program=False
+        inp=inp, dt=args.dt, qnc=args.qnc, backend=backend, single_program=False
     )
 
     start_time = None

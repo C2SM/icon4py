@@ -27,21 +27,22 @@ class Experiments:
     # TODO(havogt): the following references need to be checked (and moved to the shared directory),
     # currently they are not verifying
     # muphys/full_muphys/r2b04.tar.gz
-    # muphys/full_muphys/r2b04_maxfrac.tar.gz
     # muphys/full_muphys/r2b05.tar.gz
     # Note: don't use the 'tiny' experiment from graupel_only,
-    # as it is not sensitive to saturation adjustment
+    # as it is not sensitive to saturation adjustment 
     # TODO(havogt): double-check that all other experiments actually are sensitive,
     # i.e. reference of full_muphys and graupel_only differ significantly.
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.FULL_MUPHYS,
-        itime=4,
     )
     R2B04: Final = utils.MuphysExperiment(
         name="R2B04",
         type=utils.ExperimentType.FULL_MUPHYS,
-        itime=4,
+    )
+    R2B05: Final = utils.MuphysExperiment(
+        name="R2B05",
+        type=utils.ExperimentType.FULL_MUPHYS,
     )
 
 
@@ -50,11 +51,9 @@ class Experiments:
 @pytest.mark.parametrize(
     "experiment",
     [
+        Experiments.MINI,
         Experiments.R2B04,
-        # Experiments.MINI,
-        # TODO(havogt): references need to be checked, currently they are not verifying
-        # Experiments.R2B04_MAXFRAC,
-        # Experiments.R2B05,
+        Experiments.R2B05,
     ],
     ids=lambda exp: exp.name,
 )
@@ -77,7 +76,6 @@ def test_full_muphys(
         inp=inp,
         dt=experiment.dt,
         qnc=experiment.qnc,
-        itime=experiment.itime,
         backend=backend_like,
         single_program=single_program,
     )
