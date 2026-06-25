@@ -280,7 +280,7 @@ class Icon4pyDriver:
                 prognostic=prognostic_states.next,
                 tracers=prognostic_states.next.tracer,
                 dt=self.model_time_variables.dtime_in_seconds,
-                now=self.model_time_variables.simulation_current_datetime,
+                simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
             )
 
         prognostic_states.swap()

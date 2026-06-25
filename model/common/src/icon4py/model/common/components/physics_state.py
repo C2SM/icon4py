@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.states import prognostic_state, tracer_state
 
 
-class PhysicsStateProtocol(Protocol):
+class PhysicsState(Protocol):
     """
     Protocol for the physics-state adapter that the ``PhysicsDriver`` depends on.
 

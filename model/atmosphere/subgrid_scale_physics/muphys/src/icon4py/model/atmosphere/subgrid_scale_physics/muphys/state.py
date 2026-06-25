@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.components.physics_state import PhysicsState
 from icon4py.model.common.diagnostic_calculations.stencils import (
     calculate_tendency,
     diagnose_pressure,
@@ -47,7 +48,7 @@ def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKFiel
     return field
 
 
-class State:
+class State(PhysicsState):
     """The muphys physics State adapter.
 
     Bridges the dycore's prognostic state and the muphys Component contract.
@@ -58,14 +59,14 @@ class State:
       - returned   : muphys updates it; te/q changes come back as tendencies
                      (tend_T -> exner, tend_q -> tracers).
                      rho and p are input-only.
-      - internal   : not a muphys fields -- tv, pressure_ifc -- used only
+      - internal   : not a muphys fields -- tv, pressure_on_cells_half_levels -- used only
                      to diagnose p and to convert tend_T into an exner increment.
       - diagnostic : a muphys output stored for reporting -- pflx, pr, ps, pi, pg, pre.
 
     memory ownership
       - reference  : a pointer into the dycore state, no copy -- dz, rho, q.
       - owned      : a buffer allocated once here and overwritten in place each
-                     step -- te, p, tv, pressure_ifc, and the scratch buffers.
+                     step -- te, p, tv, pressure_on_cells_half_levels, and the scratch buffers.
     """
 
     def __init__(
@@ -109,7 +110,7 @@ class State:
         )  # temperature
         self.p = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)  # pressure
         self.tv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self.pressure_ifc = data_alloc.zero_field(
+        self.pressure_on_cells_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         )
 
@@ -164,12 +165,12 @@ class State:
             offset_provider={},
         )
 
-        # Diagnose surface pressure into the surface slot of pressure_ifc, ...
+        # Diagnose surface pressure into the surface slot of pressure_on_cells_half_levels, ...
         self._diagnose_surface_pressure_program(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,
-            surface_pressure=self.pressure_ifc,
+            surface_pressure=self.pressure_on_cells_half_levels,
             horizontal_start=0,
             horizontal_end=self._num_cells,
             vertical_start=self._num_levels,
@@ -178,14 +179,16 @@ class State:
         )
         # diagnose full-level pressure p
         surface_pressure = gtx.as_field(
-            (dims.CellDim,), self.pressure_ifc.ndarray[:, -1], allocator=self._backend
+            (dims.CellDim,),
+            self.pressure_on_cells_half_levels.ndarray[:, -1],
+            allocator=self._backend,
         )
         self._diagnose_pressure_program(
             ddqz_z_full=self.dz,
             virtual_temperature=self.tv,
             surface_pressure=surface_pressure,
             pressure=self.p,
-            pressure_ifc=self.pressure_ifc,
+            pressure_ifc=self.pressure_on_cells_half_levels,
             horizontal_start=0,
             horizontal_end=self._num_cells,
             vertical_start=0,

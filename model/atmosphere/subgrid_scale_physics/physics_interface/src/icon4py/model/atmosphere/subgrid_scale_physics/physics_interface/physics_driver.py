@@ -16,7 +16,7 @@ import enum
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.components.components import Component
-from icon4py.model.common.components.physics_state import PhysicsStateProtocol
+from icon4py.model.common.components.physics_state import PhysicsState
 
 
 if TYPE_CHECKING:
@@ -64,10 +64,10 @@ class ProcessTimeControl:
     enable_process: bool = True
     forcing_mode: ForcingMode = ForcingMode.APPLY
 
-    def is_in_window(self, now: datetime.datetime) -> bool:
-        return self.start_date <= now < self.end_date
+    def is_in_window(self, simulation_current_datetime: datetime.datetime) -> bool:
+        return self.start_date <= simulation_current_datetime < self.end_date
 
-    def is_active(self, now: datetime.datetime) -> bool:
+    def is_active(self, simulation_current_datetime: datetime.datetime) -> bool:
         """True if the process's mtime-event fires on the given step.
 
         Equivalent to AES `isCurrentEventActive(ev_xxx, datetime)`. Fires only
@@ -76,10 +76,10 @@ class ProcessTimeControl:
         if (
             not self.enable_process
             or self.interval <= datetime.timedelta(0)
-            or now < self.start_date
+            or simulation_current_datetime < self.start_date
         ):
             return False
-        elapsed = (now - self.start_date).total_seconds()
+        elapsed = (simulation_current_datetime - self.start_date).total_seconds()
         interval_s = self.interval.total_seconds()
         quotient = elapsed / interval_s
         return abs(quotient - round(quotient)) == 0.0
@@ -97,7 +97,7 @@ class PhysicsProcess:
 
     name: str
     component: Component
-    state: PhysicsStateProtocol
+    state: PhysicsState
     time_control: ProcessTimeControl
 
 
@@ -116,7 +116,7 @@ class PhysicsDriver:
         prognostic: prognostic_state.PrognosticState,
         tracers: tracer_state.TracerState,
         dt: float,
-        now: datetime.datetime,
+        simulation_current_datetime: datetime.datetime,
     ) -> None:
         # TODO (Yilu): currently, ForcingMode is not applied, because muphys is always APPLY mode.
         # TODO (Yilu): later on, when a non-APPLY process exits
@@ -126,10 +126,10 @@ class PhysicsDriver:
             tc = proc.time_control
             if not tc.enable_process:
                 continue
-            in_window = tc.is_in_window(now)
-            if in_window and tc.is_active(now):
+            in_window = tc.is_in_window(simulation_current_datetime)
+            if in_window and tc.is_active(simulation_current_datetime):
                 # compute: run the component (e.g. muphys) on this process's physics state
-                outputs = proc.component(state.as_component_input(), now)
+                outputs = proc.component(state.as_component_input(), simulation_current_datetime)
                 self._recycle_cache[proc.name] = outputs
             elif in_window:
                 # recycle
