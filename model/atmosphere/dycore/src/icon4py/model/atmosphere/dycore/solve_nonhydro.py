@@ -84,7 +84,7 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat]
+    horizontal_pressure_gradient: fa.EdgeKField[float]
     """
     Declared as z_gradh_exner in ICON.
     """
@@ -96,25 +96,27 @@ class IntermediateFields:
     """
     Declared as z_theta_v_e in ICON.
     """
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat]
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[float]
     """
     Declared as z_kin_hor_e in ICON.
     """
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat]
+    tangential_wind_on_half_levels: fa.EdgeKField[float]
     """
     Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
     """
-    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat]
+    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[float]
     """
     Declared as z_graddiv_vn in ICON.
     """
-    dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
+    dwdz_at_cells_on_model_levels: fa.CellKField[float]
     """
     Declared as z_dwdz_dd in ICON.
     """
 
     @classmethod
-    def allocate(cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None):
+    def allocate(
+        cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None
+    ) -> IntermediateFields:
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
@@ -391,16 +393,14 @@ class NonHydrostaticConfig:
         ),
     ] = 80000.0
 
-    def __post_init__(
-        self,
-    ):
+    def __post_init__(self) -> None:
         self._validate()
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
         return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
 
-    def _validate(self):
+    def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""
 
         if self.l_vert_nested:
@@ -590,6 +590,8 @@ class SolveNonhydro:
             },
             offset_provider=self._grid.connectivities,
         )
+
+        assert self._cell_params.mean_cell_area is not None
 
         self._apply_divergence_damping_and_update_vn = setup_program(
             backend=backend,
@@ -915,7 +917,7 @@ class SolveNonhydro:
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
 
-    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
@@ -1041,7 +1043,7 @@ class SolveNonhydro:
         """
         self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
 
-    def _determine_local_domains(self):
+    def _determine_local_domains(self) -> None:
         vertex_domain = h_grid.domain(dims.VertexDim)
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1094,7 +1096,7 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    def _get_rayleigh_damping_factor(self, dtime):
+    def _get_rayleigh_damping_factor(self, dtime: float) -> fa.KField[float]:
         if dtime != self._dtime_previous_substep:
             #  Precompute Rayleigh damping factor if substep magnitude changes
             self._compute_rayleigh_damping_factor(
@@ -1119,7 +1121,7 @@ class SolveNonhydro:
         at_last_substep: bool,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
-    ):
+    ) -> None:
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
         Args:
@@ -1199,7 +1201,7 @@ class SolveNonhydro:
         at_first_substep: bool,
         is_iau_active: bool,
         iau_wgt_dyn: float,
-    ):
+    ) -> None:
         """
         Runs the predictor step of the non-hydrostatic solver.
         """
@@ -1214,6 +1216,8 @@ class SolveNonhydro:
                 self._config.itime_scheme == dycore_states.TimeSteppingScheme.MOST_EFFICIENT
                 and not (at_initial_timestep and at_first_substep)
             )
+
+            assert self._cell_params.area is not None
 
             self.velocity_advection.run_predictor_step(
                 skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
@@ -1379,7 +1383,7 @@ class SolveNonhydro:
         at_last_substep: bool,
         is_iau_active: bool,
         iau_wgt_dyn: float,
-    ):
+    ) -> None:
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
@@ -1391,6 +1395,8 @@ class SolveNonhydro:
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
+        assert self._cell_params.area is not None
+        assert self._cell_params.mean_cell_area is not None
         second_order_divdamp_scaling_coeff = (
             second_order_divdamp_factor * self._cell_params.mean_cell_area
         )
