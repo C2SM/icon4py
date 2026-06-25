@@ -30,7 +30,7 @@ jobs:
             * `MODEL_SUBPACKAGES`: subpackages for non-MPI tests (last component, e.g. `diffusion`, `standalone_driver`)
             * `MODEL_MPI_SUBPACKAGES`: subpackages for MPI tests (as above)
             * `BACKENDS`: backends
-            * `GRIDS`: grids for stencil tests (`simple` or `icon_regional`)
+            * `GRIDS`: grids for stencil tests (`simple`, `icon_regional`, or `icon_global`)
             * `LEVELS`: testing level for non-stencil tests (`any`, `unit`, or `integration`)
 
             See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
