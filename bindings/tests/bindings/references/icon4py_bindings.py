@@ -23,6 +23,9 @@ from icon4py.bindings.diffusion_wrapper import diffusion_run
 from icon4py.bindings.grid_wrapper import grid_init
 from icon4py.bindings.dycore_wrapper import solve_nh_init
 from icon4py.bindings.dycore_wrapper import solve_nh_run
+from icon4py.bindings.v2.diffusion_wrapper import grid_init_v2
+from icon4py.bindings.v2.diffusion_wrapper import diffusion_init_v2
+from icon4py.bindings.v2.diffusion_wrapper import diffusion_run_v2
 
 
 @ffi.def_extern(error=2)
@@ -4371,6 +4374,1365 @@ def solve_nh_run_wrapper(
 
             if __debug__:
                 logger.info("Python execution of solve_nh_run completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def grid_init_v2_wrapper(
+    cell_starts,
+    cell_starts_size_0,
+    cell_ends,
+    cell_ends_size_0,
+    vertex_starts,
+    vertex_starts_size_0,
+    vertex_ends,
+    vertex_ends_size_0,
+    edge_starts,
+    edge_starts_size_0,
+    edge_ends,
+    edge_ends_size_0,
+    c2e,
+    c2e_size_0,
+    c2e_size_1,
+    e2c,
+    e2c_size_0,
+    e2c_size_1,
+    c2e2c,
+    c2e2c_size_0,
+    c2e2c_size_1,
+    e2c2e,
+    e2c2e_size_0,
+    e2c2e_size_1,
+    e2v,
+    e2v_size_0,
+    e2v_size_1,
+    v2e,
+    v2e_size_0,
+    v2e_size_1,
+    v2c,
+    v2c_size_0,
+    v2c_size_1,
+    e2c2v,
+    e2c2v_size_0,
+    e2c2v_size_1,
+    c2v,
+    c2v_size_0,
+    c2v_size_1,
+    c_owner_mask,
+    c_owner_mask_size_0,
+    e_owner_mask,
+    e_owner_mask_size_0,
+    v_owner_mask,
+    v_owner_mask_size_0,
+    c_glb_index,
+    c_glb_index_size_0,
+    e_glb_index,
+    e_glb_index_size_0,
+    v_glb_index,
+    v_glb_index_size_0,
+    edge_length,
+    edge_length_size_0,
+    dual_edge_length,
+    dual_edge_length_size_0,
+    edge_cell_distance,
+    edge_cell_distance_size_0,
+    edge_cell_distance_size_1,
+    edge_vertex_distance,
+    edge_vertex_distance_size_0,
+    edge_vertex_distance_size_1,
+    cell_area,
+    cell_area_size_0,
+    dual_area,
+    dual_area_size_0,
+    tangent_orientation,
+    tangent_orientation_size_0,
+    cell_normal_orientation,
+    cell_normal_orientation_size_0,
+    cell_normal_orientation_size_1,
+    edge_orientation_on_vertex,
+    edge_orientation_on_vertex_size_0,
+    edge_orientation_on_vertex_size_1,
+    cell_lat,
+    cell_lat_size_0,
+    cell_lon,
+    cell_lon_size_0,
+    edge_lat,
+    edge_lat_size_0,
+    edge_lon,
+    edge_lon_size_0,
+    vertex_lat,
+    vertex_lat_size_0,
+    vertex_lon,
+    vertex_lon_size_0,
+    vct_a,
+    vct_a_size_0,
+    vct_b,
+    vct_b_size_0,
+    topography,
+    topography_size_0,
+    rbf_vec_coeff_v,
+    rbf_vec_coeff_v_size_0,
+    rbf_vec_coeff_v_size_1,
+    rbf_vec_coeff_v_size_2,
+    mean_cell_area,
+    nudge_max_coeff,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    flat_height,
+    rayleigh_damping_height,
+    comm_id,
+    num_vertices,
+    num_cells,
+    num_edges,
+    vertical_size,
+    limited_area,
+    backend,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["grid_init_v2"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of grid_init_v2 started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            cell_starts = (cell_starts, (cell_starts_size_0,), False, False)
+
+            cell_ends = (cell_ends, (cell_ends_size_0,), False, False)
+
+            vertex_starts = (vertex_starts, (vertex_starts_size_0,), False, False)
+
+            vertex_ends = (vertex_ends, (vertex_ends_size_0,), False, False)
+
+            edge_starts = (edge_starts, (edge_starts_size_0,), False, False)
+
+            edge_ends = (edge_ends, (edge_ends_size_0,), False, False)
+
+            c2e = (
+                c2e,
+                (
+                    c2e_size_0,
+                    c2e_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            e2c = (
+                e2c,
+                (
+                    e2c_size_0,
+                    e2c_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            c2e2c = (
+                c2e2c,
+                (
+                    c2e2c_size_0,
+                    c2e2c_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            e2c2e = (
+                e2c2e,
+                (
+                    e2c2e_size_0,
+                    e2c2e_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            e2v = (
+                e2v,
+                (
+                    e2v_size_0,
+                    e2v_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            v2e = (
+                v2e,
+                (
+                    v2e_size_0,
+                    v2e_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            v2c = (
+                v2c,
+                (
+                    v2c_size_0,
+                    v2c_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            e2c2v = (
+                e2c2v,
+                (
+                    e2c2v_size_0,
+                    e2c2v_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            c2v = (
+                c2v,
+                (
+                    c2v_size_0,
+                    c2v_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            c_owner_mask = (c_owner_mask, (c_owner_mask_size_0,), False, False)
+
+            e_owner_mask = (e_owner_mask, (e_owner_mask_size_0,), False, False)
+
+            v_owner_mask = (v_owner_mask, (v_owner_mask_size_0,), False, False)
+
+            c_glb_index = (c_glb_index, (c_glb_index_size_0,), False, False)
+
+            e_glb_index = (e_glb_index, (e_glb_index_size_0,), False, False)
+
+            v_glb_index = (v_glb_index, (v_glb_index_size_0,), False, False)
+
+            edge_length = (edge_length, (edge_length_size_0,), on_gpu, False)
+
+            dual_edge_length = (dual_edge_length, (dual_edge_length_size_0,), on_gpu, False)
+
+            edge_cell_distance = (
+                edge_cell_distance,
+                (
+                    edge_cell_distance_size_0,
+                    edge_cell_distance_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            edge_vertex_distance = (
+                edge_vertex_distance,
+                (
+                    edge_vertex_distance_size_0,
+                    edge_vertex_distance_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            cell_area = (cell_area, (cell_area_size_0,), on_gpu, False)
+
+            dual_area = (dual_area, (dual_area_size_0,), on_gpu, False)
+
+            tangent_orientation = (
+                tangent_orientation,
+                (tangent_orientation_size_0,),
+                on_gpu,
+                False,
+            )
+
+            cell_normal_orientation = (
+                cell_normal_orientation,
+                (
+                    cell_normal_orientation_size_0,
+                    cell_normal_orientation_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            edge_orientation_on_vertex = (
+                edge_orientation_on_vertex,
+                (
+                    edge_orientation_on_vertex_size_0,
+                    edge_orientation_on_vertex_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            cell_lat = (cell_lat, (cell_lat_size_0,), on_gpu, False)
+
+            cell_lon = (cell_lon, (cell_lon_size_0,), on_gpu, False)
+
+            edge_lat = (edge_lat, (edge_lat_size_0,), on_gpu, False)
+
+            edge_lon = (edge_lon, (edge_lon_size_0,), on_gpu, False)
+
+            vertex_lat = (vertex_lat, (vertex_lat_size_0,), on_gpu, False)
+
+            vertex_lon = (vertex_lon, (vertex_lon_size_0,), on_gpu, False)
+
+            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
+
+            vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
+
+            topography = (topography, (topography_size_0,), on_gpu, False)
+
+            rbf_vec_coeff_v = (
+                rbf_vec_coeff_v,
+                (
+                    rbf_vec_coeff_v_size_0,
+                    rbf_vec_coeff_v_size_1,
+                    rbf_vec_coeff_v_size_2,
+                ),
+                on_gpu,
+                False,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "grid_init_v2 constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            grid_init_v2(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                cell_starts=cell_starts,
+                cell_ends=cell_ends,
+                vertex_starts=vertex_starts,
+                vertex_ends=vertex_ends,
+                edge_starts=edge_starts,
+                edge_ends=edge_ends,
+                c2e=c2e,
+                e2c=e2c,
+                c2e2c=c2e2c,
+                e2c2e=e2c2e,
+                e2v=e2v,
+                v2e=v2e,
+                v2c=v2c,
+                e2c2v=e2c2v,
+                c2v=c2v,
+                c_owner_mask=c_owner_mask,
+                e_owner_mask=e_owner_mask,
+                v_owner_mask=v_owner_mask,
+                c_glb_index=c_glb_index,
+                e_glb_index=e_glb_index,
+                v_glb_index=v_glb_index,
+                edge_length=edge_length,
+                dual_edge_length=dual_edge_length,
+                edge_cell_distance=edge_cell_distance,
+                edge_vertex_distance=edge_vertex_distance,
+                cell_area=cell_area,
+                dual_area=dual_area,
+                tangent_orientation=tangent_orientation,
+                cell_normal_orientation=cell_normal_orientation,
+                edge_orientation_on_vertex=edge_orientation_on_vertex,
+                cell_lat=cell_lat,
+                cell_lon=cell_lon,
+                edge_lat=edge_lat,
+                edge_lon=edge_lon,
+                vertex_lat=vertex_lat,
+                vertex_lon=vertex_lon,
+                vct_a=vct_a,
+                vct_b=vct_b,
+                topography=topography,
+                rbf_vec_coeff_v=rbf_vec_coeff_v,
+                mean_cell_area=mean_cell_area,
+                nudge_max_coeff=nudge_max_coeff,
+                lowest_layer_thickness=lowest_layer_thickness,
+                model_top_height=model_top_height,
+                stretch_factor=stretch_factor,
+                flat_height=flat_height,
+                rayleigh_damping_height=rayleigh_damping_height,
+                comm_id=comm_id,
+                num_vertices=num_vertices,
+                num_cells=num_cells,
+                num_edges=num_edges,
+                vertical_size=vertical_size,
+                limited_area=limited_area,
+                backend=backend,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "grid_init_v2 convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "grid_init_v2 execution time: %s" % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
+
+                    cell_starts_arr = (
+                        _conversion.as_array(ffi, cell_starts) if cell_starts is not None else None
+                    )
+                    msg = "shape of cell_starts after computation = %s" % str(
+                        cell_starts_arr.shape if cell_starts is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_starts after computation: %s" % str(cell_starts_arr)
+                        if cell_starts is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    cell_ends_arr = (
+                        _conversion.as_array(ffi, cell_ends) if cell_ends is not None else None
+                    )
+                    msg = "shape of cell_ends after computation = %s" % str(
+                        cell_ends_arr.shape if cell_ends is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_ends after computation: %s" % str(cell_ends_arr)
+                        if cell_ends is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vertex_starts_arr = (
+                        _conversion.as_array(ffi, vertex_starts)
+                        if vertex_starts is not None
+                        else None
+                    )
+                    msg = "shape of vertex_starts after computation = %s" % str(
+                        vertex_starts_arr.shape if vertex_starts is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vertex_starts after computation: %s" % str(vertex_starts_arr)
+                        if vertex_starts is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vertex_ends_arr = (
+                        _conversion.as_array(ffi, vertex_ends) if vertex_ends is not None else None
+                    )
+                    msg = "shape of vertex_ends after computation = %s" % str(
+                        vertex_ends_arr.shape if vertex_ends is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vertex_ends after computation: %s" % str(vertex_ends_arr)
+                        if vertex_ends is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_starts_arr = (
+                        _conversion.as_array(ffi, edge_starts) if edge_starts is not None else None
+                    )
+                    msg = "shape of edge_starts after computation = %s" % str(
+                        edge_starts_arr.shape if edge_starts is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_starts after computation: %s" % str(edge_starts_arr)
+                        if edge_starts is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_ends_arr = (
+                        _conversion.as_array(ffi, edge_ends) if edge_ends is not None else None
+                    )
+                    msg = "shape of edge_ends after computation = %s" % str(
+                        edge_ends_arr.shape if edge_ends is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_ends after computation: %s" % str(edge_ends_arr)
+                        if edge_ends is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    c2e_arr = _conversion.as_array(ffi, c2e) if c2e is not None else None
+                    msg = "shape of c2e after computation = %s" % str(
+                        c2e_arr.shape if c2e is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "c2e after computation: %s" % str(c2e_arr) if c2e is not None else "None"
+                    logger.debug(msg)
+
+                    e2c_arr = _conversion.as_array(ffi, e2c) if e2c is not None else None
+                    msg = "shape of e2c after computation = %s" % str(
+                        e2c_arr.shape if e2c is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "e2c after computation: %s" % str(e2c_arr) if e2c is not None else "None"
+                    logger.debug(msg)
+
+                    c2e2c_arr = _conversion.as_array(ffi, c2e2c) if c2e2c is not None else None
+                    msg = "shape of c2e2c after computation = %s" % str(
+                        c2e2c_arr.shape if c2e2c is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "c2e2c after computation: %s" % str(c2e2c_arr)
+                        if c2e2c is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    e2c2e_arr = _conversion.as_array(ffi, e2c2e) if e2c2e is not None else None
+                    msg = "shape of e2c2e after computation = %s" % str(
+                        e2c2e_arr.shape if e2c2e is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "e2c2e after computation: %s" % str(e2c2e_arr)
+                        if e2c2e is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    e2v_arr = _conversion.as_array(ffi, e2v) if e2v is not None else None
+                    msg = "shape of e2v after computation = %s" % str(
+                        e2v_arr.shape if e2v is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "e2v after computation: %s" % str(e2v_arr) if e2v is not None else "None"
+                    logger.debug(msg)
+
+                    v2e_arr = _conversion.as_array(ffi, v2e) if v2e is not None else None
+                    msg = "shape of v2e after computation = %s" % str(
+                        v2e_arr.shape if v2e is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "v2e after computation: %s" % str(v2e_arr) if v2e is not None else "None"
+                    logger.debug(msg)
+
+                    v2c_arr = _conversion.as_array(ffi, v2c) if v2c is not None else None
+                    msg = "shape of v2c after computation = %s" % str(
+                        v2c_arr.shape if v2c is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "v2c after computation: %s" % str(v2c_arr) if v2c is not None else "None"
+                    logger.debug(msg)
+
+                    e2c2v_arr = _conversion.as_array(ffi, e2c2v) if e2c2v is not None else None
+                    msg = "shape of e2c2v after computation = %s" % str(
+                        e2c2v_arr.shape if e2c2v is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "e2c2v after computation: %s" % str(e2c2v_arr)
+                        if e2c2v is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    c2v_arr = _conversion.as_array(ffi, c2v) if c2v is not None else None
+                    msg = "shape of c2v after computation = %s" % str(
+                        c2v_arr.shape if c2v is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "c2v after computation: %s" % str(c2v_arr) if c2v is not None else "None"
+                    logger.debug(msg)
+
+                    c_owner_mask_arr = (
+                        _conversion.as_array(ffi, c_owner_mask)
+                        if c_owner_mask is not None
+                        else None
+                    )
+                    msg = "shape of c_owner_mask after computation = %s" % str(
+                        c_owner_mask_arr.shape if c_owner_mask is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "c_owner_mask after computation: %s" % str(c_owner_mask_arr)
+                        if c_owner_mask is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    e_owner_mask_arr = (
+                        _conversion.as_array(ffi, e_owner_mask)
+                        if e_owner_mask is not None
+                        else None
+                    )
+                    msg = "shape of e_owner_mask after computation = %s" % str(
+                        e_owner_mask_arr.shape if e_owner_mask is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "e_owner_mask after computation: %s" % str(e_owner_mask_arr)
+                        if e_owner_mask is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    v_owner_mask_arr = (
+                        _conversion.as_array(ffi, v_owner_mask)
+                        if v_owner_mask is not None
+                        else None
+                    )
+                    msg = "shape of v_owner_mask after computation = %s" % str(
+                        v_owner_mask_arr.shape if v_owner_mask is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "v_owner_mask after computation: %s" % str(v_owner_mask_arr)
+                        if v_owner_mask is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    c_glb_index_arr = (
+                        _conversion.as_array(ffi, c_glb_index) if c_glb_index is not None else None
+                    )
+                    msg = "shape of c_glb_index after computation = %s" % str(
+                        c_glb_index_arr.shape if c_glb_index is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "c_glb_index after computation: %s" % str(c_glb_index_arr)
+                        if c_glb_index is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    e_glb_index_arr = (
+                        _conversion.as_array(ffi, e_glb_index) if e_glb_index is not None else None
+                    )
+                    msg = "shape of e_glb_index after computation = %s" % str(
+                        e_glb_index_arr.shape if e_glb_index is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "e_glb_index after computation: %s" % str(e_glb_index_arr)
+                        if e_glb_index is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    v_glb_index_arr = (
+                        _conversion.as_array(ffi, v_glb_index) if v_glb_index is not None else None
+                    )
+                    msg = "shape of v_glb_index after computation = %s" % str(
+                        v_glb_index_arr.shape if v_glb_index is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "v_glb_index after computation: %s" % str(v_glb_index_arr)
+                        if v_glb_index is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_length_arr = (
+                        _conversion.as_array(ffi, edge_length) if edge_length is not None else None
+                    )
+                    msg = "shape of edge_length after computation = %s" % str(
+                        edge_length_arr.shape if edge_length is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_length after computation: %s" % str(edge_length_arr)
+                        if edge_length is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    dual_edge_length_arr = (
+                        _conversion.as_array(ffi, dual_edge_length)
+                        if dual_edge_length is not None
+                        else None
+                    )
+                    msg = "shape of dual_edge_length after computation = %s" % str(
+                        dual_edge_length_arr.shape if dual_edge_length is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "dual_edge_length after computation: %s" % str(dual_edge_length_arr)
+                        if dual_edge_length is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_cell_distance_arr = (
+                        _conversion.as_array(ffi, edge_cell_distance)
+                        if edge_cell_distance is not None
+                        else None
+                    )
+                    msg = "shape of edge_cell_distance after computation = %s" % str(
+                        edge_cell_distance_arr.shape if edge_cell_distance is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_cell_distance after computation: %s" % str(edge_cell_distance_arr)
+                        if edge_cell_distance is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_vertex_distance_arr = (
+                        _conversion.as_array(ffi, edge_vertex_distance)
+                        if edge_vertex_distance is not None
+                        else None
+                    )
+                    msg = "shape of edge_vertex_distance after computation = %s" % str(
+                        edge_vertex_distance_arr.shape
+                        if edge_vertex_distance is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_vertex_distance after computation: %s" % str(edge_vertex_distance_arr)
+                        if edge_vertex_distance is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    cell_area_arr = (
+                        _conversion.as_array(ffi, cell_area) if cell_area is not None else None
+                    )
+                    msg = "shape of cell_area after computation = %s" % str(
+                        cell_area_arr.shape if cell_area is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_area after computation: %s" % str(cell_area_arr)
+                        if cell_area is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    dual_area_arr = (
+                        _conversion.as_array(ffi, dual_area) if dual_area is not None else None
+                    )
+                    msg = "shape of dual_area after computation = %s" % str(
+                        dual_area_arr.shape if dual_area is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "dual_area after computation: %s" % str(dual_area_arr)
+                        if dual_area is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    tangent_orientation_arr = (
+                        _conversion.as_array(ffi, tangent_orientation)
+                        if tangent_orientation is not None
+                        else None
+                    )
+                    msg = "shape of tangent_orientation after computation = %s" % str(
+                        tangent_orientation_arr.shape if tangent_orientation is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tangent_orientation after computation: %s" % str(tangent_orientation_arr)
+                        if tangent_orientation is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    cell_normal_orientation_arr = (
+                        _conversion.as_array(ffi, cell_normal_orientation)
+                        if cell_normal_orientation is not None
+                        else None
+                    )
+                    msg = "shape of cell_normal_orientation after computation = %s" % str(
+                        cell_normal_orientation_arr.shape
+                        if cell_normal_orientation is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_normal_orientation after computation: %s"
+                        % str(cell_normal_orientation_arr)
+                        if cell_normal_orientation is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_orientation_on_vertex_arr = (
+                        _conversion.as_array(ffi, edge_orientation_on_vertex)
+                        if edge_orientation_on_vertex is not None
+                        else None
+                    )
+                    msg = "shape of edge_orientation_on_vertex after computation = %s" % str(
+                        edge_orientation_on_vertex_arr.shape
+                        if edge_orientation_on_vertex is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_orientation_on_vertex after computation: %s"
+                        % str(edge_orientation_on_vertex_arr)
+                        if edge_orientation_on_vertex is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    cell_lat_arr = (
+                        _conversion.as_array(ffi, cell_lat) if cell_lat is not None else None
+                    )
+                    msg = "shape of cell_lat after computation = %s" % str(
+                        cell_lat_arr.shape if cell_lat is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_lat after computation: %s" % str(cell_lat_arr)
+                        if cell_lat is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    cell_lon_arr = (
+                        _conversion.as_array(ffi, cell_lon) if cell_lon is not None else None
+                    )
+                    msg = "shape of cell_lon after computation = %s" % str(
+                        cell_lon_arr.shape if cell_lon is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_lon after computation: %s" % str(cell_lon_arr)
+                        if cell_lon is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_lat_arr = (
+                        _conversion.as_array(ffi, edge_lat) if edge_lat is not None else None
+                    )
+                    msg = "shape of edge_lat after computation = %s" % str(
+                        edge_lat_arr.shape if edge_lat is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_lat after computation: %s" % str(edge_lat_arr)
+                        if edge_lat is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_lon_arr = (
+                        _conversion.as_array(ffi, edge_lon) if edge_lon is not None else None
+                    )
+                    msg = "shape of edge_lon after computation = %s" % str(
+                        edge_lon_arr.shape if edge_lon is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_lon after computation: %s" % str(edge_lon_arr)
+                        if edge_lon is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vertex_lat_arr = (
+                        _conversion.as_array(ffi, vertex_lat) if vertex_lat is not None else None
+                    )
+                    msg = "shape of vertex_lat after computation = %s" % str(
+                        vertex_lat_arr.shape if vertex_lat is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vertex_lat after computation: %s" % str(vertex_lat_arr)
+                        if vertex_lat is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vertex_lon_arr = (
+                        _conversion.as_array(ffi, vertex_lon) if vertex_lon is not None else None
+                    )
+                    msg = "shape of vertex_lon after computation = %s" % str(
+                        vertex_lon_arr.shape if vertex_lon is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vertex_lon after computation: %s" % str(vertex_lon_arr)
+                        if vertex_lon is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vct_a_arr = _conversion.as_array(ffi, vct_a) if vct_a is not None else None
+                    msg = "shape of vct_a after computation = %s" % str(
+                        vct_a_arr.shape if vct_a is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vct_a after computation: %s" % str(vct_a_arr)
+                        if vct_a is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vct_b_arr = _conversion.as_array(ffi, vct_b) if vct_b is not None else None
+                    msg = "shape of vct_b after computation = %s" % str(
+                        vct_b_arr.shape if vct_b is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vct_b after computation: %s" % str(vct_b_arr)
+                        if vct_b is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    topography_arr = (
+                        _conversion.as_array(ffi, topography) if topography is not None else None
+                    )
+                    msg = "shape of topography after computation = %s" % str(
+                        topography_arr.shape if topography is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "topography after computation: %s" % str(topography_arr)
+                        if topography is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    rbf_vec_coeff_v_arr = (
+                        _conversion.as_array(ffi, rbf_vec_coeff_v)
+                        if rbf_vec_coeff_v is not None
+                        else None
+                    )
+                    msg = "shape of rbf_vec_coeff_v after computation = %s" % str(
+                        rbf_vec_coeff_v_arr.shape if rbf_vec_coeff_v is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rbf_vec_coeff_v after computation: %s" % str(rbf_vec_coeff_v_arr)
+                        if rbf_vec_coeff_v is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+            if __debug__:
+                logger.info("Python execution of grid_init_v2 completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def diffusion_init_v2_wrapper(
+    ndyn_substeps,
+    diffusion_type,
+    hdiff_w,
+    hdiff_vn,
+    hdiff_smag_w,
+    zdiffu_t,
+    type_t_diffu,
+    type_vn_diffu,
+    hdiff_efdt_ratio,
+    hdiff_w_efdt_ratio,
+    smagorinski_scaling_factor,
+    smagorinski_scaling_factor2,
+    smagorinski_scaling_factor3,
+    smagorinski_scaling_factor4,
+    smagorinski_scaling_height,
+    smagorinski_scaling_height2,
+    smagorinski_scaling_height3,
+    smagorinski_scaling_height4,
+    hdiff_temp,
+    denom_diffu_v,
+    nudge_max_coeff,
+    itype_sher,
+    iforcing,
+    a_hshr,
+    loutshs,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_init_v2"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of diffusion_init_v2 started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "diffusion_init_v2 constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            diffusion_init_v2(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                ndyn_substeps=ndyn_substeps,
+                diffusion_type=diffusion_type,
+                hdiff_w=hdiff_w,
+                hdiff_vn=hdiff_vn,
+                hdiff_smag_w=hdiff_smag_w,
+                zdiffu_t=zdiffu_t,
+                type_t_diffu=type_t_diffu,
+                type_vn_diffu=type_vn_diffu,
+                hdiff_efdt_ratio=hdiff_efdt_ratio,
+                hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
+                smagorinski_scaling_factor=smagorinski_scaling_factor,
+                smagorinski_scaling_factor2=smagorinski_scaling_factor2,
+                smagorinski_scaling_factor3=smagorinski_scaling_factor3,
+                smagorinski_scaling_factor4=smagorinski_scaling_factor4,
+                smagorinski_scaling_height=smagorinski_scaling_height,
+                smagorinski_scaling_height2=smagorinski_scaling_height2,
+                smagorinski_scaling_height3=smagorinski_scaling_height3,
+                smagorinski_scaling_height4=smagorinski_scaling_height4,
+                hdiff_temp=hdiff_temp,
+                denom_diffu_v=denom_diffu_v,
+                nudge_max_coeff=nudge_max_coeff,
+                itype_sher=itype_sher,
+                iforcing=iforcing,
+                a_hshr=a_hshr,
+                loutshs=loutshs,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "diffusion_init_v2 convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "diffusion_init_v2 execution time: %s"
+                        % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                logger.info("Python execution of diffusion_init_v2 completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def diffusion_run_v2_wrapper(
+    w,
+    w_size_0,
+    w_size_1,
+    vn,
+    vn_size_0,
+    vn_size_1,
+    exner,
+    exner_size_0,
+    exner_size_1,
+    theta_v,
+    theta_v_size_0,
+    theta_v_size_1,
+    rho,
+    rho_size_0,
+    rho_size_1,
+    hdef_ic,
+    hdef_ic_size_0,
+    hdef_ic_size_1,
+    div_ic,
+    div_ic_size_0,
+    div_ic_size_1,
+    dwdx,
+    dwdx_size_0,
+    dwdx_size_1,
+    dwdy,
+    dwdy_size_0,
+    dwdy_size_1,
+    dtime,
+    linit,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_run_v2"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of diffusion_run_v2 started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            w = (
+                w,
+                (
+                    w_size_0,
+                    w_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vn = (
+                vn,
+                (
+                    vn_size_0,
+                    vn_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            exner = (
+                exner,
+                (
+                    exner_size_0,
+                    exner_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            theta_v = (
+                theta_v,
+                (
+                    theta_v_size_0,
+                    theta_v_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            rho = (
+                rho,
+                (
+                    rho_size_0,
+                    rho_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            hdef_ic = (
+                hdef_ic,
+                (
+                    hdef_ic_size_0,
+                    hdef_ic_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            div_ic = (
+                div_ic,
+                (
+                    div_ic_size_0,
+                    div_ic_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            dwdx = (
+                dwdx,
+                (
+                    dwdx_size_0,
+                    dwdx_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            dwdy = (
+                dwdy,
+                (
+                    dwdy_size_0,
+                    dwdy_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "diffusion_run_v2 constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            diffusion_run_v2(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                w=w,
+                vn=vn,
+                exner=exner,
+                theta_v=theta_v,
+                rho=rho,
+                hdef_ic=hdef_ic,
+                div_ic=div_ic,
+                dwdx=dwdx,
+                dwdy=dwdy,
+                dtime=dtime,
+                linit=linit,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "diffusion_run_v2 convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "diffusion_run_v2 execution time: %s" % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
+
+                    w_arr = _conversion.as_array(ffi, w) if w is not None else None
+                    msg = "shape of w after computation = %s" % str(
+                        w_arr.shape if w is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "w after computation: %s" % str(w_arr) if w is not None else "None"
+                    logger.debug(msg)
+
+                    vn_arr = _conversion.as_array(ffi, vn) if vn is not None else None
+                    msg = "shape of vn after computation = %s" % str(
+                        vn_arr.shape if vn is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "vn after computation: %s" % str(vn_arr) if vn is not None else "None"
+                    logger.debug(msg)
+
+                    exner_arr = _conversion.as_array(ffi, exner) if exner is not None else None
+                    msg = "shape of exner after computation = %s" % str(
+                        exner_arr.shape if exner is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "exner after computation: %s" % str(exner_arr)
+                        if exner is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    theta_v_arr = (
+                        _conversion.as_array(ffi, theta_v) if theta_v is not None else None
+                    )
+                    msg = "shape of theta_v after computation = %s" % str(
+                        theta_v_arr.shape if theta_v is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "theta_v after computation: %s" % str(theta_v_arr)
+                        if theta_v is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    rho_arr = _conversion.as_array(ffi, rho) if rho is not None else None
+                    msg = "shape of rho after computation = %s" % str(
+                        rho_arr.shape if rho is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "rho after computation: %s" % str(rho_arr) if rho is not None else "None"
+                    logger.debug(msg)
+
+                    hdef_ic_arr = (
+                        _conversion.as_array(ffi, hdef_ic) if hdef_ic is not None else None
+                    )
+                    msg = "shape of hdef_ic after computation = %s" % str(
+                        hdef_ic_arr.shape if hdef_ic is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "hdef_ic after computation: %s" % str(hdef_ic_arr)
+                        if hdef_ic is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    div_ic_arr = _conversion.as_array(ffi, div_ic) if div_ic is not None else None
+                    msg = "shape of div_ic after computation = %s" % str(
+                        div_ic_arr.shape if div_ic is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "div_ic after computation: %s" % str(div_ic_arr)
+                        if div_ic is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    dwdx_arr = _conversion.as_array(ffi, dwdx) if dwdx is not None else None
+                    msg = "shape of dwdx after computation = %s" % str(
+                        dwdx_arr.shape if dwdx is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "dwdx after computation: %s" % str(dwdx_arr) if dwdx is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    dwdy_arr = _conversion.as_array(ffi, dwdy) if dwdy is not None else None
+                    msg = "shape of dwdy after computation = %s" % str(
+                        dwdy_arr.shape if dwdy is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "dwdy after computation: %s" % str(dwdy_arr) if dwdy is not None else "None"
+                    )
+                    logger.debug(msg)
+
+            if __debug__:
+                logger.info("Python execution of diffusion_run_v2 completed.")
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")

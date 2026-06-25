@@ -12,6 +12,12 @@ module icon4py_bindings
 
    public :: solve_nh_run
 
+   public :: grid_init_v2
+
+   public :: diffusion_init_v2
+
+   public :: diffusion_run_v2
+
    interface
 
       function diffusion_init_wrapper(theta_ref_mc, &
@@ -1511,6 +1517,519 @@ module icon4py_bindings
          logical(c_bool), value :: on_gpu
 
       end function solve_nh_run_wrapper
+
+      function grid_init_v2_wrapper(cell_starts, &
+                                    cell_starts_size_0, &
+                                    cell_ends, &
+                                    cell_ends_size_0, &
+                                    vertex_starts, &
+                                    vertex_starts_size_0, &
+                                    vertex_ends, &
+                                    vertex_ends_size_0, &
+                                    edge_starts, &
+                                    edge_starts_size_0, &
+                                    edge_ends, &
+                                    edge_ends_size_0, &
+                                    c2e, &
+                                    c2e_size_0, &
+                                    c2e_size_1, &
+                                    e2c, &
+                                    e2c_size_0, &
+                                    e2c_size_1, &
+                                    c2e2c, &
+                                    c2e2c_size_0, &
+                                    c2e2c_size_1, &
+                                    e2c2e, &
+                                    e2c2e_size_0, &
+                                    e2c2e_size_1, &
+                                    e2v, &
+                                    e2v_size_0, &
+                                    e2v_size_1, &
+                                    v2e, &
+                                    v2e_size_0, &
+                                    v2e_size_1, &
+                                    v2c, &
+                                    v2c_size_0, &
+                                    v2c_size_1, &
+                                    e2c2v, &
+                                    e2c2v_size_0, &
+                                    e2c2v_size_1, &
+                                    c2v, &
+                                    c2v_size_0, &
+                                    c2v_size_1, &
+                                    c_owner_mask, &
+                                    c_owner_mask_size_0, &
+                                    e_owner_mask, &
+                                    e_owner_mask_size_0, &
+                                    v_owner_mask, &
+                                    v_owner_mask_size_0, &
+                                    c_glb_index, &
+                                    c_glb_index_size_0, &
+                                    e_glb_index, &
+                                    e_glb_index_size_0, &
+                                    v_glb_index, &
+                                    v_glb_index_size_0, &
+                                    edge_length, &
+                                    edge_length_size_0, &
+                                    dual_edge_length, &
+                                    dual_edge_length_size_0, &
+                                    edge_cell_distance, &
+                                    edge_cell_distance_size_0, &
+                                    edge_cell_distance_size_1, &
+                                    edge_vertex_distance, &
+                                    edge_vertex_distance_size_0, &
+                                    edge_vertex_distance_size_1, &
+                                    cell_area, &
+                                    cell_area_size_0, &
+                                    dual_area, &
+                                    dual_area_size_0, &
+                                    tangent_orientation, &
+                                    tangent_orientation_size_0, &
+                                    cell_normal_orientation, &
+                                    cell_normal_orientation_size_0, &
+                                    cell_normal_orientation_size_1, &
+                                    edge_orientation_on_vertex, &
+                                    edge_orientation_on_vertex_size_0, &
+                                    edge_orientation_on_vertex_size_1, &
+                                    cell_lat, &
+                                    cell_lat_size_0, &
+                                    cell_lon, &
+                                    cell_lon_size_0, &
+                                    edge_lat, &
+                                    edge_lat_size_0, &
+                                    edge_lon, &
+                                    edge_lon_size_0, &
+                                    vertex_lat, &
+                                    vertex_lat_size_0, &
+                                    vertex_lon, &
+                                    vertex_lon_size_0, &
+                                    vct_a, &
+                                    vct_a_size_0, &
+                                    vct_b, &
+                                    vct_b_size_0, &
+                                    topography, &
+                                    topography_size_0, &
+                                    rbf_vec_coeff_v, &
+                                    rbf_vec_coeff_v_size_0, &
+                                    rbf_vec_coeff_v_size_1, &
+                                    rbf_vec_coeff_v_size_2, &
+                                    mean_cell_area, &
+                                    nudge_max_coeff, &
+                                    lowest_layer_thickness, &
+                                    model_top_height, &
+                                    stretch_factor, &
+                                    flat_height, &
+                                    rayleigh_damping_height, &
+                                    comm_id, &
+                                    num_vertices, &
+                                    num_cells, &
+                                    num_edges, &
+                                    vertical_size, &
+                                    limited_area, &
+                                    backend, &
+                                    on_gpu) bind(c, name="grid_init_v2_wrapper") result(rc)
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         type(c_ptr), value, target :: cell_starts
+
+         integer(c_int), value :: cell_starts_size_0
+
+         type(c_ptr), value, target :: cell_ends
+
+         integer(c_int), value :: cell_ends_size_0
+
+         type(c_ptr), value, target :: vertex_starts
+
+         integer(c_int), value :: vertex_starts_size_0
+
+         type(c_ptr), value, target :: vertex_ends
+
+         integer(c_int), value :: vertex_ends_size_0
+
+         type(c_ptr), value, target :: edge_starts
+
+         integer(c_int), value :: edge_starts_size_0
+
+         type(c_ptr), value, target :: edge_ends
+
+         integer(c_int), value :: edge_ends_size_0
+
+         type(c_ptr), value, target :: c2e
+
+         integer(c_int), value :: c2e_size_0
+
+         integer(c_int), value :: c2e_size_1
+
+         type(c_ptr), value, target :: e2c
+
+         integer(c_int), value :: e2c_size_0
+
+         integer(c_int), value :: e2c_size_1
+
+         type(c_ptr), value, target :: c2e2c
+
+         integer(c_int), value :: c2e2c_size_0
+
+         integer(c_int), value :: c2e2c_size_1
+
+         type(c_ptr), value, target :: e2c2e
+
+         integer(c_int), value :: e2c2e_size_0
+
+         integer(c_int), value :: e2c2e_size_1
+
+         type(c_ptr), value, target :: e2v
+
+         integer(c_int), value :: e2v_size_0
+
+         integer(c_int), value :: e2v_size_1
+
+         type(c_ptr), value, target :: v2e
+
+         integer(c_int), value :: v2e_size_0
+
+         integer(c_int), value :: v2e_size_1
+
+         type(c_ptr), value, target :: v2c
+
+         integer(c_int), value :: v2c_size_0
+
+         integer(c_int), value :: v2c_size_1
+
+         type(c_ptr), value, target :: e2c2v
+
+         integer(c_int), value :: e2c2v_size_0
+
+         integer(c_int), value :: e2c2v_size_1
+
+         type(c_ptr), value, target :: c2v
+
+         integer(c_int), value :: c2v_size_0
+
+         integer(c_int), value :: c2v_size_1
+
+         type(c_ptr), value, target :: c_owner_mask
+
+         integer(c_int), value :: c_owner_mask_size_0
+
+         type(c_ptr), value, target :: e_owner_mask
+
+         integer(c_int), value :: e_owner_mask_size_0
+
+         type(c_ptr), value, target :: v_owner_mask
+
+         integer(c_int), value :: v_owner_mask_size_0
+
+         type(c_ptr), value, target :: c_glb_index
+
+         integer(c_int), value :: c_glb_index_size_0
+
+         type(c_ptr), value, target :: e_glb_index
+
+         integer(c_int), value :: e_glb_index_size_0
+
+         type(c_ptr), value, target :: v_glb_index
+
+         integer(c_int), value :: v_glb_index_size_0
+
+         type(c_ptr), value, target :: edge_length
+
+         integer(c_int), value :: edge_length_size_0
+
+         type(c_ptr), value, target :: dual_edge_length
+
+         integer(c_int), value :: dual_edge_length_size_0
+
+         type(c_ptr), value, target :: edge_cell_distance
+
+         integer(c_int), value :: edge_cell_distance_size_0
+
+         integer(c_int), value :: edge_cell_distance_size_1
+
+         type(c_ptr), value, target :: edge_vertex_distance
+
+         integer(c_int), value :: edge_vertex_distance_size_0
+
+         integer(c_int), value :: edge_vertex_distance_size_1
+
+         type(c_ptr), value, target :: cell_area
+
+         integer(c_int), value :: cell_area_size_0
+
+         type(c_ptr), value, target :: dual_area
+
+         integer(c_int), value :: dual_area_size_0
+
+         type(c_ptr), value, target :: tangent_orientation
+
+         integer(c_int), value :: tangent_orientation_size_0
+
+         type(c_ptr), value, target :: cell_normal_orientation
+
+         integer(c_int), value :: cell_normal_orientation_size_0
+
+         integer(c_int), value :: cell_normal_orientation_size_1
+
+         type(c_ptr), value, target :: edge_orientation_on_vertex
+
+         integer(c_int), value :: edge_orientation_on_vertex_size_0
+
+         integer(c_int), value :: edge_orientation_on_vertex_size_1
+
+         type(c_ptr), value, target :: cell_lat
+
+         integer(c_int), value :: cell_lat_size_0
+
+         type(c_ptr), value, target :: cell_lon
+
+         integer(c_int), value :: cell_lon_size_0
+
+         type(c_ptr), value, target :: edge_lat
+
+         integer(c_int), value :: edge_lat_size_0
+
+         type(c_ptr), value, target :: edge_lon
+
+         integer(c_int), value :: edge_lon_size_0
+
+         type(c_ptr), value, target :: vertex_lat
+
+         integer(c_int), value :: vertex_lat_size_0
+
+         type(c_ptr), value, target :: vertex_lon
+
+         integer(c_int), value :: vertex_lon_size_0
+
+         type(c_ptr), value, target :: vct_a
+
+         integer(c_int), value :: vct_a_size_0
+
+         type(c_ptr), value, target :: vct_b
+
+         integer(c_int), value :: vct_b_size_0
+
+         type(c_ptr), value, target :: topography
+
+         integer(c_int), value :: topography_size_0
+
+         type(c_ptr), value, target :: rbf_vec_coeff_v
+
+         integer(c_int), value :: rbf_vec_coeff_v_size_0
+
+         integer(c_int), value :: rbf_vec_coeff_v_size_1
+
+         integer(c_int), value :: rbf_vec_coeff_v_size_2
+
+         real(c_double), value, target :: mean_cell_area
+
+         real(c_double), value, target :: nudge_max_coeff
+
+         real(c_double), value, target :: lowest_layer_thickness
+
+         real(c_double), value, target :: model_top_height
+
+         real(c_double), value, target :: stretch_factor
+
+         real(c_double), value, target :: flat_height
+
+         real(c_double), value, target :: rayleigh_damping_height
+
+         integer(c_int), value, target :: comm_id
+
+         integer(c_int), value, target :: num_vertices
+
+         integer(c_int), value, target :: num_cells
+
+         integer(c_int), value, target :: num_edges
+
+         integer(c_int), value, target :: vertical_size
+
+         logical(c_bool), value, target :: limited_area
+
+         integer(c_int), value, target :: backend
+
+         logical(c_bool), value :: on_gpu
+
+      end function grid_init_v2_wrapper
+
+      function diffusion_init_v2_wrapper(ndyn_substeps, &
+                                         diffusion_type, &
+                                         hdiff_w, &
+                                         hdiff_vn, &
+                                         hdiff_smag_w, &
+                                         zdiffu_t, &
+                                         type_t_diffu, &
+                                         type_vn_diffu, &
+                                         hdiff_efdt_ratio, &
+                                         hdiff_w_efdt_ratio, &
+                                         smagorinski_scaling_factor, &
+                                         smagorinski_scaling_factor2, &
+                                         smagorinski_scaling_factor3, &
+                                         smagorinski_scaling_factor4, &
+                                         smagorinski_scaling_height, &
+                                         smagorinski_scaling_height2, &
+                                         smagorinski_scaling_height3, &
+                                         smagorinski_scaling_height4, &
+                                         hdiff_temp, &
+                                         denom_diffu_v, &
+                                         nudge_max_coeff, &
+                                         itype_sher, &
+                                         iforcing, &
+                                         a_hshr, &
+                                         loutshs, &
+                                         on_gpu) bind(c, name="diffusion_init_v2_wrapper") result(rc)
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         integer(c_int), value, target :: ndyn_substeps
+
+         integer(c_int), value, target :: diffusion_type
+
+         logical(c_bool), value, target :: hdiff_w
+
+         logical(c_bool), value, target :: hdiff_vn
+
+         logical(c_bool), value, target :: hdiff_smag_w
+
+         logical(c_bool), value, target :: zdiffu_t
+
+         integer(c_int), value, target :: type_t_diffu
+
+         integer(c_int), value, target :: type_vn_diffu
+
+         real(c_double), value, target :: hdiff_efdt_ratio
+
+         real(c_double), value, target :: hdiff_w_efdt_ratio
+
+         real(c_double), value, target :: smagorinski_scaling_factor
+
+         real(c_double), value, target :: smagorinski_scaling_factor2
+
+         real(c_double), value, target :: smagorinski_scaling_factor3
+
+         real(c_double), value, target :: smagorinski_scaling_factor4
+
+         real(c_double), value, target :: smagorinski_scaling_height
+
+         real(c_double), value, target :: smagorinski_scaling_height2
+
+         real(c_double), value, target :: smagorinski_scaling_height3
+
+         real(c_double), value, target :: smagorinski_scaling_height4
+
+         logical(c_bool), value, target :: hdiff_temp
+
+         real(c_double), value, target :: denom_diffu_v
+
+         real(c_double), value, target :: nudge_max_coeff
+
+         integer(c_int), value, target :: itype_sher
+
+         integer(c_int), value, target :: iforcing
+
+         real(c_double), value, target :: a_hshr
+
+         logical(c_bool), value, target :: loutshs
+
+         logical(c_bool), value :: on_gpu
+
+      end function diffusion_init_v2_wrapper
+
+      function diffusion_run_v2_wrapper(w, &
+                                        w_size_0, &
+                                        w_size_1, &
+                                        vn, &
+                                        vn_size_0, &
+                                        vn_size_1, &
+                                        exner, &
+                                        exner_size_0, &
+                                        exner_size_1, &
+                                        theta_v, &
+                                        theta_v_size_0, &
+                                        theta_v_size_1, &
+                                        rho, &
+                                        rho_size_0, &
+                                        rho_size_1, &
+                                        hdef_ic, &
+                                        hdef_ic_size_0, &
+                                        hdef_ic_size_1, &
+                                        div_ic, &
+                                        div_ic_size_0, &
+                                        div_ic_size_1, &
+                                        dwdx, &
+                                        dwdx_size_0, &
+                                        dwdx_size_1, &
+                                        dwdy, &
+                                        dwdy_size_0, &
+                                        dwdy_size_1, &
+                                        dtime, &
+                                        linit, &
+                                        on_gpu) bind(c, name="diffusion_run_v2_wrapper") result(rc)
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         type(c_ptr), value, target :: w
+
+         integer(c_int), value :: w_size_0
+
+         integer(c_int), value :: w_size_1
+
+         type(c_ptr), value, target :: vn
+
+         integer(c_int), value :: vn_size_0
+
+         integer(c_int), value :: vn_size_1
+
+         type(c_ptr), value, target :: exner
+
+         integer(c_int), value :: exner_size_0
+
+         integer(c_int), value :: exner_size_1
+
+         type(c_ptr), value, target :: theta_v
+
+         integer(c_int), value :: theta_v_size_0
+
+         integer(c_int), value :: theta_v_size_1
+
+         type(c_ptr), value, target :: rho
+
+         integer(c_int), value :: rho_size_0
+
+         integer(c_int), value :: rho_size_1
+
+         type(c_ptr), value, target :: hdef_ic
+
+         integer(c_int), value :: hdef_ic_size_0
+
+         integer(c_int), value :: hdef_ic_size_1
+
+         type(c_ptr), value, target :: div_ic
+
+         integer(c_int), value :: div_ic_size_0
+
+         integer(c_int), value :: div_ic_size_1
+
+         type(c_ptr), value, target :: dwdx
+
+         integer(c_int), value :: dwdx_size_0
+
+         integer(c_int), value :: dwdx_size_1
+
+         type(c_ptr), value, target :: dwdy
+
+         integer(c_int), value :: dwdy_size_0
+
+         integer(c_int), value :: dwdy_size_1
+
+         real(c_double), value, target :: dtime
+
+         logical(c_bool), value, target :: linit
+
+         logical(c_bool), value :: on_gpu
+
+      end function diffusion_run_v2_wrapper
 
    end interface
 
@@ -4071,5 +4590,861 @@ contains
       !$acc end host_data
       !$acc end host_data
    end subroutine solve_nh_run
+
+   subroutine grid_init_v2(cell_starts, &
+                           cell_ends, &
+                           vertex_starts, &
+                           vertex_ends, &
+                           edge_starts, &
+                           edge_ends, &
+                           c2e, &
+                           e2c, &
+                           c2e2c, &
+                           e2c2e, &
+                           e2v, &
+                           v2e, &
+                           v2c, &
+                           e2c2v, &
+                           c2v, &
+                           c_owner_mask, &
+                           e_owner_mask, &
+                           v_owner_mask, &
+                           c_glb_index, &
+                           e_glb_index, &
+                           v_glb_index, &
+                           edge_length, &
+                           dual_edge_length, &
+                           edge_cell_distance, &
+                           edge_vertex_distance, &
+                           cell_area, &
+                           dual_area, &
+                           tangent_orientation, &
+                           cell_normal_orientation, &
+                           edge_orientation_on_vertex, &
+                           cell_lat, &
+                           cell_lon, &
+                           edge_lat, &
+                           edge_lon, &
+                           vertex_lat, &
+                           vertex_lon, &
+                           vct_a, &
+                           vct_b, &
+                           topography, &
+                           rbf_vec_coeff_v, &
+                           mean_cell_area, &
+                           nudge_max_coeff, &
+                           lowest_layer_thickness, &
+                           model_top_height, &
+                           stretch_factor, &
+                           flat_height, &
+                           rayleigh_damping_height, &
+                           comm_id, &
+                           num_vertices, &
+                           num_cells, &
+                           num_edges, &
+                           vertical_size, &
+                           limited_area, &
+                           backend, &
+                           rc)
+      use, intrinsic :: iso_c_binding
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: cell_starts
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: cell_ends
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: vertex_starts
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: vertex_ends
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: edge_starts
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: edge_ends
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: c2e
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2c
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: c2e2c
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2c2e
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2v
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: v2e
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: v2c
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: e2c2v
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: c2v
+
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: c_owner_mask
+
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: e_owner_mask
+
+      logical(c_bool), dimension(:), contiguous, intent(inout), target :: v_owner_mask
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: c_glb_index
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: e_glb_index
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: v_glb_index
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: edge_length
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: dual_edge_length
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: edge_cell_distance
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: edge_vertex_distance
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: cell_area
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: dual_area
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tangent_orientation
+
+      integer(c_int), dimension(:, :), contiguous, intent(inout), target :: cell_normal_orientation
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: edge_orientation_on_vertex
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: cell_lat
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: cell_lon
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: edge_lat
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: edge_lon
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vertex_lat
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vertex_lon
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vct_a
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: vct_b
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: topography
+
+      real(c_double), dimension(:, :, :), contiguous, intent(inout), target :: rbf_vec_coeff_v
+
+      real(c_double), value, target :: mean_cell_area
+
+      real(c_double), value, target :: nudge_max_coeff
+
+      real(c_double), value, target :: lowest_layer_thickness
+
+      real(c_double), value, target :: model_top_height
+
+      real(c_double), value, target :: stretch_factor
+
+      real(c_double), value, target :: flat_height
+
+      real(c_double), value, target :: rayleigh_damping_height
+
+      integer(c_int), value, target :: comm_id
+
+      integer(c_int), value, target :: num_vertices
+
+      integer(c_int), value, target :: num_cells
+
+      integer(c_int), value, target :: num_edges
+
+      integer(c_int), value, target :: vertical_size
+
+      logical(c_bool), value, target :: limited_area
+
+      integer(c_int), value, target :: backend
+
+      logical(c_bool) :: on_gpu
+
+      integer(c_int) :: cell_starts_size_0
+
+      integer(c_int) :: cell_ends_size_0
+
+      integer(c_int) :: vertex_starts_size_0
+
+      integer(c_int) :: vertex_ends_size_0
+
+      integer(c_int) :: edge_starts_size_0
+
+      integer(c_int) :: edge_ends_size_0
+
+      integer(c_int) :: c2e_size_0
+
+      integer(c_int) :: c2e_size_1
+
+      integer(c_int) :: e2c_size_0
+
+      integer(c_int) :: e2c_size_1
+
+      integer(c_int) :: c2e2c_size_0
+
+      integer(c_int) :: c2e2c_size_1
+
+      integer(c_int) :: e2c2e_size_0
+
+      integer(c_int) :: e2c2e_size_1
+
+      integer(c_int) :: e2v_size_0
+
+      integer(c_int) :: e2v_size_1
+
+      integer(c_int) :: v2e_size_0
+
+      integer(c_int) :: v2e_size_1
+
+      integer(c_int) :: v2c_size_0
+
+      integer(c_int) :: v2c_size_1
+
+      integer(c_int) :: e2c2v_size_0
+
+      integer(c_int) :: e2c2v_size_1
+
+      integer(c_int) :: c2v_size_0
+
+      integer(c_int) :: c2v_size_1
+
+      integer(c_int) :: c_owner_mask_size_0
+
+      integer(c_int) :: e_owner_mask_size_0
+
+      integer(c_int) :: v_owner_mask_size_0
+
+      integer(c_int) :: c_glb_index_size_0
+
+      integer(c_int) :: e_glb_index_size_0
+
+      integer(c_int) :: v_glb_index_size_0
+
+      integer(c_int) :: edge_length_size_0
+
+      integer(c_int) :: dual_edge_length_size_0
+
+      integer(c_int) :: edge_cell_distance_size_0
+
+      integer(c_int) :: edge_cell_distance_size_1
+
+      integer(c_int) :: edge_vertex_distance_size_0
+
+      integer(c_int) :: edge_vertex_distance_size_1
+
+      integer(c_int) :: cell_area_size_0
+
+      integer(c_int) :: dual_area_size_0
+
+      integer(c_int) :: tangent_orientation_size_0
+
+      integer(c_int) :: cell_normal_orientation_size_0
+
+      integer(c_int) :: cell_normal_orientation_size_1
+
+      integer(c_int) :: edge_orientation_on_vertex_size_0
+
+      integer(c_int) :: edge_orientation_on_vertex_size_1
+
+      integer(c_int) :: cell_lat_size_0
+
+      integer(c_int) :: cell_lon_size_0
+
+      integer(c_int) :: edge_lat_size_0
+
+      integer(c_int) :: edge_lon_size_0
+
+      integer(c_int) :: vertex_lat_size_0
+
+      integer(c_int) :: vertex_lon_size_0
+
+      integer(c_int) :: vct_a_size_0
+
+      integer(c_int) :: vct_b_size_0
+
+      integer(c_int) :: topography_size_0
+
+      integer(c_int) :: rbf_vec_coeff_v_size_0
+
+      integer(c_int) :: rbf_vec_coeff_v_size_1
+
+      integer(c_int) :: rbf_vec_coeff_v_size_2
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+      !$acc host_data use_device(c2e)
+      !$acc host_data use_device(e2c)
+      !$acc host_data use_device(c2e2c)
+      !$acc host_data use_device(e2c2e)
+      !$acc host_data use_device(e2v)
+      !$acc host_data use_device(v2e)
+      !$acc host_data use_device(v2c)
+      !$acc host_data use_device(e2c2v)
+      !$acc host_data use_device(c2v)
+      !$acc host_data use_device(edge_length)
+      !$acc host_data use_device(dual_edge_length)
+      !$acc host_data use_device(edge_cell_distance)
+      !$acc host_data use_device(edge_vertex_distance)
+      !$acc host_data use_device(cell_area)
+      !$acc host_data use_device(dual_area)
+      !$acc host_data use_device(tangent_orientation)
+      !$acc host_data use_device(cell_normal_orientation)
+      !$acc host_data use_device(edge_orientation_on_vertex)
+      !$acc host_data use_device(cell_lat)
+      !$acc host_data use_device(cell_lon)
+      !$acc host_data use_device(edge_lat)
+      !$acc host_data use_device(edge_lon)
+      !$acc host_data use_device(vertex_lat)
+      !$acc host_data use_device(vertex_lon)
+      !$acc host_data use_device(vct_a)
+      !$acc host_data use_device(vct_b)
+      !$acc host_data use_device(topography)
+      !$acc host_data use_device(rbf_vec_coeff_v)
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
+
+      cell_starts_size_0 = SIZE(cell_starts, 1)
+
+      cell_ends_size_0 = SIZE(cell_ends, 1)
+
+      vertex_starts_size_0 = SIZE(vertex_starts, 1)
+
+      vertex_ends_size_0 = SIZE(vertex_ends, 1)
+
+      edge_starts_size_0 = SIZE(edge_starts, 1)
+
+      edge_ends_size_0 = SIZE(edge_ends, 1)
+
+      c2e_size_0 = SIZE(c2e, 1)
+      c2e_size_1 = SIZE(c2e, 2)
+
+      e2c_size_0 = SIZE(e2c, 1)
+      e2c_size_1 = SIZE(e2c, 2)
+
+      c2e2c_size_0 = SIZE(c2e2c, 1)
+      c2e2c_size_1 = SIZE(c2e2c, 2)
+
+      e2c2e_size_0 = SIZE(e2c2e, 1)
+      e2c2e_size_1 = SIZE(e2c2e, 2)
+
+      e2v_size_0 = SIZE(e2v, 1)
+      e2v_size_1 = SIZE(e2v, 2)
+
+      v2e_size_0 = SIZE(v2e, 1)
+      v2e_size_1 = SIZE(v2e, 2)
+
+      v2c_size_0 = SIZE(v2c, 1)
+      v2c_size_1 = SIZE(v2c, 2)
+
+      e2c2v_size_0 = SIZE(e2c2v, 1)
+      e2c2v_size_1 = SIZE(e2c2v, 2)
+
+      c2v_size_0 = SIZE(c2v, 1)
+      c2v_size_1 = SIZE(c2v, 2)
+
+      c_owner_mask_size_0 = SIZE(c_owner_mask, 1)
+
+      e_owner_mask_size_0 = SIZE(e_owner_mask, 1)
+
+      v_owner_mask_size_0 = SIZE(v_owner_mask, 1)
+
+      c_glb_index_size_0 = SIZE(c_glb_index, 1)
+
+      e_glb_index_size_0 = SIZE(e_glb_index, 1)
+
+      v_glb_index_size_0 = SIZE(v_glb_index, 1)
+
+      edge_length_size_0 = SIZE(edge_length, 1)
+
+      dual_edge_length_size_0 = SIZE(dual_edge_length, 1)
+
+      edge_cell_distance_size_0 = SIZE(edge_cell_distance, 1)
+      edge_cell_distance_size_1 = SIZE(edge_cell_distance, 2)
+
+      edge_vertex_distance_size_0 = SIZE(edge_vertex_distance, 1)
+      edge_vertex_distance_size_1 = SIZE(edge_vertex_distance, 2)
+
+      cell_area_size_0 = SIZE(cell_area, 1)
+
+      dual_area_size_0 = SIZE(dual_area, 1)
+
+      tangent_orientation_size_0 = SIZE(tangent_orientation, 1)
+
+      cell_normal_orientation_size_0 = SIZE(cell_normal_orientation, 1)
+      cell_normal_orientation_size_1 = SIZE(cell_normal_orientation, 2)
+
+      edge_orientation_on_vertex_size_0 = SIZE(edge_orientation_on_vertex, 1)
+      edge_orientation_on_vertex_size_1 = SIZE(edge_orientation_on_vertex, 2)
+
+      cell_lat_size_0 = SIZE(cell_lat, 1)
+
+      cell_lon_size_0 = SIZE(cell_lon, 1)
+
+      edge_lat_size_0 = SIZE(edge_lat, 1)
+
+      edge_lon_size_0 = SIZE(edge_lon, 1)
+
+      vertex_lat_size_0 = SIZE(vertex_lat, 1)
+
+      vertex_lon_size_0 = SIZE(vertex_lon, 1)
+
+      vct_a_size_0 = SIZE(vct_a, 1)
+
+      vct_b_size_0 = SIZE(vct_b, 1)
+
+      topography_size_0 = SIZE(topography, 1)
+
+      rbf_vec_coeff_v_size_0 = SIZE(rbf_vec_coeff_v, 1)
+      rbf_vec_coeff_v_size_1 = SIZE(rbf_vec_coeff_v, 2)
+      rbf_vec_coeff_v_size_2 = SIZE(rbf_vec_coeff_v, 3)
+
+      rc = grid_init_v2_wrapper(cell_starts=c_loc(cell_starts), &
+                                cell_starts_size_0=cell_starts_size_0, &
+                                cell_ends=c_loc(cell_ends), &
+                                cell_ends_size_0=cell_ends_size_0, &
+                                vertex_starts=c_loc(vertex_starts), &
+                                vertex_starts_size_0=vertex_starts_size_0, &
+                                vertex_ends=c_loc(vertex_ends), &
+                                vertex_ends_size_0=vertex_ends_size_0, &
+                                edge_starts=c_loc(edge_starts), &
+                                edge_starts_size_0=edge_starts_size_0, &
+                                edge_ends=c_loc(edge_ends), &
+                                edge_ends_size_0=edge_ends_size_0, &
+                                c2e=c_loc(c2e), &
+                                c2e_size_0=c2e_size_0, &
+                                c2e_size_1=c2e_size_1, &
+                                e2c=c_loc(e2c), &
+                                e2c_size_0=e2c_size_0, &
+                                e2c_size_1=e2c_size_1, &
+                                c2e2c=c_loc(c2e2c), &
+                                c2e2c_size_0=c2e2c_size_0, &
+                                c2e2c_size_1=c2e2c_size_1, &
+                                e2c2e=c_loc(e2c2e), &
+                                e2c2e_size_0=e2c2e_size_0, &
+                                e2c2e_size_1=e2c2e_size_1, &
+                                e2v=c_loc(e2v), &
+                                e2v_size_0=e2v_size_0, &
+                                e2v_size_1=e2v_size_1, &
+                                v2e=c_loc(v2e), &
+                                v2e_size_0=v2e_size_0, &
+                                v2e_size_1=v2e_size_1, &
+                                v2c=c_loc(v2c), &
+                                v2c_size_0=v2c_size_0, &
+                                v2c_size_1=v2c_size_1, &
+                                e2c2v=c_loc(e2c2v), &
+                                e2c2v_size_0=e2c2v_size_0, &
+                                e2c2v_size_1=e2c2v_size_1, &
+                                c2v=c_loc(c2v), &
+                                c2v_size_0=c2v_size_0, &
+                                c2v_size_1=c2v_size_1, &
+                                c_owner_mask=c_loc(c_owner_mask), &
+                                c_owner_mask_size_0=c_owner_mask_size_0, &
+                                e_owner_mask=c_loc(e_owner_mask), &
+                                e_owner_mask_size_0=e_owner_mask_size_0, &
+                                v_owner_mask=c_loc(v_owner_mask), &
+                                v_owner_mask_size_0=v_owner_mask_size_0, &
+                                c_glb_index=c_loc(c_glb_index), &
+                                c_glb_index_size_0=c_glb_index_size_0, &
+                                e_glb_index=c_loc(e_glb_index), &
+                                e_glb_index_size_0=e_glb_index_size_0, &
+                                v_glb_index=c_loc(v_glb_index), &
+                                v_glb_index_size_0=v_glb_index_size_0, &
+                                edge_length=c_loc(edge_length), &
+                                edge_length_size_0=edge_length_size_0, &
+                                dual_edge_length=c_loc(dual_edge_length), &
+                                dual_edge_length_size_0=dual_edge_length_size_0, &
+                                edge_cell_distance=c_loc(edge_cell_distance), &
+                                edge_cell_distance_size_0=edge_cell_distance_size_0, &
+                                edge_cell_distance_size_1=edge_cell_distance_size_1, &
+                                edge_vertex_distance=c_loc(edge_vertex_distance), &
+                                edge_vertex_distance_size_0=edge_vertex_distance_size_0, &
+                                edge_vertex_distance_size_1=edge_vertex_distance_size_1, &
+                                cell_area=c_loc(cell_area), &
+                                cell_area_size_0=cell_area_size_0, &
+                                dual_area=c_loc(dual_area), &
+                                dual_area_size_0=dual_area_size_0, &
+                                tangent_orientation=c_loc(tangent_orientation), &
+                                tangent_orientation_size_0=tangent_orientation_size_0, &
+                                cell_normal_orientation=c_loc(cell_normal_orientation), &
+                                cell_normal_orientation_size_0=cell_normal_orientation_size_0, &
+                                cell_normal_orientation_size_1=cell_normal_orientation_size_1, &
+                                edge_orientation_on_vertex=c_loc(edge_orientation_on_vertex), &
+                                edge_orientation_on_vertex_size_0=edge_orientation_on_vertex_size_0, &
+                                edge_orientation_on_vertex_size_1=edge_orientation_on_vertex_size_1, &
+                                cell_lat=c_loc(cell_lat), &
+                                cell_lat_size_0=cell_lat_size_0, &
+                                cell_lon=c_loc(cell_lon), &
+                                cell_lon_size_0=cell_lon_size_0, &
+                                edge_lat=c_loc(edge_lat), &
+                                edge_lat_size_0=edge_lat_size_0, &
+                                edge_lon=c_loc(edge_lon), &
+                                edge_lon_size_0=edge_lon_size_0, &
+                                vertex_lat=c_loc(vertex_lat), &
+                                vertex_lat_size_0=vertex_lat_size_0, &
+                                vertex_lon=c_loc(vertex_lon), &
+                                vertex_lon_size_0=vertex_lon_size_0, &
+                                vct_a=c_loc(vct_a), &
+                                vct_a_size_0=vct_a_size_0, &
+                                vct_b=c_loc(vct_b), &
+                                vct_b_size_0=vct_b_size_0, &
+                                topography=c_loc(topography), &
+                                topography_size_0=topography_size_0, &
+                                rbf_vec_coeff_v=c_loc(rbf_vec_coeff_v), &
+                                rbf_vec_coeff_v_size_0=rbf_vec_coeff_v_size_0, &
+                                rbf_vec_coeff_v_size_1=rbf_vec_coeff_v_size_1, &
+                                rbf_vec_coeff_v_size_2=rbf_vec_coeff_v_size_2, &
+                                mean_cell_area=mean_cell_area, &
+                                nudge_max_coeff=nudge_max_coeff, &
+                                lowest_layer_thickness=lowest_layer_thickness, &
+                                model_top_height=model_top_height, &
+                                stretch_factor=stretch_factor, &
+                                flat_height=flat_height, &
+                                rayleigh_damping_height=rayleigh_damping_height, &
+                                comm_id=comm_id, &
+                                num_vertices=num_vertices, &
+                                num_cells=num_cells, &
+                                num_edges=num_edges, &
+                                vertical_size=vertical_size, &
+                                limited_area=limited_area, &
+                                backend=backend, &
+                                on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+   end subroutine grid_init_v2
+
+   subroutine diffusion_init_v2(ndyn_substeps, &
+                                diffusion_type, &
+                                hdiff_w, &
+                                hdiff_vn, &
+                                hdiff_smag_w, &
+                                zdiffu_t, &
+                                type_t_diffu, &
+                                type_vn_diffu, &
+                                hdiff_efdt_ratio, &
+                                hdiff_w_efdt_ratio, &
+                                smagorinski_scaling_factor, &
+                                smagorinski_scaling_factor2, &
+                                smagorinski_scaling_factor3, &
+                                smagorinski_scaling_factor4, &
+                                smagorinski_scaling_height, &
+                                smagorinski_scaling_height2, &
+                                smagorinski_scaling_height3, &
+                                smagorinski_scaling_height4, &
+                                hdiff_temp, &
+                                denom_diffu_v, &
+                                nudge_max_coeff, &
+                                itype_sher, &
+                                iforcing, &
+                                a_hshr, &
+                                loutshs, &
+                                rc)
+      use, intrinsic :: iso_c_binding
+
+      integer(c_int), value, target :: ndyn_substeps
+
+      integer(c_int), value, target :: diffusion_type
+
+      logical(c_bool), value, target :: hdiff_w
+
+      logical(c_bool), value, target :: hdiff_vn
+
+      logical(c_bool), value, target :: hdiff_smag_w
+
+      logical(c_bool), value, target :: zdiffu_t
+
+      integer(c_int), value, target :: type_t_diffu
+
+      integer(c_int), value, target :: type_vn_diffu
+
+      real(c_double), value, target :: hdiff_efdt_ratio
+
+      real(c_double), value, target :: hdiff_w_efdt_ratio
+
+      real(c_double), value, target :: smagorinski_scaling_factor
+
+      real(c_double), value, target :: smagorinski_scaling_factor2
+
+      real(c_double), value, target :: smagorinski_scaling_factor3
+
+      real(c_double), value, target :: smagorinski_scaling_factor4
+
+      real(c_double), value, target :: smagorinski_scaling_height
+
+      real(c_double), value, target :: smagorinski_scaling_height2
+
+      real(c_double), value, target :: smagorinski_scaling_height3
+
+      real(c_double), value, target :: smagorinski_scaling_height4
+
+      logical(c_bool), value, target :: hdiff_temp
+
+      real(c_double), value, target :: denom_diffu_v
+
+      real(c_double), value, target :: nudge_max_coeff
+
+      integer(c_int), value, target :: itype_sher
+
+      integer(c_int), value, target :: iforcing
+
+      real(c_double), value, target :: a_hshr
+
+      logical(c_bool), value, target :: loutshs
+
+      logical(c_bool) :: on_gpu
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
+
+      rc = diffusion_init_v2_wrapper(ndyn_substeps=ndyn_substeps, &
+                                     diffusion_type=diffusion_type, &
+                                     hdiff_w=hdiff_w, &
+                                     hdiff_vn=hdiff_vn, &
+                                     hdiff_smag_w=hdiff_smag_w, &
+                                     zdiffu_t=zdiffu_t, &
+                                     type_t_diffu=type_t_diffu, &
+                                     type_vn_diffu=type_vn_diffu, &
+                                     hdiff_efdt_ratio=hdiff_efdt_ratio, &
+                                     hdiff_w_efdt_ratio=hdiff_w_efdt_ratio, &
+                                     smagorinski_scaling_factor=smagorinski_scaling_factor, &
+                                     smagorinski_scaling_factor2=smagorinski_scaling_factor2, &
+                                     smagorinski_scaling_factor3=smagorinski_scaling_factor3, &
+                                     smagorinski_scaling_factor4=smagorinski_scaling_factor4, &
+                                     smagorinski_scaling_height=smagorinski_scaling_height, &
+                                     smagorinski_scaling_height2=smagorinski_scaling_height2, &
+                                     smagorinski_scaling_height3=smagorinski_scaling_height3, &
+                                     smagorinski_scaling_height4=smagorinski_scaling_height4, &
+                                     hdiff_temp=hdiff_temp, &
+                                     denom_diffu_v=denom_diffu_v, &
+                                     nudge_max_coeff=nudge_max_coeff, &
+                                     itype_sher=itype_sher, &
+                                     iforcing=iforcing, &
+                                     a_hshr=a_hshr, &
+                                     loutshs=loutshs, &
+                                     on_gpu=on_gpu)
+   end subroutine diffusion_init_v2
+
+   subroutine diffusion_run_v2(w, &
+                               vn, &
+                               exner, &
+                               theta_v, &
+                               rho, &
+                               hdef_ic, &
+                               div_ic, &
+                               dwdx, &
+                               dwdy, &
+                               dtime, &
+                               linit, &
+                               rc)
+      use, intrinsic :: iso_c_binding
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: w
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vn
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: exner
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_v
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: hdef_ic
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: div_ic
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: dwdx
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), pointer :: dwdy
+
+      real(c_double), value, target :: dtime
+
+      logical(c_bool), value, target :: linit
+
+      logical(c_bool) :: on_gpu
+
+      integer(c_int) :: w_size_0
+
+      integer(c_int) :: w_size_1
+
+      integer(c_int) :: vn_size_0
+
+      integer(c_int) :: vn_size_1
+
+      integer(c_int) :: exner_size_0
+
+      integer(c_int) :: exner_size_1
+
+      integer(c_int) :: theta_v_size_0
+
+      integer(c_int) :: theta_v_size_1
+
+      integer(c_int) :: rho_size_0
+
+      integer(c_int) :: rho_size_1
+
+      integer(c_int) :: hdef_ic_size_0
+
+      integer(c_int) :: hdef_ic_size_1
+
+      integer(c_int) :: div_ic_size_0
+
+      integer(c_int) :: div_ic_size_1
+
+      integer(c_int) :: dwdx_size_0
+
+      integer(c_int) :: dwdx_size_1
+
+      integer(c_int) :: dwdy_size_0
+
+      integer(c_int) :: dwdy_size_1
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+      type(c_ptr) :: hdef_ic_ptr
+
+      type(c_ptr) :: div_ic_ptr
+
+      type(c_ptr) :: dwdx_ptr
+
+      type(c_ptr) :: dwdy_ptr
+
+      hdef_ic_ptr = c_null_ptr
+
+      div_ic_ptr = c_null_ptr
+
+      dwdx_ptr = c_null_ptr
+
+      dwdy_ptr = c_null_ptr
+
+      !$acc host_data use_device(w)
+      !$acc host_data use_device(vn)
+      !$acc host_data use_device(exner)
+      !$acc host_data use_device(theta_v)
+      !$acc host_data use_device(rho)
+      !$acc host_data use_device(hdef_ic) if(associated(hdef_ic))
+      !$acc host_data use_device(div_ic) if(associated(div_ic))
+      !$acc host_data use_device(dwdx) if(associated(dwdx))
+      !$acc host_data use_device(dwdy) if(associated(dwdy))
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
+
+      w_size_0 = SIZE(w, 1)
+      w_size_1 = SIZE(w, 2)
+
+      vn_size_0 = SIZE(vn, 1)
+      vn_size_1 = SIZE(vn, 2)
+
+      exner_size_0 = SIZE(exner, 1)
+      exner_size_1 = SIZE(exner, 2)
+
+      theta_v_size_0 = SIZE(theta_v, 1)
+      theta_v_size_1 = SIZE(theta_v, 2)
+
+      rho_size_0 = SIZE(rho, 1)
+      rho_size_1 = SIZE(rho, 2)
+
+      if (associated(hdef_ic)) then
+         hdef_ic_ptr = c_loc(hdef_ic)
+         hdef_ic_size_0 = SIZE(hdef_ic, 1)
+         hdef_ic_size_1 = SIZE(hdef_ic, 2)
+      end if
+
+      if (associated(div_ic)) then
+         div_ic_ptr = c_loc(div_ic)
+         div_ic_size_0 = SIZE(div_ic, 1)
+         div_ic_size_1 = SIZE(div_ic, 2)
+      end if
+
+      if (associated(dwdx)) then
+         dwdx_ptr = c_loc(dwdx)
+         dwdx_size_0 = SIZE(dwdx, 1)
+         dwdx_size_1 = SIZE(dwdx, 2)
+      end if
+
+      if (associated(dwdy)) then
+         dwdy_ptr = c_loc(dwdy)
+         dwdy_size_0 = SIZE(dwdy, 1)
+         dwdy_size_1 = SIZE(dwdy, 2)
+      end if
+
+      rc = diffusion_run_v2_wrapper(w=c_loc(w), &
+                                    w_size_0=w_size_0, &
+                                    w_size_1=w_size_1, &
+                                    vn=c_loc(vn), &
+                                    vn_size_0=vn_size_0, &
+                                    vn_size_1=vn_size_1, &
+                                    exner=c_loc(exner), &
+                                    exner_size_0=exner_size_0, &
+                                    exner_size_1=exner_size_1, &
+                                    theta_v=c_loc(theta_v), &
+                                    theta_v_size_0=theta_v_size_0, &
+                                    theta_v_size_1=theta_v_size_1, &
+                                    rho=c_loc(rho), &
+                                    rho_size_0=rho_size_0, &
+                                    rho_size_1=rho_size_1, &
+                                    hdef_ic=hdef_ic_ptr, &
+                                    hdef_ic_size_0=hdef_ic_size_0, &
+                                    hdef_ic_size_1=hdef_ic_size_1, &
+                                    div_ic=div_ic_ptr, &
+                                    div_ic_size_0=div_ic_size_0, &
+                                    div_ic_size_1=div_ic_size_1, &
+                                    dwdx=dwdx_ptr, &
+                                    dwdx_size_0=dwdx_size_0, &
+                                    dwdx_size_1=dwdx_size_1, &
+                                    dwdy=dwdy_ptr, &
+                                    dwdy_size_0=dwdy_size_0, &
+                                    dwdy_size_1=dwdy_size_1, &
+                                    dtime=dtime, &
+                                    linit=linit, &
+                                    on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+   end subroutine diffusion_run_v2
 
 end module
