@@ -333,6 +333,7 @@ select = [
   'T10',  # flake8-debugger
   'TD',  # flake8-todos
   'UP',  # pyupgrade
+  'W605',  # invalid-escape-sequence
   'YTT'  # flake8-2020
 ]
 typing-modules = ['gt4py.eve.extended_typing']
