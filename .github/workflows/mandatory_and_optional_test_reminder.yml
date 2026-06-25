@@ -35,6 +35,8 @@ jobs:
 
             See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
 
+            The `all` pipeline can be run with `cscs-ci run all`. This will run all icon4py tests in CSCS CI which can be expensive. This pipeline runs on a schedule on main, and can be run when extensive validation is needed (e.g. before releases).
+
             **Optional Tests**
 
             To run benchmarks you can use:
