@@ -192,7 +192,6 @@ def _compare_geometry_fields_single_multi_rank(
     field = multi_rank_geometry.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-15, rtol=0.0)
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
         process_props=process_props,
@@ -200,8 +199,7 @@ def _compare_geometry_fields_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=atol,
-        rtol=rtol,
+        atol=1e-15,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
@@ -345,13 +343,6 @@ def _compare_interpolation_fields_single_multi_rank(
     field = multi_rank_interpolation.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    if attrs_name.startswith("rbf"):
-        atol = 3e-9
-    elif attrs_name.startswith("pos_on_tplane"):
-        atol = 1e-10
-    else:
-        atol = 1e-15
-    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=0.0)
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
         process_props=process_props,
@@ -359,8 +350,13 @@ def _compare_interpolation_fields_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=atol,
-        rtol=rtol,
+        atol=(
+            3e-9
+            if attrs_name.startswith("rbf")
+            else 1e-10
+            if attrs_name.startswith("pos_on_tplane")
+            else 1e-15
+        ),
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
@@ -546,10 +542,10 @@ def _compare_metrics_fields_single_multi_rank(
                 and attrs_name == metrics_attributes.DDQZ_Z_FULL_E
             )
         ):
+            # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
             atol = 1e-13
         else:
             atol = 0.0
-        atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=0.0)
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_gm.decomposition_info,
             process_props=process_props,
@@ -558,7 +554,6 @@ def _compare_metrics_fields_single_multi_rank(
             local_field=field.asnumpy(),
             check_halos=True,
             atol=atol,
-            rtol=rtol,
         )
 
     _log.info(f"rank = {process_props.rank} - DONE")
