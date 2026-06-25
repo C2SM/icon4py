@@ -35,7 +35,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit, integration, or validation tests. validation tests are excluded by default and must be explicitly requested with --level=validation",
+        "level(name): marks test as unit, integration, or validation tests. Validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly

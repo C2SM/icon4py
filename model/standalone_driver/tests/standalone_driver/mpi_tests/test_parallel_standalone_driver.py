@@ -55,7 +55,6 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     end_of_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
     backend: gtx_typing.Backend,
 ) -> None:
     _run_standalone_driver_compare_single_multi_rank(
@@ -63,7 +62,6 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
         end_of_simulation=end_of_simulation,
         tmp_path=tmp_path,
         process_props=process_props,
-        backend_like=backend_like,
         backend=backend,
     )
 
@@ -85,7 +83,6 @@ def test_standalone_driver_compare_single_multi_rank_validation(  # noqa: PLR091
     end_of_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
     backend: gtx_typing.Backend,
 ) -> None:
     _run_standalone_driver_compare_single_multi_rank(
@@ -93,23 +90,27 @@ def test_standalone_driver_compare_single_multi_rank_validation(  # noqa: PLR091
         end_of_simulation=end_of_simulation,
         tmp_path=tmp_path,
         process_props=process_props,
-        backend_like=backend_like,
         backend=backend,
     )
 
 
-def _run_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+def _run_standalone_driver_compare_single_multi_rank(
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
     backend: gtx_typing.Backend,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-13, rtol=1e-14)
+    if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
+        atol = 1e-13
+        rtol = 1e-14
+    else:
+        atol = 1e-10
+        rtol = 0.0
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
