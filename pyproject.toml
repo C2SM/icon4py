@@ -168,6 +168,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
@@ -332,6 +333,14 @@ select = [
 ]
 typing-modules = ['gt4py.eve.extended_typing']
 unfixable = []
+
+[tool.ruff.lint.flake8-bugbear]
+# DeltaT / NumTimeSteps are aliases of immutable types (timedelta / int), so calling them
+# in argument or dataclass defaults is safe (B008, RUF009).
+extend-immutable-calls = [
+  "icon4py.model.common.io.io.DeltaT",
+  "icon4py.model.common.io.io.NumTimeSteps"
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
