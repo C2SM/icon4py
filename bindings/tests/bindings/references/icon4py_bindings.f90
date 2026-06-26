@@ -1569,6 +1569,12 @@ module icon4py_bindings
                                     e_glb_index_size_0, &
                                     v_glb_index, &
                                     v_glb_index_size_0, &
+                                    cell_refin_ctrl, &
+                                    cell_refin_ctrl_size_0, &
+                                    edge_refin_ctrl, &
+                                    edge_refin_ctrl_size_0, &
+                                    vertex_refin_ctrl, &
+                                    vertex_refin_ctrl_size_0, &
                                     edge_length, &
                                     edge_length_size_0, &
                                     dual_edge_length, &
@@ -1732,6 +1738,18 @@ module icon4py_bindings
          type(c_ptr), value, target :: v_glb_index
 
          integer(c_int), value :: v_glb_index_size_0
+
+         type(c_ptr), value, target :: cell_refin_ctrl
+
+         integer(c_int), value :: cell_refin_ctrl_size_0
+
+         type(c_ptr), value, target :: edge_refin_ctrl
+
+         integer(c_int), value :: edge_refin_ctrl_size_0
+
+         type(c_ptr), value, target :: vertex_refin_ctrl
+
+         integer(c_int), value :: vertex_refin_ctrl_size_0
 
          type(c_ptr), value, target :: edge_length
 
@@ -4612,6 +4630,9 @@ contains
                            c_glb_index, &
                            e_glb_index, &
                            v_glb_index, &
+                           cell_refin_ctrl, &
+                           edge_refin_ctrl, &
+                           vertex_refin_ctrl, &
                            edge_length, &
                            dual_edge_length, &
                            edge_cell_distance, &
@@ -4689,6 +4710,12 @@ contains
       integer(c_int), dimension(:), contiguous, intent(inout), target :: e_glb_index
 
       integer(c_int), dimension(:), contiguous, intent(inout), target :: v_glb_index
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: cell_refin_ctrl
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: edge_refin_ctrl
+
+      integer(c_int), dimension(:), contiguous, intent(inout), target :: vertex_refin_ctrl
 
       real(c_double), dimension(:), contiguous, intent(inout), target :: edge_length
 
@@ -4817,6 +4844,12 @@ contains
       integer(c_int) :: e_glb_index_size_0
 
       integer(c_int) :: v_glb_index_size_0
+
+      integer(c_int) :: cell_refin_ctrl_size_0
+
+      integer(c_int) :: edge_refin_ctrl_size_0
+
+      integer(c_int) :: vertex_refin_ctrl_size_0
 
       integer(c_int) :: edge_length_size_0
 
@@ -4957,6 +4990,12 @@ contains
 
       v_glb_index_size_0 = SIZE(v_glb_index, 1)
 
+      cell_refin_ctrl_size_0 = SIZE(cell_refin_ctrl, 1)
+
+      edge_refin_ctrl_size_0 = SIZE(edge_refin_ctrl, 1)
+
+      vertex_refin_ctrl_size_0 = SIZE(vertex_refin_ctrl, 1)
+
       edge_length_size_0 = SIZE(edge_length, 1)
 
       dual_edge_length_size_0 = SIZE(dual_edge_length, 1)
@@ -5052,6 +5091,12 @@ contains
                                 e_glb_index_size_0=e_glb_index_size_0, &
                                 v_glb_index=c_loc(v_glb_index), &
                                 v_glb_index_size_0=v_glb_index_size_0, &
+                                cell_refin_ctrl=c_loc(cell_refin_ctrl), &
+                                cell_refin_ctrl_size_0=cell_refin_ctrl_size_0, &
+                                edge_refin_ctrl=c_loc(edge_refin_ctrl), &
+                                edge_refin_ctrl_size_0=edge_refin_ctrl_size_0, &
+                                vertex_refin_ctrl=c_loc(vertex_refin_ctrl), &
+                                vertex_refin_ctrl_size_0=vertex_refin_ctrl_size_0, &
                                 edge_length=c_loc(edge_length), &
                                 edge_length_size_0=edge_length_size_0, &
                                 dual_edge_length=c_loc(dual_edge_length), &

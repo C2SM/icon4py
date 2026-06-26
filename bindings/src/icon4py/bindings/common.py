@@ -207,6 +207,9 @@ def construct_icon_grid(
     limited_area: bool,
     distributed: bool,
     allocator: gtx_typing.Allocator | None,
+    cell_refin_ctrl: NDArray | None = None,
+    edge_refin_ctrl: NDArray | None = None,
+    vertex_refin_ctrl: NDArray | None = None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
@@ -279,6 +282,20 @@ def construct_icon_grid(
     )
     start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
+    refinement_control = None
+    if cell_refin_ctrl is not None:
+        refinement_control = {
+            dims.CellDim: gtx.as_field(
+                (dims.CellDim,), cell_refin_ctrl[:num_cells], allocator=allocator
+            ),
+            dims.EdgeDim: gtx.as_field(
+                (dims.EdgeDim,), edge_refin_ctrl[:num_edges], allocator=allocator
+            ),
+            dims.VertexDim: gtx.as_field(
+                (dims.VertexDim,), vertex_refin_ctrl[:num_vertices], allocator=allocator
+            ),
+        }
+
     return icon.icon_grid(
         id_=grid_id,
         allocator=allocator,
@@ -287,6 +304,7 @@ def construct_icon_grid(
         start_index=start_index,
         end_index=end_index,
         grid_params=icon.GridParams(),
+        refinement_control=refinement_control,
     )
 
 

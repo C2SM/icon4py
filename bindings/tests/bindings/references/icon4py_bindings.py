@@ -4435,6 +4435,12 @@ def grid_init_v2_wrapper(
     e_glb_index_size_0,
     v_glb_index,
     v_glb_index_size_0,
+    cell_refin_ctrl,
+    cell_refin_ctrl_size_0,
+    edge_refin_ctrl,
+    edge_refin_ctrl_size_0,
+    vertex_refin_ctrl,
+    vertex_refin_ctrl_size_0,
     edge_length,
     edge_length_size_0,
     dual_edge_length,
@@ -4620,6 +4626,12 @@ def grid_init_v2_wrapper(
 
             v_glb_index = (v_glb_index, (v_glb_index_size_0,), False, False)
 
+            cell_refin_ctrl = (cell_refin_ctrl, (cell_refin_ctrl_size_0,), False, False)
+
+            edge_refin_ctrl = (edge_refin_ctrl, (edge_refin_ctrl_size_0,), False, False)
+
+            vertex_refin_ctrl = (vertex_refin_ctrl, (vertex_refin_ctrl_size_0,), False, False)
+
             edge_length = (edge_length, (edge_length_size_0,), on_gpu, False)
 
             dual_edge_length = (dual_edge_length, (dual_edge_length_size_0,), on_gpu, False)
@@ -4742,6 +4754,9 @@ def grid_init_v2_wrapper(
                 c_glb_index=c_glb_index,
                 e_glb_index=e_glb_index,
                 v_glb_index=v_glb_index,
+                cell_refin_ctrl=cell_refin_ctrl,
+                edge_refin_ctrl=edge_refin_ctrl,
+                vertex_refin_ctrl=vertex_refin_ctrl,
                 edge_length=edge_length,
                 dual_edge_length=dual_edge_length,
                 edge_cell_distance=edge_cell_distance,
@@ -5049,6 +5064,54 @@ def grid_init_v2_wrapper(
                     msg = (
                         "v_glb_index after computation: %s" % str(v_glb_index_arr)
                         if v_glb_index is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    cell_refin_ctrl_arr = (
+                        _conversion.as_array(ffi, cell_refin_ctrl)
+                        if cell_refin_ctrl is not None
+                        else None
+                    )
+                    msg = "shape of cell_refin_ctrl after computation = %s" % str(
+                        cell_refin_ctrl_arr.shape if cell_refin_ctrl is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "cell_refin_ctrl after computation: %s" % str(cell_refin_ctrl_arr)
+                        if cell_refin_ctrl is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    edge_refin_ctrl_arr = (
+                        _conversion.as_array(ffi, edge_refin_ctrl)
+                        if edge_refin_ctrl is not None
+                        else None
+                    )
+                    msg = "shape of edge_refin_ctrl after computation = %s" % str(
+                        edge_refin_ctrl_arr.shape if edge_refin_ctrl is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "edge_refin_ctrl after computation: %s" % str(edge_refin_ctrl_arr)
+                        if edge_refin_ctrl is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vertex_refin_ctrl_arr = (
+                        _conversion.as_array(ffi, vertex_refin_ctrl)
+                        if vertex_refin_ctrl is not None
+                        else None
+                    )
+                    msg = "shape of vertex_refin_ctrl after computation = %s" % str(
+                        vertex_refin_ctrl_arr.shape if vertex_refin_ctrl is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vertex_refin_ctrl after computation: %s" % str(vertex_refin_ctrl_arr)
+                        if vertex_refin_ctrl is not None
                         else "None"
                     )
                     logger.debug(msg)

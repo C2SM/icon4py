@@ -99,6 +99,9 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
     c_glb_index: NumpyInt32Array1D,
     e_glb_index: NumpyInt32Array1D,
     v_glb_index: NumpyInt32Array1D,
+    cell_refin_ctrl: NumpyInt32Array1D,
+    edge_refin_ctrl: NumpyInt32Array1D,
+    vertex_refin_ctrl: NumpyInt32Array1D,
     # raw geometry (replaces the v1 inverse/normal forms; factories derive the rest)
     edge_length: fa.EdgeField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
@@ -198,6 +201,9 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         limited_area=limited_area,
         distributed=distributed,
         allocator=allocator,
+        cell_refin_ctrl=cell_refin_ctrl,
+        edge_refin_ctrl=edge_refin_ctrl,
+        vertex_refin_ctrl=vertex_refin_ctrl,
     )
 
     vertical_config = v_grid.VerticalGridConfig(
