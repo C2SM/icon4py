@@ -140,6 +140,15 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
     allocator = model_backends.get_allocator(actual_backend)
+    # The factories need a concrete gt4py Backend (they read `.name`), but select_backend
+    # returns a BackendDescriptor dict; resolve it via its backend_factory (gtfn by default).
+    if model_backends.is_backend_descriptor(actual_backend):
+        backend_factory = actual_backend.get(
+            "backend_factory", model_backends.make_custom_gtfn_backend
+        )
+        resolved_backend = backend_factory(actual_backend["device"])
+    else:
+        resolved_backend = actual_backend
     xp = cell_area.array_ns
 
     if comm_id is None:
@@ -246,7 +255,7 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         rbf_vec_coeff_v1=rbf_v1,
         rbf_vec_coeff_v2=rbf_v2,
         mean_cell_area=float(mean_cell_area),
-        backend=actual_backend,
+        backend=resolved_backend,
         exchange=exchange,
         reductions=reductions,
     )
@@ -259,7 +268,7 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         edge_geometry=diffusion_setup.assemble_edge_params(sources.geometry),
         cell_geometry=diffusion_setup.assemble_cell_params(sources.geometry),
         exchange_runtime=exchange,
-        backend=actual_backend,
+        backend=resolved_backend,
         allocator=allocator,
     )
 
