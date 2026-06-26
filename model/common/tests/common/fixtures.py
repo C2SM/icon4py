@@ -12,7 +12,13 @@ from collections.abc import Generator
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common.grid import geometry, geometry_attributes, gridfile, vertical
+from icon4py.model.common.grid import (
+    geometry,
+    geometry_attributes,
+    geometry_config,
+    gridfile,
+    vertical,
+)
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.testing import serialbox
@@ -88,6 +94,7 @@ def geometry_from_savepoint(
         metadata=geometry_attributes.attrs,
         coordinates=coordinates,
         extra_fields=extra_fields,
+        config=geometry_config.GeometryConfig(),
         exchange=exchange,
         global_reductions=global_reductions,
     )

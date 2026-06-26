@@ -14,6 +14,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
+    geometry_config,
     grid_manager as gm,
     gridfile,
     vertical as v_grid,
@@ -96,9 +97,13 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
 
 
 def get_grid_geometry(
-    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
+    config: geometry_config.GeometryConfig,
 ) -> geometry.GridGeometry:
-    register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
+    register_name = "_".join(
+        (experiment.name, data_alloc.backend_name(backend), str(config.use_analytical_means))
+    )
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
@@ -114,6 +119,7 @@ def get_grid_geometry(
             coordinates=gm.coordinates,
             extra_fields=gm.geometry_fields,
             metadata=geometry_attrs.attrs,
+            config=config,
             exchange=decomposition.single_node_exchange,
         )
 

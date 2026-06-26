@@ -23,6 +23,7 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry_attributes as attrs,
+    geometry_config,
     geometry_stencils as stencils,
     grid_manager as gm,
     gridfile,
@@ -48,12 +49,15 @@ class GridGeometry(factory.FieldSource):
 
     Examples:
         >>> geometry = GridGeometry(
-        ...     grid,
-        ...     decomposition_info,
-        ...     backend,
-        ...     coordinates,
-        ...     extra_fields,
-        ...     geometry_attributes.attrs,
+        ...     grid=grid,
+        ...     decomposition_info=decomposition_info,
+        ...     backend=backend,
+        ...     coordinates=coordinates,
+        ...     extra_fields=extra_fields,
+        ...     metadata=geometry_attributes.attrs,
+        ...     config=geometry_config.GeometryConfig(),
+        ...     exchange=exchange,
+        ...     global_reductions=global_reductions,
         ... )
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
@@ -89,6 +93,7 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
+        config: geometry_config.GeometryConfig,
         exchange: decomposition.ExchangeRuntime,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
@@ -101,6 +106,7 @@ class GridGeometry(factory.FieldSource):
             extra_fields: fields that are not computed but directly read off the grid file,
                 currently only the edge_system_orientation cell_area. Should eventually disappear.
             metadata: a dictionary of FieldMetaData for all fields computed in GridGeometry.
+            config: configuration options controlling geometry computation.
 
         """
         self._providers = {}
@@ -112,6 +118,7 @@ class GridGeometry(factory.FieldSource):
         self._attrs = metadata
         self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
+        self._config = config
         self._exchange = exchange
         self._global_reductions = global_reductions
         log.info(
@@ -367,10 +374,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(edge_areas)
 
-        # TODO(msimberg): Should this be a config option, or is analytical
-        # computation always the right choice?
-        use_analytical_means = True
-        if use_analytical_means:
+        if self._config.use_analytical_means:
             analytical_means = self._compute_analytical_means()
             mean_provider = factory.PrecomputedFieldProvider(analytical_means)
             self.register_provider(mean_provider)

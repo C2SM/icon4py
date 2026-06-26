@@ -18,6 +18,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    geometry_config,
     grid_manager as gm,
     vertical as v_grid,
 )
@@ -43,11 +44,12 @@ def geometry_field_source(
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
         decomposition_info=decomposition_info,
-        exchange=decomposition.single_node_exchange,
         backend=generic_concrete_backend,
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        config=geometry_config.GeometryConfig(),
+        exchange=decomposition.single_node_exchange,
     )
     yield geometry_field_source
 

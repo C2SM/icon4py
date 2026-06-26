@@ -603,6 +603,7 @@ def initialize_driver(
         backend=backend,
         exchange=exchange,
         global_reductions=global_reductions,
+        geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
     )

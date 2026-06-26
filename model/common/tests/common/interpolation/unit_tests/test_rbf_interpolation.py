@@ -14,7 +14,11 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
+from icon4py.model.common.grid import (
+    geometry_attributes as geometry_attrs,
+    geometry_config,
+    horizontal as h_grid,
+)
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -164,7 +168,9 @@ def test_rbf_interpolation_coeffs_cell(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(
+        backend, experiment, config=geometry_config.GeometryConfig()
+    )
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
@@ -239,7 +245,9 @@ def test_rbf_interpolation_coeffs_vertex(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(
+        backend, experiment, config=geometry_config.GeometryConfig()
+    )
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
@@ -314,7 +322,9 @@ def test_rbf_interpolation_coeffs_edge(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(
+        backend, experiment, config=geometry_config.GeometryConfig()
+    )
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 

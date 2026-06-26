@@ -35,6 +35,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    geometry_config as geometry_configuration,
     grid_manager as gm,
     gridfile,
     icon as icon_grid,
@@ -164,6 +165,7 @@ def create_static_field_factories(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
 ) -> driver_states.StaticFieldFactories:
@@ -174,6 +176,7 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        config=geometry_config,
         exchange=exchange,
         global_reductions=global_reductions,
     )
