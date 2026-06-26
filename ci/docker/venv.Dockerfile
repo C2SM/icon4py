@@ -15,7 +15,7 @@ ENV GHEX_TRANSPORT_BACKEND=MPI
 RUN uv sync \
     --no-dev \
     --extra all \
-    --extra $ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS \
+    $(for e in $(echo "$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS" | tr -sc '[:alnum:]_' ' '); do printf ' --extra %s' "$e"; done) \
     --group test \
     --python $PYVERSION && \
     chmod -R a+rwX "$UV_CACHE_DIR"
