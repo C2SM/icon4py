@@ -71,8 +71,8 @@ class InitialConditionConfig:
                 config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
                 # Fortran resets the u-perturbation amplitude jw_up to 0 for the
                 # jabw_s/jabw_m cases only; the others keep the namelist default
-                # (1.0), see mo_nh_testcases.f90.
-                if test_name in ("jabw_s", "jabw_m"):
+                # (1.0), see mo_nh_testcases.f90. (jabw_m is not handled above.)
+                if test_name == "jabw_s":
                     config.baroclinic_amplitude = 0.0
             case (
                 "gauss3D" | "wk82"

@@ -98,8 +98,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 ) -> None:
     """
     Initial condition for Jablonowski-Williamson test.
-    Set jw_baroclinic_amplitude to values larger than 0.01 if you want to run
-    baroclinic case.
+    The u-perturbation amplitude (``baroclinic_amplitude``, jw_up) defaults to
+    1.0 m/s as in ICON; the jabw_s/jabw_m cases reset it to 0.0 (steady state).
 
     The reference experiment config for this is
     exp.exclaim_nh35_tri_jws_sb.
