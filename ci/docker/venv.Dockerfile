@@ -25,6 +25,6 @@ RUN uv sync \
 RUN find /icon4py -mindepth 1 -maxdepth 1 -not -name '.venv' -exec rm -rf {} +
 ENV PATH="/icon4py/.venv/bin:$PATH"
 
-# Propagate base image info so child images (checkout) and cache scripts can use it
+# Propagate this as environment variable for use in e.g. gt4py cache directories
 ARG BASE_IMAGE
 ENV BASE_IMAGE=$BASE_IMAGE
