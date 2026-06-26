@@ -273,8 +273,6 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
 
-        # Fast physics (muphys): runs after dynamics + diffusion + transport, on the
-        # n+1 state (prognostic_states.next + its tracers), before the swap.
         if self.granules.physics is not None:
             self.granules.physics.run(
                 prognostic=prognostic_states.next,
