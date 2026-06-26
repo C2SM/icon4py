@@ -23,19 +23,16 @@ from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import (
-    geometry as grid_geometry,
-    horizontal as h_grid,
-    icon as icon_grid,
-)
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
-from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.states.static_fields import StaticFieldFactories
 from icon4py.model.common.states.tracer_state import TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config
@@ -46,21 +43,6 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-
-
-class StaticFieldFactories(NamedTuple):
-    """
-    Factories of static fields for the driver and components.
-
-    Attributes:
-        geometry: grid geometry field factory that stores geometrical properties of a grid
-        interpolation: interpolation field factory that stores pre-computed coefficients for interpolation employed in the model
-        metrics: metrics field factory that stores pre-computed coefficients for numerical operations employed in the model
-    """
-
-    geometry: grid_geometry.GridGeometry
-    interpolation: interpolation_factory.InterpolationFieldsFactory
-    metrics: metrics_factory.MetricsFieldsFactory
 
 
 class DriverStates(NamedTuple):

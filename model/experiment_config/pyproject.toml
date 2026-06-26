@@ -27,26 +27,22 @@ classifiers = [
 ]
 dependencies = [
   # workspace members
-  "icon4py-atmosphere-dycore~=0.2.0",
+  "icon4py-atmosphere-advection~=0.2.0",
   "icon4py-atmosphere-diffusion~=0.2.0",
+  "icon4py-atmosphere-dycore~=0.2.0",
+  "icon4py-atmosphere-microphysics~=0.2.0",
   "icon4py-common[io]~=0.2.0",
-  "icon4py-testing~=0.2.0",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
-  "typer>=0.20.0",
-  "devtools>=0.12",
   "gt4py==1.1.11",
   "packaging>=20.0"
 ]
-description = "ICON model driver."
+description = "Shared ICON experiment configuration (ExperimentConfig + Fortran-namelist reader)."
 license = {text = "BSD-3 License"}
-name = "icon4py-standalone_driver"
+name = "icon4py-experiment_config"
 readme = "README.md"
 requires-python = ">=3.10"
 # managed by bump-my-version:
 version = "0.2.0"
-
-[project.scripts]
-icon4py-standalone-driver = "icon4py.model.standalone_driver.main:app"  # TODO (Yilu): change the name (remove the standalone) when it becomes the main driver
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"
@@ -57,7 +53,7 @@ allow_dirty = false
 commit = false
 current_version = "0.2.0"
 ignore_missing_version = false
-message = 'Bump icon4py-standalone_driver version: {current_version} → {new_version}'
+message = 'Bump icon4py-experiment_config version: {current_version} → {new_version}'
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:(?P<pre_l>a|b|rc)(?P<pre_n>\\d+))?"
 serialize = ["{major}.{minor}.{patch}{pre_l}{pre_n}", "{major}.{minor}.{patch}"]
 tag = false
@@ -74,7 +70,7 @@ version = "{current_version}"
 '''
 
 [[tool.bumpversion.files]]
-filename = "src/icon4py/model/standalone_driver/__init__.py"
+filename = "src/icon4py/model/experiment_config/__init__.py"
 
 # --ruff --
 [tool.ruff]

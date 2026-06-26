@@ -97,6 +97,7 @@ dependencies = [
   "icon4py-atmosphere-muphys~=0.2.0",
   "icon4py-common~=0.2.0",
   "icon4py-driver~=0.2.0",
+  "icon4py-experiment_config~=0.2.0",
   "icon4py-standalone_driver~=0.2.0"
 ]
 description = 'ICON model in Python.'
@@ -180,6 +181,7 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
+  '$MYPY_CONFIG_FILE_DIR/model/experiment_config/src/',
   '$MYPY_CONFIG_FILE_DIR/tools/src/',
   '$MYPY_CONFIG_FILE_DIR/bindings/src/',
   '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src',
@@ -195,6 +197,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
+$MYPY_CONFIG_FILE_DIR/model/experiment_config/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
@@ -233,7 +236,7 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
 module = [
-  "icon4py.model.standalone_driver.initial_condition.*"
+  "icon4py.model.common.initial_condition.*"
 ]
 
 [[tool.mypy.overrides]]
@@ -273,6 +276,7 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
+  "model/experiment_config",
   "model/standalone_driver",
   "model/testing",
   "tools"
@@ -424,6 +428,7 @@ icon4py-atmosphere-muphys = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
 icon4py-driver = {workspace = true}
+icon4py-experiment_config = {workspace = true}
 icon4py-standalone_driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
@@ -438,6 +443,7 @@ members = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
+  "model/experiment_config",
   "model/standalone_driver",
   "model/testing",
   "tools"

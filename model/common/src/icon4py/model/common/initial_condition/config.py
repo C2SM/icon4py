@@ -13,12 +13,12 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
-from icon4py.model.standalone_driver.initial_condition.analytical import (
+from icon4py.model.common.initial_condition import from_file as from_file_ic
+from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
 )
+from icon4py.model.common.utils import fortran_config
 
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
     from icon4py.model.common.states import prognostic_state as prognostics
-    from icon4py.model.standalone_driver import driver_states
+    from icon4py.model.common.states.static_fields import StaticFieldFactories
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ def create(
     config: InitialConditionConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    static_fields: driver_states.StaticFieldFactories,
+    static_fields: StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,

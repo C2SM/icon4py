@@ -11,10 +11,10 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import initial_condition, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
+from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -55,9 +55,8 @@ def test_initial_conditions(
         allocator=allocator,
         process_props=process_props,
     )
-    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        config=config,  # type: ignore[arg-type]
+        config=config,
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
