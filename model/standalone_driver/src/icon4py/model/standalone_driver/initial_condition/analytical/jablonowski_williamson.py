@@ -56,13 +56,61 @@ class JablonowskiWilliamsonConfig:
     dtemp: float = 4.8e5
     lon_perturbation_center: float = math.pi / 9.0
     lat_perturbation_center: float = 2.0 * math.pi / 9.0
+    rh_at_1000hpa: float = 0.7
+    qv_max: float = 20e-3
 
     fortran_name_map: ClassVar[dict[str, str]] = {
         "jw_up": "baroclinic_amplitude",
         "jw_u0": "u0",
         "jw_temp0": "temp0",
         "zp_ape": "p_sfc",
+        "rh_at_1000hpa": "rh_at_1000hpa",
+        "qv_max": "qv_max",
     }
+
+
+def _init_tracers(
+    rho: data_alloc.NDArray,
+    exner: data_alloc.NDArray,
+    theta_v: data_alloc.NDArray,
+    config: JablonowskiWilliamsonConfig,
+    tracer_arrays: dict[str, data_alloc.NDArray],
+) -> None:
+    array_ns = data_alloc.array_namespace(rho)
+    TETENS_P0 = 610.78
+    TETENS_AW = 17.269
+    TETENS_BW = 35.86
+    TETENS_AI = 21.875
+    TETENS_BI = 7.66
+
+    temp = theta_v * exner
+    pres = phy_const.P0REF * exner ** phy_const.CPD_O_RD
+
+    zrhf = config.rh_at_1000hpa - 0.5 + pres / 200000.0
+    zrhf = array_ns.maximum(zrhf, 0.0)
+
+    e_sat_ice = TETENS_P0 * array_ns.exp(
+        TETENS_AI * (array_ns.maximum(temp, 180.0) - phy_const.MELTING_TEMPERATURE)
+        / (array_ns.maximum(temp, 180.0) - TETENS_BI)
+    )
+    e_sat_water = TETENS_P0 * array_ns.exp(
+        TETENS_AW * (temp - phy_const.MELTING_TEMPERATURE) / (temp - TETENS_BW)
+    )
+    e_sat = array_ns.where(temp <= phy_const.MELTING_TEMPERATURE, e_sat_ice, e_sat_water)
+
+    z_1_o_rh = 1.0 / (zrhf + 1.0e-6)
+    z_help = array_ns.minimum(e_sat, pres * z_1_o_rh)
+    qsat = z_help / (rho * phy_const.RV * temp)
+
+    qv = array_ns.minimum(qsat, zrhf * qsat)
+    qv = array_ns.where(pres <= 10000.0, array_ns.minimum(qv, 5.0e-6), qv)
+    qv = array_ns.minimum(qv, config.qv_max)
+
+    if "qv" in tracer_arrays:
+        tracer_arrays["qv"][:] = qv
+    for name in ("qc", "qi", "qr", "qs", "qg"):
+        if name in tracer_arrays:
+            tracer_arrays[name][:] = 0.0
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
@@ -253,3 +301,17 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
+
+    tracer_ndarrays = {
+        name: field.ndarray
+        for name, field in prognostic_state_now.tracer.active_fields()
+    }
+    if tracer_ndarrays:
+        log.info("Initializing inwp tracers (qv from RH profile, others zero).")
+        _init_tracers(
+            rho=rho_ndarray,
+            exner=exner_ndarray,
+            theta_v=theta_v_ndarray,
+            config=config,
+            tracer_arrays=tracer_ndarrays,
+        )

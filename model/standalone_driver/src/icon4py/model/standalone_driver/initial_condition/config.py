@@ -60,7 +60,7 @@ class InitialConditionConfig:
             jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
         )  # mypy does not automatically catch type
         match testcase_nml.get("nh_test_name"):
-            case "jabw" | "jabw_s" | "APE_nwp":
+            case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
                 log.info("Analytical initial condition for Jablonowski-Williamson test case")
                 config = fortran_config.config_dataclass_from_dict(
                     jw_ic.JablonowskiWilliamsonConfig, testcase_nml
