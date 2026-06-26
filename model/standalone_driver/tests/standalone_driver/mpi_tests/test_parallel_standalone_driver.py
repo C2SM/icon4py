@@ -71,7 +71,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
 @pytest.mark.parametrize(
     "experiment_description, end_of_simulation",
     [
-        (test_defs.Experiments.JW, driver_config.RelativeTime(days=2)),
+        (test_defs.Experiments.JW, driver_config.RelativeTime(days=7)),
     ],
 )
 @pytest.mark.mpi
