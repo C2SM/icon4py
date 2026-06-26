@@ -448,7 +448,7 @@ def initialize_granules(
             component=muphys_component.MuphysComponent(
                 ncells=grid.num_cells,
                 nlev=grid.num_levels,
-                dt=config.driver.dtime.total_seconds(),
+                dtime=config.driver.dtime,
                 qnc=config.muphys.qnc,
                 backend=backend,
             ),

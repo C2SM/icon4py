@@ -79,10 +79,8 @@ class ProcessTimeControl:
             or simulation_current_datetime < self.start_date
         ):
             return False
-        elapsed = (simulation_current_datetime - self.start_date).total_seconds()
-        interval_s = self.interval.total_seconds()
-        quotient = elapsed / interval_s
-        return abs(quotient - round(quotient)) == 0.0
+        elapsed = simulation_current_datetime - self.start_date
+        return elapsed % self.interval == datetime.timedelta(0)
 
 
 @dataclasses.dataclass
@@ -102,7 +100,7 @@ class PhysicsProcess:
 
 
 class PhysicsDriver:
-    """Physics orchestrator. icon4py analogue of `aes_phy_main`."""
+    """Physics orchestrator."""
 
     def __init__(
         self,

@@ -13,7 +13,12 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.components.physics_state import PhysicsState
 from icon4py.model.common.diagnostic_calculations.stencils import (
     calculate_tendency,
@@ -76,32 +81,64 @@ class State(PhysicsState):
         self._num_levels = grid.num_levels
         self._backend = backend
 
-        self._diagnose_temperature_program = (
-            diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(
-                self._backend
-            )
+        full_horizontal = {
+            "horizontal_start": gtx.int32(0),
+            "horizontal_end": gtx.int32(self._num_cells),
+        }
+        full_vertical = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._num_levels),
+        }
+
+        self._diagnose_temperature = model_options.setup_program(
+            program=diagnose_temperature.diagnose_virtual_temperature_and_temperature,
+            backend=self._backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
         )
-        self._diagnose_surface_pressure_program = (
-            diagnose_surface_pressure.diagnose_surface_pressure.with_backend(self._backend)
+        self._diagnose_surface_pressure = model_options.setup_program(
+            program=diagnose_surface_pressure.diagnose_surface_pressure,
+            backend=self._backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes={
+                "vertical_start": gtx.int32(self._num_levels),
+                "vertical_end": gtx.int32(self._num_levels + 1),
+            },
+            offset_provider={"Koff": dims.KDim},  # type: ignore[dict-item]
         )
-        self._diagnose_pressure_program = diagnose_pressure.diagnose_pressure.with_backend(
-            self._backend
+        self._diagnose_pressure = model_options.setup_program(
+            program=diagnose_pressure.diagnose_pressure,
+            backend=self._backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
         )
-        self._apply_tendency_program = (
-            generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k.with_backend(
-                self._backend
-            )
+        self._apply_tendency = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            backend=self._backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
         )
-        self._virtual_temperature_tendency_program = (
-            calculate_tendency.calculate_virtual_temperature_tendency.with_backend(self._backend)
+        self._calculate_virtual_temperature_tendency = model_options.setup_program(
+            program=calculate_tendency.calculate_virtual_temperature_tendency,
+            backend=self._backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
         )
-        self._exner_tendency_program = calculate_tendency.calculate_exner_tendency.with_backend(
-            self._backend
+        self._calculate_exner_tendency = model_options.setup_program(
+            program=calculate_tendency.calculate_exner_tendency,
+            backend=self._backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
         )
 
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
-        self.q: dict[str, fa.CellKField[ta.wpfloat]] = {}
+        self._tracers: tracer_state.TracerState | None = None
         self.te = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend
         )  # temperature
@@ -134,45 +171,28 @@ class State(PhysicsState):
             - diagnosing the muphys input fields that aren't stored prognostically (te, p) from the prognostic state.
         """
         self.rho = prognostic.rho
-        self.q = {
-            "v": _require(tracers.qv, "qv"),
-            "c": _require(tracers.qc, "qc"),
-            "r": _require(tracers.qr, "qr"),
-            "s": _require(tracers.qs, "qs"),
-            "i": _require(tracers.qi, "qi"),
-            "g": _require(tracers.qg, "qg"),
-        }
+        self._tracers = tracers
 
         # Diagnose virtual temperature and temperature (te is not stored prognostically).
-        self._diagnose_temperature_program(
-            qv=self.q["v"],
-            qc=self.q["c"],
-            qi=self.q["i"],
-            qr=self.q["r"],
-            qs=self.q["s"],
-            qg=self.q["g"],
+        self._diagnose_temperature(
+            qv=_require(tracers.qv, "qv"),
+            qc=_require(tracers.qc, "qc"),
+            qi=_require(tracers.qi, "qi"),
+            qr=_require(tracers.qr, "qr"),
+            qs=_require(tracers.qs, "qs"),
+            qg=_require(tracers.qg, "qg"),
             theta_v=prognostic.theta_v,
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             temperature=self.te,
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=0,
-            vertical_end=self._num_levels,
-            offset_provider={},
         )
 
         # Diagnose surface pressure into the surface slot of pressure_on_cells_half_levels, ...
-        self._diagnose_surface_pressure_program(
+        self._diagnose_surface_pressure(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,
             surface_pressure=self.pressure_on_cells_half_levels,
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=self._num_levels,
-            vertical_end=self._num_levels + 1,
-            offset_provider={"Koff": dims.KDim},  # type: ignore[dict-item]
         )
         # diagnose full-level pressure p
         surface_pressure = gtx.as_field(
@@ -180,17 +200,12 @@ class State(PhysicsState):
             self.pressure_on_cells_half_levels.ndarray[:, -1],
             allocator=self._backend,
         )
-        self._diagnose_pressure_program(
+        self._diagnose_pressure(
             ddqz_z_full=self.dz,
             virtual_temperature=self.tv,
             surface_pressure=surface_pressure,
             pressure=self.p,
             pressure_ifc=self.pressure_on_cells_half_levels,
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=0,
-            vertical_end=self._num_levels,
-            offset_provider={},
         )
 
     def scatter_to_prognostic(
@@ -204,75 +219,51 @@ class State(PhysicsState):
         This will be called after calling the muphys.
         output is got from muphys, and the tendencies in output will be applied to the prognostic state.
         """
-        # 1. Apply moisture tendencies to the tracers (in place; self.q was bound in gather).
+        assert self._tracers is not None, "gather_from_prognostic must be called first"
+        # 1. Apply moisture tendencies to the tracers (in place; tracers were bound in gather).
         for s in SPECIES:
-            tracer = self.q[s]
-            self._apply_tendency_program(
+            tracer = _require(getattr(self._tracers, f"q{s}"), f"q{s}")
+            self._apply_tendency(
                 field_a=tracer,
                 coeff=dt,
                 field_b=outputs[f"tend_q{s}"],
                 output_field=tracer,
-                offset_provider={},
-                horizontal_start=0,
-                horizontal_end=self._num_cells,
-                vertical_start=0,
-                vertical_end=self._num_levels,
             )
 
         # 2. tend_T -> exner. new_te = te + tend_T*dt
-        self._apply_tendency_program(
+        self._apply_tendency(
             field_a=self.te,
             coeff=dt,
             field_b=outputs["tend_temperature"],
             output_field=self._new_te,
-            offset_provider={},
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=0,
-            vertical_end=self._num_levels,
         )
 
         # dTv/dt from the new temperature and the species just updated in step 1
-        self._virtual_temperature_tendency_program(
+        self._calculate_virtual_temperature_tendency(
             dtime=dt,
-            qv=self.q["v"],
-            qc=self.q["c"],
-            qi=self.q["i"],
-            qr=self.q["r"],
-            qs=self.q["s"],
-            qg=self.q["g"],
+            qv=_require(self._tracers.qv, "qv"),
+            qc=_require(self._tracers.qc, "qc"),
+            qi=_require(self._tracers.qi, "qi"),
+            qr=_require(self._tracers.qr, "qr"),
+            qs=_require(self._tracers.qs, "qs"),
+            qg=_require(self._tracers.qg, "qg"),
             temperature=self._new_te,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
-            offset_provider={},
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=0,
-            vertical_end=self._num_levels,
         )
         # d(exner)/dt from dTv/dt, then exner += d(exner)/dt * dt.
-        self._exner_tendency_program(
+        self._calculate_exner_tendency(
             dtime=dt,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
             exner=prognostic.exner,
             exner_tendency=self._exner_tendency,
-            offset_provider={},
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=0,
-            vertical_end=self._num_levels,
         )
-        self._apply_tendency_program(
+        self._apply_tendency(
             field_a=prognostic.exner,
             coeff=dt,
             field_b=self._exner_tendency,
             output_field=prognostic.exner,
-            offset_provider={},
-            horizontal_start=0,
-            horizontal_end=self._num_cells,
-            vertical_start=0,
-            vertical_end=self._num_levels,
         )
 
         # 3. Store precip diagnostics (references; never applied to prognostic state).
@@ -287,8 +278,8 @@ class State(PhysicsState):
         """
         Translate to the generic Component input dict (the 10 muphys input fields).
         """
-        if self.rho is None:
+        if self.rho is None or self._tracers is None:
             raise RuntimeError("as_component_input called before gather_from_prognostic")
         inp = {"dz": self.dz, "te": self.te, "p": self.p, "rho": self.rho}
-        inp.update({f"q{s}": self.q[s] for s in SPECIES})
+        inp.update({f"q{s}": _require(getattr(self._tracers, f"q{s}"), f"q{s}") for s in SPECIES})
         return inp

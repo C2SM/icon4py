@@ -46,7 +46,7 @@ class MuphysComponent:
         self,
         ncells: int,
         nlev: int,
-        dt: float,
+        dtime: datetime.timedelta,
         qnc: float,
         backend: gtx_typing.Backend | None = None,
         *,
@@ -54,15 +54,28 @@ class MuphysComponent:
     ) -> None:
         self._ncells = ncells
         self._nlev = nlev
-        self._dt = dt
+        self._dt_seconds = dtime.total_seconds()
         self._qnc = qnc
         self._backend = model_options.customize_backend(program=None, backend=backend)
 
-        self._tendency_program = calculate_tendency.calculate_cell_kdim_field_tendency.with_backend(
-            self._backend
+        horizontal_sizes = {
+            "horizontal_start": gtx.int32(0),
+            "horizontal_end": gtx.int32(self._ncells),
+        }
+        vertical_sizes = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._nlev)}
+        self._calculate_tendency = model_options.setup_program(
+            program=calculate_tendency.calculate_cell_kdim_field_tendency,
+            backend=self._backend,
+            horizontal_sizes=horizontal_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider={},
         )
-        self._copy_program = generic_math_operations.copy_field_on_cell_k.with_backend(
-            self._backend
+        self._copy_field = model_options.setup_program(
+            program=generic_math_operations.copy_field_on_cell_k,
+            backend=self._backend,
+            horizontal_sizes=horizontal_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider={},
         )
 
         allocator = model_backends.get_allocator(backend)
@@ -71,7 +84,7 @@ class MuphysComponent:
             sizes = types.SimpleNamespace(ncells=ncells, nlev=nlev)
             step = run_full_muphys.setup_muphys(
                 inp=sizes,  # type: ignore[arg-type]  # only .ncells/.nlev are read
-                dt=dt,
+                dt=self._dt_seconds,
                 qnc=qnc,
                 backend=backend,
                 single_program=False,
@@ -122,28 +135,18 @@ class MuphysComponent:
         out: fa.CellKField[ta.wpfloat],
     ) -> None:
         """``out = (new - old) / dt`` over the whole column."""
-        self._tendency_program(
-            dtime=self._dt,
+        self._calculate_tendency(
+            dtime=self._dt_seconds,
             old_field=old,
             new_field=new,
             tendency=out,
-            horizontal_start=0,
-            horizontal_end=self._ncells,
-            vertical_start=0,
-            vertical_end=self._nlev,
-            offset_provider={},
         )
 
     def _copy_into(self, src: fa.CellKField[ta.wpfloat], dst: fa.CellKField[ta.wpfloat]) -> None:
         """Copy ``src`` into the granule-owned buffer ``dst``."""
-        self._copy_program(
+        self._copy_field(
             field=src,
             output_field=dst,
-            horizontal_start=0,
-            horizontal_end=self._ncells,
-            vertical_start=0,
-            vertical_end=self._nlev,
-            offset_provider={},
         )
 
     def __call__(
