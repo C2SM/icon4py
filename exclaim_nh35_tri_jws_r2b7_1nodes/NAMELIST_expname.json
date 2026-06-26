@@ -1,0 +1,82 @@
+{
+    "parallel_nml": {
+        "nproma": 0,
+        "nblocks_c": 1,
+        "nblocks_e": 0,
+        "nproma_sub": null,
+        "nblocks_sub": 1,
+        "proc0_shift": 0,
+        "p_test_run": false,
+        "l_test_openmp": false,
+        "l_log_checks": false,
+        "division_method": 1,
+        "num_io_procs": 0,
+        "num_restart_procs": 0,
+        "n_ghost_rows": 1
+    },
+    "grid_nml": {
+        "dynamics_grid_filename": "/capstor/scratch/cscs/ioannmag/cycle36/icon-exclaim-updated/build_acc/grids/icon_grid_0004_R02B07_G.nc"
+    },
+    "run_nml": {
+        "num_lev": 35,
+        "dtime": 150.0,
+        "ltestcase": true,
+        "ldynamics": true,
+        "ltransport": false,
+        "iforcing": 0,
+        "ntracer": 0,
+        "msg_level": 1,
+        "output": "nml",
+        "ltimer": true,
+        "timers_level": 1,
+        "activate_sync_timers": true,
+        "profiling_output": 3
+    },
+    "dynamics_nml": {
+        "iequations": 3,
+        "lmoist_thdyn": false,
+        "divavg_cntrwgt": 0.5,
+        "lcoriolis": true
+    },
+    "nh_testcase_nml": {
+        "nh_test_name": "jabw_s"
+    },
+    "nonhydrostatic_nml": {
+        "iadv_rhotheta": 2,
+        "itime_scheme": 4,
+        "ndyn_substeps": 5,
+        "igradp_method": 3,
+        "damp_height": 45000.0,
+        "rayleigh_coeff": 0.1,
+        "divdamp_order": 24,
+        "divdamp_type": 3,
+        "divdamp_fac": 0.0025,
+        "divdamp_fac2": 0.004,
+        "divdamp_fac3": 0.004,
+        "divdamp_fac4": 0.004,
+        "divdamp_z": 32500.0,
+        "divdamp_z2": 40000.0,
+        "divdamp_z3": 60000.0,
+        "divdamp_z4": 80000.0,
+        "l_zdiffu_t": false,
+        "htop_moist_proc": 22500.0,
+        "hbot_qvsubstep": 22500.0
+    },
+    "diffusion_nml": {
+        "lhdiff_vn": true,
+        "lhdiff_temp": false,
+        "lhdiff_w": true,
+        "hdiff_order": 5,
+        "itype_vn_diffu": 1,
+        "itype_t_diffu": 2,
+        "hdiff_efdt_ratio": 10.0,
+        "hdiff_smag_fac": 0.025,
+        "hdiff_multfac": 1.0,
+        "hdiff_tv_ratio": 1.0
+    },
+    "io_nml": {
+        "dt_checkpoint": 0,
+        "lnetcdf_flt64_output": true,
+        "write_last_restart": true
+    }
+}

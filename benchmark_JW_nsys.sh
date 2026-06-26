@@ -64,9 +64,11 @@ rm -rf ${OUTPUT_PATH}*
 
 srun -u --cpu-bind=cores \
     bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; nsys profile -t cuda,nvtx,osrt,mpi --mpi-impl mpich -o JW4Py.%q{SLURM_PROCID}.%q{SLURM_JOBID} --stats true $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
+    --config-file-path exclaim_nh35_tri_jws_r2b7_${SLURM_NNODES}nodes \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
     --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-    --output-path ${OUTPUT_PATH}'
+    --output-path ${OUTPUT_PATH} \
+    --no-enable-output'
 
 rm -rf ${OUTPUT_PATH}
