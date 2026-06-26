@@ -16,12 +16,19 @@ from typing import TYPE_CHECKING, ClassVar
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
+    field_type_aliases as fa,
     model_backends,
+    thermodynamic_functions as thermo,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.diagnostic_calculations.stencils import (
+    diagnose_pressure as diagnose_pressure_stencil,
+    diagnose_surface_pressure as diagnose_surface_pressure_stencil,
+)
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
+    horizontal as h_grid,
     icon as icon_grid,
     vertical as v_grid,
 )
@@ -56,8 +63,19 @@ class JablonowskiWilliamsonConfig:
     dtemp: float = 4.8e5
     lon_perturbation_center: float = math.pi / 9.0
     lat_perturbation_center: float = 2.0 * math.pi / 9.0
+    # Moist tracer initialization (inwp tracers, see init_nh_inwp_tracers in
+    # mo_nh_jabw_exp.f90). Relevant only when transport is active.
     rh_at_1000hpa: float = 0.7
     qv_max: float = 20e-3
+    #: number of iterations to converge qv against the moisture-dependent
+    #: temperature (Fortran l_rediag=.TRUE. => 10 iterations).
+    moisture_init_iterations: int = 10
+    #: target column-integrated moisture [kg/m**2] (ztmc_ape). Only used by the
+    #: APE test cases, which rescale qv to match this global value.
+    global_moisture_content: float = 25.006
+    #: whether to rescale qv to ``global_moisture_content``; enabled for the APE
+    #: cases (mirrors the optional ``opt_global_moist`` argument in Fortran).
+    normalize_global_moisture: bool = False
 
     fortran_name_map: ClassVar[dict[str, str]] = {
         "jw_up": "baroclinic_amplitude",
@@ -66,51 +84,151 @@ class JablonowskiWilliamsonConfig:
         "zp_ape": "p_sfc",
         "rh_at_1000hpa": "rh_at_1000hpa",
         "qv_max": "qv_max",
+        "ztmc_ape": "global_moisture_content",
     }
 
 
-def _init_tracers(
+def _qv_from_relative_humidity(
+    temperature: data_alloc.NDArray,
+    pressure: data_alloc.NDArray,
     rho: data_alloc.NDArray,
-    exner: data_alloc.NDArray,
-    theta_v: data_alloc.NDArray,
     config: JablonowskiWilliamsonConfig,
-    tracer_arrays: dict[str, data_alloc.NDArray],
-) -> None:
+) -> data_alloc.NDArray:
+    """Specific humidity from a height-dependent relative-humidity profile.
+
+    Ports the ``iqv`` branch of ``init_nh_inwp_tracers`` (mo_nh_jabw_exp.f90):
+    a linearly decreasing relative humidity with height, capped so the water
+    vapour pressure cannot exceed the total pressure, with additional caps in
+    the stratosphere and tropics.
+    """
     array_ns = data_alloc.array_namespace(rho)
-    TETENS_P0 = 610.78
-    TETENS_AW = 17.269
-    TETENS_BW = 35.86
-    TETENS_AI = 21.875
-    TETENS_BI = 7.66
+    relative_humidity = array_ns.maximum(config.rh_at_1000hpa - 0.5 + pressure / 200000.0, 0.0)
+    inverse_relative_humidity = 1.0 / (relative_humidity + 1.0e-6)
 
-    temp = theta_v * exner
-    pres = phy_const.P0REF * exner ** phy_const.CPD_O_RD
-
-    zrhf = config.rh_at_1000hpa - 0.5 + pres / 200000.0
-    zrhf = array_ns.maximum(zrhf, 0.0)
-
-    e_sat_ice = TETENS_P0 * array_ns.exp(
-        TETENS_AI * (array_ns.maximum(temp, 180.0) - phy_const.MELTING_TEMPERATURE)
-        / (array_ns.maximum(temp, 180.0) - TETENS_BI)
+    saturation_pressure = array_ns.where(
+        temperature <= phy_const.MELTING_TEMPERATURE,
+        # the ice branch clamps the temperature at 180 K, as in Fortran
+        thermo.sat_pres_ice(array_ns.maximum(temperature, 180.0)),
+        thermo.sat_pres_water(temperature),
     )
-    e_sat_water = TETENS_P0 * array_ns.exp(
-        TETENS_AW * (temp - phy_const.MELTING_TEMPERATURE) / (temp - TETENS_BW)
+    # avoid water vapour pressure > total pressure
+    vapour_pressure = array_ns.minimum(saturation_pressure, pressure * inverse_relative_humidity)
+    # saturation qv as in mo_satad's qsat_rho
+    saturation_qv = vapour_pressure / (rho * phy_const.RV * temperature)
+
+    qv = array_ns.minimum(saturation_qv, relative_humidity * saturation_qv)
+    qv = array_ns.where(pressure <= 10000.0, array_ns.minimum(qv, 5.0e-6), qv)
+    return array_ns.minimum(qv, config.qv_max)
+
+
+def _diagnose_pressure(
+    *,
+    grid: icon_grid.IconGrid,
+    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.Allocator,
+    exner: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
+) -> data_alloc.NDArray:
+    """Hydrostatic pressure at full levels, as in ICON's ``diagnose_pres_temp``.
+
+    Reuses the same stencils the driver uses at runtime: the surface pressure is
+    extrapolated from the lowest three levels, then the pressure is obtained by
+    vertical integration of the virtual temperature. This is the proper
+    hydrostatic pressure, not the Exner-function shortcut.
+    """
+    num_levels = grid.num_levels
+    cell_domain = h_grid.domain(dims.CellDim)
+    horizontal_end = grid.end_index(cell_domain(h_grid.Zone.END))
+
+    surface_pressure_k = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
     )
-    e_sat = array_ns.where(temp <= phy_const.MELTING_TEMPERATURE, e_sat_ice, e_sat_water)
+    surface_pressure = data_alloc.zero_field(
+        grid, dims.CellDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    pressure = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    pressure_ifc = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
+    )
 
-    z_1_o_rh = 1.0 / (zrhf + 1.0e-6)
-    z_help = array_ns.minimum(e_sat, pres * z_1_o_rh)
-    qsat = z_help / (rho * phy_const.RV * temp)
+    diagnose_surface_pressure_stencil.diagnose_surface_pressure.with_backend(backend)(
+        exner=exner,
+        virtual_temperature=virtual_temperature,
+        ddqz_z_full=ddqz_z_full,
+        surface_pressure=surface_pressure_k,
+        horizontal_start=0,
+        horizontal_end=horizontal_end,
+        vertical_start=num_levels,
+        vertical_end=num_levels + 1,
+        offset_provider={},
+    )
+    # surface pressure lives at the bottom interface; extract it as a cell field
+    surface_pressure.ndarray[:] = surface_pressure_k.ndarray[:, num_levels]
+    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
 
-    qv = array_ns.minimum(qsat, zrhf * qsat)
-    qv = array_ns.where(pres <= 10000.0, array_ns.minimum(qv, 5.0e-6), qv)
-    qv = array_ns.minimum(qv, config.qv_max)
+    diagnose_pressure_stencil.diagnose_pressure.with_backend(backend)(
+        ddqz_z_full,
+        virtual_temperature,
+        surface_pressure,
+        pressure,
+        pressure_ifc,
+        horizontal_start=0,
+        horizontal_end=horizontal_end,
+        vertical_start=0,
+        vertical_end=num_levels,
+        offset_provider={},
+    )
+    return pressure.ndarray
 
-    if "qv" in tracer_arrays:
-        tracer_arrays["qv"][:] = qv
-    for name in ("qc", "qi", "qr", "qs", "qg"):
-        if name in tracer_arrays:
-            tracer_arrays[name][:] = 0.0
+
+def _init_tracers(
+    *,
+    rho: data_alloc.NDArray,
+    virtual_temperature: data_alloc.NDArray,
+    pressure: data_alloc.NDArray,
+    cell_area: data_alloc.NDArray,
+    ddqz_z_full: data_alloc.NDArray,
+    config: JablonowskiWilliamsonConfig,
+    qv: data_alloc.NDArray,
+    global_reductions: decomposition_defs.Reductions,
+) -> None:
+    """Initialize the water-vapour tracer ``qv`` from a relative-humidity profile.
+
+    Mirrors ``init_nh_inwp_tracers`` (mo_nh_jabw_exp.f90): qv is iterated against
+    the moisture-dependent temperature, and (for the APE cases) finally rescaled
+    so the global column-integrated moisture matches ``global_moisture_content``.
+    The other hydrometeors stay at their zero-initialized value.
+
+    ``pressure`` is the hydrostatic pressure and ``virtual_temperature`` is
+    ``theta_v * exner``; both are independent of qv and are passed in already
+    diagnosed.
+    """
+    array_ns = data_alloc.array_namespace(rho)
+
+    # first guess uses qv = 0, i.e. temperature == virtual temperature
+    temperature = virtual_temperature
+    qv_values = _qv_from_relative_humidity(temperature, pressure, rho, config)
+    for _ in range(config.moisture_init_iterations - 1):
+        # re-diagnose the actual temperature with the moisture feedback; the other
+        # hydrometeors are zero here, so only qv enters (see diagnose_temperature).
+        temperature = virtual_temperature / (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_values)
+        qv_values = _qv_from_relative_humidity(temperature, pressure, rho, config)
+
+    if config.normalize_global_moisture:
+        # rescale qv so the global mean column-integrated moisture matches the
+        # prescribed value (Fortran opt_global_moist / ztmc_ape).
+        column_moisture = global_reductions.sum(
+            ddqz_z_full * rho * qv_values * cell_area[:, array_ns.newaxis]
+        )
+        total_area = global_reductions.sum(cell_area)
+        mean_column_moisture = column_moisture / total_area
+        if mean_column_moisture > 1.0e-25:
+            qv_values = qv_values * (config.global_moisture_content / mean_column_moisture)
+
+    qv[:, :] = qv_values
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
@@ -122,6 +240,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
+    global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """
     Initial condition for Jablonowski-Williamson test.
@@ -152,6 +271,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
     wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
+    ddqz_z_full = metrics.get(metrics_attributes.DDQZ_Z_FULL).ndarray
     c_lin_e = static_fields.interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 
@@ -302,16 +422,39 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    tracer_ndarrays = {
-        name: field.ndarray
-        for name, field in prognostic_state_now.tracer.active_fields()
-    }
-    if tracer_ndarrays:
+    # Moist initialization only runs when transport is active. The only tracer we
+    # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
+    # value, so we don't touch them.
+    active_tracers = {name for name, _ in prognostic_state_now.tracer.active_fields()}
+    if active_tracers:
+        if prognostic_state_now.tracer.qv is None:
+            raise ValueError(
+                "Moist tracer initialization requires the 'qv' tracer to be active, "
+                f"but only {sorted(active_tracers)} are present."
+            )
         log.info("Initializing inwp tracers (qv from RH profile, others zero).")
+
+        # virtual temperature theta_v * exner is independent of qv; it feeds both
+        # the hydrostatic pressure diagnosis and the moist-iteration first guess.
+        virtual_temperature = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        )
+        virtual_temperature.ndarray[:, :] = theta_v_ndarray * exner_ndarray
+        pressure_ndarray = _diagnose_pressure(
+            grid=grid,
+            backend=backend,
+            allocator=allocator,
+            exner=prognostic_state_now.exner,
+            virtual_temperature=virtual_temperature,
+            ddqz_z_full=metrics.get(metrics_attributes.DDQZ_Z_FULL),
+        )
         _init_tracers(
             rho=rho_ndarray,
-            exner=exner_ndarray,
-            theta_v=theta_v_ndarray,
+            virtual_temperature=virtual_temperature.ndarray,
+            pressure=pressure_ndarray,
+            cell_area=cell_area,
+            ddqz_z_full=ddqz_z_full,
             config=config,
-            tracer_arrays=tracer_ndarrays,
+            qv=prognostic_state_now.tracer.qv.ndarray,
+            global_reductions=global_reductions,
         )
