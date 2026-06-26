@@ -33,6 +33,8 @@ RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR
+#: RD/RV, rdv in ICON.
+RD_O_RV: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR
 
 #: Specific heat capacity of water vapor at constant pressure [J/K/kg]
 SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR: Final[ta.wpfloat] = 1869.46

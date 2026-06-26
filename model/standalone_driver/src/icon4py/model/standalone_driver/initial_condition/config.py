@@ -18,6 +18,7 @@ from icon4py.model.standalone_driver.initial_condition import from_file as from_
 from icon4py.model.standalone_driver.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
+    weisman_klemp as wk_ic,
 )
 
 
@@ -34,7 +35,12 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+    config: (
+        jw_ic.JablonowskiWilliamsonConfig
+        | gauss_ic.Gauss3DConfig
+        | wk_ic.WeismanKlempConfig
+        | from_file_ic.FromFileConfig
+    )
 
     @classmethod
     def from_fortran_dict(
@@ -58,7 +64,7 @@ class InitialConditionConfig:
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         test_name = testcase_nml.get("nh_test_name")
         config: (
-            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
+            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | wk_ic.WeismanKlempConfig
         )  # mypy does not automatically catch type
         match test_name:
             case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
@@ -71,12 +77,15 @@ class InitialConditionConfig:
                 # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
                 if test_name == "jabw_s":
                     config.baroclinic_amplitude = 0.0
-            case (
-                "gauss3D" | "wk82"
-            ):  # TODO (jcanton): wk82 is just a placeholder until next PR, it is not actually used
+            case "gauss3D":
                 log.info("Analytical initial condition for Gauss 3D test case")
                 config = fortran_config.config_dataclass_from_dict(
                     gauss_ic.Gauss3DConfig, testcase_nml
+                )
+            case "wk82":
+                log.info("Analytical initial condition for Weisman-Klemp test case")
+                config = fortran_config.config_dataclass_from_dict(
+                    wk_ic.WeismanKlempConfig, testcase_nml
                 )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
@@ -110,6 +119,16 @@ def create(
             )
         case gauss_ic.Gauss3DConfig():
             gauss_ic.gauss3d(
+                config=config.config,
+                vertical_config=vertical_config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                backend=backend,
+                exchange=exchange,
+            )
+        case wk_ic.WeismanKlempConfig():
+            wk_ic.weisman_klemp(
                 config=config.config,
                 vertical_config=vertical_config,
                 grid=grid,
