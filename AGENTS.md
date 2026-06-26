@@ -185,4 +185,4 @@ uv run --group test --frozen nox -s 'test_common(datatest=True)'
 uv run --group test --frozen nox -s 'test_common(datatest=False)'
 ```
 
-Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks), `all`. Level options: `any` (default, excludes extended), `extended`.
+Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).

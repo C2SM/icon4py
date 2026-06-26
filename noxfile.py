@@ -46,7 +46,7 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
 ]
 
-ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic", "all"]
+ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
@@ -59,6 +59,7 @@ TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ToolsBindingsTestsSubset.__args__
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
 
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
@@ -164,9 +165,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(
-    session: nox.Session,
-    selection: ModelTestsSubset,
-    subpackage: ModelSubpackagePath,
+    session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
 ) -> None:
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
@@ -274,8 +273,6 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
             pytest_args.extend(
                 ["--datatest-skip", "-k", "not stencil_tests and not benchmark_only"]
             )
-        case "all":
-            pass
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
 

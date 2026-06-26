@@ -25,7 +25,7 @@ __all__ = [
     "pytest_sessionfinish",
 ]
 
-_TEST_LEVELS = ("any", "unit", "integration", "extended")
+_TEST_LEVELS = ("any", "unit", "integration")
 
 
 def pytest_configure(config):
@@ -132,20 +132,14 @@ def pytest_collection_modifyitems(config, items):
             pytest.exit("No tests assigned to this MPI subcomm group", returncode=0)
 
     test_level = config.getoption("--level")
+    if test_level == "any":
+        return
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
             assert all(level in _TEST_LEVELS for level in marker.args), (
                 f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             )
-            if test_level == "any":
-                # Default mode: run unit and integration, but exclude extended tests
-                if "extended" in marker.args:
-                    item.add_marker(
-                        pytest.mark.skip(
-                            reason="Extended tests must be explicitly requested with --level=extended."
-                        )
-                    )
-            elif test_level not in marker.args:
+            if test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(
                         reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
