@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import enum
-import math
+
+import gt4py.next as gtx
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
@@ -180,14 +181,14 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     QI0 = ta.wpfloat(0.0)
 
     #: ice crystal number concentration at threshold temperature for mixed-phase cloud
-    NIMIX = ta.wpfloat(5.0) * math.exp(
+    NIMIX = ta.wpfloat(5.0) * gtx.exp(
         ta.wpfloat(0.304) * (PhysicsConstants.tmelt - THRESHOLD_FREEZE_TEMPERATURE_MIXEDPHASE)
     )
 
     CCSDEP = (
         ta.wpfloat(0.26)
-        * math.gamma((POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(5.0)) / ta.wpfloat(2.0))
-        * math.sqrt(ta.wpfloat(1.0) / AIR_KINEMATIC_VISCOSITY)
+        * gtx.gamma((POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(5.0)) / ta.wpfloat(2.0))
+        * gtx.sqrt(ta.wpfloat(1.0) / AIR_KINEMATIC_VISCOSITY)
     )
     _ccsvxp = -(
         POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED
@@ -195,7 +196,7 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
         + ta.wpfloat(1.0)
     )
     CCSVXP = _ccsvxp + ta.wpfloat(1.0)
-    CCSLAM = POWER_LAW_COEFF_FOR_SNOW_MD_RELATION * math.gamma(
+    CCSLAM = POWER_LAW_COEFF_FOR_SNOW_MD_RELATION * gtx.gamma(
         POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + ta.wpfloat(1.0)
     )
     CCSLXP = ta.wpfloat(1.0) / (POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + ta.wpfloat(1.0))
@@ -213,9 +214,9 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     CCIDEP = ta.wpfloat(4.0) * POWER_LAW_EXPONENT_FOR_ICE_MD_RELATION ** (
         ta.wpfloat(-1.0) / ta.wpfloat(3.0)
     )
-    CCSWXP_LN1O2 = math.exp(CCSWXP * math.log(ta.wpfloat(0.5)))
+    CCSWXP_LN1O2 = gtx.exp(CCSWXP * gtx.log(ta.wpfloat(0.5)))
 
-    PVSW0 = TETENS_P0 * math.exp(
+    PVSW0 = TETENS_P0 * gtx.exp(
         TETENS_AW
         * (PhysicsConstants.tmelt - PhysicsConstants.tmelt)
         / (PhysicsConstants.tmelt - TETENS_BW)
