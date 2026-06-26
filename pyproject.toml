@@ -222,7 +222,9 @@ module = [
   'icon4py.bindings.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
   'icon4py.bindings.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
   'icon4py.bindings.grid_wrapper',
-  'icon4py.bindings.muphys_wrapper'
+  'icon4py.bindings.muphys_wrapper',
+  'icon4py.bindings.common',  # array->field grid-construction glue, same category as the wrappers
+  'icon4py.bindings.v2.*'  # v2 binding glue: same bare-int/backend-object/array->field patterns
 ]
 
 [[tool.mypy.overrides]]

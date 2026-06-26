@@ -18,7 +18,10 @@ import pathlib
 import click
 
 from icon4py.bindings import diffusion_wrapper, dycore_wrapper, grid_wrapper
-from icon4py.bindings.v2 import diffusion_wrapper as diffusion_wrapper_v2
+from icon4py.bindings.v2 import (
+    diffusion_wrapper as diffusion_wrapper_v2,
+    dycore_wrapper as dycore_wrapper_v2,
+)
 from icon4py.tools import py2fgen
 
 
@@ -31,6 +34,8 @@ FUNCTIONS = [
     diffusion_wrapper_v2.grid_init_v2,
     diffusion_wrapper_v2.diffusion_init_v2,
     diffusion_wrapper_v2.diffusion_run_v2,
+    dycore_wrapper_v2.solve_nh_init_v2,
+    dycore_wrapper_v2.solve_nh_run_v2,
 ]
 LIBRARY_NAME = "icon4py_bindings"
 

@@ -14,13 +14,12 @@ Mirrors the assembly in
 to avoid a `bindings -> standalone_driver` dependency edge).
 """
 
+from icon4py.bindings.v2 import factory_setup
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, states as grid_states
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import factory as states_factory
-
-from icon4py.bindings.v2 import factory_setup
 
 
 def assemble_cell_params(geometry) -> grid_states.CellParams:

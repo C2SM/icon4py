@@ -23,11 +23,7 @@ import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.bindings import (
-    common as wrapper_common,
-    config as wrapper_config,
-    icon4py_export,
-)
+from icon4py.bindings import common as wrapper_common, config as wrapper_config, icon4py_export
 from icon4py.bindings.grid_wrapper import NumpyBoolArray1D, NumpyInt32Array1D
 from icon4py.bindings.v2 import diffusion_setup, factory_setup
 from icon4py.model.atmosphere.diffusion.diffusion import (
@@ -40,6 +36,7 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     TemperatureDiscretizationType,
     TurbulenceShearForcingType,
 )
+from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
@@ -64,6 +61,7 @@ class GridStateV2:
     exchange_runtime: decomposition_defs.ExchangeRuntime
     backend: object
     allocator: object
+    owner_mask: gtx.Field  # CellDim bool, needed by the solve-nonhydro granule
 
 
 @dataclasses.dataclass
@@ -123,6 +121,7 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
     topography: fa.CellField[wpfloat],
     # injected from Fortran (rounding-sensitive / global-reduction)
     rbf_vec_coeff_v: wrapper_common.Float64Array3D,
+    rbf_vec_coeff_e: wrapper_common.Float64Array2D,
     mean_cell_area: gtx.float64,
     nudge_max_coeff: gtx.float64,  # scaled ICON value (not the raw namelist value)
     lowest_layer_thickness: gtx.float64,
@@ -207,9 +206,7 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         # ICON-NWP grids are icosahedral; the factories read grid_params.geometry_type
         # and .radius (radius defaults to EARTH_RADIUS). subdivision is unused -> placeholder.
         grid_params=icon_grid.GridParams(
-            icon_grid.IcosahedronParams(
-                subdivision=icon_grid.GridSubdivision(root=1, level=0)
-            )
+            icon_grid.IcosahedronParams(subdivision=icon_grid.GridSubdivision(root=1, level=0))
         ),
     )
 
@@ -278,6 +275,13 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         xp.transpose(rbf_vec_coeff_v[:, 1, :num_vertices]),
         allocator=allocator,
     )
+    # rbf_vec_coeff_e arrives in ICON layout (rbf_vec_dim_e, nproma); transpose to
+    # (EdgeDim, E2C2EDim) and trim the nproma-padded edge axis to num_edges.
+    rbf_e = gtx.as_field(
+        [dims.EdgeDim, dims.E2C2EDim],
+        xp.transpose(rbf_vec_coeff_e[:, :num_edges]),
+        allocator=allocator,
+    )
 
     interpolation_config = interpolation_factory.InterpolationConfig(
         max_nudging_coefficient=nudge_max_coeff
@@ -295,10 +299,18 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         metrics_config=metrics_config,
         rbf_vec_coeff_v1=rbf_v1,
         rbf_vec_coeff_v2=rbf_v2,
+        rbf_vec_coeff_e=rbf_e,
         mean_cell_area=float(mean_cell_area),
         backend=resolved_backend,
         exchange=exchange,
         reductions=reductions,
+    )
+
+    # The solve-nonhydro granule needs the cell owner mask as an on-device CellField[bool]
+    # (used in velocity-advection stencils). Build it from the host array ICON already
+    # passes for the decomposition, so no extra device array crosses the binding boundary.
+    owner_mask = gtx.as_field(
+        (dims.CellDim,), np.asarray(c_owner_mask[:num_cells], dtype=bool), allocator=allocator
     )
 
     global grid_state  # noqa: PLW0603 [global-statement]
@@ -311,6 +323,7 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         exchange_runtime=exchange,
         backend=resolved_backend,
         allocator=allocator,
+        owner_mask=owner_mask,
     )
 
 
@@ -343,7 +356,9 @@ def diffusion_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
     loutshs: bool,
 ) -> None:
     if grid_state is None:
-        raise RuntimeError("Need to initialise grid using 'grid_init_v2' before 'diffusion_init_v2'.")
+        raise RuntimeError(
+            "Need to initialise grid using 'grid_init_v2' before 'diffusion_init_v2'."
+        )
 
     config = DiffusionConfig(
         diffusion_type=DiffusionType(diffusion_type),
@@ -412,10 +427,6 @@ def diffusion_run_v2(  # noqa: PLR0917 [too-many-positional-arguments]
     dtime: gtx.float64,
     linit: bool,
 ) -> None:
-    from icon4py.model.atmosphere.diffusion.diffusion_states import (
-        DiffusionDiagnosticState,
-    )
-
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init_v2' first.")
 

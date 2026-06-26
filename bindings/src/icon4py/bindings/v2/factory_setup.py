@@ -32,10 +32,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.grid_manager import CoordinateDict, GeometryDict
-from icon4py.model.common.interpolation import (
-    interpolation_attributes,
-    interpolation_factory,
-)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
 
@@ -170,8 +167,6 @@ def build_coordinates(
     vertex_lat: gtx.Field,
     vertex_lon: gtx.Field,
 ) -> CoordinateDict:
-    from icon4py.model.common import dimension as dims
-
     return {
         dims.CellDim: {"lat": cell_lat, "lon": cell_lon},
         dims.EdgeDim: {"lat": edge_lat, "lon": edge_lon},

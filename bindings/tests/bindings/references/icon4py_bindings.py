@@ -26,6 +26,8 @@ from icon4py.bindings.dycore_wrapper import solve_nh_run
 from icon4py.bindings.v2.diffusion_wrapper import grid_init_v2
 from icon4py.bindings.v2.diffusion_wrapper import diffusion_init_v2
 from icon4py.bindings.v2.diffusion_wrapper import diffusion_run_v2
+from icon4py.bindings.v2.dycore_wrapper import solve_nh_init_v2
+from icon4py.bindings.v2.dycore_wrapper import solve_nh_run_v2
 
 
 @ffi.def_extern(error=2)
@@ -4485,6 +4487,9 @@ def grid_init_v2_wrapper(
     rbf_vec_coeff_v_size_0,
     rbf_vec_coeff_v_size_1,
     rbf_vec_coeff_v_size_2,
+    rbf_vec_coeff_e,
+    rbf_vec_coeff_e_size_0,
+    rbf_vec_coeff_e_size_1,
     mean_cell_area,
     nudge_max_coeff,
     lowest_layer_thickness,
@@ -4716,6 +4721,16 @@ def grid_init_v2_wrapper(
                 False,
             )
 
+            rbf_vec_coeff_e = (
+                rbf_vec_coeff_e,
+                (
+                    rbf_vec_coeff_e_size_0,
+                    rbf_vec_coeff_e_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
             if __debug__:
                 if runtime_config.PROFILING:
                     allocate_end_time = _runtime.perf_counter()
@@ -4776,6 +4791,7 @@ def grid_init_v2_wrapper(
                 vct_b=vct_b,
                 topography=topography,
                 rbf_vec_coeff_v=rbf_vec_coeff_v,
+                rbf_vec_coeff_e=rbf_vec_coeff_e,
                 mean_cell_area=mean_cell_area,
                 nudge_max_coeff=nudge_max_coeff,
                 lowest_layer_thickness=lowest_layer_thickness,
@@ -5400,6 +5416,22 @@ def grid_init_v2_wrapper(
                     )
                     logger.debug(msg)
 
+                    rbf_vec_coeff_e_arr = (
+                        _conversion.as_array(ffi, rbf_vec_coeff_e)
+                        if rbf_vec_coeff_e is not None
+                        else None
+                    )
+                    msg = "shape of rbf_vec_coeff_e after computation = %s" % str(
+                        rbf_vec_coeff_e_arr.shape if rbf_vec_coeff_e is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rbf_vec_coeff_e after computation: %s" % str(rbf_vec_coeff_e_arr)
+                        if rbf_vec_coeff_e is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
             if __debug__:
                 logger.info("Python execution of grid_init_v2 completed.")
 
@@ -5796,6 +5828,1187 @@ def diffusion_run_v2_wrapper(
 
             if __debug__:
                 logger.info("Python execution of diffusion_run_v2 completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def solve_nh_init_v2_wrapper(
+    itime_scheme,
+    iadv_rhotheta,
+    igradp_method,
+    rayleigh_type,
+    divdamp_order,
+    divdamp_type,
+    l_vert_nested,
+    ldeepatmo,
+    iau_init,
+    extra_diffu,
+    rhotheta_offctr,
+    veladv_offctr,
+    nudge_max_coeff,
+    divdamp_fac,
+    divdamp_fac2,
+    divdamp_fac3,
+    divdamp_fac4,
+    divdamp_z,
+    divdamp_z2,
+    divdamp_z3,
+    divdamp_z4,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_init_v2"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of solve_nh_init_v2 started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "solve_nh_init_v2 constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            solve_nh_init_v2(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                itime_scheme=itime_scheme,
+                iadv_rhotheta=iadv_rhotheta,
+                igradp_method=igradp_method,
+                rayleigh_type=rayleigh_type,
+                divdamp_order=divdamp_order,
+                divdamp_type=divdamp_type,
+                l_vert_nested=l_vert_nested,
+                ldeepatmo=ldeepatmo,
+                iau_init=iau_init,
+                extra_diffu=extra_diffu,
+                rhotheta_offctr=rhotheta_offctr,
+                veladv_offctr=veladv_offctr,
+                nudge_max_coeff=nudge_max_coeff,
+                divdamp_fac=divdamp_fac,
+                divdamp_fac2=divdamp_fac2,
+                divdamp_fac3=divdamp_fac3,
+                divdamp_fac4=divdamp_fac4,
+                divdamp_z=divdamp_z,
+                divdamp_z2=divdamp_z2,
+                divdamp_z3=divdamp_z3,
+                divdamp_z4=divdamp_z4,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "solve_nh_init_v2 convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "solve_nh_init_v2 execution time: %s" % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                logger.info("Python execution of solve_nh_init_v2 completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def solve_nh_run_v2_wrapper(
+    rho_now,
+    rho_now_size_0,
+    rho_now_size_1,
+    rho_new,
+    rho_new_size_0,
+    rho_new_size_1,
+    exner_now,
+    exner_now_size_0,
+    exner_now_size_1,
+    exner_new,
+    exner_new_size_0,
+    exner_new_size_1,
+    w_now,
+    w_now_size_0,
+    w_now_size_1,
+    w_new,
+    w_new_size_0,
+    w_new_size_1,
+    theta_v_now,
+    theta_v_now_size_0,
+    theta_v_now_size_1,
+    theta_v_new,
+    theta_v_new_size_0,
+    theta_v_new_size_1,
+    vn_now,
+    vn_now_size_0,
+    vn_now_size_1,
+    vn_new,
+    vn_new_size_0,
+    vn_new_size_1,
+    w_concorr_c,
+    w_concorr_c_size_0,
+    w_concorr_c_size_1,
+    ddt_vn_apc_ntl1,
+    ddt_vn_apc_ntl1_size_0,
+    ddt_vn_apc_ntl1_size_1,
+    ddt_vn_apc_ntl2,
+    ddt_vn_apc_ntl2_size_0,
+    ddt_vn_apc_ntl2_size_1,
+    ddt_w_adv_ntl1,
+    ddt_w_adv_ntl1_size_0,
+    ddt_w_adv_ntl1_size_1,
+    ddt_w_adv_ntl2,
+    ddt_w_adv_ntl2_size_0,
+    ddt_w_adv_ntl2_size_1,
+    theta_v_ic,
+    theta_v_ic_size_0,
+    theta_v_ic_size_1,
+    rho_ic,
+    rho_ic_size_0,
+    rho_ic_size_1,
+    exner_pr,
+    exner_pr_size_0,
+    exner_pr_size_1,
+    exner_dyn_incr,
+    exner_dyn_incr_size_0,
+    exner_dyn_incr_size_1,
+    ddt_exner_phy,
+    ddt_exner_phy_size_0,
+    ddt_exner_phy_size_1,
+    grf_tend_rho,
+    grf_tend_rho_size_0,
+    grf_tend_rho_size_1,
+    grf_tend_thv,
+    grf_tend_thv_size_0,
+    grf_tend_thv_size_1,
+    grf_tend_w,
+    grf_tend_w_size_0,
+    grf_tend_w_size_1,
+    mass_fl_e,
+    mass_fl_e_size_0,
+    mass_fl_e_size_1,
+    ddt_vn_phy,
+    ddt_vn_phy_size_0,
+    ddt_vn_phy_size_1,
+    grf_tend_vn,
+    grf_tend_vn_size_0,
+    grf_tend_vn_size_1,
+    vn_ie,
+    vn_ie_size_0,
+    vn_ie_size_1,
+    vt,
+    vt_size_0,
+    vt_size_1,
+    vn_incr,
+    vn_incr_size_0,
+    vn_incr_size_1,
+    rho_incr,
+    rho_incr_size_0,
+    rho_incr_size_1,
+    exner_incr,
+    exner_incr_size_0,
+    exner_incr_size_1,
+    mass_flx_me,
+    mass_flx_me_size_0,
+    mass_flx_me_size_1,
+    mass_flx_ic,
+    mass_flx_ic_size_0,
+    mass_flx_ic_size_1,
+    vol_flx_ic,
+    vol_flx_ic_size_0,
+    vol_flx_ic_size_1,
+    vn_traj,
+    vn_traj_size_0,
+    vn_traj_size_1,
+    dtime,
+    max_vcfl_size1_array,
+    max_vcfl_size1_array_size_0,
+    lprep_adv,
+    at_initial_timestep,
+    divdamp_fac_o2,
+    ndyn_substeps_var,
+    idyn_timestep,
+    is_iau_active,
+    iau_wgt_dyn,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_run_v2"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of solve_nh_run_v2 started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            rho_now = (
+                rho_now,
+                (
+                    rho_now_size_0,
+                    rho_now_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            rho_new = (
+                rho_new,
+                (
+                    rho_new_size_0,
+                    rho_new_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            exner_now = (
+                exner_now,
+                (
+                    exner_now_size_0,
+                    exner_now_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            exner_new = (
+                exner_new,
+                (
+                    exner_new_size_0,
+                    exner_new_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            w_now = (
+                w_now,
+                (
+                    w_now_size_0,
+                    w_now_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            w_new = (
+                w_new,
+                (
+                    w_new_size_0,
+                    w_new_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            theta_v_now = (
+                theta_v_now,
+                (
+                    theta_v_now_size_0,
+                    theta_v_now_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            theta_v_new = (
+                theta_v_new,
+                (
+                    theta_v_new_size_0,
+                    theta_v_new_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vn_now = (
+                vn_now,
+                (
+                    vn_now_size_0,
+                    vn_now_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vn_new = (
+                vn_new,
+                (
+                    vn_new_size_0,
+                    vn_new_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            w_concorr_c = (
+                w_concorr_c,
+                (
+                    w_concorr_c_size_0,
+                    w_concorr_c_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ddt_vn_apc_ntl1 = (
+                ddt_vn_apc_ntl1,
+                (
+                    ddt_vn_apc_ntl1_size_0,
+                    ddt_vn_apc_ntl1_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ddt_vn_apc_ntl2 = (
+                ddt_vn_apc_ntl2,
+                (
+                    ddt_vn_apc_ntl2_size_0,
+                    ddt_vn_apc_ntl2_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ddt_w_adv_ntl1 = (
+                ddt_w_adv_ntl1,
+                (
+                    ddt_w_adv_ntl1_size_0,
+                    ddt_w_adv_ntl1_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ddt_w_adv_ntl2 = (
+                ddt_w_adv_ntl2,
+                (
+                    ddt_w_adv_ntl2_size_0,
+                    ddt_w_adv_ntl2_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            theta_v_ic = (
+                theta_v_ic,
+                (
+                    theta_v_ic_size_0,
+                    theta_v_ic_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            rho_ic = (
+                rho_ic,
+                (
+                    rho_ic_size_0,
+                    rho_ic_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            exner_pr = (
+                exner_pr,
+                (
+                    exner_pr_size_0,
+                    exner_pr_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            exner_dyn_incr = (
+                exner_dyn_incr,
+                (
+                    exner_dyn_incr_size_0,
+                    exner_dyn_incr_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ddt_exner_phy = (
+                ddt_exner_phy,
+                (
+                    ddt_exner_phy_size_0,
+                    ddt_exner_phy_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            grf_tend_rho = (
+                grf_tend_rho,
+                (
+                    grf_tend_rho_size_0,
+                    grf_tend_rho_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            grf_tend_thv = (
+                grf_tend_thv,
+                (
+                    grf_tend_thv_size_0,
+                    grf_tend_thv_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            grf_tend_w = (
+                grf_tend_w,
+                (
+                    grf_tend_w_size_0,
+                    grf_tend_w_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            mass_fl_e = (
+                mass_fl_e,
+                (
+                    mass_fl_e_size_0,
+                    mass_fl_e_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ddt_vn_phy = (
+                ddt_vn_phy,
+                (
+                    ddt_vn_phy_size_0,
+                    ddt_vn_phy_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            grf_tend_vn = (
+                grf_tend_vn,
+                (
+                    grf_tend_vn_size_0,
+                    grf_tend_vn_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vn_ie = (
+                vn_ie,
+                (
+                    vn_ie_size_0,
+                    vn_ie_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vt = (
+                vt,
+                (
+                    vt_size_0,
+                    vt_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vn_incr = (
+                vn_incr,
+                (
+                    vn_incr_size_0,
+                    vn_incr_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            rho_incr = (
+                rho_incr,
+                (
+                    rho_incr_size_0,
+                    rho_incr_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            exner_incr = (
+                exner_incr,
+                (
+                    exner_incr_size_0,
+                    exner_incr_size_1,
+                ),
+                on_gpu,
+                True,
+            )
+
+            mass_flx_me = (
+                mass_flx_me,
+                (
+                    mass_flx_me_size_0,
+                    mass_flx_me_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            mass_flx_ic = (
+                mass_flx_ic,
+                (
+                    mass_flx_ic_size_0,
+                    mass_flx_ic_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vol_flx_ic = (
+                vol_flx_ic,
+                (
+                    vol_flx_ic_size_0,
+                    vol_flx_ic_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vn_traj = (
+                vn_traj,
+                (
+                    vn_traj_size_0,
+                    vn_traj_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            max_vcfl_size1_array = (
+                max_vcfl_size1_array,
+                (max_vcfl_size1_array_size_0,),
+                False,
+                False,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "solve_nh_run_v2 constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            solve_nh_run_v2(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                rho_now=rho_now,
+                rho_new=rho_new,
+                exner_now=exner_now,
+                exner_new=exner_new,
+                w_now=w_now,
+                w_new=w_new,
+                theta_v_now=theta_v_now,
+                theta_v_new=theta_v_new,
+                vn_now=vn_now,
+                vn_new=vn_new,
+                w_concorr_c=w_concorr_c,
+                ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+                ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+                ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+                theta_v_ic=theta_v_ic,
+                rho_ic=rho_ic,
+                exner_pr=exner_pr,
+                exner_dyn_incr=exner_dyn_incr,
+                ddt_exner_phy=ddt_exner_phy,
+                grf_tend_rho=grf_tend_rho,
+                grf_tend_thv=grf_tend_thv,
+                grf_tend_w=grf_tend_w,
+                mass_fl_e=mass_fl_e,
+                ddt_vn_phy=ddt_vn_phy,
+                grf_tend_vn=grf_tend_vn,
+                vn_ie=vn_ie,
+                vt=vt,
+                vn_incr=vn_incr,
+                rho_incr=rho_incr,
+                exner_incr=exner_incr,
+                mass_flx_me=mass_flx_me,
+                mass_flx_ic=mass_flx_ic,
+                vol_flx_ic=vol_flx_ic,
+                vn_traj=vn_traj,
+                dtime=dtime,
+                max_vcfl_size1_array=max_vcfl_size1_array,
+                lprep_adv=lprep_adv,
+                at_initial_timestep=at_initial_timestep,
+                divdamp_fac_o2=divdamp_fac_o2,
+                ndyn_substeps_var=ndyn_substeps_var,
+                idyn_timestep=idyn_timestep,
+                is_iau_active=is_iau_active,
+                iau_wgt_dyn=iau_wgt_dyn,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "solve_nh_run_v2 convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "solve_nh_run_v2 execution time: %s" % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
+
+                    rho_now_arr = (
+                        _conversion.as_array(ffi, rho_now) if rho_now is not None else None
+                    )
+                    msg = "shape of rho_now after computation = %s" % str(
+                        rho_now_arr.shape if rho_now is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rho_now after computation: %s" % str(rho_now_arr)
+                        if rho_now is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    rho_new_arr = (
+                        _conversion.as_array(ffi, rho_new) if rho_new is not None else None
+                    )
+                    msg = "shape of rho_new after computation = %s" % str(
+                        rho_new_arr.shape if rho_new is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rho_new after computation: %s" % str(rho_new_arr)
+                        if rho_new is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    exner_now_arr = (
+                        _conversion.as_array(ffi, exner_now) if exner_now is not None else None
+                    )
+                    msg = "shape of exner_now after computation = %s" % str(
+                        exner_now_arr.shape if exner_now is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "exner_now after computation: %s" % str(exner_now_arr)
+                        if exner_now is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    exner_new_arr = (
+                        _conversion.as_array(ffi, exner_new) if exner_new is not None else None
+                    )
+                    msg = "shape of exner_new after computation = %s" % str(
+                        exner_new_arr.shape if exner_new is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "exner_new after computation: %s" % str(exner_new_arr)
+                        if exner_new is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    w_now_arr = _conversion.as_array(ffi, w_now) if w_now is not None else None
+                    msg = "shape of w_now after computation = %s" % str(
+                        w_now_arr.shape if w_now is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "w_now after computation: %s" % str(w_now_arr)
+                        if w_now is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    w_new_arr = _conversion.as_array(ffi, w_new) if w_new is not None else None
+                    msg = "shape of w_new after computation = %s" % str(
+                        w_new_arr.shape if w_new is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "w_new after computation: %s" % str(w_new_arr)
+                        if w_new is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    theta_v_now_arr = (
+                        _conversion.as_array(ffi, theta_v_now) if theta_v_now is not None else None
+                    )
+                    msg = "shape of theta_v_now after computation = %s" % str(
+                        theta_v_now_arr.shape if theta_v_now is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "theta_v_now after computation: %s" % str(theta_v_now_arr)
+                        if theta_v_now is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    theta_v_new_arr = (
+                        _conversion.as_array(ffi, theta_v_new) if theta_v_new is not None else None
+                    )
+                    msg = "shape of theta_v_new after computation = %s" % str(
+                        theta_v_new_arr.shape if theta_v_new is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "theta_v_new after computation: %s" % str(theta_v_new_arr)
+                        if theta_v_new is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vn_now_arr = _conversion.as_array(ffi, vn_now) if vn_now is not None else None
+                    msg = "shape of vn_now after computation = %s" % str(
+                        vn_now_arr.shape if vn_now is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vn_now after computation: %s" % str(vn_now_arr)
+                        if vn_now is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vn_new_arr = _conversion.as_array(ffi, vn_new) if vn_new is not None else None
+                    msg = "shape of vn_new after computation = %s" % str(
+                        vn_new_arr.shape if vn_new is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vn_new after computation: %s" % str(vn_new_arr)
+                        if vn_new is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    w_concorr_c_arr = (
+                        _conversion.as_array(ffi, w_concorr_c) if w_concorr_c is not None else None
+                    )
+                    msg = "shape of w_concorr_c after computation = %s" % str(
+                        w_concorr_c_arr.shape if w_concorr_c is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "w_concorr_c after computation: %s" % str(w_concorr_c_arr)
+                        if w_concorr_c is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    ddt_vn_apc_ntl1_arr = (
+                        _conversion.as_array(ffi, ddt_vn_apc_ntl1)
+                        if ddt_vn_apc_ntl1 is not None
+                        else None
+                    )
+                    msg = "shape of ddt_vn_apc_ntl1 after computation = %s" % str(
+                        ddt_vn_apc_ntl1_arr.shape if ddt_vn_apc_ntl1 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ddt_vn_apc_ntl1 after computation: %s" % str(ddt_vn_apc_ntl1_arr)
+                        if ddt_vn_apc_ntl1 is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    ddt_vn_apc_ntl2_arr = (
+                        _conversion.as_array(ffi, ddt_vn_apc_ntl2)
+                        if ddt_vn_apc_ntl2 is not None
+                        else None
+                    )
+                    msg = "shape of ddt_vn_apc_ntl2 after computation = %s" % str(
+                        ddt_vn_apc_ntl2_arr.shape if ddt_vn_apc_ntl2 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ddt_vn_apc_ntl2 after computation: %s" % str(ddt_vn_apc_ntl2_arr)
+                        if ddt_vn_apc_ntl2 is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    ddt_w_adv_ntl1_arr = (
+                        _conversion.as_array(ffi, ddt_w_adv_ntl1)
+                        if ddt_w_adv_ntl1 is not None
+                        else None
+                    )
+                    msg = "shape of ddt_w_adv_ntl1 after computation = %s" % str(
+                        ddt_w_adv_ntl1_arr.shape if ddt_w_adv_ntl1 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ddt_w_adv_ntl1 after computation: %s" % str(ddt_w_adv_ntl1_arr)
+                        if ddt_w_adv_ntl1 is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    ddt_w_adv_ntl2_arr = (
+                        _conversion.as_array(ffi, ddt_w_adv_ntl2)
+                        if ddt_w_adv_ntl2 is not None
+                        else None
+                    )
+                    msg = "shape of ddt_w_adv_ntl2 after computation = %s" % str(
+                        ddt_w_adv_ntl2_arr.shape if ddt_w_adv_ntl2 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ddt_w_adv_ntl2 after computation: %s" % str(ddt_w_adv_ntl2_arr)
+                        if ddt_w_adv_ntl2 is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    theta_v_ic_arr = (
+                        _conversion.as_array(ffi, theta_v_ic) if theta_v_ic is not None else None
+                    )
+                    msg = "shape of theta_v_ic after computation = %s" % str(
+                        theta_v_ic_arr.shape if theta_v_ic is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "theta_v_ic after computation: %s" % str(theta_v_ic_arr)
+                        if theta_v_ic is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    rho_ic_arr = _conversion.as_array(ffi, rho_ic) if rho_ic is not None else None
+                    msg = "shape of rho_ic after computation = %s" % str(
+                        rho_ic_arr.shape if rho_ic is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rho_ic after computation: %s" % str(rho_ic_arr)
+                        if rho_ic is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    exner_pr_arr = (
+                        _conversion.as_array(ffi, exner_pr) if exner_pr is not None else None
+                    )
+                    msg = "shape of exner_pr after computation = %s" % str(
+                        exner_pr_arr.shape if exner_pr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "exner_pr after computation: %s" % str(exner_pr_arr)
+                        if exner_pr is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    exner_dyn_incr_arr = (
+                        _conversion.as_array(ffi, exner_dyn_incr)
+                        if exner_dyn_incr is not None
+                        else None
+                    )
+                    msg = "shape of exner_dyn_incr after computation = %s" % str(
+                        exner_dyn_incr_arr.shape if exner_dyn_incr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "exner_dyn_incr after computation: %s" % str(exner_dyn_incr_arr)
+                        if exner_dyn_incr is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    ddt_exner_phy_arr = (
+                        _conversion.as_array(ffi, ddt_exner_phy)
+                        if ddt_exner_phy is not None
+                        else None
+                    )
+                    msg = "shape of ddt_exner_phy after computation = %s" % str(
+                        ddt_exner_phy_arr.shape if ddt_exner_phy is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ddt_exner_phy after computation: %s" % str(ddt_exner_phy_arr)
+                        if ddt_exner_phy is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    grf_tend_rho_arr = (
+                        _conversion.as_array(ffi, grf_tend_rho)
+                        if grf_tend_rho is not None
+                        else None
+                    )
+                    msg = "shape of grf_tend_rho after computation = %s" % str(
+                        grf_tend_rho_arr.shape if grf_tend_rho is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "grf_tend_rho after computation: %s" % str(grf_tend_rho_arr)
+                        if grf_tend_rho is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    grf_tend_thv_arr = (
+                        _conversion.as_array(ffi, grf_tend_thv)
+                        if grf_tend_thv is not None
+                        else None
+                    )
+                    msg = "shape of grf_tend_thv after computation = %s" % str(
+                        grf_tend_thv_arr.shape if grf_tend_thv is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "grf_tend_thv after computation: %s" % str(grf_tend_thv_arr)
+                        if grf_tend_thv is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    grf_tend_w_arr = (
+                        _conversion.as_array(ffi, grf_tend_w) if grf_tend_w is not None else None
+                    )
+                    msg = "shape of grf_tend_w after computation = %s" % str(
+                        grf_tend_w_arr.shape if grf_tend_w is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "grf_tend_w after computation: %s" % str(grf_tend_w_arr)
+                        if grf_tend_w is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    mass_fl_e_arr = (
+                        _conversion.as_array(ffi, mass_fl_e) if mass_fl_e is not None else None
+                    )
+                    msg = "shape of mass_fl_e after computation = %s" % str(
+                        mass_fl_e_arr.shape if mass_fl_e is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "mass_fl_e after computation: %s" % str(mass_fl_e_arr)
+                        if mass_fl_e is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    ddt_vn_phy_arr = (
+                        _conversion.as_array(ffi, ddt_vn_phy) if ddt_vn_phy is not None else None
+                    )
+                    msg = "shape of ddt_vn_phy after computation = %s" % str(
+                        ddt_vn_phy_arr.shape if ddt_vn_phy is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ddt_vn_phy after computation: %s" % str(ddt_vn_phy_arr)
+                        if ddt_vn_phy is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    grf_tend_vn_arr = (
+                        _conversion.as_array(ffi, grf_tend_vn) if grf_tend_vn is not None else None
+                    )
+                    msg = "shape of grf_tend_vn after computation = %s" % str(
+                        grf_tend_vn_arr.shape if grf_tend_vn is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "grf_tend_vn after computation: %s" % str(grf_tend_vn_arr)
+                        if grf_tend_vn is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vn_ie_arr = _conversion.as_array(ffi, vn_ie) if vn_ie is not None else None
+                    msg = "shape of vn_ie after computation = %s" % str(
+                        vn_ie_arr.shape if vn_ie is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vn_ie after computation: %s" % str(vn_ie_arr)
+                        if vn_ie is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vt_arr = _conversion.as_array(ffi, vt) if vt is not None else None
+                    msg = "shape of vt after computation = %s" % str(
+                        vt_arr.shape if vt is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "vt after computation: %s" % str(vt_arr) if vt is not None else "None"
+                    logger.debug(msg)
+
+                    vn_incr_arr = (
+                        _conversion.as_array(ffi, vn_incr) if vn_incr is not None else None
+                    )
+                    msg = "shape of vn_incr after computation = %s" % str(
+                        vn_incr_arr.shape if vn_incr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vn_incr after computation: %s" % str(vn_incr_arr)
+                        if vn_incr is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    rho_incr_arr = (
+                        _conversion.as_array(ffi, rho_incr) if rho_incr is not None else None
+                    )
+                    msg = "shape of rho_incr after computation = %s" % str(
+                        rho_incr_arr.shape if rho_incr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rho_incr after computation: %s" % str(rho_incr_arr)
+                        if rho_incr is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    exner_incr_arr = (
+                        _conversion.as_array(ffi, exner_incr) if exner_incr is not None else None
+                    )
+                    msg = "shape of exner_incr after computation = %s" % str(
+                        exner_incr_arr.shape if exner_incr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "exner_incr after computation: %s" % str(exner_incr_arr)
+                        if exner_incr is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    mass_flx_me_arr = (
+                        _conversion.as_array(ffi, mass_flx_me) if mass_flx_me is not None else None
+                    )
+                    msg = "shape of mass_flx_me after computation = %s" % str(
+                        mass_flx_me_arr.shape if mass_flx_me is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "mass_flx_me after computation: %s" % str(mass_flx_me_arr)
+                        if mass_flx_me is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    mass_flx_ic_arr = (
+                        _conversion.as_array(ffi, mass_flx_ic) if mass_flx_ic is not None else None
+                    )
+                    msg = "shape of mass_flx_ic after computation = %s" % str(
+                        mass_flx_ic_arr.shape if mass_flx_ic is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "mass_flx_ic after computation: %s" % str(mass_flx_ic_arr)
+                        if mass_flx_ic is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vol_flx_ic_arr = (
+                        _conversion.as_array(ffi, vol_flx_ic) if vol_flx_ic is not None else None
+                    )
+                    msg = "shape of vol_flx_ic after computation = %s" % str(
+                        vol_flx_ic_arr.shape if vol_flx_ic is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vol_flx_ic after computation: %s" % str(vol_flx_ic_arr)
+                        if vol_flx_ic is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vn_traj_arr = (
+                        _conversion.as_array(ffi, vn_traj) if vn_traj is not None else None
+                    )
+                    msg = "shape of vn_traj after computation = %s" % str(
+                        vn_traj_arr.shape if vn_traj is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vn_traj after computation: %s" % str(vn_traj_arr)
+                        if vn_traj is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    max_vcfl_size1_array_arr = (
+                        _conversion.as_array(ffi, max_vcfl_size1_array)
+                        if max_vcfl_size1_array is not None
+                        else None
+                    )
+                    msg = "shape of max_vcfl_size1_array after computation = %s" % str(
+                        max_vcfl_size1_array_arr.shape
+                        if max_vcfl_size1_array is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "max_vcfl_size1_array after computation: %s" % str(max_vcfl_size1_array_arr)
+                        if max_vcfl_size1_array is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+            if __debug__:
+                logger.info("Python execution of solve_nh_run_v2 completed.")
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
