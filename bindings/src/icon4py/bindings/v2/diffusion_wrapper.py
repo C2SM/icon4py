@@ -223,6 +223,29 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     vertical_grid = v_grid.VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
+    # ICON arrays are nproma-padded (nproma >= n_patch_edges because nblks_e=1), but the
+    # factories assume exact entity sizes; trim every horizontal field to its entity count.
+    # (Connectivities are already trimmed by construct_icon_grid via shrink_to_dimension.)
+    def _trim(field, n):
+        return gtx.as_field(tuple(field.domain.dims), field.ndarray[:n], allocator=allocator)
+
+    cell_lat = _trim(cell_lat, num_cells)
+    cell_lon = _trim(cell_lon, num_cells)
+    cell_area = _trim(cell_area, num_cells)
+    cell_normal_orientation = _trim(cell_normal_orientation, num_cells)
+    topography = _trim(topography, num_cells)
+    edge_lat = _trim(edge_lat, num_edges)
+    edge_lon = _trim(edge_lon, num_edges)
+    edge_length = _trim(edge_length, num_edges)
+    dual_edge_length = _trim(dual_edge_length, num_edges)
+    edge_cell_distance = _trim(edge_cell_distance, num_edges)
+    edge_vertex_distance = _trim(edge_vertex_distance, num_edges)
+    tangent_orientation = _trim(tangent_orientation, num_edges)
+    vertex_lat = _trim(vertex_lat, num_vertices)
+    vertex_lon = _trim(vertex_lon, num_vertices)
+    dual_area = _trim(dual_area, num_vertices)
+    edge_orientation_on_vertex = _trim(edge_orientation_on_vertex, num_vertices)
+
     coordinates = factory_setup.build_coordinates(
         cell_lat=cell_lat,
         cell_lon=cell_lon,
@@ -243,12 +266,17 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         edge_orientation_on_vertex=edge_orientation_on_vertex,
     )
 
-    # rbf_vec_coeff_v arrives in ICON layout (rbf_vec_dim_v, 2, n_vertices); split components.
+    # rbf_vec_coeff_v arrives in ICON layout (rbf_vec_dim_v, 2, nproma); split components and
+    # trim the nproma-padded vertex axis to num_vertices.
     rbf_v1 = gtx.as_field(
-        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+        [dims.VertexDim, dims.V2EDim],
+        xp.transpose(rbf_vec_coeff_v[:, 0, :num_vertices]),
+        allocator=allocator,
     )
     rbf_v2 = gtx.as_field(
-        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
+        [dims.VertexDim, dims.V2EDim],
+        xp.transpose(rbf_vec_coeff_v[:, 1, :num_vertices]),
+        allocator=allocator,
     )
 
     interpolation_config = interpolation_factory.InterpolationConfig(
