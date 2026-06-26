@@ -19,10 +19,10 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
+from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 
 
 if TYPE_CHECKING:
