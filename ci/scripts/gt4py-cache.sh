@@ -14,8 +14,8 @@ find "${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache" -mindepth 1 
 
 uv_lock_hash=$(sha256sum "./uv.lock" | awk '{print substr($1,1,32)}')
 job_name="${CI_JOB_NAME_SLUG}"
-if [[ -z "${BASE_IMAGE}" ]]; then
-    echo "BASE_IMAGE must be set and non-empty"
+if [[ -z "${BASE_IMAGE:-}" ]]; then
+    echo "BASE_IMAGE must be set and non-empty" >&2
     exit 1
 fi
 base_image_hash=$(echo -n "${BASE_IMAGE}" | sha256sum | awk '{print substr($1,1,32)}')
