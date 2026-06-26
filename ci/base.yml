@@ -52,7 +52,6 @@ variables:
   variables:
     DOCKERFILE: ci/docker/venv.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE", "ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS"]'
-    CSCS_REBUILD_POLICY: if-not-exists
 
 .build_venv_aarch64:
   extends: [.container-builder-cscs-gh200, .build_venv]
@@ -65,7 +64,6 @@ variables:
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
     DOCKERFILE: ci/docker/checkout.Dockerfile
     DOCKER_BUILD_ARGS: '["VENV_IMAGE=${VENV_IMAGE}"]'
-    CSCS_REBUILD_POLICY: if-not-exists
 .build_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_image]
   needs: [build_venv_aarch64]
@@ -95,6 +93,7 @@ variables:
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
     ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
+    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PYTEST_ADDOPTS: "--durations=0"
 
