@@ -5,6 +5,7 @@ COPY . /icon4py
 WORKDIR /icon4py
 
 ARG PYVERSION
+ARG ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS
 ENV UV_CACHE_DIR=/opt/uv-cache
 ENV MPI4PY_BUILD_BACKEND=scikit-build-core
 ENV GHEX_USE_GPU=ON
@@ -14,7 +15,7 @@ ENV GHEX_TRANSPORT_BACKEND=MPI
 RUN uv sync \
     --no-dev \
     --extra all \
-    --extra cuda12 \
+    --extra $ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS \
     --group test \
     --python $PYVERSION && \
     chmod -R a+rwX "$UV_CACHE_DIR"

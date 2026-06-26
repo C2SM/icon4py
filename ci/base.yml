@@ -13,6 +13,7 @@ stages:
 variables:
   PYVERSION: 3.13.13
   PYVERSION_SHORT: 3.13
+  ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:
@@ -50,7 +51,7 @@ variables:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/docker/venv.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE"]'
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE", "ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS"]'
     CSCS_REBUILD_POLICY: if-not-exists
 
 .build_venv_aarch64:
@@ -120,7 +121,6 @@ variables:
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
-    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
 
 .test_runner_serial:
   extends: .test_runner_base
