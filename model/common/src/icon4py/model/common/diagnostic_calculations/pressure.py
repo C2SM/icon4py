@@ -37,12 +37,12 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common import field_type_aliases as fa
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import base as grid_base
 
 
 def diagnose_pressure_into(
     *,
-    grid: icon_grid.IconGrid,
+    grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
@@ -96,7 +96,7 @@ def diagnose_pressure_into(
 
 def diagnose_pressure_ndarray(
     *,
-    grid: icon_grid.IconGrid,
+    grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
     allocator: gtx_typing.Allocator,
     exner: fa.CellKField[ta.wpfloat],
