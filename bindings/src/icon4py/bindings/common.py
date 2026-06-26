@@ -210,6 +210,7 @@ def construct_icon_grid(
     cell_refin_ctrl: NDArray | None = None,
     edge_refin_ctrl: NDArray | None = None,
     vertex_refin_ctrl: NDArray | None = None,
+    grid_params: icon.GridParams | None = None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
@@ -303,7 +304,7 @@ def construct_icon_grid(
         neighbor_tables=neighbor_tables,
         start_index=start_index,
         end_index=end_index,
-        grid_params=icon.GridParams(),
+        grid_params=grid_params if grid_params is not None else icon.GridParams(),
         refinement_control=refinement_control,
     )
 

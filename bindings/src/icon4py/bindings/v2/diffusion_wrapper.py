@@ -204,6 +204,13 @@ def grid_init_v2(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_refin_ctrl=cell_refin_ctrl,
         edge_refin_ctrl=edge_refin_ctrl,
         vertex_refin_ctrl=vertex_refin_ctrl,
+        # ICON-NWP grids are icosahedral; the factories read grid_params.geometry_type
+        # and .radius (radius defaults to EARTH_RADIUS). subdivision is unused -> placeholder.
+        grid_params=icon_grid.GridParams(
+            icon_grid.IcosahedronParams(
+                subdivision=icon_grid.GridSubdivision(root=1, level=0)
+            )
+        ),
     )
 
     vertical_config = v_grid.VerticalGridConfig(
