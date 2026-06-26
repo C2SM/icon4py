@@ -37,8 +37,9 @@ export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export CUDA_CACHE_DISABLE=1
 
+# export ICON_GRID="./icon_grid_0025_R02B08_G.nc"
 export ICON_GRID="./icon_grid_0004_R02B07_G.nc"
-#export ICON_GRID="./icon_grid_0013_R02B04_R.nc"
+# export ICON_GRID="./icon_grid_0013_R02B04_R.nc"
 SUFFIX=""
 if [[ "$ICON_GRID" == *"R02B04"* ]]; then
     SUFFIX="R02B04"
@@ -46,9 +47,11 @@ elif [[ "$ICON_GRID" == *"R02B06"* ]]; then
     SUFFIX="R02B06"
 elif [[ "$ICON_GRID" == *"R02B07"* ]]; then
     SUFFIX="R02B07"
+elif [[ "$ICON_GRID" == *"R02B08"* ]]; then
+    SUFFIX="R02B08"
 fi
 
-export GT4PY_BUILD_CACHE_DIR="amd_profiling_JW_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
+export GT4PY_BUILD_CACHE_DIR="GH200_JW_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
 
 export GT4PY_SKIP_DACE_WARNINGS=0
 
@@ -61,10 +64,12 @@ echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes to check the WALL CLOCK tim
 rm -rf ${OUTPUT_PATH}*
 
 srun -u --cpu-bind=cores \
-    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; $VIRTUAL_ENV/bin/python model/standalone_driver/src/icon4py/model/standalone_driver/main.py \
+    bash -c 'printenv TMPDIR; CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; icon4py-standalone-driver \
+    --config-file-path exclaim_nh35_tri_jws_r2b7_${SLURM_NNODES}nodes \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
     --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-    --output-path ${OUTPUT_PATH}'
+    --output-path ${OUTPUT_PATH} \
+    --no-enable-output'
 
 rm -rf ${OUTPUT_PATH}

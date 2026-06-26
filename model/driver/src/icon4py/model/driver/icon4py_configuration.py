@@ -73,17 +73,17 @@ def read_config(
     def _mch_ch_r04b09_diffusion_config():
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
+            apply_to_vertical_wind=True,
+            apply_to_horizontal_wind=True,
             type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
             type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=24.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
-            velocity_boundary_diffusion_denom=150.0,
+            apply_zdiffusion_t=True,
+            velocity_boundary_diffusion_denominator=150.0,
             max_nudging_coefficient=0.375,
-            n_substeps=n_substeps_reduced,
+            ndyn_substeps=n_substeps_reduced,
             shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         )
 
@@ -103,17 +103,17 @@ def read_config(
     def _jabw_diffusion_config(n_substeps: int):
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            hdiff_temp=False,
-            n_substeps=n_substeps,
+            apply_to_vertical_wind=True,
+            apply_to_horizontal_wind=True,
+            apply_to_temperature=False,
+            ndyn_substeps=n_substeps,
             type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
             type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=False,
-            velocity_boundary_diffusion_denom=200.0,
+            apply_zdiffusion_t=False,
+            velocity_boundary_diffusion_denominator=200.0,
         )
 
     def _jabw_nonhydro_config():
@@ -164,7 +164,7 @@ def read_config(
 
     def _gauss3d_diffusion_config(n_substeps: int):
         return diffusion.DiffusionConfig(
-            n_substeps=n_substeps,
+            ndyn_substeps=n_substeps,
         )
 
     def _gauss3d_nonhydro_config():

@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -18,14 +18,14 @@ def _compute_ppm_slope_a(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
-    zfac = (p_cc(Koff[+1]) - p_cc) / (p_cellhgt_mc_now(Koff[+1]) + p_cellhgt_mc_now)
+    zfac_m1 = (p_cc - p_cc(KDim - 1)) / (p_cellhgt_mc_now + p_cellhgt_mc_now(KDim - 1))
+    zfac = (p_cc(KDim + 1) - p_cc) / (p_cellhgt_mc_now(KDim + 1) + p_cellhgt_mc_now)
     z_slope = (
         p_cellhgt_mc_now
-        / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[+1]))
+        / (p_cellhgt_mc_now(KDim - 1) + p_cellhgt_mc_now + p_cellhgt_mc_now(KDim + 1))
     ) * (
-        (2.0 * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
-        + (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now(Koff[+1])) * zfac_m1
+        (2.0 * p_cellhgt_mc_now(KDim - 1) + p_cellhgt_mc_now) * zfac
+        + (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now(KDim + 1)) * zfac_m1
     )
 
     return z_slope
@@ -36,9 +36,9 @@ def _compute_ppm_slope_b(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
+    zfac_m1 = (p_cc - p_cc(KDim - 1)) / (p_cellhgt_mc_now + p_cellhgt_mc_now(KDim - 1))
     z_slope = (
-        (p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now))
+        (p_cellhgt_mc_now / (p_cellhgt_mc_now(KDim - 1) + p_cellhgt_mc_now + p_cellhgt_mc_now))
         * (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now)
         * zfac_m1
     )
