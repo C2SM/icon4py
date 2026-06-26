@@ -19,6 +19,9 @@ RUN uv sync \
     --group test \
     --python $PYVERSION && \
     chmod -R a+rwX "$UV_CACHE_DIR"
+# Remove everything except the .venv directory. icon4py is copied again in the
+# checkout.Dockerfile stage.
+RUN find /icon4py -mindepth 1 -maxdepth 1 -not -name '.venv' -exec rm -rf {} +
 ENV PATH="/icon4py/.venv/bin:$PATH"
 
 # Propagate base image info so child images (checkout) and cache scripts can use it
