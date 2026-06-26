@@ -71,7 +71,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
         rtol = 0.0
 
     _log.info(
-        f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}."
+        f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
     allocator = model_backends.get_allocator(backend)
