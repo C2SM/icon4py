@@ -54,7 +54,6 @@ variables:
   stage: test
   timeout: 8h
   variables:
-    ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: true
     CXXFLAGS: "-ffp-contract=off"
     # Signal to (selected) tests that they should expect bitwise identical
     # results between single- and multi-rank runs. This goes hand-in-hand with
