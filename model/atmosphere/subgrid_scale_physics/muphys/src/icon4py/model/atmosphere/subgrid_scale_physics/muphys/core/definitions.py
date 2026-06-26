@@ -27,3 +27,6 @@ class Q_scalar(NamedTuple):
     s: ta.wpfloat  # Specific snow water
     i: ta.wpfloat  # Specific ice water content
     g: ta.wpfloat  # Specific graupel water content
+
+
+SPECIES: tuple[str, ...] = Q._fields

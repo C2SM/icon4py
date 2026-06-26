@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, cast
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import data as muphys_data
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
 from icon4py.model.common import (
     dimension as dims,
@@ -33,9 +33,6 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.states import model
-
-_SPECIES = ("v", "c", "r", "s", "i", "g")
-# TODO (Yilu): avoid duplicating specieis
 
 
 class MuphysComponent:
@@ -161,7 +158,7 @@ class MuphysComponent:
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
 
         self._copy_into(fields["te"], self._te_in)
-        for s in _SPECIES:
+        for s in SPECIES:
             self._copy_into(fields[f"q{s}"], getattr(self._q_in, s))
 
         self._step(
@@ -181,7 +178,7 @@ class MuphysComponent:
         )
 
         self._to_tendency(fields["te"], self._t_out, self._tendencies["tend_temperature"])
-        for s in _SPECIES:
+        for s in SPECIES:
             self._to_tendency(
                 fields[f"q{s}"], getattr(self._q_out, s), self._tendencies[f"tend_q{s}"]
             )

@@ -10,10 +10,9 @@
 
 from __future__ import annotations
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
 from icon4py.model.common.states import data, model
 
-
-_SPECIES = ("v", "c", "r", "s", "i", "g")
 
 # muphys precip port -> common precip-registry key.
 _PRECIP_KEY = dict(
@@ -26,17 +25,15 @@ _PRECIP_KEY = dict(
 )
 
 INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
-    "dz": model.FieldMetaData(
-        standard_name="layer_thickness", units="m"
-    ),
+    "dz": model.FieldMetaData(standard_name="layer_thickness", units="m"),
     "te": data.DIAGNOSTIC_CF_ATTRIBUTES["temperature"],
     "p": data.DIAGNOSTIC_CF_ATTRIBUTES["pressure"],
     "rho": data.PROGNOSTIC_CF_ATTRIBUTES["air_density"],
-    **{f"q{s}": data.COMMON_TRACER_CF_ATTRIBUTES[f"q{s}"] for s in _SPECIES},
+    **{f"q{s}": data.COMMON_TRACER_CF_ATTRIBUTES[f"q{s}"] for s in SPECIES},
 }
 
 OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "tend_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
-    **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[f"q{s}"] for s in _SPECIES},
+    **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[f"q{s}"] for s in SPECIES},
     **{port: data.MICROPHYSICS_PRECIP_CF_ATTRIBUTES[key] for port, key in _PRECIP_KEY.items()},
 }

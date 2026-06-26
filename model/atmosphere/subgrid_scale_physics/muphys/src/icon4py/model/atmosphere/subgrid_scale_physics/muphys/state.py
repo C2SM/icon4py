@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.components.physics_state import PhysicsState
 from icon4py.model.common.diagnostic_calculations.stencils import (
@@ -30,10 +31,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_state
-
-
-#: muphys species keys, in the order of the muphys ``Q`` tuple.
-_SPECIES = ("v", "c", "r", "s", "i", "g")
 
 
 def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKField[ta.wpfloat]:
@@ -208,7 +205,7 @@ class State(PhysicsState):
         output is got from muphys, and the tendencies in output will be applied to the prognostic state.
         """
         # 1. Apply moisture tendencies to the tracers (in place; self.q was bound in gather).
-        for s in _SPECIES:
+        for s in SPECIES:
             tracer = self.q[s]
             self._apply_tendency_program(
                 field_a=tracer,
@@ -293,5 +290,5 @@ class State(PhysicsState):
         if self.rho is None:
             raise RuntimeError("as_component_input called before gather_from_prognostic")
         inp = {"dz": self.dz, "te": self.te, "p": self.p, "rho": self.rho}
-        inp.update({f"q{s}": self.q[s] for s in _SPECIES})
+        inp.update({f"q{s}": self.q[s] for s in SPECIES})
         return inp
