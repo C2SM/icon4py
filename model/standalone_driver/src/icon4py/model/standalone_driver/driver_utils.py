@@ -44,6 +44,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
@@ -216,9 +217,9 @@ def initialize_granules(
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
 ) -> Granules:
-    geometry_field_source = static_field_factories.geometry_field_source
-    interpolation_field_source = static_field_factories.interpolation_field_source
-    metrics_field_source = static_field_factories.metrics_field_source
+    geometry_field_source = static_field_factories.geometry
+    interpolation_field_source = static_field_factories.interpolation
+    metrics_field_source = static_field_factories.metrics
 
     log.info("creating cell geometry")
     cell_geometry = grid_states.CellParams(
@@ -452,7 +453,7 @@ def find_maximum_from_field(
 
 
 def display_icon4py_logo_in_log_file() -> None:
-    """
+    r"""
     Print out icon4py signature and some important information of the initial setup to the log file.
 
                                                                ___
@@ -515,7 +516,10 @@ def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
+    tracer_config: TracerConfig | None = None,
 ) -> None:
+    if tracer_config is None:
+        tracer_config = TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")
@@ -533,7 +537,7 @@ def display_driver_setup_in_log_file(
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
     log.info(f"Statistics enabled     : {config.enable_statistics_output}")
-    log.info(f"Number of tracers      : {config.ntracer}")
+    log.info(f"Active tracers         : {tracer_config}")
     log.info("")
 
     log.info("==== Vertical Grid Parameters ====")

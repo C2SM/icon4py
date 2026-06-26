@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import pathlib
@@ -26,8 +27,10 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.states import tracer_state
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.standalone_driver import config as driver_config, initial_condition
+from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 
@@ -195,6 +198,10 @@ def create_experiment_configuration(
         if do_tracer_advection
         else None
     )
+    ntracer = (
+        fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
+    )
+    tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
@@ -210,14 +217,19 @@ def create_experiment_configuration(
         atm_dict=atm_dict, input_dict=input_dict, data_path=experiment_path
     )
 
+    if not do_tracer_advection and isinstance(
+        initial_condition_config.config, from_file_ic.FromFileConfig
+    ):
+        initial_condition_config = dataclasses.replace(
+            initial_condition_config,
+            config=dataclasses.replace(initial_condition_config.config, ntracer=0),
+        )
+
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=None,
         enable_statistics_output=False,
-        ntracer=fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"])
-        if do_tracer_advection
-        else 0,
     )
 
     return definitions.ExperimentConfig(
@@ -227,6 +239,7 @@ def create_experiment_configuration(
         topography=topography_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
+        tracer_config=tracer_config,
         tracer_advection=tracer_advection_config,
         graupel=graupel_config,
         initial_condition=initial_condition_config,

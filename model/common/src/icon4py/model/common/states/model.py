@@ -29,9 +29,14 @@ class OptionalMetaData(TypedDict, total=False):
     long_name: str
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
+    #: list index for variables stored in fortran lists (e.g. tracers)
+    icon_var_list_index: int
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+    #: whether the vertical dimension of the field lives on interface (half) levels
+    #: rather than full levels
+    is_on_half_levels: bool
 
 
 class RequiredMetaData(TypedDict, total=True):
