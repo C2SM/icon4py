@@ -152,7 +152,7 @@ files = [
   # TODO(egparedes): activate for all sources and tests
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
@@ -163,12 +163,14 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/grid',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/metrics',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
@@ -238,7 +240,10 @@ module = [
 disable_error_code = [
   "valid-type"  # vfloat is not a valid type
 ]
-module = ["icon4py.model.atmosphere.advection.stencils.*"]
+module = [
+  "icon4py.model.atmosphere.advection.stencils.*",
+  "icon4py.model.atmosphere.diffusion.stencils.*"
+]
 
 # -- pytest --
 [tool.pytest]
@@ -329,6 +334,7 @@ select = [
   'T10',  # flake8-debugger
   'TD',  # flake8-todos
   'UP',  # pyupgrade
+  'W605',  # invalid-escape-sequence
   'YTT'  # flake8-2020
 ]
 typing-modules = ['gt4py.eve.extended_typing']
