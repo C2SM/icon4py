@@ -123,22 +123,28 @@ class SingleMomentSixClassIconGraupel:
         self._initialize_gt4py_programs()
 
     def _initialize_configurable_parameters(self):
-        pi_wp = ta.wpfloat(math.pi)
+        pi_wp = gtx.astype(math.pi, ta.wpfloat)
         precomputed_riming_coef: ta.wpfloat = (
             ta.wpfloat(0.25)
             * pi_wp
             * MicrophysicsConstants.SNOW_CLOUD_COLLECTION_EFF
             * self.config.power_law_coeff_for_snow_fall_speed
-            * gtx.gamma(
-                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(3.0)
+            * gtx.astype(
+                gtx.gamma(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(3.0)
+                ),
+                ta.wpfloat,
             )
         )
         precomputed_agg_coef: ta.wpfloat = (
             ta.wpfloat(0.25)
             * pi_wp
             * self.config.power_law_coeff_for_snow_fall_speed
-            * gtx.gamma(
-                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(3.0)
+            * gtx.astype(
+                gtx.gamma(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(3.0)
+                ),
+                ta.wpfloat,
             )
         )
         _ccsvxp = -(
@@ -149,22 +155,29 @@ class SingleMomentSixClassIconGraupel:
         precomputed_snow_sed_coef: ta.wpfloat = (
             MicrophysicsConstants.POWER_LAW_COEFF_FOR_SNOW_MD_RELATION
             * self.config.power_law_coeff_for_snow_fall_speed
-            * gtx.gamma(
-                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION
-                + MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED
-                + ta.wpfloat(1.0)
+            * gtx.astype(
+                gtx.gamma(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION
+                    + MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED
+                    + ta.wpfloat(1.0)
+                ),
+                ta.wpfloat,
             )
             * (
                 MicrophysicsConstants.POWER_LAW_COEFF_FOR_SNOW_MD_RELATION
-                * gtx.gamma(
-                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + ta.wpfloat(1.0)
+                * gtx.astype(
+                    gtx.gamma(
+                        MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION
+                        + ta.wpfloat(1.0)
+                    ),
+                    ta.wpfloat,
                 )
             )
             ** _ccsvxp
         )
         _n0r: ta.wpfloat = (
             ta.wpfloat(8.0e6)
-            * gtx.exp(ta.wpfloat(3.2) * self.config.rain_mu)
+            * gtx.astype(gtx.exp(ta.wpfloat(3.2) * self.config.rain_mu), ta.wpfloat)
             * ta.wpfloat(0.01) ** (-self.config.rain_mu)
         )  # empirical relation adapted from Ulbrich (1983)
         _n0r: ta.wpfloat = _n0r * self.config.rain_n0  # apply tuning factor to rain_n0 variable
@@ -173,7 +186,7 @@ class SingleMomentSixClassIconGraupel:
             * PhysicsConstants.water_density
             / ta.wpfloat(6.0)
             * _n0r
-            * gtx.gamma(self.config.rain_mu + ta.wpfloat(4.0))
+            * gtx.astype(gtx.gamma(self.config.rain_mu + ta.wpfloat(4.0)), ta.wpfloat)
         )  # pre-factor
 
         power_law_exponent_for_rain_mean_fall_speed: ta.wpfloat = ta.wpfloat(0.5) / (
@@ -181,8 +194,8 @@ class SingleMomentSixClassIconGraupel:
         )
         power_law_coeff_for_rain_mean_fall_speed: ta.wpfloat = (
             ta.wpfloat(130.0)
-            * gtx.gamma(self.config.rain_mu + ta.wpfloat(4.5))
-            / gtx.gamma(self.config.rain_mu + ta.wpfloat(4.0))
+            * gtx.astype(gtx.gamma(self.config.rain_mu + ta.wpfloat(4.5)), ta.wpfloat)
+            / gtx.astype(gtx.gamma(self.config.rain_mu + ta.wpfloat(4.0)), ta.wpfloat)
             * _ar ** (-power_law_exponent_for_rain_mean_fall_speed)
         )
 
@@ -196,7 +209,7 @@ class SingleMomentSixClassIconGraupel:
             / MicrophysicsConstants.HOWELL_FACTOR
             * _n0r
             * _ar ** (-precomputed_evaporation_alpha_exp_coeff)
-            * gtx.gamma(self.config.rain_mu + ta.wpfloat(2.0))
+            * gtx.astype(gtx.gamma(self.config.rain_mu + ta.wpfloat(2.0)), ta.wpfloat)
         )
         precomputed_evaporation_beta_exp_coeff: ta.wpfloat = (
             ta.wpfloat(2.0) * self.config.rain_mu + ta.wpfloat(5.5)
@@ -205,27 +218,42 @@ class SingleMomentSixClassIconGraupel:
         ) - precomputed_evaporation_alpha_exp_coeff
         precomputed_evaporation_beta_coeff: ta.wpfloat = (
             ta.wpfloat(0.26)
-            * gtx.sqrt(
-                MicrophysicsConstants.REF_AIR_DENSITY
-                * ta.wpfloat(130.0)
-                / MicrophysicsConstants.AIR_KINEMATIC_VISCOSITY
+            * gtx.astype(
+                gtx.sqrt(
+                    MicrophysicsConstants.REF_AIR_DENSITY
+                    * ta.wpfloat(130.0)
+                    / MicrophysicsConstants.AIR_KINEMATIC_VISCOSITY
+                ),
+                ta.wpfloat,
             )
             * _ar ** (-precomputed_evaporation_beta_exp_coeff)
-            * gtx.gamma((ta.wpfloat(2.0) * self.config.rain_mu + ta.wpfloat(5.5)) / ta.wpfloat(2.0))
-            / gtx.gamma(self.config.rain_mu + ta.wpfloat(2.0))
+            * gtx.astype(
+                gtx.gamma(
+                    (ta.wpfloat(2.0) * self.config.rain_mu + ta.wpfloat(5.5)) / ta.wpfloat(2.0)
+                ),
+                ta.wpfloat,
+            )
+            / gtx.astype(gtx.gamma(self.config.rain_mu + ta.wpfloat(2.0)), ta.wpfloat)
         )
 
         # Precomputations for optimization
-        power_law_exponent_for_rain_mean_fall_speed_ln1o2: ta.wpfloat = gtx.exp(
-            power_law_exponent_for_rain_mean_fall_speed * gtx.log(ta.wpfloat(0.5))
+        power_law_exponent_for_rain_mean_fall_speed_ln1o2: ta.wpfloat = gtx.astype(
+            gtx.exp(power_law_exponent_for_rain_mean_fall_speed * gtx.log(ta.wpfloat(0.5))),
+            ta.wpfloat,
         )
-        power_law_exponent_for_ice_mean_fall_speed_ln1o2: ta.wpfloat = gtx.exp(
-            MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED
-            * gtx.log(ta.wpfloat(0.5))
+        power_law_exponent_for_ice_mean_fall_speed_ln1o2: ta.wpfloat = gtx.astype(
+            gtx.exp(
+                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED
+                * gtx.log(ta.wpfloat(0.5))
+            ),
+            ta.wpfloat,
         )
-        power_law_exponent_for_graupel_mean_fall_speed_ln1o2: ta.wpfloat = gtx.exp(
-            MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED
-            * gtx.log(ta.wpfloat(0.5))
+        power_law_exponent_for_graupel_mean_fall_speed_ln1o2: ta.wpfloat = gtx.astype(
+            gtx.exp(
+                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED
+                * gtx.log(ta.wpfloat(0.5))
+            ),
+            ta.wpfloat,
         )
 
         self._ice_collision_precomputed_coef = (

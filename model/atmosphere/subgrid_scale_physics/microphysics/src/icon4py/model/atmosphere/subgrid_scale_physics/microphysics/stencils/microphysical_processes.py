@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import exp, log, maximum, minimum, sqrt
+from gt4py.next import astype, exp, log, maximum, minimum, sqrt
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_constants import (
     MicrophysicsConstants,
@@ -22,7 +22,9 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def compute_cooper_inp_concentration(temperature: wpfloat) -> wpfloat:
-    cnin = wpfloat(5.0) * exp(wpfloat(0.304) * (PhysicsConstants.tmelt - temperature))
+    cnin = wpfloat(5.0) * astype(
+        exp(wpfloat(0.304) * (PhysicsConstants.tmelt - temperature)), wpfloat
+    )
     cnin = minimum(cnin, MicrophysicsConstants.NIMAX_THOM)
     return cnin
 
@@ -69,8 +71,8 @@ def compute_snow_interception_and_collision_parameters(
             local_tc = temperature - PhysicsConstants.tmelt
             local_tc = minimum(local_tc, wpfloat(0.0))
             local_tc = maximum(local_tc, wpfloat(-40.0))
-            n0s = MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S1 * exp(
-                MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S2 * local_tc
+            n0s = MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S1 * astype(
+                exp(MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S2 * local_tc), wpfloat
             )
             n0s = minimum(n0s, wpfloat(1.0e9))
             n0s = maximum(n0s, wpfloat(1.0e6))
@@ -95,7 +97,7 @@ def compute_snow_interception_and_collision_parameters(
                 + MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_MMA9 * local_tc**3.0
                 + MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_MMA10 * local_nnr**3.0
             )
-            local_alf = exp(local_hlp * log(wpfloat(10.0)))
+            local_alf = astype(exp(local_hlp * astype(log(wpfloat(10.0)), wpfloat)), wpfloat)
             local_bet = (
                 MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_MMB1
                 + MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_MMB2 * local_tc
@@ -113,10 +115,12 @@ def compute_snow_interception_and_collision_parameters(
             local_m2s = (
                 qs * rho / MicrophysicsConstants.POWER_LAW_COEFF_FOR_SNOW_MD_RELATION
             )  # UB rho added as bugfix
-            local_m3s = local_alf * exp(local_bet * log(local_m2s))
+            local_m3s = local_alf * astype(
+                exp(local_bet * astype(log(local_m2s), wpfloat)), wpfloat
+            )
 
-            local_hlp = MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S1 * exp(
-                MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S2 * local_tc
+            local_hlp = MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S1 * astype(
+                exp(MicrophysicsConstants.SNOW_INTERCEPT_PARAMETER_N0S2 * local_tc), wpfloat
             )
             n0s = wpfloat(13.50) * local_m2s * (local_m2s / local_m3s) ** 3.0
             n0s = maximum(n0s, wpfloat(0.5) * local_hlp)
@@ -128,11 +132,15 @@ def compute_snow_interception_and_collision_parameters(
             n0s = MicrophysicsConstants.SNOW_DEFAULT_INTERCEPT_PARAM
 
         # compute integration factor for terminal velocity
-        snow_sed0 = precomputed_snow_sed_coef * exp(MicrophysicsConstants.CCSVXP * log(n0s))
+        snow_sed0 = precomputed_snow_sed_coef * astype(
+            exp(MicrophysicsConstants.CCSVXP * astype(log(n0s), wpfloat)), wpfloat
+        )
         # compute constants for riming, aggregation, and deposition processes for snow
         crim = precomputed_riming_coef * n0s
         cagg = precomputed_agg_coef * n0s
-        cbsdep = MicrophysicsConstants.CCSDEP * sqrt(power_law_coeff_for_snow_fall_speed)
+        cbsdep = MicrophysicsConstants.CCSDEP * astype(
+            sqrt(power_law_coeff_for_snow_fall_speed), wpfloat
+        )
     else:
         n0s = MicrophysicsConstants.SNOW_DEFAULT_INTERCEPT_PARAM
         snow_sed0 = wpfloat(0.0)
@@ -240,7 +248,9 @@ def autoconversion_and_rain_accretion(
             if qc > wpfloat(1.0e-6):
                 local_tau = minimum(wpfloat(1.0) - qc / (qc + qr), wpfloat(0.9))
                 local_tau = maximum(local_tau, wpfloat(1.0e-30))
-                local_hlp = exp(MicrophysicsConstants.KPHI2 * log(local_tau))
+                local_hlp = astype(
+                    exp(MicrophysicsConstants.KPHI2 * astype(log(local_tau), wpfloat)), wpfloat
+                )
                 local_phi = (
                     MicrophysicsConstants.KPHI1 * local_hlp * (wpfloat(1.0) - local_hlp) ** 3.0
                 )
@@ -309,9 +319,12 @@ def freezing_in_clouds(
                 rain_freezing_rate_r2g_in_clouds = (
                     MicrophysicsConstants.COEFF_RAIN_FREEZE1
                     * (
-                        exp(
-                            MicrophysicsConstants.COEFF_RAIN_FREEZE2
-                            * (MicrophysicsConstants.THRESHOLD_FREEZE_TEMPERATURE - temperature)
+                        astype(
+                            exp(
+                                MicrophysicsConstants.COEFF_RAIN_FREEZE2
+                                * (MicrophysicsConstants.THRESHOLD_FREEZE_TEMPERATURE - temperature)
+                            ),
+                            wpfloat,
                         )
                         - wpfloat(1.0)
                     )
@@ -373,7 +386,11 @@ def riming_in_clouds(
     """
     if cloud_exists & (temperature > MicrophysicsConstants.HOMOGENEOUS_FREEZE_TEMPERATURE):
         if snow_exists:
-            snow_riming_rate_c2s = crim * qc * exp(MicrophysicsConstants.CCSAXP * log(cslam))
+            snow_riming_rate_c2s = (
+                crim
+                * qc
+                * astype(exp(MicrophysicsConstants.CCSAXP * astype(log(cslam), wpfloat)), wpfloat)
+            )
         else:
             snow_riming_rate_c2s = wpfloat(0.0)
 
@@ -574,7 +591,7 @@ def collision_and_ice_deposition_in_cold_ice_clouds(
         # Change in sticking efficiency needed in case of cloud ice sedimentation
         # (based on Guenther Zaengls work)
         local_eff = minimum(
-            exp(wpfloat(0.09) * (temperature - PhysicsConstants.tmelt)),
+            astype(exp(wpfloat(0.09) * (temperature - PhysicsConstants.tmelt)), wpfloat),
             wpfloat(1.0),
         )
         local_eff = maximum(local_eff, ice_stickeff_min)
@@ -585,13 +602,16 @@ def collision_and_ice_deposition_in_cold_ice_clouds(
         )
 
         local_nid = rho * qi / cmi
-        local_lnlogmi = log(cmi)
+        local_lnlogmi = astype(log(cmi), wpfloat)
 
         local_qvsidiff = qv - qvsi
         local_svmax = local_qvsidiff / dtime
 
         snow_ice_collision_rate_i2s = (
-            local_eff * qi * cagg * exp(MicrophysicsConstants.CCSAXP * log(cslam))
+            local_eff
+            * qi
+            * cagg
+            * astype(exp(MicrophysicsConstants.CCSAXP * astype(log(cslam), wpfloat)), wpfloat)
         )
         graupel_ice_collision_rate_i2g = (
             local_eff * qi * MicrophysicsConstants.CAGG_G * celnrimexp_g
@@ -611,7 +631,7 @@ def collision_and_ice_deposition_in_cold_ice_clouds(
             rain_ice_2graupel_rain_loss_rate_r2g = wpfloat(0.0)
 
         local_icetotaldeposition = (
-            cidep * local_nid * exp(wpfloat(0.33) * local_lnlogmi) * local_qvsidiff
+            cidep * local_nid * astype(exp(wpfloat(0.33) * local_lnlogmi), wpfloat) * local_qvsidiff
         )
         ice_deposition_rate_v2i = local_icetotaldeposition
 
@@ -633,8 +653,10 @@ def collision_and_ice_deposition_in_cold_ice_clouds(
             ice_net_deposition_rate_v2i = wpfloat(0.0)
             ice_net_sublimation_rate_v2i = wpfloat(0.0)
 
-        local_lnlogmi = log(MicrophysicsConstants.MSMIN / cmi)
-        local_ztau = wpfloat(1.5) * (exp(wpfloat(0.66) * local_lnlogmi) - wpfloat(1.0))
+        local_lnlogmi = astype(log(MicrophysicsConstants.MSMIN / cmi), wpfloat)
+        local_ztau = wpfloat(1.5) * (
+            astype(exp(wpfloat(0.66) * local_lnlogmi), wpfloat) - wpfloat(1.0)
+        )
         ice_dep_autoconversion_rate_i2s = ice_net_deposition_rate_v2i / local_ztau
     else:
         snow_ice_collision_rate_i2s = wpfloat(0.0)
@@ -720,7 +742,9 @@ def snow_and_graupel_depositional_growth_in_cold_ice_clouds(
             local_qvsidiff = qv - qvsi
             local_svmax = local_qvsidiff / dtime
 
-            local_xfac = wpfloat(1.0) + cbsdep * exp(MicrophysicsConstants.CCSDXP * log(cslam))
+            local_xfac = wpfloat(1.0) + cbsdep * astype(
+                exp(MicrophysicsConstants.CCSDXP * astype(log(cslam), wpfloat)), wpfloat
+            )
             snow_deposition_rate_v2s_in_cold_clouds = (
                 csdep * local_xfac * local_qvsidiff / (cslam + PhysicsConstants.eps) ** 2.0
             )
@@ -976,9 +1000,9 @@ def evaporation_and_freezing_in_subsaturated_air(
     """
     rain_freezing_rate_r2g = rain_freezing_rate_r2g_in_clouds
     if rain_exists & (qv + qc <= qvsw):
-        local_lnqr = log(rhoqr)
-        local_x1 = wpfloat(1.0) + precomputed_evaporation_beta_coeff * exp(
-            precomputed_evaporation_beta_exp_coeff * local_lnqr
+        local_lnqr = astype(log(rhoqr), wpfloat)
+        local_x1 = wpfloat(1.0) + precomputed_evaporation_beta_coeff * astype(
+            exp(precomputed_evaporation_beta_exp_coeff * local_lnqr), wpfloat
         )
         # Limit evaporation rate in order to avoid overshoots towards supersaturation, the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
         local_temp_c = temperature - PhysicsConstants.tmelt
@@ -991,7 +1015,7 @@ def evaporation_and_freezing_in_subsaturated_air(
             precomputed_evaporation_alpha_coeff
             * local_x1
             * (qvsw - qv)
-            * exp(precomputed_evaporation_alpha_exp_coeff * local_lnqr)
+            * astype(exp(precomputed_evaporation_alpha_exp_coeff * local_lnqr), wpfloat)
         )
         rain_evaporation_rate_r2v = minimum(rain_evaporation_rate_r2v, local_maxevap)
 
@@ -1002,9 +1026,12 @@ def evaporation_and_freezing_in_subsaturated_air(
                 rain_freezing_rate_r2g = (
                     MicrophysicsConstants.COEFF_RAIN_FREEZE1
                     * (
-                        exp(
-                            MicrophysicsConstants.COEFF_RAIN_FREEZE2
-                            * (MicrophysicsConstants.THRESHOLD_FREEZE_TEMPERATURE - temperature)
+                        astype(
+                            exp(
+                                MicrophysicsConstants.COEFF_RAIN_FREEZE2
+                                * (MicrophysicsConstants.THRESHOLD_FREEZE_TEMPERATURE - temperature)
+                            ),
+                            wpfloat,
                         )
                         - wpfloat(1.0)
                     )
@@ -1029,10 +1056,13 @@ def sat_pres_water_scalar(temperature: wpfloat) -> wpfloat:
     Returns:
         saturation water vapour pressure.
     """
-    return MicrophysicsConstants.TETENS_P0 * exp(
-        MicrophysicsConstants.TETENS_AW
-        * (temperature - PhysicsConstants.tmelt)
-        / (temperature - MicrophysicsConstants.TETENS_BW)
+    return MicrophysicsConstants.TETENS_P0 * astype(
+        exp(
+            MicrophysicsConstants.TETENS_AW
+            * (temperature - PhysicsConstants.tmelt)
+            / (temperature - MicrophysicsConstants.TETENS_BW)
+        ),
+        wpfloat,
     )
 
 
@@ -1047,19 +1077,25 @@ def sat_pres_water(temperature: fa.CellKField[wpfloat]) -> fa.CellKField[wpfloat
     Returns:
         saturation water vapour pressure.
     """
-    return MicrophysicsConstants.TETENS_P0 * exp(
-        MicrophysicsConstants.TETENS_AW
-        * (temperature - PhysicsConstants.tmelt)
-        / (temperature - MicrophysicsConstants.TETENS_BW)
+    return MicrophysicsConstants.TETENS_P0 * astype(
+        exp(
+            MicrophysicsConstants.TETENS_AW
+            * (temperature - PhysicsConstants.tmelt)
+            / (temperature - MicrophysicsConstants.TETENS_BW)
+        ),
+        wpfloat,
     )
 
 
 @gtx.field_operator
 def sat_pres_ice(temperature: wpfloat) -> wpfloat:
-    return MicrophysicsConstants.TETENS_P0 * exp(
-        MicrophysicsConstants.TETENS_AI
-        * (temperature - PhysicsConstants.tmelt)
-        / (temperature - MicrophysicsConstants.TETENS_BI)
+    return MicrophysicsConstants.TETENS_P0 * astype(
+        exp(
+            MicrophysicsConstants.TETENS_AI
+            * (temperature - PhysicsConstants.tmelt)
+            / (temperature - MicrophysicsConstants.TETENS_BI)
+        ),
+        wpfloat,
     )
 
 

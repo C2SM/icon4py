@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import exp, maximum, minimum, power, sqrt, where
+from gt4py.next import astype, exp, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
     GraupelConsts,
@@ -709,7 +709,7 @@ def _vapor_x_snow(  # noqa: PLR0917 [too-many-positional-arguments]
     """
     NU = wpfloat(1.75e-5)  # kinematic viscosity of air
     A0_VS = wpfloat(1.0)
-    A1_VS = wpfloat(0.4182) * sqrt(GraupelConsts.v0s / NU)
+    A1_VS = wpfloat(0.4182) * astype(sqrt(GraupelConsts.v0s / NU), wpfloat)
     A2_VS = -(GraupelConsts.v1s + wpfloat(1.0)) / wpfloat(2.0)
     EPS = wpfloat(1.0e-15)
     QS_LIM = wpfloat(1.0e-7)
