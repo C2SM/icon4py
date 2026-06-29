@@ -251,6 +251,8 @@ def init_inwp_tracers(
 
     ``pressure`` is the hydrostatic pressure and ``virtual_temperature`` is
     ``theta_v * exner``; both are independent of qv and passed in already diagnosed.
+    ``rho`` is the dry-air density from the hydrostatic adjustment (no moisture
+    feedback).
     """
     array_ns = data_alloc.array_namespace(rho)
 
