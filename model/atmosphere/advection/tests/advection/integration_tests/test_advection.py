@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
 
@@ -168,7 +169,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     least_squares_state = construct_least_squares_state(
-        ta.wpfloat(least_squares_coeffs), backend=backend
+        gtx.astype(least_squares_coeffs, ta.wpfloat), backend=backend
     )
 
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)

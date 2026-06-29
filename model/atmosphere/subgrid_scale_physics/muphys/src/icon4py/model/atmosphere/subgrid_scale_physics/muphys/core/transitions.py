@@ -131,7 +131,7 @@ def _cloud_to_snow(
     Return:                 Conversion rate
     """
     ECS = wpfloat(0.9)
-    B_RIM = -(wpfloat(GraupelConsts.v1s) + wpfloat(3.0))
+    B_RIM = -(GraupelConsts.v1s + wpfloat(3.0))
     C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
     ZERO = wpfloat(0.0)
     return where(
@@ -208,7 +208,7 @@ def _graupel_to_rain(
 
     Return:                 Conversion rate
     """
-    A_MELT = wpfloat(GraupelConsts.tx) - wpfloat(389.5)  # melting prefactor
+    A_MELT = GraupelConsts.tx - wpfloat(389.5)  # melting prefactor
     B_MELT = wpfloat(0.6)  # melting exponent
     C1_MELT = wpfloat(12.31698)  # Constants in melting formula
     C2_MELT = wpfloat(7.39441e-05)  # Constants in melting formula
