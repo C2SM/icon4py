@@ -53,7 +53,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
     _vapor_x_snow,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -508,7 +508,7 @@ def _precipitation_effects(  # noqa: PLR0917 [too-many-positional-arguments]
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
+    t_kp1 = concat_where(dims.KDim < last_lev, t(KDim + 1), t)
 
     precip_state = _precip_and_t(
         t,

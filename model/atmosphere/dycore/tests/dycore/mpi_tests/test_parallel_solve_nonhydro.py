@@ -91,8 +91,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = experiment.config.nonhydrostatic
-    nonhydro_params = nh.NonHydrostaticParams(config)
+    assert experiment.config.nonhydrostatic is not None
+
+    nonhydro_params = nh.NonHydrostaticParams(experiment.config.nonhydrostatic)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.dtime()
@@ -121,7 +122,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
 
     solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
-        config=config,
+        config=experiment.config.nonhydrostatic,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -143,11 +144,11 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
+        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == experiment.config.diffusion.ndyn_substeps),
+        at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )

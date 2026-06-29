@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -19,8 +19,8 @@ def _compute_vertical_parabola_limiter_condition(
     p_face: fa.CellKField[wpfloat],
     p_cc: fa.CellKField[wpfloat],
 ) -> fa.CellKField[gtx.int32]:
-    z_delta = p_face - p_face(Koff[1])
-    z_a6i = wpfloat(6.0) * (p_cc - wpfloat(0.5) * (p_face + p_face(Koff[1])))
+    z_delta = p_face - p_face(KDim + 1)
+    z_a6i = wpfloat(6.0) * (p_cc - wpfloat(0.5) * (p_face + p_face(KDim + 1)))
 
     l_limit = where(abs(z_delta) < wpfloat(-1.0) * z_a6i, 1, 0)
 

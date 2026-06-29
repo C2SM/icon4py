@@ -33,6 +33,6 @@ def test_init_enh_smag_fac(backend_like: model_backends.BackendLike, grid: base_
         *fac,
         *z,
         enh_smag_fac,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
     assert np.allclose(enhanced_smag_fac_np, enh_smag_fac.asnumpy())

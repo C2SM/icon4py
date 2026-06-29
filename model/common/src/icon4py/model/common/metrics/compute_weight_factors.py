@@ -11,7 +11,7 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -19,7 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 def _compute_wgtfac_c_nlev(
     z_ifc: fa.CellKField[gtx.float64],
 ) -> fa.CellKField[gtx.float64]:
-    z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-2]) - z_ifc)
+    z_wgtfac_c = (z_ifc(KDim - 1) - z_ifc) / (z_ifc(KDim - 2) - z_ifc)
     return z_wgtfac_c
 
 
@@ -27,7 +27,7 @@ def _compute_wgtfac_c_nlev(
 def _compute_wgtfac_c_0(
     z_ifc: fa.CellKField[gtx.float64],
 ) -> fa.CellKField[gtx.float64]:
-    z_wgtfac_c = (z_ifc(Koff[+1]) - z_ifc) / (z_ifc(Koff[+2]) - z_ifc)
+    z_wgtfac_c = (z_ifc(KDim + 1) - z_ifc) / (z_ifc(KDim + 2) - z_ifc)
     return z_wgtfac_c
 
 
@@ -35,7 +35,7 @@ def _compute_wgtfac_c_0(
 def _compute_wgtfac_c_inner(
     z_ifc: fa.CellKField[gtx.float64],
 ) -> fa.CellKField[gtx.float64]:
-    z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
+    z_wgtfac_c = (z_ifc(KDim - 1) - z_ifc) / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
     return z_wgtfac_c
 
 

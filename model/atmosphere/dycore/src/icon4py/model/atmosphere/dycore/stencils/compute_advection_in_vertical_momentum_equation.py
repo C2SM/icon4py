@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
@@ -45,7 +45,7 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
         vpfloat("0.5")
         * (
             contravariant_corrected_w_at_cells_on_half_levels
-            + contravariant_corrected_w_at_cells_on_half_levels(Koff[1])
+            + contravariant_corrected_w_at_cells_on_half_levels(KDim + 1)
         ),
         vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels,
     )
@@ -91,8 +91,8 @@ def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
 
     vertical_wind_advective_tendency_wp = -contravariant_corrected_w_at_cells_on_half_levels_wp * (
-        w(Koff[-1]) * coeff1_dwdz_wp
-        - w(Koff[1]) * coeff2_dwdz_wp
+        w(KDim - 1) * coeff1_dwdz_wp
+        - w(KDim + 1) * coeff2_dwdz_wp
         + w * astype(coeff2_dwdz - coeff1_dwdz, wpfloat)
     )
     return astype(vertical_wind_advective_tendency_wp, vpfloat)

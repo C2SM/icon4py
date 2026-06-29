@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -20,6 +20,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
+from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 
@@ -29,14 +30,6 @@ log = logging.getLogger(__name__)
 TimeIndex: TypeAlias = Literal[0, 1]
 FourIndex: TypeAlias = Literal[0, 1, 2, 3]
 TwoIndex: TypeAlias = Literal[0, 1]
-
-#: ICON default indices for the tracers, see mo_advection_utils.f90
-QV: Final[int] = 0
-QC: Final[int] = 1
-QI: Final[int] = 2
-QR: Final[int] = 3
-QS: Final[int] = 4
-QG: Final[int] = 5
 
 
 TracerIndex: TypeAlias = Literal[QV, QC, QI, QR, QS, QG]
@@ -1853,8 +1846,14 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def vn_now(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
+    def w_now(self):
+        return self._get_field("w_now", dims.CellDim, dims.KDim)
+
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def tracer_now(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
 
 
 class IconGraupelSavepoint(IconSavepoint):

@@ -21,6 +21,14 @@ import nox
 nox.options.default_venv_backend = "uv"
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 
+_rank = (
+    os.environ.get("PMI_RANK")
+    or os.environ.get("OMPI_COMM_WORLD_RANK")
+    or os.environ.get("SLURM_PROCID")
+)
+if _rank is not None:
+    nox.options.envdir = f".nox/mpi-rank-{_rank}"
+
 
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
@@ -39,8 +47,16 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
 ]
 
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
+MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+]
+# Stencil tests are by definition serial
+MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__ if arg != "stencils"
+]
+ToolsBindingsTestsSubset: TypeAlias = Literal["datatest", "unittest"]
+TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    nox.param(arg, id=arg, tags=[arg]) for arg in ToolsBindingsTestsSubset.__args__
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
@@ -169,6 +185,34 @@ def test_model(
         )
 
 
+# MPI test session. Per-rank venv isolation is handled automatically by setting
+# nox.options.envdir to ".nox/mpi-rank-<rank>" at import time when an MPI
+# rank variable is present. Note that the session assumes that MPI is wrapped
+# around the nox call; nox will not call mpirun or srun itself.
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+@nox.parametrize("selection", MODEL_MPI_TESTS_SUBSETS)
+def test_model_mpi(
+    session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
+) -> None:
+    """Run MPI tests for selected icon4py model subpackages."""
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
+    pytest_args = _selection_to_pytest_args(selection)
+    with session.chdir(f"model/{subpackage}"):
+        session.run(
+            "pytest",
+            "-sv",
+            "--benchmark-disable",
+            "-n0",
+            "--only-mpi",
+            "-k mpi_tests",
+            *pytest_args,
+            *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
+
+
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 @nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
@@ -178,26 +222,17 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 # Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
-@nox.parametrize(
-    "datatest",
-    [
-        nox.param(True, id="datatest", tags=["datatest"]),
-        nox.param(
-            False,
-            id="unittest",
-        ),
-    ],
-)
-def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
+@nox.parametrize("selection", TOOLS_BINDINGS_TESTS_SUBSETS)
+def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsSubset) -> None:
     """Run tests for the Fortran bindings and integration tools."""
     _install_session_venv(
         session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
     )
 
-    datatest_flag = "--datatest-only" if datatest else "--datatest-skip"
+    datatest_flag = "--datatest-only" if selection == "datatest" else "--datatest-skip"
     pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
-    if not datatest:
-        # tools/ has no datatest-marked tests, so skip it in datatest mode
+    if selection == "unittest":
+        # tools/ only has unit tests, so skip it in datatest mode
         with session.chdir("tools"):
             session.run(*pytest_base.split(), *session.posargs)
     with session.chdir("bindings"):

@@ -94,7 +94,7 @@ def setup_graupel(
                 "vertical_start": vertical_start,
                 "vertical_end": vertical_end,
             },
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
         gtx.wait_for_compilation()
         return graupel_run_program

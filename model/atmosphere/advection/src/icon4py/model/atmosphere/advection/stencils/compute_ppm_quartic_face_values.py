@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -19,28 +19,28 @@ def _compute_ppm_quartic_face_values(
     p_cellhgt_mc_now: fa.CellKField[wpfloat],
     z_slope: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
-    zgeo1 = p_cellhgt_mc_now(Koff[-1]) / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
+    zgeo1 = p_cellhgt_mc_now(KDim - 1) / (p_cellhgt_mc_now(KDim - 1) + p_cellhgt_mc_now)
     zgeo2 = wpfloat(1.0) / (
-        p_cellhgt_mc_now(Koff[-2])
-        + p_cellhgt_mc_now(Koff[-1])
+        p_cellhgt_mc_now(KDim - 2)
+        + p_cellhgt_mc_now(KDim - 1)
         + p_cellhgt_mc_now
-        + p_cellhgt_mc_now(Koff[1])
+        + p_cellhgt_mc_now(KDim + 1)
     )
-    zgeo3 = (p_cellhgt_mc_now(Koff[-2]) + p_cellhgt_mc_now(Koff[-1])) / (
-        wpfloat(2.0) * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now
+    zgeo3 = (p_cellhgt_mc_now(KDim - 2) + p_cellhgt_mc_now(KDim - 1)) / (
+        wpfloat(2.0) * p_cellhgt_mc_now(KDim - 1) + p_cellhgt_mc_now
     )
-    zgeo4 = (p_cellhgt_mc_now(Koff[1]) + p_cellhgt_mc_now) / (
-        wpfloat(2.0) * p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1])
+    zgeo4 = (p_cellhgt_mc_now(KDim + 1) + p_cellhgt_mc_now) / (
+        wpfloat(2.0) * p_cellhgt_mc_now + p_cellhgt_mc_now(KDim - 1)
     )
 
     p_face = (
-        p_cc(Koff[-1])
-        + zgeo1 * (p_cc - p_cc(Koff[-1]))
+        p_cc(KDim - 1)
+        + zgeo1 * (p_cc - p_cc(KDim - 1))
         + zgeo2
         * (
-            (wpfloat(2.0) * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc(Koff[-1]))
-            - zgeo3 * p_cellhgt_mc_now(Koff[-1]) * z_slope
-            + zgeo4 * p_cellhgt_mc_now * z_slope(Koff[-1])
+            (wpfloat(2.0) * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc(KDim - 1))
+            - zgeo3 * p_cellhgt_mc_now(KDim - 1) * z_slope
+            + zgeo4 * p_cellhgt_mc_now * z_slope(KDim - 1)
         )
     )
 

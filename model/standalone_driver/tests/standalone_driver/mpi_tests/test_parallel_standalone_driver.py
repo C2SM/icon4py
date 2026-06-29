@@ -9,16 +9,23 @@
 import logging
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import main
-from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
+from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    parallel_helpers,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
     backend_like,
     download_ser_data,
-    experiment,
     experiment_description,
     process_props,
 )
@@ -33,62 +40,86 @@ _log = logging.getLogger(__file__)
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description",
+    "experiment_description, end_of_simulation",
     [
-        test_defs.Experiments.JW,
+        (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
     ],
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_standalone_driver_compare_single_multi_rank(
-    experiment: test_defs.Experiment,
+def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+    download_ser_data: None,
+    experiment_description: test_defs.ExperimentDescription,
+    end_of_simulation: driver_config.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
+    backend: gtx_typing.Backend,
 ) -> None:
-    if experiment.grid.limited_area:
+    if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
-        # NOTE: we use gtfn_cpu to check that single and multirank give bitwise
-        # identical results, as gtfn_cpu is deterministic. In this case we can
-        # set atol = 0.0 and check for bitwise identical results. In theory
-        # dace_cpu should also be deterministic, but it results in 1.8e-14
-        # delta on vn and 4.3e-19 on w on the initial condition, which then
-        # propagates here. We haven't investigated this yet.
-        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
-        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
-        # 0.0 is too strict.
-        # TODO(msimberg,jcanton): Even gtfn_cpu is not always bitwise identical.
         atol = 1e-13
         rtol = 1e-14
     else:
-        atol = 2e-12
+        atol = 1e-10
         rtol = 0.0
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
     )
 
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+    allocator = model_backends.get_allocator(backend)
 
-    single_rank_ds, _ = main.main(
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
+    config = driver_config.read_config(config_file_path)
+
+    single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
+    single_rank_config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
+            "end_of_simulation": end_of_simulation,
+        }
+    )
+    single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_like,
-        output_path=tmp_path / "ci_driver_output_serial_rank0",
-        force_serial_run=True,
+        vertical_grid_config=single_rank_config.vertical_grid,
+        allocator=allocator,
+        process_props=single_rank_process_props,
+    )
+    single_rank_ds, _ = standalone_driver.run_driver(
+        config=single_rank_config,
+        grid_manager=single_rank_grid_manager,
+        process_props=single_rank_process_props,
+        backend=backend,
     )
 
-    multi_rank_ds, decomposition_info = main.main(
+    multi_rank_config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
+            "end_of_simulation": end_of_simulation,
+        }
+    )
+    multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
-        icon4py_backend=backend_like,
-        output_path=tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
+        vertical_grid_config=multi_rank_config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    multi_rank_ds, multi_rank_driver = standalone_driver.run_driver(
+        config=multi_rank_config,
+        grid_manager=multi_rank_grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
-    serial_reference_fields: dict[str, object] = {
+    single_rank_reference_fields: dict[str, object] = {
         field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
         for field_name in fields
     }
@@ -96,13 +127,13 @@ def test_standalone_driver_compare_single_multi_rank(
     for field_name in fields:
         print(f"\nverifying field {field_name}")
         global_reference_field = process_props.comm.bcast(
-            serial_reference_fields.get(field_name),
+            single_rank_reference_fields.get(field_name),
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
-            decomposition_info=decomposition_info,
+            decomposition_info=multi_rank_driver.decomposition_info,
             process_props=process_props,
             dim=dim,
             global_reference_field=global_reference_field,

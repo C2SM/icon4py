@@ -35,7 +35,7 @@ dependencies = [
   # external dependencies
   'cffi>=1.5',
   'click>=8.0',
-  'gt4py==1.1.10',
+  'gt4py==1.1.11',
   "numpy>=1.23.3",
   'packaging>=20.0'
 ]
@@ -50,6 +50,7 @@ version = "0.2.0"
 [project.optional-dependencies]
 cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
+cuda13 = ['cupy-cuda13x>=14.0', 'gt4py[cuda13]']
 profiling = ['viztracer>=1.1.0']
 
 [project.urls]

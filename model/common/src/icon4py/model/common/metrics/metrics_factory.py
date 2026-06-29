@@ -6,10 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
 import math
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -44,7 +47,7 @@ from icon4py.model.common.metrics import (
     reference_atmosphere as ra,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -119,6 +122,23 @@ class MetricsConfig:
             raise NotImplementedError(
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
             )
+
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> MetricsConfig:
+        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
+        return cls(
+            exner_expol=nonhydrostatic_nml["exner_expol"],
+            vwind_offctr=nonhydrostatic_nml["vwind_offctr"],
+            thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
+            thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
+            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
+            rayleigh_coeff=fortran_config.list_to_value(nonhydrostatic_nml["rayleigh_coeff"]),
+            divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
+            divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
+            divdamp_type=nonhydrostatic_nml["divdamp_type"],
+            igradp_method=nonhydrostatic_nml["igradp_method"],
+            **overrides,
+        )
 
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):

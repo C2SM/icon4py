@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -23,15 +23,15 @@ def _limit_vertical_parabola_semi_monotonically(
     q_face_up, q_face_low = where(
         l_limit != 0,
         where(
-            (p_cc < minimum(p_face, p_face(Koff[1]))),
+            (p_cc < minimum(p_face, p_face(KDim + 1))),
             (p_cc, p_cc),
             where(
-                p_face > p_face(Koff[1]),
-                (wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(Koff[1]), p_face(Koff[1])),
+                p_face > p_face(KDim + 1),
+                (wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(KDim + 1), p_face(KDim + 1)),
                 (p_face, wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face),
             ),
         ),
-        (p_face, p_face(Koff[1])),
+        (p_face, p_face(KDim + 1)),
     )
 
     return q_face_up, q_face_low

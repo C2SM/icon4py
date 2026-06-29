@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
@@ -43,7 +43,7 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
         wgtfac_c=wgtfac_c_wp, interpolant=theta_v
     )
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (
-        exner_pr(Koff[-1]) - exner_pr
+        exner_pr(KDim - 1) - exner_pr
     ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
     return z_theta_v_pr_ic_vp, theta_v_ic_wp, astype(z_th_ddz_exner_c_wp, vpfloat)
 
@@ -95,7 +95,7 @@ def _compute_virtual_potential_temperatures(
     z_theta_v_pr_ic_vp = _interpolate_cell_field_to_half_levels_vp(
         wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2
     )
-    theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
+    theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(KDim - 1)
     return z_theta_v_pr_ic_vp, theta_v_ic_wp
 
 
@@ -110,6 +110,6 @@ def _compute_pressure_gradient(
 ) -> fa.CellKField[vpfloat]:
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic * (
-        exner_pr(Koff[-1]) - exner_pr
+        exner_pr(KDim - 1) - exner_pr
     ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic * d_exner_dz_ref_ic, wpfloat)
     return astype(z_th_ddz_exner_c_wp, vpfloat)

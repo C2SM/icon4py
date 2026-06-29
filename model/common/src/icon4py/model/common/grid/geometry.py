@@ -358,7 +358,7 @@ class GridGeometry(factory.FieldSource):
             func=lambda input_val: gtx.sqrt(input_val),  # noqa: PLW0108
             domain=(),
             deps={
-                "input_val": attrs.MEAN_DUAL_AREA,
+                "input_val": attrs.MEAN_CELL_AREA,
             },
             fields=(attrs.CHARACTERISTIC_LENGTH,),
         )

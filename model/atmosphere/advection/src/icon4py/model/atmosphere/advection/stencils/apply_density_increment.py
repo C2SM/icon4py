@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import broadcast, maximum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -28,7 +28,7 @@ def _apply_density_increment(
 ) -> fa.CellKField[wpfloat]:
     even = broadcast(even_timestep, (dims.CellDim, dims.KDim))
     rhodz_incr = p_dtime * (
-        p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v(KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
     rhodz_out = where(
         even, rhodz_in + rhodz_incr, maximum(wpfloat(0.1) * rhodz_in, rhodz_in) - rhodz_incr

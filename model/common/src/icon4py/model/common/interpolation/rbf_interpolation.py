@@ -120,7 +120,7 @@ def construct_rbf_matrix_offsets_tables_for_cells(
     grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
-    connectivity = grid.get_connectivity(dims.C2E2C2E).asnumpy()
+    connectivity = grid.get_connectivity(dims.C2E2C2E).ndarray
     assert connectivity.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
     return connectivity
 
@@ -129,7 +129,7 @@ def construct_rbf_matrix_offsets_tables_for_edges(
     grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
-    connectivity = grid.get_connectivity(dims.E2C2E).asnumpy()
+    connectivity = grid.get_connectivity(dims.E2C2E).ndarray
     assert connectivity.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
     return connectivity
 
@@ -138,7 +138,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v"""
-    connectivity = grid.get_connectivity(dims.V2E).asnumpy()
+    connectivity = grid.get_connectivity(dims.V2E).ndarray
     assert connectivity.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
     return connectivity
 

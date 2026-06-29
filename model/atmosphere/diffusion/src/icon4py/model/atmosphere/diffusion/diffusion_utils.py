@@ -22,7 +22,7 @@ def _identity_c_k(field: fa.CellKField[wpfloat]) -> fa.CellKField[wpfloat]:
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_field(old_f: fa.CellKField[wpfloat], new_f: fa.CellKField[wpfloat]):
+def copy_field(old_f: fa.CellKField[wpfloat], new_f: fa.CellKField[wpfloat]) -> None:
     _identity_c_k(old_f, out=new_f)
 
 
@@ -37,7 +37,7 @@ def _scale_k(field: fa.KField[wpfloat], factor: wpfloat) -> fa.KField[wpfloat]:
 
 
 @gtx.program
-def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[wpfloat]):
+def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[wpfloat]) -> None:
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -73,7 +73,7 @@ def setup_fields_for_initial_step(
     hdiff_efdt_ratio: wpfloat,
     diff_multfac_vn: fa.KField[wpfloat],
     smag_limit: fa.KField[wpfloat],
-):
+) -> None:
     _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
 
 
@@ -127,7 +127,7 @@ def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many
     diff_multfac_vn: fa.KField[wpfloat],
     smag_limit: fa.KField[wpfloat],
     enh_smag_fac: fa.KField[wpfloat],
-):
+) -> None:
     _init_diffusion_local_fields_for_regular_timestep(
         k4=k4,
         dyn_substeps=dyn_substeps,

@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -23,7 +23,7 @@ def _apply_horizontal_density_increment(
     p_dtime: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     return maximum(wpfloat(0.1) * p_rhodz_new, p_rhodz_new) - p_dtime * (
-        p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v(KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
 
 

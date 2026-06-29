@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common import topography as topo
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import topography as topo
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
 

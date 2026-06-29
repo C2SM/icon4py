@@ -99,8 +99,8 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
 def zonalwind_2_normalwind_ndarray(
     *,
     grid: icon_grid.IconGrid,
-    jw_u0: float,
-    jw_baroclinic_amplitude: float,
+    u0: float,
+    baroclinic_amplitude: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
     edge_lat: data_alloc.NDArray,
@@ -113,8 +113,8 @@ def zonalwind_2_normalwind_ndarray(
 
     Args:
         grid: IconGrid
-        jw_u0: base zonal wind speed factor, or maximum wind speed
-        jw_baroclinic_amplitude: perturbation amplitude
+        u0: base zonal wind speed factor, or maximum wind speed
+        baroclinic_amplitude: perturbation amplitude
         lat_perturbation_center: perturbation center in latitude
         lon_perturbation_center: perturbation center in longitude
         edge_lat: edge center latitude
@@ -142,14 +142,14 @@ def zonalwind_2_normalwind_ndarray(
     )
     u = array_ns.where(
         mask,
-        jw_u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
+        u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
         0.0,
     )
-    if jw_baroclinic_amplitude > 1.0e-20:
+    if baroclinic_amplitude > 1.0e-20:
         u = array_ns.where(
             mask,
             u
-            + jw_baroclinic_amplitude
+            + baroclinic_amplitude
             * array_ns.exp(
                 -(
                     (
@@ -219,3 +219,23 @@ def init_w(
     w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
     return w
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers (used by individual analytical IC modules)
+# ---------------------------------------------------------------------------
+
+
+def zone_indices(grid: icon_grid.IconGrid) -> dict[str, int]:
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    return {
+        "end_edge_lateral_boundary_level_2": grid.end_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "end_edge_end": grid.end_index(edge_domain(h_grid.Zone.END)),
+        "end_cell_lateral_boundary_level_2": grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "end_cell_end": grid.end_index(cell_domain(h_grid.Zone.END)),
+    }

@@ -22,6 +22,7 @@ __all__ = [
     "pytest_collection_modifyitems",
     "pytest_configure",
     "pytest_runtest_setup",
+    "pytest_sessionfinish",
 ]
 
 _TEST_LEVELS = ("any", "unit", "integration")
@@ -34,7 +35,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit or integration tests, mostly applicable where both are available",
+        "level(name): marks test as unit or integration tests, tests without this marker are implicitly treated as 'unit'",
     )
     config.addinivalue_line(
         "markers", "single_precision_ready: intended to run if single precision is selected"
@@ -54,24 +55,7 @@ def pytest_configure(config):
         m_option.append("single_precision_ready")
     config.option.markexpr = " and ".join(m_option[::-1])
 
-    with_mpi = config.getoption("--with-mpi", default=False)
-    only_mpi = config.getoption("--only-mpi", default=False)
-    if with_mpi or only_mpi:
-        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-            import_error,
-            mpi4py,
-        )
-
-        if mpi4py is None:
-            raise pytest.UsageError(
-                f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
-            )
-
-        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-            init_mpi,
-        )
-
-        init_mpi()
+    handle_mpi_options(config)
 
 
 def pytest_addoption(parser: pytest.Parser):
@@ -112,7 +96,7 @@ def pytest_addoption(parser: pytest.Parser):
             "--level",
             action="store",
             choices=_TEST_LEVELS,
-            help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
+            help="Set level (unit, integration) of the tests to run. Tests without a level marker are implicitly 'unit'. Defaults to 'any'.",
             default="any",
         )
     with contextlib.suppress(ValueError):
@@ -123,9 +107,26 @@ def pytest_addoption(parser: pytest.Parser):
             default=False,
         )
 
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--mpi-subcomm-size",
+            action="store",
+            type=int,
+            default=None,
+            help="Size of MPI subcommunicators for parallel test execution. "
+            "Total ranks must be a multiple of this value.",
+        )
 
+
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     """Modify collected test items based on command line options."""
+    scheduler = getattr(config, "_mpi_scheduler", None)
+    if scheduler is not None:
+        items[:] = scheduler.filter_items(items)
+        if not items:
+            pytest.exit("No tests assigned to this MPI subcomm group", returncode=0)
+
     test_level = config.getoption("--level")
     if test_level == "any":
         return
@@ -140,6 +141,12 @@ def pytest_collection_modifyitems(config, items):
                         reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
                     )
                 )
+        elif test_level != "unit":
+            item.add_marker(
+                pytest.mark.skip(
+                    reason=f"Selected level '{test_level}' does not match the implicit level 'unit' for this test."
+                )
+            )
 
 
 @pytest.hookimpl(trylast=True)
@@ -252,3 +259,132 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
                 f"{benchmark_name:<{max_name_len}} | {np.mean(gtx_metrics):>10.8f} | {np.median(gtx_metrics):>10.8f} | {np.std(gtx_metrics):>10.8f} | {len(gtx_metrics):>4}"
             )
         terminalreporter.line("-" * len(header), blue=True)
+
+
+def handle_mpi_options(config):
+    with_mpi = config.getoption("--with-mpi", default=False)
+    only_mpi = config.getoption("--only-mpi", default=False)
+    subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
+
+    if subcomm_size is None:
+        env_val = os.environ.get("ICON4PY_TEST_MPI_SUBCOMM_SIZE")
+        if env_val is not None:
+            subcomm_size = int(env_val)
+    if subcomm_size is not None and not (with_mpi or only_mpi):
+        raise pytest.UsageError(
+            "--mpi-subcomm-size requires MPI to be initialized. Make sure --with-mpi or --only-mpi is passed."
+        )
+
+    if with_mpi or only_mpi:
+        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+            import_error,
+            mpi4py,
+        )
+
+        if mpi4py is None:
+            raise pytest.UsageError(
+                f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
+            )
+
+        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+            init_mpi,
+        )
+
+        init_mpi()
+
+        if subcomm_size is not None:
+            scheduler = MPISubcommScheduler(subcomm_size)
+            config._mpi_scheduler = scheduler
+
+            if scheduler.subcomm.Get_rank() == 0:
+                start_rank = scheduler.group_id * scheduler.subcomm_size
+                end_rank = (scheduler.group_id + 1) * scheduler.subcomm_size - 1
+                print(
+                    f"\n[MPI Scheduler] Group {scheduler.group_id}/{scheduler.num_groups}: "
+                    f"world ranks {start_rank}-{end_rank}, subcomm size {scheduler.subcomm_size}"
+                )
+
+
+class MPISubcommScheduler:
+    """Splits MPI_COMM_WORLD into subcommunicators for parallel test execution."""
+
+    def __init__(self, subcomm_size: int):
+        from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
+
+        if subcomm_size <= 0:
+            raise ValueError("--mpi-subcomm-size must be a positive integer")
+
+        self.world = MPI.COMM_WORLD
+        self.world_size = self.world.Get_size()
+        self.world_rank = self.world.Get_rank()
+        self.subcomm_size = subcomm_size
+        self._finalized = False
+
+        if self.world_size % self.subcomm_size != 0:
+            raise ValueError(
+                f"MPI world size ({self.world_size}) must be divisible by "
+                f"--mpi-subcomm-size ({self.subcomm_size})"
+            )
+
+        self.num_groups = self.world_size // self.subcomm_size
+        self.group_id = self.world_rank // self.subcomm_size
+        self.subcomm = self.world.Split(self.group_id, self.world_rank)
+
+        from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+            mpi_decomposition,
+        )
+
+        self._original_get_props = mpi_decomposition._get_process_properties
+
+        def _patched_get_props(with_mpi=False, comm_id=None, **kwargs):
+            if with_mpi and comm_id is None:
+                comm_id = self.subcomm
+            return self._original_get_props(with_mpi=with_mpi, comm_id=comm_id, **kwargs)
+
+        mpi_decomposition._get_process_properties = _patched_get_props
+
+    def filter_items(self, items: list[pytest.Item]) -> list[pytest.Item]:
+        """Return only the test items assigned to this subcomm group."""
+        mpi_items = sorted(
+            (i for i in items if i.get_closest_marker("mpi")),
+            key=lambda i: i.nodeid,
+        )
+        non_mpi_items = [i for i in items if i not in mpi_items]
+
+        valid_mpi_items = [
+            item
+            for item in mpi_items
+            if item.get_closest_marker("mpi").kwargs.get("min_size", 1) <= self.subcomm_size
+        ]
+
+        assigned_mpi = [
+            item
+            for idx, item in enumerate(valid_mpi_items)
+            if idx % self.num_groups == self.group_id
+        ]
+
+        if self.group_id == 0:
+            return non_mpi_items + assigned_mpi
+        return assigned_mpi
+
+    def finalize(self) -> None:
+        """Free the subcommunicator and restore patched functions."""
+        if self._finalized:
+            return
+        self._finalized = True
+
+        try:
+            if self.subcomm is not None and self.subcomm != self.world:
+                self.subcomm.Free()
+        finally:
+            from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+                mpi_decomposition,
+            )
+
+            mpi_decomposition._get_process_properties = self._original_get_props
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    scheduler = getattr(session.config, "_mpi_scheduler", None)
+    if scheduler is not None:
+        scheduler.finalize()
