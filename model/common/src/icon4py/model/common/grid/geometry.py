@@ -235,7 +235,7 @@ class GridGeometry(factory.FieldSource):
                 # For a uniform torus grid all cells are identical equilateral
                 # triangles. Read the common edge length directly from the edge
                 # length field (the grid file stores it on every edge).
-                # TODO(msimberg): Check if we can should get it from the grid
+                # TODO(msimberg): Check if we can/should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
                 edge_length = self.get(attrs.EDGE_LENGTH).ndarray
