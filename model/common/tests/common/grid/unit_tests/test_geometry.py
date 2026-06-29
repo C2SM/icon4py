@@ -571,6 +571,10 @@ def test_geometry_mean_fields(
 )
 def test_analytical_and_global_reduction_mean_fields_agree(
     backend: gtx_typing.Backend,
+    # TODO(msimberg): This would in principle not need the full experiment, but
+    # only the grid (description). Currently we go through the grid manager,
+    # which does require e.g. num_levels from experiment. This should be cleaned
+    # up when fixtures in https://github.com/C2SM/icon4py/issues/1134.
     experiment: definitions.Experiment,
     attr_name: str,
 ) -> None:
