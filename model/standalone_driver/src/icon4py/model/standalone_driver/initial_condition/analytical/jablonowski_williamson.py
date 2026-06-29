@@ -109,6 +109,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     geometry = static_fields.geometry
     metrics = static_fields.metrics
+    interpolation = static_fields.interpolation
+
     cell_lat = geometry.get(geometry_meta.CELL_LAT).ndarray
     edge_lat = geometry.get(geometry_meta.EDGE_LAT).ndarray
     edge_lon = geometry.get(geometry_meta.EDGE_LON).ndarray
@@ -125,8 +127,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
     wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
-    ddqz_z_full = metrics.get(metrics_attributes.DDQZ_Z_FULL).ndarray
-    c_lin_e = static_fields.interpolation.get(interpolation_attributes.C_LIN_E)
+    ddqz_z_full_field = metrics.get(metrics_attributes.DDQZ_Z_FULL)
+    ddqz_z_full = ddqz_z_full_field.ndarray
+    c_lin_e = interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 
     p_sfc = config.p_sfc
@@ -302,7 +305,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             allocator=allocator,
             exner=prognostic_state_now.exner,
             virtual_temperature=virtual_temperature,
-            ddqz_z_full=metrics.get(metrics_attributes.DDQZ_Z_FULL),
+            ddqz_z_full=ddqz_z_full_field,
         )
         testcases_utils.init_inwp_tracers(
             rho=rho_ndarray,
