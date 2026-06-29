@@ -216,7 +216,9 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
         line2_p2_lat=tri_line2_p2_lat,
     )
 
-    lvn_sys_pos = (p_vn * broadcast(tangent_orientation_dsl, (dims.EdgeDim, dims.KDim))) >= wpfloat(0.0)
+    lvn_sys_pos = (p_vn * broadcast(tangent_orientation_dsl, (dims.EdgeDim, dims.KDim))) >= wpfloat(
+        0.0
+    )
     famask_bool = famask_int == 1
     # ------------------------------------------------- Case 1
     mask_case1 = lintersect_line1 & lintersect_line2 & famask_bool

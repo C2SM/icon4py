@@ -11,7 +11,7 @@ from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2CDim
-from icon4py.model.common.type_alias import wpfloat, vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -32,7 +32,7 @@ def _compute_barycentric_backtrajectory(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    lvn_pos = p_vn >=  wpfloat(0.0)
+    lvn_pos = p_vn >= wpfloat(0.0)
 
     p_cell_idx = where(lvn_pos, cell_idx[E2CDim(0)], cell_idx[E2CDim(1)])
     p_cell_rel_idx_dsl = where(lvn_pos, 0, 1)

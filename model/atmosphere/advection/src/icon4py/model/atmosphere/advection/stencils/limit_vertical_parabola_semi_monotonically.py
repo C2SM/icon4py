@@ -13,6 +13,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
+
 @gtx.field_operator
 def _limit_vertical_parabola_semi_monotonically(
     l_limit: fa.CellKField[gtx.int32],

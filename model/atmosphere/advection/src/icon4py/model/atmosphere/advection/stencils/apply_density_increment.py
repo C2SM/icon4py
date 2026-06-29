@@ -30,7 +30,9 @@ def _apply_density_increment(
     rhodz_incr = p_dtime * (
         p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
-    rhodz_out = where(even, rhodz_in + rhodz_incr, maximum(wpfloat(0.1) * rhodz_in, rhodz_in) - rhodz_incr)
+    rhodz_out = where(
+        even, rhodz_in + rhodz_incr, maximum(wpfloat(0.1) * rhodz_in, rhodz_in) - rhodz_incr
+    )
     return rhodz_out
 
 

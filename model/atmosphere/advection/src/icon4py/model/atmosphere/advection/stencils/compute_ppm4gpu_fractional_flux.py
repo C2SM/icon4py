@@ -91,7 +91,8 @@ def _compute_ppm4gpu_fractional_flux(
     z_q_int = (
         p_cc_jks
         + wsign * (z_delta_q_jks * (wpfloat(1.0) - z_cflfrac))
-        - z_a1_jks * (wpfloat(1.0) - wpfloat(3.0) * z_cflfrac + wpfloat(2.0) * z_cflfrac * z_cflfrac)
+        - z_a1_jks
+        * (wpfloat(1.0) - wpfloat(3.0) * z_cflfrac + wpfloat(2.0) * z_cflfrac * z_cflfrac)
     )
 
     p_upflux = where(

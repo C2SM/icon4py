@@ -11,7 +11,7 @@ from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2CDim
-from icon4py.model.common.type_alias import wpfloat, vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator

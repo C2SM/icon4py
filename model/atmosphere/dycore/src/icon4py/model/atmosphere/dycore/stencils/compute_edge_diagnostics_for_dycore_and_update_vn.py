@@ -48,7 +48,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     _compute_vn_on_lateral_boundary,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
