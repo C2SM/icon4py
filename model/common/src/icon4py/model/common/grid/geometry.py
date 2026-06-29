@@ -259,6 +259,7 @@ class GridGeometry(factory.FieldSource):
             attrs.MEAN_DUAL_AREA: mean_dual_area,
             attrs.MEAN_EDGE_LENGTH: mean_edge_length,
             attrs.MEAN_DUAL_EDGE_LENGTH: mean_dual_edge_length,
+            attrs.CHARACTERISTIC_LENGTH: math.sqrt(mean_cell_area),
         }
 
     def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
@@ -438,15 +439,15 @@ class GridGeometry(factory.FieldSource):
             )
             self.register_provider(mean_dual_cell_area_np)
 
-        characteristic_length_np = factory.NumpyDataProvider(
-            func=math_utils.compute_sqrt,
-            domain=(),
-            deps={
-                "input_val": attrs.MEAN_CELL_AREA,
-            },
-            fields=(attrs.CHARACTERISTIC_LENGTH,),
-        )
-        self.register_provider(characteristic_length_np)
+            characteristic_length_np = factory.NumpyDataProvider(
+                func=math_utils.compute_sqrt,
+                domain=(),
+                deps={
+                    "input_val": attrs.MEAN_CELL_AREA,
+                },
+                fields=(attrs.CHARACTERISTIC_LENGTH,),
+            )
+            self.register_provider(characteristic_length_np)
 
     def _register_normals_and_tangents_icosahedron(self) -> None:
         """Register normals and tangents specific to icosahedron geometry."""
