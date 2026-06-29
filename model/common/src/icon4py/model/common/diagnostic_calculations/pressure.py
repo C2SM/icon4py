@@ -81,11 +81,11 @@ def diagnose_pressure_into(
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
 
     diagnose_pressure_stencil.diagnose_pressure.with_backend(backend)(
-        ddqz_z_full,
-        virtual_temperature,
-        surface_pressure,
-        pressure,
-        pressure_ifc,
+        ddqz_z_full=ddqz_z_full,
+        virtual_temperature=virtual_temperature,
+        surface_pressure=surface_pressure,
+        pressure=pressure,
+        pressure_ifc=pressure_ifc,
         horizontal_start=0,
         horizontal_end=horizontal_end,
         vertical_start=0,
