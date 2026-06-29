@@ -210,7 +210,7 @@ class DiagnosticsComputer:
             offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
         )
 
-        pressure_diagnostics.diagnose_pressure_into(
+        pressure_diagnostics.diagnose_pressure_surface_to_top(
             grid=self._grid,
             backend=backend,
             exner=prognostic_state.exner,

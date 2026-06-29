@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
 
 
-def diagnose_pressure_into(
+def diagnose_pressure_surface_to_top(
     *,
     grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
@@ -94,7 +94,7 @@ def diagnose_pressure_into(
     )
 
 
-def diagnose_pressure_ndarray(
+def diagnose_pressure_surface_to_top_ndarray(
     *,
     grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
@@ -105,7 +105,7 @@ def diagnose_pressure_ndarray(
 ) -> data_alloc.NDArray:
     """Allocate work buffers, diagnose the hydrostatic pressure, return its ndarray.
 
-    Convenience wrapper around :func:`diagnose_pressure_into` for one-shot callers
+    Convenience wrapper around :func:`diagnose_pressure_surface_to_top` for one-shot callers
     (e.g. initial-condition setup) that do not keep their own buffers.
     """
     surface_pressure_k = data_alloc.zero_field(
@@ -120,7 +120,7 @@ def diagnose_pressure_ndarray(
     pressure_ifc = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
     )
-    diagnose_pressure_into(
+    diagnose_pressure_surface_to_top(
         grid=grid,
         backend=backend,
         exner=exner,

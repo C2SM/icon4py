@@ -20,7 +20,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.diagnostic_calculations.pressure import diagnose_pressure_ndarray
+from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -299,7 +299,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         )
         virtual_temperature.ndarray[:, :] = theta_v_ndarray * exner_ndarray
-        pressure_ndarray = diagnose_pressure_ndarray(
+        pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
             grid=grid,
             backend=backend,
             allocator=allocator,
