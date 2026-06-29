@@ -6,13 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import math
+
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     thermodynamic_functions as thermo,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import (
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    icon as icon_grid,
+)
+from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -291,6 +299,84 @@ def init_inwp_tracers(
 # ---------------------------------------------------------------------------
 # Shared helpers (used by individual analytical IC modules)
 # ---------------------------------------------------------------------------
+
+
+def init_bubble(
+    *,
+    grid: icon_grid.IconGrid,
+    geometry: grid_geometry.GridGeometry,
+    z_mc: data_alloc.NDArray,
+    theta_v: data_alloc.NDArray,
+    rho: data_alloc.NDArray,
+    qv: data_alloc.NDArray,
+    exner: data_alloc.NDArray,
+    center_x: float,
+    center_y: float,
+    center_z: float,
+    horizontal_width: float,
+    vertical_width: float,
+    amplitude: float,
+    radius: float,
+) -> None:
+    """Add a cos**2-shaped warm-bubble perturbation to ``theta_v`` and update ``rho`` in place.
+
+    Inside the normalized ellipsoid (normalized distance smaller than ``radius``) centred at
+    ``(center_x, center_y, center_z)`` with horizontal and vertical scales ``horizontal_width``
+    and ``vertical_width``, ``theta_v`` is increased by up to ``amplitude`` [K] and ``rho`` is
+    recomputed from the perturbed ``theta_v`` so the state stays consistent with ``exner``.
+
+    Mirrors ``init_nh_buble_wk`` in ``mo_nh_wk_exp.f90``. On the torus the horizontal distance is
+    the periodic plane distance; on the sphere it is the great-circle distance and
+    ``(center_x, center_y)`` are interpreted as longitude and latitude in degrees.
+    """
+    array_ns = data_alloc.array_namespace(theta_v)
+
+    match grid.geometry_type:
+        case icon_grid.GeometryType.TORUS:
+            # ICON's plane_torus_distance does not actually wrap the warm bubble (its
+            # periodic threshold is never met), so the distance is non-periodic here.
+            horizontal_distance = distance_array_ns.horizontal_distance_to_point(
+                x=geometry.get(geometry_meta.CELL_CENTER_X).ndarray,
+                y=geometry.get(geometry_meta.CELL_CENTER_Y).ndarray,
+                point_x=center_x,
+                point_y=center_y,
+                wrap=False,
+            )
+        case icon_grid.GeometryType.ICOSAHEDRON:
+            cell_lat = geometry.get(geometry_meta.CELL_LAT).ndarray
+            cell_lon = geometry.get(geometry_meta.CELL_LON).ndarray
+            center_lon = math.radians(center_x)
+            center_lat = math.radians(center_y)
+            central_angle = array_ns.arccos(
+                array_ns.sin(center_lat) * array_ns.sin(cell_lat)
+                + array_ns.cos(center_lat)
+                * array_ns.cos(cell_lat)
+                * array_ns.cos(cell_lon - center_lon)
+            )
+            horizontal_distance = phy_const.EARTH_RADIUS * central_angle
+        case _:
+            raise NotImplementedError(
+                f"Bubble initialization is not implemented for geometry '{grid.geometry_type}'."
+            )
+
+    normalized_distance = array_ns.sqrt(
+        (horizontal_distance[:, array_ns.newaxis] / horizontal_width) ** 2
+        + ((z_mc - center_z) / vertical_width) ** 2
+    )
+    inside_bubble = normalized_distance < radius
+    theta_v[:, :] = array_ns.where(
+        inside_bubble,
+        theta_v
+        + amplitude
+        * array_ns.cos(normalized_distance * math.pi / 2.0) ** 2
+        * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv),
+        theta_v,
+    )
+    rho[:, :] = array_ns.where(
+        inside_bubble,
+        exner**phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v),
+        rho,
+    )
 
 
 def zone_indices(grid: icon_grid.IconGrid) -> dict[str, int]:

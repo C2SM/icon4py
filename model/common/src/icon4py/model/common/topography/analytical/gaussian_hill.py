@@ -12,6 +12,7 @@ import dataclasses
 from typing import TYPE_CHECKING, ClassVar
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -45,6 +46,8 @@ def gaussian_hill(
 
     array_ns = data_alloc.array_namespace(cell_x)
 
-    dist = ((cell_x - mount_x) ** 2 + (cell_y - mount_y) ** 2) ** 0.5
+    dist = distance_array_ns.horizontal_distance_to_point(
+        x=cell_x, y=cell_y, point_x=mount_x, point_y=mount_y
+    )
 
-    return mount_height * array_ns.exp(-((dist / mount_width) ** 2))
+    return mount_height * array_ns.exp(-1.0 * (dist / mount_width) ** 2)
