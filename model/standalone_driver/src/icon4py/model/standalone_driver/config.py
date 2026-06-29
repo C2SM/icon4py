@@ -55,7 +55,7 @@ class ProfilingStats:
 #: their length is not fixed, and this is currently only used for dtime.
 _ISO8601_DURATION = re.compile(
     r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
-    r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
+    r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
 )
 
 

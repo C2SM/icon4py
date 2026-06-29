@@ -47,7 +47,7 @@ def test_timedelta_from_iso8601_valid(duration: str, expected_seconds: float) ->
     )
 
 
-@pytest.mark.parametrize("duration", ["", "P", "PT", "P1Y", "P1M", "300", "PT300"])
+@pytest.mark.parametrize("duration", ["", "P", "PT", "P1Y", "P1M", "300", "PT300", "P1DT", "P1WT"])
 def test_timedelta_from_iso8601_invalid(duration: str) -> None:
     with pytest.raises(ValueError, match="Invalid ISO 8601 duration"):
         driver_config._timedelta_from_iso8601(duration)
