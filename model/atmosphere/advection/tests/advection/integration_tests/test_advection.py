@@ -16,6 +16,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
+    geometry_config,
     horizontal as h_grid,
 )
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
@@ -143,7 +144,9 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(
+        backend, experiment, config=geometry_config.GeometryConfig()
+    )
     least_squares_coeffs = compute_lsq_coeffs(
         cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
         cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
@@ -248,7 +251,9 @@ def test_compute_lsq_coeffs(
     min_rlcell_int = gm.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
     start_idx = gm.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
-    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    grid_geometry = grid_utils.get_grid_geometry(
+        backend, experiment, config=geometry_config.GeometryConfig()
+    )
     cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
     cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
     domain_length = gm.grid.grid_params.domain_length
