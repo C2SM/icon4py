@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
+import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import (
@@ -239,11 +240,8 @@ class GridGeometry(factory.FieldSource):
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
                 edge_length = self.get(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
-                    array_ns = data_alloc.array_namespace(edge_length)
-                    send_buffer = array_ns.empty(1, dtype=edge_length.dtype)
+                    send_buffer = np.empty(1, dtype=edge_length.dtype)
                     send_buffer[0] = edge_length[0]
-                    if hasattr(array_ns, "cuda"):
-                        array_ns.cuda.runtime.deviceSynchronize()
                     self._process_props.comm.Bcast(send_buffer, root=0)
                     mean_edge_length = float(send_buffer[0])
                 else:
