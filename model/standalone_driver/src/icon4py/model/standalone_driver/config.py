@@ -102,7 +102,7 @@ class DriverConfig:
         master_model_nml = master_dict["master_model_nml"]
         # Both 'modeltimestep' (an ISO 8601 duration) and 'dtime' (seconds) are
         # always present; a non-empty 'modeltimestep' takes priority over 'dtime'.
-        modeltimestep = fortran_config.list_to_value(run_nml.get("modeltimestep", "")).strip()
+        modeltimestep = run_nml["modeltimestep"].strip()
         dtime = (
             _timedelta_from_iso8601(modeltimestep)
             if modeltimestep
