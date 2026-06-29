@@ -123,6 +123,7 @@ def _make_single_rank_geometry(
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
         config=geometry_config.GeometryConfig(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
         exchange=decomp_defs.single_node_exchange,
     )
     return grid_manager, grid_geometry
@@ -150,6 +151,7 @@ def _make_multi_rank_geometry(
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
         config=geometry_config.GeometryConfig(),
+        process_props=process_props,
         exchange=decomp_defs.create_exchange(process_props, grid_manager.decomposition_info),
         global_reductions=decomp_defs.create_reduction(
             process_props, grid_manager.decomposition_info

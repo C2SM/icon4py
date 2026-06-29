@@ -49,6 +49,7 @@ def geometry_field_source(
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
         config=geometry_config.GeometryConfig(),
+        process_props=decomposition.SingleNodeProcessProperties(),
         exchange=decomposition.single_node_exchange,
     )
     yield geometry_field_source

@@ -120,6 +120,7 @@ def get_grid_geometry(
             extra_fields=gm.geometry_fields,
             metadata=geometry_attrs.attrs,
             config=config,
+            process_props=decomposition.SingleNodeProcessProperties(),
             exchange=decomposition.single_node_exchange,
         )
 

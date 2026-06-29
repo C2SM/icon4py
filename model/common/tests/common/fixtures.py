@@ -95,6 +95,7 @@ def geometry_from_savepoint(
         coordinates=coordinates,
         extra_fields=extra_fields,
         config=geometry_config.GeometryConfig(),
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
     )

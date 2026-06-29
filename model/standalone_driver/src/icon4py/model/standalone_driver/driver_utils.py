@@ -163,6 +163,7 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    process_props: decomposition_defs.ProcessProperties,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
     geometry_config: geometry_configuration.GeometryConfig,
@@ -177,6 +178,7 @@ def create_static_field_factories(
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
         config=geometry_config,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
     )

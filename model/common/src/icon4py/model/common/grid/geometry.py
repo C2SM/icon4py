@@ -56,6 +56,7 @@ class GridGeometry(factory.FieldSource):
         ...     extra_fields=extra_fields,
         ...     metadata=geometry_attributes.attrs,
         ...     config=geometry_config.GeometryConfig(),
+        ...     process_props=process_props,
         ...     exchange=exchange,
         ...     global_reductions=global_reductions,
         ... )
@@ -94,6 +95,12 @@ class GridGeometry(factory.FieldSource):
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
         config: geometry_config.GeometryConfig,
+        process_props: decomposition.ProcessProperties,
+        # TODO(msimberg): There's no need to pass exchange and global_reductions
+        # if process_props is passed. The former can all be constructed from
+        # process_props. Refactor this consistently across the code base to use
+        # process_props only. We may need special care to make sure that we
+        # don't create many different GHEX communication objects.
         exchange: decomposition.ExchangeRuntime,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
@@ -107,6 +114,7 @@ class GridGeometry(factory.FieldSource):
                 currently only the edge_system_orientation cell_area. Should eventually disappear.
             metadata: a dictionary of FieldMetaData for all fields computed in GridGeometry.
             config: configuration options controlling geometry computation.
+            process_props: process properties including the MPI communicator.
 
         """
         self._providers = {}
@@ -120,6 +128,7 @@ class GridGeometry(factory.FieldSource):
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._config = config
         self._exchange = exchange
+        self._process_props = process_props
         self._global_reductions = global_reductions
         log.info(
             f"initializing geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -228,7 +237,17 @@ class GridGeometry(factory.FieldSource):
                 # TODO(msimberg): Check if we can should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
-                mean_edge_length = float(self.get(attrs.EDGE_LENGTH).ndarray[0])
+                edge_length = self.get(attrs.EDGE_LENGTH).ndarray
+                if self._process_props.comm is not None:
+                    array_ns = data_alloc.array_namespace(edge_length)
+                    send_buffer = array_ns.empty(1, dtype=edge_length.dtype)
+                    send_buffer[0] = edge_length[0]
+                    if hasattr(array_ns, "cuda"):
+                        array_ns.cuda.runtime.deviceSynchronize()
+                    self._process_props.comm.Bcast(send_buffer, root=0)
+                    mean_edge_length = float(send_buffer[0])
+                else:
+                    mean_edge_length = float(edge_length[0])
                 mean_cell_area = mean_edge_length**2 * math.sqrt(3.0) / 4.0
                 mean_dual_area = 2.0 * mean_cell_area
                 mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
