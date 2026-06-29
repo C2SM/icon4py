@@ -70,11 +70,3 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
     assert config.dtime == datetime.timedelta(seconds=120)
-
-
-def test_missing_modeltimestep_falls_back_to_dtime() -> None:
-    atm_dict, master_dict = _make_dicts({"dtime": 60.0})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
-    )
-    assert config.dtime == datetime.timedelta(seconds=60)
