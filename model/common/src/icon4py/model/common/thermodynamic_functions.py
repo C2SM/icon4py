@@ -72,4 +72,5 @@ def qv_from_relative_humidity(
     # avoid water vapour pressure > total pressure
     vapour_pressure = array_ns.minimum(saturation_pressure, pressure / (relative_humidity + 1.0e-6))
     saturation_qv = vapour_pressure / (rho * phy_const.RV * temperature)
+    # avoid supersaturation: if rh > 1 return saturation_qv
     return array_ns.minimum(saturation_qv, relative_humidity * saturation_qv)
