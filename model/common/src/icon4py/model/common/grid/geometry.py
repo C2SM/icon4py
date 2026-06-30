@@ -240,6 +240,7 @@ class GridGeometry(factory.FieldSource):
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
                 edge_length = self.get(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
+                    assert edge_length.size > 0
                     send_buffer = np.empty(1, dtype=edge_length.dtype)
                     send_buffer[0] = edge_length[0]
                     self._process_props.comm.Bcast(send_buffer, root=0)
