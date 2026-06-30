@@ -169,7 +169,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     least_squares_state = construct_least_squares_state(
-        gtx.astype(least_squares_coeffs, ta.wpfloat), backend=backend
+        least_squares_coeffs.astype(ta.wpfloat), backend=backend
     )
 
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
