@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
+import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import (
@@ -234,16 +235,14 @@ class GridGeometry(factory.FieldSource):
                 # For a uniform torus grid all cells are identical equilateral
                 # triangles. Read the common edge length directly from the edge
                 # length field (the grid file stores it on every edge).
-                # TODO(msimberg): Check if we can should get it from the grid
+                # TODO(msimberg): Check if we can/should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
                 edge_length = self.get(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
-                    array_ns = data_alloc.array_namespace(edge_length)
-                    send_buffer = array_ns.empty(1, dtype=edge_length.dtype)
+                    assert edge_length.size > 0
+                    send_buffer = np.empty(1, dtype=edge_length.dtype)
                     send_buffer[0] = edge_length[0]
-                    if hasattr(array_ns, "cuda"):
-                        array_ns.cuda.runtime.deviceSynchronize()
                     self._process_props.comm.Bcast(send_buffer, root=0)
                     mean_edge_length = float(send_buffer[0])
                 else:

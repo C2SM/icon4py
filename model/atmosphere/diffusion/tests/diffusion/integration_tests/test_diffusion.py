@@ -17,11 +17,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_meta,
-    geometry_config,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -56,9 +52,7 @@ def get_cell_geometry_for_experiment(
 
 def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str):
     if not grid_functionality[experiment.name].get(name):
-        geometry_ = grid_utils.get_grid_geometry(
-            backend, experiment, config=geometry_config.GeometryConfig()
-        )
+        geometry_ = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import dataclasses
 import functools
 from typing import TYPE_CHECKING
 
@@ -18,7 +19,6 @@ from icon4py.model.common.grid import (
     base,
     geometry,
     geometry_attributes as attrs,
-    geometry_config,
     horizontal as h_grid,
     icon as icon_grid,
     simple,
@@ -50,9 +50,7 @@ if TYPE_CHECKING:
 def test_geometry_raises_for_unknown_field(
     backend: gtx_typing.Backend, experiment: definitions.Experiment
 ) -> None:
-    geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
         geometry.get("foo")
 
@@ -73,9 +71,7 @@ def test_edge_control_area(
     rtol: float,
 ) -> None:
     expected = grid_savepoint.edge_areas()
-    geometry_source = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     result = geometry_source.get(attrs.EDGE_AREA)
     assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol=rtol)
 
@@ -86,9 +82,7 @@ def test_coriolis_parameter(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry_source = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     expected = grid_savepoint.f_e()
 
     result = geometry_source.get(attrs.CORIOLIS_PARAMETER)
@@ -101,9 +95,7 @@ def test_compute_edge_length(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry_source = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     expected = grid_savepoint.primal_edge_length()
     result = geometry_source.get(attrs.EDGE_LENGTH)
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
@@ -116,9 +108,7 @@ def test_compute_inverse_edge_length(
     experiment: definitions.Experiment,
 ) -> None:
     expected = grid_savepoint.inverse_primal_edge_lengths()
-    geometry_source = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     computed = geometry_source.get(f"inverse_of_{attrs.EDGE_LENGTH}")
 
     assert test_utils.dallclose(computed.asnumpy(), expected.asnumpy())
@@ -130,9 +120,7 @@ def test_compute_dual_edge_length(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
     expected = grid_savepoint.dual_edge_length()
     result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
@@ -145,9 +133,7 @@ def test_compute_inverse_dual_edge_length(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     expected = grid_savepoint.inv_dual_edge_length()
     result = grid_geometry.get(f"inverse_of_{attrs.DUAL_EDGE_LENGTH}")
 
@@ -172,9 +158,7 @@ def test_compute_inverse_vertex_vertex_length(
     experiment: definitions.Experiment,
     rtol: float,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
     expected = grid_savepoint.inv_vert_vert_length().asnumpy()
     result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
@@ -187,9 +171,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     x_normal = grid_geometry.get(attrs.EDGE_NORMAL_X)
     y_normal = grid_geometry.get(attrs.EDGE_NORMAL_Y)
     z_normal = grid_geometry.get(attrs.EDGE_NORMAL_Z)
@@ -217,9 +199,7 @@ def test_compute_primal_normals(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     primal_normal_u = grid_geometry.get(attrs.EDGE_NORMAL_U)
     primal_normal_v = grid_geometry.get(attrs.EDGE_NORMAL_V)
 
@@ -240,9 +220,7 @@ def test_tangent_orientation(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     result = grid_geometry.get(attrs.TANGENT_ORIENTATION)
     expected = grid_savepoint.tangent_orientation()
 
@@ -255,9 +233,7 @@ def test_cell_area(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     result = grid_geometry.get(attrs.CELL_AREA)
     expected = grid_savepoint.cell_areas()
 
@@ -270,9 +246,7 @@ def test_primal_normal_cell(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     primal_normal_cell_u_ref = grid_savepoint.primal_normal_cell_x().asnumpy()
     primal_normal_cell_v_ref = grid_savepoint.primal_normal_cell_y().asnumpy()
     primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
@@ -292,9 +266,7 @@ def test_dual_normal_cell(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     dual_normal_cell_u_ref = grid_savepoint.dual_normal_cell_x().asnumpy()
     dual_normal_cell_v_ref = grid_savepoint.dual_normal_cell_y().asnumpy()
     dual_normal_cell_u = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
@@ -310,9 +282,7 @@ def test_primal_normal_vert(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     primal_normal_vert_u_ref = grid_savepoint.primal_normal_vert_x().asnumpy()
     primal_normal_vert_v_ref = grid_savepoint.primal_normal_vert_y().asnumpy()
     primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
@@ -332,9 +302,7 @@ def test_dual_normal_vert(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     dual_normal_vert_u_ref = grid_savepoint.dual_normal_vert_x().asnumpy()
     dual_normal_vert_v_ref = grid_savepoint.dual_normal_vert_y().asnumpy()
     dual_normal_vert_u = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_U)
@@ -350,9 +318,7 @@ def test_cartesian_centers_edge(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.EDGE_CENTER_X)
     y = grid_geometry.get(attrs.EDGE_CENTER_Y)
@@ -391,9 +357,7 @@ def test_cartesian_centers_cell(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.CELL_CENTER_X)
     y = grid_geometry.get(attrs.CELL_CENTER_Y)
@@ -432,9 +396,7 @@ def test_vertex(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.VERTEX_X)
     y = grid_geometry.get(attrs.VERTEX_Y)
@@ -557,9 +519,7 @@ def test_geometry_mean_fields(
     experiment: definitions.Experiment,
     attr_name: str,
 ) -> None:
-    grid_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig()
-    )
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
     value = grid_geometry.get(attr_name)
     assert value == pytest.approx(value_ref)
@@ -578,24 +538,23 @@ def test_analytical_and_global_reduction_mean_fields_agree(
     experiment: definitions.Experiment,
     attr_name: str,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail(
-            "Analytical means are based on global grid counts and may differ from reductions on "
-            "limited-area grids."
-        )
-    analytical_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig(use_analytical_means=True)
+    analytical_config = dataclasses.replace(
+        experiment.config,
+        geometry=dataclasses.replace(experiment.config.geometry, use_analytical_means=True),
     )
-    reduction_geometry = grid_utils.get_grid_geometry(
-        backend, experiment, config=geometry_config.GeometryConfig(use_analytical_means=False)
+    reduction_config = dataclasses.replace(
+        experiment.config,
+        geometry=dataclasses.replace(experiment.config.geometry, use_analytical_means=False),
     )
+    analytical_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, analytical_config)
+    reduction_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, reduction_config)
     analytical_value = analytical_geometry.get(attr_name)
     reduction_value = reduction_geometry.get(attr_name)
     match experiment.grid.params.geometry_type:
         case icon_grid.GeometryType.TORUS:
-            rtol = 1e-14
+            rtol = 1e-15
         case icon_grid.GeometryType.ICOSAHEDRON:
-            rtol = 2e-3
+            rtol = 3e-2 if experiment.grid.limited_area else 2e-3
         case _ as geometry_type:
             raise ValueError(f"Unsupported geometry type '{geometry_type}'.")
     assert analytical_value == pytest.approx(reduction_value, rel=rtol)

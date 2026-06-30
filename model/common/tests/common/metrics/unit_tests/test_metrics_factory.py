@@ -17,7 +17,7 @@ from numpy import testing as np_testing
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry_config, horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -57,9 +57,7 @@ def _get_metrics_factory(
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(
-            backend, experiment, config=geometry_config.GeometryConfig()
-        )
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
         vertical_config = experiment.config.vertical_grid
         vertical_grid = v_grid.VerticalGrid(
