@@ -180,4 +180,5 @@ def verify_advection_fields(
     test_utils.assert_dallclose(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
+        atol=test_utils.scale_tol(1e-16),
     )

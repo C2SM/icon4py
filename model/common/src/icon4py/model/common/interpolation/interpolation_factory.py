@@ -198,7 +198,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "max_nudging_coefficient": gtx.float64(self._config.max_nudging_coefficient),
                 "nudge_efold_width": self._config.nudge_efold_width,
                 "nudge_zone_width": self._config.nudge_zone_width,
             },
