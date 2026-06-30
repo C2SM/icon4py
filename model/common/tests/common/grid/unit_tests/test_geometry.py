@@ -538,11 +538,6 @@ def test_analytical_and_global_reduction_mean_fields_agree(
     experiment: definitions.Experiment,
     attr_name: str,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail(
-            "Analytical means are based on global grid counts and may differ from reductions on "
-            "limited-area grids."
-        )
     analytical_config = dataclasses.replace(
         experiment.config,
         geometry=dataclasses.replace(experiment.config.geometry, use_analytical_means=True),
@@ -557,9 +552,9 @@ def test_analytical_and_global_reduction_mean_fields_agree(
     reduction_value = reduction_geometry.get(attr_name)
     match experiment.grid.params.geometry_type:
         case icon_grid.GeometryType.TORUS:
-            rtol = 1e-14
+            rtol = 1e-15
         case icon_grid.GeometryType.ICOSAHEDRON:
-            rtol = 2e-3
+            rtol = 3e-2 if experiment.grid.limited_area else 2e-3
         case _ as geometry_type:
             raise ValueError(f"Unsupported geometry type '{geometry_type}'.")
     assert analytical_value == pytest.approx(reduction_value, rel=rtol)
