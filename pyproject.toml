@@ -36,13 +36,15 @@ lint = [
   'validate-pyproject-schema-store[all]>=2025.06.13'
 ]
 scripts = [
+  "drawsvg>=2.0",
+  "f90nml>=1.5",
   "lazy-loader>=0.5",
+  "numpy>=1.23.3",
   "packaging>=24.0",
   "pytest>=8.0.1",
   "pyyaml>=6.0",
   "rich>=13.0.0",
   "typer>=0.15",
-  "f90nml>=1.5",
   {include-group = "build"}
 ]
 test = [
