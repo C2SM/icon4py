@@ -325,13 +325,11 @@ class Options:
     light: np.ndarray
     ambient: float
     draw_faces: bool
-    cell_centers: bool
-    edge_midpoints: bool
-    vertices: bool
-    circle_radius: float
-    square_size: float
-    vertex_radius: float
-    edge_width: float
+    # Marker sizes as a ratio of the sphere radius; 0 disables the marker.
+    cell_size: float
+    edge_size: float
+    vertex_size: float
+    line_width: float
     margin: float
     marker_facing: float
 
@@ -378,7 +376,7 @@ def render_icosahedron(
                     close=True,
                     fill=color,
                     stroke=opt.palette.edge,
-                    stroke_width=opt.edge_width,
+                    stroke_width=opt.line_width,
                     stroke_linejoin="round",
                 )
             )
@@ -387,11 +385,11 @@ def render_icosahedron(
 
     # --- Markers (drawn far-to-near, back-facing culled) ------------------- #
     markers: list[tuple[float, draw.DrawingBasicElement]] = []
-    if opt.cell_centers:
+    if opt.cell_size > 0.0:
         markers.extend(_cell_center_markers(vertices, faces, view, opt, to_pixels))
-    if opt.edge_midpoints:
+    if opt.edge_size > 0.0:
         markers.extend(_edge_midpoint_markers(vertices, edges, view, opt, to_pixels))
-    if opt.vertices:
+    if opt.vertex_size > 0.0:
         markers.extend(_vertex_markers(vertices, view, opt, to_pixels))
     for _, element in sorted(markers, key=lambda item: -item[0]):
         drawing.append(element)
@@ -405,7 +403,7 @@ def _render_wireframe(drawing, vertices, edges, *, view, opt, to_pixels) -> None
             continue
         pts = to_pixels(np.array([vertices[i], vertices[j]]))
         drawing.append(
-            draw.Lines(*pts, close=False, stroke=opt.palette.edge, stroke_width=opt.edge_width)
+            draw.Lines(*pts, close=False, stroke=opt.palette.edge, stroke_width=opt.line_width)
         )
 
 
@@ -415,7 +413,7 @@ def _cell_center_markers(vertices, faces, view, opt, to_pixels):
         normal = _normalize(centroid)
         if not front_facing(view, centroid, normal, opt.marker_facing):
             continue
-        outline = planar_disc(centroid, normal, opt.circle_radius)
+        outline = planar_disc(centroid, normal, opt.cell_size)
         depth = view.distance - (view.rot @ centroid)[2]
         yield (
             depth,
@@ -424,7 +422,7 @@ def _cell_center_markers(vertices, faces, view, opt, to_pixels):
                 close=True,
                 fill=opt.palette.circle,
                 stroke=opt.palette.circle_stroke,
-                stroke_width=opt.edge_width * 0.6,
+                stroke_width=opt.line_width * 0.6,
             ),
         )
 
@@ -436,7 +434,7 @@ def _edge_midpoint_markers(vertices, edges, view, opt, to_pixels):
         if not front_facing(view, midpoint, normal, opt.marker_facing):
             continue
         outline = planar_square(
-            midpoint, normal, opt.square_size, orient_dir=vertices[j] - vertices[i]
+            midpoint, normal, opt.edge_size, orient_dir=vertices[j] - vertices[i]
         )
         depth = view.distance - (view.rot @ midpoint)[2]
         yield (
@@ -446,7 +444,7 @@ def _edge_midpoint_markers(vertices, edges, view, opt, to_pixels):
                 close=True,
                 fill=opt.palette.square,
                 stroke=opt.palette.square_stroke,
-                stroke_width=opt.edge_width * 0.6,
+                stroke_width=opt.line_width * 0.6,
             ),
         )
 
@@ -456,7 +454,7 @@ def _vertex_markers(vertices, view, opt, to_pixels):
         normal = _normalize(vertex)
         if not front_facing(view, vertex, normal, opt.marker_facing):
             continue
-        outline = planar_disc(vertex, normal, opt.vertex_radius, samples=24)
+        outline = planar_disc(vertex, normal, opt.vertex_size, samples=24)
         depth = view.distance - (view.rot @ vertex)[2]
         yield (
             depth,
@@ -539,22 +537,22 @@ def generate_logo(
     faces: Annotated[
         bool, typer.Option("--faces/--wireframe", help="Solid shaded faces or wireframe.")
     ] = True,
-    cell_centers: Annotated[
-        bool, typer.Option("--cell-centers/--no-cell-centers", help="Circles at cell centres.")
-    ] = True,
-    edge_midpoints: Annotated[
-        bool,
-        typer.Option("--edge-midpoints/--no-edge-midpoints", help="Squares at edge midpoints."),
-    ] = True,
-    vertices: Annotated[
-        bool, typer.Option("--vertices/--no-vertices", help="Dots at vertices (off by default).")
-    ] = False,
+    cell_size: Annotated[
+        float,
+        typer.Option(help="Cell-centre circle radius, as a ratio of the sphere radius (0 = off)."),
+    ] = 0.13,
+    edge_size: Annotated[
+        float,
+        typer.Option(help="Edge-midpoint square side, as a ratio of the sphere radius (0 = off)."),
+    ] = 0.16,
+    vertex_size: Annotated[
+        float,
+        typer.Option(help="Vertex dot radius, as a ratio of the sphere radius (0 = off)."),
+    ] = 0.0,
+    line_width: Annotated[float, typer.Option(help="Mesh edge stroke width in pixels.")] = 2.5,
     wordmark: Annotated[
         bool, typer.Option("--wordmark/--no-wordmark", help="Also write the icon + wordmark SVG.")
     ] = True,
-    circle_radius: Annotated[float, typer.Option(help="Cell-centre circle radius.")] = 0.13,
-    square_size: Annotated[float, typer.Option(help="Edge-midpoint square side.")] = 0.16,
-    edge_width: Annotated[float, typer.Option(help="Edge stroke width in pixels.")] = 1.5,
     marker_facing: Annotated[
         float,
         typer.Option(help="Min. cosine for a marker to face the camera; drops grazing markers."),
@@ -574,13 +572,10 @@ def generate_logo(
         light=_normalize(_parse_vector(light)),
         ambient=ambient,
         draw_faces=faces,
-        cell_centers=cell_centers,
-        edge_midpoints=edge_midpoints,
-        vertices=vertices,
-        circle_radius=circle_radius,
-        square_size=square_size,
-        vertex_radius=circle_radius * 0.55,
-        edge_width=edge_width,
+        cell_size=cell_size,
+        edge_size=edge_size,
+        vertex_size=vertex_size,
+        line_width=line_width,
         margin=0.06,
         marker_facing=marker_facing,
     )
