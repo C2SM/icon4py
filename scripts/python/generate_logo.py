@@ -540,23 +540,23 @@ def generate_logo(
     cell_size: Annotated[
         float,
         typer.Option(help="Cell-centre circle radius, as a ratio of the sphere radius (0 = off)."),
-    ] = 0.13,
+    ] = 0.07,
     edge_size: Annotated[
         float,
         typer.Option(help="Edge-midpoint square side, as a ratio of the sphere radius (0 = off)."),
-    ] = 0.16,
+    ] = 0.09,
     vertex_size: Annotated[
         float,
         typer.Option(help="Vertex dot radius, as a ratio of the sphere radius (0 = off)."),
     ] = 0.0,
-    line_width: Annotated[float, typer.Option(help="Mesh edge stroke width in pixels.")] = 2.5,
+    line_width: Annotated[float, typer.Option(help="Mesh edge stroke width in pixels.")] = 6,
     wordmark: Annotated[
         bool, typer.Option("--wordmark/--no-wordmark", help="Also write the icon + wordmark SVG.")
     ] = True,
     marker_facing: Annotated[
         float,
         typer.Option(help="Min. cosine for a marker to face the camera; drops grazing markers."),
-    ] = 0.15,
+    ] = 0.05,
     background: Annotated[
         str, typer.Option(help="Background colour, or 'none' for transparent.")
     ] = "none",

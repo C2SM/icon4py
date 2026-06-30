@@ -36,31 +36,6 @@ through the unified dev-scripts entry point:
 ./scripts/run generate-logo --help
 ```
 
-### Useful flags
-
-| Flag | Default | Effect |
-| --- | --- | --- |
-| `--size` | `512` | Icon size in pixels (square). |
-| `--azimuth / --elevation / --roll` | `25 / 18 / 0` | Camera orientation (degrees). |
-| `--distance` | `4.5` | Camera distance; smaller means stronger perspective. |
-| `--light` | `-0.4,0.5,0.85` | Light direction `x,y,z` in the camera frame. |
-| `--ambient` | `0.45` | Ambient light fraction in `[0, 1]`. |
-| `--palette {atmosphere,vibrant,mono}` | `atmosphere` | Colour scheme. |
-| `--faces / --wireframe` | `--faces` | Solid shaded faces or wireframe. |
-| `--cell-size` | `0.13` | Cell-centre circle radius, as a ratio of the sphere radius (`0` = off). |
-| `--edge-size` | `0.16` | Edge-midpoint square side, as a ratio of the sphere radius (`0` = off). |
-| `--vertex-size` | `0.0` | Vertex dot radius, as a ratio of the sphere radius (`0` = off). |
-| `--line-width` | `2.5` | Mesh edge stroke width in pixels. |
-| `--marker-facing` | `0.15` | Min. cosine for a marker to face the camera; drops grazing markers. |
-| `--wordmark / --no-wordmark` | `--wordmark` | Whether to also write the wordmark variant. |
-| `--background` | `none` | Background colour, or `none` for transparent. |
-
-The marker sizes are ratios of the sphere radius, so they scale with the mesh; set any
-of them to `0` to turn that marker off (vertex dots are off by default).
-
 The committed `icon4py_icon.svg` and `icon4py_logo.svg` were produced with **all defaults**
 (i.e. a bare `./scripts/run generate-logo`), so the table above is also the exact recipe
 to reproduce them.
-
-The script depends only on NumPy and `drawsvg` (declared in the `scripts` dependency
-group), so no model packages need to be installed to regenerate the logo.
