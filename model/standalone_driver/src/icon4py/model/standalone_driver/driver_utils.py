@@ -415,12 +415,17 @@ def initialize_granules(
 
     tracer_advection_granule: advection.Advection | None = None
     if config.tracer_advection is not None:
+        lsq_pseudoinv = interpolation_field_source.export_field(
+            interpolation_attributes.LSQ_PSEUDOINV
+        )
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
             interpolation_state=advection_states.AdvectionInterpolationState(
-                geofac_div=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_DIV),
+                geofac_div=interpolation_field_source.export_field(
+                    interpolation_attributes.GEOFAC_DIV
+                ),
                 rbf_vec_coeff_e=interpolation_field_source.export_field(
                     interpolation_attributes.RBF_VEC_COEFF_E
                 ),
@@ -431,7 +436,6 @@ def initialize_granules(
                     interpolation_attributes.POS_ON_TPLANE_E_Y
                 ),
             ),
-            lsq_pseudoinv = interpolation_field_source.export_field(interpolation_attributes.LSQ_PSEUDOINV)
             least_squares_state=advection_states.AdvectionLeastSquaresState(
                 lsq_pseudoinv_1=lsq_pseudoinv[:, 0, :],
                 lsq_pseudoinv_2=lsq_pseudoinv[:, 1, :],
