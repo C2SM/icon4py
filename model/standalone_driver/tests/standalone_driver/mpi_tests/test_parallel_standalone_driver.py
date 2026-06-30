@@ -39,44 +39,26 @@ _log = logging.getLogger(__file__)
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "experiment_description, end_of_simulation",
     [
-        (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
+        pytest.param(
+            test_defs.Experiments.JW,
+            driver_config.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration",
+        ),
+        pytest.param(
+            test_defs.Experiments.JW,
+            driver_config.RelativeTime(days=7),
+            marks=[pytest.mark.level("validation")],
+            id="validation",
+        ),
     ],
 )
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-@pytest.mark.level("integration")
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
-    download_ser_data: None,
-    experiment_description: test_defs.ExperimentDescription,
-    end_of_simulation: driver_config.EndOfSimulation,
-    tmp_path: pathlib.Path,
-    process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
-) -> None:
-    _run_standalone_driver_compare_single_multi_rank(
-        experiment_description=experiment_description,
-        end_of_simulation=end_of_simulation,
-        tmp_path=tmp_path,
-        process_props=process_props,
-        backend=backend,
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "experiment_description, end_of_simulation",
-    [
-        (test_defs.Experiments.JW, driver_config.RelativeTime(days=7)),
-    ],
-)
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-@pytest.mark.level("validation")
-def test_standalone_driver_compare_single_multi_rank_validation(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: driver_config.EndOfSimulation,
