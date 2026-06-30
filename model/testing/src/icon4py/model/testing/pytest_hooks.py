@@ -151,7 +151,7 @@ def pytest_collection_modifyitems(config, items):
                         reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
                     )
                 )
-        elif test_level != "unit":
+        elif test_level not in ("unit", "any"):
             item.add_marker(
                 pytest.mark.skip(
                     reason=f"Selected level '{test_level}' does not match the implicit level 'unit' for this test."
