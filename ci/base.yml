@@ -70,12 +70,6 @@ variables:
     # defaults for potentially increased concurrency on the GPU.
     CUDA_DEVICE_MAX_CONNECTIONS: 8
     CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
-    CXXFLAGS: "-ffp-contract=off"
-    # Signal to (selected) tests that they should expect bitwise identical
-    # results between single- and multi-rank runs. This goes hand-in-hand with
-    # compiler flags like -ffp-contract=off and others that may be required to
-    # actually get bitwise identical results.
-    ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE: "1"
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
@@ -159,11 +153,24 @@ variables:
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
+    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' && $LEVEL == 'validation'
+      variables:
+        # Signal to (selected) tests that they should expect bitwise identical
+        # results between single- and multi-rank runs. This goes hand-in-hand with
+        # compiler flags like -ffp-contract=off and others that may be required to
+        # actually get bitwise identical results.
+        ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE: "1"
+        CXXFLAGS: "-ffp-contract=off"
+        # TODO(msimberg): Decrease this when there's more parallelism for compilation.
+        SLURM_TIMELIMIT: '02:00:00'
+        # TODO(msimberg): Use shared partition when time limit can be set to at
+        # most an hour. The shared partition only accepts jobs maximum an hour long.
+        SLURM_PARTITION: "normal"
     - if: ($MODEL_MPI_SUBPACKAGE == 'standalone_driver' || $MODEL_MPI_SUBPACKAGE == 'common') && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
       variables:
-        # TODO: Decrease this when there's more parallelism for compilation.
+        # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
-        # TODO: Use shared partition when time limit can be set to at
+        # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
     - if: $MODEL_MPI_SUBPACKAGE == 'common' || $MODEL_MPI_SUBPACKAGE == 'standalone_driver'
