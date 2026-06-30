@@ -1036,7 +1036,7 @@ def compute_e_bln_c_s_torus(
         e_bln_c_s
     """
     array_ns = data_alloc.array_namespace(c2e)
-    return array_ns.full_like(c2e, 1.0 / 3.0)
+    return array_ns.full(c2e.shape, 1.0 / 3.0)
 
 
 def compute_pos_on_tplane_e_x_y(
