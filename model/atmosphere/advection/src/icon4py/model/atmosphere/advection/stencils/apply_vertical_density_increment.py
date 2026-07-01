@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -21,7 +21,7 @@ def _apply_vertical_density_increment(
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     k_offset_up_low = p_dtime * (
-        p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v(KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
     return rhodz_ast + k_offset_up_low
 

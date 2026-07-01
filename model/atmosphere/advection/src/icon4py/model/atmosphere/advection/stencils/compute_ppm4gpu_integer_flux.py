@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, astype, floor, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -33,15 +33,15 @@ def _sum_neighbor_contributions_all(
     js_gt4 = js >= 4.0
 
     prod_p0 = where(mask1 & js_gt0, p_cc * p_cellmass_now, 0.0)
-    prod_p1 = where(mask1 & js_gt1, p_cc(Koff[1]) * p_cellmass_now(Koff[1]), 0.0)
-    prod_p2 = where(mask1 & js_gt2, p_cc(Koff[2]) * p_cellmass_now(Koff[2]), 0.0)
-    prod_p3 = where(mask1 & js_gt3, p_cc(Koff[3]) * p_cellmass_now(Koff[3]), 0.0)
-    prod_p4 = where(mask1 & js_gt4, p_cc(Koff[4]) * p_cellmass_now(Koff[4]), 0.0)
-    prod_m0 = where(mask2 & js_gt0, p_cc(Koff[-1]) * p_cellmass_now(Koff[-1]), 0.0)
-    prod_m1 = where(mask2 & js_gt1, p_cc(Koff[-2]) * p_cellmass_now(Koff[-2]), 0.0)
-    prod_m2 = where(mask2 & js_gt2, p_cc(Koff[-3]) * p_cellmass_now(Koff[-3]), 0.0)
-    prod_m3 = where(mask2 & js_gt3, p_cc(Koff[-4]) * p_cellmass_now(Koff[-4]), 0.0)
-    prod_m4 = where(mask2 & js_gt4, p_cc(Koff[-5]) * p_cellmass_now(Koff[-5]), 0.0)
+    prod_p1 = where(mask1 & js_gt1, p_cc(KDim + 1) * p_cellmass_now(KDim + 1), 0.0)
+    prod_p2 = where(mask1 & js_gt2, p_cc(KDim + 2) * p_cellmass_now(KDim + 2), 0.0)
+    prod_p3 = where(mask1 & js_gt3, p_cc(KDim + 3) * p_cellmass_now(KDim + 3), 0.0)
+    prod_p4 = where(mask1 & js_gt4, p_cc(KDim + 4) * p_cellmass_now(KDim + 4), 0.0)
+    prod_m0 = where(mask2 & js_gt0, p_cc(KDim - 1) * p_cellmass_now(KDim - 1), 0.0)
+    prod_m1 = where(mask2 & js_gt1, p_cc(KDim - 2) * p_cellmass_now(KDim - 2), 0.0)
+    prod_m2 = where(mask2 & js_gt2, p_cc(KDim - 3) * p_cellmass_now(KDim - 3), 0.0)
+    prod_m3 = where(mask2 & js_gt3, p_cc(KDim - 4) * p_cellmass_now(KDim - 4), 0.0)
+    prod_m4 = where(mask2 & js_gt4, p_cc(KDim - 5) * p_cellmass_now(KDim - 5), 0.0)
 
     prod_jks = (
         prod_p0

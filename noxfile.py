@@ -203,6 +203,7 @@ def test_model_mpi(
             "--benchmark-disable",
             "-n0",
             "--only-mpi",
+            "-k mpi_tests",
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],

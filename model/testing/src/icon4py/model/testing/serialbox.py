@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Sequence
-from typing import Final, Literal
+from typing import Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -20,6 +20,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
+from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 
 
@@ -28,14 +29,6 @@ log = logging.getLogger(__name__)
 type TimeIndex = Literal[0, 1]
 type FourIndex = Literal[0, 1, 2, 3]
 type TwoIndex = Literal[0, 1]
-
-#: ICON default indices for the tracers, see mo_advection_utils.f90
-QV: Final[int] = 0
-QC: Final[int] = 1
-QI: Final[int] = 2
-QR: Final[int] = 3
-QS: Final[int] = 4
-QG: Final[int] = 5
 
 
 type TracerIndex = Literal[QV, QC, QI, QR, QS, QG]

@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): this stencil has no test
@@ -37,19 +37,19 @@ def _compute_courant_number_below(
     z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_now, 0.0)
 
     mass_gt_cellmass_p1 = mass_gt_cellmass_p0 & where(
-        z_mass_pos & in_bounds_p1, z_mass >= p_cellmass_now(Koff[1]), False
+        z_mass_pos & in_bounds_p1, z_mass >= p_cellmass_now(KDim + 1), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(Koff[1]), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(KDim + 1), 0.0)
 
     mass_gt_cellmass_p2 = mass_gt_cellmass_p1 & where(
-        z_mass_pos & in_bounds_p2, z_mass >= p_cellmass_now(Koff[2]), False
+        z_mass_pos & in_bounds_p2, z_mass >= p_cellmass_now(KDim + 2), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(Koff[2]), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(KDim + 2), 0.0)
 
     mass_gt_cellmass_p3 = mass_gt_cellmass_p2 & where(
-        z_mass_pos & in_bounds_p3, z_mass >= p_cellmass_now(Koff[3]), False
+        z_mass_pos & in_bounds_p3, z_mass >= p_cellmass_now(KDim + 3), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(Koff[3]), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(KDim + 3), 0.0)
 
     z_cfl = z_cfl + where(mass_gt_cellmass_p0, 1.0, 0.0)
     z_cfl = z_cfl + where(mass_gt_cellmass_p1, 1.0, 0.0)
@@ -57,10 +57,10 @@ def _compute_courant_number_below(
     z_cfl = z_cfl + where(mass_gt_cellmass_p3, 1.0, 0.0)
 
     p_cellmass_now_jks = p_cellmass_now
-    p_cellmass_now_jks = where(mass_gt_cellmass_p0, p_cellmass_now(Koff[1]), p_cellmass_now_jks)
-    p_cellmass_now_jks = where(mass_gt_cellmass_p1, p_cellmass_now(Koff[2]), p_cellmass_now_jks)
-    p_cellmass_now_jks = where(mass_gt_cellmass_p2, p_cellmass_now(Koff[3]), p_cellmass_now_jks)
-    p_cellmass_now_jks = where(mass_gt_cellmass_p3, p_cellmass_now(Koff[4]), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p0, p_cellmass_now(KDim + 1), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p1, p_cellmass_now(KDim + 2), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p2, p_cellmass_now(KDim + 3), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p3, p_cellmass_now(KDim + 4), p_cellmass_now_jks)
 
     z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, 0.0)
     z_cfl = z_cfl + where(z_cflfrac < 1.0, z_cflfrac, 1.0 - dbl_eps)
@@ -85,30 +85,30 @@ def _compute_courant_number_above(
     in_bounds_m3 = k >= slevp1_ti + 4
 
     mass_gt_cellmass_m0 = where(
-        z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_now(Koff[-1]), False
+        z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_now(KDim - 1), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(Koff[-1]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(KDim - 1), 0.0)
 
     mass_gt_cellmass_m1 = mass_gt_cellmass_m0 & where(
-        z_mass_neg & in_bounds_m1, abs(z_mass) >= p_cellmass_now(Koff[-2]), False
+        z_mass_neg & in_bounds_m1, abs(z_mass) >= p_cellmass_now(KDim - 2), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(Koff[-2]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(KDim - 2), 0.0)
 
     mass_gt_cellmass_m2 = mass_gt_cellmass_m1 & where(
-        z_mass_neg & in_bounds_m2, abs(z_mass) >= p_cellmass_now(Koff[-3]), False
+        z_mass_neg & in_bounds_m2, abs(z_mass) >= p_cellmass_now(KDim - 3), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(Koff[-3]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(KDim - 3), 0.0)
 
     mass_gt_cellmass_m3 = mass_gt_cellmass_m2 & where(
-        z_mass_neg & in_bounds_m3, abs(z_mass) >= p_cellmass_now(Koff[-4]), False
+        z_mass_neg & in_bounds_m3, abs(z_mass) >= p_cellmass_now(KDim - 4), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(Koff[-4]), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(KDim - 4), 0.0)
 
-    p_cellmass_now_jks = p_cellmass_now(Koff[-1])
-    p_cellmass_now_jks = where(mass_gt_cellmass_m0, p_cellmass_now(Koff[-2]), p_cellmass_now_jks)
-    p_cellmass_now_jks = where(mass_gt_cellmass_m1, p_cellmass_now(Koff[-3]), p_cellmass_now_jks)
-    p_cellmass_now_jks = where(mass_gt_cellmass_m2, p_cellmass_now(Koff[-4]), p_cellmass_now_jks)
-    p_cellmass_now_jks = where(mass_gt_cellmass_m3, p_cellmass_now(Koff[-5]), p_cellmass_now_jks)
+    p_cellmass_now_jks = p_cellmass_now(KDim - 1)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m0, p_cellmass_now(KDim - 2), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m1, p_cellmass_now(KDim - 3), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m2, p_cellmass_now(KDim - 4), p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m3, p_cellmass_now(KDim - 5), p_cellmass_now_jks)
 
     z_cfl = z_cfl - where(mass_gt_cellmass_m0, 1.0, 0.0)
     z_cfl = z_cfl - where(mass_gt_cellmass_m1, 1.0, 0.0)

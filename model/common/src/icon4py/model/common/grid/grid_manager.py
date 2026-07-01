@@ -368,6 +368,11 @@ class GridManager:
         return refinement_control_fields
 
     @property
+    def file_path(self) -> str:
+        """Path of the ICON grid file this manager reads from."""
+        return self._file_name
+
+    @property
     def grid(self) -> icon.IconGrid:
         return self._grid
 
