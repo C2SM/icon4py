@@ -41,6 +41,7 @@ members = [
   "icon4py-atmosphere-dycore",
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
+  "icon4py-atmosphere-physics-interface",
   "icon4py-bindings",
   "icon4py-common",
   "icon4py-driver",
@@ -2320,6 +2321,7 @@ dependencies = [
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
+  {name = "icon4py-atmosphere-physics-interface"},
   {name = "icon4py-common"},
   {name = "icon4py-driver"},
   {name = "icon4py-standalone-driver"}
@@ -2435,6 +2437,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
+  {name = "icon4py-atmosphere-physics-interface", editable = "model/atmosphere/subgrid_scale_physics/physics_interface"},
   {name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
@@ -2664,6 +2667,21 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
+name = "icon4py-atmosphere-physics-interface"
+source = {editable = "model/atmosphere/subgrid_scale_physics/physics_interface"}
+version = "0.2.0"
+
+[package.metadata]
+requires-dist = [
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
   {name = "cffi"},
   {name = "click"},
   {name = "gt4py"},
@@ -2849,6 +2867,8 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
+  {name = "icon4py-atmosphere-muphys"},
+  {name = "icon4py-atmosphere-physics-interface"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "icon4py-testing"},
   {name = "packaging"},
@@ -2865,6 +2885,8 @@ requires-dist = [
   {name = "gt4py", specifier = "==1.1.11"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
+  {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
+  {name = "icon4py-atmosphere-physics-interface", editable = "model/atmosphere/subgrid_scale_physics/physics_interface"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "packaging", specifier = ">=20.0"},

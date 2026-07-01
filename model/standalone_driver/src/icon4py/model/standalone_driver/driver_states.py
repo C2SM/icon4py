@@ -107,19 +107,17 @@ class ModelTimeVariables:
 
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
+        self.simulation_current_datetime = config.start_of_simulation
         match config.end_of_simulation:
             case driver_config.NumTimeSteps() as n:
-                self.n_time_steps = n
-                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
             case driver_config.RelativeTime() as relative:
-                self.n_time_steps = int(relative / config.dtime)
-                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + relative
             case driver_config.AbsoluteTime() as absolute:
-                self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
-                self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = absolute
+        self.n_time_steps = int(
+            (self.simulation_end_datetime - config.start_of_simulation) / config.dtime
+        )
         self.dtime = config.dtime
         self.elapsed_time_in_seconds = ta.wpfloat("0.0")
         self.ndyn_substeps_var = config.ndyn_substeps

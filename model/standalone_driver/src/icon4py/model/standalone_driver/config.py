@@ -23,6 +23,7 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
@@ -68,6 +69,9 @@ class DriverConfig:
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     enable_output: bool = False
+
+    # TODO (Yilu): we can add a post_int()
+    # TODO (Yilu): use the name from ModelTimeVariables
 
     @classmethod
     def from_fortran_dict(
@@ -115,6 +119,7 @@ class ExperimentConfig:
     tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+    muphys: muphys_config.MuphysConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}
@@ -179,14 +184,14 @@ def read_config(
     tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
-    # If these two namelists are missing it means that the experiment was run
-    # without microphysics and we have to skip parsing the graupel config which
-    # relies on some of these parameters.
     graupel_config = (
         graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
         if do_physics
         else None
     )
+
+    # TODO (Yilu): setup muphys_config here, muphys_config  =  MuphysConfig(qnc = <namelist key, or per-experiment value>)
+    # TODO (Yilu): where does qnc come from? namelist or experiment value
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
@@ -217,6 +222,7 @@ def read_config(
         tracer_config=tracer_config,
         tracer_advection=tracer_advection_config,
         graupel=graupel_config,
+        # TODO (Yilu): muphys = muphys_config
         initial_condition=initial_condition_config,
         driver=driver_cfg,
     )
