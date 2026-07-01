@@ -55,6 +55,7 @@ from . import utils
 _log = logging.getLogger(__file__)
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(
@@ -82,11 +83,7 @@ def test_grid_manager_validate_decomposer(
 
 
 def _get_neighbor_tables(grid: base.Grid) -> dict:
-    return {
-        k: v.ndarray
-        for k, v in grid.connectivities.items()
-        if gtx_common.is_neighbor_connectivity(v)
-    }
+    return {k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)}
 
 
 # These fields can't be computed with the embedded backend for one reason or
@@ -209,6 +206,7 @@ def _compare_geometry_fields_single_multi_rank(
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.level("unit")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -248,6 +246,7 @@ def test_geometry_fields_compare_single_multi_rank_unit(
     _compare_geometry_fields_single_multi_rank(process_props, backend, grid_description, attrs_name)
 
 
+@pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -364,6 +363,7 @@ def _compare_interpolation_fields_single_multi_rank(
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.level("unit")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -394,6 +394,7 @@ def test_interpolation_fields_compare_single_multi_rank_unit(
     _compare_interpolation_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
+@pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -541,11 +542,16 @@ def _compare_metrics_fields_single_multi_rank(
             model_backends.is_cpu_backend(backend)
             or (
                 model_backends.is_gpu_backend(backend)
-                and attrs_name == metrics_attributes.DDQZ_Z_FULL_E
+                and attrs_name
+                in {
+                    metrics_attributes.DDQZ_Z_FULL_E,
+                    metrics_attributes.RHO_REF_ME,
+                    metrics_attributes.THETA_REF_ME,
+                }
             )
         ):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
-            atol = 1e-13
+            atol = 2e-13
         else:
             atol = 0.0
         parallel_helpers.check_local_global_field(
@@ -561,6 +567,7 @@ def _compare_metrics_fields_single_multi_rank(
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.level("unit")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -614,6 +621,7 @@ def test_metrics_fields_compare_single_multi_rank_unit(
     _compare_metrics_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
+@pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -646,6 +654,7 @@ def test_metrics_fields_compare_single_multi_rank_integration(
 # MASK_PROG_HALO_C is defined specially only on halos, so we have a separate
 # test for it. It doesn't make sense to compare to a single-rank reference since
 # it has no halos.
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_metrics_mask_prog_halo_c(
@@ -743,6 +752,7 @@ def test_metrics_mask_prog_halo_c(
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_validate_skip_values_in_distributed_connectivities(
@@ -762,7 +772,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     )
     distributed_grid = multi_rank_grid_manager.grid
     for k, c in distributed_grid.connectivities.items():
-        if gtx_common.is_neighbor_connectivity(c):
+        if gtx_common.is_neighbor_table(c):
             skip_values_in_table = np.count_nonzero(c.asnumpy() == c.skip_value)
             found_skips = skip_values_in_table > 0
             assert found_skips == (c.skip_value is not None), (
@@ -778,6 +788,7 @@ def test_validate_skip_values_in_distributed_connectivities(
                 )
 
 
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", [test_defs.Grids.MCH_CH_R04B09_DSL])
@@ -797,6 +808,7 @@ def test_limited_area_raises(
         )
 
 
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(

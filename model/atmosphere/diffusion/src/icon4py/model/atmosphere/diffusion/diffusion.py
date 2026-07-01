@@ -6,13 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import enum
 import functools
 import logging
 import math
 import sys
-from typing import Final
+import typing
+from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -43,6 +46,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -131,6 +135,7 @@ class ForcingType(int, enum.Enum):
     NWP = 3  #: Numerical Weather Prediction forcing (inwp)
 
 
+@dataclasses.dataclass(kw_only=True)
 class DiffusionConfig:
     """
     Contains necessary parameter to configure a diffusion run.
@@ -143,170 +148,261 @@ class DiffusionConfig:
     # TODO(halungge): to be read from config
     # TODO(halungge):  handle dependencies on other namelists (see below...)
 
-    def __init__(
-        self,
-        *,
-        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w: bool = True,
-        hdiff_vn: bool = True,
-        hdiff_temp: bool = True,
-        hdiff_smag_w: bool = False,
-        type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
-        smag_3d: bool = False,
-        type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
-        hdiff_efdt_ratio: float = 36.0,
-        hdiff_w_efdt_ratio: float = 15.0,
-        smagorinski_scaling_factor: float = 0.015,
-        smagorinski_scaling_factor2: float = 2e-6
-        * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0))),
-        smagorinski_scaling_factor3: float = 0.0,
-        smagorinski_scaling_factor4: float = 1.0,
-        smagorinski_scaling_height: float = 32500.0,
-        smagorinski_scaling_height2: float = 1600.0
-        + 50000.0
-        + math.sqrt(1600.0 * (1600 + 50000.0)),
-        smagorinski_scaling_height3: float = 50000.0,
-        smagorinski_scaling_height4: float = 90000.0,
-        n_substeps: int = 5,
-        zdiffu_t: bool = True,
-        velocity_boundary_diffusion_denom: float = 200.0,
-        temperature_boundary_diffusion_denom: float = 135.0,
-        max_nudging_coefficient: float = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
-        * 0.02,
-        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-        iforcing: ForcingType = ForcingType.NO_FORCING,
-        a_hshr: float = 1.0,
-        loutshs: bool = False,
-    ):
-        """Set the diffusion configuration parameters with the ICON default values."""
-        # parameters from namelist diffusion_nml
+    diffusion_type: typing.Annotated[
+        DiffusionType,
+        common_conf_opt.ConfigOption(
+            description="Order of Nabla operator for diffusion.",
+            icon_equivalent=common_conf_opt.IconOption("hdiff_order", ("diffusion_nml",)),
+        ),
+    ] = DiffusionType.SMAGORINSKY_4TH_ORDER
 
-        self.diffusion_type: int = diffusion_type
+    apply_to_vertical_wind: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="If True, apply diffusion to the vertical wind field.",
+            icon_equivalent=common_conf_opt.IconOption("lhdiff_w", ("diffusion_nml",)),
+        ),
+    ] = True
 
-        #: If True, apply diffusion on the vertical wind field
-        #: Called 'lhdiff_w' in mo_diffusion_nml.f90
-        self.apply_to_vertical_wind: bool = hdiff_w
+    apply_to_horizontal_wind: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="If true, apply diffusion on the horizontal wind field.",
+            icon_equivalent=common_conf_opt.IconOption("lhdiff_vn", ("diffusion_nml",)),
+        ),
+    ] = True
 
-        #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
-        #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
-        self.apply_to_horizontal_wind = hdiff_vn
+    apply_to_temperature: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="If True, apply horizontal diffusion to temperature field.",
+            icon_equivalent=common_conf_opt.IconOption("lhdiff_temp", ("diffusion_nml",)),
+        ),
+    ] = True
 
-        #:  If True, apply horizontal diffusion to temperature field
-        #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
-        self.apply_to_temperature: bool = hdiff_temp
+    apply_smag_diff_to_vertical_wind: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="If True, apply Smagorinsky diffusion to vertical wind field.",
+            icon_equivalent=common_conf_opt.IconOption(
+                "lhdiff_smag_w", ("diffusion_nml",), list_to_value=True
+            ),
+        ),
+    ] = False
 
-        #: If True, compute Smagorinsky diffusion to vertical wind field
-        #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
-        self.apply_smag_diff_to_vertical_wind: bool = hdiff_smag_w
+    compute_3d_smag_coeff: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="If True, compute 3D Smagorinsky diffusion coefficient.",
+            icon_equivalent=common_conf_opt.IconOption(
+                "lsmag_3d", ("diffusion_nml",), list_to_value=True
+            ),
+        ),
+    ] = False
 
-        #: If True, compute 3D Smagorinsky diffusion coefficient
-        #: Called 'lsmag_3d' in mo_diffusion_nml.f90
-        self.compute_3d_smag_coeff: bool = smag_3d
+    type_vn_diffu: typing.Annotated[
+        SmagorinskyStencilType,
+        common_conf_opt.ConfigOption(
+            description="Reconstruction method used for Smagorinsky diffusion.",
+            icon_equivalent=common_conf_opt.IconOption("itype_vn_diffu", ("diffusion_nml",)),
+        ),
+    ] = SmagorinskyStencilType.DIAMOND_VERTICES
 
-        #: Options for discretizing the Smagorinsky momentum diffusion
-        #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
-        self.type_vn_diffu: int = type_vn_diffu
+    type_t_diffu: typing.Annotated[
+        TemperatureDiscretizationType,
+        common_conf_opt.ConfigOption(
+            description="Options for discretizing the Smagorinsky temperature diffusion.",
+            icon_equivalent=common_conf_opt.IconOption("itype_t_diffu", ("diffusion_nml",)),
+        ),
+    ] = TemperatureDiscretizationType.HETEROGENEOUS
 
-        #: Options for discretizing the Smagorinsky temperature diffusion
-        #: Called 'itype_t_diffu' in mo_diffusion_nml.f90
-        self.type_t_diffu: int = type_t_diffu
+    hdiff_efdt_ratio: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Ratio of e-folding time to (2*)time step.",
+            icon_equivalent=common_conf_opt.IconOption("hdiff_efdt_ratio", ("diffusion_nml",)),
+        ),
+    ] = 36.0
 
-        #: Ratio of e-folding time to (2*)time step
-        #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
-        self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
+    hdiff_w_efdt_ratio: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Ratio of e-folding time to time step for w diffusion (NH only).",
+            icon_equivalent=common_conf_opt.IconOption("hdiff_w_efdt_ratio", ("diffusion_nml",)),
+        ),
+    ] = 15.0
 
-        #: Ratio of e-folding time to time step for w diffusion (NH only)
-        #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
-        self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
+    # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
+    smagorinski_scaling_factor: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Smagorinsky factor for z <= smagorinski_scaling_height (constant base value).",
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac", ("diffusion_nml",)),
+        ),
+    ] = 0.015
 
-        # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
-        #: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value)
-        #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
+    smagorinski_scaling_factor2: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and"
+                "start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1)."
+            ),
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac2", ("diffusion_nml",)),
+        ),
+    ] = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
 
-        #: Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and
-        #: start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1).
-        #: Called 'hdiff_smag_fac2' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor2: float = smagorinski_scaling_factor2
+    smagorinski_scaling_factor3: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the"
+                "quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients."
+            ),
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac3", ("diffusion_nml",)),
+        ),
+    ] = 0.0
 
-        #: Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the
-        #: quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients.
-        #: Called 'hdiff_smag_fac3' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor3: float = smagorinski_scaling_factor3
+    smagorinski_scaling_factor4: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value)."
+                "Also the third control point that defines the quadratic segment together with factor2 and factor3."
+            ),
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac4", ("diffusion_nml",)),
+        ),
+    ] = 1.0
 
-        #: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value).
-        #: Also the third control point that defines the quadratic segment together with factor2 and factor3.
-        #: Called 'hdiff_smag_fac4' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor4: float = smagorinski_scaling_factor4
+    smagorinski_scaling_height: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor "
+                "below this height."
+            ),
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z", ("diffusion_nml",)),
+        ),
+    ] = 32500.0
 
-        #: Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor below this height.
-        #: Called 'hdiff_smag_z' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height: float = smagorinski_scaling_height
+    smagorinski_scaling_height2: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Transition height between linear and quadratic segments.",
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z2", ("diffusion_nml",)),
+        ),
+    ] = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
 
-        #: Transition height between linear and quadratic segments.
-        #: Called 'hdiff_smag_z2' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height2: float = smagorinski_scaling_height2
+    smagorinski_scaling_height3: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Interior control point height within the quadratic segment (height2 <= height3 <= height4).",
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z3", ("diffusion_nml",)),
+        ),
+    ] = 50000.0
 
-        #: Interior control point height within the quadratic segment (height2 <= height3 <= height4).
-        #: Called 'hdiff_smag_z3' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height3: float = smagorinski_scaling_height3
+    smagorinski_scaling_height4: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Upper boundary of the quadratic segment: factor is constant at "
+                "smagorinski_scaling_factor4 above this height."
+            ),
+            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z4", ("diffusion_nml",)),
+        ),
+    ] = 90000.0
 
-        #: Upper boundary of the quadratic segment: factor is constant at smagorinski_scaling_factor4 above this height.
-        #: Called 'hdiff_smag_z4' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_height4: float = smagorinski_scaling_height4
+    apply_zdiffusion_t: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="If True, apply truly horizontal temperature diffusion over steep slopes.",
+            icon_equivalent=common_conf_opt.IconOption("l_zdiffu_t", ("nonhydrostatic_nml",)),
+        ),
+    ] = True
 
-        #: If True, apply truly horizontal temperature diffusion over steep slopes
-        #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
-        self.apply_zdiffusion_t: bool = zdiffu_t
+    ndyn_substeps: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Number of dynamics substeps per fast-physics step.",
+            icon_equivalent=common_conf_opt.IconOption("ndyn_substeps", ("nonhydrostatic_nml",)),
+        ),
+    ] = 5
 
-        # from other namelists:
-        # from parent namelist mo_nonhydrostatic_nml
+    temperature_boundary_diffusion_denominator: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Denominator for temperature boundary diffusion.",
+            icon_equivalent=common_conf_opt.IconOption("denom_diffu_t", ("gridref_nml",)),
+        ),
+    ] = 135.0
 
-        #: Number of dynamics substeps per fast-physics step
-        #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
-        self.ndyn_substeps: int = n_substeps
+    velocity_boundary_diffusion_denominator: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Denominator for velocity boundary diffusion.",
+            icon_equivalent=common_conf_opt.IconOption("denom_diffu_v", ("gridref_nml",)),
+        ),
+    ] = 200.0
 
-        # namelist mo_gridref_nml.f90
+    max_nudging_coefficient: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Parameter describing the lateral boundary nudging in limited area mode."
+                "Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,"
+                "from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
+            ),
+        ),
+    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
 
-        #: Denominator for temperature boundary diffusion
-        #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-        self.temperature_boundary_diffusion_denominator: float = (
-            temperature_boundary_diffusion_denom
-        )
+    shear_type: typing.Annotated[
+        TurbulenceShearForcingType,
+        common_conf_opt.ConfigOption(
+            description="Type of shear forcing used in turbulence.",
+            icon_equivalent=common_conf_opt.IconOption("itype_sher", ("turbdiff_nml",)),
+        ),
+    ] = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
 
-        #: Denominator for velocity boundary diffusion
-        #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-        self.velocity_boundary_diffusion_denominator: float = velocity_boundary_diffusion_denom
+    iforcing: typing.Annotated[
+        ForcingType,
+        common_conf_opt.ConfigOption(
+            description="Type of physics forcing.",
+            icon_equivalent=common_conf_opt.IconOption("iforcing", ("run_nml",)),
+        ),
+    ] = ForcingType.NO_FORCING
 
-        # parameters from namelist: mo_interpol_nml.f90
+    a_hshr: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling factor for horizontal shear production term.",
+            icon_equivalent=common_conf_opt.IconOption("a_hshr", ("turbdiff_nml",)),
+        ),
+    ] = 1.0
 
-        #: Parameter describing the lateral boundary nudging in limited area mode.
-        #:
-        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
-        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        self.max_nudging_coefficient: float = max_nudging_coefficient
+    loutshs: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Output flag for horizontal shear."
+                "Called 'loutshs' in mo_turbdiff_nml.f90, "
+                "not a namelist parameter: its default is FALSE and "
+                "only set to true in fortran `IF (.NOT. ldynamics)`."
+            )
+        ),
+    ] = False
 
-        #: Type of shear forcing used in turbulence
-        #: Called 'itype_sher' in mo_turbdiff_nml.f90
-        self.shear_type = shear_type
-
-        #: Type of physics forcing
-        #: Called 'iforcing' in mo_run_nml.f90
-        self.iforcing: ForcingType = iforcing
-
-        #: Scaling factor for horizontal shear production term
-        #: Called 'a_hshr' in mo_turbdiff_nml.f90
-        self.a_hshr: float = a_hshr
-
-        #: Output flag for horizontal shear
-        #: Called 'loutshs' in mo_turbdiff_nml.f90
-        #: not a namelist parameter: its default is FALSE and only set to true in fortran `IF (.NOT. ldynamics)`
-        self.loutshs: bool = loutshs
+    def __post_init__(self) -> None:
 
         self._validate()
 
-    def _validate(self):
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> DiffusionConfig:
+        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
+
+    def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""
         if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
             raise NotImplementedError(
@@ -343,7 +439,7 @@ class DiffusionConfig:
             )
 
     @functools.cached_property
-    def substep_as_float(self):
+    def substep_as_float(self) -> float:
         return float(self.ndyn_substeps)
 
 
@@ -359,7 +455,7 @@ class DiffusionParams:
     smagorinski_factor: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
     smagorinski_height: Final[tuple[float, float, float, float]] = dataclasses.field(init=False)
 
-    def __post_init__(self, config):
+    def __post_init__(self, config: DiffusionConfig) -> None:
         object.__setattr__(
             self,
             "K2",
@@ -414,7 +510,7 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
-    ):
+    ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
@@ -425,6 +521,8 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+
+        assert self._cell_params.area is not None
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange,
@@ -459,7 +557,10 @@ class Diffusion:
                 "horizontal_start": self._vertex_start_lateral_boundary_level_2,
                 "horizontal_end": self._vertex_end_local,
             },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
             offset_provider=self._grid.connectivities,
         )
 
@@ -538,8 +639,8 @@ class Diffusion:
                 "interior_idx": self._cell_start_interior,
             },
             vertical_sizes={
-                "vertical_start": 0,
-                "vertical_end": self._grid.num_levels,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
                 "nrdmax": gtx.int32(
                     self._vertical_grid.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
@@ -598,7 +699,7 @@ class Diffusion:
         self.init_diffusion_local_fields_for_regular_timestep = setup_program(
             backend=backend,
             program=init_diffusion_local_fields_for_regular_timestep,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
 
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -612,7 +713,7 @@ class Diffusion:
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
         setup_program(
             backend=backend,
@@ -632,7 +733,7 @@ class Diffusion:
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
-    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
@@ -670,7 +771,7 @@ class Diffusion:
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
 
-    def _determine_horizontal_domains(self):
+    def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -711,7 +812,7 @@ class Diffusion:
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
         initial_run: bool = False,
-    ):
+    ) -> None:
         """
         Do one diffusion step.
 
