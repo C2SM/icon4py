@@ -23,6 +23,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.time import NumTimeSteps
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_io,
@@ -55,12 +56,12 @@ def test_standalone_driver_writes_output(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "io_driver_output",
             "enable_output": True,
-            "end_of_simulation": driver_config.NumTimeSteps(1),
+            "end_of_simulation": NumTimeSteps(1),
         }
     )
 

@@ -14,6 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.time import EndOfSimulation, NumTimeSteps
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -42,7 +43,7 @@ _log = logging.getLogger(__file__)
 @pytest.mark.parametrize(
     "experiment_description, end_of_simulation",
     [
-        (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
+        (test_defs.Experiments.JW, NumTimeSteps(1)),
     ],
 )
 @pytest.mark.mpi
@@ -50,7 +51,7 @@ _log = logging.getLogger(__file__)
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
-    end_of_simulation: driver_config.EndOfSimulation,
+    end_of_simulation: EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend_like: model_backends.BackendLike,
@@ -77,7 +78,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
     single_rank_config = config.with_overrides(

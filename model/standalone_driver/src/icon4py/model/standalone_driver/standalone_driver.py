@@ -22,7 +22,13 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import dimension as dims, model_backends, topography, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    initial_condition,
+    model_backends,
+    topography,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
@@ -37,6 +43,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.time import AbsoluteTime
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -44,7 +51,6 @@ from icon4py.model.standalone_driver import (
     driver_io,
     driver_states,
     driver_utils,
-    initial_condition,
 )
 
 
@@ -114,7 +120,7 @@ class Icon4pyDriver:
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
-        simulation_current_datetime: driver_config.AbsoluteTime,
+        simulation_current_datetime: AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
 

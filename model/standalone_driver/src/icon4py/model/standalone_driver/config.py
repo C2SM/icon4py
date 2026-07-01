@@ -13,7 +13,7 @@ import datetime
 import json
 import logging
 import pathlib
-from typing import Any, TypeAlias
+from typing import Any
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
@@ -23,23 +23,17 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common import topography, type_alias as ta
+from icon4py.model.common import initial_condition, topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.initial_condition.from_file import FromFileConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
+from icon4py.model.common.time import AbsoluteTime, EndOfSimulation, RelativeTime
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver import initial_condition
-from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
 
 
 log = logging.getLogger(__name__)
-
-
-RelativeTime: TypeAlias = datetime.timedelta
-AbsoluteTime: TypeAlias = datetime.datetime
-NumTimeSteps: TypeAlias = int
-EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
 @dataclasses.dataclass
@@ -103,7 +97,6 @@ class DriverConfig:
 
 @dataclasses.dataclass(frozen=True)
 class ExperimentConfig:
-    # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
@@ -127,11 +120,13 @@ class ExperimentConfig:
         return dataclasses.replace(self, **replacements)
 
 
-def read_config(
+def read_experiment_config_from_fortran(
     config_file_path: pathlib.Path,
+    *,
     enable_profiling: bool = False,
+    enable_statistics_output: bool = False,
 ) -> ExperimentConfig:
-    # NOTE: This has a duplicate in testing/datatest_utils.py to avoid circular imports.
+    """Assemble an :class:`ExperimentConfig` from a directory of serialized Fortran namelists."""
 
     with (config_file_path / fortran_config.ATM_DICT_FNAME).open() as f:
         atm_dict = json.load(f)
@@ -188,16 +183,14 @@ def read_config(
         else None
     )
 
-    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
+    initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
-    if not do_tracer_advection and isinstance(
-        initial_condition_config.config, from_file_ic.FromFileConfig
-    ):
-        initial_condition_config = dataclasses.replace(
-            initial_condition_config,
-            config=dataclasses.replace(initial_condition_config.config, ntracer=0),
+    if not do_tracer_advection and isinstance(initial_condition_cfg.config, FromFileConfig):
+        initial_condition_cfg = dataclasses.replace(
+            initial_condition_cfg,
+            config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
@@ -205,6 +198,7 @@ def read_config(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
+        enable_statistics_output=enable_statistics_output,
     )
 
     return ExperimentConfig(
@@ -217,7 +211,7 @@ def read_config(
         tracer_config=tracer_config,
         tracer_advection=tracer_advection_config,
         graupel=graupel_config,
-        initial_condition=initial_condition_config,
+        initial_condition=initial_condition_cfg,
         driver=driver_cfg,
     )
 

@@ -19,15 +19,16 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
+from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states
-from icon4py.model.standalone_driver.initial_condition.analytical import utils as testcases_utils
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.states.static_fields import StaticFieldFactories
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def gauss3d(
     config: Gauss3DConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    static_fields: driver_states.StaticFieldFactories,
+    static_fields: StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,

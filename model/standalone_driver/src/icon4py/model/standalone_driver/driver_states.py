@@ -23,20 +23,18 @@ from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import (
-    geometry as grid_geometry,
-    horizontal as h_grid,
-    icon as icon_grid,
-)
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
-from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.states.static_fields import StaticFieldFactories
 from icon4py.model.common.states.tracer_state import TracerState
+from icon4py.model.common.time import AbsoluteTime, NumTimeSteps, RelativeTime
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config
 
@@ -46,21 +44,6 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-
-
-class StaticFieldFactories(NamedTuple):
-    """
-    Factories of static fields for the driver and components.
-
-    Attributes:
-        geometry: grid geometry field factory that stores geometrical properties of a grid
-        interpolation: interpolation field factory that stores pre-computed coefficients for interpolation employed in the model
-        metrics: metrics field factory that stores pre-computed coefficients for numerical operations employed in the model
-    """
-
-    geometry: grid_geometry.GridGeometry
-    interpolation: interpolation_factory.InterpolationFieldsFactory
-    metrics: metrics_factory.MetricsFieldsFactory
 
 
 class DriverStates(NamedTuple):
@@ -91,11 +74,11 @@ class ModelTimeVariables:
     Runtime time/date variables derived from config at initialisation.
     """
 
-    simulation_current_datetime: driver_config.AbsoluteTime
-    simulation_start_datetime: driver_config.AbsoluteTime
-    simulation_end_datetime: driver_config.AbsoluteTime
-    n_time_steps: driver_config.NumTimeSteps
-    dtime: driver_config.RelativeTime
+    simulation_current_datetime: AbsoluteTime
+    simulation_start_datetime: AbsoluteTime
+    simulation_end_datetime: AbsoluteTime
+    n_time_steps: NumTimeSteps
+    dtime: RelativeTime
     ndyn_substeps_var: int
     max_ndyn_substeps: int
     elapsed_time_in_seconds: ta.wpfloat
@@ -108,15 +91,15 @@ class ModelTimeVariables:
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
         match config.end_of_simulation:
-            case driver_config.NumTimeSteps() as n:
+            case NumTimeSteps() as n:
                 self.n_time_steps = n
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
-            case driver_config.RelativeTime() as relative:
+            case RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + relative
-            case driver_config.AbsoluteTime() as absolute:
+            case AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = absolute
