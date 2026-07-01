@@ -152,7 +152,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
     ],
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
-def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
+def test_start_index_end_index_halo_zones_on_distributed_lam_grid(  # noqa: PLR0917 [too-many-positional-arguments]
     process_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,

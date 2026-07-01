@@ -22,6 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     inv_dual_edge_length: np.ndarray,
     z_exner_ex_pr: np.ndarray,
@@ -64,7 +65,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
 
 
 @pytest.mark.skip_value_error
-@pytest.mark.uses_as_offset
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
@@ -72,6 +72,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         inv_dual_edge_length: np.ndarray,
         z_exner_ex_pr: np.ndarray,
         zdiff_gradp: np.ndarray,
@@ -81,13 +82,13 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         **kwargs: Any,
     ) -> dict:
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
-            connectivities,
-            inv_dual_edge_length,
-            z_exner_ex_pr,
-            zdiff_gradp,
-            ikoffset,
-            z_dexner_dz_c_1,
-            z_dexner_dz_c_2,
+            connectivities=connectivities,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=z_exner_ex_pr,
+            zdiff_gradp=zdiff_gradp,
+            ikoffset=ikoffset,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
+            z_dexner_dz_c_2=z_dexner_dz_c_2,
         )
         return dict(z_gradh_exner=z_gradh_exner)
 

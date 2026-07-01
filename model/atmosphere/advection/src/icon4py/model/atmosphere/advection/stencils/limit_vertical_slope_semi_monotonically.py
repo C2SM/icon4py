@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, minimum, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -20,8 +20,8 @@ def _limit_vertical_slope_semi_monotonically(
     k: fa.KField[gtx.int32],
     elev: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    p_cc_min_last = minimum(p_cc(Koff[-1]), p_cc)
-    p_cc_min = where(k == elev, p_cc_min_last, minimum(p_cc_min_last, p_cc(Koff[1])))
+    p_cc_min_last = minimum(p_cc(KDim - 1), p_cc)
+    p_cc_min = where(k == elev, p_cc_min_last, minimum(p_cc_min_last, p_cc(KDim + 1)))
     slope_l = minimum(abs(z_slope), 2.0 * (p_cc - p_cc_min))
     slope = where(z_slope >= 0.0, slope_l, -slope_l)
     return slope
@@ -39,10 +39,10 @@ def limit_vertical_slope_semi_monotonically(
     vertical_end: gtx.int32,
 ) -> None:
     _limit_vertical_slope_semi_monotonically(
-        p_cc,
-        z_slope,
-        k,
-        elev,
+        p_cc=p_cc,
+        z_slope=z_slope,
+        k=k,
+        elev=elev,
         out=z_slope,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

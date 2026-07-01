@@ -51,9 +51,9 @@ def edge_2_cell_vector_rbf_interpolation(
     vertical_end: gtx.int32,
 ) -> None:
     _edge_2_cell_vector_rbf_interpolation(
-        p_e_in,
-        ptr_coeff_1,
-        ptr_coeff_2,
+        p_e_in=p_e_in,
+        ptr_coeff_1=ptr_coeff_1,
+        ptr_coeff_2=ptr_coeff_2,
         out=(p_u_out, p_v_out),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -53,10 +53,12 @@ def initialized_writer(
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
     writer = writers.NETCDFWriter(
-        fname,
-        vertical_params,
-        horizontal,
-        writers.TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
+        file_name=fname,
+        vertical=vertical_params,
+        horizontal=horizontal,
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
     )
     writer.initialize_dataset()
@@ -86,15 +88,15 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert np.all(vertical == np.arange(grid.num_levels))
 
 
-def test_initialize_writer_interface_levels(test_path, random_name):
+def test_initialize_writer_half_levels(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
-    interface_levels = dataset.variables[writers.MODEL_INTERFACE_LEVEL]
-    assert interface_levels.units == "1"
-    assert interface_levels.datatype == np.int32
-    assert interface_levels.long_name == "model interface level index"
-    assert interface_levels.standard_name == metadata.INTERFACE_LEVEL_STANDARD_NAME
-    assert len(interface_levels) == grid.num_levels + 1
-    assert np.all(interface_levels == np.arange(grid.num_levels + 1))
+    half_levels = dataset.variables[writers.MODEL_HALF_LEVEL]
+    assert half_levels.units == "1"
+    assert half_levels.datatype == np.int32
+    assert half_levels.long_name == "model half level index"
+    assert half_levels.standard_name == metadata.INTERFACE_LEVEL_STANDARD_NAME
+    assert len(half_levels) == grid.num_levels + 1
+    assert np.all(half_levels == np.arange(grid.num_levels + 1))
 
 
 def test_initialize_writer_heights(test_path, random_name):
@@ -188,7 +190,7 @@ def test_initialize_writer_create_dimensions(
     assert writer["institution"] == "EXCLAIM - ETH Zurich"
     assert len(writer.dims) == 6
     assert writer.dims[writers.MODEL_LEVEL].size == grid.num_levels
-    assert writer.dims[writers.MODEL_INTERFACE_LEVEL].size == grid.num_levels + 1
+    assert writer.dims[writers.MODEL_HALF_LEVEL].size == grid.num_levels + 1
     assert writer.dims[writers.CELL].size == grid.num_cells
     assert writer.dims[writers.VERTEX].size == grid.num_vertices
     assert writer.dims[writers.EDGE].size == grid.num_edges

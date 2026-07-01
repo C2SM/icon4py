@@ -16,7 +16,7 @@ jobs:
         python-version: ["3.10", "3.14"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Fetch base branch for tach impact analysis
         run: git fetch origin main:main
       - name: Install system dependencies

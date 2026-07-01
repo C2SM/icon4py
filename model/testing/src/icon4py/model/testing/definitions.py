@@ -11,15 +11,18 @@ from __future__ import annotations
 import copy
 import dataclasses
 import pathlib
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
+from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.common.states import tracer_state
+from icon4py.model.standalone_driver import config as driver_config, initial_condition
 from icon4py.model.testing import config
 
 
@@ -30,7 +33,6 @@ if TYPE_CHECKING:
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
-NAMELIST_ICON_FNAME: Final = "NAMELIST_ICON_output_atm"
 GRID_DATA_DIR: Final = "grids"
 EXPERIMENT_DATA_DIR: Final = "experiments"
 MUPHYS_DATA_DIR: Final = "muphys"
@@ -167,18 +169,33 @@ class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 3
+    version: int = 5
 
 
 @dataclasses.dataclass
 class ExperimentConfig:
-    driver: driver_config.DriverConfig
-    vertical_grid: v_grid.VerticalGridConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
+    # NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig
+    vertical_grid: v_grid.VerticalGridConfig
+    topography: topography.TopographyConfig
+    initial_condition: initial_condition.InitialConditionConfig
+    driver: driver_config.DriverConfig
+    nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
+    diffusion: diffusion.DiffusionConfig | None = None
+    tracer_config: tracer_state.TracerConfig | None = None
+    tracer_advection: tracer_advection.AdvectionConfig | None = None
+    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+
+    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
+        replacements: dict[str, Any] = {}
+        for key, value in overrides.items():
+            current = getattr(self, key)
+            if isinstance(value, dict):
+                replacements[key] = dataclasses.replace(current, **value)
+            else:
+                replacements[key] = value
+        return dataclasses.replace(self, **replacements)
 
 
 @dataclasses.dataclass

@@ -13,8 +13,8 @@
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import json
-import os
 import pathlib
 import re
 import shutil
@@ -28,6 +28,8 @@ from typing import TYPE_CHECKING
 
 import f90nml
 import typer
+
+from icon4py.model.common.utils import fortran_config
 
 
 if TYPE_CHECKING:
@@ -43,7 +45,7 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 @dataclasses.dataclass(frozen=True)
 class SerializationSettings:
     comm_sizes: list[int]
-    experiments: list[definitions.ExperimentDescription]
+    experiment_descriptions: list[definitions.ExperimentDescription]
     sbatch_partition: str
     sbatch_time: str
     sbatch_account: str
@@ -85,10 +87,14 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Directories (adjust if needed)
-        ROOT_PROJECT_DIR = pathlib.Path(os.environ.get("SCRATCH", "")) / "icon-exclaim.serialize"
+        # Directories (derived from this script's location in icon4py/)
+        _THIS_FILE = pathlib.Path(__file__).resolve()
+        ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
+        assert ICON4PY_REPO_DIR.name == "icon4py", (
+            f"Expected icon4py repo dir, got {ICON4PY_REPO_DIR}"
+        )
+        ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
-        ICON4PY_REPO_DIR = ROOT_PROJECT_DIR / "icon4py"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
         RUNSCRIPTS_DIR = BUILD_DIR / "run"
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
@@ -101,7 +107,7 @@ class SerializationSettings:
 
         return cls(
             comm_sizes=COMM_SIZES,
-            experiments=EXPERIMENTS,
+            experiment_descriptions=EXPERIMENTS,
             sbatch_partition=SBATCH_PARTITION,
             sbatch_time=SBATCH_TIME,
             sbatch_account=SBATCH_ACCOUNT,
@@ -122,42 +128,57 @@ class SerializationSettings:
         # ======================================
 
 
-def get_f90exp_name(experiment: definitions.Experiment) -> str:
-    return f"{experiment.name}_sb"
+def get_f90exp_name(experiment_description: definitions.ExperimentDescription) -> str:
+    return f"{experiment_description.name}_sb"
 
 
 def get_f90exp_dir(
-    experiment: definitions.Experiment, *, settings: SerializationSettings
+    experiment_description: definitions.ExperimentDescription, *, settings: SerializationSettings
 ) -> pathlib.Path:
-    return settings.experiments_dir / get_f90exp_name(experiment)
+    return settings.experiments_dir / get_f90exp_name(experiment_description)
 
 
-def get_nmlfile_name(experiment: definitions.Experiment) -> str:
-    return f"exp.{get_f90exp_name(experiment)}"
+def get_nmlfile_name(experiment_description: definitions.ExperimentDescription) -> str:
+    return f"exp.{get_f90exp_name(experiment_description)}"
 
 
-def get_slurmscript_name(experiment: definitions.Experiment) -> str:
-    return f"{get_nmlfile_name(experiment)}.run"
+def get_dumped_nmlfile_name(experiment_description: definitions.ExperimentDescription) -> str:
+    return f"NAMELIST_{get_f90exp_name(experiment_description)}"
+
+
+def get_slurmscript_name(experiment_description: definitions.ExperimentDescription) -> str:
+    return f"{get_nmlfile_name(experiment_description)}.run"
 
 
 def get_serdata_dst_dir(
-    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+    experiment_description: definitions.ExperimentDescription,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
 ) -> pathlib.Path:
     """Get the destination directory for serialized data."""
     return settings.output_root / dt_utils.get_ranked_experiment_name_with_version(
-        experiment, comm_size
+        experiment_description, comm_size
     )
 
 
 def get_tar_path(
-    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+    experiment_description: definitions.ExperimentDescription,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
 ) -> pathlib.Path:
     """Get the path to the tar archive for the experiment."""
-    return settings.output_root / dt_utils.get_experiment_archive_filename(experiment, comm_size)
+    return settings.output_root / dt_utils.get_experiment_archive_filename(
+        experiment_description, comm_size
+    )
 
 
 def cleanup_exp_output(
-    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+    experiment_description: definitions.ExperimentDescription,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
 ) -> None:
     """Clean up experiment output directories and archives.
 
@@ -167,17 +188,17 @@ def cleanup_exp_output(
     - Tar archive (tar_path)
     """
     # Delete experiment directory
-    exp_dir = get_f90exp_dir(experiment, settings=settings)
+    exp_dir = get_f90exp_dir(experiment_description, settings=settings)
     if exp_dir.exists():
         shutil.rmtree(exp_dir)
 
     # Delete serialized data destination directory
-    dest_dir = get_serdata_dst_dir(experiment, comm_size, settings=settings)
+    dest_dir = get_serdata_dst_dir(experiment_description, comm_size, settings=settings)
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
 
     # Delete tar archive
-    tar_path = get_tar_path(experiment, comm_size, settings=settings)
+    tar_path = get_tar_path(experiment_description, comm_size, settings=settings)
     if tar_path.exists():
         tar_path.unlink()
 
@@ -399,19 +420,19 @@ def wait_for_success(job_id: str, *, settings: SerializationSettings) -> None:
 
 
 def copy_ser_data(
-    experiment,
+    experiment_description: definitions.ExperimentDescription,
     comm_size: int,
     job_id: str | None = None,
     *,
     settings: SerializationSettings,
 ) -> pathlib.Path:
-    exp_dir = get_f90exp_dir(experiment, settings=settings)
+    exp_dir = get_f90exp_dir(experiment_description, settings=settings)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
     # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
-    dest_dir = get_serdata_dst_dir(experiment, comm_size, settings=settings)
+    dest_dir = get_serdata_dst_dir(experiment_description, comm_size, settings=settings)
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
@@ -422,19 +443,30 @@ def copy_ser_data(
     shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
     # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / definitions.NAMELIST_ICON_FNAME)
-    with (dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")).open("w") as f:
+    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
+    with (dest_dir / (fortran_config.ATM_DICT_FNAME)).open("w") as f:
+        json.dump(nml.todict(), f, indent=4)
+    # same for icon_master.namelist
+    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
+    with (dest_dir / (fortran_config.MASTER_DICT_FNAME)).open("w") as f:
+        json.dump(nml.todict(), f, indent=4)
+    # same for NAMELIST_expname
+    nml = f90nml.read(exp_dir / get_dumped_nmlfile_name(experiment_description))
+    with (dest_dir / (fortran_config.INPUT_DICT_FNAME)).open("w") as f:
         json.dump(nml.todict(), f, indent=4)
 
     # Copy NAMELIST files
-    namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
+    namelist_files = sorted(itertools.chain(exp_dir.glob("NAMELIST_*"), exp_dir.glob("*.namelist")))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
 
     # Copy LOG file if available
     if job_id is not None:
-        log_file = settings.runscript_dir / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
+        log_file = (
+            settings.runscript_dir
+            / f"LOG.{get_slurmscript_name(experiment_description)}.{job_id}.o"
+        )
         if log_file.is_file():
             shutil.copy2(log_file, dest_dir / log_file.name)
 
@@ -443,12 +475,12 @@ def copy_ser_data(
 
 def tar_folder(
     folder: pathlib.Path,
-    experiment: definitions.Experiment,
+    experiment_description: definitions.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
 ) -> pathlib.Path:
-    tar_path = get_tar_path(experiment, comm_size, settings=settings)
+    tar_path = get_tar_path(experiment_description, comm_size, settings=settings)
 
     with tarfile.open(tar_path, "w:gz") as tar:
         # Add only the contents of the folder (NAMELIST files and ser_data), not the folder itself
@@ -459,30 +491,33 @@ def tar_folder(
 
 
 def generate_update_script(
-    experiment: definitions.Experiment, *, settings: SerializationSettings
+    experiment_description: definitions.ExperimentDescription, *, settings: SerializationSettings
 ) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
-        settings.iconf90_repo_dir / "run" / get_nmlfile_name(experiment),
-        settings.runscript_dir / get_nmlfile_name(experiment),
+        settings.iconf90_repo_dir / "run" / get_nmlfile_name(experiment_description),
+        settings.runscript_dir / get_nmlfile_name(experiment_description),
     )
 
     # run make_runscript
-    cmd = ["./make_runscripts", get_f90exp_name(experiment)]
+    cmd = ["./make_runscripts", get_f90exp_name(experiment_description)]
     _ = run_command(cmd, cwd=settings.build_dir)
 
 
 def run_experiment(
-    experiment: definitions.Experiment, comm_size: int, *, settings: SerializationSettings
+    experiment_description: definitions.ExperimentDescription,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
 ) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
         # Clean up previous experiment output
-        cleanup_exp_output(experiment, comm_size, settings=settings)
+        cleanup_exp_output(experiment_description, comm_size, settings=settings)
 
-        generate_update_script(experiment, settings=settings)
+        generate_update_script(experiment_description, settings=settings)
 
-        script_path = settings.runscript_dir / get_slurmscript_name(experiment)
+        script_path = settings.runscript_dir / get_slurmscript_name(experiment_description)
         if not script_path.exists():
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
@@ -490,27 +525,29 @@ def run_experiment(
         extra_mpi_ranks = parse_extra_mpi_ranks(script_path, comm_size)
 
         log_status(
-            f"Setting up {experiment.name} with {comm_size} ranks"
+            f"Setting up {experiment_description.name} with {comm_size} ranks"
             + (f" + {extra_mpi_ranks} extra" if extra_mpi_ranks > 0 else "")
         )
         update_slurm_variables(script_path, settings=settings)
         update_slurm_ranks(script_path, comm_size, extra_mpi_ranks)
 
-        log_status(f"Submitting {experiment.name} with {comm_size} ranks")
+        log_status(f"Submitting {experiment_description.name} with {comm_size} ranks")
         job_id = submit_job(script_path, settings=settings)
 
-        log_status(f"Waiting for {experiment.name} (ranks={comm_size}, job_id={job_id})")
+        log_status(
+            f"Waiting for {experiment_description.name} (ranks={comm_size}, job_id={job_id})"
+        )
         wait_for_success(job_id, settings=settings)
 
-        log_status(f"Copying ser_data for {experiment.name} with {comm_size} ranks")
-        dest_dir = copy_ser_data(experiment, comm_size, job_id, settings=settings)
+        log_status(f"Copying ser_data for {experiment_description.name} with {comm_size} ranks")
+        dest_dir = copy_ser_data(experiment_description, comm_size, job_id, settings=settings)
 
-        log_status(f"Creating tar archive for {experiment.name} with {comm_size} ranks")
-        tar_folder(dest_dir, experiment, comm_size, settings=settings)
+        log_status(f"Creating tar archive for {experiment_description.name} with {comm_size} ranks")
+        tar_folder(dest_dir, experiment_description, comm_size, settings=settings)
 
-        log_status(f"Completed {experiment.name} with {comm_size} ranks")
+        log_status(f"Completed {experiment_description.name} with {comm_size} ranks")
     except Exception as e:
-        log_status(f"ERROR in {experiment.name} with {comm_size} ranks: {e}")
+        log_status(f"ERROR in {experiment_description.name} with {comm_size} ranks: {e}")
         raise
 
 
@@ -526,13 +563,13 @@ def run_serialization() -> None:
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
 
-    total_tasks = len(settings.experiments) * len(settings.comm_sizes)
+    total_tasks = len(settings.experiment_descriptions) * len(settings.comm_sizes)
     log_status(
-        f"Starting experiment series with {total_tasks} tasks ({len(settings.experiments)} experiments x {len(settings.comm_sizes)} communicator sizes)"
+        f"Starting experiment series with {total_tasks} tasks ({len(settings.experiment_descriptions)} experiments x {len(settings.comm_sizes)} communicator sizes)"
     )
 
     for rank_idx, comm_size in enumerate(settings.comm_sizes, 1):
-        num_experiments = len(settings.experiments)
+        num_experiments = len(settings.experiment_descriptions)
         log_status(
             f"Starting communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks ({num_experiments} experiments parallel)"
         )
@@ -540,8 +577,10 @@ def run_serialization() -> None:
         with ThreadPoolExecutor(max_workers=settings.max_threads) as executor:
             futures = []
 
-            for experiment in settings.experiments:
-                future = executor.submit(run_experiment, experiment, comm_size, settings=settings)
+            for experiment_description in settings.experiment_descriptions:
+                future = executor.submit(
+                    run_experiment, experiment_description, comm_size, settings=settings
+                )
                 futures.append(future)
 
             log_status(

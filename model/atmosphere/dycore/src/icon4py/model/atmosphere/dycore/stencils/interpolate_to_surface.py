@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -19,9 +19,9 @@ def _interpolate_to_surface(
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_04."""
     interpolation_to_surface = (
-        wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])
-        + wgtfacq_c(Koff[-2]) * interpolant(Koff[-2])
-        + wgtfacq_c(Koff[-3]) * interpolant(Koff[-3])
+        wgtfacq_c(KDim - 1) * interpolant(KDim - 1)
+        + wgtfacq_c(KDim - 2) * interpolant(KDim - 2)
+        + wgtfacq_c(KDim - 3) * interpolant(KDim - 3)
     )
     return interpolation_to_surface
 
@@ -37,8 +37,8 @@ def interpolate_to_surface(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_to_surface(
-        wgtfacq_c,
-        interpolant,
+        wgtfacq_c=wgtfacq_c,
+        interpolant=interpolant,
         out=interpolation_to_surface,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

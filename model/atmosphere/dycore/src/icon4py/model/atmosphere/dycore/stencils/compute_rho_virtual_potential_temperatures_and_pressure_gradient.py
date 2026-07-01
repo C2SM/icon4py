@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -42,8 +42,8 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     )
 
     z_w_backtraj_wp = -(w - w_concorr_c_wp) * dtime * wpfloat("0.5") / ddqz_z_half_wp
-    z_rho_tavg_m1_wp = wgt_nnow_rth * rho_now(Koff[-1]) + wgt_nnew_rth * rho_var(Koff[-1])
-    z_theta_tavg_m1_wp = wgt_nnow_rth * theta_now(Koff[-1]) + wgt_nnew_rth * theta_var(Koff[-1])
+    z_rho_tavg_m1_wp = wgt_nnow_rth * rho_now(KDim - 1) + wgt_nnew_rth * rho_var(KDim - 1)
+    z_theta_tavg_m1_wp = wgt_nnow_rth * theta_now(KDim - 1) + wgt_nnew_rth * theta_var(KDim - 1)
     z_rho_tavg_wp = wgt_nnow_rth * rho_now + wgt_nnew_rth * rho_var
     z_theta_tavg_wp = wgt_nnow_rth * theta_now + wgt_nnew_rth * theta_var
     rho_ic_wp = (
@@ -51,7 +51,7 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         + (wpfloat("1.0") - wgtfac_c_wp) * z_rho_tavg_m1_wp
         + z_w_backtraj_wp * (z_rho_tavg_m1_wp - z_rho_tavg_wp)
     )
-    z_theta_v_pr_mc_m1_wp = z_theta_tavg_m1_wp - theta_ref_mc_wp(Koff[-1])
+    z_theta_v_pr_mc_m1_wp = z_theta_tavg_m1_wp - theta_ref_mc_wp(KDim - 1)
     z_theta_v_pr_mc_wp = z_theta_tavg_wp - theta_ref_mc_wp
 
     z_theta_v_pr_mc_vp, z_theta_v_pr_mc_m1_vp = astype(
@@ -66,7 +66,7 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         + (wpfloat("1.0") - wgtfac_c_wp) * z_theta_tavg_m1_wp
         + z_w_backtraj_wp * (z_theta_tavg_m1_wp - z_theta_tavg_wp)
     )
-    z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (exner_pr(Koff[-1]) - exner_pr) / astype(
+    z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (exner_pr(KDim - 1) - exner_pr) / astype(
         ddqz_z_half, wpfloat
     ) + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
     return (
@@ -104,21 +104,21 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
-        w,
-        w_concorr_c,
-        ddqz_z_half,
-        rho_now,
-        rho_var,
-        theta_now,
-        theta_var,
-        wgtfac_c,
-        theta_ref_mc,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        dtime,
-        wgt_nnow_rth,
-        wgt_nnew_rth,
+        w=w,
+        w_concorr_c=w_concorr_c,
+        ddqz_z_half=ddqz_z_half,
+        rho_now=rho_now,
+        rho_var=rho_var,
+        theta_now=theta_now,
+        theta_var=theta_var,
+        wgtfac_c=wgtfac_c,
+        theta_ref_mc=theta_ref_mc,
+        vwind_expl_wgt=vwind_expl_wgt,
+        exner_pr=exner_pr,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        dtime=dtime,
+        wgt_nnow_rth=wgt_nnow_rth,
+        wgt_nnew_rth=wgt_nnew_rth,
         out=(
             rho_ic,
             z_theta_v_pr_ic,

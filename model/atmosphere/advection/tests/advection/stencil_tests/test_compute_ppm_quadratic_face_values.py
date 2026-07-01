@@ -30,6 +30,7 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
         **kwargs: Any,

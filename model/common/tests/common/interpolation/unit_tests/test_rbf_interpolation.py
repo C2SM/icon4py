@@ -71,7 +71,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
         experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
-    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
+    offset_table = data_alloc.as_numpy(rbf.construct_rbf_matrix_offsets_tables_for_cells(grid))
     assert offset_table.shape == (
         grid.num_cells,
         rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
@@ -103,7 +103,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
         experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
-    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
+    offset_table = data_alloc.as_numpy(rbf.construct_rbf_matrix_offsets_tables_for_edges(grid))
     assert offset_table.shape == (
         grid.num_edges,
         rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
@@ -133,7 +133,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
         experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
-    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
+    offset_table = data_alloc.as_numpy(rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid))
     assert offset_table.shape == (
         grid.num_vertices,
         rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
@@ -181,29 +181,29 @@ def test_rbf_interpolation_coeffs_cell(
     )
 
     rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(  # type: ignore[misc] # function returns two vars
-        geometry.get(geometry_attrs.CELL_LAT).ndarray,
-        geometry.get(geometry_attrs.CELL_LON).ndarray,
-        geometry.get(geometry_attrs.CELL_CENTER_X).ndarray,
-        geometry.get(geometry_attrs.CELL_CENTER_Y).ndarray,
-        geometry.get(geometry_attrs.CELL_CENTER_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
-        rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        geometry_type.value,
-        rbf.compute_default_rbf_scale_cell(
+        cell_center_lat=geometry.get(geometry_attrs.CELL_LAT).ndarray,
+        cell_center_lon=geometry.get(geometry_attrs.CELL_LON).ndarray,
+        cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).ndarray,
+        cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).ndarray,
+        cell_center_z=geometry.get(geometry_attrs.CELL_CENTER_Z).ndarray,
+        edge_center_x=geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        edge_center_y=geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        edge_center_z=geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        edge_normal_x=geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        edge_normal_y=geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        edge_normal_z=geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
+        rbf_offset=rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
+        rbf_kernel=rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        geometry_type=geometry_type.value,
+        scale_factor=rbf.compute_default_rbf_scale_cell(
             geometry_type.value,
             geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
-        horizontal_start,
-        horizontal_end,
-        grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
-        grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
@@ -256,29 +256,29 @@ def test_rbf_interpolation_coeffs_vertex(
     )
 
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
-        geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
-        geometry.get(geometry_attrs.VERTEX_LON).ndarray,
-        geometry.get(geometry_attrs.VERTEX_X).ndarray,
-        geometry.get(geometry_attrs.VERTEX_Y).ndarray,
-        geometry.get(geometry_attrs.VERTEX_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
-        rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        geometry_type.value,
-        rbf.compute_default_rbf_scale_vertex(
+        vertex_lat=geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
+        vertex_lon=geometry.get(geometry_attrs.VERTEX_LON).ndarray,
+        vertex_x=geometry.get(geometry_attrs.VERTEX_X).ndarray,
+        vertex_y=geometry.get(geometry_attrs.VERTEX_Y).ndarray,
+        vertex_z=geometry.get(geometry_attrs.VERTEX_Z).ndarray,
+        edge_center_x=geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        edge_center_y=geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        edge_center_z=geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        edge_normal_x=geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        edge_normal_y=geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        edge_normal_z=geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
+        rbf_offset=rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
+        rbf_kernel=rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        geometry_type=geometry_type.value,
+        scale_factor=rbf.compute_default_rbf_scale_vertex(
             geometry_type.value,
             geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
-        horizontal_start,
-        horizontal_end,
-        grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
-        grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()

@@ -121,7 +121,7 @@ def construct_rbf_matrix_offsets_tables_for_cells(
     grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
-    connectivity = grid.get_connectivity(dims.C2E2C2E).asnumpy()
+    connectivity = grid.get_connectivity(dims.C2E2C2E).ndarray
     assert connectivity.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
     return connectivity
 
@@ -130,7 +130,7 @@ def construct_rbf_matrix_offsets_tables_for_edges(
     grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
-    connectivity = grid.get_connectivity(dims.E2C2E).asnumpy()
+    connectivity = grid.get_connectivity(dims.E2C2E).ndarray
     assert connectivity.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
     return connectivity
 
@@ -139,7 +139,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v"""
-    connectivity = grid.get_connectivity(dims.V2E).asnumpy()
+    connectivity = grid.get_connectivity(dims.V2E).ndarray
     assert connectivity.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
     return connectivity
 
@@ -296,6 +296,7 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
 
 
 def _compute_rbf_interpolation_coeffs(
+    *,
     element_center_lat: data_alloc.NDArray,
     element_center_lon: data_alloc.NDArray,
     element_center_x: data_alloc.NDArray,
@@ -465,6 +466,7 @@ def _compute_rbf_interpolation_coeffs(
 
 
 def compute_rbf_interpolation_coeffs_cell(
+    *,
     cell_center_lat: data_alloc.NDArray,
     cell_center_lon: data_alloc.NDArray,
     cell_center_x: data_alloc.NDArray,
@@ -491,30 +493,31 @@ def compute_rbf_interpolation_coeffs_cell(
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
     return _compute_rbf_interpolation_coeffs(
-        cell_center_lat,
-        cell_center_lon,
-        cell_center_x,
-        cell_center_y,
-        cell_center_z,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_normal_x,
-        edge_normal_y,
-        edge_normal_z,
-        ((ones, zeros), (zeros, ones)),
-        rbf_offset,
-        InterpolationKernel(rbf_kernel),
-        icon_grid.GeometryType(geometry_type),
-        scale_factor,
-        horizontal_start,
-        horizontal_end,
-        domain_length,
-        domain_height,
+        element_center_lat=cell_center_lat,
+        element_center_lon=cell_center_lon,
+        element_center_x=cell_center_x,
+        element_center_y=cell_center_y,
+        element_center_z=cell_center_z,
+        edge_center_x=edge_center_x,
+        edge_center_y=edge_center_y,
+        edge_center_z=edge_center_z,
+        edge_normal_x=edge_normal_x,
+        edge_normal_y=edge_normal_y,
+        edge_normal_z=edge_normal_z,
+        uv=((ones, zeros), (zeros, ones)),
+        rbf_offset=rbf_offset,
+        rbf_kernel=InterpolationKernel(rbf_kernel),
+        geometry_type=icon_grid.GeometryType(geometry_type),
+        scale_factor=scale_factor,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
 
 
 def compute_rbf_interpolation_coeffs_edge(
+    *,
     edge_lat: data_alloc.NDArray,
     edge_lon: data_alloc.NDArray,
     edge_center_x: data_alloc.NDArray,
@@ -535,30 +538,31 @@ def compute_rbf_interpolation_coeffs_edge(
     domain_height: ta.wpfloat,
 ) -> data_alloc.NDArray:
     return _compute_rbf_interpolation_coeffs(
-        edge_lat,
-        edge_lon,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_normal_x,
-        edge_normal_y,
-        edge_normal_z,
-        ((edge_dual_normal_u, edge_dual_normal_v),),
-        rbf_offset,
-        InterpolationKernel(rbf_kernel),
-        icon_grid.GeometryType(geometry_type),
-        scale_factor,
-        horizontal_start,
-        horizontal_end,
-        domain_length,
-        domain_height,
+        element_center_lat=edge_lat,
+        element_center_lon=edge_lon,
+        element_center_x=edge_center_x,
+        element_center_y=edge_center_y,
+        element_center_z=edge_center_z,
+        edge_center_x=edge_center_x,
+        edge_center_y=edge_center_y,
+        edge_center_z=edge_center_z,
+        edge_normal_x=edge_normal_x,
+        edge_normal_y=edge_normal_y,
+        edge_normal_z=edge_normal_z,
+        uv=((edge_dual_normal_u, edge_dual_normal_v),),
+        rbf_offset=rbf_offset,
+        rbf_kernel=InterpolationKernel(rbf_kernel),
+        geometry_type=icon_grid.GeometryType(geometry_type),
+        scale_factor=scale_factor,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )[0]
 
 
 def compute_rbf_interpolation_coeffs_vertex(
+    *,
     vertex_lat: data_alloc.NDArray,
     vertex_lon: data_alloc.NDArray,
     vertex_x: data_alloc.NDArray,
@@ -584,24 +588,24 @@ def compute_rbf_interpolation_coeffs_vertex(
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
     return _compute_rbf_interpolation_coeffs(
-        vertex_lat,
-        vertex_lon,
-        vertex_x,
-        vertex_y,
-        vertex_z,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_normal_x,
-        edge_normal_y,
-        edge_normal_z,
-        ((ones, zeros), (zeros, ones)),
-        rbf_offset,
-        InterpolationKernel(rbf_kernel),
-        icon_grid.GeometryType(geometry_type),
-        scale_factor,
-        horizontal_start,
-        horizontal_end,
-        domain_length,
-        domain_height,
+        element_center_lat=vertex_lat,
+        element_center_lon=vertex_lon,
+        element_center_x=vertex_x,
+        element_center_y=vertex_y,
+        element_center_z=vertex_z,
+        edge_center_x=edge_center_x,
+        edge_center_y=edge_center_y,
+        edge_center_z=edge_center_z,
+        edge_normal_x=edge_normal_x,
+        edge_normal_y=edge_normal_y,
+        edge_normal_z=edge_normal_z,
+        uv=((ones, zeros), (zeros, ones)),
+        rbf_offset=rbf_offset,
+        rbf_kernel=InterpolationKernel(rbf_kernel),
+        geometry_type=icon_grid.GeometryType(geometry_type),
+        scale_factor=scale_factor,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )

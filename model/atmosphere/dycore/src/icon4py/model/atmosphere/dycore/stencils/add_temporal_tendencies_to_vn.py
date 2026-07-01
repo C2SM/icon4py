@@ -48,12 +48,12 @@ def add_temporal_tendencies_to_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _add_temporal_tendencies_to_vn(
-        vn_nnow,
-        ddt_vn_apc_ntl1,
-        ddt_vn_phy,
-        z_theta_v_e,
-        z_gradh_exner,
-        dtime,
+        vn_nnow=vn_nnow,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_phy=ddt_vn_phy,
+        z_theta_v_e=z_theta_v_e,
+        z_gradh_exner=z_gradh_exner,
+        dtime=dtime,
         out=vn_nnew,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

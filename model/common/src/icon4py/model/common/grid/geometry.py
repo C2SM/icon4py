@@ -81,6 +81,7 @@ class GridGeometry(factory.FieldSource):
 
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         backend: gtx_typing.Backend | None,
@@ -136,12 +137,12 @@ class GridGeometry(factory.FieldSource):
             coordinates_[attrs.VERTEX_Y] = coordinates[dims.VertexDim]["y"]
             coordinates_[attrs.VERTEX_Z] = coordinates[dims.VertexDim]["z"]
 
-        coordinate_provider = factory.PrecomputedFieldProvider(coordinates_)
+        coordinate_provider = factory.PrecomputedFieldProvider(fields=coordinates_)
         self.register_provider(coordinate_provider)
 
         # Setup input fields
         input_fields_provider = factory.PrecomputedFieldProvider(
-            {
+            fields={
                 # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
                 attrs.EDGE_LENGTH: extra_fields[gridfile.GeometryName.EDGE_LENGTH],
                 attrs.DUAL_EDGE_LENGTH: extra_fields[gridfile.GeometryName.DUAL_EDGE_LENGTH],
@@ -274,7 +275,7 @@ class GridGeometry(factory.FieldSource):
                 self.register_provider(vertex_vertex_distance)
 
                 coriolis_param = factory.PrecomputedFieldProvider(
-                    {
+                    fields={
                         # TODO(jcanton): this constant (0.0) should eventually
                         # come from the config
                         "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(
@@ -357,7 +358,7 @@ class GridGeometry(factory.FieldSource):
             func=math_utils.compute_sqrt,
             domain=(),
             deps={
-                "input_val": attrs.MEAN_DUAL_AREA,
+                "input_val": attrs.MEAN_CELL_AREA,
             },
             fields=(attrs.CHARACTERISTIC_LENGTH,),
         )
@@ -469,7 +470,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         normal_vert_wrapper = SparseFieldProviderWrapper(
-            normal_vert,
+            field_provider=normal_vert,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
@@ -504,7 +505,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         normal_cell_wrapper = SparseFieldProviderWrapper(
-            normal_cell,
+            field_provider=normal_cell,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
@@ -541,7 +542,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         tangent_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_vert,
+            field_provider=tangent_vert,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
@@ -576,7 +577,7 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         tangent_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_cell,
+            field_provider=tangent_cell,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
@@ -624,7 +625,7 @@ class GridGeometry(factory.FieldSource):
 
         # primal_normal_vert, primal_normal_cell
         normal_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
@@ -646,7 +647,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(normal_vert_wrapper)
 
         normal_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(
@@ -659,7 +660,7 @@ class GridGeometry(factory.FieldSource):
 
         # dual normals: the dual normals are the edge tangents
         tangent_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
@@ -681,7 +682,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(tangent_vert_wrapper)
 
         tangent_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_normal_coordinates,
+            field_provider=tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(
@@ -784,6 +785,7 @@ class GridGeometry(factory.FieldSource):
 class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
     def __init__(
         self,
+        *,
         field_provider: factory.FieldProvider,
         target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
@@ -800,6 +802,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
 
     def __call__(
         self,
+        *,
         field_name: str,
         field_src: factory.FieldSource | None,
         backend: gtx_typing.Backend | None,
@@ -811,7 +814,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
             input_fields = []
             for p in self._pairs:
                 t = tuple(
-                    [self._wrapped_provider(name, field_src, backend, grid, exchange) for name in p]
+                    [
+                        self._wrapped_provider(
+                            field_name=name,
+                            field_src=field_src,
+                            backend=backend,
+                            grid=grid,
+                            exchange=exchange,
+                        )
+                        for name in p
+                    ]
                 )
                 input_fields.append(t)
             sparse_fields = self.func(input_fields, backend=backend)
@@ -856,6 +868,7 @@ def as_sparse_field(
 
 
 def create_auxiliary_coordinate_arrays_for_orientation(
+    *,
     grid: icon.IconGrid,
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],

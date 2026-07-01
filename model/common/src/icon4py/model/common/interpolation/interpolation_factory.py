@@ -6,9 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -115,10 +118,27 @@ class InterpolationConfig:
         else:  # default value in ICON
             self.max_nudging_coefficient = 0.375
 
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> InterpolationConfig:
+        interpol_nml = atmo_dict["interpol_nml"]
+        dynamics_nml = atmo_dict["dynamics_nml"]
+        return cls(
+            divergence_averaging_central_cell_weight=dynamics_nml["divavg_cntrwgt"],
+            _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+            nudge_efold_width=interpol_nml["nudge_efold_width"],
+            nudge_zone_width=interpol_nml["nudge_zone_width"],
+            rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+            rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+            rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+            lsq_dim_stencil=interpol_nml["lsq_high_ord"],
+            **overrides,
+        )
+
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
@@ -148,7 +168,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
-                {
+                fields={
                     "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
                 }
             )
@@ -161,7 +181,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry,))
+        return factory.CompositeSource(me=self, others=(self._geometry,))
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
@@ -301,7 +321,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=self._exchange,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
-            domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
+            domain=(dims.CellDim, dims.LsqUnkDim, dims.C2E2CDim),
             deps={
                 "cell_center_x": geometry_attrs.CELL_CENTER_X,
                 "cell_center_y": geometry_attrs.CELL_CENTER_Y,
