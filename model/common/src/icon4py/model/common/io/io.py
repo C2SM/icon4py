@@ -26,12 +26,12 @@ from icon4py.model.common.io.writers import GlobalFileAttributes
 log = logging.getLogger(__name__)
 
 
-DeltaT: TypeAlias = dt.timedelta
-NumTimeSteps: TypeAlias = int
+DeltaT: TypeAlias = dt.timedelta  # noqa: UP040
+NumTimeSteps: TypeAlias = int  # noqa: UP040
 #: Output schedule given as either a number of model steps or a simulation-time delta.
 #: A time delta is normalized to a number of steps internally (using the model time step),
 #: so the schedule is always evaluated in steps.
-OutputInterval: TypeAlias = DeltaT | NumTimeSteps
+OutputInterval: TypeAlias = DeltaT | NumTimeSteps  # noqa: UP040
 
 
 def _interval_in_steps(output_interval: OutputInterval, dtime: DeltaT) -> int:

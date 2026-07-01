@@ -36,10 +36,10 @@ from icon4py.model.standalone_driver.initial_condition import from_file as from_
 log = logging.getLogger(__name__)
 
 
-RelativeTime: TypeAlias = datetime.timedelta
-AbsoluteTime: TypeAlias = datetime.datetime
-NumTimeSteps: TypeAlias = int
-EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
+RelativeTime: TypeAlias = datetime.timedelta  # noqa: UP040
+AbsoluteTime: TypeAlias = datetime.datetime  # noqa: UP040
+NumTimeSteps: TypeAlias = int  # noqa: UP040
+EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps  # noqa: UP040
 
 
 @dataclasses.dataclass
