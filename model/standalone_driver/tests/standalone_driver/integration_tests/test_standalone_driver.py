@@ -26,6 +26,35 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
+# Absolute tolerances for the prognostic fields, per experiment. JW and GAUSS3D
+# reproduce the serialized reference to roundoff; MCH_CH_R04B09 is looser because
+# the driver generates its static fields (e.g. rbf coefficients) rather than
+# reading them from the savepoints.
+_TOLERANCES = {
+    test_defs.Experiments.JW.name: {
+        "vn": 6e-12,
+        "w": 1e-13,
+        "exner": 0.0,
+        "theta_v": 4e-12,
+        "rho": 0.0,
+    },
+    test_defs.Experiments.GAUSS3D.name: {
+        "vn": 6e-12,
+        "w": 1e-13,
+        "exner": 0.0,
+        "theta_v": 4e-12,
+        "rho": 0.0,
+    },
+    test_defs.Experiments.MCH_CH_R04B09.name: {
+        "vn": 6e-7,
+        "w": 8e-9,
+        "exner": 2e-10,
+        "theta_v": 1e-7,
+        "rho": 9e-10,
+    },
+}
+
+
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
@@ -123,43 +152,32 @@ def test_standalone_driver(
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
 
-    if experiment_description == test_defs.Experiments.MCH_CH_R04B09:
-        vn_atol = 6e-7
-        w_atol = 8e-9
-        exner_atol = 2e-10
-        theta_v_atol = 1e-7
-        rho_atol = 9e-10
-    else:
-        vn_atol = 6e-12
-        w_atol = 1e-13
-        exner_atol = 0.0
-        theta_v_atol = 4e-12
-        rho_atol = 0.0
+    tolerances = _TOLERANCES[experiment_description.name]
 
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=vn_atol,
+        atol=tolerances["vn"],
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=w_atol,
+        atol=tolerances["w"],
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
-        atol=exner_atol,
+        atol=tolerances["exner"],
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=theta_v_atol,
+        atol=tolerances["theta_v"],
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.rho.asnumpy(),
         rho_sp.asnumpy(),
-        atol=rho_atol,
+        atol=tolerances["rho"],
     )
 
 
