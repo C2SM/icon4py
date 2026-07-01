@@ -131,8 +131,8 @@ variables:
   extends: .test_runner_base
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   variables:
-    SLURM_NTASKS: 12
-    ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
+    SLURM_NTASKS: 4
+    # ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
     SLURM_LABELIO: 1
     # Use this to reduce memory requirements from having one venv per rank.
     # Generally this is not recommended but in CI the cache will not get wiped
