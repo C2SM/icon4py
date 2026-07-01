@@ -34,6 +34,7 @@ from icon4py.model.common.states import (
 )
 from icon4py.model.common.states.static_fields import StaticFieldFactories
 from icon4py.model.common.states.tracer_state import TracerState
+from icon4py.model.common.time import AbsoluteTime, NumTimeSteps, RelativeTime
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config
 
@@ -73,11 +74,11 @@ class ModelTimeVariables:
     Runtime time/date variables derived from config at initialisation.
     """
 
-    simulation_current_datetime: driver_config.AbsoluteTime
-    simulation_start_datetime: driver_config.AbsoluteTime
-    simulation_end_datetime: driver_config.AbsoluteTime
-    n_time_steps: driver_config.NumTimeSteps
-    dtime: driver_config.RelativeTime
+    simulation_current_datetime: AbsoluteTime
+    simulation_start_datetime: AbsoluteTime
+    simulation_end_datetime: AbsoluteTime
+    n_time_steps: NumTimeSteps
+    dtime: RelativeTime
     ndyn_substeps_var: int
     max_ndyn_substeps: int
     elapsed_time_in_seconds: ta.wpfloat
@@ -90,15 +91,15 @@ class ModelTimeVariables:
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
         match config.end_of_simulation:
-            case driver_config.NumTimeSteps() as n:
+            case NumTimeSteps() as n:
                 self.n_time_steps = n
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
-            case driver_config.RelativeTime() as relative:
+            case RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + relative
-            case driver_config.AbsoluteTime() as absolute:
+            case AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = absolute

@@ -45,6 +45,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.states.tracer_state import TracerConfig
+from icon4py.model.common.time import AbsoluteTime, NumTimeSteps, RelativeTime
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
@@ -527,11 +528,11 @@ def display_driver_setup_in_log_file(
     log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
     log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
     match config.end_of_simulation:
-        case driver_config.NumTimeSteps():
+        case NumTimeSteps():
             log.info("Running mode           : num_timesteps")
-        case driver_config.RelativeTime():
+        case RelativeTime():
             log.info("Running mode           : relative_time")
-        case driver_config.AbsoluteTime():
+        case AbsoluteTime():
             log.info("Running mode           : absolute_time")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")

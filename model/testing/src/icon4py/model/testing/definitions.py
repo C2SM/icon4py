@@ -14,7 +14,7 @@ import pathlib
 from typing import Final
 
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.experiment_config.config import ExperimentConfig
+from icon4py.model.standalone_driver.config import ExperimentConfig
 from icon4py.model.testing import config
 
 

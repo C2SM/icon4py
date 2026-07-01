@@ -43,6 +43,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.time import AbsoluteTime
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -119,7 +120,7 @@ class Icon4pyDriver:
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
-        simulation_current_datetime: driver_config.AbsoluteTime,
+        simulation_current_datetime: AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
 

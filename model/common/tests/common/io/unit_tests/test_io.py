@@ -23,16 +23,15 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import ugrid
 from icon4py.model.common.io.io import (
-    DeltaT,
     FieldGroupIOConfig,
     FieldGroupMonitor,
     IOConfig,
     IOMonitor,
-    NumTimeSteps,
     OutputInterval,
     generate_name,
 )
 from icon4py.model.common.states import data
+from icon4py.model.common.time import NumTimeSteps, RelativeTime
 from icon4py.model.testing import datatest_utils, definitions, grid_utils
 
 from ...fixtures import test_path
@@ -85,7 +84,7 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
-        dtime=DeltaT(hours=1),
+        dtime=RelativeTime(hours=1),
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -110,7 +109,7 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
-        dtime=DeltaT(hours=1),
+        dtime=RelativeTime(hours=1),
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
@@ -157,7 +156,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(grid.id),
-        dtime=DeltaT(hours=1),
+        dtime=RelativeTime(hours=1),
     )
     time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(3):
@@ -205,7 +204,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
         horizontal=grid.config.horizontal_config,
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
-        dtime=DeltaT(hours=1),
+        dtime=RelativeTime(hours=1),
     )
     time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(4):
@@ -284,7 +283,7 @@ def create_field_group_monitor(
     test_path: pathlib.Path,
     grid: base.Grid,
     output_interval: OutputInterval = NumTimeSteps(1),
-    dtime: DeltaT = DeltaT(hours=1),
+    dtime: RelativeTime = RelativeTime(hours=1),
 ) -> tuple[FieldGroupIOConfig, FieldGroupMonitor]:
     config = FieldGroupIOConfig(
         filename="test_empty.nc",
@@ -367,7 +366,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pa
         horizontal=horizontal_size,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         output_path=test_path,
-        dtime=DeltaT(hours=1),
+        dtime=RelativeTime(hours=1),
     )
     assert group_monitor.output_path == test_path.joinpath("vars")
     assert group_monitor.output_path.exists()
@@ -389,7 +388,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.
         horizontal=horizontal_size,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         output_path=test_path,
-        dtime=DeltaT(hours=1),
+        dtime=RelativeTime(hours=1),
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
@@ -413,8 +412,8 @@ def test_fieldgroup_monitor_time_interval_normalized_to_steps(test_path: pathlib
     _, group_monitor = create_field_group_monitor(
         test_path,
         test_io_utils.simple_grid,
-        output_interval=DeltaT(hours=3),
-        dtime=DeltaT(hours=1),
+        output_interval=RelativeTime(hours=3),
+        dtime=RelativeTime(hours=1),
     )
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
@@ -433,6 +432,6 @@ def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(test_path: pathli
         create_field_group_monitor(
             test_path,
             test_io_utils.simple_grid,
-            output_interval=DeltaT(minutes=30),
-            dtime=DeltaT(hours=1),
+            output_interval=RelativeTime(minutes=30),
+            dtime=RelativeTime(hours=1),
         )

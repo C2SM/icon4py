@@ -9,7 +9,6 @@ source_roots = [
     "model/standalone_driver/src",
     "model/common/src",
     "model/driver/src",
-    "model/experiment_config/src",
     "model/testing/src",
     "tools/src",
     "bindings/src",
@@ -61,17 +60,6 @@ depends_on = [{ path = "icon4py.model.common" }]
 path = "icon4py.model.standalone_driver"
 depends_on = [
     { path = "icon4py.model.common" },
-    { path = "icon4py.model.experiment_config" },
-]
-
-[[modules]]
-path = "icon4py.model.experiment_config"
-depends_on = [
-    { path = "icon4py.model.atmosphere.advection" },
-    { path = "icon4py.model.atmosphere.diffusion" },
-    { path = "icon4py.model.atmosphere.dycore" },
-    { path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics" },
-    { path = "icon4py.model.common" },
 ]
 
 [[modules]]
@@ -88,10 +76,7 @@ depends_on = [
 
 [[modules]]
 path = "icon4py.model.testing"
-depends_on = [
-    { path = "icon4py.model.common" },
-    { path = "icon4py.model.experiment_config" },
-]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.tools"

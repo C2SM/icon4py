@@ -44,7 +44,6 @@ members = [
   "icon4py-bindings",
   "icon4py-common",
   "icon4py-driver",
-  "icon4py-experiment-config",
   "icon4py-standalone-driver",
   "icon4py-testing",
   "icon4py-tools"
@@ -2323,7 +2322,6 @@ dependencies = [
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-common"},
   {name = "icon4py-driver"},
-  {name = "icon4py-experiment-config"},
   {name = "icon4py-standalone-driver"}
 ]
 name = "icon4py"
@@ -2445,7 +2443,6 @@ requires-dist = [
   {name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
   {name = "icon4py-driver", editable = "model/driver"},
-  {name = "icon4py-experiment-config", editable = "model/experiment_config"},
   {name = "icon4py-standalone-driver", editable = "model/standalone_driver"},
   {name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing"},
   {name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0"}
@@ -2848,37 +2845,11 @@ requires-dist = [
 
 [[package]]
 dependencies = [
-  {name = "gt4py"},
-  {name = "icon4py-atmosphere-advection"},
-  {name = "icon4py-atmosphere-diffusion"},
-  {name = "icon4py-atmosphere-dycore"},
-  {name = "icon4py-atmosphere-microphysics"},
-  {name = "icon4py-common", extra = ["io"]},
-  {name = "packaging"}
-]
-name = "icon4py-experiment-config"
-source = {editable = "model/experiment_config"}
-version = "0.2.0"
-
-[package.metadata]
-requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
-  {name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection"},
-  {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
-  {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
-  {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
-  {name = "icon4py-common", extras = ["io"], editable = "model/common"},
-  {name = "packaging", specifier = ">=20.0"}
-]
-
-[[package]]
-dependencies = [
   {name = "devtools"},
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-common", extra = ["io"]},
-  {name = "icon4py-testing"},
   {name = "packaging"},
   {name = "typer"}
 ]
@@ -2893,7 +2864,6 @@ requires-dist = [
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
-  {name = "icon4py-testing", editable = "model/testing"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "typer", specifier = ">=0.20.0"}
 ]

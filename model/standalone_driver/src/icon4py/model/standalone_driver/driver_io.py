@@ -37,6 +37,7 @@ from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, v
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
 from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.time import NumTimeSteps
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -280,7 +281,7 @@ def create_io_monitor(
     vertical_grid: v_grid.VerticalGrid,
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
-    output_interval: common_io.OutputInterval = common_io.NumTimeSteps(1),
+    output_interval: common_io.OutputInterval = NumTimeSteps(1),
     process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.
