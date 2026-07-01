@@ -40,7 +40,7 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
 from icon4py.model.common.math.vertical_operations import (
     difference_level_plus1_on_cells,
-    with_boundaries_on_half_levels,
+    with_boundaries_on_half_levels_on_cells,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -54,7 +54,7 @@ def _compute_ddqz_z_half(
     z_mc: fa.CellKField[wpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    return with_boundaries_on_half_levels(
+    return with_boundaries_on_half_levels_on_cells(
         top=2.0 * (z_ifc - z_mc),
         interior=z_mc(KDim - 1) - z_mc,
         bottom=2.0 * (z_mc(KDim - 1) - z_ifc),

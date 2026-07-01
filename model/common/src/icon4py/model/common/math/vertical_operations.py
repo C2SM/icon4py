@@ -76,7 +76,7 @@ def difference_level_plus1_on_cells(
 
 
 @gtx.field_operator
-def with_boundaries_on_half_levels(
+def with_boundaries_on_half_levels_on_cells(
     top: fa.CellKField[wpfloat],
     interior: fa.CellKField[wpfloat],
     bottom: fa.CellKField[wpfloat],
