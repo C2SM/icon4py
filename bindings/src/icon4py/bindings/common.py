@@ -118,7 +118,7 @@ type OptionalFloat64Array1D = Annotated[
 ]
 
 type OptionalFloat64Array2D = Annotated[
-    data_alloc.NDArray,
+    data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=2,
         dtype=ts.ScalarKind.FLOAT64,
