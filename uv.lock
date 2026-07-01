@@ -2398,7 +2398,6 @@ scripts = [
   {name = "pyyaml"},
   {name = "rich"},
   {name = "setuptools"},
-  {name = "tach"},
   {name = "typer"},
   {name = "wheel"}
 ]
@@ -2517,7 +2516,6 @@ scripts = [
   {name = "pyyaml", specifier = ">=6.0"},
   {name = "rich", specifier = ">=13.0.0"},
   {name = "setuptools", specifier = ">=70.1.1"},
-  {name = "tach", specifier = ">=0.23.0"},
   {name = "typer", specifier = ">=0.15"},
   {name = "wheel", specifier = ">=0.45.0"}
 ]
