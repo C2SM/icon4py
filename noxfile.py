@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 from collections.abc import Sequence
 from datetime import datetime
@@ -232,6 +233,49 @@ def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsS
             session.run(*pytest_base.split(), *session.posargs)
     with session.chdir("bindings"):
         session.run(*pytest_base.split(), *session.posargs)
+
+
+# Deterministic CPU backends and pilot tests used to measure and tighten tolerances. GPU/dace
+# backends are excluded because their results are not bitwise reproducible.
+TOLERANCE_RECORD_BACKENDS: Final[Sequence[str]] = ("gtfn_cpu", "embedded")
+TOLERANCE_PILOT_TEST: Final[str] = (
+    "model/common/tests/common/interpolation/unit_tests/test_rbf_interpolation.py"
+)
+TOLERANCE_PILOT_STORE: Final[str] = (
+    "model/common/tests/common/interpolation/unit_tests/rbf_tolerances.json"
+)
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+def update_tolerances(session: nox.Session) -> None:
+    """Measure test tolerances on deterministic CPU backends and tighten the tolerance store."""
+    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
+
+    measurement_files = []
+    for backend in TOLERANCE_RECORD_BACKENDS:
+        measurement_file = str(pathlib.Path(f"tolerance-measurements-{backend}.jsonl").resolve())
+        measurement_files.append(measurement_file)
+        # '-n0' is required: xdist workers would otherwise clobber the shared measurements file.
+        session.run(
+            "pytest",
+            "-q",
+            "--benchmark-disable",
+            "-n0",
+            "--datatest-only",
+            f"--backend={backend}",
+            TOLERANCE_PILOT_TEST,
+            env={"ICON4PY_RECORD_TOLERANCES": measurement_file},
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
+
+    session.run(
+        "python",
+        "scripts/python/update_tolerances.py",
+        "--store",
+        TOLERANCE_PILOT_STORE,
+        *measurement_files,
+        *session.posargs,
+    )
 
 
 # -- utils --
