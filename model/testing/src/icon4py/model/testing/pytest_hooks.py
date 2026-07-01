@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.testing import filters
+from icon4py.model.testing import config as testing_config, filters, tolerances
 
 
 __all__ = [
@@ -50,6 +50,10 @@ def pytest_configure(config):
 
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
+
+    # Activate tolerance recording/drift detection when the corresponding options are enabled.
+    if testing_config.RECORD_TOLERANCES_PATH is not None or testing_config.TOLERANCE_DRIFT_WARN:
+        tolerances.activate_recorder()
 
     handle_mpi_options(config)
 
@@ -153,9 +157,26 @@ def pytest_collection_modifyitems(config, items):
             )
 
 
+def _record_test_context(item: pytest.Item) -> None:
+    """Provide the current test id, backend and experiment to the active tolerance recorder."""
+    recorder = tolerances.get_active_recorder()
+    if recorder is None:
+        return
+    params = getattr(item, "callspec", None)
+    params = params.params if params is not None else {}
+    experiment = params.get("experiment_description", params.get("experiment", ""))
+    recorder.set_context(
+        nodeid=item.nodeid,
+        backend=item.config.getoption("--backend"),
+        experiment=getattr(experiment, "name", str(experiment)),
+    )
+
+
 @pytest.hookimpl(trylast=True)
 def pytest_runtest_setup(item: pytest.Item) -> None:
     """Apply test item filters as the final test setup step."""
+
+    _record_test_context(item)
 
     item_marker_filters = filters.item_marker_filters
     for marker_name in set(m.name for m in item.iter_markers()) & item_marker_filters.keys():
@@ -230,10 +251,26 @@ def pytest_runtest_makereport(item, call):
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
+def _report_tolerance_drift(terminalreporter) -> None:
+    """Print a non-failing summary of tolerances that are much looser than the measured difference."""
+    recorder = tolerances.get_active_recorder()
+    if recorder is None or not recorder.drift_warnings:
+        return
+    terminalreporter.ensure_newline()
+    terminalreporter.section("Tolerance drift (tolerances too loose)", sep="-", yellow=True)
+    for warning in recorder.drift_warnings:
+        terminalreporter.line(
+            f"{warning.nodeid} [{warning.field}]: atol={warning.atol:g} "
+            f"but measured max diff {warning.max_abs:g}"
+        )
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
+    _report_tolerance_drift(terminalreporter)
+
     # Gather gtx_metrics
     benchmark_gtx_metrics = []
     for outcome in ("passed", "failed", "skipped"):
@@ -392,3 +429,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     scheduler = getattr(session.config, "_mpi_scheduler", None)
     if scheduler is not None:
         scheduler.finalize()
+
+    recorder = tolerances.get_active_recorder()
+    if recorder is not None and testing_config.RECORD_TOLERANCES_PATH is not None:
+        recorder.dump(testing_config.RECORD_TOLERANCES_PATH)
