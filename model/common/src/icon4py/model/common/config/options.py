@@ -8,13 +8,9 @@
 
 import dataclasses
 import typing
-
-from typing_extensions import Self
+from typing import Self
 
 from icon4py.model.common.utils import fortran_config
-
-
-T = typing.TypeVar("T")
 
 
 class NotDataclassError(Exception): ...
@@ -141,7 +137,7 @@ def iter_pairs_from_icon(
             yield name, annotations[name](de_listified)
 
 
-def construct_config_from_icon(
+def construct_config_from_icon[T](
     config_cls: type[T], icon_config: dict[str, typing.Any], **overrides: typing.Any
 ) -> T:
     """
