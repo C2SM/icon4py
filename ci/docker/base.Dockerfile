@@ -184,6 +184,19 @@ RUN set -eux; \
     curl -fsSL "https://github.com/NVIDIA/nccl/archive/refs/tags/v${nccl_version}.tar.gz" -o /tmp/nccl.tar.gz; \
     tar -C /tmp -xzf /tmp/nccl.tar.gz; \
     cd "/tmp/nccl-${nccl_version}"; \
+    # HPC SDK 24.11 (CUDA 12.6) declares cospi/sinpi/rsqrt without noexcept
+    # in crt/math_functions.h, but glibc >= 2.38 (>= 2.42 on Ubuntu 25.10)
+    # declares them with noexcept(true) via bits/mathcalls.h. C++17 forbids
+    # redeclaration with differing exception specs. Fixed in CUDA 13.2.
+    # https://forums.developer.nvidia.com/t/323591
+    sed -i \
+      -e 's/sinpi(double x);/sinpi(double x) noexcept (true);/' \
+      -e 's/sinpif(float x);/sinpif(float x) noexcept (true);/' \
+      -e 's/cospi(double x);/cospi(double x) noexcept (true);/' \
+      -e 's/cospif(float x);/cospif(float x) noexcept (true);/' \
+      -e 's/rsqrt(double x);/rsqrt(double x) noexcept (true);/' \
+      -e 's/rsqrtf(float x);/rsqrtf(float x) noexcept (true);/' \
+      "$(find "${CUDA_PATH}" -path '*/targets/sbsa-linux/include/crt/math_functions.h' -print -quit)"; \
     make -j"$(nproc)" CUDA_HOME="${CUDA_PATH}" PREFIX=/usr; \
     make install CUDA_HOME="${CUDA_PATH}" PREFIX=/usr; \
     cd /; \
