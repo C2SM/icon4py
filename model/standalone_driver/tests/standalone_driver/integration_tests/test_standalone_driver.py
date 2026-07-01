@@ -26,6 +26,34 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
+# Absolute tolerances for the prognostic fields, per experiment. JW and GAUSS3D
+# reproduce the serialized reference to roundoff; MCH_CH_R04B09 is looser,
+# probably because of rbf coeffs (under investigation).
+_TOLERANCES = {
+    test_defs.Experiments.JW: {
+        "vn": 6e-7,
+        "w": 8e-9,
+        "exner": 2e-10,
+        "theta_v": 1e-7,
+        "rho": 9e-10,
+    },
+    test_defs.Experiments.GAUSS3D: {
+        "vn": 6e-7,
+        "w": 8e-9,
+        "exner": 2e-10,
+        "theta_v": 1e-7,
+        "rho": 9e-10,
+    },
+    test_defs.Experiments.MCH_CH_R04B09: {
+        "vn": 6e-7,
+        "w": 8e-9,
+        "exner": 2e-10,
+        "theta_v": 1e-7,
+        "rho": 9e-10,
+    },
+}
+
+
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
@@ -51,7 +79,26 @@ from ..fixtures import *  # noqa: F403
             False,
             False,
         ),
-        # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            2,
+            2,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            True,
+            False,
+        ),
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            2,
+            2,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            False,
+            False,
+        ),
     ],
 )
 def test_standalone_driver(
@@ -76,6 +123,9 @@ def test_standalone_driver(
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
+            "start_of_simulation": datetime.datetime.fromisoformat(timeloop_date_init).replace(
+                tzinfo=datetime.timezone.utc
+            ),
             "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
                 tzinfo=datetime.timezone.utc
             ),
@@ -101,28 +151,30 @@ def test_standalone_driver(
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
 
+    tolerances = _TOLERANCES[experiment_description]
+
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=6e-7,
+        atol=tolerances["vn"],
     )
-
     test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-9,
+        atol=tolerances["w"],
     )
-
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
-        atol=2e-10,
+        atol=tolerances["exner"],
     )
-
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=1e-7,
+        atol=tolerances["theta_v"],
     )
-
-    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
+    test_utils.assert_dallclose(
+        ds.prognostics.current.rho.asnumpy(),
+        rho_sp.asnumpy(),
+        atol=tolerances["rho"],
+    )

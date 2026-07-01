@@ -47,7 +47,7 @@ def grids_path() -> pathlib.Path:
     return config.TEST_DATA_PATH.joinpath(GRID_DATA_DIR)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class GridDescription:
     name: str
     description: str
@@ -164,7 +164,7 @@ class Grids:
     )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ExperimentDescription:
     name: str
     long_name: str

@@ -43,6 +43,8 @@ _log = logging.getLogger(__file__)
     "experiment_description, end_of_simulation",
     [
         (test_defs.Experiments.JW, driver_config.NumTimeSteps(1)),
+        (test_defs.Experiments.GAUSS3D, driver_config.NumTimeSteps(1)),
+        (test_defs.Experiments.MCH_CH_R04B09, driver_config.NumTimeSteps(1)),
     ],
 )
 @pytest.mark.mpi
