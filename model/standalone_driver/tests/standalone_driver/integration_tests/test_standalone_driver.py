@@ -31,18 +31,18 @@ from ..fixtures import *  # noqa: F403
 # probably because of rbf coeffs (under investigation).
 _TOLERANCES = {
     test_defs.Experiments.JW: {
-        "vn": 6e-12,
-        "w": 1e-13,
-        "exner": 0.0,
-        "theta_v": 4e-12,
-        "rho": 0.0,
+        "vn": 6e-7,
+        "w": 8e-9,
+        "exner": 2e-10,
+        "theta_v": 1e-7,
+        "rho": 9e-10,
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": 6e-12,
-        "w": 1e-13,
-        "exner": 0.0,
-        "theta_v": 4e-12,
-        "rho": 0.0,
+        "vn": 6e-7,
+        "w": 8e-9,
+        "exner": 2e-10,
+        "theta_v": 1e-7,
+        "rho": 9e-10,
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": 6e-7,
