@@ -29,6 +29,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_states,
+    driver_utils,
     standalone_driver,
 )
 from icon4py.model.testing import (
@@ -146,21 +147,18 @@ def test_standalone_driver(
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
 
-    if (
-        experiment_description == test_defs.Experiments.JW
-        or experiment_description == test_defs.Experiments.GAUSS3D
-    ):
+    if experiment_description == test_defs.Experiments.MCH_CH_R04B09:
+        vn_atol = 6e-7
+        w_atol = 8e-9
+        exner_atol = 2e-10
+        theta_v_atol = 1e-7
+        rho_atol = 9e-10
+    else:
         vn_atol = 6e-12
         w_atol = 1e-13
         exner_atol = 0.0
         theta_v_atol = 4e-12
         rho_atol = 0.0
-    else:
-        vn_atol = _MCH_VN_ATOL
-        w_atol = _MCH_W_ATOL
-        exner_atol = _MCH_EXNER_ATOL
-        theta_v_atol = _MCH_THETA_V_ATOL
-        rho_atol = _MCH_RHO_ATOL
 
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
