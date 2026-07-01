@@ -27,25 +27,24 @@ from ..fixtures import *  # noqa: F403
 
 
 # Absolute tolerances for the prognostic fields, per experiment. JW and GAUSS3D
-# reproduce the serialized reference to roundoff; MCH_CH_R04B09 is looser because
-# the driver generates its static fields (e.g. rbf coefficients) rather than
-# reading them from the savepoints.
+# reproduce the serialized reference to roundoff; MCH_CH_R04B09 is looser,
+# probably because of rbf coeffs (under investigation).
 _TOLERANCES = {
-    test_defs.Experiments.JW.name: {
+    test_defs.Experiments.JW: {
         "vn": 6e-12,
         "w": 1e-13,
         "exner": 0.0,
         "theta_v": 4e-12,
         "rho": 0.0,
     },
-    test_defs.Experiments.GAUSS3D.name: {
+    test_defs.Experiments.GAUSS3D: {
         "vn": 6e-12,
         "w": 1e-13,
         "exner": 0.0,
         "theta_v": 4e-12,
         "rho": 0.0,
     },
-    test_defs.Experiments.MCH_CH_R04B09.name: {
+    test_defs.Experiments.MCH_CH_R04B09: {
         "vn": 6e-7,
         "w": 8e-9,
         "exner": 2e-10,
@@ -152,7 +151,7 @@ def test_standalone_driver(
     vn_sp = savepoint_diffusion_exit.vn()
     w_sp = savepoint_diffusion_exit.w()
 
-    tolerances = _TOLERANCES[experiment_description.name]
+    tolerances = _TOLERANCES[experiment_description]
 
     test_utils.assert_dallclose(
         ds.prognostics.current.vn.asnumpy(),
@@ -179,5 +178,3 @@ def test_standalone_driver(
         rho_sp.asnumpy(),
         atol=tolerances["rho"],
     )
-
-
