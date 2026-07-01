@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 )
 from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
@@ -108,6 +109,7 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
+    geometry: GeometryConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -188,6 +190,8 @@ def read_config(
         else None
     )
 
+    geometry_config = GeometryConfig(use_analytical_means=True)
+
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
@@ -212,6 +216,7 @@ def read_config(
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,
         topography=topography_config,
+        geometry=geometry_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
         tracer_config=tracer_config,
