@@ -26,9 +26,10 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  # NOTE: gt4py, numpy and icon4py-common will be added as soon as the first
-  # stencils land (tach rejects declared-but-unused dependencies).
+  # workspace members
+  "icon4py-common~=0.2.0",
   # external dependencies
+  "gt4py==1.1.11",
   "packaging>=20.0"
 ]
 description = "ICON AES turbulent mixing (tmx) parameterization."

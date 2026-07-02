@@ -2667,6 +2667,8 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common"},
   {name = "packaging"}
 ]
 name = "icon4py-atmosphere-tmx"
@@ -2674,7 +2676,11 @@ source = {editable = "model/atmosphere/subgrid_scale_physics/tmx"}
 version = "0.2.0"
 
 [package.metadata]
-requires-dist = [{name = "packaging", specifier = ">=20.0"}]
+requires-dist = [
+  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
 
 [[package]]
 dependencies = [
