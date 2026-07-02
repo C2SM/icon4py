@@ -16,11 +16,26 @@ from typing import Any, Final
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_explicit_vertical_diffusion_cells import (
+    apply_explicit_vertical_diffusion_cells,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_horizontal_diffusion_and_update_scalar import (
+    apply_horizontal_diffusion_and_update_scalar,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.assign_constant_viscosity import (
     assign_constant_viscosity,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_brunt_vaisala_frequency import (
     compute_brunt_vaisala_frequency,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_energy_from_temperature import (
+    compute_energy_from_temperature,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_inverse_air_mass import (
+    compute_inverse_air_mass,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_nabla2_flux import (
+    compute_scalar_nabla2_flux,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_shear_and_div_of_stress import (
     compute_shear_and_div_of_stress,
@@ -31,14 +46,26 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_smagori
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_static_energy import (
     compute_static_energy,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_energy_flux import (
+    compute_surface_energy_flux,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_flux_rhs import (
+    compute_surface_flux_rhs,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tangential_wind_wp import (
     compute_tangential_wind_wp,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_temperature_from_energy_and_tendency import (
+    compute_temperature_from_energy_and_tendency,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_virtual_potential_temperature import (
     compute_virtual_potential_temperature,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_from_uv import (
     compute_vn_from_uv,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_cell_kdim_field_with_zero import (
+    init_cell_kdim_field_with_zero,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_height_above_ground import (
     init_height_above_ground,
@@ -66,6 +93,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_she
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_vn_to_half_levels_with_boundary import (
     interpolate_vn_to_half_levels_with_boundary,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.prepare_tridiagonal_matrix_cells import (
+    prepare_tridiagonal_matrix_cells,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_diffusion_cells import (
+    solve_vertical_diffusion_cells,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import options as common_conf_opt
@@ -313,9 +346,11 @@ class Tmx:
 
     Port of the ``t_vdf`` / ``t_vdf_atmo`` classes driven by ``mo_vdf.f90``.
     Currently implements the initialization (``Smagorinsky_init`` in
-    mo_tmx_smagorinsky.f90 plus the time-independent height above ground) and
+    mo_tmx_smagorinsky.f90 plus the time-independent height above ground),
     Stage A, the Smagorinsky diagnostics (``Compute_diagnostics`` in
-    mo_vdf_atmo.f90).
+    mo_vdf_atmo.f90), and the scalar diffusion stages B
+    (``Compute_diffusion_hydrometeors``) and C
+    (``Compute_diffusion_temperature``) of mo_vdf.f90.
 
     Persistent derived fields (computed once at construction, read every step):
     - ``mix_len_sq``: squared Smagorinsky mixing length (half-level cells),
@@ -362,6 +397,14 @@ class Tmx:
         self._cell_params = cell_params
 
         assert self._cell_params.area is not None
+
+        #: scaling factor of the turbulent energy flux (``zfactor`` in
+        #: 'Compute_diffusion_temperature', mo_vdf.f90)
+        self._zfactor = (
+            self.config.scale_turb_energy_flux if self.config.use_scale_turb_energy_flux else 1.0
+        )
+        #: compile-time variant selector of the energy conversion stencils
+        use_internal_energy = self.config.energy_type == EnergyType.INTERNAL
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(self._exchange)
 
@@ -802,6 +845,8 @@ class Tmx:
             offset_provider=self._grid.connectivities,
         )
 
+        self._setup_scalar_diffusion_programs(backend, num_levels, use_internal_energy)
+
         # ---------------------------------------------------------------------
         # Run the init programs (Smagorinsky_init in mo_tmx_smagorinsky.f90 and
         # compute_geopotential_height_above_ground in mo_vdf_atmo.f90)
@@ -812,6 +857,209 @@ class Tmx:
             # Louis stability correction is enabled; the field stays zero otherwise
             self.init_louis_scaling_factor(scaling_factor_louis=self.louis_factor)
         self.init_height_above_ground(height_above_ground=self.ghf)
+
+    def _setup_scalar_diffusion_programs(
+        self,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
+        num_levels: int,
+        use_internal_energy: bool,
+    ) -> None:
+        """
+        Bind the Stage B + C step programs (scalar diffusion:
+        Compute_diffusion_hydrometeors l. 585 and Compute_diffusion_temperature
+        l. 912 in mo_vdf.f90). All cell loops run on the tmx t_domain cell
+        range (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels, unless
+        noted otherwise.
+        """
+        # CALL init(...) zero fills (whole array, tendencies before the solves)
+        self.init_cell_kdim_field_with_zero = setup_program(
+            backend=backend,
+            program=init_cell_kdim_field_with_zero,
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": self._cell_end_end,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        # inverse air mass (the ``inv_mair`` loops of mo_vdf.f90)
+        self.compute_inverse_air_mass = setup_program(
+            backend=backend,
+            program=compute_inverse_air_mass,
+            constant_args={"inv_air_mass": self._inv_air_mass},
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        # prepare_diffusion_matrix (zk = kh_ic): two bindings because zprefac is
+        # inlined at compile time (hydrometeors: 1, energy: zfactor)
+        prepare_tridiagonal_matrix_constant_args = {
+            "inv_mair": self._inv_air_mass,
+            "inv_dz": self._metric_state.inv_ddqz_z_half,
+        }
+        prepare_tridiagonal_matrix_sizes = dict(
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        self.prepare_tridiagonal_matrix_hydrometeors = setup_program(
+            backend=backend,
+            program=prepare_tridiagonal_matrix_cells,
+            constant_args={**prepare_tridiagonal_matrix_constant_args, "zprefac": 1.0},
+            **prepare_tridiagonal_matrix_sizes,
+        )
+        self.prepare_tridiagonal_matrix_energy = setup_program(
+            backend=backend,
+            program=prepare_tridiagonal_matrix_cells,
+            constant_args={**prepare_tridiagonal_matrix_constant_args, "zprefac": self._zfactor},
+            **prepare_tridiagonal_matrix_sizes,
+        )
+        # rhs(nlev) = -sfc_flx * prefac * inv_mair(nlev): single bottom K row;
+        # the other rows of self._rhs are zero-allocated and never written
+        # (Fortran: rhs(1) = +top_flx * inv_mair(1) with top_flx == 0)
+        self.compute_surface_flux_rhs = setup_program(
+            backend=backend,
+            program=compute_surface_flux_rhs,
+            constant_args={"inv_air_mass": self._inv_air_mass},
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(num_levels - 1),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        # vertical solve: 'diffuse_vertical_implicit' or 'diffuse_vertical_explicit'
+        # in mo_tmx_numerics.f90, selected by the configured solver type
+        solve_vertical_diffusion_constant_args = {
+            "a": self._matrix_a,
+            "b": self._matrix_b,
+            "c": self._matrix_c,
+            "rhs": self._rhs,
+        }
+        self.solve_vertical_diffusion = setup_program(
+            backend=backend,
+            program=solve_vertical_diffusion_cells
+            if self.config.solver_type == TurbulenceSolverType.IMPLICIT
+            else apply_explicit_vertical_diffusion_cells,
+            constant_args=solve_vertical_diffusion_constant_args,
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        # nabla2_e = kh_ie * grad_horiz(scalar): edges rl grf_bdywidth_e..
+        # min_rledge_int-1 (halo edges computed on purpose, the divergence is
+        # taken on halo-adjacent cells afterwards)
+        self.compute_scalar_nabla2_flux = setup_program(
+            backend=backend,
+            program=compute_scalar_nabla2_flux,
+            constant_args={
+                "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
+                "rturb_prandtl": self._params.rturb_prandtl,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_nudging,
+                "horizontal_end": self._edge_end_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+        # flux divergence (geofac_div), tendency and state update
+        self.apply_horizontal_diffusion_and_update_scalar = setup_program(
+            backend=backend,
+            program=apply_horizontal_diffusion_and_update_scalar,
+            constant_args={
+                "nabla2_flux": self._nabla2_flux_e,
+                "geofac_div": self._interpolation_state.geofac_div,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+        # temp_to_energy / energy_to_temp + final tendency (mo_vdf_atmo.f90 l.
+        # 634/694) and compute_flux_x (l. 753); the energy-type variant is
+        # inlined at compile time
+        self.compute_energy_from_temperature = setup_program(
+            backend=backend,
+            program=compute_energy_from_temperature,
+            constant_args={
+                "height_above_ground": self.ghf,
+                "grav": constants.GRAV,
+                "use_internal_energy": use_internal_energy,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        self.compute_surface_energy_flux = setup_program(
+            backend=backend,
+            program=compute_surface_energy_flux,
+            constant_args={"use_internal_energy": use_internal_energy},
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            offset_provider={},
+        )
+        self.compute_temperature_from_energy_and_tendency = setup_program(
+            backend=backend,
+            program=compute_temperature_from_energy_and_tendency,
+            constant_args={
+                "height_above_ground": self.ghf,
+                "grav": constants.GRAV,
+                "use_internal_energy": use_internal_energy,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
 
     def _allocate_local_fields(self) -> None:
         #: squared Smagorinsky mixing length at half-level cell centers [m^2]
@@ -832,6 +1080,48 @@ class Tmx:
             self._grid, dims.CellDim, allocator=self._allocator
         )
         self.fract_ice: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
+            self._grid, dims.CellDim, allocator=self._allocator
+        )
+
+        # scalar diffusion (Stages B and C) temporaries, matching the local
+        # arrays of the scalar diffusion subroutines in mo_vdf.f90
+        def _cell_k_field() -> fa.CellKField[ta.wpfloat]:
+            return data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, allocator=self._allocator
+            )
+
+        #: inverse air mass per unit area [m^2/kg] (``inv_mair``)
+        self._inv_air_mass: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: rows of the tridiagonal vertical diffusion matrix (``a``, ``b``, ``c``)
+        self._matrix_a: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        self._matrix_b: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        self._matrix_c: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: right-hand side of the vertical diffusion solve (``rhs``); only the
+        #: bottom K row is ever written, all other rows must stay zero
+        self._rhs: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: scratch for the tridiagonal solution of the implicit solver, whose
+        #: effect only enters through the tendency (the Fortran discards it too:
+        #: the new state is computed as state + tend * dtime after the
+        #: horizontal diffusion)
+        self._diffused_scalar: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: horizontal turbulent diffusion flux at full-level edges (``nabla2_e``)
+        self._nabla2_flux_e: fa.EdgeKField[ta.wpfloat] = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._allocator
+        )
+        #: energy diffused by the heat diffusion, computed from the input
+        #: temperature and the old moisture state (``energy``)
+        self.energy: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: total (vertical + horizontal) diffusion tendency of the energy
+        #: (``tend_energy``)
+        self.tend_energy: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: energy after the diffusion update (``new_energy``)
+        self._new_energy: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        #: grid-mean surface energy flux (``flux_x`` of 'compute_flux_x')
+        self._flux_x: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
+            self._grid, dims.CellDim, allocator=self._allocator
+        )
+        #: zero surface flux of the tracers without surface exchange (qc, qi)
+        self._zero_surface_flux: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
         )
 
@@ -862,6 +1152,7 @@ class Tmx:
         self._cell_end_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._cell_end_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
         self._cell_end_halo_level_2 = self._grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
+        self._cell_end_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         self._edge_start_lateral_boundary_level_2 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -1033,3 +1324,210 @@ class Tmx:
         )
 
         log.debug("tmx Stage A (Compute_diagnostics): end")
+
+    def _solve_scalar_vertical_diffusion(
+        self,
+        var: fa.CellKField[ta.wpfloat],
+        tend: fa.CellKField[ta.wpfloat],
+        dtime: float,
+    ) -> None:
+        """
+        Vertical diffusion solve of a cell scalar, accumulating onto ``tend``.
+
+        Dispatches on the configured solver type ('diffuse_vertical_implicit' /
+        'diffuse_vertical_explicit' in mo_tmx_numerics.f90). The matrix rows
+        (``self._matrix_a/b/c``) and the right-hand side (``self._rhs``) are
+        bound at construction and must be up to date. The tridiagonal solution
+        of the implicit solver goes to the ``self._diffused_scalar`` scratch:
+        as in the Fortran, it only enters through the tendency.
+        """
+        if self.config.solver_type == TurbulenceSolverType.IMPLICIT:
+            self.solve_vertical_diffusion(
+                var=var,
+                new_var=self._diffused_scalar,
+                tend=tend,
+                dtime=dtime,
+            )
+        else:
+            self.solve_vertical_diffusion(
+                var=var,
+                tend=tend,
+            )
+
+    def run_hydrometeor_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
+        self,
+        input_state: tmx_states.TmxInputState,
+        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        diagnostic_state: tmx_states.TmxDiagnosticState,
+        tendency_state: tmx_states.TmxTendencyState,
+        new_state: tmx_states.TmxNewState,
+        dtime: float,
+    ) -> None:
+        """
+        Compute the hydrometeor diffusion (Stage B).
+
+        Port of ``Compute_diffusion_hydrometeors`` in mo_vdf.f90 (l. 585),
+        without the optional CO2 tracer (``l_co2``, out of scope). For each of
+        qv, qc and qi: implicit (or explicit) vertical diffusion with the
+        surface flux entering through the bottom-row right-hand side
+        (qv: evapotranspiration, qc/qi: zero), followed by conservative
+        horizontal nabla2 diffusion and the state update. The tendencies
+        (``ddt_qv/qc/qi``) are zeroed at entry and hold the total (vertical +
+        horizontal) diffusion tendency on exit.
+
+        Requires the Stage A diagnostics (``kh_ic``, ``km_ie``) of
+        ``diagnostic_state`` to be up to date (``run_diagnostics``).
+        """
+        log.debug("tmx Stage B (Compute_diffusion_hydrometeors): start")
+
+        self.compute_inverse_air_mass(air_mass=input_state.air_mass)
+        self.prepare_tridiagonal_matrix_hydrometeors(
+            zk=diagnostic_state.kh_ic,
+            a=self._matrix_a,
+            b=self._matrix_b,
+            c=self._matrix_c,
+        )
+
+        tracers = (
+            (
+                "qv",
+                input_state.qv,
+                tendency_state.ddt_qv,
+                new_state.qv,
+                surface_flux_state.evapotranspiration,
+            ),
+            ("qc", input_state.qc, tendency_state.ddt_qc, new_state.qc, self._zero_surface_flux),
+            ("qi", input_state.qi, tendency_state.ddt_qi, new_state.qi, self._zero_surface_flux),
+        )
+        for name, state, tend, new, sfc_flx in tracers:
+            self.init_cell_kdim_field_with_zero(field=tend)
+            self.compute_surface_flux_rhs(sfc_flx=sfc_flx, rhs=self._rhs, prefac=1.0)
+            self._solve_scalar_vertical_diffusion(var=state, tend=tend, dtime=dtime)
+
+            # S5: CALL sync_patch_array(SYNC_C, patch, state) in mo_vdf.f90
+            # ("include halo points and boundary points because these values
+            # will be used in next loop")
+            log.debug(f"communication of {name} (cells): start")
+            self._exchange.exchange(dims.CellDim, state)
+            log.debug(f"communication of {name} (cells): end")
+
+            self.compute_scalar_nabla2_flux(
+                scalar=state,
+                km_ie=diagnostic_state.km_ie,
+                nabla2_flux=self._nabla2_flux_e,
+                prefac=1.0,
+            )
+            self.apply_horizontal_diffusion_and_update_scalar(
+                scalar=state,
+                rho=input_state.rho,
+                new_scalar=new,
+                tend=tend,
+                dtime=dtime,
+            )
+
+        log.debug("tmx Stage B (Compute_diffusion_hydrometeors): end")
+
+    def run_temperature_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
+        self,
+        input_state: tmx_states.TmxInputState,
+        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        diagnostic_state: tmx_states.TmxDiagnosticState,
+        tendency_state: tmx_states.TmxTendencyState,
+        new_state: tmx_states.TmxNewState,
+        dtime: float,
+    ) -> None:
+        """
+        Compute the temperature (heat) diffusion (Stage C).
+
+        Port of ``Compute_diffusion_temperature`` in mo_vdf.f90 (l. 912):
+        the temperature is converted to the configured energy (dry static or
+        internal, using the *old* moisture state), the energy is diffused
+        vertically (surface energy flux ``flux_x`` in the bottom-row right-hand
+        side) and horizontally like the hydrometeors, and the new temperature
+        is recovered from the new energy using the *new* moisture state of
+        ``new_state`` -> ``new_state.temperature``,
+        ``tendency_state.ddt_temperature = (new_ta - ta) / dtime``.
+
+        The intermediate energy fields are kept on the granule for testing:
+        ``self.energy`` (from the old temperature) and ``self.tend_energy``
+        (total energy diffusion tendency).
+
+        Requires the Stage A diagnostics (``kh_ic``, ``km_ie``) of
+        ``diagnostic_state`` and the hydrometeor diffusion results
+        (``new_state.qv/qc/qi``, Stage B) to be up to date.
+        """
+        log.debug("tmx Stage C (Compute_diffusion_temperature): start")
+
+        self.init_cell_kdim_field_with_zero(field=self.tend_energy)
+
+        self.compute_energy_from_temperature(
+            temperature=input_state.temperature,
+            qv=input_state.qv,
+            qc=input_state.qc,
+            qi=input_state.qi,
+            qr=input_state.qr,
+            qs=input_state.qs,
+            qg=input_state.qg,
+            energy=self.energy,
+        )
+
+        #: air temperature at the lowest full level, as passed to
+        #: 'compute_energy_fluxes' by the surface Compute (mo_vdf_sfc.f90; the
+        #: surface scheme input ``ta`` is bound to the bottom row of the tmx
+        #: temperature state in mo_interface_aes_tmx.f90)
+        temperature_sfc = gtx.as_field(
+            (dims.CellDim,),
+            input_state.temperature.ndarray[:, self._grid.num_levels - 1],
+            allocator=self._allocator,
+        )
+        self.compute_surface_energy_flux(
+            sensible_heat_flux=surface_flux_state.sensible_heat_flux,
+            evapotranspiration=surface_flux_state.evapotranspiration,
+            temperature_sfc=temperature_sfc,
+            flux_x=self._flux_x,
+        )
+
+        self.compute_inverse_air_mass(air_mass=input_state.air_mass)
+        self.prepare_tridiagonal_matrix_energy(
+            zk=diagnostic_state.kh_ic,
+            a=self._matrix_a,
+            b=self._matrix_b,
+            c=self._matrix_c,
+        )
+        self.compute_surface_flux_rhs(sfc_flx=self._flux_x, rhs=self._rhs, prefac=self._zfactor)
+        self._solve_scalar_vertical_diffusion(var=self.energy, tend=self.tend_energy, dtime=dtime)
+
+        # S6: CALL sync_patch_array(SYNC_C, patch, energy) in mo_vdf.f90
+        log.debug("communication of energy (cells): start")
+        self._exchange.exchange(dims.CellDim, self.energy)
+        log.debug("communication of energy (cells): end")
+
+        self.compute_scalar_nabla2_flux(
+            scalar=self.energy,
+            km_ie=diagnostic_state.km_ie,
+            nabla2_flux=self._nabla2_flux_e,
+            prefac=self._zfactor,
+        )
+        self.apply_horizontal_diffusion_and_update_scalar(
+            scalar=self.energy,
+            rho=input_state.rho,
+            new_scalar=self._new_energy,
+            tend=self.tend_energy,
+            dtime=dtime,
+        )
+
+        self.compute_temperature_from_energy_and_tendency(
+            energy=self._new_energy,
+            temperature=input_state.temperature,
+            qv=new_state.qv,
+            qc=new_state.qc,
+            qi=new_state.qi,
+            qr=input_state.qr,
+            qs=input_state.qs,
+            qg=input_state.qg,
+            new_temperature=new_state.temperature,
+            tend_temperature=tendency_state.ddt_temperature,
+            dtime=dtime,
+        )
+
+        log.debug("tmx Stage C (Compute_diffusion_temperature): end")

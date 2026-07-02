@@ -1,0 +1,152 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Shared helpers of the tmx integration datatests: state constructors from
+the serialized ICON data (exp.exclaim_ape_aesPhys_sb savepoints)."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import gt4py.next as gtx
+
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
+from icon4py.model.common import dimension as dims
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+    import numpy as np
+
+    from icon4py.model.testing import serialbox as sb
+
+
+# TODO(port_turbulence): verify against the actual timestamps once the
+# exclaim_ape_aesPhys_sb archive is generated (run start 2008-09-01T00:00:00Z,
+# dtime = 300 s). Keep in sync with integration_tests/test_savepoints.py.
+TMX_DATE = "2008-09-01T00:05:00.000"
+
+
+def flip_back(field: gtx.Field) -> np.ndarray:
+    """
+    Reverse the K rows of a 3-row extrapolation coefficient field.
+
+    The metrics savepoint accessors (`wgtfacq_c`/`wgtfacq_e`) flip the Fortran
+    coefficient order (row k multiplies the k+1-th full level counted from the
+    relevant boundary); the tmx metric state stores the coefficients in Fortran
+    order, see the TmxMetricState docstrings.
+    """
+    array = field.asnumpy()
+    assert array.shape[1] == 3
+    return array[:, ::-1]
+
+
+def construct_config(init_savepoint: sb.TmxInitSavepoint) -> tmx.TmxConfig:
+    """Construct a TmxConfig matching the tmx-init savepoint scalars."""
+    return tmx.TmxConfig(
+        solver_type=tmx.TurbulenceSolverType(int(init_savepoint.solver_type())),
+        energy_type=tmx.EnergyType(int(init_savepoint.energy_type())),
+        dissipation_factor=init_savepoint.dissipation_factor(),
+        use_louis=init_savepoint.use_louis(),
+        louis_constant_b=init_savepoint.louis_constant_b(),
+        use_km_const=init_savepoint.use_km_const(),
+        km_const=init_savepoint.km_const(),
+        smag_constant=init_savepoint.smag_constant(),
+        turb_prandtl=init_savepoint.turb_prandtl(),
+        km_min=init_savepoint.km_min(),
+        max_turb_scale=init_savepoint.max_turb_scale(),
+    )
+
+
+def construct_metric_state(
+    metrics_savepoint: sb.MetricSavepoint,
+    init_savepoint: sb.TmxInitSavepoint,
+    allocator: gtx_typing.Allocator | None,
+) -> tmx_states.TmxMetricState:
+    inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
+    ddqz_z_full = metrics_savepoint.ddqz_z_full()
+    if ddqz_z_full is None:  # optionally registered in the savepoint
+        ddqz_z_full = gtx.as_field(
+            (dims.CellDim, dims.KDim), 1.0 / inv_ddqz_z_full.asnumpy(), allocator=allocator
+        )
+    return tmx_states.TmxMetricState(
+        ddqz_z_full=ddqz_z_full,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        inv_ddqz_z_half=init_savepoint.inv_ddqz_z_half(),
+        inv_ddqz_z_full_e=init_savepoint.inv_ddqz_z_full_e(),
+        inv_ddqz_z_half_e=init_savepoint.inv_ddqz_z_half_e(),
+        inv_ddqz_z_half_v=init_savepoint.inv_ddqz_z_half_v(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        wgtfac_e=metrics_savepoint.wgtfac_e(),
+        wgtfacq_c=gtx.as_field(
+            (dims.CellDim, dims.KDim),
+            flip_back(metrics_savepoint.wgtfacq_c()),
+            allocator=allocator,
+        ),
+        wgtfacq1_c=init_savepoint.wgtfacq1_c(),
+        wgtfacq_e=gtx.as_field(
+            (dims.EdgeDim, dims.KDim),
+            flip_back(metrics_savepoint.wgtfacq_e()),
+            allocator=allocator,
+        ),
+        wgtfacq1_e=init_savepoint.wgtfacq1_e(),
+        geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
+        z_mc=metrics_savepoint.z_mc(),
+        z_ifc=metrics_savepoint.z_ifc(),
+    )
+
+
+def construct_interpolation_state(
+    interpolation_savepoint: sb.InterpolationSavepoint,
+) -> tmx_states.TmxInterpolationState:
+    return tmx_states.TmxInterpolationState(
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+        geofac_div=interpolation_savepoint.geofac_div(),
+        # `c_intp` is `p_int_state%cells_aw_verts` in the serialization
+        cells_aw_verts=interpolation_savepoint.c_intp(),
+        rbf_coeff_v1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_v2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        rbf_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
+        rbf_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
+        rbf_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
+    )
+
+
+def construct_input_state(entry_savepoint: sb.TmxEntrySavepoint) -> tmx_states.TmxInputState:
+    return tmx_states.TmxInputState(
+        temperature=entry_savepoint.ta(),
+        virtual_temperature=entry_savepoint.tempv(),
+        pressure=entry_savepoint.pres(),
+        pressure_ifc=entry_savepoint.pres_ifc(),
+        u=entry_savepoint.ua(),
+        v=entry_savepoint.va(),
+        w=entry_savepoint.wa(),
+        qv=entry_savepoint.qv(),
+        qc=entry_savepoint.qc(),
+        qi=entry_savepoint.qi(),
+        qr=entry_savepoint.qr(),
+        qs=entry_savepoint.qs(),
+        qg=entry_savepoint.qg(),
+        rho=entry_savepoint.rho(),
+        air_mass=entry_savepoint.mair(),
+        cv_air=entry_savepoint.cvair(),
+    )
+
+
+def construct_surface_flux_state(
+    surface_fluxes_savepoint: sb.TmxSurfaceFluxesSavepoint,
+) -> tmx_states.TmxSurfaceFluxState:
+    return tmx_states.TmxSurfaceFluxState(
+        evapotranspiration=surface_fluxes_savepoint.evspsbl(),
+        sensible_heat_flux=surface_fluxes_savepoint.hfss(),
+        u_stress=surface_fluxes_savepoint.tauu(),
+        v_stress=surface_fluxes_savepoint.tauv(),
+        q_snocpymlt=surface_fluxes_savepoint.q_snocpymlt(),
+    )

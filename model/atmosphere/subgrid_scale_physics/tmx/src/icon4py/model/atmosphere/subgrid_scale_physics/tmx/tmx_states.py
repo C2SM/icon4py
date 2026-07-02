@@ -277,6 +277,40 @@ class TmxDiagnosticState:
 
 
 @dataclasses.dataclass(frozen=True)
+class TmxNewState:
+    """
+    Updated prognostic fields after the tmx diffusion.
+
+    Corresponds to the ``new_states`` of the (state, new_state, tendency)
+    triples in mo_vdf.f90: ``new = state + tend * dtime``. Only the fields
+    updated by the scalar diffusion stages are included so far; the momentum
+    fields follow with the momentum-diffusion granule stages.
+    """
+
+    temperature: fa.CellKField[ta.wpfloat]
+    """Updated air temperature on full levels [K]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Updated specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Updated cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Updated cloud ice mixing ratio on full levels [kg/kg]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxNewState:
+        """Allocate a new-state container with all fields initialized to zero."""
+        full, _, _ = _field_allocators(grid, allocator)
+        return cls(
+            temperature=full(dims.CellDim),
+            qv=full(dims.CellDim),
+            qc=full(dims.CellDim),
+            qi=full(dims.CellDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
 class TmxTendencyState:
     """Tendencies computed by tmx."""
 

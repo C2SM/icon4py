@@ -10,10 +10,11 @@
 
 Constructs the granule with plausible (random but physically sane) metric,
 interpolation and geometry fields on the simple grid and runs the Stage A
-diagnostics once. This only checks that the orchestration is wired correctly
+diagnostics and the scalar diffusion stages B (hydrometeors) and C
+(temperature) once. This only checks that the orchestration is wired correctly
 (programs execute, outputs are finite and have the right shapes); correctness
-against ICON is covered by the stencil tests and by the integration datatest
-(``integration_tests/test_tmx_diagnostics.py``).
+against ICON is covered by the stencil tests and by the integration datatests
+(``integration_tests/``).
 """
 
 from __future__ import annotations
@@ -193,6 +194,21 @@ def _input_state(
     )
 
 
+def _surface_flux_state(
+    grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
+) -> tmx_states.TmxSurfaceFluxState:
+    def flux(low: float, high: float):
+        return data_alloc.random_field(grid, dims.CellDim, low=low, high=high, allocator=allocator)
+
+    return tmx_states.TmxSurfaceFluxState(
+        evapotranspiration=flux(-1.0e-4, 1.0e-4),
+        sensible_heat_flux=flux(-100.0, 100.0),
+        u_stress=flux(-0.1, 0.1),
+        v_stress=flux(-0.1, 0.1),
+        q_snocpymlt=flux(0.0, 1.0),
+    )
+
+
 #: diagnostic-state fields written by run_diagnostics and their expected
 #: (horizontal dimension, number of vertical levels relative to nlev) shapes
 STAGE_A_OUTPUTS = (
@@ -252,7 +268,8 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
     assert np.all(np.isfinite(ghf))
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
-    granule.run_diagnostics(_input_state(grid, allocator), diagnostic_state)
+    input_state = _input_state(grid, allocator)
+    granule.run_diagnostics(input_state, diagnostic_state)
 
     horizontal_size = {
         dims.CellDim: grid.num_cells,
@@ -271,3 +288,27 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
     assert np.all(diagnostic_state.km_c.asnumpy() >= config.km_min)
     assert np.all(diagnostic_state.km_iv.asnumpy() >= config.km_min)
     assert np.all(diagnostic_state.km_ie.asnumpy() >= config.km_min)
+
+    # scalar diffusion stages B (hydrometeors) and C (temperature)
+    surface_flux_state = _surface_flux_state(grid, allocator)
+    tendency_state = tmx_states.TmxTendencyState.allocate(grid, allocator=allocator)
+    new_state = tmx_states.TmxNewState.allocate(grid, allocator=allocator)
+    dtime = 300.0
+
+    granule.run_hydrometeor_diffusion(
+        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+    )
+    granule.run_temperature_diffusion(
+        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+    )
+
+    for name in ("ddt_qv", "ddt_qc", "ddt_qi", "ddt_temperature"):
+        field = getattr(tendency_state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    for name in ("qv", "qc", "qi", "temperature"):
+        field = getattr(new_state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    assert np.all(np.isfinite(granule.energy.asnumpy()))
+    assert np.all(np.isfinite(granule.tend_energy.asnumpy()))
