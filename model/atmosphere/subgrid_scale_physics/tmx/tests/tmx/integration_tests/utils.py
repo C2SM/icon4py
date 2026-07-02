@@ -66,6 +66,7 @@ def construct_config(init_savepoint: sb.TmxInitSavepoint) -> tmx.TmxConfig:
 def construct_metric_state(
     metrics_savepoint: sb.MetricSavepoint,
     init_savepoint: sb.TmxInitSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
     allocator: gtx_typing.Allocator | None,
 ) -> tmx_states.TmxMetricState:
     inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
@@ -99,6 +100,9 @@ def construct_metric_state(
         geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
         z_mc=metrics_savepoint.z_mc(),
         z_ifc=metrics_savepoint.z_ifc(),
+        # a grid-geometry field, not part of the common EdgeParams (see the
+        # TmxMetricState docstring)
+        edge_cell_length=grid_savepoint.edge_cell_length(),
     )
 
 

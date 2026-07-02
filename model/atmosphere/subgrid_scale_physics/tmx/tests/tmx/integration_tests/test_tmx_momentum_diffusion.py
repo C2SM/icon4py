@@ -6,15 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Integration tests of the Tmx granule scalar diffusion stages (M4).
+"""Integration tests of the Tmx granule momentum diffusion stages (M5).
 
 Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys_sb)
-and verifies one call of ``run_hydrometeor_diffusion`` (Stage B) against the
-tmx-hydro-exit savepoint and one call of ``run_temperature_diffusion``
-(Stage C) against the tmx-temperature-exit savepoint. Both stages are seeded
-from the tmx-diagnostics-exit savepoint (``kh_ic``, ``km_ie``) and the
-temperature stage additionally from the tmx-hydro-exit savepoint (the new
-moisture state), so that failures do not cascade between the stages.
+and verifies one call of ``run_horizontal_wind_diffusion`` (Stage D) against
+the tmx-hor-wind-exit savepoint and one call of ``run_vertical_wind_diffusion``
+(Stage E) against the tmx-vert-wind-exit savepoint. Both stages are seeded
+from the tmx-diagnostics-exit savepoint (the Stage A diagnostics they consume)
+instead of running Stage A, so that failures do not cascade between the
+stages. Stage E only reads the input state and the Stage A diagnostics, so no
+Stage D outputs need to be seeded.
 """
 
 from __future__ import annotations
@@ -93,12 +94,21 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
         backend=backend,
     )
 
-    # seed the Stage A diagnostics consumed by the scalar diffusion from the
+    # seed the Stage A diagnostics consumed by the momentum diffusion from the
     # diagnostics-exit savepoint instead of running Stage A (failures there
     # must not cascade into these tests)
     diagnostic_state = dataclasses.replace(
         tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
-        kh_ic=diagnostics_exit_savepoint.kh_ic(),
+        vn=diagnostics_exit_savepoint.vn(),
+        u_vert=diagnostics_exit_savepoint.u_vert(),
+        v_vert=diagnostics_exit_savepoint.v_vert(),
+        w_vert=diagnostics_exit_savepoint.w_vert(),
+        w_ie=diagnostics_exit_savepoint.w_ie(),
+        rho_ic=diagnostics_exit_savepoint.rho_ic(),
+        div_c=diagnostics_exit_savepoint.div_c(),
+        km_c=diagnostics_exit_savepoint.km_c(),
+        km_ic=diagnostics_exit_savepoint.km_ic(),
+        km_iv=diagnostics_exit_savepoint.km_iv(),
         km_ie=diagnostics_exit_savepoint.km_ie(),
     )
 
@@ -115,7 +125,7 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
-def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -131,9 +141,9 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         icon_grid,
         backend,
     )
-    exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=TMX_DATE)
+    exit_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=TMX_DATE)
 
-    setup.granule.run_hydrometeor_diffusion(
+    setup.granule.run_horizontal_wind_diffusion(
         setup.input_state,
         setup.surface_flux_state,
         setup.diagnostic_state,
@@ -143,12 +153,11 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
     )
 
     fields = (
-        (setup.tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv"),
-        (setup.tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc"),
-        (setup.tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi"),
-        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new"),
-        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new"),
-        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new"),
+        (setup.granule.tot_tend, exit_savepoint.tot_tend(), "tot_tend"),
+        (setup.tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua"),
+        (setup.tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va"),
+        (setup.new_state.u, exit_savepoint.ua_new(), "ua_new"),
+        (setup.new_state.v, exit_savepoint.va_new(), "va_new"),
     )
     for actual, desired, name in fields:
         test_utils.assert_dallclose(
@@ -158,7 +167,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
-def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -174,38 +183,19 @@ def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         icon_grid,
         backend,
     )
-    hydro_exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=TMX_DATE)
-    exit_savepoint = data_provider.from_savepoint_tmx_temperature_exit(date=TMX_DATE)
+    exit_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=TMX_DATE)
 
-    # seed the new moisture state (energy_type = 2 recovers the temperature
-    # with the *new* tracers) from the hydro-exit savepoint instead of running
-    # Stage B
-    new_state = dataclasses.replace(
-        setup.new_state,
-        qv=hydro_exit_savepoint.qv_new(),
-        qc=hydro_exit_savepoint.qc_new(),
-        qi=hydro_exit_savepoint.qi_new(),
-    )
-
-    setup.granule.run_temperature_diffusion(
+    setup.granule.run_vertical_wind_diffusion(
         setup.input_state,
-        setup.surface_flux_state,
         setup.diagnostic_state,
         setup.tendency_state,
-        new_state,
+        setup.new_state,
         setup.dtime,
     )
 
-    # the energy computed from the (old) input state is a direct chain
-    # (no solve); the serialized field includes the halo values updated by the
-    # sync before the horizontal diffusion, which is a no-op on a single node
-    test_utils.assert_dallclose(
-        setup.granule.energy.asnumpy(), exit_savepoint.energy().asnumpy(), err_msg="energy"
-    )
     fields = (
-        (setup.granule.tend_energy, exit_savepoint.tend_energy(), "tend_energy"),
-        (new_state.temperature, exit_savepoint.ta_new(), "ta_new"),
-        (setup.tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
+        (setup.tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa"),
+        (setup.new_state.w, exit_savepoint.wa_new(), "wa_new"),
     )
     for actual, desired, name in fields:
         test_utils.assert_dallclose(

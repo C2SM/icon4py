@@ -10,8 +10,9 @@
 
 Constructs the granule with plausible (random but physically sane) metric,
 interpolation and geometry fields on the simple grid and runs the Stage A
-diagnostics and the scalar diffusion stages B (hydrometeors) and C
-(temperature) once. This only checks that the orchestration is wired correctly
+diagnostics, the scalar diffusion stages B (hydrometeors) and C (temperature),
+and the momentum diffusion stages D (horizontal wind) and E (vertical wind)
+once. This only checks that the orchestration is wired correctly
 (programs execute, outputs are finite and have the right shapes); correctness
 against ICON is covered by the stencil tests and by the integration datatests
 (``integration_tests/``).
@@ -80,6 +81,9 @@ def _metric_state(
         ),
         z_mc=positive(dims.CellDim, dims.KDim),
         z_ifc=positive(dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        edge_cell_length=data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, low=1.0e3, high=1.0e4, allocator=allocator
+        ),
     )
 
 
@@ -312,3 +316,35 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
         assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
     assert np.all(np.isfinite(granule.energy.asnumpy()))
     assert np.all(np.isfinite(granule.tend_energy.asnumpy()))
+
+    # momentum diffusion stages D (horizontal wind) and E (vertical wind)
+    granule.run_horizontal_wind_diffusion(
+        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+    )
+    granule.run_vertical_wind_diffusion(
+        input_state, diagnostic_state, tendency_state, new_state, dtime
+    )
+
+    tot_tend = granule.tot_tend.asnumpy()
+    assert tot_tend.shape == (grid.num_edges, grid.num_levels)
+    assert np.all(np.isfinite(tot_tend))
+    for name in ("ddt_u", "ddt_v"):
+        field = getattr(tendency_state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    for name in ("u", "v"):
+        field = getattr(new_state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    ddt_w = tendency_state.ddt_w.asnumpy()
+    assert ddt_w.shape == (grid.num_cells, grid.num_levels + 1)
+    assert np.all(np.isfinite(ddt_w))
+    new_w = new_state.w.asnumpy()
+    assert new_w.shape == (grid.num_cells, grid.num_levels + 1)
+    assert np.all(np.isfinite(new_w))
+    # w = 0 boundary conditions: the top and bottom half-level rows of the new
+    # w and its tendency are never written
+    np.testing.assert_array_equal(ddt_w[:, 0], 0.0)
+    np.testing.assert_array_equal(ddt_w[:, -1], 0.0)
+    np.testing.assert_array_equal(new_w[:, 0], 0.0)
+    np.testing.assert_array_equal(new_w[:, -1], 0.0)

@@ -81,6 +81,12 @@ class TmxMetricState:
     """Geometric height at cell centers on full levels [m]."""
     z_ifc: fa.CellKField[ta.wpfloat]
     """Geometric height at cell centers on half levels [m]."""
+    edge_cell_length: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+    """Distance between the edge midpoint and the circumcenters of the two
+    adjacent cells [m] (``t_grid_edges%edge_cell_length`` in mo_model_domain.f90).
+
+    A grid-geometry field carried here because it is not part of the common
+    ``grid_states.EdgeParams`` (used by the horizontal w diffusion, Stage E)."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -282,9 +288,7 @@ class TmxNewState:
     Updated prognostic fields after the tmx diffusion.
 
     Corresponds to the ``new_states`` of the (state, new_state, tendency)
-    triples in mo_vdf.f90: ``new = state + tend * dtime``. Only the fields
-    updated by the scalar diffusion stages are included so far; the momentum
-    fields follow with the momentum-diffusion granule stages.
+    triples in mo_vdf.f90: ``new = state + tend * dtime``.
     """
 
     temperature: fa.CellKField[ta.wpfloat]
@@ -295,18 +299,27 @@ class TmxNewState:
     """Updated cloud water mixing ratio on full levels [kg/kg]."""
     qi: fa.CellKField[ta.wpfloat]
     """Updated cloud ice mixing ratio on full levels [kg/kg]."""
+    u: fa.CellKField[ta.wpfloat]
+    """Updated zonal wind on full levels [m/s]."""
+    v: fa.CellKField[ta.wpfloat]
+    """Updated meridional wind on full levels [m/s]."""
+    w: fa.CellKField[ta.wpfloat]
+    """Updated vertical wind on half levels [m/s]."""
 
     @classmethod
     def allocate(
         cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
     ) -> TmxNewState:
         """Allocate a new-state container with all fields initialized to zero."""
-        full, _, _ = _field_allocators(grid, allocator)
+        full, half, _ = _field_allocators(grid, allocator)
         return cls(
             temperature=full(dims.CellDim),
             qv=full(dims.CellDim),
             qc=full(dims.CellDim),
             qi=full(dims.CellDim),
+            u=full(dims.CellDim),
+            v=full(dims.CellDim),
+            w=half(dims.CellDim),
         )
 
 

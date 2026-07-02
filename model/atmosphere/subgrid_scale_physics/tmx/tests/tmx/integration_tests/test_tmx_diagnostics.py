@@ -65,7 +65,9 @@ def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-po
         params=params,
         # the vertical grid is not used by the Smagorinsky diagnostics (Stage A)
         vertical_grid=None,
-        metric_state=construct_metric_state(metrics_savepoint, init_savepoint, allocator),
+        metric_state=construct_metric_state(
+            metrics_savepoint, init_savepoint, grid_savepoint, allocator
+        ),
         interpolation_state=construct_interpolation_state(interpolation_savepoint),
         edge_params=grid_savepoint.construct_edge_geometry(),
         cell_params=grid_savepoint.construct_cell_geometry(),
