@@ -2166,7 +2166,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.11+unknown.version.details"
-source = { git = "https://github.com/havogt/gt4py?branch=process-pool-on-clean#b6cf5d82ec8bcf840e5c1dc3845f67f2e3001ec4" }
+source = { git = "https://github.com/havogt/gt4py?branch=process-pool-on-clean#9414baeaea1516b8e9b980b9e2f264e8192dc4c3" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
