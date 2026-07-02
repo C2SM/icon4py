@@ -23,6 +23,9 @@ variables:
 build_baseimage_aarch64:
   extends: [.build_baseimage_aarch64]
 
+build_venv_aarch64:
+  extends: [.build_venv_aarch64]
+
 build_image_aarch64:
   extends: [.build_image_aarch64]
 
