@@ -36,6 +36,22 @@ ports) do not rediscover them.
   operator, mixed E2C2V/E2C/E2V offsets) compiles and verifies on gtfn_cpu without
   temporary-extraction issues.
 
+## Additional patterns from milestone M3
+
+- **`PhysicsConstants` enum members work inline on gtfn** (unlike plain module-level `Final`
+  floats): `icon4py.model.common.constants` wpfloat-subclass enum members can be used directly
+  inside field operators, including as `power()` arguments and in scalar/field division.
+  Prefer this over the inline-local workaround when the constant exists in the enum.
+- **Cross-package reuse of private common field operators** (e.g.
+  `_interpolate_cell_field_to_half_levels_wp`) composes inside tmx field operators on both
+  backends, also nested in `concat_where` branches.
+- **Fixed absolute-K row inputs** (Fortran `field(:,nlevp1,:)`) must be passed as pre-sliced
+  2D fields — GT4Py offsets are relative only; 2D→3D broadcast handles the rest.
+- **Zone-table gap**: Fortran `min_rledge_int-3` has no `h_grid.Zone` equivalent; use the
+  closest more-inclusive zone (`END`) — identical on a single node, revisit for MPI.
+- The common `interpolate_to_cell_center` is vp-typed; usable from wp-only tmx because
+  `vpfloat == wpfloat` in double precision. Breaks under `--enable-mixed-precision`.
+
 ## Limitations and workarounds
 
 - **Module-level constants fail on gtfn**: symbols referenced inside a field operator must
