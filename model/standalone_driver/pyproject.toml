@@ -27,8 +27,10 @@ classifiers = [
 ]
 dependencies = [
   # workspace members
-  "icon4py-atmosphere-dycore~=0.2.0",
+  "icon4py-atmosphere-advection~=0.2.0",
   "icon4py-atmosphere-diffusion~=0.2.0",
+  "icon4py-atmosphere-dycore~=0.2.0",
+  "icon4py-atmosphere-microphysics~=0.2.0",
   "icon4py-common[io]~=0.2.0",
   "icon4py-testing~=0.2.0",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
