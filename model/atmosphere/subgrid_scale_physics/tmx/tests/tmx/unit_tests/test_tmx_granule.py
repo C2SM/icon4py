@@ -11,11 +11,12 @@
 Constructs the granule with plausible (random but physically sane) metric,
 interpolation and geometry fields on the simple grid and runs the Stage A
 diagnostics, the scalar diffusion stages B (hydrometeors) and C (temperature),
-and the momentum diffusion stages D (horizontal wind) and E (vertical wind)
-once. This only checks that the orchestration is wired correctly
-(programs execute, outputs are finite and have the right shapes); correctness
-against ICON is covered by the stencil tests and by the integration datatests
-(``integration_tests/``).
+the momentum diffusion stages D (horizontal wind) and E (vertical wind), the
+energy update F and the diagnostics update G once, followed by a full
+``run()`` (Stages A to G). This only checks that the orchestration is wired
+correctly (programs execute, outputs are finite and have the right shapes);
+correctness against ICON is covered by the stencil tests and by the
+integration datatests (``integration_tests/``).
 """
 
 from __future__ import annotations
@@ -348,3 +349,83 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
     np.testing.assert_array_equal(ddt_w[:, -1], 0.0)
     np.testing.assert_array_equal(new_w[:, 0], 0.0)
     np.testing.assert_array_equal(new_w[:, -1], 0.0)
+
+    # energy update stage F and diagnostics update stage G
+    granule.run_energy_update(
+        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+    )
+    granule.run_update_diagnostics(input_state, diagnostic_state, new_state, dtime)
+
+    for name in ("heating", "dissip_ke", "cptgz", "km", "kh"):
+        field = getattr(diagnostic_state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    for name in ("cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend"):
+        field = getattr(diagnostic_state, name).asnumpy()
+        assert field.shape == (grid.num_cells,), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    # the km/kh diagnostics are the interior half-level coefficients shifted
+    # by one row; the bottom row is zero (the surface exchange coefficients
+    # are out of scope and use_km_const is False by default)
+    km = diagnostic_state.km.asnumpy()
+    kh = diagnostic_state.kh.asnumpy()
+    np.testing.assert_array_equal(km[:, :-1], diagnostic_state.km_ic.asnumpy()[:, 1:-1])
+    np.testing.assert_array_equal(kh[:, :-1], diagnostic_state.kh_ic.asnumpy()[:, 1:-1])
+    np.testing.assert_array_equal(km[:, -1], 0.0)
+    np.testing.assert_array_equal(kh[:, -1], 0.0)
+
+
+def test_tmx_granule_full_run_smoke(
+    grid: base_grid.Grid,
+    backend_like: model_backends.BackendLike,
+) -> None:
+    """Run the full A-to-G sequence through ``Tmx.run`` once."""
+    allocator = model_backends.get_allocator(backend_like)
+    config = tmx.TmxConfig()
+    edge_params, cell_params = _geometry(grid, allocator)
+
+    granule = tmx.Tmx(
+        grid=grid,
+        config=config,
+        params=tmx.TmxParams(config),
+        vertical_grid=None,
+        metric_state=_metric_state(grid, allocator),
+        interpolation_state=_interpolation_state(grid, allocator),
+        edge_params=edge_params,
+        cell_params=cell_params,
+        backend=backend_like,
+    )
+
+    input_state = _input_state(grid, allocator)
+    surface_flux_state = _surface_flux_state(grid, allocator)
+    diagnostic_state = tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
+    tendency_state = tmx_states.TmxTendencyState.allocate(grid, allocator=allocator)
+    new_state = tmx_states.TmxNewState.allocate(grid, allocator=allocator)
+
+    granule.run(
+        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime=300.0
+    )
+
+    for state, names in (
+        (tendency_state, ("ddt_temperature", "ddt_qv", "ddt_qc", "ddt_qi", "ddt_u", "ddt_v")),
+        (new_state, ("temperature", "qv", "qc", "qi", "u", "v")),
+    ):
+        for name in names:
+            field = getattr(state, name).asnumpy()
+            assert field.shape == (
+                grid.num_cells,
+                grid.num_levels,
+            ), f"unexpected shape for '{name}'"
+            assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    for state, name in ((tendency_state, "ddt_w"), (new_state, "w")):
+        field = getattr(state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels + 1)
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+    for name in ("heating", "dissip_ke", "km", "kh"):
+        assert np.all(np.isfinite(getattr(diagnostic_state, name).asnumpy())), (
+            f"non-finite values in '{name}'"
+        )
+    for name in ("cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend"):
+        field = getattr(diagnostic_state, name).asnumpy()
+        assert field.shape == (grid.num_cells,), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"

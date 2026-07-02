@@ -68,6 +68,23 @@ ports) do not rediscover them.
   `neighbor_sum` over 2D (surface) edge fields can feed one branch of a `concat_where` whose
   other branch is 3D (`apply_w_horizontal_diffusion_and_update`).
 
+## Additional patterns from milestone M6
+
+- **Composing a scan-based field operator multiple times in one field operator**
+  works: `compute_vertical_integral_diagnostics` applies the M1
+  `_accumulate_from_top` scan to four different integrands (two of them via the
+  common `_internal_energy` thermodynamics) in a single program on both backends.
+- **`broadcast(...)` results cannot be a `concat_where` branch**: a bare
+  broadcast has an unbounded K range, and the per-region domain inference of
+  `concat_where` fails with `ValueError: Cannot compute length of open 'UnitRange'`. Workaround: anchor the constant to a K-bounded field from the
+  other branch (`bounded_field * wpfloat("0.0") + constant`), see
+  `update_exchange_coefficient_diagnostics.py`. (Broadcasts as direct *tuple
+  output members* are fine, see the M1 note below.)
+- **2D column diagnostics from K scans**: a scan output is always 3D; the 2D
+  `*_vi` diagnostics are extracted in the granule by a device-side row copy
+  (`target.ndarray[...] = running.ndarray[:, nlev - 1]`, driver-testcase
+  precedent) from persistent running-integral scratch fields.
+
 ## Limitations and workarounds
 
 - **Module-level constants fail on gtfn**: symbols referenced inside a field operator must

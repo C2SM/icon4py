@@ -61,6 +61,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tangent
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_temperature_from_energy_and_tendency import (
     compute_temperature_from_energy_and_tendency,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vertical_integral_diagnostics import (
+    compute_vertical_integral_diagnostics,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_virtual_potential_temperature import (
     compute_virtual_potential_temperature,
 )
@@ -130,8 +133,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_diffusion_edges import (
     solve_vertical_diffusion_edges,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_exchange_coefficient_diagnostics import (
+    update_exchange_coefficient_diagnostics,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_horizontal_wind import (
     update_horizontal_wind,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_temperature_with_dissipation_heating import (
+    update_temperature_with_dissipation_heating,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import options as common_conf_opt
@@ -381,14 +390,19 @@ class Tmx:
     TMX (AES turbulent mixing) granule.
 
     Port of the ``t_vdf`` / ``t_vdf_atmo`` classes driven by ``mo_vdf.f90``.
-    Currently implements the initialization (``Smagorinsky_init`` in
-    mo_tmx_smagorinsky.f90 plus the time-independent height above ground),
+    Implements the initialization (``Smagorinsky_init`` in
+    mo_tmx_smagorinsky.f90 plus the time-independent height above ground) and
+    the full atmospheric ``Compute`` sequence of mo_vdf.f90 (:meth:`run`):
     Stage A, the Smagorinsky diagnostics (``Compute_diagnostics`` in
     mo_vdf_atmo.f90), the scalar diffusion stages B
     (``Compute_diffusion_hydrometeors``) and C
-    (``Compute_diffusion_temperature``), and the momentum diffusion stages D
-    (``Compute_diffusion_hor_wind``) and E (``Compute_diffusion_vert_wind``)
-    of mo_vdf.f90.
+    (``Compute_diffusion_temperature``), the momentum diffusion stages D
+    (``Compute_diffusion_hor_wind``) and E (``Compute_diffusion_vert_wind``),
+    the dissipation-heating energy update F (``Update_energy_tendencies``)
+    and the end-of-step diagnostics G (``Update_diagnostics``). The surface
+    scheme (``this%sfc%Compute`` in the Fortran) is out of scope; the
+    grid-mean surface fluxes are prescribed inputs
+    (:class:`tmx_states.TmxSurfaceFluxState`).
 
     Persistent derived fields (computed once at construction, read every step):
     - ``mix_len_sq``: squared Smagorinsky mixing length (half-level cells),
@@ -885,6 +899,7 @@ class Tmx:
 
         self._setup_scalar_diffusion_programs(backend, num_levels, use_internal_energy)
         self._setup_momentum_diffusion_programs(backend, num_levels)
+        self._setup_energy_and_diagnostics_programs(backend, num_levels)
 
         # ---------------------------------------------------------------------
         # Run the init programs (Smagorinsky_init in mo_tmx_smagorinsky.f90 and
@@ -1445,6 +1460,84 @@ class Tmx:
             offset_provider=self._grid.connectivities,
         )
 
+    def _setup_energy_and_diagnostics_programs(
+        self,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
+        num_levels: int,
+    ) -> None:
+        """
+        Bind the Stage F + G step programs (``Update_energy_tendencies``
+        l. 1938 in mo_vdf.f90 and the ``Update_diagnostics`` of
+        mo_vdf_atmo.f90 l. 487 / mo_vdf.f90 l. 354). All loops run on the tmx
+        t_domain cell range (grf_bdywidth_c + 1 .. min_rlcell_int), all full
+        levels.
+        """
+        # Stage F: kinetic-energy dissipation heating and final temperature
+        # tendency / update
+        self.update_temperature_with_dissipation_heating = setup_program(
+            backend=backend,
+            program=update_temperature_with_dissipation_heating,
+            constant_args={"dissipation_factor": self.config.dissipation_factor},
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+                "nlev": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        # Stage G: vertical-integral diagnostics ('compute_internal_energy_vi'
+        # and the accumulation loop of Update_diagnostics, mo_vdf_atmo.f90);
+        # the running integrals go to granule scratch fields, the bottom rows
+        # (the column integrals) are copied to the 2D diagnostics afterwards
+        self.compute_vertical_integral_diagnostics = setup_program(
+            backend=backend,
+            program=compute_vertical_integral_diagnostics,
+            constant_args={
+                "dz": self._metric_state.ddqz_z_full,
+                "cptgz_vi": self._cptgz_vi_run,
+                "dissip_ke_vi": self._dissip_ke_vi_run,
+                "int_energy_vi": self._int_energy_vi_run,
+                "int_energy_vi_tend": self._int_energy_vi_tend_run,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+        # Stage G: full-level km/kh diagnostic assembly (the km/kh loop of
+        # Update_diagnostics, mo_vdf.f90; output-only diagnostics)
+        self.update_exchange_coefficient_diagnostics = setup_program(
+            backend=backend,
+            program=update_exchange_coefficient_diagnostics,
+            constant_args={
+                "km_const": self.config.km_const,
+                "rturb_prandtl": self._params.rturb_prandtl,
+                "use_km_const": self.config.use_km_const,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+                "nlev": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
+
     def _allocate_local_fields(self) -> None:
         #: squared Smagorinsky mixing length at half-level cell centers [m^2]
         self.mix_len_sq: fa.CellKField[ta.wpfloat] = data_alloc.zero_field(
@@ -1508,6 +1601,16 @@ class Tmx:
         self._zero_surface_flux: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
         )
+
+        # Stage G scratch: running (top-down) vertical integrals of the
+        # ``*_vi`` diagnostics; the value at the last full level is the column
+        # integral that is copied to the 2D fields of the diagnostic state
+        # (rows of cells outside the computed domain stay zero, matching the
+        # Fortran 'CALL init(...)' of the 2D fields)
+        self._cptgz_vi_run: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        self._dissip_ke_vi_run: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        self._int_energy_vi_run: fa.CellKField[ta.wpfloat] = _cell_k_field()
+        self._int_energy_vi_tend_run: fa.CellKField[ta.wpfloat] = _cell_k_field()
 
         # momentum diffusion (Stages D and E) temporaries, matching the local
         # arrays of Compute_diffusion_hor_wind / Compute_diffusion_vert_wind
@@ -2157,3 +2260,181 @@ class Tmx:
         log.debug("communication of new w (cells): end")
 
         log.debug("tmx Stage E (Compute_diffusion_vert_wind): end")
+
+    def run_energy_update(  # noqa: PLR0917 [too-many-positional-arguments]
+        self,
+        input_state: tmx_states.TmxInputState,
+        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        diagnostic_state: tmx_states.TmxDiagnosticState,
+        tendency_state: tmx_states.TmxTendencyState,
+        new_state: tmx_states.TmxNewState,
+        dtime: float,
+    ) -> None:
+        """
+        Update the temperature tendency with the dissipation heating (Stage F).
+
+        Port of ``Update_energy_tendencies`` in mo_vdf.f90 (l. 1938): the
+        kinetic energy dissipated by the horizontal wind diffusion
+        (``dissip_ke``, from the old and the Stage D updated winds) plus the
+        snow-on-canopy melt cooling at the lowest level (``-q_snocpymlt``,
+        non-zero only over land) give the turbulent heating rate
+        (``diagnostic_state.heating``), whose temperature tendency is added to
+        the heat-diffusion tendency of Stage C:
+        ``tendency_state.ddt_temperature += heating / cv_air`` and
+        ``new_state.temperature = temperature + ddt_temperature * dtime``.
+
+        Requires the temperature diffusion tendency (Stage C,
+        ``tendency_state.ddt_temperature``) and the updated winds (Stage D,
+        ``new_state.u/v``) to be up to date.
+        """
+        log.debug("tmx Stage F (Update_energy_tendencies): start")
+
+        # CALL init(heating): zero fill of the whole array; the update stencil
+        # only writes the domain cells
+        self.init_cell_kdim_field_with_zero(field=diagnostic_state.heating)
+        self.update_temperature_with_dissipation_heating(
+            u=input_state.u,
+            v=input_state.v,
+            new_u=new_state.u,
+            new_v=new_state.v,
+            air_mass=input_state.air_mass,
+            cv_air=input_state.cv_air,
+            temperature=input_state.temperature,
+            tend_temperature=tendency_state.ddt_temperature,
+            q_snocpymlt=surface_flux_state.q_snocpymlt,
+            dissip_ke=diagnostic_state.dissip_ke,
+            heating=diagnostic_state.heating,
+            new_temperature=new_state.temperature,
+            dtime=dtime,
+        )
+
+        # S13: CALL sync_patch_array_mult(SYNC_C, patch, 2, new_state_ta,
+        # tend_ta) in mo_vdf.f90 (marked "TODO: Are these necessary?" there;
+        # ported as-is)
+        log.debug("communication of new temperature, ddt_temperature (cells): start")
+        self._exchange.exchange(dims.CellDim, new_state.temperature, tendency_state.ddt_temperature)
+        log.debug("communication of new temperature, ddt_temperature (cells): end")
+
+        log.debug("tmx Stage F (Update_energy_tendencies): end")
+
+    def run_update_diagnostics(
+        self,
+        input_state: tmx_states.TmxInputState,
+        diagnostic_state: tmx_states.TmxDiagnosticState,
+        new_state: tmx_states.TmxNewState,
+        dtime: float,
+    ) -> None:
+        """
+        Update the end-of-step diagnostics (Stage G).
+
+        Port of the atmospheric part of ``Update_diagnostics`` in
+        mo_vdf_atmo.f90 (l. 487) and mo_vdf.f90 (l. 354):
+
+        - ``diagnostic_state.cptgz`` is recomputed from the updated
+          temperature,
+        - the vertically integrated diagnostics ``cptgz_vi``,
+          ``dissip_ke_vi``, ``int_energy_vi`` and ``int_energy_vi_tend``
+          (from the old- and new-state internal energies),
+        - the full-level exchange coefficient diagnostics ``km`` / ``kh``
+          (bottom row: ``km_const`` if ``use_km_const``, else zero — the
+          surface exchange coefficients are out of scope).
+
+        The 2m/10m diagnostics and the tile aggregation of the Fortran
+        ``Update_diagnostics`` belong to the surface scheme and are out of
+        scope.
+
+        Requires all diffusion stages and the energy update (Stage F, for
+        ``dissip_ke`` and the final ``new_state.temperature``) to be up to
+        date.
+        """
+        log.debug("tmx Stage G (Update_diagnostics): start")
+
+        # cptgz from the updated temperature (same program binding as Stage A)
+        self.compute_static_energy(
+            temperature=new_state.temperature,
+            static_energy=diagnostic_state.cptgz,
+        )
+        self.compute_vertical_integral_diagnostics(
+            static_energy=diagnostic_state.cptgz,
+            dissip_ke=diagnostic_state.dissip_ke,
+            rho=input_state.rho,
+            temperature=input_state.temperature,
+            qv=input_state.qv,
+            qc=input_state.qc,
+            qi=input_state.qi,
+            new_temperature=new_state.temperature,
+            new_qv=new_state.qv,
+            new_qc=new_state.qc,
+            new_qi=new_state.qi,
+            qr=input_state.qr,
+            qs=input_state.qs,
+            qg=input_state.qg,
+            dtime=dtime,
+        )
+        # extract the column integrals (the last full-level row of the running
+        # sums) into the 2D diagnostics; a device-side row copy, no compute
+        bottom = self._grid.num_levels - 1
+        for running_integral, target in (
+            (self._cptgz_vi_run, diagnostic_state.cptgz_vi),
+            (self._dissip_ke_vi_run, diagnostic_state.dissip_ke_vi),
+            (self._int_energy_vi_run, diagnostic_state.int_energy_vi),
+            (self._int_energy_vi_tend_run, diagnostic_state.int_energy_vi_tend),
+        ):
+            target.ndarray[...] = running_integral.ndarray[:, bottom]
+
+        self.update_exchange_coefficient_diagnostics(
+            km_ic=diagnostic_state.km_ic,
+            kh_ic=diagnostic_state.kh_ic,
+            km=diagnostic_state.km,
+            kh=diagnostic_state.kh,
+        )
+
+        log.debug("tmx Stage G (Update_diagnostics): end")
+
+    def run(  # noqa: PLR0917 [too-many-positional-arguments]
+        self,
+        input_state: tmx_states.TmxInputState,
+        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        diagnostic_state: tmx_states.TmxDiagnosticState,
+        tendency_state: tmx_states.TmxTendencyState,
+        new_state: tmx_states.TmxNewState,
+        dtime: float,
+    ) -> None:
+        """
+        Run one tmx time step (Stages A to G).
+
+        Port of ``Compute`` in mo_vdf.f90, in the Fortran stage order:
+        Smagorinsky diagnostics (A), hydrometeor diffusion (B), temperature
+        diffusion (C, using the new moisture state of B), horizontal wind
+        diffusion (D), vertical wind diffusion (E), dissipation heating (F,
+        using the new winds of D) and the end-of-step diagnostics (G). The
+        surface scheme called between A and B in the Fortran
+        (``this%sfc%Compute``) is out of scope: the grid-mean surface fluxes
+        it would produce are prescribed inputs (``surface_flux_state``).
+
+        On exit, ``tendency_state`` holds the total tmx tendencies of
+        temperature, qv/qc/qi, u/v and w, ``new_state`` the corresponding
+        updated fields (``new = state + tend * dtime``) and
+        ``diagnostic_state`` the Stage A and Stage F/G diagnostics.
+        """
+        log.debug("tmx run (Compute): start")
+
+        self.run_diagnostics(input_state, diagnostic_state)
+        self.run_hydrometeor_diffusion(
+            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        )
+        self.run_temperature_diffusion(
+            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        )
+        self.run_horizontal_wind_diffusion(
+            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        )
+        self.run_vertical_wind_diffusion(
+            input_state, diagnostic_state, tendency_state, new_state, dtime
+        )
+        self.run_energy_update(
+            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        )
+        self.run_update_diagnostics(input_state, diagnostic_state, new_state, dtime)
+
+        log.debug("tmx run (Compute): end")
