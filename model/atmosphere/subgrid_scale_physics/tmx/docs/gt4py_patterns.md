@@ -52,6 +52,22 @@ ports) do not rediscover them.
 - The common `interpolate_to_cell_center` is vp-typed; usable from wp-only tmx because
   `vpfloat == wpfloat` in double precision. Breaks under `--enable-mixed-precision`.
 
+## Additional patterns from milestone M5
+
+- **`concat_where(dims.KDim == nlev - 1, ...)` is broken** in gt4py 1.1.11
+  (GridTools/gt4py#2205): equality against a runtime scalar at the last-but-one level
+  miscompiles. Workarounds used: invert the condition (`dims.KDim < nlev - 1` selecting the
+  interior branch first), or run the boundary row as its own single-row program domain.
+  Note `dims.KDim == nlev` (last half-level row) works fine — only the `nlev - 1` case is hit.
+- **Direct element indexing of *input* sparse fields** (`field[E2CDim(0)]` on a field that is
+  already sparse, not the result of a shift) works on both backends
+  (`compute_vn_vertical_diffusion_rhs`, surface-stress projection).
+- **Chained unstructured + negative vertical offset**: `w(E2C[0])(KDim - 1)` composes like the
+  positive-offset case proven in M1.
+- **2D-only `neighbor_sum` inside a 3D `concat_where` branch** promotes correctly: a
+  `neighbor_sum` over 2D (surface) edge fields can feed one branch of a `concat_where` whose
+  other branch is 3D (`apply_w_horizontal_diffusion_and_update`).
+
 ## Limitations and workarounds
 
 - **Module-level constants fail on gtfn**: symbols referenced inside a field operator must
