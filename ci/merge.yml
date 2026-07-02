@@ -5,7 +5,7 @@ variables:
   # See default.yml and generate_ci_pipeline.py for details on how these are
   # used. This pipeline gates merges and variables should not be overridden.
   SESSIONS: "model:model_mpi:tools"
-  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
+  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:tmx:common:driver:standalone_driver"
   MODEL_SUBSETS: "stencils:datatest"
   MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   MODEL_MPI_SUBSETS: "datatest"

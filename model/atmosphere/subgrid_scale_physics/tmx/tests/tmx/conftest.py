@@ -1,0 +1,17 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
+
+
+__all__ = [
+    "backend_like",
+    "grid",
+    "grid_manager",
+]
