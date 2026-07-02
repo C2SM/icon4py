@@ -234,6 +234,11 @@ class Experiments:
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
     )
+    APE_AES: Final = ExperimentDescription(
+        name="exclaim_ape_aesPhys_sb",
+        long_name="EXCLAIM Aquaplanet experiment with AES physics (TMX turbulent mixing)",
+        grid=Grids.R02B04_GLOBAL,
+    )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",
         long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
