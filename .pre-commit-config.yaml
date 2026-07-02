@@ -96,7 +96,16 @@ repos:
 
       - <<: *uv-managed-hook
         id: tach
-        name: tach module dependency checker
+        name: tach internal module graph checker
+        # Pinned separately from the locked tach version: tach >=0.27 cannot resolve
+        # first-party imports across multiple source roots sharing the 'icon4py'
+        # namespace package, which silently breaks 'tach check' (not 'check-external').
+        entry: uv tool run --from tach==0.26.1 tach check
+        pass_filenames: false
+
+      - <<: *uv-managed-hook
+        id: tach-external
+        name: tach external dependency checker
         entry: uv run --group dev --frozen --isolated tach check-external
         pass_filenames: false
 
