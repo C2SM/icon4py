@@ -109,7 +109,7 @@ RUN set -eux; \
     rm -rf /gdrcopy; \
     ldconfig
 
-ARG cassini_headers_version=release/shs-13.0.0
+ARG cassini_headers_version=release/shs-13.1.0
 RUN set -eux; \
     git clone --depth 1 --branch "${cassini_headers_version}" https://github.com/HewlettPackard/shs-cassini-headers.git; \
     cd shs-cassini-headers; \
@@ -117,14 +117,14 @@ RUN set -eux; \
     cp -r share/* /usr/share/; \
     rm -rf /shs-cassini-headers
 
-ARG cxi_driver_version=release/shs-13.0.0
+ARG cxi_driver_version=release/shs-13.1.0
 RUN set -eux; \
     git clone --depth 1 --branch "${cxi_driver_version}" https://github.com/HewlettPackard/shs-cxi-driver.git; \
     cd shs-cxi-driver; \
     cp -r include/* /usr/include/; \
     rm -rf /shs-cxi-driver
 
-ARG libcxi_version=release/shs-13.0.0
+ARG libcxi_version=release/shs-13.1.0
 RUN set -eux; \
     git clone --depth 1 --branch "${libcxi_version}" https://github.com/HewlettPackard/shs-libcxi.git; \
     cd shs-libcxi; \
@@ -136,7 +136,7 @@ RUN set -eux; \
     rm -rf /shs-libcxi; \
     ldconfig
 
-ARG xpmem_version=0d0bad4e1d07b38d53ecc8f20786bb1328c446da
+ARG xpmem_version=3bcab55479489fdd93847fa04c58ab16e9c0b3fd
 RUN set -eux; \
     git clone https://github.com/hpc/xpmem.git; \
     cd xpmem; \
@@ -150,7 +150,7 @@ RUN set -eux; \
 
 # NOTE: xpmem is not found correctly without setting the prefix explicitly in
 # --enable-xpmem
-ARG libfabric_version=v2.4.0
+ARG libfabric_version=v2.6.0
 RUN set -eux; \
     git clone --depth 1 --branch "${libfabric_version}" https://github.com/ofiwg/libfabric.git; \
     cd libfabric; \
@@ -166,7 +166,7 @@ RUN set -eux; \
     rm -rf /libfabric; \
     ldconfig
 
-ARG openmpi_version=5.0.9
+ARG openmpi_version=5.0.10
 RUN set -eux; \
     curl -fsSL "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${openmpi_version}.tar.gz" -o /tmp/ompi.tar.gz; \
     tar -C /tmp -xzf /tmp/ompi.tar.gz; \
@@ -177,6 +177,30 @@ RUN set -eux; \
     make -j"$(nproc)" install; \
     cd /; \
     rm -rf "/tmp/openmpi-${openmpi_version}" /tmp/ompi.tar.gz; \
+    ldconfig
+
+ARG nccl_version=2.30.7-1
+RUN set -eux; \
+    curl -fsSL "https://github.com/NVIDIA/nccl/archive/refs/tags/v${nccl_version}.tar.gz" -o /tmp/nccl.tar.gz; \
+    tar -C /tmp -xzf /tmp/nccl.tar.gz; \
+    cd "/tmp/nccl-${nccl_version}"; \
+    # HPC SDK 24.11 (CUDA 12.6) declares cospi/sinpi/rsqrt without noexcept
+    # in crt/math_functions.h, but glibc >= 2.38 (>= 2.42 on Ubuntu 25.10)
+    # declares them with noexcept(true) via bits/mathcalls.h. C++17 forbids
+    # redeclaration with differing exception specs. Fixed in CUDA 13.2.
+    # https://forums.developer.nvidia.com/t/323591
+    sed -i \
+      -e 's/sinpi(double x);/sinpi(double x) noexcept (true);/' \
+      -e 's/sinpif(float x);/sinpif(float x) noexcept (true);/' \
+      -e 's/cospi(double x);/cospi(double x) noexcept (true);/' \
+      -e 's/cospif(float x);/cospif(float x) noexcept (true);/' \
+      -e 's/rsqrt(double x);/rsqrt(double x) noexcept (true);/' \
+      -e 's/rsqrtf(float x);/rsqrtf(float x) noexcept (true);/' \
+      "$(find "${CUDA_PATH}" -path '*/targets/sbsa-linux/include/crt/math_functions.h' -print -quit)"; \
+    make -j"$(nproc)" CUDA_HOME="${CUDA_PATH}" PREFIX=/usr; \
+    make install CUDA_HOME="${CUDA_PATH}" PREFIX=/usr; \
+    cd /; \
+    rm -rf "/tmp/nccl-${nccl_version}" /tmp/nccl.tar.gz; \
     ldconfig
 
 # Install uv: https://docs.astral.sh/uv/guides/integration/docker
