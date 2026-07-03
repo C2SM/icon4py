@@ -64,24 +64,57 @@ def test_config_rejects_invalid_enum_values() -> None:
         tmx.TmxConfig(solver_type=3)
 
 
+def _echoed_vdf_record(**overrides: object) -> list[object]:
+    """A positional t_vdiff_config record as echoed in aes_vdf_nml.
+
+    Positions not pinned by a TmxConfig option get a dummy value; the
+    overrides are placed at the pinned 'unnamed_index' positions.
+    """
+    positions = {
+        "use_tmx": 22,
+        "solver_type": 23,
+        "energy_type": 24,
+        "dissipation_factor": 25,
+        "use_louis": 26,
+        "use_louis_land": 27,
+        "use_louis_ice": 28,
+        "louis_constant_b": 29,
+        "use_km_const": 30,
+        "km_const": 31,
+        "use_scale_turb_energy_flux": 32,
+        "scale_turb_energy_flux": 33,
+        "smag_constant": 34,
+        "turb_prandtl": 35,
+        "km_min": 37,
+        "max_turb_scale": 38,
+    }
+    record: list[object] = [0.0] * 42
+    record[positions["use_tmx"]] = True
+    for name, value in overrides.items():
+        record[positions[name]] = value
+    return record
+
+
 def test_config_from_fortran_dict() -> None:
     fortran_dict = {
         "aes_vdf_nml": {
-            "solver_type": 1,
-            "energy_type": 1,
-            "dissipation_factor": 0.5,
-            "use_louis": False,
-            "use_louis_land": False,
-            "use_louis_ice": False,
-            "louis_constant_b": 2.1,
-            "use_km_const": True,
-            "km_const": 2.0,
-            "use_scale_turb_energy_flux": True,
-            "scale_turb_energy_flux": 0.9,
-            "smag_constant": 0.28,
-            "turb_prandtl": 0.5,
-            "km_min": 0.002,
-            "max_turb_scale": 150.0,
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=1,
+                energy_type=1,
+                dissipation_factor=0.5,
+                use_louis=False,
+                use_louis_land=False,
+                use_louis_ice=False,
+                louis_constant_b=2.1,
+                use_km_const=True,
+                km_const=2.0,
+                use_scale_turb_energy_flux=True,
+                scale_turb_energy_flux=0.9,
+                smag_constant=0.28,
+                turb_prandtl=0.5,
+                km_min=0.002,
+                max_turb_scale=150.0,
+            )
         }
     }
     config = tmx.TmxConfig.from_fortran_dict(fortran_dict)
@@ -100,6 +133,19 @@ def test_config_from_fortran_dict() -> None:
     assert config.turb_prandtl == 0.5
     assert config.km_min == 0.002
     assert config.max_turb_scale == 150.0
+
+
+def test_config_from_fortran_dict_rejects_changed_member_count() -> None:
+    record = _echoed_vdf_record()
+    with pytest.raises(ValueError, match="not a multiple"):
+        tmx.TmxConfig.from_fortran_dict({"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}})
+
+
+def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
+    record = _echoed_vdf_record()
+    record[22] = False
+    with pytest.raises(ValueError, match="use_tmx"):
+        tmx.TmxConfig.from_fortran_dict({"aes_vdf_nml": {"aes_vdf_config": record}})
 
 
 def test_params_derived_from_config() -> None:
