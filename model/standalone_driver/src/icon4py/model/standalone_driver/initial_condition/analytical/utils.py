@@ -282,7 +282,9 @@ def init_inwp_tracers(
 
     if normalize_global_moisture:
         # rescale qv so the global mean column-integrated moisture matches the
-        # prescribed value (Fortran opt_global_moist / ztmc_ape).
+        # prescribed value (Fortran opt_global_moist / ztmc_ape). The per-cell
+        # qv_max and stratosphere caps are not re-applied after this uniform
+        # rescale, matching init_nh_inwp_tracers in mo_nh_jabw_exp.f90.
         column_moisture = global_reductions.sum(
             ddqz_z_full * rho * qv_values * cell_area[:, array_ns.newaxis]
         )
