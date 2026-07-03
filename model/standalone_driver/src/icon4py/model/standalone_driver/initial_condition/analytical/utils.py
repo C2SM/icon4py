@@ -257,12 +257,18 @@ def init_inwp_tracers(
     array_ns = data_alloc.array_namespace(rho)
 
     # linearly decreasing relative humidity with height (independent of qv)
-    relative_humidity = array_ns.maximum(rh_at_1000hpa - 0.5 + pressure / 200000.0, 0.0)
+    relative_humidity = array_ns.maximum(
+        rh_at_1000hpa - 0.5 + pressure / phy_const.RELATIVE_HUMIDITY_REFERENCE_PRESSURE, 0.0
+    )
 
     def _qv(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
         q = thermo.qv_from_relative_humidity(temperature, pressure, rho, relative_humidity)
         # stratosphere and tropics caps (init_nh_inwp_tracers)
-        q = array_ns.where(pressure <= 10000.0, array_ns.minimum(q, 5.0e-6), q)
+        q = array_ns.where(
+            pressure <= phy_const.STRATOSPHERE_PRESSURE_THRESHOLD,
+            array_ns.minimum(q, phy_const.STRATOSPHERIC_QV_CAP),
+            q,
+        )
         return array_ns.minimum(q, qv_max)
 
     # first guess uses qv = 0, i.e. temperature == virtual temperature
