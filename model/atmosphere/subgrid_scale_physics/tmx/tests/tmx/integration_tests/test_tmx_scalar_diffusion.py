@@ -112,7 +112,7 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.APE_AES, date) for date in TMX_DATES],
+    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
 def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
@@ -158,7 +158,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.APE_AES, date) for date in TMX_DATES],
+    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
 def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,

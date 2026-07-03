@@ -138,7 +138,7 @@ def _open_savepoint(data_provider: sb.IconSerialDataProvider, factory_name: str,
 @pytest.mark.parametrize(
     "experiment_description, date",
     # shape/dtype smoke tests: one serialized timestep is enough
-    [(definitions.Experiments.APE_AES, TMX_DATES[0])],
+    [(definitions.Experiments.EXCLAIM_APE_AES, TMX_DATES[0])],
 )
 @pytest.mark.parametrize(
     "factory_name, field_name, horizontal_dim, vertical",
@@ -177,7 +177,7 @@ def test_tmx_savepoint_field_shapes_and_dtypes(  # noqa: PLR0917 [too-many-posit
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE_AES])
 def test_tmx_init_savepoint_scalars(data_provider: sb.IconSerialDataProvider) -> None:
     savepoint = data_provider.from_savepoint_tmx_init()
 

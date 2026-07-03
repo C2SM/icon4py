@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.APE_AES, date) for date in TMX_DATES],
+    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
 def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
