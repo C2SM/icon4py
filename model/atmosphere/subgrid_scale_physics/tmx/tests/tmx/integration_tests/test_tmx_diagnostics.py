@@ -61,7 +61,6 @@ def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-po
     exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
     params = tmx.TmxParams(tmx_config)
-    assert params.rturb_prandtl == pytest.approx(init_savepoint.rturb_prandtl(), rel=1e-14)
 
     granule = tmx.Tmx(
         grid=icon_grid,

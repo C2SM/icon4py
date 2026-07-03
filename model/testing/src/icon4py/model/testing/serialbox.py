@@ -2004,45 +2004,6 @@ class TmxInitSavepoint(IconSavepoint):
     def scaling_factor_louis(self):
         return self._get_field("scaling_factor_louis", dims.CellDim)
 
-    def smag_constant(self) -> float:
-        return self.serializer.read("smag_constant", self.savepoint)[0]
-
-    def turb_prandtl(self) -> float:
-        return self.serializer.read("turb_prandtl", self.savepoint)[0]
-
-    def rturb_prandtl(self) -> float:
-        return self.serializer.read("rturb_prandtl", self.savepoint)[0]
-
-    def km_min(self) -> float:
-        return self.serializer.read("km_min", self.savepoint)[0]
-
-    def max_turb_scale(self) -> float:
-        return self.serializer.read("max_turb_scale", self.savepoint)[0]
-
-    def solver_type(self) -> int:
-        return self.serializer.read("solver_type", self.savepoint)[0]
-
-    def energy_type(self) -> int:
-        return self.serializer.read("energy_type", self.savepoint)[0]
-
-    def dissipation_factor(self) -> float:
-        return self.serializer.read("dissipation_factor", self.savepoint)[0]
-
-    def louis_constant_b(self) -> float:
-        return self.serializer.read("louis_constant_b", self.savepoint)[0]
-
-    def use_louis(self) -> bool:
-        return bool(self.serializer.read("use_louis", self.savepoint)[0])
-
-    def use_km_const(self) -> bool:
-        return bool(self.serializer.read("use_km_const", self.savepoint)[0])
-
-    def km_const(self) -> float:
-        return self.serializer.read("km_const", self.savepoint)[0]
-
-    def dtime(self) -> float:
-        return self.serializer.read("dtime", self.savepoint)[0]
-
 
 class TmxEntrySavepoint(IconSavepoint):
     """Savepoint at entry of vdf Compute in mo_vdf.f90 (inputs of the TMX scheme)."""

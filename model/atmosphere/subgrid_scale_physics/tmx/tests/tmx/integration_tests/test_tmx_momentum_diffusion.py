@@ -67,6 +67,7 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend | None,
     date: str,
     config: tmx.TmxConfig,
+    dtime: float,
 ) -> _GranuleSetup:
     """Construct the granule and its states, seeded from the savepoints."""
     allocator = model_backends.get_allocator(backend)
@@ -114,7 +115,7 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
         diagnostic_state=diagnostic_state,
         tendency_state=tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator),
         new_state=tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
-        dtime=init_savepoint.dtime(),
+        dtime=dtime,
     )
 
 
@@ -132,6 +133,7 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-ma
     backend: gtx_typing.Backend | None,
     date: str,
     tmx_config: tmx.TmxConfig,
+    tmx_dtime: float,
 ) -> None:
     setup = _setup_granule(
         data_provider,
@@ -142,6 +144,7 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-ma
         backend,
         date,
         tmx_config,
+        tmx_dtime,
     )
     exit_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
 
@@ -179,6 +182,7 @@ def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many
     backend: gtx_typing.Backend | None,
     date: str,
     tmx_config: tmx.TmxConfig,
+    tmx_dtime: float,
 ) -> None:
     setup = _setup_granule(
         data_provider,
@@ -189,6 +193,7 @@ def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many
         backend,
         date,
         tmx_config,
+        tmx_dtime,
     )
     exit_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=date)
     # tend_wa is compared against the tmx-exit savepoint: on GPU runs the

@@ -58,6 +58,7 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
     backend: gtx_typing.Backend | None,
     date: str,
     tmx_config: tmx.TmxConfig,
+    tmx_dtime: float,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     init_savepoint = data_provider.from_savepoint_tmx_init()
@@ -89,7 +90,7 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
         diagnostic_state,
         tendency_state,
         new_state,
-        init_savepoint.dtime(),
+        tmx_dtime,
     )
 
     verify_full_run_fields(diagnostic_state, tendency_state, exit_savepoint, icon_grid.num_levels)

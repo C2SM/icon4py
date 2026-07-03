@@ -70,6 +70,7 @@ def test_parallel_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positiona
     backend: gtx_typing.Backend | None,
     date: str,
     tmx_config: tmx.TmxConfig,
+    tmx_dtime: float,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
     _log.info(
@@ -111,7 +112,7 @@ def test_parallel_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positiona
         diagnostic_state,
         tendency_state,
         new_state,
-        init_savepoint.dtime(),
+        tmx_dtime,
     )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: tmx run done")
 
