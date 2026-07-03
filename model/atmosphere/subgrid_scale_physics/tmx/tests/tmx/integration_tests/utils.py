@@ -57,6 +57,57 @@ def assert_scaled_allclose(
     test_utils.assert_dallclose(actual, desired, rtol=rtol, atol=atol, err_msg=err_msg)
 
 
+def verify_full_run_fields(
+    diagnostic_state: tmx_states.TmxDiagnosticState,
+    tendency_state: tmx_states.TmxTendencyState,
+    exit_savepoint: sb.TmxExitSavepoint,
+    num_levels: int,
+) -> None:
+    """Verify the outputs of a full ``Tmx.run`` against the tmx-exit savepoint."""
+    # final tendencies and Stage F diagnostics
+    fields = (
+        (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
+        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv"),
+        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc"),
+        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi"),
+        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua"),
+        (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va"),
+        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa"),
+        (diagnostic_state.heating, exit_savepoint.heating(), "heating"),
+        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke"),
+    )
+    for actual, desired, name in fields:
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+
+    # Stage G vertically integrated diagnostics (2D)
+    integrals = (
+        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi"),
+        (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi"),
+        (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), "int_energy_vi"),
+        (
+            diagnostic_state.int_energy_vi_tend,
+            exit_savepoint.tend_int_energy_vi(),
+            "tend_int_energy_vi",
+        ),
+    )
+    for actual, desired, name in integrals:
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+
+    # Stage G km/kh diagnostics: the bottom (nlev) row is excluded, it holds
+    # the tile-aggregated surface exchange coefficients in the Fortran
+    # (km_sfc/kh_sfc from mo_vdf_diag_smag.f90, out of scope of the
+    # atmosphere-only port; the granule writes zero there)
+    for actual, desired, name in (
+        (diagnostic_state.km, exit_savepoint.km(), "km"),
+        (diagnostic_state.kh, exit_savepoint.kh(), "kh"),
+    ):
+        assert_scaled_allclose(
+            actual.asnumpy()[:, : num_levels - 1],
+            desired.asnumpy()[:, : num_levels - 1],
+            err_msg=name,
+        )
+
+
 def flip_back(field: gtx.Field) -> np.ndarray:
     """
     Reverse the K rows of a 3-row extrapolation coefficient field.
