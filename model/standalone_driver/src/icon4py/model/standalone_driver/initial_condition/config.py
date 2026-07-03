@@ -56,15 +56,24 @@ class InitialConditionConfig:
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
+        test_name = testcase_nml.get("nh_test_name")
         config: (
             jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
         )  # mypy does not automatically catch type
-        match testcase_nml.get("nh_test_name"):
-            case "jabw" | "jabw_s" | "APE_nwp":
+        match test_name:
+            case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
                 log.info("Analytical initial condition for Jablonowski-Williamson test case")
                 config = fortran_config.config_dataclass_from_dict(
                     jw_ic.JablonowskiWilliamsonConfig, testcase_nml
                 )
+                # The APE cases rescale qv to a prescribed global moisture content;
+                # the jabw cases do not (Fortran passes opt_global_moist only for APE).
+                config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
+                # Fortran resets the u-perturbation amplitude jw_up to 0 for the
+                # jabw_s/jabw_m cases only; the others keep the namelist default
+                # (1.0), see mo_nh_testcases.f90. (jabw_m is not handled above.)
+                if test_name == "jabw_s":
+                    config.baroclinic_amplitude = 0.0
             case (
                 "gauss3D" | "wk82"
             ):  # TODO (jcanton): wk82 is just a placeholder until next PR, it is not actually used
@@ -87,6 +96,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
+    global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """Fill a PrognosticState by dispatching on the type of ``config.config``."""
     match config.config:
@@ -99,6 +109,7 @@ def create(
                 prognostic_state_now=prognostic_state_now,
                 backend=backend,
                 exchange=exchange,
+                global_reductions=global_reductions,
             )
         case gauss_ic.Gauss3DConfig():
             gauss_ic.gauss3d(
