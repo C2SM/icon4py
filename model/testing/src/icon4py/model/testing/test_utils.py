@@ -20,6 +20,18 @@ from icon4py.model.common import model_options
 from icon4py.model.testing import config
 
 
+def _as_numeric_array(a: npt.ArrayLike) -> np.ndarray:
+    """
+    Cast boolean arrays to int8 so arithmetic comparisons work; otherwise some
+    tests fail due to incorrect type when running with
+    DALLCLOSE_PRINT_INSTEAD_OF_FAIL
+    """
+    arr = np.asarray(a)
+    if arr.dtype == np.bool_:
+        arr = arr.astype(np.int8)
+    return arr
+
+
 def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
@@ -31,7 +43,13 @@ def dallclose(
     """
     'numpy.allclose', but with double precision default tolerances.
     """
-    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+    return np.allclose(
+        _as_numeric_array(a),
+        _as_numeric_array(b),
+        rtol=rtol,
+        atol=atol,
+        equal_nan=equal_nan,
+    )
 
 
 def assert_dallclose(
@@ -47,16 +65,18 @@ def assert_dallclose(
     """
     'numpy.testing.assert_allclose', but with double precision default tolerances.
     """
+    actual_arr = _as_numeric_array(actual)
+    desired_arr = _as_numeric_array(desired)
     if config.DALLCLOSE_PRINT_INSTEAD_OF_FAIL:
         # Non-blocking version: prints max diff instead of raising errors.
         # Prints red if delta > 0, green otherwise.
-        max_diff = np.max(np.abs(np.asarray(actual) - np.asarray(desired)))
+        max_diff = np.max(np.abs(actual_arr - desired_arr))
         color = "\033[1;31m" if max_diff > 0 else "\033[32m"
         print(f"{color}{err_msg} max diff {max_diff}\033[0m")
     else:
         np_testing.assert_allclose(
-            actual,  # type: ignore[arg-type]
-            desired,  # type: ignore[arg-type]
+            actual_arr,
+            desired_arr,
             rtol=rtol,
             atol=atol,
             equal_nan=equal_nan,
