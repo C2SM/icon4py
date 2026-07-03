@@ -235,9 +235,10 @@ class Experiments:
         grid=Grids.R02B04_GLOBAL,
     )
     APE_AES: Final = ExperimentDescription(
-        name="exclaim_ape_aesPhys_sb",
+        name="exclaim_ape_aesPhys",
         long_name="EXCLAIM Aquaplanet experiment with AES physics (TMX turbulent mixing)",
         grid=Grids.R02B04_GLOBAL,
+        version=6,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",

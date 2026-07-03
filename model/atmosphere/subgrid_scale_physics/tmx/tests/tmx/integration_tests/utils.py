@@ -7,29 +7,53 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Shared helpers of the tmx integration datatests: state constructors from
-the serialized ICON data (exp.exclaim_ape_aesPhys_sb savepoints)."""
+the serialized ICON data (exp.exclaim_ape_aesPhys savepoints)."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import dimension as dims
+from icon4py.model.testing import test_utils
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-    import numpy as np
 
     from icon4py.model.testing import serialbox as sb
 
 
-# TODO(port_turbulence): verify against the actual timestamps once the
-# exclaim_ape_aesPhys_sb archive is generated (run start 2008-09-01T00:00:00Z,
-# dtime = 300 s). Keep in sync with integration_tests/test_savepoints.py.
+# Second serialized timestep of the exclaim_ape_aesPhys archive (run start
+# 2008-09-01T00:00:00Z, dtime = 300 s). Keep in sync with
+# integration_tests/test_savepoints.py.
 TMX_DATE = "2008-09-01T00:05:00.000"
+
+
+def assert_scaled_allclose(
+    actual: np.ndarray,
+    desired: np.ndarray,
+    *,
+    rtol: float = 1.0e-11,
+    atol_scale: float = 1.0e-9,
+    err_msg: str = "",
+) -> None:
+    """
+    'assert_dallclose' with an absolute tolerance scaled to the reference field.
+
+    The tmx fields verified against the Fortran reference agree to a few ulp of
+    the field magnitude, but a plain relative tolerance blows up on near-zero
+    entries (e.g. tendencies crossing zero, v-wind on a zonally symmetric
+    aquaplanet). ``atol = atol_scale * max|desired|`` gives every field an
+    absolute floor tied to its own scale; the measured normalized deviations
+    (max abs diff / max|desired|) on the v06 archive are all below 6e-11, and
+    the largest relative deviations away from zero are below 3e-12.
+    """
+    atol = atol_scale * float(np.max(np.abs(desired)))
+    test_utils.assert_dallclose(actual, desired, rtol=rtol, atol=atol, err_msg=err_msg)
 
 
 def flip_back(field: gtx.Field) -> np.ndarray:

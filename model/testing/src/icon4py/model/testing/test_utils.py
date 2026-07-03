@@ -50,9 +50,13 @@ def assert_dallclose(
     if config.DALLCLOSE_PRINT_INSTEAD_OF_FAIL:
         # Non-blocking version: prints max diff instead of raising errors.
         # Prints red if delta > 0, green otherwise.
-        max_diff = np.max(np.abs(np.asarray(actual) - np.asarray(desired)))
+        abs_diff = np.abs(np.asarray(actual) - np.asarray(desired))
+        max_diff = np.max(abs_diff)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            rel_diff = abs_diff / np.abs(np.asarray(desired))
+        max_rel = np.max(np.nan_to_num(rel_diff, nan=0.0, posinf=0.0))
         color = "\033[1;31m" if max_diff > 0 else "\033[32m"
-        print(f"{color}{err_msg} max diff {max_diff}\033[0m")
+        print(f"{color}{err_msg} max diff {max_diff} (rel {max_rel})\033[0m")
     else:
         np_testing.assert_allclose(
             actual,  # type: ignore[arg-type]

@@ -8,7 +8,7 @@
 
 """Integration tests of the Tmx granule momentum diffusion stages (M5).
 
-Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys_sb)
+Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
 and verifies one call of ``run_horizontal_wind_diffusion`` (Stage D) against
 the tmx-hor-wind-exit savepoint and one call of ``run_vertical_wind_diffusion``
 (Stage E) against the tmx-vert-wind-exit savepoint. Both stages are seeded
@@ -27,11 +27,12 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import model_backends
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATE,
+    assert_scaled_allclose,
     construct_config,
     construct_input_state,
     construct_interpolation_state,
@@ -45,12 +46,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import icon as icon_grid_
     from icon4py.model.testing import serialbox as sb
-
-
-#: relative tolerance for fields downstream of the implicit tridiagonal solve
-#: (operation-order differences vs. the Fortran TDMA).
-#: TODO(port_turbulence): tighten empirically once the archive is generated.
-SOLVER_RTOL = 1.0e-9
 
 
 @dataclasses.dataclass
@@ -160,9 +155,7 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-ma
         (setup.new_state.v, exit_savepoint.va_new(), "va_new"),
     )
     for actual, desired, name in fields:
-        test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=SOLVER_RTOL, err_msg=name
-        )
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
 
 
 @pytest.mark.datatest
@@ -184,6 +177,14 @@ def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many
         backend,
     )
     exit_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=TMX_DATE)
+    # tend_wa is compared against the tmx-exit savepoint: on GPU runs the
+    # tmx-vert-wind-exit serialization races with the still-running ASYNC(1)
+    # horizontal-stress kernel, so its tend_wa copy predates the horizontal
+    # contribution (wa_new, updated to host a moment later, is complete, and
+    # nothing modifies tend_wa between the two savepoints). Verified on the
+    # v06 archive: wa_new == wa + tend_wa(tmx-exit) * dtime to 3e-19, while
+    # tend_wa(tmx-vert-wind-exit) is off by exactly the horizontal term.
+    final_savepoint = data_provider.from_savepoint_tmx_exit(date=TMX_DATE)
 
     setup.granule.run_vertical_wind_diffusion(
         setup.input_state,
@@ -194,10 +195,8 @@ def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many
     )
 
     fields = (
-        (setup.tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa"),
+        (setup.tendency_state.ddt_w, final_savepoint.tend_wa(), "tend_wa"),
         (setup.new_state.w, exit_savepoint.wa_new(), "wa_new"),
     )
     for actual, desired, name in fields:
-        test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=SOLVER_RTOL, err_msg=name
-        )
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)

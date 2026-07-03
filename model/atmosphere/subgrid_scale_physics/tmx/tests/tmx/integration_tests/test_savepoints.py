@@ -9,7 +9,7 @@
 """Smoke tests for the TMX serialbox savepoint readers.
 
 Opens every tmx savepoint written by the instrumented ICON run
-(exp.exclaim_ape_aesPhys_sb) and verifies field shapes and dtypes.
+(exp.exclaim_ape_aesPhys) and verifies field shapes and dtypes.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 # TODO(port_turbulence): verify against the actual timestamps once the
-# exclaim_ape_aesPhys_sb archive is generated (run start 2008-09-01T00:00:00Z,
+# exclaim_ape_aesPhys archive is generated (run start 2008-09-01T00:00:00Z,
 # dtime = 300 s).
 TMX_DATE = "2008-09-01T00:05:00.000"
 

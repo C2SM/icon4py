@@ -8,7 +8,7 @@
 
 """End-to-end integration test of the Tmx granule (M6).
 
-Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys_sb)
+Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
 and verifies one full ``run`` (Stages A to G) from the tmx-entry /
 tmx-surface-fluxes savepoints against the tmx-exit savepoint (final
 tendencies, dissipation heating and vertically integrated diagnostics).
@@ -24,11 +24,12 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import model_backends
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATE,
+    assert_scaled_allclose,
     construct_config,
     construct_input_state,
     construct_interpolation_state,
@@ -42,18 +43,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import icon as icon_grid_
     from icon4py.model.testing import serialbox as sb
-
-
-#: relative tolerance for fields downstream of the implicit tridiagonal solves
-#: (operation-order differences vs. the Fortran TDMA), accumulated over the
-#: full A-to-G stage sequence.
-#: TODO(port_turbulence): tighten empirically once the archive is generated.
-SOLVER_RTOL = 1.0e-9
-#: relative tolerance for the vertically integrated diagnostics: the
-#: ``int_energy_vi_tend`` difference quotient of two nearly equal column
-#: integrals amplifies the solver differences.
-#: TODO(port_turbulence): tighten empirically once the archive is generated.
-INTEGRAL_RTOL = 1.0e-7
 
 
 @pytest.mark.datatest
@@ -113,9 +102,7 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
         (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke"),
     )
     for actual, desired, name in fields:
-        test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=SOLVER_RTOL, err_msg=name
-        )
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
 
     # Stage G vertically integrated diagnostics (2D)
     integrals = (
@@ -129,9 +116,7 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
         ),
     )
     for actual, desired, name in integrals:
-        test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=INTEGRAL_RTOL, err_msg=name
-        )
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
 
     # Stage G km/kh diagnostics: the bottom (nlev) row is excluded, it holds
     # the tile-aggregated surface exchange coefficients in the Fortran
@@ -142,9 +127,8 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
         (diagnostic_state.km, exit_savepoint.km(), "km"),
         (diagnostic_state.kh, exit_savepoint.kh(), "kh"),
     ):
-        test_utils.assert_dallclose(
+        assert_scaled_allclose(
             actual.asnumpy()[:, : nlev - 1],
             desired.asnumpy()[:, : nlev - 1],
-            rtol=SOLVER_RTOL,
             err_msg=name,
         )

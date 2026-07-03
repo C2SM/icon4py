@@ -60,7 +60,7 @@ uv run --group test --frozen pytest --datatest-skip model/atmosphere/subgrid_sca
 uv run --group test --frozen pytest --datatest-skip --backend gtfn_cpu model/atmosphere/subgrid_scale_physics/tmx/
 
 # integration datatests against serialized ICON reference data
-# (exp.exclaim_ape_aesPhys_sb archive, auto-downloaded):
+# (exp.exclaim_ape_aesPhys archive, auto-downloaded):
 uv run --group test --frozen pytest --datatest-only model/atmosphere/subgrid_scale_physics/tmx/
 ```
 

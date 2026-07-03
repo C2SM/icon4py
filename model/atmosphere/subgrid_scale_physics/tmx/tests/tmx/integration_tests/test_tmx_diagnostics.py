@@ -8,7 +8,7 @@
 
 """Integration test of the Tmx granule Stage A (Smagorinsky diagnostics).
 
-Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys_sb),
+Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys),
 verifies the init fields against the tmx-init savepoint and one call of
 ``run_diagnostics`` against the tmx-diagnostics-exit savepoint.
 """
@@ -26,6 +26,7 @@ from icon4py.model.testing import definitions, test_utils
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATE,
+    assert_scaled_allclose,
     construct_config,
     construct_input_state,
     construct_interpolation_state,
@@ -130,4 +131,4 @@ def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-po
     for attr_name, accessor_name, k_slice in fields:
         actual = getattr(diagnostic_state, attr_name).asnumpy()[:, k_slice]
         desired = getattr(exit_savepoint, accessor_name)().asnumpy()[:, k_slice]
-        test_utils.assert_dallclose(actual, desired, err_msg=attr_name)
+        assert_scaled_allclose(actual, desired, err_msg=attr_name)

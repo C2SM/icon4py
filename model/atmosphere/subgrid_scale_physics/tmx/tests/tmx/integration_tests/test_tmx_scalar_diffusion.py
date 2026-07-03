@@ -8,7 +8,7 @@
 
 """Integration tests of the Tmx granule scalar diffusion stages (M4).
 
-Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys_sb)
+Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
 and verifies one call of ``run_hydrometeor_diffusion`` (Stage B) against the
 tmx-hydro-exit savepoint and one call of ``run_temperature_diffusion``
 (Stage C) against the tmx-temperature-exit savepoint. Both stages are seeded
@@ -31,6 +31,7 @@ from icon4py.model.testing import definitions, test_utils
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATE,
+    assert_scaled_allclose,
     construct_config,
     construct_input_state,
     construct_interpolation_state,
@@ -44,12 +45,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import icon as icon_grid_
     from icon4py.model.testing import serialbox as sb
-
-
-#: relative tolerance for fields downstream of the implicit tridiagonal solve
-#: (operation-order differences vs. the Fortran TDMA).
-#: TODO(port_turbulence): tighten empirically once the archive is generated.
-SOLVER_RTOL = 1.0e-9
 
 
 @dataclasses.dataclass
@@ -151,9 +146,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new"),
     )
     for actual, desired, name in fields:
-        test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=SOLVER_RTOL, err_msg=name
-        )
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
 
 
 @pytest.mark.datatest
@@ -208,6 +201,4 @@ def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         (setup.tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
     )
     for actual, desired, name in fields:
-        test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=SOLVER_RTOL, err_msg=name
-        )
+        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
