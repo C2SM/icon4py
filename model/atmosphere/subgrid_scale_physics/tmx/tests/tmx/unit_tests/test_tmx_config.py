@@ -36,7 +36,7 @@ def test_default_config_matches_fortran_defaults() -> None:
     assert config.use_scale_turb_energy_flux is False
     assert config.scale_turb_energy_flux == 1.0
     assert config.smag_constant == 0.23
-    #: exact Fortran literal, not 1/3
+    # exact Fortran literal, not 1/3
     assert config.turb_prandtl == 0.33333333333
     assert config.km_min == 0.001
     assert config.max_turb_scale == 300.0

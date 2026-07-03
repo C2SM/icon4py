@@ -32,8 +32,8 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-#: vertical size specifiers: number of full levels, half levels (nlev + 1),
-#: 3 extrapolation coefficients, or no vertical dimension (2D surface field)
+# vertical size specifiers: number of full levels, half levels (nlev + 1),
+# 3 extrapolation coefficients, or no vertical dimension (2D surface field)
 FULL = "full"
 HALF = "half"
 COEFF3 = "coeff3"

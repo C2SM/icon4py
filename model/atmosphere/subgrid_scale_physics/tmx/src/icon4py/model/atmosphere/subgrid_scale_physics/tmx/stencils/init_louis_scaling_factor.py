@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-#: Global mean of cell area for R2B8 [m^2] (from ICON's ``mo_tmx_smagorinsky.f90``)
+# Global mean of cell area for R2B8 [m^2] (from ICON's ``mo_tmx_smagorinsky.f90``)
 MEAN_CELL_AREA_R2B8: Final[wpfloat] = wpfloat(97294071.23714285)
 
 

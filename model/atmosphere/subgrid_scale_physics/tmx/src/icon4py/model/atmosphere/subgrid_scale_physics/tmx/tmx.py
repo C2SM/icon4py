@@ -192,8 +192,8 @@ class TurbulenceSolverType(int, enum.Enum):
     Note: Called ``solver_type`` in ``mo_turb_vdiff_config.f90``.
     """
 
-    EXPLICIT = 1  #: explicit time stepping
-    IMPLICIT = 2  #: implicit time stepping
+    EXPLICIT = 1  # explicit time stepping
+    IMPLICIT = 2  # implicit time stepping
 
 
 class EnergyType(int, enum.Enum):
@@ -203,17 +203,17 @@ class EnergyType(int, enum.Enum):
     Note: Called ``energy_type`` in ``mo_turb_vdiff_config.f90``.
     """
 
-    DRY_STATIC = 1  #: dry static energy cp*T + g*z
-    INTERNAL = 2  #: internal energy cv*T
+    DRY_STATIC = 1  # dry static energy cp*T + g*z
+    INTERNAL = 2  # internal energy cv*T
 
 
-#: number of members of the Fortran t_vdiff_config derived type
-#: (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this many
-#: values per domain, in declaration order. Must be kept in sync with the
-#: 'unnamed_index' positions of the TmxConfig options below.
+# number of members of the Fortran t_vdiff_config derived type
+# (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this many
+# values per domain, in declaration order. Must be kept in sync with the
+# 'unnamed_index' positions of the TmxConfig options below.
 _T_VDIFF_CONFIG_NUM_MEMBERS: Final = 42
 
-#: position of 'use_tmx' in t_vdiff_config, used as an order canary
+# position of 'use_tmx' in t_vdiff_config, used as an order canary
 _T_VDIFF_CONFIG_USE_TMX_INDEX: Final = 22
 
 
@@ -361,7 +361,7 @@ class TmxConfig:
                 "turb_prandtl", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=35
             ),
         ),
-    ] = 0.33333333333  #: exact literal from mo_turb_vdiff_config.f90 (not 1/3)
+    ] = 0.33333333333  # exact literal from mo_turb_vdiff_config.f90 (not 1/3)
 
     km_min: typing.Annotated[
         float,
@@ -502,8 +502,8 @@ class Tmx:
         self.config = config
         self._params = params
         self._grid = grid
-        #: not used by the Smagorinsky diagnostics (Stage A); kept for parity with
-        #: the other granules and for the later tmx stages.
+        # not used by the Smagorinsky diagnostics (Stage A); kept for parity with
+        # the other granules and for the later tmx stages.
         self._vertical_grid = vertical_grid
         self._metric_state = metric_state
         self._interpolation_state = interpolation_state
@@ -512,12 +512,12 @@ class Tmx:
 
         assert self._cell_params.area is not None
 
-        #: scaling factor of the turbulent energy flux (``zfactor`` in
-        #: 'Compute_diffusion_temperature', mo_vdf.f90)
+        # scaling factor of the turbulent energy flux (``zfactor`` in
+        # 'Compute_diffusion_temperature', mo_vdf.f90)
         self._zfactor = (
             self.config.scale_turb_energy_flux if self.config.use_scale_turb_energy_flux else 1.0
         )
-        #: compile-time variant selector of the energy conversion stencils
+        # compile-time variant selector of the energy conversion stencils
         use_internal_energy = self.config.energy_type == EnergyType.INTERNAL
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(self._exchange)
@@ -533,7 +533,7 @@ class Tmx:
         wgtfacq_c = self._coefficient_fields(self._metric_state.wgtfacq_c, dims.CellDim)
         wgtfacq1_e = self._coefficient_fields(self._metric_state.wgtfacq1_e, dims.EdgeDim)
         wgtfacq_e = self._coefficient_fields(self._metric_state.wgtfacq_e, dims.EdgeDim)
-        #: geometric height of the surface (bottom half level), 2D slice of z_ifc
+        # geometric height of the surface (bottom half level), 2D slice of z_ifc
         z_ifc_sfc = gtx.as_field(
             (dims.CellDim,),
             self._metric_state.z_ifc.ndarray[:, num_levels],
@@ -1601,20 +1601,20 @@ class Tmx:
         )
 
     def _allocate_local_fields(self) -> None:
-        #: squared Smagorinsky mixing length at half-level cell centers [m^2]
+        # squared Smagorinsky mixing length at half-level cell centers [m^2]
         self.mix_len_sq: fa.CellKField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
         )
-        #: cell-area scaling factor of the Louis constant b
+        # cell-area scaling factor of the Louis constant b
         self.louis_factor: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
         )
-        #: geometric height of the full levels above the surface [m]
+        # geometric height of the full levels above the surface [m]
         self.ghf: fa.CellKField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=self._allocator
         )
-        #: land / sea-ice fractions; zero (aqua planet) until they are wired
-        #: through the input state
+        # land / sea-ice fractions; zero (aqua planet) until they are wired
+        # through the input state
         self.fract_land: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
         )
@@ -1629,37 +1629,37 @@ class Tmx:
                 self._grid, dims.CellDim, dims.KDim, allocator=self._allocator
             )
 
-        #: inverse air mass per unit area [m^2/kg] (``inv_mair``)
+        # inverse air mass per unit area [m^2/kg] (``inv_mair``)
         self._inv_air_mass: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: rows of the tridiagonal vertical diffusion matrix (``a``, ``b``, ``c``)
+        # rows of the tridiagonal vertical diffusion matrix (``a``, ``b``, ``c``)
         self._matrix_a: fa.CellKField[ta.wpfloat] = _cell_k_field()
         self._matrix_b: fa.CellKField[ta.wpfloat] = _cell_k_field()
         self._matrix_c: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: right-hand side of the vertical diffusion solve (``rhs``); only the
-        #: bottom K row is ever written, all other rows must stay zero
+        # right-hand side of the vertical diffusion solve (``rhs``); only the
+        # bottom K row is ever written, all other rows must stay zero
         self._rhs: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: scratch for the tridiagonal solution of the implicit solver, whose
-        #: effect only enters through the tendency (the Fortran discards it too:
-        #: the new state is computed as state + tend * dtime after the
-        #: horizontal diffusion)
+        # scratch for the tridiagonal solution of the implicit solver, whose
+        # effect only enters through the tendency (the Fortran discards it too:
+        # the new state is computed as state + tend * dtime after the
+        # horizontal diffusion)
         self._diffused_scalar: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: horizontal turbulent diffusion flux at full-level edges (``nabla2_e``)
+        # horizontal turbulent diffusion flux at full-level edges (``nabla2_e``)
         self._nabla2_flux_e: fa.EdgeKField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=self._allocator
         )
-        #: energy diffused by the heat diffusion, computed from the input
-        #: temperature and the old moisture state (``energy``)
+        # energy diffused by the heat diffusion, computed from the input
+        # temperature and the old moisture state (``energy``)
         self.energy: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: total (vertical + horizontal) diffusion tendency of the energy
-        #: (``tend_energy``)
+        # total (vertical + horizontal) diffusion tendency of the energy
+        # (``tend_energy``)
         self.tend_energy: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: energy after the diffusion update (``new_energy``)
+        # energy after the diffusion update (``new_energy``)
         self._new_energy: fa.CellKField[ta.wpfloat] = _cell_k_field()
-        #: grid-mean surface energy flux (``flux_x`` of 'compute_flux_x')
+        # grid-mean surface energy flux (``flux_x`` of 'compute_flux_x')
         self._flux_x: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
         )
-        #: zero surface flux of the tracers without surface exchange (qc, qi)
+        # zero surface flux of the tracers without surface exchange (qc, qi)
         self._zero_surface_flux: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
         )
@@ -1695,45 +1695,45 @@ class Tmx:
                 allocator=self._allocator,
             )
 
-        #: inverse air density at edge midpoints (``inv_rhoe``)
+        # inverse air density at edge midpoints (``inv_rhoe``)
         self._inv_rhoe: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: inverse air mass per unit area of the edge layers (``inv_maire``)
+        # inverse air mass per unit area of the edge layers (``inv_maire``)
         self._inv_maire: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: total (horizontal + vertical) vn diffusion tendency (``tot_tend``),
-        #: kept on the granule for testing. The Fortran zero fill at entry is
-        #: not replicated: the rows inside the Stage D edge domain are
-        #: (over)written before they are read, halo rows are synced (S9), and
-        #: all other rows keep their allocation-time zeros because no stencil
-        #: ever writes them (they are read by the C2E2C2E gather of the RBF
-        #: interpolation, as zeros, exactly as in the Fortran).
+        # total (horizontal + vertical) vn diffusion tendency (``tot_tend``),
+        # kept on the granule for testing. The Fortran zero fill at entry is
+        # not replicated: the rows inside the Stage D edge domain are
+        # (over)written before they are read, halo rows are synced (S9), and
+        # all other rows keep their allocation-time zeros because no stencil
+        # ever writes them (they are read by the C2E2C2E gather of the RBF
+        # interpolation, as zeros, exactly as in the Fortran).
         self.tot_tend: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: rows of the tridiagonal vn diffusion matrix (``za``, ``zb``, ``zc``)
+        # rows of the tridiagonal vn diffusion matrix (``za``, ``zb``, ``zc``)
         self._edge_matrix_a: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
         self._edge_matrix_b: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
         self._edge_matrix_c: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: right-hand side of the vn diffusion solve (``zrhs``); every row is
-        #: written by 'compute_vn_vertical_diffusion_rhs' before the solve
+        # right-hand side of the vn diffusion solve (``zrhs``); every row is
+        # written by 'compute_vn_vertical_diffusion_rhs' before the solve
         self._edge_rhs: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: scratch for the tridiagonal solution of the vn solve (discarded,
-        #: only the tendency accumulated onto ``tot_tend`` is used)
+        # scratch for the tridiagonal solution of the vn solve (discarded,
+        # only the tendency accumulated onto ``tot_tend`` is used)
         self._diffused_vn: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: tangential wind at edge midpoints on full levels (``vt_e``)
+        # tangential wind at edge midpoints on full levels (``vt_e``)
         self._vt_e: fa.EdgeKField[ta.wpfloat] = _edge_k_field()
-        #: horizontal D31/D32 stress tendency of w at half-level edges
-        #: (``hori_tend_e``); rows outside the computed domain (edge rows
-        #: outside grf_bdywidth_e..min_rledge_int-1 and the top/bottom half
-        #: levels) keep their allocation-time zeros and are never read
+        # horizontal D31/D32 stress tendency of w at half-level edges
+        # (``hori_tend_e``); rows outside the computed domain (edge rows
+        # outside grf_bdywidth_e..min_rledge_int-1 and the top/bottom half
+        # levels) keep their allocation-time zeros and are never read
         self._hori_tend_e: fa.EdgeKField[ta.wpfloat] = _edge_k_field(extend=1)
-        #: right-hand side of the w diffusion solve (``rhs``); only the
-        #: half-level rows 1..nlev-1 are written and read
+        # right-hand side of the w diffusion solve (``rhs``); only the
+        # half-level rows 1..nlev-1 are written and read
         self._w_rhs: fa.CellKField[ta.wpfloat] = _cell_half_field()
-        #: inverse air density at half-level cell centers (``inv_rho_ic``)
+        # inverse air density at half-level cell centers (``inv_rho_ic``)
         self._inv_rho_ic: fa.CellKField[ta.wpfloat] = _cell_half_field()
-        #: inverse air mass per unit area of the half-level layers
-        #: (``inv_mair_ic``)
+        # inverse air mass per unit area of the half-level layers
+        # (``inv_mair_ic``)
         self._inv_mair_ic: fa.CellKField[ta.wpfloat] = _cell_half_field()
-        #: scratch for the tridiagonal solution of the w solve (discarded,
-        #: only the tendency is used)
+        # scratch for the tridiagonal solution of the w solve (discarded,
+        # only the tendency is used)
         self._diffused_w: fa.CellKField[ta.wpfloat] = _cell_half_field()
 
     def _coefficient_fields(
@@ -2084,10 +2084,10 @@ class Tmx:
             energy=self.energy,
         )
 
-        #: air temperature at the lowest full level, as passed to
-        #: 'compute_energy_fluxes' by the surface Compute (mo_vdf_sfc.f90; the
-        #: surface scheme input ``ta`` is bound to the bottom row of the tmx
-        #: temperature state in mo_interface_aes_tmx.f90)
+        # air temperature at the lowest full level, as passed to
+        # 'compute_energy_fluxes' by the surface Compute (mo_vdf_sfc.f90; the
+        # surface scheme input ``ta`` is bound to the bottom row of the tmx
+        # temperature state in mo_interface_aes_tmx.f90)
         temperature_sfc = gtx.as_field(
             (dims.CellDim,),
             input_state.temperature.ndarray[:, self._grid.num_levels - 1],

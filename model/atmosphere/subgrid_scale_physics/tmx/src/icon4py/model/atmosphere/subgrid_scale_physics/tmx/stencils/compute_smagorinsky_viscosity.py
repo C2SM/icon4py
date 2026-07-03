@@ -16,8 +16,8 @@ from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
-#: Threshold to avoid division by zero in the Richardson number
-#: (``eps_louis`` in ICON's ``mo_tmx_smagorinsky.f90``)
+# Threshold to avoid division by zero in the Richardson number
+# (``eps_louis`` in ICON's ``mo_tmx_smagorinsky.f90``)
 EPS_LOUIS: Final[wpfloat] = wpfloat(1.0e-28)
 
 

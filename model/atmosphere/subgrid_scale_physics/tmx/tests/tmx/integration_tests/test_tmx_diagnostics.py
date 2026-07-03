@@ -99,17 +99,17 @@ def test_tmx_init_and_run_diagnostics_single_step(
     granule.run_diagnostics(construct_input_state(entry_savepoint), diagnostic_state)
 
     nlev = icon_grid.num_levels
-    #: (diagnostic state attribute, exit savepoint accessor, K slice compared)
-    #: K rows are excluded only where the Fortran leaves them dead:
-    #: - bruvais: brunt_vaisala_freq (mo_nh_vert_interp_les.f90) computes
-    #:   jk = 2..nlev (1-based), i.e. rows 1..nlev-1; rows 0 and nlev are never
-    #:   written.
-    #: - mech_prod: interpolate_rate_of_strain_full2half_edge2cell
-    #:   (mo_vdf_atmo.f90) computes jk = 2..nlev (1-based), i.e. rows
-    #:   1..nlev-1; rows 0 and nlev are never written.
-    #: - rho_ic: NOT excluded; vert_intp_full2half_cell_3d
-    #:   (mo_nh_vert_interp_les.f90) writes all rows, including row 0
-    #:   (wgtfacq1_c extrapolation) and row nlev (wgtfacq_c extrapolation).
+    # (diagnostic state attribute, exit savepoint accessor, K slice compared)
+    # K rows are excluded only where the Fortran leaves them dead:
+    # - bruvais: brunt_vaisala_freq (mo_nh_vert_interp_les.f90) computes
+    #   jk = 2..nlev (1-based), i.e. rows 1..nlev-1; rows 0 and nlev are never
+    #   written.
+    # - mech_prod: interpolate_rate_of_strain_full2half_edge2cell
+    #   (mo_vdf_atmo.f90) computes jk = 2..nlev (1-based), i.e. rows
+    #   1..nlev-1; rows 0 and nlev are never written.
+    # - rho_ic: NOT excluded; vert_intp_full2half_cell_3d
+    #   (mo_nh_vert_interp_les.f90) writes all rows, including row 0
+    #   (wgtfacq1_c extrapolation) and row nlev (wgtfacq_c extrapolation).
     interior = slice(1, nlev)
     everything = slice(None)
     fields = (

@@ -98,8 +98,8 @@ def temperature_from_energy_input_data(
     )
 
 
-#: Static-params variants: prove that the config bool can be passed both as a regular
-#: runtime scalar ("none") and as a static (compile-time) argument selecting the variant.
+# Static-params variants: prove that the config bool can be passed both as a regular
+# runtime scalar ("none") and as a static (compile-time) argument selecting the variant.
 STATIC_VARIANTS = {
     "none": (),
     "compile_time_variant": ("use_internal_energy",),

@@ -184,8 +184,8 @@ def smagorinsky_viscosity_input_data(
     )
 
 
-#: Static-params variants: prove that the config bools can be passed both as regular
-#: runtime scalars ("none") and as static (compile-time) arguments selecting the variant.
+# Static-params variants: prove that the config bools can be passed both as regular
+# runtime scalars ("none") and as static (compile-time) arguments selecting the variant.
 STATIC_VARIANTS = {
     "none": (),
     "compile_time_variant": ("use_louis", "use_louis_land", "use_louis_ice"),

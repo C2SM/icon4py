@@ -214,8 +214,8 @@ def _surface_flux_state(
     )
 
 
-#: diagnostic-state fields written by run_diagnostics and their expected
-#: (horizontal dimension, number of vertical levels relative to nlev) shapes
+# diagnostic-state fields written by run_diagnostics and their expected
+# (horizontal dimension, number of vertical levels relative to nlev) shapes
 STAGE_A_OUTPUTS = (
     ("cptgz", dims.CellDim, 0),
     ("theta_v", dims.CellDim, 0),
