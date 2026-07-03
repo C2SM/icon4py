@@ -42,7 +42,7 @@ class ThermodynamicConstants(ta.wpfloat, enum.Enum):
 
 
 @gtx.field_operator
-def _T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def _T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     u: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -81,7 +81,7 @@ def _T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     u: fa.CellKField[ta.wpfloat],  # Internal energy (extensive)
     qv: fa.CellKField[ta.wpfloat],  # Water vapor specific humidity
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
@@ -94,7 +94,7 @@ def T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def _T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     u: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
@@ -133,7 +133,7 @@ def _T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-argume
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     u: ta.wpfloat,  # Internal energy (extensive)
     qv: ta.wpfloat,  # Water vapor specific humidity
     qliq: ta.wpfloat,  # Specific mass of liquid phases
@@ -148,7 +148,7 @@ def T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-argumen
 
 
 @gtx.field_operator
-def _internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def _internal_energy(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     t: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -183,7 +183,7 @@ def _internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def _internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     t: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
@@ -218,7 +218,7 @@ def _internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def internal_energy(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qv: fa.CellKField[ta.wpfloat],  # Specific mass of vapor
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases

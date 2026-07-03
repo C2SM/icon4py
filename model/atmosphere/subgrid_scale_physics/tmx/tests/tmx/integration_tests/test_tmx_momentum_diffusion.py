@@ -58,7 +58,8 @@ class _GranuleSetup:
     dtime: float
 
 
-def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
+def _setup_granule(
+    *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -82,7 +83,10 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
         params=tmx.TmxParams(config),
         vertical_grid=None,
         metric_state=construct_metric_state(
-            metrics_savepoint, init_savepoint, grid_savepoint, allocator
+            metrics_savepoint=metrics_savepoint,
+            init_savepoint=init_savepoint,
+            grid_savepoint=grid_savepoint,
+            allocator=allocator,
         ),
         interpolation_state=construct_interpolation_state(interpolation_savepoint),
         edge_params=grid_savepoint.construct_edge_geometry(),
@@ -124,7 +128,8 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
     "experiment_description, date",
     [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
-def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_run_horizontal_wind_diffusion_single_step(
+    *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -136,25 +141,25 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-ma
     tmx_dtime: float,
 ) -> None:
     setup = _setup_granule(
-        data_provider,
-        grid_savepoint,
-        metrics_savepoint,
-        interpolation_savepoint,
-        icon_grid,
-        backend,
-        date,
-        tmx_config,
-        tmx_dtime,
+        data_provider=data_provider,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        interpolation_savepoint=interpolation_savepoint,
+        icon_grid=icon_grid,
+        backend=backend,
+        date=date,
+        config=tmx_config,
+        dtime=tmx_dtime,
     )
     exit_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
 
     setup.granule.run_horizontal_wind_diffusion(
-        setup.input_state,
-        setup.surface_flux_state,
-        setup.diagnostic_state,
-        setup.tendency_state,
-        setup.new_state,
-        setup.dtime,
+        input_state=setup.input_state,
+        surface_flux_state=setup.surface_flux_state,
+        diagnostic_state=setup.diagnostic_state,
+        tendency_state=setup.tendency_state,
+        new_state=setup.new_state,
+        dtime=setup.dtime,
     )
 
     fields = (
@@ -173,7 +178,8 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(  # noqa: PLR0917 [too-ma
     "experiment_description, date",
     [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
-def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_run_vertical_wind_diffusion_single_step(
+    *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -185,15 +191,15 @@ def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many
     tmx_dtime: float,
 ) -> None:
     setup = _setup_granule(
-        data_provider,
-        grid_savepoint,
-        metrics_savepoint,
-        interpolation_savepoint,
-        icon_grid,
-        backend,
-        date,
-        tmx_config,
-        tmx_dtime,
+        data_provider=data_provider,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        interpolation_savepoint=interpolation_savepoint,
+        icon_grid=icon_grid,
+        backend=backend,
+        date=date,
+        config=tmx_config,
+        dtime=tmx_dtime,
     )
     exit_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=date)
     # tend_wa is compared against the tmx-exit savepoint: on GPU runs the
@@ -206,11 +212,11 @@ def test_tmx_run_vertical_wind_diffusion_single_step(  # noqa: PLR0917 [too-many
     final_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
 
     setup.granule.run_vertical_wind_diffusion(
-        setup.input_state,
-        setup.diagnostic_state,
-        setup.tendency_state,
-        setup.new_state,
-        setup.dtime,
+        input_state=setup.input_state,
+        diagnostic_state=setup.diagnostic_state,
+        tendency_state=setup.tendency_state,
+        new_state=setup.new_state,
+        dtime=setup.dtime,
     )
 
     fields = (

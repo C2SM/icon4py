@@ -211,7 +211,7 @@ def sat_pres_water(
 
 
 @gtx.field_operator
-def _newton_raphson(  # noqa: PLR0917 [too-many-positional-arguments]
+def _newton_raphson(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py operator parameters are positional
     Tx: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     qve: fa.CellKField[ta.wpfloat],

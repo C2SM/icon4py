@@ -1965,8 +1965,9 @@ class Tmx:
                 tend=tend,
             )
 
-    def run_hydrometeor_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
+    def run_hydrometeor_diffusion(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: tmx_states.TmxSurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -2038,8 +2039,9 @@ class Tmx:
 
         log.debug("tmx Stage B (Compute_diffusion_hydrometeors): end")
 
-    def run_temperature_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
+    def run_temperature_diffusion(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: tmx_states.TmxSurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -2143,8 +2145,9 @@ class Tmx:
 
         log.debug("tmx Stage C (Compute_diffusion_temperature): end")
 
-    def run_horizontal_wind_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
+    def run_horizontal_wind_diffusion(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: tmx_states.TmxSurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -2255,6 +2258,7 @@ class Tmx:
 
     def run_vertical_wind_diffusion(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
@@ -2323,8 +2327,9 @@ class Tmx:
 
         log.debug("tmx Stage E (Compute_diffusion_vert_wind): end")
 
-    def run_energy_update(  # noqa: PLR0917 [too-many-positional-arguments]
+    def run_energy_update(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: tmx_states.TmxSurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -2381,6 +2386,7 @@ class Tmx:
 
     def run_update_diagnostics(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
         new_state: tmx_states.TmxNewState,
@@ -2453,8 +2459,9 @@ class Tmx:
 
         log.debug("tmx Stage G (Update_diagnostics): end")
 
-    def run(  # noqa: PLR0917 [too-many-positional-arguments]
+    def run(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: tmx_states.TmxSurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -2482,21 +2489,30 @@ class Tmx:
         log.debug("tmx run (Compute): start")
 
         self.run_diagnostics(input_state, diagnostic_state)
-        self.run_hydrometeor_diffusion(
-            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        stage_kwargs = dict(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
         )
-        self.run_temperature_diffusion(
-            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
-        )
-        self.run_horizontal_wind_diffusion(
-            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
-        )
+        self.run_hydrometeor_diffusion(**stage_kwargs)
+        self.run_temperature_diffusion(**stage_kwargs)
+        self.run_horizontal_wind_diffusion(**stage_kwargs)
         self.run_vertical_wind_diffusion(
-            input_state, diagnostic_state, tendency_state, new_state, dtime
+            input_state=input_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
         )
-        self.run_energy_update(
-            input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        self.run_energy_update(**stage_kwargs)
+        self.run_update_diagnostics(
+            input_state=input_state,
+            diagnostic_state=diagnostic_state,
+            new_state=new_state,
+            dtime=dtime,
         )
-        self.run_update_diagnostics(input_state, diagnostic_state, new_state, dtime)
 
         log.debug("tmx run (Compute): end")

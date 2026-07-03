@@ -35,6 +35,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 def load_fortran_dict(
+    *,
     experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
     fname: str,
@@ -53,7 +54,9 @@ def tmx_config(
 ) -> tmx.TmxConfig:
     """TmxConfig read from the experiment's converted (echoed) namelists."""
     atmo_dict = load_fortran_dict(
-        experiment_description, process_props, fortran_config.ATM_DICT_FNAME
+        experiment_description=experiment_description,
+        process_props=process_props,
+        fname=fortran_config.ATM_DICT_FNAME,
     )
     return tmx.TmxConfig.from_fortran_dict(atmo_dict)
 
@@ -87,7 +90,9 @@ def tmx_dtime(
     active turbulent mixing, so it is always present in the input namelists.
     """
     input_dict = load_fortran_dict(
-        experiment_description, process_props, fortran_config.INPUT_DICT_FNAME
+        experiment_description=experiment_description,
+        process_props=process_props,
+        fname=fortran_config.INPUT_DICT_FNAME,
     )
     dt_vdf = input_dict["aes_phy_nml"]["aes_phy_config"][0]["dt_vdf"]
     match = _ISO8601_DURATION.fullmatch(dt_vdf)

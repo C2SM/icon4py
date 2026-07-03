@@ -49,7 +49,8 @@ if TYPE_CHECKING:
     "experiment_description, date",
     [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
-def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_full_run_single_step(
+    *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -72,7 +73,10 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
         params=tmx.TmxParams(tmx_config),
         vertical_grid=None,
         metric_state=construct_metric_state(
-            metrics_savepoint, init_savepoint, grid_savepoint, allocator
+            metrics_savepoint=metrics_savepoint,
+            init_savepoint=init_savepoint,
+            grid_savepoint=grid_savepoint,
+            allocator=allocator,
         ),
         interpolation_state=construct_interpolation_state(interpolation_savepoint),
         edge_params=grid_savepoint.construct_edge_geometry(),
@@ -85,12 +89,17 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
     new_state = tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator)
 
     granule.run(
-        construct_input_state(entry_savepoint),
-        construct_surface_flux_state(surface_fluxes_savepoint),
-        diagnostic_state,
-        tendency_state,
-        new_state,
-        tmx_dtime,
+        input_state=construct_input_state(entry_savepoint),
+        surface_flux_state=construct_surface_flux_state(surface_fluxes_savepoint),
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=tmx_dtime,
     )
 
-    verify_full_run_fields(diagnostic_state, tendency_state, exit_savepoint, icon_grid.num_levels)
+    verify_full_run_fields(
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        exit_savepoint=exit_savepoint,
+        num_levels=icon_grid.num_levels,
+    )

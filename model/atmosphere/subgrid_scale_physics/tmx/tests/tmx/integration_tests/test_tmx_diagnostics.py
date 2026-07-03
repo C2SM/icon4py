@@ -45,7 +45,8 @@ if TYPE_CHECKING:
     "experiment_description, date",
     [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
 )
-def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_init_and_run_diagnostics_single_step(
+    *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -69,7 +70,10 @@ def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-po
         # the vertical grid is not used by the Smagorinsky diagnostics (Stage A)
         vertical_grid=None,
         metric_state=construct_metric_state(
-            metrics_savepoint, init_savepoint, grid_savepoint, allocator
+            metrics_savepoint=metrics_savepoint,
+            init_savepoint=init_savepoint,
+            grid_savepoint=grid_savepoint,
+            allocator=allocator,
         ),
         interpolation_state=construct_interpolation_state(interpolation_savepoint),
         edge_params=grid_savepoint.construct_edge_geometry(),

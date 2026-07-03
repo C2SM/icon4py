@@ -301,10 +301,20 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
     dtime = 300.0
 
     granule.run_hydrometeor_diffusion(
-        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        input_state=input_state,
+        surface_flux_state=surface_flux_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=dtime,
     )
     granule.run_temperature_diffusion(
-        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        input_state=input_state,
+        surface_flux_state=surface_flux_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=dtime,
     )
 
     for name in ("ddt_qv", "ddt_qc", "ddt_qi", "ddt_temperature"):
@@ -320,10 +330,19 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
 
     # momentum diffusion stages D (horizontal wind) and E (vertical wind)
     granule.run_horizontal_wind_diffusion(
-        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        input_state=input_state,
+        surface_flux_state=surface_flux_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=dtime,
     )
     granule.run_vertical_wind_diffusion(
-        input_state, diagnostic_state, tendency_state, new_state, dtime
+        input_state=input_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=dtime,
     )
 
     tot_tend = granule.tot_tend.asnumpy()
@@ -352,9 +371,19 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
 
     # energy update stage F and diagnostics update stage G
     granule.run_energy_update(
-        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+        input_state=input_state,
+        surface_flux_state=surface_flux_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=dtime,
     )
-    granule.run_update_diagnostics(input_state, diagnostic_state, new_state, dtime)
+    granule.run_update_diagnostics(
+        input_state=input_state,
+        diagnostic_state=diagnostic_state,
+        new_state=new_state,
+        dtime=dtime,
+    )
 
     for name in ("heating", "dissip_ke", "cptgz", "km", "kh"):
         field = getattr(diagnostic_state, name).asnumpy()
@@ -403,7 +432,12 @@ def test_tmx_granule_full_run_smoke(
     new_state = tmx_states.TmxNewState.allocate(grid, allocator=allocator)
 
     granule.run(
-        input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime=300.0
+        input_state=input_state,
+        surface_flux_state=surface_flux_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=300.0,
     )
 
     for state, names in (

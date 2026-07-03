@@ -20,7 +20,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-def interpolate_vn_to_half_levels_with_boundary_numpy(  # noqa: PLR0917 [too-many-positional-arguments]
+def interpolate_vn_to_half_levels_with_boundary_numpy(
+    *,
     vn: np.ndarray,
     wgtfac_e: np.ndarray,
     wgtfacq1_e_1: np.ndarray,
@@ -63,14 +64,14 @@ class TestInterpolateVnToHalfLevelsWithBoundary(StencilTest):
         **kwargs,
     ) -> dict:
         vn_ie = interpolate_vn_to_half_levels_with_boundary_numpy(
-            vn,
-            wgtfac_e,
-            wgtfacq1_e_1,
-            wgtfacq1_e_2,
-            wgtfacq1_e_3,
-            wgtfacq_e_1,
-            wgtfacq_e_2,
-            wgtfacq_e_3,
+            vn=vn,
+            wgtfac_e=wgtfac_e,
+            wgtfacq1_e_1=wgtfacq1_e_1,
+            wgtfacq1_e_2=wgtfacq1_e_2,
+            wgtfacq1_e_3=wgtfacq1_e_3,
+            wgtfacq_e_1=wgtfacq_e_1,
+            wgtfacq_e_2=wgtfacq_e_2,
+            wgtfacq_e_3=wgtfacq_e_3,
         )
         return dict(vn_ie=vn_ie)
 

@@ -50,7 +50,9 @@ def test_tmx_config_cross_checks_input_namelist_and_defaults(
     process_props: decomposition.ProcessProperties,
 ) -> None:
     input_dict = load_fortran_dict(
-        experiment_description, process_props, fortran_config.INPUT_DICT_FNAME
+        experiment_description=experiment_description,
+        process_props=process_props,
+        fname=fortran_config.INPUT_DICT_FNAME,
     )
     # first domain (the only one in the serialized experiments)
     input_members = input_dict["aes_vdf_nml"]["aes_vdf_config"][0]

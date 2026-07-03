@@ -58,6 +58,7 @@ def assert_scaled_allclose(
 
 
 def verify_full_run_fields(
+    *,
     diagnostic_state: tmx_states.TmxDiagnosticState,
     tendency_state: tmx_states.TmxTendencyState,
     exit_savepoint: sb.TmxExitSavepoint,
@@ -123,6 +124,7 @@ def flip_back(field: gtx.Field) -> np.ndarray:
 
 
 def construct_metric_state(
+    *,
     metrics_savepoint: sb.MetricSavepoint,
     init_savepoint: sb.TmxInitSavepoint,
     grid_savepoint: sb.IconGridSavepoint,

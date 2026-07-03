@@ -128,7 +128,7 @@ SAVEPOINT_FIELDS: tuple[tuple[str, str, gtx.Dimension, str], ...] = (
 )
 
 
-def _open_savepoint(data_provider: sb.IconSerialDataProvider, factory_name: str, date: str):
+def _open_savepoint(*, data_provider: sb.IconSerialDataProvider, factory_name: str, date: str):
     factory = getattr(data_provider, factory_name)
     if factory_name == "from_savepoint_tmx_init":
         return factory()
@@ -146,7 +146,8 @@ def _open_savepoint(data_provider: sb.IconSerialDataProvider, factory_name: str,
     SAVEPOINT_FIELDS,
     ids=[f"{factory[15:]}-{field}" for factory, field, _, _ in SAVEPOINT_FIELDS],
 )
-def test_tmx_savepoint_field_shapes_and_dtypes(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tmx_savepoint_field_shapes_and_dtypes(
+    *,
     data_provider: sb.IconSerialDataProvider,
     factory_name: str,
     field_name: str,
@@ -154,7 +155,7 @@ def test_tmx_savepoint_field_shapes_and_dtypes(  # noqa: PLR0917 [too-many-posit
     vertical: str,
     date: str,
 ) -> None:
-    savepoint = _open_savepoint(data_provider, factory_name, date)
+    savepoint = _open_savepoint(data_provider=data_provider, factory_name=factory_name, date=date)
     field = getattr(savepoint, field_name)()
 
     num_levels = data_provider.grid_size[dims.KDim]
