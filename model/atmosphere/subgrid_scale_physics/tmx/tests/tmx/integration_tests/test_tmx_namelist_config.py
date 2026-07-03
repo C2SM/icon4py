@@ -6,22 +6,26 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Cross-check of the tmx configuration against the echoed ICON namelists.
+"""Cross-checks of the tmx configuration read from the echoed ICON namelists.
 
-``TmxConfig.from_fortran_dict`` reads the converted *input* namelists, which
-only contain the explicitly set ``aes_vdf_config`` members; all other options
-rely on the dataclass defaults matching the Fortran initialization
-(``vdiff_config_init``). ICON echoes the complete configuration, but as an
-anonymous positional array (derived-type namelist), so this test pins the
-member order of ``t_vdiff_config`` (mo_turb_vdiff_config.f90) and compares
-every value the Fortran run actually used against the Python config. If it
-fails, either the Fortran member order changed or one or more values drifted
-from the Python defaults — either way the pinned order below and the
-``TmxConfig`` defaults need to be revisited.
+``TmxConfig.from_fortran_dict`` locates the options positionally in the echoed
+``aes_vdf_nml`` namelist (an anonymous array of the ``t_vdiff_config`` members
+in declaration order, pinned by the ``unnamed_index`` annotations). These
+tests validate that pin against two independent sources:
+
+- the *input* namelist dict carries the explicitly set members by name; a
+  silent shift of the pinned positions would make the positionally read
+  values disagree with the named ones.
+- the members *not* set in the input namelist reach the echo through the
+  Fortran initialization (``vdiff_config_init``), so for those the echoed
+  values must equal the ``TmxConfig`` dataclass defaults, which mirror it.
+  The defaults are not load-bearing for the datatests (the echo carries the
+  actually used values), but they must stay truthful for direct construction.
 """
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING
 
 import pytest
@@ -38,100 +42,39 @@ if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition
 
 
-#: declaration order of the t_vdiff_config members (mo_turb_vdiff_config.f90);
-#: the echoed aes_vdf_nml prints the derived type in exactly this order.
-_VDIFF_CONFIG_MEMBER_ORDER = (
-    "lsfc_mom_flux",
-    "lsfc_heat_flux",
-    "pr0",
-    "f_tau0",
-    "f_theta0",
-    "f_tau_limit_fraction",
-    "f_theta_limit_fraction",
-    "f_tau_decay",
-    "f_theta_decay",
-    "ek_ep_ratio_stable",
-    "ek_ep_ratio_unstable",
-    "c_f",
-    "c_n",
-    "c_e",
-    "wmc",
-    "fsl",
-    "fbl",
-    "lmix_max",
-    "z0m_min",
-    "z0m_ice",
-    "z0m_oce",
-    "turb",
-    "use_tmx",
-    "solver_type",
-    "energy_type",
-    "dissipation_factor",
-    "use_louis",
-    "use_louis_land",
-    "use_louis_ice",
-    "louis_constant_b",
-    "use_km_const",
-    "km_const",
-    "use_scale_turb_energy_flux",
-    "scale_turb_energy_flux",
-    "smag_constant",
-    "turb_prandtl",
-    "rturb_prandtl",
-    "km_min",
-    "max_turb_scale",
-    "min_sfc_wind",
-    "wind_g",
-    "lcuda_graph_vdf",
-)
-
-#: TmxConfig members and their t_vdiff_config equivalents (here identical)
-_TMX_CONFIG_MEMBERS = (
-    "solver_type",
-    "energy_type",
-    "dissipation_factor",
-    "use_louis",
-    "use_louis_land",
-    "use_louis_ice",
-    "louis_constant_b",
-    "use_km_const",
-    "km_const",
-    "use_scale_turb_energy_flux",
-    "scale_turb_energy_flux",
-    "smag_constant",
-    "turb_prandtl",
-    "km_min",
-    "max_turb_scale",
-)
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE_AES])
-def test_tmx_config_matches_echoed_namelist(
+def test_tmx_config_cross_checks_input_namelist_and_defaults(
     tmx_config: tmx.TmxConfig,
     experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
 ) -> None:
-    atm_dict = load_fortran_dict(
-        experiment_description, process_props, fortran_config.ATM_DICT_FNAME
-    )
-    flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
-    stride = len(_VDIFF_CONFIG_MEMBER_ORDER)
-    assert len(flat) % stride == 0, (
-        "the echoed aes_vdf_config size is not a multiple of the pinned "
-        "t_vdiff_config member count: the Fortran type changed"
+    input_dict = load_fortran_dict(
+        experiment_description, process_props, fortran_config.INPUT_DICT_FNAME
     )
     # first domain (the only one in the serialized experiments)
-    echoed = dict(zip(_VDIFF_CONFIG_MEMBER_ORDER, flat[:stride], strict=True))
-    assert echoed["use_tmx"] is True
+    input_members = input_dict["aes_vdf_nml"]["aes_vdf_config"][0]
+    assert input_members.pop("use_tmx") is True
 
-    for name in _TMX_CONFIG_MEMBERS:
-        config_value = getattr(tmx_config, name)
-        if isinstance(config_value, bool):
-            assert config_value is echoed[name], name
+    defaults = tmx.TmxConfig()
+    checked_by_name = 0
+    for field_name in (f.name for f in dataclasses.fields(tmx.TmxConfig)):
+        config_value = getattr(tmx_config, field_name)
+        if field_name in input_members:
+            # explicitly set in the input namelist: the named input value must
+            # agree with the positionally read one (order-pin cross-check)
+            assert config_value == input_members[field_name], field_name
+            checked_by_name += 1
         else:
-            # the echoed values go through decimal formatting; compare loosely
-            assert float(config_value) == pytest.approx(echoed[name], rel=1e-12), name
+            # not set in the input namelist: the echoed value comes from the
+            # Fortran initialization and must equal the dataclass default
+            default = getattr(defaults, field_name)
+            if isinstance(default, bool):
+                assert config_value is default, field_name
+            else:
+                # the echoed values go through decimal formatting
+                assert float(config_value) == pytest.approx(float(default), rel=1e-12), field_name
 
-    params = tmx.TmxParams(tmx_config)
-    assert params.rturb_prandtl == pytest.approx(echoed["rturb_prandtl"], rel=1e-10)
+    # the experiment must exercise the order-pin cross-check on at least the
+    # solver and energy types
+    assert checked_by_name >= 2

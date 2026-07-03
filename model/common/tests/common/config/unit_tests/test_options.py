@@ -114,39 +114,33 @@ def test_construct_config_from_icon() -> None:
 
 
 @dataclasses.dataclass
-class ConfigClassWithDefaults:
-    """A configuration class with defaults for all ICON options, for testing."""
+class UnnamedNmlConfigClass:
+    """A configuration class reading a positional (derived-type) namelist record."""
 
     choice: typing.Annotated[
         int,
         options.ConfigOption(
             description="A choice of methods.",
-            icon_equivalent=options.IconOption(name="isomchce", path=("nested",)),
+            icon_equivalent=options.IconOption(
+                name="isomchce", path=("some_nml", "some_config"), unnamed_index=1
+            ),
         ),
-    ] = 1
+    ]
     flag: typing.Annotated[
         bool,
         options.ConfigOption(
             description="A configuration flag.",
-            icon_equivalent=options.IconOption(name="lsomflg", path=()),
+            icon_equivalent=options.IconOption(
+                name="lsomflg", path=("some_nml", "some_config"), unnamed_index=0
+            ),
         ),
-    ] = True
+    ]
 
 
-def test_iter_pairs_from_icon_missing_option_fails() -> None:
-    with pytest.raises(KeyError):
-        dict(
-            options.iter_pairs_from_icon(
-                config_cls=ConfigClassWithDefaults, icon_config={"nested": {"isomchce": 42}}
-            )
-        )
-
-
-def test_construct_config_from_icon_allow_missing() -> None:
+def test_construct_config_from_icon_unnamed_index() -> None:
     result = options.construct_config_from_icon(
-        config_cls=ConfigClassWithDefaults,
-        icon_config={"nested": {"isomchce": 42}},
-        allow_missing=True,
+        config_cls=UnnamedNmlConfigClass,
+        icon_config={"some_nml": {"some_config": [True, 42, 3.14]}},
     )
     assert result.choice == 42
-    assert result.flag is True  # not in the config dict: dataclass default applies
+    assert result.flag is True

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+import pathlib
 from typing import Final
 
 import matplotlib.colors as mcolors
@@ -543,7 +544,7 @@ def generate_page(static_dir: str):
     # TODO(): use constant for _source location
     page_rst_path = os.path.join("_source", "offset_providers.rst")
 
-    with open(page_rst_path, "w") as f:
+    with pathlib.Path(page_rst_path).open("w") as f:
         f.write("Offset providers\n")
         f.write("================\n\n")
         f.write("This page contains the figures for the offset providers.\n\n")
