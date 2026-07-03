@@ -50,9 +50,9 @@ class ProfilingStats:
     skip_first_timestep: bool = True
 
 
-#: ISO 8601 duration, restricted to the fixed-length components (weeks, days,
-#: hours, minutes, seconds). Years and months are intentionally not matched since
-#: their length is not fixed, and this is currently only used for dtime.
+# ISO 8601 duration, restricted to the fixed-length components (weeks, days,
+# hours, minutes, seconds). Years and months are intentionally not matched since
+# their length is not fixed, and this is currently only used for dtime.
 _ISO8601_DURATION = re.compile(
     r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
     r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
