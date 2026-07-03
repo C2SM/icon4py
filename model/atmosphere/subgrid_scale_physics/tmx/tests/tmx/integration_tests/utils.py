@@ -27,10 +27,11 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-# Second serialized timestep of the exclaim_ape_aesPhys archive (run start
-# 2008-09-01T00:00:00Z, dtime = 300 s). Keep in sync with
-# integration_tests/test_savepoints.py.
-TMX_DATE = "2008-09-01T00:05:00.000"
+#: Serialized timesteps of the exclaim_ape_aesPhys archive (run start
+#: 2008-09-01T00:00:00Z, dtime = 300 s). The archive also holds the
+#: 00:00:00 step, but that is the call made during model initialization,
+#: so the verification tests parametrize over the subsequent steps only.
+TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
 
 def assert_scaled_allclose(

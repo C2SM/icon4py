@@ -30,7 +30,7 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    TMX_DATE,
+    TMX_DATES,
     assert_scaled_allclose,
     construct_config,
     construct_input_state,
@@ -65,13 +65,14 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
+    date: str,
 ) -> _GranuleSetup:
     """Construct the granule and its states, seeded from the savepoints."""
     allocator = model_backends.get_allocator(backend)
     init_savepoint = data_provider.from_savepoint_tmx_init()
-    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=TMX_DATE)
-    surface_fluxes_savepoint = data_provider.from_savepoint_tmx_surface_fluxes(date=TMX_DATE)
-    diagnostics_exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=TMX_DATE)
+    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    surface_fluxes_savepoint = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+    diagnostics_exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
     config = construct_config(init_savepoint)
     granule = tmx.Tmx(
@@ -109,7 +110,10 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [(definitions.Experiments.APE_AES, date) for date in TMX_DATES],
+)
 def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
@@ -117,6 +121,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
+    date: str,
 ) -> None:
     setup = _setup_granule(
         data_provider,
@@ -125,8 +130,9 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         interpolation_savepoint,
         icon_grid,
         backend,
+        date,
     )
-    exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=TMX_DATE)
+    exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=date)
 
     setup.granule.run_hydrometeor_diffusion(
         setup.input_state,
@@ -150,7 +156,10 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [(definitions.Experiments.APE_AES, date) for date in TMX_DATES],
+)
 def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
@@ -158,6 +167,7 @@ def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-p
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
+    date: str,
 ) -> None:
     setup = _setup_granule(
         data_provider,
@@ -166,9 +176,10 @@ def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         interpolation_savepoint,
         icon_grid,
         backend,
+        date,
     )
-    hydro_exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=TMX_DATE)
-    exit_savepoint = data_provider.from_savepoint_tmx_temperature_exit(date=TMX_DATE)
+    hydro_exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=date)
+    exit_savepoint = data_provider.from_savepoint_tmx_temperature_exit(date=date)
 
     # seed the new moisture state (energy_type = 2 recovers the temperature
     # with the *new* tracers) from the hydro-exit savepoint instead of running

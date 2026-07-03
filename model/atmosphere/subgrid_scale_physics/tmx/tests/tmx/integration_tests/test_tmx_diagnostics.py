@@ -25,7 +25,7 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    TMX_DATE,
+    TMX_DATES,
     assert_scaled_allclose,
     construct_config,
     construct_input_state,
@@ -42,7 +42,10 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [(definitions.Experiments.APE_AES, date) for date in TMX_DATES],
+)
 def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
@@ -50,11 +53,12 @@ def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-po
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
+    date: str,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     init_savepoint = data_provider.from_savepoint_tmx_init()
-    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=TMX_DATE)
-    exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=TMX_DATE)
+    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
     config = construct_config(init_savepoint)
     params = tmx.TmxParams(config)

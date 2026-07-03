@@ -24,16 +24,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.testing import definitions
 
 from ..fixtures import *  # noqa: F403
+from .utils import TMX_DATES
 
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
-
-# TODO(port_turbulence): verify against the actual timestamps once the
-# exclaim_ape_aesPhys archive is generated (run start 2008-09-01T00:00:00Z,
-# dtime = 300 s).
-TMX_DATE = "2008-09-01T00:05:00.000"
 
 #: vertical size specifiers: number of full levels, half levels (nlev + 1),
 #: 3 extrapolation coefficients, or no vertical dimension (2D surface field)
@@ -131,28 +127,33 @@ SAVEPOINT_FIELDS: tuple[tuple[str, str, gtx.Dimension, str], ...] = (
 )
 
 
-def _open_savepoint(data_provider: sb.IconSerialDataProvider, factory_name: str):
+def _open_savepoint(data_provider: sb.IconSerialDataProvider, factory_name: str, date: str):
     factory = getattr(data_provider, factory_name)
     if factory_name == "from_savepoint_tmx_init":
         return factory()
-    return factory(date=TMX_DATE)
+    return factory(date=date)
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.APE_AES])
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    # shape/dtype smoke tests: one serialized timestep is enough
+    [(definitions.Experiments.APE_AES, TMX_DATES[0])],
+)
 @pytest.mark.parametrize(
     "factory_name, field_name, horizontal_dim, vertical",
     SAVEPOINT_FIELDS,
     ids=[f"{factory[15:]}-{field}" for factory, field, _, _ in SAVEPOINT_FIELDS],
 )
-def test_tmx_savepoint_field_shapes_and_dtypes(
+def test_tmx_savepoint_field_shapes_and_dtypes(  # noqa: PLR0917 [too-many-positional-arguments]
     data_provider: sb.IconSerialDataProvider,
     factory_name: str,
     field_name: str,
     horizontal_dim: gtx.Dimension,
     vertical: str,
+    date: str,
 ) -> None:
-    savepoint = _open_savepoint(data_provider, factory_name)
+    savepoint = _open_savepoint(data_provider, factory_name, date)
     field = getattr(savepoint, field_name)()
 
     num_levels = data_provider.grid_size[dims.KDim]
