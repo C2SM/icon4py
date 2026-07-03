@@ -31,7 +31,6 @@ from icon4py.model.testing import definitions, parallel_helpers
 from ..fixtures import *  # noqa: F403
 from ..integration_tests.utils import (
     TMX_DATES,
-    construct_config,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -70,6 +69,7 @@ def test_parallel_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positiona
     decomposition_info: decomp_defs.DecompositionInfo,
     backend: gtx_typing.Backend | None,
     date: str,
+    tmx_config: tmx.TmxConfig,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
     _log.info(
@@ -86,11 +86,10 @@ def test_parallel_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positiona
 
     exchange = decomp_defs.create_exchange(process_props, decomposition_info)
 
-    config = construct_config(init_savepoint)
     granule = tmx.Tmx(
         grid=icon_grid,
-        config=config,
-        params=tmx.TmxParams(config),
+        config=tmx_config,
+        params=tmx.TmxParams(tmx_config),
         vertical_grid=None,
         metric_state=construct_metric_state(
             metrics_savepoint, init_savepoint, grid_savepoint, allocator

@@ -20,6 +20,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx
 from icon4py.model.common import dimension as dims
 from icon4py.model.testing import definitions
 
@@ -206,3 +207,35 @@ def test_tmx_init_savepoint_scalars(data_provider: sb.IconSerialDataProvider) ->
 
     assert savepoint.dtime() > 0.0
     assert savepoint.turb_prandtl() * savepoint.rturb_prandtl() == pytest.approx(1.0)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE_AES])
+def test_tmx_config_matches_serialized_scalars(
+    tmx_config: tmx.TmxConfig, data_provider: sb.IconSerialDataProvider
+) -> None:
+    """Guard against Fortran/Python default drift.
+
+    ``TmxConfig.from_fortran_dict`` reads the converted *input* namelists,
+    which only contain the explicitly set ``aes_vdf_config`` members; all
+    other options rely on the dataclass defaults matching the Fortran
+    initialization. Cross-check every config member against the values the
+    instrumented Fortran run actually used (serialized in the tmx-init
+    savepoint).
+    """
+    savepoint = data_provider.from_savepoint_tmx_init()
+
+    assert tmx_config.solver_type == tmx.TurbulenceSolverType(int(savepoint.solver_type()))
+    assert tmx_config.energy_type == tmx.EnergyType(int(savepoint.energy_type()))
+    assert tmx_config.use_louis == savepoint.use_louis()
+    assert tmx_config.use_km_const == savepoint.use_km_const()
+    for name in (
+        "dissipation_factor",
+        "louis_constant_b",
+        "km_const",
+        "smag_constant",
+        "turb_prandtl",
+        "km_min",
+        "max_turb_scale",
+    ):
+        assert getattr(tmx_config, name) == getattr(savepoint, name)(), name

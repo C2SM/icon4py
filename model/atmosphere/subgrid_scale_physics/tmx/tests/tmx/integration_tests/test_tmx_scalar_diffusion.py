@@ -32,7 +32,6 @@ from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATES,
     assert_scaled_allclose,
-    construct_config,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -66,6 +65,7 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
+    config: tmx.TmxConfig,
 ) -> _GranuleSetup:
     """Construct the granule and its states, seeded from the savepoints."""
     allocator = model_backends.get_allocator(backend)
@@ -74,7 +74,6 @@ def _setup_granule(  # noqa: PLR0917 [too-many-positional-arguments]
     surface_fluxes_savepoint = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
     diagnostics_exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
-    config = construct_config(init_savepoint)
     granule = tmx.Tmx(
         grid=icon_grid,
         config=config,
@@ -122,6 +121,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
+    tmx_config: tmx.TmxConfig,
 ) -> None:
     setup = _setup_granule(
         data_provider,
@@ -131,6 +131,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         icon_grid,
         backend,
         date,
+        tmx_config,
     )
     exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=date)
 
@@ -168,6 +169,7 @@ def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-p
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
+    tmx_config: tmx.TmxConfig,
 ) -> None:
     setup = _setup_granule(
         data_provider,
@@ -177,6 +179,7 @@ def test_tmx_run_temperature_diffusion_single_step(  # noqa: PLR0917 [too-many-p
         icon_grid,
         backend,
         date,
+        tmx_config,
     )
     hydro_exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_temperature_exit(date=date)

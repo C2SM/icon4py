@@ -111,3 +111,42 @@ def test_construct_config_from_icon() -> None:
     assert result.choice == 42
     assert result.flag is False
     assert result.other == 3
+
+
+@dataclasses.dataclass
+class ConfigClassWithDefaults:
+    """A configuration class with defaults for all ICON options, for testing."""
+
+    choice: typing.Annotated[
+        int,
+        options.ConfigOption(
+            description="A choice of methods.",
+            icon_equivalent=options.IconOption(name="isomchce", path=("nested",)),
+        ),
+    ] = 1
+    flag: typing.Annotated[
+        bool,
+        options.ConfigOption(
+            description="A configuration flag.",
+            icon_equivalent=options.IconOption(name="lsomflg", path=()),
+        ),
+    ] = True
+
+
+def test_iter_pairs_from_icon_missing_option_fails() -> None:
+    with pytest.raises(KeyError):
+        dict(
+            options.iter_pairs_from_icon(
+                config_cls=ConfigClassWithDefaults, icon_config={"nested": {"isomchce": 42}}
+            )
+        )
+
+
+def test_construct_config_from_icon_allow_missing() -> None:
+    result = options.construct_config_from_icon(
+        config_cls=ConfigClassWithDefaults,
+        icon_config={"nested": {"isomchce": 42}},
+        allow_missing=True,
+    )
+    assert result.choice == 42
+    assert result.flag is True  # not in the config dict: dataclass default applies

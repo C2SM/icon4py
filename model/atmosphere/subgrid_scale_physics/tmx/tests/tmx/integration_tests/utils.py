@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.testing import test_utils
 
@@ -120,23 +120,6 @@ def flip_back(field: gtx.Field) -> np.ndarray:
     array = field.asnumpy()
     assert array.shape[1] == 3
     return array[:, ::-1]
-
-
-def construct_config(init_savepoint: sb.TmxInitSavepoint) -> tmx.TmxConfig:
-    """Construct a TmxConfig matching the tmx-init savepoint scalars."""
-    return tmx.TmxConfig(
-        solver_type=tmx.TurbulenceSolverType(int(init_savepoint.solver_type())),
-        energy_type=tmx.EnergyType(int(init_savepoint.energy_type())),
-        dissipation_factor=init_savepoint.dissipation_factor(),
-        use_louis=init_savepoint.use_louis(),
-        louis_constant_b=init_savepoint.louis_constant_b(),
-        use_km_const=init_savepoint.use_km_const(),
-        km_const=init_savepoint.km_const(),
-        smag_constant=init_savepoint.smag_constant(),
-        turb_prandtl=init_savepoint.turb_prandtl(),
-        km_min=init_savepoint.km_min(),
-        max_turb_scale=init_savepoint.max_turb_scale(),
-    )
 
 
 def construct_metric_state(

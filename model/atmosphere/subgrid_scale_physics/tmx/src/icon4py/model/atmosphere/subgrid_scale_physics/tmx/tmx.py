@@ -349,8 +349,24 @@ class TmxConfig:
         self._validate()
 
     @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> TmxConfig:
-        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
+    def from_fortran_dict(cls, input_dict: dict[str, Any], **overrides: Any) -> TmxConfig:
+        """
+        Construct the configuration from the converted ICON *input* namelists.
+
+        Unlike the other configs, this reads the input namelist dict
+        (``fortran_config.INPUT_DICT_FNAME``) instead of the echoed-output one:
+        ``aes_vdf_nml`` is a derived-type namelist (``t_aes_vdf_config``) which
+        ICON echoes as an anonymous positional array, so the echoed output
+        carries no member names. The input dict only contains the explicitly
+        set members; the remaining options fall back to the dataclass
+        defaults, which mirror the Fortran initialization.
+        """
+        # first (and only, in the serialized experiments) domain of the
+        # aes_vdf_config(:) namelist array
+        vdf_members = input_dict.get("aes_vdf_nml", {}).get("aes_vdf_config", [{}])[0]
+        return common_conf_opt.construct_config_from_icon(
+            cls, {"aes_vdf_nml": vdf_members}, allow_missing=True, **overrides
+        )
 
     def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""

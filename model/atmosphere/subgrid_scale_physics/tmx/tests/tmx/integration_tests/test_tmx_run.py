@@ -29,7 +29,6 @@ from icon4py.model.testing import definitions
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATES,
-    construct_config,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -58,6 +57,7 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
+    tmx_config: tmx.TmxConfig,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     init_savepoint = data_provider.from_savepoint_tmx_init()
@@ -65,11 +65,10 @@ def test_tmx_full_run_single_step(  # noqa: PLR0917 [too-many-positional-argumen
     surface_fluxes_savepoint = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
 
-    config = construct_config(init_savepoint)
     granule = tmx.Tmx(
         grid=icon_grid,
-        config=config,
-        params=tmx.TmxParams(config),
+        config=tmx_config,
+        params=tmx.TmxParams(tmx_config),
         vertical_grid=None,
         metric_state=construct_metric_state(
             metrics_savepoint, init_savepoint, grid_savepoint, allocator

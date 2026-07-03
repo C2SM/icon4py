@@ -102,10 +102,17 @@ class ConfigOption:
 
 
 def iter_pairs_from_icon(
-    config_cls: type, icon_config: dict[str, typing.Any]
+    config_cls: type, icon_config: dict[str, typing.Any], *, allow_missing: bool = False
 ) -> typing.Iterator[tuple[str, typing.Any]]:
     """
     Iter name-value pairs for config options, reading from a fortran ICON config dict.
+
+    With ``allow_missing`` options not found in ``icon_config`` are skipped (so
+    that the dataclass defaults apply). This is meant for sources that only
+    contain the explicitly set options, e.g. the converted *input* namelists:
+    derived-type namelists (such as ``aes_vdf_nml``) are echoed by ICON as an
+    anonymous positional array, so for them the complete named values of the
+    standard echoed-output source are not available.
 
     Example:
 
@@ -130,9 +137,14 @@ def iter_pairs_from_icon(
     for name, opt in ConfigOption.iter_from_config_class(config_cls):
         if opt.icon_equivalent and opt.icon_equivalent.read_from_icon:
             data = icon_config
-            for subsection in opt.icon_equivalent.path:
-                data = data[subsection]
-            raw_value = data[opt.icon_equivalent.name]
+            try:
+                for subsection in opt.icon_equivalent.path:
+                    data = data[subsection]
+                raw_value = data[opt.icon_equivalent.name]
+            except KeyError:
+                if allow_missing:
+                    continue
+                raise
             de_listified = (
                 fortran_config.list_to_value(raw_value)
                 if opt.icon_equivalent.list_to_value
@@ -142,10 +154,17 @@ def iter_pairs_from_icon(
 
 
 def construct_config_from_icon(
-    config_cls: type[T], icon_config: dict[str, typing.Any], **overrides: typing.Any
+    config_cls: type[T],
+    icon_config: dict[str, typing.Any],
+    *,
+    allow_missing: bool = False,
+    **overrides: typing.Any,
 ) -> T:
     """
     Construct a configuration instance from a fortran ICON config dict.
+
+    ``allow_missing`` is forwarded to :func:`iter_pairs_from_icon`: options not
+    found in ``icon_config`` fall back to the dataclass defaults.
 
     Example:
 
@@ -165,6 +184,6 @@ def construct_config_from_icon(
     ConfigClass(choice=1)
     """
     return config_cls(
-        **dict(iter_pairs_from_icon(config_cls, icon_config)),
+        **dict(iter_pairs_from_icon(config_cls, icon_config, allow_missing=allow_missing)),
         **overrides,
     )

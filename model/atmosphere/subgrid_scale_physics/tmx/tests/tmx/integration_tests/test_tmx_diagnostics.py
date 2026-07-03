@@ -27,7 +27,6 @@ from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATES,
     assert_scaled_allclose,
-    construct_config,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -54,19 +53,19 @@ def test_tmx_init_and_run_diagnostics_single_step(  # noqa: PLR0917 [too-many-po
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
+    tmx_config: tmx.TmxConfig,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     init_savepoint = data_provider.from_savepoint_tmx_init()
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
-    config = construct_config(init_savepoint)
-    params = tmx.TmxParams(config)
+    params = tmx.TmxParams(tmx_config)
     assert params.rturb_prandtl == pytest.approx(init_savepoint.rturb_prandtl(), rel=1e-14)
 
     granule = tmx.Tmx(
         grid=icon_grid,
-        config=config,
+        config=tmx_config,
         params=params,
         # the vertical grid is not used by the Smagorinsky diagnostics (Stage A)
         vertical_grid=None,
