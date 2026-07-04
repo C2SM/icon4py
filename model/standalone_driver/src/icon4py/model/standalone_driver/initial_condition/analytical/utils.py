@@ -6,8 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+import math
+
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    thermodynamic_functions as thermo,
+)
+from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.grid import (
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    icon as icon_grid,
+)
+from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -221,9 +234,149 @@ def init_w(
     return w
 
 
+def init_inwp_tracers(
+    *,
+    rho: data_alloc.NDArray,
+    virtual_temperature: data_alloc.NDArray,
+    pressure: data_alloc.NDArray,
+    cell_area: data_alloc.NDArray,
+    ddqz_z_full: data_alloc.NDArray,
+    qv: data_alloc.NDArray,
+    global_reductions: decomposition_defs.Reductions,
+    n_iter: int,
+    rh_at_1000hpa: float,
+    qv_max: float,
+    global_moisture_content: float,
+    normalize_global_moisture: bool,
+) -> None:
+    """Initialize the water-vapour tracer ``qv`` from a relative-humidity profile.
+
+    Host port of ``init_nh_inwp_tracers`` (mo_nh_jabw_exp.f90): qv follows a
+    linearly decreasing relative humidity with height, is iterated against the
+    moisture-dependent temperature, and (for the APE cases) finally rescaled so the
+    global mean column-integrated moisture matches ``global_moisture_content``. The
+    other hydrometeors keep their zero-initialized value.
+
+    ``pressure`` is the hydrostatic pressure and ``virtual_temperature`` is
+    ``theta_v * exner``; both are independent of qv and passed in already diagnosed.
+    ``rho`` is the dry-air density from the hydrostatic adjustment (no moisture
+    feedback).
+    """
+    array_ns = data_alloc.array_namespace(rho)
+
+    # linearly decreasing relative humidity with height (independent of qv)
+    relative_humidity = array_ns.maximum(rh_at_1000hpa - 0.5 + pressure / 200000.0, 0.0)
+
+    def _qv(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
+        q = thermo.qv_from_relative_humidity(temperature, pressure, rho, relative_humidity)
+        # stratosphere and tropics caps (init_nh_inwp_tracers)
+        q = array_ns.where(pressure <= 10000.0, array_ns.minimum(q, 5.0e-6), q)
+        return array_ns.minimum(q, qv_max)
+
+    # first guess uses qv = 0, i.e. temperature == virtual temperature
+    temperature = virtual_temperature
+    qv_values = _qv(temperature)
+    for _ in range(n_iter - 1):
+        # re-diagnose the actual temperature with the moisture feedback; the other
+        # hydrometeors are zero here, so only qv enters (see diagnose_temperature).
+        temperature = virtual_temperature / (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_values)
+        qv_values = _qv(temperature)
+
+    if normalize_global_moisture:
+        # rescale qv so the global mean column-integrated moisture matches the
+        # prescribed value (Fortran opt_global_moist / ztmc_ape).
+        column_moisture = global_reductions.sum(
+            ddqz_z_full * rho * qv_values * cell_area[:, array_ns.newaxis]
+        )
+        total_area = global_reductions.sum(cell_area)
+        mean_column_moisture = column_moisture / total_area
+        if mean_column_moisture > 1.0e-25:
+            qv_values = qv_values * (global_moisture_content / mean_column_moisture)
+
+    qv[:, :] = qv_values
+
+
 # ---------------------------------------------------------------------------
 # Shared helpers (used by individual analytical IC modules)
 # ---------------------------------------------------------------------------
+
+
+def init_bubble(
+    *,
+    grid: icon_grid.IconGrid,
+    geometry: grid_geometry.GridGeometry,
+    z_mc: data_alloc.NDArray,
+    theta_v: data_alloc.NDArray,
+    rho: data_alloc.NDArray,
+    qv: data_alloc.NDArray,
+    exner: data_alloc.NDArray,
+    center_x: float,
+    center_y: float,
+    center_z: float,
+    horizontal_width: float,
+    vertical_width: float,
+    amplitude: float,
+    radius: float,
+) -> None:
+    """Add a cos**2-shaped warm-bubble perturbation to ``theta_v`` and update ``rho`` in place.
+
+    Inside the normalized ellipsoid (normalized distance smaller than ``radius``) centred at
+    ``(center_x, center_y, center_z)`` with horizontal and vertical scales ``horizontal_width``
+    and ``vertical_width``, ``theta_v`` is increased by up to ``amplitude`` [K] and ``rho`` is
+    recomputed from the perturbed ``theta_v`` so the state stays consistent with ``exner``.
+
+    Mirrors ``init_nh_buble_wk`` in ``mo_nh_wk_exp.f90``. On the torus the horizontal distance is
+    the periodic plane distance; on the sphere it is the great-circle distance and
+    ``(center_x, center_y)`` are interpreted as longitude and latitude in degrees.
+    """
+    array_ns = data_alloc.array_namespace(theta_v)
+
+    match grid.geometry_type:
+        case icon_grid.GeometryType.TORUS:
+            # ICON's plane_torus_distance does not actually wrap the warm bubble (its
+            # periodic threshold is never met), so the distance is non-periodic here.
+            horizontal_distance = distance_array_ns.horizontal_distance_to_point(
+                x=geometry.get(geometry_meta.CELL_CENTER_X).ndarray,
+                y=geometry.get(geometry_meta.CELL_CENTER_Y).ndarray,
+                point_x=center_x,
+                point_y=center_y,
+                wrap=False,
+            )
+        case icon_grid.GeometryType.ICOSAHEDRON:
+            cell_lat = geometry.get(geometry_meta.CELL_LAT).ndarray
+            cell_lon = geometry.get(geometry_meta.CELL_LON).ndarray
+            center_lon = math.radians(center_x)
+            center_lat = math.radians(center_y)
+            central_angle = array_ns.arccos(
+                array_ns.sin(center_lat) * array_ns.sin(cell_lat)
+                + array_ns.cos(center_lat)
+                * array_ns.cos(cell_lat)
+                * array_ns.cos(cell_lon - center_lon)
+            )
+            horizontal_distance = phy_const.EARTH_RADIUS * central_angle
+        case _:
+            raise NotImplementedError(
+                f"Bubble initialization is not implemented for geometry '{grid.geometry_type}'."
+            )
+
+    normalized_distance = array_ns.sqrt(
+        (horizontal_distance[:, array_ns.newaxis] / horizontal_width) ** 2
+        + ((z_mc - center_z) / vertical_width) ** 2
+    )
+    inside_bubble = normalized_distance < radius
+    theta_v[:, :] = array_ns.where(
+        inside_bubble,
+        theta_v
+        + amplitude
+        * array_ns.cos(normalized_distance * math.pi / 2.0) ** 2
+        * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv),
+        theta_v,
+    )
+    rho[:, :] = array_ns.where(
+        inside_bubble,
+        exner**phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v),
+        rho,
+    )
 
 
 def zone_indices(grid: icon_grid.IconGrid) -> dict[str, int]:

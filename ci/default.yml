@@ -10,7 +10,7 @@ variables:
   #
   # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSIONS=model;MODEL_SUBSETS=datatest
   SESSIONS: "model:model_mpi:tools"
-  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
+  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:tmx:common:driver:standalone_driver"
   MODEL_SUBSETS: "datatest"
   MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   MODEL_MPI_SUBSETS: "datatest"
