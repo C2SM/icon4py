@@ -138,6 +138,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     rd = GAS_CONSTANT_DRY_AIR
     rv = GAS_CONSTANT_WATER_VAPOR
     rv_o_rd_minus_1 = RV_O_RD_MINUS_1
+    rd_o_rv = RD_O_RV
     cvd = SPECIFIC_HEAT_CAPACITY_VOLUME_DRY_AIR
     cpd = SPECIFIC_HEAT_CAPACITY_PRESSURE_DRY_AIR
     cpv = SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR
@@ -155,10 +156,25 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     cpd_o_rd = CPD_O_RD
     cvd_o_rd = CVD_O_RD
     rd_o_p0ref = RD_O_P0REF
+    grav = GRAVITATIONAL_ACCELERATION
     grav_o_cpd = GRAV_O_CPD
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
     eps = DBL_EPS
+
+
+class SeaIceConstants(ta.wpfloat, enum.Enum):
+    """
+    Sea-ice thermodynamics constants (ICON mo_physical_constants.f90).
+
+    Used by the tmx sea-ice surface model (Semtner zero-layer + albedo scheme 1).
+    """
+
+    ki = 2.1656  # sea-ice heat conductivity [J/(m s K)]
+    ks = 0.31  # snow heat conductivity [J/(m s K)]
+    rhoi = 917.0  # sea-ice density [kg/m^3]
+    ci = 2106.0  # sea-ice specific heat [J/(kg K)] (NOT 2108, the microphysics value)
+    stbo = 5.6704e-8  # Stefan-Boltzmann constant [W/(m^2 K^4)]
 
 
 class RayleighType(int, enum.Enum):
