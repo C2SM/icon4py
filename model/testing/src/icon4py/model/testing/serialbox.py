@@ -2080,6 +2080,302 @@ class TmxSurfaceFluxesSavepoint(IconSavepoint):
         return self._get_field("q_snocpymlt", dims.CellDim)
 
 
+class TmxSurfaceEntrySavepoint(IconSavepoint):
+    """Entry inputs of the tmx surface component (mo_vdf.f90, before sfc%Compute).
+
+    Lowest-level atmosphere state, prescribed forcings and per-tile fractions /
+    old surface temperatures. Per-tile fields are the named ocean/ice/land
+    slices extracted in the Fortran instrumentation; an inactive tile is zero.
+    """
+
+    def ta(self):
+        return self._get_field("sfc_ta", dims.CellDim)
+
+    def qa(self):
+        return self._get_field("sfc_qa", dims.CellDim)
+
+    def ua(self):
+        return self._get_field("sfc_ua", dims.CellDim)
+
+    def va(self):
+        return self._get_field("sfc_va", dims.CellDim)
+
+    def pa(self):
+        return self._get_field("sfc_pa", dims.CellDim)
+
+    def psfc(self):
+        return self._get_field("sfc_psfc", dims.CellDim)
+
+    def rho_atm(self):
+        return self._get_field("sfc_rho_atm", dims.CellDim)
+
+    def dz(self):
+        return self._get_field("sfc_dz", dims.CellDim)
+
+    def emissivity(self):
+        return self._get_field("sfc_emissivity", dims.CellDim)
+
+    def snowfall(self):
+        return self._get_field("sfc_snowfall", dims.CellDim)
+
+    def ice_thickness(self):
+        return self._get_field("sfc_ice_thickness", dims.CellDim)
+
+    def ocean_u(self):
+        return self._get_field("sfc_ocean_u", dims.CellDim)
+
+    def ocean_v(self):
+        return self._get_field("sfc_ocean_v", dims.CellDim)
+
+    def ice_u(self):
+        return self._get_field("sfc_ice_u", dims.CellDim)
+
+    def ice_v(self):
+        return self._get_field("sfc_ice_v", dims.CellDim)
+
+    def snow_thickness(self):
+        return self._get_field("sfc_snow_thickness", dims.CellDim)
+
+    def frac_oce(self):
+        return self._get_field("sfc_frac_oce", dims.CellDim)
+
+    def frac_ice(self):
+        return self._get_field("sfc_frac_ice", dims.CellDim)
+
+    def frac_lnd(self):
+        return self._get_field("sfc_frac_lnd", dims.CellDim)
+
+    def tsfc_oce(self):
+        return self._get_field("sfc_tsfc_oce", dims.CellDim)
+
+    def tsfc_ice(self):
+        return self._get_field("sfc_tsfc_ice", dims.CellDim)
+
+    def tsfc_lnd(self):
+        return self._get_field("sfc_tsfc_lnd", dims.CellDim)
+
+
+class TmxSurfaceExchangeSavepoint(IconSavepoint):
+    """Exchange-coefficient stage of the tmx surface (Compute_diagnostics exit).
+
+    Grid-mean potential temperatures plus the per-tile diagnostics on the old
+    surface temperature. The ice-tile heat fluxes (``*_ice``) are the old-state
+    forcing that feeds the sea-ice model on the following step.
+    """
+
+    def theta_atm(self):
+        return self._get_field("sfc_theta_atm", dims.CellDim)
+
+    def thetav_atm(self):
+        return self._get_field("sfc_thetav_atm", dims.CellDim)
+
+    def km_oce(self):
+        return self._get_field("sfc_km_oce", dims.CellDim)
+
+    def km_ice(self):
+        return self._get_field("sfc_km_ice", dims.CellDim)
+
+    def km_lnd(self):
+        return self._get_field("sfc_km_lnd", dims.CellDim)
+
+    def kh_oce(self):
+        return self._get_field("sfc_kh_oce", dims.CellDim)
+
+    def kh_ice(self):
+        return self._get_field("sfc_kh_ice", dims.CellDim)
+
+    def kh_lnd(self):
+        return self._get_field("sfc_kh_lnd", dims.CellDim)
+
+    def rough_m_oce(self):
+        return self._get_field("sfc_rough_m_oce", dims.CellDim)
+
+    def rough_m_ice(self):
+        return self._get_field("sfc_rough_m_ice", dims.CellDim)
+
+    def rough_m_lnd(self):
+        return self._get_field("sfc_rough_m_lnd", dims.CellDim)
+
+    def rough_h_oce(self):
+        return self._get_field("sfc_rough_h_oce", dims.CellDim)
+
+    def rough_h_ice(self):
+        return self._get_field("sfc_rough_h_ice", dims.CellDim)
+
+    def rough_h_lnd(self):
+        return self._get_field("sfc_rough_h_lnd", dims.CellDim)
+
+    def qsat_oce(self):
+        return self._get_field("sfc_qsat_oce", dims.CellDim)
+
+    def qsat_ice(self):
+        return self._get_field("sfc_qsat_ice", dims.CellDim)
+
+    def qsat_lnd(self):
+        return self._get_field("sfc_qsat_lnd", dims.CellDim)
+
+    def rho_oce(self):
+        return self._get_field("sfc_rho_oce", dims.CellDim)
+
+    def rho_ice(self):
+        return self._get_field("sfc_rho_ice", dims.CellDim)
+
+    def rho_lnd(self):
+        return self._get_field("sfc_rho_lnd", dims.CellDim)
+
+    def theta_oce(self):
+        return self._get_field("sfc_theta_oce", dims.CellDim)
+
+    def theta_ice(self):
+        return self._get_field("sfc_theta_ice", dims.CellDim)
+
+    def theta_lnd(self):
+        return self._get_field("sfc_theta_lnd", dims.CellDim)
+
+    def thetav_oce(self):
+        return self._get_field("sfc_thetav_oce", dims.CellDim)
+
+    def thetav_ice(self):
+        return self._get_field("sfc_thetav_ice", dims.CellDim)
+
+    def thetav_lnd(self):
+        return self._get_field("sfc_thetav_lnd", dims.CellDim)
+
+    def moist_rich_oce(self):
+        return self._get_field("sfc_moist_rich_oce", dims.CellDim)
+
+    def moist_rich_ice(self):
+        return self._get_field("sfc_moist_rich_ice", dims.CellDim)
+
+    def moist_rich_lnd(self):
+        return self._get_field("sfc_moist_rich_lnd", dims.CellDim)
+
+    def wind_rel_oce(self):
+        return self._get_field("sfc_wind_rel_oce", dims.CellDim)
+
+    def wind_rel_ice(self):
+        return self._get_field("sfc_wind_rel_ice", dims.CellDim)
+
+    def wind_rel_lnd(self):
+        return self._get_field("sfc_wind_rel_lnd", dims.CellDim)
+
+    def lhfl_ice(self):
+        return self._get_field("sfc_lhfl_ice", dims.CellDim)
+
+    def shfl_ice(self):
+        return self._get_field("sfc_shfl_ice", dims.CellDim)
+
+    def lwfl_net_ice(self):
+        return self._get_field("sfc_lwfl_net_ice", dims.CellDim)
+
+    def swfl_net_ice(self):
+        return self._get_field("sfc_swfl_net_ice", dims.CellDim)
+
+
+class TmxSurfaceIceExitSavepoint(IconSavepoint):
+    """Sea-ice model exit (mo_vdf_sfc.f90, after update_sea_ice).
+
+    Prognostic new skin temperature and melt fluxes, the old-state forcing that
+    produced them, and the scheme-1 albedos. Enough to validate the standalone
+    Semtner zero-layer ``set_ice_temp_zerolayer`` (the old snow thickness comes
+    from the entry savepoint; ``snow_thickness_new`` is the updated value).
+    """
+
+    def tsfc_ice_old(self):
+        return self._get_field("sfc_tsfc_ice_old", dims.CellDim)
+
+    def tsfc_ice_new(self):
+        return self._get_field("sfc_tsfc_ice_new", dims.CellDim)
+
+    def q_ice_top(self):
+        return self._get_field("sfc_q_ice_top", dims.CellDim)
+
+    def q_ice_bot(self):
+        return self._get_field("sfc_q_ice_bot", dims.CellDim)
+
+    def snow_thickness_new(self):
+        return self._get_field("sfc_snow_thickness_new", dims.CellDim)
+
+    def ice_thickness(self):
+        return self._get_field("sfc_ice_thickness", dims.CellDim)
+
+    def emissivity(self):
+        return self._get_field("sfc_emissivity", dims.CellDim)
+
+    def lhfl_ice(self):
+        return self._get_field("sfc_lhfl_ice", dims.CellDim)
+
+    def shfl_ice(self):
+        return self._get_field("sfc_shfl_ice", dims.CellDim)
+
+    def lwfl_net_ice(self):
+        return self._get_field("sfc_lwfl_net_ice", dims.CellDim)
+
+    def swfl_net_ice(self):
+        return self._get_field("sfc_swfl_net_ice", dims.CellDim)
+
+    def albvisdir_ice(self):
+        return self._get_field("sfc_albvisdir_ice", dims.CellDim)
+
+    def albvisdif_ice(self):
+        return self._get_field("sfc_albvisdif_ice", dims.CellDim)
+
+    def albnirdir_ice(self):
+        return self._get_field("sfc_albnirdir_ice", dims.CellDim)
+
+    def albnirdif_ice(self):
+        return self._get_field("sfc_albnirdif_ice", dims.CellDim)
+
+
+class TmxSurfaceFluxesTileSavepoint(IconSavepoint):
+    """Per-tile surface fluxes on the new state (companion to tmx-surface-fluxes)."""
+
+    def evapotrans_oce(self):
+        return self._get_field("sfc_evapotrans_oce", dims.CellDim)
+
+    def evapotrans_ice(self):
+        return self._get_field("sfc_evapotrans_ice", dims.CellDim)
+
+    def evapotrans_lnd(self):
+        return self._get_field("sfc_evapotrans_lnd", dims.CellDim)
+
+    def lhfl_oce(self):
+        return self._get_field("sfc_lhfl_oce", dims.CellDim)
+
+    def lhfl_ice(self):
+        return self._get_field("sfc_lhfl_ice", dims.CellDim)
+
+    def lhfl_lnd(self):
+        return self._get_field("sfc_lhfl_lnd", dims.CellDim)
+
+    def shfl_oce(self):
+        return self._get_field("sfc_shfl_oce", dims.CellDim)
+
+    def shfl_ice(self):
+        return self._get_field("sfc_shfl_ice", dims.CellDim)
+
+    def shfl_lnd(self):
+        return self._get_field("sfc_shfl_lnd", dims.CellDim)
+
+    def ustress_oce(self):
+        return self._get_field("sfc_ustress_oce", dims.CellDim)
+
+    def ustress_ice(self):
+        return self._get_field("sfc_ustress_ice", dims.CellDim)
+
+    def ustress_lnd(self):
+        return self._get_field("sfc_ustress_lnd", dims.CellDim)
+
+    def vstress_oce(self):
+        return self._get_field("sfc_vstress_oce", dims.CellDim)
+
+    def vstress_ice(self):
+        return self._get_field("sfc_vstress_ice", dims.CellDim)
+
+    def vstress_lnd(self):
+        return self._get_field("sfc_vstress_lnd", dims.CellDim)
+
+
 class TmxDiagnosticsExitSavepoint(IconSavepoint):
     """Savepoint at exit of vdf Compute_diagnostics in mo_vdf_atmo.f90."""
 
@@ -2571,9 +2867,39 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    def from_savepoint_tmx_surface_entry(self, date: str) -> TmxSurfaceEntrySavepoint:
+        savepoint = self.serializer.savepoint["tmx-surface-entry"].id[1].date[date].as_savepoint()
+        return TmxSurfaceEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_surface_exchange(self, date: str) -> TmxSurfaceExchangeSavepoint:
+        savepoint = (
+            self.serializer.savepoint["tmx-surface-exchange"].id[1].date[date].as_savepoint()
+        )
+        return TmxSurfaceExchangeSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
     def from_savepoint_tmx_surface_fluxes(self, date: str) -> TmxSurfaceFluxesSavepoint:
         savepoint = self.serializer.savepoint["tmx-surface-fluxes"].id[1].date[date].as_savepoint()
         return TmxSurfaceFluxesSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_surface_fluxes_tile(self, date: str) -> TmxSurfaceFluxesTileSavepoint:
+        savepoint = (
+            self.serializer.savepoint["tmx-surface-fluxes-tile"].id[1].date[date].as_savepoint()
+        )
+        return TmxSurfaceFluxesTileSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_surface_ice_exit(self, date: str) -> TmxSurfaceIceExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["tmx-surface-ice-exit"].id[1].date[date].as_savepoint()
+        )
+        return TmxSurfaceIceExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
