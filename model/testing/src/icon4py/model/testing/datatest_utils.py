@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import topography
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
@@ -225,6 +226,8 @@ def create_experiment_configuration(
             config=dataclasses.replace(initial_condition_config.config, ntracer=0),
         )
 
+    geometry_config = GeometryConfig()
+
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
@@ -237,6 +240,7 @@ def create_experiment_configuration(
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,
         topography=topography_config,
+        geometry=geometry_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
         tracer_config=tracer_config,

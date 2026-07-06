@@ -601,8 +601,10 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
+        geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
     )
