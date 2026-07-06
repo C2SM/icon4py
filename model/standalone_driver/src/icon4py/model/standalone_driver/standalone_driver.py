@@ -683,6 +683,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+        global_reductions=icon4py_driver.global_reductions,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=icon4py_driver.grid, allocator=allocator

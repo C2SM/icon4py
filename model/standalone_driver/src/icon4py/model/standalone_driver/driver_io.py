@@ -28,11 +28,8 @@ import xarray as xr
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.diagnostic_calculations.stencils import (
-    diagnose_pressure,
-    diagnose_surface_pressure,
-    diagnose_temperature,
-)
+from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
+from icon4py.model.common.diagnostic_calculations.stencils import diagnose_temperature
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
@@ -157,8 +154,7 @@ class DiagnosticsComputer:
         self._pressure = _zero_full()
         # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
         # in-place buffer fills below would not type-check against the precise Field type.
-        self._pressure_ifc: Any = _zero_interface()
-        self._surface_pressure_k = _zero_interface()
+        self._pressure_on_cells_half_levels: Any = _zero_interface()
         self._surface_pressure: Any = data_alloc.zero_field(
             grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
         )
@@ -213,33 +209,15 @@ class DiagnosticsComputer:
             offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
         )
 
-        diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+        pressure_diagnostics.diagnose_pressure_surface_to_top(
+            grid=self._grid,
+            backend=backend,
             exner=prognostic_state.exner,
             virtual_temperature=self._virtual_temperature,
             ddqz_z_full=ddqz_z_full,
-            surface_pressure=self._surface_pressure_k,
-            horizontal_start=0,
-            horizontal_end=end_cell_end,
-            vertical_start=num_levels,
-            vertical_end=num_levels + 1,
-            offset_provider={},
-        )
-
-        # surface pressure lives at the bottom interface; extract it as a cell field
-        self._surface_pressure.ndarray[:] = self._surface_pressure_k.ndarray[:, num_levels]
-        self._pressure_ifc.ndarray[:, -1] = self._surface_pressure.ndarray
-
-        diagnose_pressure.diagnose_pressure.with_backend(backend)(
-            ddqz_z_full,
-            self._virtual_temperature,
-            self._surface_pressure,
-            self._pressure,
-            self._pressure_ifc,
-            horizontal_start=0,
-            horizontal_end=end_cell_end,
-            vertical_start=0,
-            vertical_end=num_levels,
-            offset_provider={},
+            surface_pressure=self._surface_pressure,
+            pressure=self._pressure,
+            pressure_on_cells_half_levels=self._pressure_on_cells_half_levels,
         )
 
         return {
