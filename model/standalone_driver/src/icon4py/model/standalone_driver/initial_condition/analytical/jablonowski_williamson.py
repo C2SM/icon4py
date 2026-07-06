@@ -13,6 +13,8 @@ import logging
 import math
 from typing import TYPE_CHECKING, ClassVar
 
+import gt4py.next as gtx
+
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
@@ -20,6 +22,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -47,7 +50,8 @@ class JablonowskiWilliamsonConfig:
     # reads zp_ape from the nh_testcase_nml
     # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
     p_sfc: float = 100000.0
-    baroclinic_amplitude: float = 0.0
+    # amplitude of the u-perturbation [m/s] (jw_up); jabw_s resets it to 0.0.
+    baroclinic_amplitude: float = 1.0
     u0: float = 35.0
     temp0: float = 288.0
     eta_0: float = 0.252
@@ -56,12 +60,26 @@ class JablonowskiWilliamsonConfig:
     dtemp: float = 4.8e5
     lon_perturbation_center: float = math.pi / 9.0
     lat_perturbation_center: float = 2.0 * math.pi / 9.0
+    # Moist tracer initialization (inwp tracers, see init_nh_inwp_tracers in
+    # mo_nh_jabw_exp.f90). Relevant only when transport is active.
+    rh_at_1000hpa: float = 0.7
+    qv_max: float = 20e-3
+    # number of iterations to converge qv against the moisture-dependent
+    # temperature (Fortran l_rediag=.TRUE. => 10 iterations).
+    moisture_init_iterations: int = 10
+    # target column-integrated moisture for APE cases [kg/m**2] (ztmc_ape).
+    global_moisture_content: float = 25.006
+    # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
+    normalize_global_moisture: bool = False
 
     fortran_name_map: ClassVar[dict[str, str]] = {
         "jw_up": "baroclinic_amplitude",
         "jw_u0": "u0",
         "jw_temp0": "temp0",
         "zp_ape": "p_sfc",
+        "rh_at_1000hpa": "rh_at_1000hpa",
+        "qv_max": "qv_max",
+        "ztmc_ape": "global_moisture_content",
     }
 
 
@@ -74,11 +92,12 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
+    global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """
     Initial condition for Jablonowski-Williamson test.
-    Set jw_baroclinic_amplitude to values larger than 0.01 if you want to run
-    baroclinic case.
+    The u-perturbation amplitude (``baroclinic_amplitude``, jw_up) defaults to
+    1.0 m/s as in ICON; the jabw_s/jabw_m cases reset it to 0.0 (steady state).
 
     The reference experiment config for this is
     exp.exclaim_nh35_tri_jws_sb.
@@ -88,6 +107,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     geometry = static_fields.geometry
     metrics = static_fields.metrics
+    interpolation = static_fields.interpolation
+
     cell_lat = geometry.get(geometry_meta.CELL_LAT).ndarray
     edge_lat = geometry.get(geometry_meta.EDGE_LAT).ndarray
     edge_lon = geometry.get(geometry_meta.EDGE_LON).ndarray
@@ -104,7 +125,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
     wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
-    c_lin_e = static_fields.interpolation.get(interpolation_attributes.C_LIN_E)
+    ddqz_z_full_field = metrics.get(metrics_attributes.DDQZ_Z_FULL)
+    c_lin_e = interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 
     p_sfc = config.p_sfc
@@ -253,3 +275,45 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
+
+    # Moist initialization only runs when transport is active. The only tracer we
+    # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
+    # value, so we don't touch them.
+    active_tracers = {name for name, _ in prognostic_state_now.tracer.active_fields()}
+    if active_tracers:
+        if prognostic_state_now.tracer.qv is None:
+            raise ValueError(
+                "Moist tracer initialization requires the 'qv' tracer to be active, "
+                f"but only {sorted(active_tracers)} are present."
+            )
+        log.info("Initializing inwp tracers (qv from RH profile, others zero).")
+
+        # virtual temperature theta_v * exner is the post-hydro_adjust base (not the
+        # pre-adjust temperature_jw); it is independent of qv and feeds both the
+        # hydrostatic pressure diagnosis and the moist-iteration first guess, so the
+        # iteration converges to the same fixed point as Fortran.
+        virtual_temperature = gtx.as_field(
+            (dims.CellDim, dims.KDim), theta_v_ndarray * exner_ndarray, allocator=allocator
+        )
+        pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
+            grid=grid,
+            backend=backend,
+            allocator=allocator,
+            exner=prognostic_state_now.exner,
+            virtual_temperature=virtual_temperature,
+            ddqz_z_full=ddqz_z_full_field,
+        )
+        testcases_utils.init_inwp_tracers(
+            rho=rho_ndarray,
+            virtual_temperature=virtual_temperature.ndarray,
+            pressure=pressure_ndarray,
+            cell_area=cell_area,
+            ddqz_z_full=ddqz_z_full_field.ndarray,
+            qv=prognostic_state_now.tracer.qv.ndarray,
+            global_reductions=global_reductions,
+            n_iter=config.moisture_init_iterations,
+            rh_at_1000hpa=config.rh_at_1000hpa,
+            qv_max=config.qv_max,
+            global_moisture_content=config.global_moisture_content,
+            normalize_global_moisture=config.normalize_global_moisture,
+        )

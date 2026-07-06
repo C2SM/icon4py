@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states.data import QV
 from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -31,6 +32,7 @@ from icon4py.model.testing.fixtures.datatest import (
     "experiment_description",
     [
         definitions.Experiments.JW,
+        definitions.Experiments.EXCLAIM_APE_AES,
         definitions.Experiments.GAUSS3D,
         definitions.Experiments.MCH_CH_R04B09,
     ],
@@ -76,6 +78,7 @@ def test_initial_conditions(
         prognostic_state_now=prognostic_state_now,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+        global_reductions=icon4py_driver.global_reductions,
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
@@ -107,3 +110,10 @@ def test_initial_conditions(
         prognostics_savepoint.w_now().asnumpy(),
         atol=1e-12,
     )
+
+    # Moist experiments (e.g. APE) initialize the water-vapour tracer
+    if prognostic_state_now.tracer.qv is not None:
+        test_utils.assert_dallclose(
+            prognostic_state_now.tracer.qv.asnumpy(),
+            prognostics_savepoint.tracer_now(QV).asnumpy(),
+        )
