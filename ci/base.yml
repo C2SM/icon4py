@@ -100,8 +100,6 @@ variables:
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_runner_base]
   before_script:
-    # TODO(msimberg): remove
-    - rm -rfv /capstor/scratch/cscs/svc_cwci02_cicd_ext/firecrest/*
     - cd /icon4py
     - source .venv/bin/activate # For nox etc. not for the testing venv itself
     - source ci/scripts/start-cuda-mps.sh
