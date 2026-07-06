@@ -220,7 +220,7 @@ def read_config(
         else None
     )
 
-    geometry_config = GeometryConfig()
+    geometry_config = GeometryConfig(use_analytical_means=True)
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
