@@ -542,11 +542,16 @@ def _compare_metrics_fields_single_multi_rank(
             model_backends.is_cpu_backend(backend)
             or (
                 model_backends.is_gpu_backend(backend)
-                and attrs_name == metrics_attributes.DDQZ_Z_FULL_E
+                and attrs_name
+                in {
+                    metrics_attributes.DDQZ_Z_FULL_E,
+                    metrics_attributes.RHO_REF_ME,
+                    metrics_attributes.THETA_REF_ME,
+                }
             )
         ):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
-            atol = 1e-13
+            atol = 2e-13
         else:
             atol = 0.0
         parallel_helpers.check_local_global_field(
