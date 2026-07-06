@@ -134,6 +134,7 @@ def iter_pairs_from_icon(
             for subsection in opt.icon_equivalent.path:
                 data = data[subsection]
             raw_value = data[opt.icon_equivalent.name]
+            # TODO(ricoh): c35 -- check if this needs to be robust to missing keys (silent defaults)
             de_listified = (
                 fortran_config.list_to_value(raw_value)
                 if opt.icon_equivalent.list_to_value

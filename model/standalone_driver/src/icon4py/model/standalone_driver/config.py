@@ -14,6 +14,7 @@ import json
 import logging
 import pathlib
 import re
+import typing
 from typing import Any, TypeAlias
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
@@ -25,6 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.common import topography, type_alias as ta
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
@@ -42,6 +44,15 @@ RelativeTime: TypeAlias = datetime.timedelta
 AbsoluteTime: TypeAlias = datetime.datetime
 NumTimeSteps: TypeAlias = int
 EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
+
+
+def datetime_from_iconformat(value: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def timedelta_from_iconformat(dtime: float, modeltimestep: str) -> datetime.timedelta:
+    modeltimestep = modeltimestep.strip()
+    return _timedelta_from_iso8601(modeltimestep) if modeltimestep else datetime.timedelta(seconds=dtime)
 
 
 @dataclasses.dataclass
@@ -73,7 +84,7 @@ def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
     return datetime.timedelta(**components)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, kw_only=True)
 class DriverConfig:
     """
     Standalone driver configuration.
@@ -81,53 +92,152 @@ class DriverConfig:
     Default values should correspond to default values in ICON.
     """
 
-    experiment_name: str
-    profiling_stats: ProfilingStats | None
-    dtime: RelativeTime
-    start_of_simulation: AbsoluteTime
-    end_of_simulation: EndOfSimulation
-    output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
-    apply_extra_second_order_divdamp: bool = False
-    vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
-    ndyn_substeps: int = 5
-    enable_statistics_output: bool = False
-    enable_output: bool = False
+    experiment_name: typing.Annotated[
+        str,
+        common_conf_opt.ConfigOption(
+            description="Name of the experiment",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="model_namelist_filename",
+                path=(
+                    "master_cfg",
+                    "master_model_nml",
+                ),
+                converter=lambda model_namelist_filename: model_namelist_filename.removeprefix(
+                    "NAMELIST_"
+                ).removeprefix("_sb_atm"),
+            ),
+        ),
+    ]
+    profiling_stats: typing.Annotated[
+        ProfilingStats | None,
+        common_conf_opt.ConfigOption(
+            description=""  # TODO(ricoh): c35 -- Add a description
+        ),
+    ]
+    dtime: typing.Annotated[
+        RelativeTime,
+        common_conf_opt.ConfigOption(
+            description="Time step duration in seconds.",
+            icon_equivalent=common_conf_opt.IconMultiOption(
+                common_conf_opt.IconOption(
+                    name="dtime",
+                    path=(
+                        "model_cfg",
+                        "run_nml",
+                    ),
+                ),
+                common_conf_opt.IconOption(
+                    name="modeltimestep",
+                    path=(
+                        "model_cfg",
+                        "run_nml",
+                    ),
+                )
+                converter=timedelta_from_iconformat,
+            ),
+        ),
+    ]
+    start_of_simulation: typing.Annotated[
+        AbsoluteTime,
+        common_conf_opt.ConfigOption(
+            description="This is the start date of an experiment, given in ISO format (proleptic gregorian calendar).",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="experimentstartdate",
+                path=(
+                    "master_cfg",
+                    "master_time_control_nml",
+                ),
+                converter=datetime_from_iconformat,
+            ),
+        ),
+    ]
+    end_of_simulation: typing.Annotated[
+        EndOfSimulation,
+        common_conf_opt.ConfigOption(
+            description="This is the date an experiment is finished, given in ISO format.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="experimentstopdate",
+                path=(
+                    "master_cfg",
+                    "master_time_control_nml",
+                ),
+                converter=datetime_from_iconformat,
+            ),
+        ),
+    ]
+    output_path: typing.Annotated[
+        pathlib.Path,
+        common_conf_opt.ConfigOption(
+            description="Output directory path, relative to the working directory.",
+            icon_equivalent=None,
+        ),
+    ] = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
+    apply_extra_second_order_divdamp: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Whether to apply additional second order divergence damping.",  # TODO(ricoh): ask for a better description
+            icon_equivalent=common_conf_opt.IconOption(
+                name="ltestcase",
+                path=(
+                    "model_cfg",
+                    "run_nml",
+                ),
+                converter=lambda value: not value,
+                # TODO(ricoh): c35 -- make reading from icon robust against missing values?
+            ),
+        ),
+    ] = False
+    vertical_cfl_threshold: typing.Annotated[
+        ta.wpfloat,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Threshold for vertical advection CFL number at which the adaptive time step reduction "
+                "(increase of ndyn_substeps w.r.t. the fixed fast-physics time step) is triggered."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="vcfl_threshold",
+                path=(
+                    "model_cfg",
+                    "nonhydrostatic_nml",
+                ),
+            ),
+        ),
+    ] = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
+    ndyn_substeps: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Number of dynamics substeps per fast-physics step.",
+            icon_equivalent=common_conf_opt.IconOption(
+                "ndyn_substeps",
+                (
+                    "model_cfg",
+                    "nonhydrostatic_nml",
+                ),
+            ),
+        ),
+    ] = 5
+    enable_statistics_output: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Enable statistics output.",  # TODO(ricoh): c35 -- ask for better description
+            icon_equivalent=None,
+        ),
+    ] = False
+    enable_output: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Enable output.",  # TODO(ricoh): c35 -- ask for better description
+            icon_equivalent=None,
+        ),
+    ] = False
 
     @classmethod
     def from_fortran_dict(
         cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
     ) -> DriverConfig:
-        nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
-        run_nml = atm_dict["run_nml"]
-        master_time_control_nml = master_dict["master_time_control_nml"]
-        master_model_nml = master_dict["master_model_nml"]
-        # Both 'modeltimestep' (an ISO 8601 duration) and 'dtime' (seconds) are
-        # always present; a non-empty 'modeltimestep' takes priority over 'dtime'.
-        modeltimestep = run_nml["modeltimestep"].strip()
-        dtime = (
-            _timedelta_from_iso8601(modeltimestep)
-            if modeltimestep
-            else datetime.timedelta(seconds=run_nml["dtime"])
-        )
-        start_datetime_str = master_time_control_nml["experimentstartdate"]
-        end_datetime_str = master_time_control_nml["experimentstopdate"]
-        return cls(
-            experiment_name=master_model_nml["model_namelist_filename"]
-            .removeprefix("NAMELIST_")
-            .removesuffix("_sb_atm"),
-            dtime=dtime,
-            start_of_simulation=datetime.datetime.fromisoformat(
-                start_datetime_str.replace("Z", "+00:00")
-            ),
-            end_of_simulation=datetime.datetime.fromisoformat(
-                end_datetime_str.replace("Z", "+00:00")
-            ),
-            # apply_extra_second_order_divdamp does not have a namelist
-            # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
-            # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
-            apply_extra_second_order_divdamp=not run_nml.get("ltestcase", False),
-            vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
-            ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
+        return common_conf_opt.construct_config_from_icon(
+            config_cls=cls,
+            icon_config={"master_cfg": master_dict, "model_cfg": atm_dict},
             **overrides,
         )
 
