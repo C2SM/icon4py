@@ -84,7 +84,7 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    horizontal_pressure_gradient: fa.EdgeKField[float]
+    horizontal_pressure_gradient: fa.EdgeKField[ta.anyfloat]
     """
     Declared as z_gradh_exner in ICON.
     """
@@ -96,19 +96,19 @@ class IntermediateFields:
     """
     Declared as z_theta_v_e in ICON.
     """
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[float]
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat]
     """
     Declared as z_kin_hor_e in ICON.
     """
-    tangential_wind_on_half_levels: fa.EdgeKField[float]
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat]
     """
     Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
     """
-    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[float]
+    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.anyfloat]
     """
     Declared as z_graddiv_vn in ICON.
     """
-    dwdz_at_cells_on_model_levels: fa.CellKField[float]
+    dwdz_at_cells_on_model_levels: fa.CellKField[ta.anyfloat]
     """
     Declared as z_dwdz_dd in ICON.
     """
