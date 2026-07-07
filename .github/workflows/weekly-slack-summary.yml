@@ -5,6 +5,12 @@ on:
     # Every Monday at 08:00 UTC
     - cron: "0 8 * * 1"
   workflow_dispatch:
+    inputs:
+      offline:
+        description: "Use synthetic data instead of calling external APIs (for testing)."
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   weekly-summary:
@@ -35,7 +41,8 @@ jobs:
         run: |
           uv run -q --frozen --isolated --python 3.12 --only-group scripts \
             python3 scripts/python/weekly_slack_summary.py \
-            --output-dir weekly_slack_summary_output
+            --output-dir weekly_slack_summary_output \
+            ${{ inputs.offline && '--offline' || '' }}
 
       - name: Upload summary artifact
         uses: actions/upload-artifact@v4

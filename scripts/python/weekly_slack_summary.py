@@ -597,6 +597,90 @@ def _collect_all(
     }
 
 
+def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
+    """Return synthetic context for offline/demo runs."""
+    week_start, week_end = _previous_week_bounds(now)
+    return {
+        "week_start": week_start.isoformat(),
+        "week_end": week_end.isoformat(),
+        "repository": f"{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}",
+        "github_prs": {
+            "closed_prs": [
+                {
+                    "number": 42,
+                    "title": "Fix boundary handling",
+                    "author": "alice",
+                    "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pull/42",
+                    "state_reason": "merged",
+                    "merged_at": "2024-07-03T10:00:00Z",
+                    "closed_at": "2024-07-03T10:00:00Z",
+                    "body": "This PR fixes boundary handling.",
+                    "commits": [
+                        {
+                            "sha": "abc1234",
+                            "message": "Fix boundary handling",
+                            "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/commit/abc1234",
+                        }
+                    ],
+                    "comments": [],
+                    "review_comments": [],
+                }
+            ],
+            "active_prs": [
+                {
+                    "number": 43,
+                    "title": "Add new stencil",
+                    "author": "bob",
+                    "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pull/43",
+                    "updated_at": "2024-07-05T12:00:00Z",
+                    "comments": [],
+                    "review_comments": [],
+                }
+            ],
+            "inactive_prs": [
+                {
+                    "number": 44,
+                    "title": "Refactor old module",
+                    "author": "carol",
+                    "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pull/44",
+                    "updated_at": "2024-06-01T12:00:00Z",
+                }
+            ],
+        },
+        "github_issues": {
+            "opened_issues": [
+                {
+                    "number": 101,
+                    "title": "Bug report",
+                    "author": "dave",
+                    "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/issues/101",
+                    "created_at": "2024-07-04T09:00:00Z",
+                    "body_snippet": "Something is broken.",
+                }
+            ],
+            "closed_issues": [
+                {
+                    "number": 100,
+                    "title": "Resolved issue",
+                    "author": "eve",
+                    "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/issues/100",
+                    "closed_at": "2024-07-02T15:00:00Z",
+                    "state_reason": "completed",
+                }
+            ],
+        },
+        "gitlab_ci": {
+            "status": "success",
+            "url": GITLAB_PIPELINE_URL_TEMPLATE,
+            "pipeline_id": 123,
+            "created_at": "2024-07-06T01:00:00Z",
+            "message": None,
+            "failed_jobs": [],
+            "running_jobs": [],
+        },
+    }
+
+
 @_cli.command(name="generate")
 def generate(
     *,
@@ -616,6 +700,10 @@ def generate(
         bool,
         typer.Option("--skip-opencode", help="Skip the OpenCode generation step."),
     ] = False,
+    offline: Annotated[
+        bool,
+        typer.Option("--offline", help="Use synthetic data instead of calling external APIs."),
+    ] = False,
     github_token: Annotated[
         str | None,
         typer.Option("--github-token", help="GitHub API token (defaults to GITHUB_TOKEN env var)."),
@@ -630,11 +718,15 @@ def generate(
     ] = None,
 ) -> None:
     """Collect activity data and produce a weekly Slack summary."""
-    token = github_token or _github_token()
     output_dir = output_dir.resolve()
 
-    typer.echo("Collecting GitHub activity and GitLab CI status...")
-    context = _collect_all(token=token)
+    if offline:
+        typer.echo("Using offline/sample data...")
+        context = _sample_context()
+    else:
+        token = github_token or _github_token()
+        typer.echo("Collecting GitHub activity and GitLab CI status...")
+        context = _collect_all(token=token)
     markdown_context = _format_context_markdown(
         datetime.datetime.fromisoformat(context["week_start"]),
         datetime.datetime.fromisoformat(context["week_end"]),

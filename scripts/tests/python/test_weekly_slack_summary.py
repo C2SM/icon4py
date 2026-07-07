@@ -398,3 +398,23 @@ class TestGenerateCommand:
 
         data = json.loads(context_json.read_text())
         assert data["repository"] == "C2SM/icon4py"
+
+    def test_offline_dry_run_writes_files(self, tmp_path):
+        with pytest.raises(typer.Exit) as exc_info:
+            weekly_slack_summary.generate(
+                output_dir=tmp_path,
+                dry_run=True,
+                skip_opencode=True,
+                offline=True,
+            )
+        assert exc_info.value.exit_code == 0
+
+        summary_md = tmp_path / "weekly_slack_summary.md"
+        assert summary_md.exists()
+        markdown = summary_md.read_text()
+        assert "Closed PRs" in markdown
+        assert "Active Open PRs" in markdown
+        assert "Inactive Open PRs" in markdown
+        assert "Opened Issues" in markdown
+        assert "Closed Issues" in markdown
+        assert "GitLab Weekly CI" in markdown
