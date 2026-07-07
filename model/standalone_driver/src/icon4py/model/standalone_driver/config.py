@@ -189,7 +189,6 @@ class DriverConfig:
                     "run_nml",
                 ),
                 converter=lambda value: not value,
-                # TODO(ricoh): c35 -- make reading from icon robust against missing values?
             ),
         ),
     ] = False
