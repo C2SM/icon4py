@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 import json
 import logging
 import pathlib
@@ -53,7 +54,7 @@ _ISO8601_DURATION = re.compile(
 
 
 def _timedelta_from_iso8601(duration: str) -> time.RelativeTime:
-    """Parse an ISO 8601 duration such as 'PT300S' into a 'datetime.timedelta'.
+    """Parse an ISO 8601 duration such as 'PT300S' into a 'time.RelativeTime'.
 
     Only the components convertible to a fixed duration are supported (weeks,
     days, hours, minutes, seconds).
@@ -99,7 +100,7 @@ class DriverConfig:
         dtime = (
             _timedelta_from_iso8601(modeltimestep)
             if modeltimestep
-            else datetime.timedelta(seconds=run_nml["dtime"])
+            else time.RelativeTime(seconds=run_nml["dtime"])
         )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
