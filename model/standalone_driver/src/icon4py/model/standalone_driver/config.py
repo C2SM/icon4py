@@ -51,8 +51,11 @@ def datetime_from_iconformat(value: str) -> datetime.datetime:
 
 
 def timedelta_from_iconformat(dtime: float, modeltimestep: str) -> datetime.timedelta:
-    modeltimestep = modeltimestep.strip()
-    return _timedelta_from_iso8601(modeltimestep) if modeltimestep else datetime.timedelta(seconds=dtime)
+    return (
+        _timedelta_from_iso8601(modeltimestep)
+        if modeltimestep
+        else datetime.timedelta(seconds=dtime)
+    )
 
 
 @dataclasses.dataclass
@@ -119,20 +122,23 @@ class DriverConfig:
         common_conf_opt.ConfigOption(
             description="Time step duration in seconds.",
             icon_equivalent=common_conf_opt.IconMultiOption(
-                common_conf_opt.IconOption(
-                    name="dtime",
-                    path=(
-                        "model_cfg",
-                        "run_nml",
+                options=[
+                    common_conf_opt.IconOption(
+                        name="dtime",
+                        path=(
+                            "model_cfg",
+                            "run_nml",
+                        ),
                     ),
-                ),
-                common_conf_opt.IconOption(
-                    name="modeltimestep",
-                    path=(
-                        "model_cfg",
-                        "run_nml",
+                    common_conf_opt.IconOption(
+                        name="modeltimestep",
+                        path=(
+                            "model_cfg",
+                            "run_nml",
+                        ),
+                        converter=str.strip,
                     ),
-                )
+                ],
                 converter=timedelta_from_iconformat,
             ),
         ),
