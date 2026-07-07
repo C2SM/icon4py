@@ -50,6 +50,12 @@ def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKFiel
     return field
 
 
+# muphys precip diagnostic field names (pure diagnostics -- never applied to the
+# prognostic state): total precip flux, surface rain / snow / ice / graupel rates,
+# and surface precip energy flux.
+_PRECIP_DIAGNOSTICS: tuple[str, ...] = ("pflx", "pr", "ps", "pi", "pg", "pre")
+
+
 class State(PhysicsState):
     """The muphys physics State adapter.
 
@@ -152,13 +158,7 @@ class State(PhysicsState):
         self._exner_tendency = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
-
-        self.pflx: fa.CellKField[ta.wpfloat] | None = None  # total precipitation flux
-        self.pr: fa.CellKField[ta.wpfloat] | None = None  # surface rain rate
-        self.ps: fa.CellKField[ta.wpfloat] | None = None  # surface snow rate
-        self.pi: fa.CellKField[ta.wpfloat] | None = None  # surface ice rate
-        self.pg: fa.CellKField[ta.wpfloat] | None = None  # surface graupel rate
-        self.pre: fa.CellKField[ta.wpfloat] | None = None  # surface precip energy flux
+        self._precip_diagnostics: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
     def gather_from_prognostic(
         self, prognostic: prognostics.PrognosticState, tracers: tracer_state.TracerState
@@ -263,12 +263,7 @@ class State(PhysicsState):
         )
 
         # 3. Store precip diagnostics (references; never applied to prognostic state).
-        self.pflx = outputs["pflx"]
-        self.pr = outputs["pr"]
-        self.ps = outputs["ps"]
-        self.pi = outputs["pi"]
-        self.pg = outputs["pg"]
-        self.pre = outputs["pre"]
+        self._precip_diagnostics = {name: outputs[name] for name in _PRECIP_DIAGNOSTICS}
 
     def as_component_input(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
         """
@@ -279,3 +274,10 @@ class State(PhysicsState):
         inp = {"dz": self.dz, "te": self.te, "p": self.p, "rho": self.rho}
         inp.update({f"q{s}": _require(getattr(self._tracers, f"q{s}"), f"q{s}") for s in SPECIES})
         return inp
+
+    @property
+    def precip_diagnostics(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
+        """muphys precip diagnostics keyed by name, ready for IO / plotting."""
+        if self._precip_diagnostics is None:
+            raise RuntimeError("precip_diagnostics accessed before scatter_to_prognostic")
+        return self._precip_diagnostics
