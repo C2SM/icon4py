@@ -329,10 +329,7 @@ def _collect_gitlab_ci(
         f"cscs-ci/ci-testing/webhook-ci/mirrors/{GITLAB_PROJECT_ID}/2255149825504677",
         safe="",
     )
-    url = (
-        f"{GITLAB_API_BASE}/projects/{project_path}/pipelines"
-        "?order_by=created_at&sort=desc&per_page=20"
-    )
+    url = f"{GITLAB_API_BASE}/projects/{project_path}/pipelines?order_by=id&sort=desc&per_page=20"
     pipelines = _gitlab_api_request(url)
     if not isinstance(pipelines, list):
         raise RuntimeError(f"Unexpected GitLab pipelines response type: {type(pipelines)}")
