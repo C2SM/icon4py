@@ -42,7 +42,7 @@ jobs:
           uv run -q --frozen --isolated --python 3.12 --only-group scripts \
             python3 scripts/python/weekly_slack_summary.py generate \
             --output-dir weekly_slack_summary_output \
-            ${{ inputs.offline && '--offline' || '' }}
+            ${{ inputs.offline == 'true' && '--offline' || '' }}
 
       - name: Upload summary artifact
         uses: actions/upload-artifact@v4

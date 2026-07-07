@@ -143,6 +143,8 @@ class TestCollectGitHubPRs:
         assert result["closed_prs"][0]["merged_at"] is not None
         assert len(result["active_prs"]) == 1
         assert result["active_prs"][0]["number"] == 43
+        assert len(result["active_prs"][0]["commits"]) == 1
+        assert result["active_prs"][0]["commits"][0]["sha"] == "abc1234"
         assert len(result["inactive_prs"]) == 1
         assert result["inactive_prs"][0]["number"] == 44
 

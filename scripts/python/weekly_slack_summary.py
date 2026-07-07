@@ -219,6 +219,7 @@ def _collect_github_prs(
     active_prs: list[dict[str, Any]] = []
     for item in active_prs_raw:
         pr_number = item["number"]
+        commits = _github_pr_commits(pr_number, token=token)
         comments = _github_pr_comments(pr_number, token=token)
         review_comments = _github_pr_review_comments(pr_number, token=token)
         active_prs.append(
@@ -228,6 +229,14 @@ def _collect_github_prs(
                 "author": item["user"]["login"] if item.get("user") else None,
                 "url": item["html_url"],
                 "updated_at": item.get("updated_at"),
+                "commits": [
+                    {
+                        "sha": c.get("sha", "")[:7],
+                        "message": (c.get("commit", {}).get("message") or "").split("\n")[0],
+                        "url": c.get("html_url", ""),
+                    }
+                    for c in commits
+                ],
                 "comments": [
                     {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
                     for c in comments
@@ -421,6 +430,9 @@ def _format_active_pr_lines(pr: dict[str, Any]) -> list[str]:
     lines = [_format_pr_line(pr)]
     if pr.get("updated_at"):
         lines.append(f"  Last updated: {pr['updated_at']}")
+    if pr.get("commits"):
+        lines.append("  Recent commits:")
+        lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
     all_comments = pr.get("comments", []) + pr.get("review_comments", [])
     if all_comments:
         lines.append(f"  Recent comments ({len(all_comments)}):")
@@ -647,6 +659,13 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
                     "author": "bob",
                     "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pull/43",
                     "updated_at": "2024-07-05T12:00:00Z",
+                    "commits": [
+                        {
+                            "sha": "def5678",
+                            "message": "Add new stencil",
+                            "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/commit/def5678",
+                        }
+                    ],
                     "comments": [],
                     "review_comments": [],
                 }
