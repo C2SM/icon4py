@@ -444,6 +444,11 @@ def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
             f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
             for job in gitlab_ci["failed_jobs"]
         )
+    elif gitlab_ci.get("status") == "failed":
+        lines.append(
+            "- The pipeline status is failed, but no individual failed jobs were retrieved. "
+            "See the pipeline link for details."
+        )
     if gitlab_ci.get("running_jobs"):
         lines.append(f"- Running jobs ({len(gitlab_ci['running_jobs'])}):")
         lines.extend(f"  - [{job['name']}]({job['url']})" for job in gitlab_ci["running_jobs"])
