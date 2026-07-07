@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import dataclasses
-import datetime
 import json
 import logging
 import pathlib
@@ -53,7 +52,7 @@ _ISO8601_DURATION = re.compile(
 )
 
 
-def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
+def _timedelta_from_iso8601(duration: str) -> time.RelativeTime:
     """Parse an ISO 8601 duration such as 'PT300S' into a 'datetime.timedelta'.
 
     Only the components convertible to a fixed duration are supported (weeks,
@@ -63,7 +62,7 @@ def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
     if match is None or not any(match.groups()):
         raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
     components = {name: float(value) for name, value in match.groupdict().items() if value}
-    return datetime.timedelta(**components)
+    return time.RelativeTime(**components)
 
 
 @dataclasses.dataclass(frozen=True)
