@@ -16,6 +16,8 @@ from typing import Final, Literal, TypeAlias
 
 import nox
 
+from scripts.python.helpers.test_selection import ModelTestsSubset, _selection_to_pytest_args
+
 
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
@@ -46,7 +48,6 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
 ]
 
-ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
@@ -229,9 +230,17 @@ def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsS
     if selection == "unittest":
         # tools/ only has unit tests, so skip it in datatest mode
         with session.chdir("tools"):
-            session.run(*pytest_base.split(), *session.posargs)
+            session.run(
+                *pytest_base.split(),
+                *session.posargs,
+                success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+            )
     with session.chdir("bindings"):
-        session.run(*pytest_base.split(), *session.posargs)
+        session.run(
+            *pytest_base.split(),
+            *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
 
 
 # -- utils --
@@ -259,21 +268,3 @@ def _install_session_venv(
         session.run_install(
             "uv", "pip", "install", *((item,) if isinstance(item, str) else item), env=env
         )
-
-
-def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
-    pytest_args = []
-
-    match selection:
-        case "datatest":
-            pytest_args.extend(["--datatest-only"])
-        case "stencils":
-            pytest_args.extend(["-k", "stencil_tests"])
-        case "basic":
-            pytest_args.extend(
-                ["--datatest-skip", "-k", "not stencil_tests and not benchmark_only"]
-            )
-        case _:
-            raise AssertionError(f"Invalid selection: {selection}")
-
-    return pytest_args

@@ -134,23 +134,16 @@ def pytest_collection_modifyitems(config, items):
     test_level = config.getoption("--level")
     if test_level == "any":
         return
-    for item in items:
+
+    def _matches_level(item: pytest.Item) -> bool:
         if (marker := item.get_closest_marker("level")) is not None:
             assert all(level in _TEST_LEVELS for level in marker.args), (
                 f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             )
-            if test_level not in marker.args:
-                item.add_marker(
-                    pytest.mark.skip(
-                        reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
-                    )
-                )
-        elif test_level != "unit":
-            item.add_marker(
-                pytest.mark.skip(
-                    reason=f"Selected level '{test_level}' does not match the implicit level 'unit' for this test."
-                )
-            )
+            return test_level in marker.args
+        return test_level == "unit"
+
+    items[:] = [item for item in items if _matches_level(item)]
 
 
 @pytest.hookimpl(trylast=True)
