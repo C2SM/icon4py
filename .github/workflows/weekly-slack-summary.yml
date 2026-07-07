@@ -1,0 +1,45 @@
+name: Weekly Slack Activity Summary
+
+on:
+  schedule:
+    # Every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  weekly-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          activate-environment: true
+
+      - name: Install opencode
+        run: npm install -g opencode-ai
+
+      - name: Generate weekly summary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        run: |
+          uv run -q --frozen --isolated --python 3.12 --only-group scripts \
+            python3 scripts/python/weekly_slack_summary.py generate \
+            --output-dir weekly_slack_summary_output
+
+      - name: Upload summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-slack-summary
+          path: weekly_slack_summary_output/
+          if-no-files-found: error
