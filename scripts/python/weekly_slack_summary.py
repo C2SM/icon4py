@@ -28,7 +28,9 @@ import typer
 from helpers import common
 
 
-cli = typer.Typer(no_args_is_help=True, help=__doc__)
+# NOTE: this script is intentionally not auto-discovered by ``scripts/run``;
+# the user-facing entry point is ``scripts/sh/weekly_slack_summary.sh``.
+_cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 
 GITHUB_REPO_OWNER: Final[str] = "C2SM"
@@ -565,7 +567,7 @@ def _collect_all(
     }
 
 
-@cli.command()
+@_cli.command(name="generate")
 def generate(
     output_dir: Annotated[
         pathlib.Path,
@@ -644,4 +646,4 @@ def generate(
 
 
 if __name__ == "__main__":
-    sys.exit(cli())
+    sys.exit(_cli())
