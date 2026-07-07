@@ -152,7 +152,7 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
@@ -240,7 +240,9 @@ disable_error_code = [
 ]
 module = [
   "icon4py.model.atmosphere.advection.stencils.*",
-  "icon4py.model.atmosphere.diffusion.stencils.*"
+  "icon4py.model.atmosphere.diffusion.stencils.*",
+  "icon4py.model.atmosphere.dycore.dycore_states",
+  "icon4py.model.atmosphere.dycore.stencils.*"
 ]
 
 # -- pytest --

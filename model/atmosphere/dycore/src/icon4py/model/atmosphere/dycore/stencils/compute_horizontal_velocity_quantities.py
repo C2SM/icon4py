@@ -130,7 +130,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     This program computes a variety of diagnostic quantities and fluxes
     related to horizontal wind including

@@ -34,6 +34,7 @@ class IconOption:
     path: tuple[str, ...]
     list_to_value: bool = False
     read_from_icon: bool = True
+    converter: typing.Callable[[typing.Any], typing.Any] | None = None
 
 
 @dataclasses.dataclass
@@ -134,7 +135,8 @@ def iter_pairs_from_icon(
                 if opt.icon_equivalent.list_to_value
                 else raw_value
             )
-            yield name, annotations[name](de_listified)
+            converter = opt.icon_equivalent.converter or annotations[name]
+            yield name, converter(de_listified)
 
 
 def construct_config_from_icon[T](

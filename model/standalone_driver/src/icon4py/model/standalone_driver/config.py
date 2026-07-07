@@ -13,6 +13,7 @@ import datetime
 import json
 import logging
 import pathlib
+import re
 from typing import Any, TypeAlias
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
@@ -25,6 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 )
 from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
@@ -47,6 +49,28 @@ class ProfilingStats:
     gt4py_metrics_level: int = gtx_metrics.ALL
     gt4py_metrics_output_file: str = "gt4py_metrics.json"
     skip_first_timestep: bool = True
+
+
+# ISO 8601 duration, restricted to the fixed-length components (weeks, days,
+# hours, minutes, seconds). Years and months are intentionally not matched since
+# their length is not fixed, and this is currently only used for dtime.
+_ISO8601_DURATION = re.compile(
+    r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
+    r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
+)
+
+
+def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
+    """Parse an ISO 8601 duration such as 'PT300S' into a 'datetime.timedelta'.
+
+    Only the components convertible to a fixed duration are supported (weeks,
+    days, hours, minutes, seconds).
+    """
+    match = _ISO8601_DURATION.fullmatch(duration)
+    if match is None or not any(match.groups()):
+        raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
+    components = {name: float(value) for name, value in match.groupdict().items() if value}
+    return datetime.timedelta(**components)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -77,14 +101,21 @@ class DriverConfig:
         run_nml = atm_dict["run_nml"]
         master_time_control_nml = master_dict["master_time_control_nml"]
         master_model_nml = master_dict["master_model_nml"]
-        dtime = run_nml["dtime"]
+        # Both 'modeltimestep' (an ISO 8601 duration) and 'dtime' (seconds) are
+        # always present; a non-empty 'modeltimestep' takes priority over 'dtime'.
+        modeltimestep = run_nml["modeltimestep"].strip()
+        dtime = (
+            _timedelta_from_iso8601(modeltimestep)
+            if modeltimestep
+            else datetime.timedelta(seconds=run_nml["dtime"])
+        )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
         return cls(
             experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
-            dtime=datetime.timedelta(seconds=dtime),
+            dtime=dtime,
             start_of_simulation=datetime.datetime.fromisoformat(
                 start_datetime_str.replace("Z", "+00:00")
             ),
@@ -108,6 +139,7 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
+    geometry: GeometryConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -188,6 +220,8 @@ def read_config(
         else None
     )
 
+    geometry_config = GeometryConfig(use_analytical_means=True)
+
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
@@ -212,6 +246,7 @@ def read_config(
         interpolation=interpolation_config,
         vertical_grid=vertical_grid_config,
         topography=topography_config,
+        geometry=geometry_config,
         nonhydrostatic=nonhydro_config,
         diffusion=diffusion_config,
         tracer_config=tracer_config,
