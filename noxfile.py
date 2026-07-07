@@ -20,7 +20,12 @@ from scripts.python.helpers.test_selection import ModelTestsSubset, _selection_t
 
 
 # -- nox configuration --
-nox.options.default_venv_backend = "uv"
+def _use_active_venv() -> bool:
+    """Return True when nox should run in the active Python environment."""
+    return os.environ.get("ICON4PY_NOX_USE_ACTIVE_VENV") == "1"
+
+
+nox.options.default_venv_backend = "none" if _use_active_venv() else "uv"
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 
 _rank = (
@@ -251,6 +256,9 @@ def _install_session_venv(
     groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
+    if _use_active_venv():
+        return
+
     # TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
     if env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", ""):
         extras = [*extras, *re.split(r"\W+", env_extras)]
