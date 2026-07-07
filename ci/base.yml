@@ -193,12 +193,16 @@ variables:
 .generate_test_child_pipeline:
   stage: generate_test
   extends: .container-runner-lightweight-gh200
-  image: ghcr.io/astral-sh/uv:0.11.15-python3.12-trixie-slim
-  timeout: 5m
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  needs: [build_image_aarch64]
+  timeout: 1h
   variables:
     GIT_STRATEGY: fetch
     KUBERNETES_MEMORY_REQUEST: 4Gi
     KUBERNETES_MEMORY_LIMIT: 4Gi
+  before_script:
+    - cd /icon4py
+    - source .venv/bin/activate
   script:
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml

@@ -13,7 +13,8 @@
 Reads the pipeline variables (SESSIONS, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
 BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS, TOOLS_SUBSETS) or corresponding command-line options
 and writes a child pipeline that includes ``ci/base.yml`` and instantiates only
-the test jobs whose matrix entries match the requested filter.
+the test jobs whose matrix entries match the requested filter and collect at
+least one test.
 
 Each SESSION value maps to a single job template that corresponds to a nox
 session. Parameters like MODEL_SUBPACKAGES and MODEL_SUBSETS are passed as nox
@@ -28,7 +29,10 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from typing import Annotated
 
 import typer
@@ -68,6 +72,14 @@ ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
 # should be changed to simplify this.
 ALL_LEVELS = ["unit", "integration"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
+
+# Collection tuning. Per-cell timeout should be generous enough for the first
+# cold import of icon4py/GT4Py; total timeout is a safety net for the whole
+# matrix. Values are intentionally conservative and can be reduced once
+# real timings are available.
+_COLLECTION_TIMEOUT_SECONDS = 5 * 60
+_COLLECTION_TOTAL_TIMEOUT_SECONDS = 30 * 60
+_COLLECTION_MAX_WORKERS = 8
 
 
 def _parse_list(raw: str | None) -> list[str]:
@@ -137,6 +149,292 @@ def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) 
     return tokens
 
 
+def _nox_session_name(base: str, params: str) -> str:
+    """Return the nox session name used for collection.
+
+    When collection runs with ``ICON4PY_NOX_USE_ACTIVE_VENV=1`` nox ignores the
+    ``python=`` parametrization and names sessions without a Python-version
+    suffix.
+    """
+    return f"{base}({params})"
+
+
+def _collection_env() -> dict[str, str]:
+    """Return environment variables for the offline collection runs."""
+    return {
+        "ICON4PY_NOX_USE_ACTIVE_VENV": "1",
+        "ICON4PY_ENABLE_GRID_DOWNLOAD": "false",
+        "ICON4PY_ENABLE_TESTDATA_DOWNLOAD": "false",
+        "GT4PY_BUILD_CACHE_LIFETIME": "persistent",
+    }
+
+
+def _parse_collected_count(output: str) -> int | None:
+    """Parse pytest --collect-only terminal output for the selected test count.
+
+    Returns the number of tests that would run, or None if the count cannot be
+    parsed. The "selected" number is preferred when pytest reports both
+    collected and selected counts.
+    """
+    pattern = re.compile(
+        r"collected\s+(?P<collected>\d+)\s+items"
+        r"(?:\s*/\s*\d+\s*deselected\s*/\s*(?P<selected>\d+)\s*selected)?"
+    )
+    # The summary is at the end of the output; search backwards.
+    for line in reversed(output.splitlines()):
+        match = pattern.search(line)
+        if match:
+            selected = match.group("selected")
+            if selected is not None:
+                return int(selected)
+            return int(match.group("collected"))
+    return None
+
+
+def _run_nox_collection(
+    session_name: str,
+    pytest_args: list[str],
+    env: dict[str, str],
+    timeout: float,
+) -> int | None:
+    """Run a nox session with --collect-only and return the test count.
+
+    Returns None if the subprocess fails, times out, or the output cannot be
+    parsed. A return value of 0 means the cell collected no tests.
+    """
+    cmd = ["nox", "-s", session_name, "--", *pytest_args]
+    full_env = os.environ.copy()
+    full_env.update(env)
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=full_env,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    # pytest exits with 5 when no tests were collected; this is a valid outcome
+    # for filtering purposes.
+    if result.returncode not in (0, 5):
+        return None
+
+    return _parse_collected_count(result.stdout + "\n" + result.stderr)
+
+
+@dataclass(frozen=True)
+class _MatrixCell:
+    """A single matrix expansion cell together with its collection recipe."""
+
+    job_name: str
+    extends: str
+    variables: dict[str, str]
+    matrix: dict[str, str]
+    session: str
+    pytest_args: list[str]
+
+
+def _model_cells(
+    subpackages: list[str],
+    backends: list[str],
+    grids: list[str],
+    levels: list[str],
+    subsets: list[str],
+) -> list[_MatrixCell]:
+    """Build collection cells for the serial model test sessions."""
+    cells: list[_MatrixCell] = []
+
+    if "stencils" in subsets and grids:
+        for subpackage in subpackages:
+            for backend in backends:
+                for grid in grids:
+                    cells.append(  # noqa: PERF401
+                        _MatrixCell(
+                            job_name="test_model_stencils_aarch64",
+                            extends=".test_model_aarch64",
+                            variables={"MODEL_SUBSET": "stencils"},
+                            matrix={
+                                "MODEL_SUBPACKAGE": subpackage,
+                                "BACKEND": backend,
+                                "GRID": grid,
+                            },
+                            session=_nox_session_name(
+                                "test_model", f"selection='stencils', subpackage='{subpackage}'"
+                            ),
+                            pytest_args=[
+                                "--collect-only",
+                                "-n0",
+                                f"--backend={backend}",
+                                f"--grid={grid}",
+                                "--datatest-skip",
+                            ],
+                        )
+                    )
+
+    for subset in ("datatest", "basic"):
+        if subset not in subsets or not levels:
+            continue
+        for subpackage in subpackages:
+            for backend in backends:
+                for level in levels:
+                    pytest_args = [
+                        "--collect-only",
+                        "-n0",
+                        f"--backend={backend}",
+                        f"--level={level}",
+                    ]
+                    if subset != "datatest":
+                        pytest_args.append("--datatest-skip")
+                    cells.append(
+                        _MatrixCell(
+                            job_name=f"test_model_{subset}_aarch64",
+                            extends=".test_model_aarch64",
+                            variables={"MODEL_SUBSET": subset},
+                            matrix={
+                                "MODEL_SUBPACKAGE": subpackage,
+                                "BACKEND": backend,
+                                "LEVEL": level,
+                            },
+                            session=_nox_session_name(
+                                "test_model", f"selection='{subset}', subpackage='{subpackage}'"
+                            ),
+                            pytest_args=pytest_args,
+                        )
+                    )
+
+    return cells
+
+
+def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
+    """Build collection cells for the tools/bindings test session."""
+    cells: list[_MatrixCell] = []
+    for selection in selections:
+        pytest_args = ["--collect-only", "-n0"]
+        if selection != "datatest":
+            pytest_args.append("--datatest-skip")
+        cells.append(
+            _MatrixCell(
+                job_name="test_tools_aarch64",
+                extends=".test_tools_aarch64",
+                variables={},
+                matrix={"SELECTION": selection},
+                session=_nox_session_name("test_tools_and_bindings", f"selection='{selection}'"),
+                pytest_args=pytest_args,
+            )
+        )
+    return cells
+
+
+def _model_mpi_cells(
+    subpackages: list[str],
+    backends: list[str],
+    levels: list[str],
+    subsets: list[str],
+) -> list[_MatrixCell]:
+    """Build collection cells for the MPI model test sessions."""
+    cells: list[_MatrixCell] = []
+    for subset in subsets:
+        if not subpackages or not backends or not levels:
+            continue
+        for subpackage in subpackages:
+            for backend in backends:
+                for level in levels:
+                    pytest_args = [
+                        "--collect-only",
+                        "-n0",
+                        f"--backend={backend}",
+                        f"--level={level}",
+                    ]
+                    if subset != "datatest":
+                        pytest_args.append("--datatest-skip")
+                    cells.append(
+                        _MatrixCell(
+                            job_name=f"test_model_mpi_{subset}_aarch64",
+                            extends=".test_model_mpi_aarch64",
+                            variables={"SELECTION": subset},
+                            matrix={
+                                "MODEL_MPI_SUBPACKAGE": subpackage,
+                                "BACKEND": backend,
+                                "LEVEL": level,
+                            },
+                            session=_nox_session_name(
+                                "test_model_mpi", f"selection='{subset}', subpackage='{subpackage}'"
+                            ),
+                            pytest_args=pytest_args,
+                        )
+                    )
+    return cells
+
+
+def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
+    """Run collection for every cell in parallel and return cells with tests.
+
+    Cells where collection fails, times out, or cannot be parsed are kept
+    conservatively.
+    """
+    if os.environ.get("ICON4PY_CI_SKIP_COLLECTION"):
+        return cells
+
+    if not cells:
+        return cells
+
+    env = _collection_env()
+    kept: list[_MatrixCell] = []
+
+    with ThreadPoolExecutor(max_workers=_COLLECTION_MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(
+                _run_nox_collection,
+                cell.session,
+                cell.pytest_args,
+                env,
+                _COLLECTION_TIMEOUT_SECONDS,
+            ): cell
+            for cell in cells
+        }
+        try:
+            for future in as_completed(futures, timeout=_COLLECTION_TOTAL_TIMEOUT_SECONDS):
+                cell = futures[future]
+                try:
+                    count = future.result(timeout=0)
+                except Exception:
+                    count = None
+                if count is None or count > 0:
+                    kept.append(cell)
+        except TimeoutError:
+            # Total timeout expired: keep all remaining pending cells.
+            for future, cell in futures.items():
+                if not future.done():
+                    future.cancel()
+                if not future.done() or future.cancelled():
+                    kept.append(cell)
+
+    return kept
+
+
+def _build_pipeline(cells: list[_MatrixCell]) -> dict:
+    """Build the child pipeline dict from the surviving matrix cells."""
+    pipeline: dict = {"include": [{"local": "ci/base.yml"}]}
+    jobs: dict[str, dict] = {}
+    for cell in cells:
+        job = jobs.setdefault(
+            cell.job_name,
+            {
+                "extends": cell.extends,
+                "variables": dict(cell.variables),
+                "parallel": {"matrix": []},
+            },
+        )
+        job["parallel"]["matrix"].append(dict(cell.matrix))
+
+    pipeline.update(jobs)
+
+    return pipeline
+
+
 def _generate_child_pipeline(
     *,
     sessions: str | None = None,
@@ -152,9 +450,8 @@ def _generate_child_pipeline(
     """Return the child pipeline YAML as a string.
 
     Each subset is expanded into a separate job definition with a
-    ``parallel:matrix`` for the remaining dimensions.  This keeps
-    every matrix under GitLab's 200-instance limit while producing a
-    clean, grouped pipeline view.
+    ``parallel:matrix`` for the remaining dimensions. Matrix entries that
+    collect zero tests are omitted.
     """
     requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
     _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
@@ -199,84 +496,39 @@ def _generate_child_pipeline(
     )
     _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
-    pipeline: dict = {
-        "include": [{"local": "ci/base.yml"}],
-    }
+    cells: list[_MatrixCell] = []
 
     if "model" in requested_sessions:
-        filtered_subpackages = _intersect(requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
-        filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
-        filtered_subsets = _intersect(requested_model_subsets, ALL_MODEL_SUBSETS)
-        filtered_grids = _intersect(requested_grids, ALL_GRIDS)
-        filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-
-        # Stencils subset uses GRID dimension
-        if "stencils" in filtered_subsets and filtered_grids:
-            pipeline["test_model_stencils_aarch64"] = {
-                "extends": ".test_model_aarch64",
-                "variables": {"MODEL_SUBSET": "stencils"},
-                "parallel": {
-                    "matrix": [
-                        {
-                            "MODEL_SUBPACKAGE": filtered_subpackages,
-                            "BACKEND": filtered_backends,
-                            "GRID": filtered_grids,
-                        }
-                    ]
-                },
-            }
-
-        # Datatest and basic subsets need LEVEL dimension
-        for subset in ("datatest", "basic"):
-            if subset in filtered_subsets and filtered_levels:
-                pipeline[f"test_model_{subset}_aarch64"] = {
-                    "extends": ".test_model_aarch64",
-                    "variables": {"MODEL_SUBSET": subset},
-                    "parallel": {
-                        "matrix": [
-                            {
-                                "MODEL_SUBPACKAGE": filtered_subpackages,
-                                "BACKEND": filtered_backends,
-                                "LEVEL": filtered_levels,
-                            }
-                        ]
-                    },
-                }
+        cells.extend(
+            _model_cells(
+                subpackages=_intersect(requested_model_subpackages, ALL_MODEL_SUBPACKAGES),
+                backends=_intersect(requested_backends, ALL_BACKENDS),
+                grids=_intersect(requested_grids, ALL_GRIDS),
+                levels=_intersect(requested_levels, ALL_LEVELS),
+                subsets=_intersect(requested_model_subsets, ALL_MODEL_SUBSETS),
+            )
+        )
 
     if "tools" in requested_sessions:
-        filtered_tools_subsets = _intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS)
-        if filtered_tools_subsets:
-            pipeline["test_tools_aarch64"] = {
-                "extends": ".test_tools_aarch64",
-                "parallel": {
-                    "matrix": [
-                        {"SELECTION": filtered_tools_subsets},
-                    ]
-                },
-            }
+        cells.extend(
+            _tools_cells(
+                selections=_intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS),
+            )
+        )
 
     if "model_mpi" in requested_sessions:
-        filtered_subpackages = _intersect(
-            requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
+        cells.extend(
+            _model_mpi_cells(
+                subpackages=_intersect(requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES),
+                backends=_intersect(requested_backends, ALL_BACKENDS),
+                levels=_intersect(requested_levels, ALL_LEVELS),
+                subsets=_intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS),
+            )
         )
-        filtered_backends = _intersect(requested_backends, ALL_BACKENDS)
-        filtered_levels = _intersect(requested_levels, ALL_LEVELS)
-        filtered_subsets = _intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
-        for subset in filtered_subsets:
-            if filtered_subpackages and filtered_backends and filtered_levels:
-                pipeline[f"test_model_mpi_{subset}_aarch64"] = {
-                    "extends": ".test_model_mpi_aarch64",
-                    "variables": {"SELECTION": subset},
-                    "parallel": {
-                        "matrix": [
-                            {
-                                "MODEL_MPI_SUBPACKAGE": filtered_subpackages,
-                                "BACKEND": filtered_backends,
-                                "LEVEL": filtered_levels,
-                            }
-                        ]
-                    },
-                }
+
+    cells = _collect_cells(cells)
+
+    pipeline = _build_pipeline(cells)
 
     test_jobs = [k for k in pipeline if k != "include"]
     if not test_jobs:
