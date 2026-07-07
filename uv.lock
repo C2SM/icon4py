@@ -2847,8 +2847,10 @@ requires-dist = [
 dependencies = [
   {name = "devtools"},
   {name = "gt4py"},
+  {name = "icon4py-atmosphere-advection"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
+  {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "icon4py-testing"},
   {name = "packaging"},
@@ -2863,8 +2865,10 @@ version = "0.2.0"
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
   {name = "gt4py", specifier = "==1.1.11"},
+  {name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
+  {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "packaging", specifier = ">=20.0"},

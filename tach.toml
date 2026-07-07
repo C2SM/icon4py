@@ -58,7 +58,13 @@ depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.standalone_driver"
-depends_on = [{ path = "icon4py.model.common" }]
+depends_on = [
+    { path = "icon4py.model.atmosphere.advection" },
+    { path = "icon4py.model.atmosphere.diffusion" },
+    { path = "icon4py.model.atmosphere.dycore" },
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics" },
+    { path = "icon4py.model.common" },
+]
 
 [[modules]]
 path = "icon4py.model.common"
@@ -70,11 +76,25 @@ depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
     { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
+    # debt: serialbox-based initialization lives in testing
+    # (see docs/development/architecture_refactoring_proposal.md, Phases 1-2)
+    { path = "icon4py.model.testing" },
 ]
 
+# debt: the component/driver edges below exist because testing mixes generic test
+# infrastructure with the ICON-reference experiment registry (datatest_utils.py,
+# definitions.py). They are removed by extracting icon4py-validation
+# (see docs/development/architecture_refactoring_proposal.md, Phase 1).
 [[modules]]
 path = "icon4py.model.testing"
-depends_on = [{ path = "icon4py.model.common" }]
+depends_on = [
+    { path = "icon4py.model.atmosphere.advection" },
+    { path = "icon4py.model.atmosphere.diffusion" },
+    { path = "icon4py.model.atmosphere.dycore" },
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics" },
+    { path = "icon4py.model.common" },
+    { path = "icon4py.model.standalone_driver" },
+]
 
 [[modules]]
 path = "icon4py.tools"
