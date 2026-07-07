@@ -15,6 +15,9 @@ import datetime
 import enum
 from typing import TYPE_CHECKING, Any
 
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface.process_time_control import (
+    ProcessTimeControl,
+)
 from icon4py.model.common.components.components import Component
 from icon4py.model.common.components.physics_state import PhysicsState
 
@@ -43,46 +46,6 @@ class ForcingMode(enum.IntEnum):
     APPLY = 1
 
 
-# TODO (Yilu): this can belong to a standalone file (with the exception of ForcingMode.APPLY)?
-@dataclasses.dataclass(frozen=True)
-class ProcessTimeControl:
-    """icon4py analogue of the per-process fields in AES `aes_phy_tc`.
-
-    Mirrors `mo_aes_phy_main.f90` semantics, with one deviation: where AES
-    disables a process via `dt_xxx == 0`, we use an explicit `enable_process`
-    flag
-      - `enable_process`: explicit on/off switch for the process.
-      - `interval`   (`dt_xxx`): firing interval; must be > 0 when enabled.
-      - `start_date` (`sd_xxx`), `end_date` (`ed_xxx`): half-open
-        `[start, end)` window during which the process exists at all.
-      - `forcing_mode` (`fc_xxx`): DIAGNOSTIC (compute only) or APPLY.
-    """
-
-    interval: datetime.timedelta
-    start_date: datetime.datetime
-    end_date: datetime.datetime
-    enable_process: bool = True
-    forcing_mode: ForcingMode = ForcingMode.APPLY
-
-    def is_in_window(self, simulation_current_datetime: datetime.datetime) -> bool:
-        return self.start_date <= simulation_current_datetime < self.end_date
-
-    def is_active(self, simulation_current_datetime: datetime.datetime) -> bool:
-        """True if the process's mtime-event fires on the given step.
-
-        Equivalent to AES `isCurrentEventActive(ev_xxx, datetime)`. Fires only
-        when the elapsed time is an exact integer multiple of the interval.
-        """
-        if (
-            not self.enable_process
-            or self.interval <= datetime.timedelta(0)
-            or simulation_current_datetime < self.start_date
-        ):
-            return False
-        elapsed = simulation_current_datetime - self.start_date
-        return elapsed % self.interval == datetime.timedelta(0)
-
-
 @dataclasses.dataclass
 class PhysicsProcess:
     """A registered physics process: a component, its state adapter, and its time control.
@@ -91,12 +54,17 @@ class PhysicsProcess:
     implements the generic ``Component`` protocol, which is how the driver types it.
     The state adapter is process-specific (it translates the prognostic state to/from
     *this* component's contract), so it is bundled per process rather than shared.
+
+    ``forcing_mode`` is the per-process AES ``fc_xxx`` analogue (DIAGNOSTIC vs APPLY);
+    it lives here rather than on ``ProcessTimeControl`` because it is a property of the
+    process, not of its firing schedule.
     """
 
     name: str
     component: Component
     state: PhysicsState
     time_control: ProcessTimeControl
+    forcing_mode: ForcingMode = ForcingMode.APPLY
 
 
 class PhysicsDriver:
