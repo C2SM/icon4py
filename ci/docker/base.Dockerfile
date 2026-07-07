@@ -21,6 +21,7 @@ RUN apt-get update && \
         libffi-dev \
         libfuse-dev \
         libhdf5-dev \
+        libhwloc-dev \
         libjson-c-dev \
         liblzma-dev \
         libncurses5-dev \
@@ -201,6 +202,21 @@ RUN set -eux; \
     make install CUDA_HOME="${CUDA_PATH}" PREFIX=/usr; \
     cd /; \
     rm -rf "/tmp/nccl-${nccl_version}" /tmp/nccl.tar.gz; \
+    ldconfig
+
+ARG aws_ofi_nccl_version=1.20.0
+RUN set -eux; \
+    curl -fsSL "https://github.com/aws/aws-ofi-nccl/releases/download/v${aws_ofi_nccl_version}/aws-ofi-nccl-${aws_ofi_nccl_version}.tar.gz" -o /tmp/aws-ofi-nccl.tar.gz; \
+    tar -C /tmp -xzf /tmp/aws-ofi-nccl.tar.gz; \
+    cd "/tmp/aws-ofi-nccl-${aws_ofi_nccl_version}"; \
+    ./configure \
+      --prefix=/usr \
+      --with-libfabric=/usr/local \
+      --with-cuda=${CUDA_PATH} \
+      --disable-tests; \
+    make -j"$(nproc)" install; \
+    cd /; \
+    rm -rf "/tmp/aws-ofi-nccl-${aws_ofi_nccl_version}" /tmp/aws-ofi-nccl.tar.gz; \
     ldconfig
 
 # Install uv: https://docs.astral.sh/uv/guides/integration/docker
