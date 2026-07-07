@@ -607,8 +607,10 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
+        geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
     )
@@ -687,6 +689,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
+        global_reductions=icon4py_driver.global_reductions,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=icon4py_driver.grid, allocator=allocator

@@ -53,6 +53,7 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
+        test_defs.Experiments.EXCLAIM_APE_AES,
     ],
 )
 @pytest.mark.mpi
@@ -130,6 +131,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=single_rank_prognostic,
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
+        global_reductions=single_rank_icon4py_driver.global_reductions,
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -176,6 +178,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=multi_rank_prognostic,
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
+        global_reductions=multi_rank_icon4py_driver.global_reductions,
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
@@ -195,6 +198,16 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         (name, single_rank_ds.prognostics.current, multi_rank_ds.prognostics.current)
         for name in ("vn", "w", "exner", "theta_v", "rho")
     ] + [(name, single_rank_ds.diagnostic, multi_rank_ds.diagnostic) for name in ("u", "v")]
+
+    # Moist experiments (e.g. APE) initialize the water-vapour tracer
+    if single_rank_ds.prognostics.current.tracer.qv is not None:
+        fields_to_check.append(
+            (
+                "qv",
+                single_rank_ds.prognostics.current.tracer,
+                multi_rank_ds.prognostics.current.tracer,
+            )
+        )
 
     for field_name, serial_source, local_source in fields_to_check:
         print(f"verifying field {field_name}")

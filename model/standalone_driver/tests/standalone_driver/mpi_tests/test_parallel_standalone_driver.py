@@ -12,9 +12,9 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.common.time import EndOfSimulation, NumTimeSteps
+from icon4py.model.common.time import EndOfSimulation, NumTimeSteps, RelativeTime
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -40,34 +40,59 @@ _log = logging.getLogger(__file__)
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "experiment_description, end_of_simulation",
     [
-        (test_defs.Experiments.JW, NumTimeSteps(1)),
+        pytest.param(
+            test_defs.Experiments.JW,
+            NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration",
+        ),
+        pytest.param(
+            test_defs.Experiments.JW,
+            RelativeTime(days=7),
+            marks=[pytest.mark.level("validation")],
+            id="validation",
+        ),
     ],
 )
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend_like: model_backends.BackendLike,
+    backend: gtx_typing.Backend,
+) -> None:
+    _run_standalone_driver_compare_single_multi_rank(
+        experiment_description=experiment_description,
+        end_of_simulation=end_of_simulation,
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend=backend,
+    )
+
+
+def _run_standalone_driver_compare_single_multi_rank(
+    experiment_description: test_defs.ExperimentDescription,
+    end_of_simulation: driver_config.EndOfSimulation,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
-        model_options.customize_backend(program=None, backend=backend_like)
-    ):
+    if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
         atol = 1e-13
         rtol = 1e-14
     else:
         atol = 1e-10
         rtol = 0.0
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"

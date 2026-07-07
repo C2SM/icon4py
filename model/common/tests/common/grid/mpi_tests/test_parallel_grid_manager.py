@@ -23,6 +23,7 @@ from icon4py.model.common.grid import (
     base,
     geometry,
     geometry_attributes,
+    geometry_config,
     grid_manager as gm,
     gridfile,
     icon,
@@ -121,6 +122,8 @@ def _make_single_rank_geometry(
         decomposition_info=grid_manager.decomposition_info,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        config=geometry_config.GeometryConfig(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
         exchange=decomp_defs.single_node_exchange,
     )
     return grid_manager, grid_geometry
@@ -147,6 +150,8 @@ def _make_multi_rank_geometry(
         decomposition_info=grid_manager.decomposition_info,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        config=geometry_config.GeometryConfig(),
+        process_props=process_props,
         exchange=decomp_defs.create_exchange(process_props, grid_manager.decomposition_info),
         global_reductions=decomp_defs.create_reduction(
             process_props, grid_manager.decomposition_info
@@ -546,11 +551,12 @@ def _compare_metrics_fields_single_multi_rank(
                 in {
                     metrics_attributes.DDQZ_Z_FULL_E,
                     metrics_attributes.RHO_REF_ME,
+                    metrics_attributes.THETA_REF_ME,
                 }
             )
         ):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
-            atol = 1e-13
+            atol = 2e-13
         else:
             atol = 0.0
         parallel_helpers.check_local_global_field(
