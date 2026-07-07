@@ -240,6 +240,7 @@ class DriverConfig:
     def from_fortran_dict(
         cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
     ) -> DriverConfig:
+        # TODO(ricoh): merge the dictionaries outside and put this method in a base class
         return common_conf_opt.construct_config_from_icon(
             config_cls=cls,
             icon_config={"master_cfg": master_dict, "model_cfg": atm_dict},
