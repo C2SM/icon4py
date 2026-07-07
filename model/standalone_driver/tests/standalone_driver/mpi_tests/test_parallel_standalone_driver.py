@@ -48,7 +48,7 @@ _log = logging.getLogger(__file__)
             test_defs.Experiments.JW,
             driver_config.NumTimeSteps(1),
             marks=[pytest.mark.level("integration")],
-            id="integration",
+            id="integration-jw",
         ),
         pytest.param(
             test_defs.Experiments.GAUSS3D,
@@ -66,7 +66,7 @@ _log = logging.getLogger(__file__)
             test_defs.Experiments.JW,
             driver_config.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
-            id="validation",
+            id="validation-jw",
         ),
     ],
 )
