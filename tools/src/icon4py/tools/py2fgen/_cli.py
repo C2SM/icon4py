@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import importlib
 import logging
 import pathlib
 import sysconfig
@@ -49,9 +50,9 @@ logger = _utils.setup_logger("py2fgen", log_level=logging.INFO)
     "--skip-compilation",
     is_flag=True,
     default=False,
-    help="Generate source files (.py, .f90, .c, .h) without compiling the shared library.",
+    help="Generate source files (.py, .f90, .c) without compiling the shared library.",
 )
-def main(
+def main(  # noqa: PLR0917 [too-many-positional-arguments]
     module_import_path: str,
     functions: list[str],
     library_name: str,
@@ -62,7 +63,9 @@ def main(
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
-    plugin = _generator.get_cffi_description(module_import_path, functions, library_name)
+    module = importlib.import_module(module_import_path)
+    callables = [getattr(module, name) for name in functions]
+    plugin = _generator.get_cffi_description(callables, library_name)
 
     logger.info("Generating C header...")
     c_header = _codegen.generate_c_header(plugin)
@@ -79,30 +82,24 @@ def main(
         (python_wrapper, f"{plugin.library_name}.py", "Python wrapper"),
         (f90_interface, f"{plugin.library_name}.f90", "Fortran interface"),
     ]:
-        changed = _utils.write_file_if_changed(content, output_path, fname, force=regenerate)
+        changed = _utils.write_if_changed(content, output_path / fname, force=regenerate)
         logger.info("%s %s.", label, "changed" if changed else "is up to date")
         any_changed |= changed
 
-    c_source_exists = (output_path / f"{plugin.library_name}.c").exists()
-    header_exists = (output_path / f"{plugin.library_name}.h").exists()
-    shared_lib_exists = (
-        output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
-    ).exists()
-
     if skip_compilation:
-        if any_changed or not c_source_exists or not header_exists:
-            logger.info("Generating C source and header files...")
+        c_source_exists = (output_path / f"{plugin.library_name}.c").exists()
+        if any_changed or not c_source_exists:
+            logger.info("Generating C source file...")
             _generator.generate_cffi_source(
-                plugin.library_name, c_header, python_wrapper, output_path, rpath
+                plugin.library_name, c_header, python_wrapper, output_path
             )
         else:
             logger.info("All generated files are up to date. Skipping C code generation.")
     else:
-        compilation_outputs_exist = header_exists and shared_lib_exists
-        if not compilation_outputs_exist:
-            logger.info("Compilation outputs missing.")
-
-        if any_changed or not compilation_outputs_exist:
+        shared_lib_exists = (
+            output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
+        ).exists()
+        if any_changed or not shared_lib_exists:
             logger.info("Compiling CFFI dynamic library...")
             _generator.generate_and_compile_cffi_plugin(
                 plugin.library_name, c_header, python_wrapper, output_path, rpath

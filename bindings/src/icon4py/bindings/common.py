@@ -183,6 +183,7 @@ def get_nproma(tables: Iterable[NDArray]) -> int:
 
 
 def construct_icon_grid(
+    *,
     cell_starts: np.ndarray,
     cell_ends: np.ndarray,
     vertex_starts: np.ndarray,
@@ -285,11 +286,12 @@ def construct_icon_grid(
         neighbor_tables=neighbor_tables,
         start_index=start_index,
         end_index=end_index,
-        global_properties=icon.GlobalGridParams(),
+        grid_params=icon.GridParams(),
     )
 
 
 def construct_decomposition(
+    *,
     c_glb_index: np.ndarray,
     e_glb_index: np.ndarray,
     v_glb_index: np.ndarray,

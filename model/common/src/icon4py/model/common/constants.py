@@ -6,10 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import enum
 import sys
 from typing import Final
-
-from gt4py.eve import utils as eve_utils
 
 from icon4py.model.common import type_alias as ta
 
@@ -73,6 +72,29 @@ LATENT_HEAT_FOR_FUSION: Final[ta.wpfloat] = (
 #: Triple point of water at 611hPa [K]
 WATER_TRIPLE_POINT_TEMPERATURE: Final[ta.wpfloat] = 273.16
 
+# Tetens formula constants for the saturation vapour pressure, called c1es, c3les,
+# c4les, c3ies and c4ies in ICON (mo_lookup_tables_constants.f90).
+# e_sat = TETENS_P0 * exp(A * (T - tmelt) / (T - B)), with the *_WATER coefficients
+# over liquid water and the *_ICE coefficients over ice.
+TETENS_P0: Final[ta.wpfloat] = 610.78
+TETENS_A_WATER: Final[ta.wpfloat] = 17.269
+TETENS_B_WATER: Final[ta.wpfloat] = 35.86
+TETENS_A_ICE: Final[ta.wpfloat] = 21.875
+TETENS_B_ICE: Final[ta.wpfloat] = 7.66
+
+# Minimum temperature for saturation-over-ice calculations [K]. Used to clamp T
+# in the Tetens ice branch (mo_thdyn_functions.f90).
+MINIMUM_TEMPERATURE_ICE_SATURATION: Final[ta.wpfloat] = 180.0
+
+# Reference pressure for the APE/JW relative-humidity profile [Pa].
+RELATIVE_HUMIDITY_REFERENCE_PRESSURE: Final[ta.wpfloat] = 200000.0
+
+# Pressure threshold below which the stratospheric specific-humidity cap applies [Pa].
+STRATOSPHERE_PRESSURE_THRESHOLD: Final[ta.wpfloat] = 10000.0
+
+# Stratospheric specific-humidity cap [kg/kg].
+STRATOSPHERIC_QV_CAP: Final[ta.wpfloat] = 5.0e-6
+
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
 TVMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
@@ -92,8 +114,8 @@ RD_O_P0REF: Final[ta.wpfloat] = RD / P0REF
 SEA_LEVEL_PRESSURE: Final[ta.wpfloat] = 101325.0
 P0SL_BG: Final[ta.wpfloat] = SEA_LEVEL_PRESSURE
 
-# average earth radius in [m]
-EARTH_RADIUS: Final[float] = 6.371229e6
+#: average earth radius in [m]
+EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 #: Earth angular velocity [rad/s]
 EARTH_ANGULAR_VELOCITY: Final[ta.wpfloat] = 7.29212e-5
@@ -118,11 +140,8 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 #: default dynamics to physics time step ratio
 DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
 
-#: average earth radius in [m]
-EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
-
-class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
+class PhysicsConstants(ta.wpfloat, enum.Enum):
     """
     Constants used in gt4py stencils.
     """
@@ -153,7 +172,7 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     eps = DBL_EPS
 
 
-class RayleighType(eve_utils.FrozenNamespace[int]):
+class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
     #: Klemp (2008) type Rayleigh damping

@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
-from types import ModuleType
 from typing import Final
 
-import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
@@ -178,7 +176,6 @@ def compute_domain_bounds(
     dim: gtx.Dimension,
     refinement_fields: dict[gtx.Dimension, gtx.Field],
     decomposition_info: decomposition.DecompositionInfo,
-    array_ns: ModuleType = np,
 ) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
     """
     Compute the domain bounds (start_index, end_index) based on a grid Domain.
@@ -201,15 +198,13 @@ def compute_domain_bounds(
         dim: Dimension one of `CellDim`. `VertexDim`, `EdgeDim`
         refinement_fields: dict[Dimension, ndarray] containing the refinement_control values for each dimension
         decomposition_info: DecompositionInfo needed to determine the HALO `Zone`s
-        array_ns: numpy or cupy
 
     """
-    assert (
-        dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-    ), f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
-    refinement_ctrl = convert_to_non_nested_refinement_values(
-        refinement_fields[dim].ndarray, dim, array_ns
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, (
+        f"Dimension must be one of {list(dims.horizontal_dims())}"
     )
+    refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
+    array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)
     halo_level_1 = decomposition_info.halo_level_mask(
         dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL
@@ -230,13 +225,13 @@ def compute_domain_bounds(
         h_grid.domain(dim)(h_grid.Zone.HALO)
     )
     not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
-    halo_region_1 = array_ns.where(halo_level_1 & not_lateral_boundary_1)[0]
+    halo_region_1 = array_ns.nonzero(halo_level_1 & not_lateral_boundary_1)[0]
     not_lateral_boundary_2 = (refinement_ctrl < 1) | (
         refinement_ctrl
         > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
     )
 
-    halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
+    halo_region_2 = array_ns.nonzero(halo_level_2 & not_lateral_boundary_2)[0]
     start_halo_2, end_halo_2 = (
         (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
         if halo_region_2.size > 0
@@ -262,7 +257,7 @@ def compute_domain_bounds(
             if domain.zone.is_lateral_boundary()
             else _LAST_BOUNDARY[dim].level + domain.zone.level
         )
-        found = array_ns.where((refinement_ctrl == value) & owned)[0]
+        found = array_ns.nonzero((refinement_ctrl == value) & owned)[0]
         start_index, end_index = (
             (array_ns.min(found).item(), array_ns.max(found).item() + 1)
             if found.size > 0
@@ -290,15 +285,14 @@ def get_nudging_refinement_value(dim: gtx.Dimension) -> int:
     return _LAST_BOUNDARY[dim].level + _LAST_NUDGING[dim].level
 
 
-def is_unordered_field(
-    field: data_alloc.NDArray, dim: gtx.Dimension, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
+def is_unordered_field(field: data_alloc.NDArray, dim: gtx.Dimension) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
+    array_ns = data_alloc.array_namespace(field)
     return array_ns.isin(field, _UNORDERED[dim])
 
 
 def convert_to_non_nested_refinement_values(
-    field: data_alloc.NDArray, dim: gtx.Dimension, array_ns: ModuleType = np
+    field: data_alloc.NDArray, dim: gtx.Dimension
 ) -> data_alloc.NDArray:
     """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.
@@ -306,12 +300,12 @@ def convert_to_non_nested_refinement_values(
     The nested values are used for example in the radiation grids.
     """
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
-    return array_ns.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
+    array_ns = data_alloc.array_namespace(field)
+    return array_ns.where(field == _UNORDERED[dim][1], 0, array_ns.where(field < 0, -field, field))
 
 
 def is_limited_area_grid(
     refinement_field: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> bool:
     """Check if the grid is a local area grid.
 
@@ -326,4 +320,4 @@ def is_limited_area_grid(
     ... )
     >>> assert is_limited_area_grid(non_nested_edge_refinement)
     """
-    return array_ns.any(refinement_field > 0).item()
+    return (refinement_field > 0).any().item()

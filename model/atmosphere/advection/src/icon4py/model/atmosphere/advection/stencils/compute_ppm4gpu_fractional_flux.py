@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, astype, floor, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -32,15 +32,15 @@ def _sum_neighbor_contributions(
     js_eq4 = js == 4.0
 
     p_cc_p0 = where(mask1 & js_eq0, p_cc, 0.0)
-    p_cc_p1 = where(mask1 & js_eq1, p_cc(Koff[1]), 0.0)
-    p_cc_p2 = where(mask1 & js_eq2, p_cc(Koff[2]), 0.0)
-    p_cc_p3 = where(mask1 & js_eq3, p_cc(Koff[3]), 0.0)
-    p_cc_p4 = where(mask1 & js_eq4, p_cc(Koff[4]), 0.0)
-    p_cc_m0 = where(mask2 & js_eq0, p_cc(Koff[-1]), 0.0)
-    p_cc_m1 = where(mask2 & js_eq1, p_cc(Koff[-2]), 0.0)
-    p_cc_m2 = where(mask2 & js_eq2, p_cc(Koff[-3]), 0.0)
-    p_cc_m3 = where(mask2 & js_eq3, p_cc(Koff[-4]), 0.0)
-    p_cc_m4 = where(mask2 & js_eq4, p_cc(Koff[-5]), 0.0)
+    p_cc_p1 = where(mask1 & js_eq1, p_cc(KDim + 1), 0.0)
+    p_cc_p2 = where(mask1 & js_eq2, p_cc(KDim + 2), 0.0)
+    p_cc_p3 = where(mask1 & js_eq3, p_cc(KDim + 3), 0.0)
+    p_cc_p4 = where(mask1 & js_eq4, p_cc(KDim + 4), 0.0)
+    p_cc_m0 = where(mask2 & js_eq0, p_cc(KDim - 1), 0.0)
+    p_cc_m1 = where(mask2 & js_eq1, p_cc(KDim - 2), 0.0)
+    p_cc_m2 = where(mask2 & js_eq2, p_cc(KDim - 3), 0.0)
+    p_cc_m3 = where(mask2 & js_eq3, p_cc(KDim - 4), 0.0)
+    p_cc_m4 = where(mask2 & js_eq4, p_cc(KDim - 5), 0.0)
 
     p_cc_jks = (
         p_cc_p0
@@ -81,10 +81,12 @@ def _compute_ppm4gpu_fractional_flux(
 
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
 
-    p_cc_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cc)
-    p_cellmass_now_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cellmass_now)
-    z_delta_q_jks = _sum_neighbor_contributions(mask1, mask2, js, z_delta_q)
-    z_a1_jks = _sum_neighbor_contributions(mask1, mask2, js, z_a1)
+    p_cc_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=p_cc)
+    p_cellmass_now_jks = _sum_neighbor_contributions(
+        mask1=mask1, mask2=mask2, js=js, p_cc=p_cellmass_now
+    )
+    z_delta_q_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=z_delta_q)
+    z_a1_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=z_a1)
 
     z_q_int = (
         p_cc_jks
@@ -116,14 +118,14 @@ def compute_ppm4gpu_fractional_flux(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_fractional_flux(
-        p_cc,
-        p_cellmass_now,
-        z_cfl,
-        z_delta_q,
-        z_a1,
-        k,
-        slev,
-        p_dtime,
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
+        z_cfl=z_cfl,
+        z_delta_q=z_delta_q,
+        z_a1=z_a1,
+        k=k,
+        slev=slev,
+        p_dtime=p_dtime,
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

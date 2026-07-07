@@ -12,6 +12,7 @@ import pytest
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
@@ -21,7 +22,6 @@ from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
-    exchange_utils,
     grid_utils,
     grid_utils as gridtest_utils,
     serialbox as sb,
@@ -32,6 +32,7 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -41,7 +42,6 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
-    construct_config,
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
     construct_interpolation_state,
@@ -66,7 +66,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
@@ -108,7 +108,7 @@ from ..utils import (
         ),
     ],
 )
-def test_advection_run_single_step(
+def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,
@@ -135,14 +135,15 @@ def test_advection_run_single_step(
         pytest.xfail(
             "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
-    config = construct_config(
+    config = advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
         vertical_advection_limiter=vertical_advection_limiter,
     )
+
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     least_squares_coeffs = compute_lsq_coeffs(
         cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
         cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
@@ -150,8 +151,8 @@ def test_advection_run_single_step(
         cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        domain_length=geometry.grid.global_properties.domain_length,
-        domain_height=geometry.grid.global_properties.domain_height,
+        domain_length=geometry.grid.grid_params.domain_length,
+        domain_height=geometry.grid.grid_params.domain_height,
         grid_sphere_radius=constants.EARTH_RADIUS,
         lsq_dim_unk=2,
         lsq_dim_c=3,
@@ -161,8 +162,8 @@ def test_advection_run_single_step(
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.geometry_type,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        geometry_type=icon_grid.grid_params.geometry_type,
+        exchange=decomposition.single_node_exchange,
     )
 
     least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
@@ -181,6 +182,7 @@ def test_advection_run_single_step(
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     diagnostic_state = construct_diagnostic_init_state(
@@ -202,7 +204,10 @@ def test_advection_run_single_step(
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid, advection_exit_savepoint, ntracer, backend=backend
+        icon_grid=icon_grid,
+        savepoint=advection_exit_savepoint,
+        ntracer=ntracer,
+        backend=backend,
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
@@ -243,34 +248,34 @@ def test_compute_lsq_coeffs(
     min_rlcell_int = gm.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
     start_idx = gm.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
-    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
     cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
-    domain_length = gm.grid.global_properties.domain_length
-    domain_height = gm.grid.global_properties.domain_height
+    domain_length = gm.grid.grid_params.domain_length
+    domain_height = gm.grid.grid_params.domain_height
     lsq_dim_stencil = 3
 
     coordinates = gm.coordinates
     cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
     cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
     lsq_pseudoinv = compute_lsq_coeffs(
-        cell_center_x,
-        cell_center_y,
-        cell_lat,
-        cell_lon,
-        c2e2c,
-        cell_owner_mask,
-        domain_length,
-        domain_height,
-        grid_sphere_radius,
-        lsq_dim_unk,
-        lsq_dim_c,
-        lsq_wgt_exp,
-        lsq_dim_stencil,
-        start_idx,
-        min_rlcell_int,
-        icon_grid.geometry_type,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        cell_lat=cell_lat,
+        cell_lon=cell_lon,
+        c2e2c=c2e2c,
+        cell_owner_mask=cell_owner_mask,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        grid_sphere_radius=grid_sphere_radius,
+        lsq_dim_unk=lsq_dim_unk,
+        lsq_dim_c=lsq_dim_c,
+        lsq_wgt_exp=lsq_wgt_exp,
+        lsq_dim_stencil=lsq_dim_stencil,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        geometry_type=icon_grid.grid_params.geometry_type,
+        exchange=decomposition.single_node_exchange,
     )
 
     assert test_helpers.dallclose(

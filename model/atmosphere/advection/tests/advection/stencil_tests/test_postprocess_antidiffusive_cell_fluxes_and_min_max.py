@@ -27,6 +27,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         refin_ctrl: np.ndarray,
         p_cc: np.ndarray,
         z_tracer_new_low: np.ndarray,
@@ -38,8 +39,8 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
     ) -> dict:
         refin_ctrl = np.expand_dims(refin_ctrl, axis=1)
         condition = np.logical_or(
-            np.equal(refin_ctrl, lo_bound * np.ones(refin_ctrl.shape, dtype=gtx.int32)),
-            np.equal(refin_ctrl, hi_bound * np.ones(refin_ctrl.shape, dtype=gtx.int32)),
+            np.equal(refin_ctrl, np.full(refin_ctrl.shape, lo_bound, dtype=gtx.int32)),
+            np.equal(refin_ctrl, np.full(refin_ctrl.shape, hi_bound, dtype=gtx.int32)),
         )
         z_tracer_new_out = np.where(
             condition,

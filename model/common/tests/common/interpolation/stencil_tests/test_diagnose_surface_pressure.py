@@ -27,6 +27,7 @@ class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         exner: np.ndarray,
         virtual_temperature: np.ndarray,
         ddqz_z_full: np.ndarray,

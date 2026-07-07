@@ -23,12 +23,13 @@ import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 EDGE: Final[str] = "edge"
 VERTEX: Final[str] = "vertex"
 CELL: Final[str] = "cell"
-MODEL_INTERFACE_LEVEL: Final[str] = "interface_level"
+MODEL_HALF_LEVEL: Final[str] = "half_level"
 MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
@@ -89,6 +90,7 @@ class NETCDFWriter:
 
     def __init__(
         self,
+        *,
         file_name: pathlib.Path | str,
         vertical: v_grid.VerticalGrid,
         horizontal: base.HorizontalGridSize,
@@ -131,7 +133,7 @@ class NETCDFWriter:
         ## create dimensions all except time are fixed
         self.dataset.createDimension(TIME, None)
         self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
-        self.dataset.createDimension(MODEL_INTERFACE_LEVEL, self.num_interfaces)
+        self.dataset.createDimension(MODEL_HALF_LEVEL, self.num_interfaces)
         self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
         self.dataset.createDimension(VERTEX, self._horizontal_size.num_vertices)
         self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
@@ -151,18 +153,16 @@ class NETCDFWriter:
         levels.standard_name = cf_utils.LEVEL_STANDARD_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
 
-        interface_levels = self.dataset.createVariable(
-            MODEL_INTERFACE_LEVEL, np.int32, (MODEL_INTERFACE_LEVEL,)
-        )
-        interface_levels.units = "1"
-        interface_levels.positive = "down"
-        interface_levels.long_name = "model interface level index"
-        interface_levels.standard_name = (
+        half_levels = self.dataset.createVariable(MODEL_HALF_LEVEL, np.int32, (MODEL_HALF_LEVEL,))
+        half_levels.units = "1"
+        half_levels.positive = "down"
+        half_levels.long_name = "model half level index"
+        half_levels.standard_name = (
             icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
         )
-        interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
+        half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
-        heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
+        heights = self.dataset.createVariable("height", np.float64, (MODEL_HALF_LEVEL,))
         heights.units = "m"
         heights.positive = "up"
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
@@ -170,7 +170,7 @@ class NETCDFWriter:
         heights.standard_name = (
             icon4py.model.common.states.metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
         )
-        heights[:] = self._vertical_params.interface_physical_height.ndarray
+        heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
@@ -198,7 +198,7 @@ class NETCDFWriter:
                 new_var = self.dataset.createVariable(
                     var_name, canonical_new_slice.dtype, dimensions
                 )
-                new_var[0, :] = canonical_new_slice.data
+                new_var[0, :] = data_alloc.as_numpy(canonical_new_slice.data)
                 new_var.units = canonical_new_slice.units
                 new_var.standard_name = canonical_new_slice.standard_name
                 new_var.long_name = canonical_new_slice.long_name
@@ -211,9 +211,9 @@ class NETCDFWriter:
                 actual_var_name = ds_var.get(var_name).name
                 dims = ds_var.get(actual_var_name).dimensions
                 shape = ds_var.get(actual_var_name).shape
-                assert (
-                    len(canonical_new_slice.dims) == len(dims) - 1
-                ), f"Data variable dimensions do not match for {standard_name}."
+                assert len(canonical_new_slice.dims) == len(dims) - 1, (
+                    f"Data variable dimensions do not match for {standard_name}."
+                )
 
                 # TODO(halungge): change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
                 # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)
@@ -223,7 +223,9 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
-                self.dataset.variables[actual_var_name][slices] = canonical_new_slice.data
+                self.dataset.variables[actual_var_name][slices] = data_alloc.as_numpy(
+                    canonical_new_slice.data
+                )
 
     def close(self) -> None:
         assert self.dataset is not None

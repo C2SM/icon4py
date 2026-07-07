@@ -22,10 +22,8 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-dycore_consts: Final = constants.PhysicsConstants()
-
-
 def add_temporal_tendencies_to_vn_numpy(
+    *,
     vn_nnow: np.ndarray,
     ddt_vn_apc_ntl1: np.ndarray,
     ddt_vn_phy: np.ndarray,
@@ -34,7 +32,7 @@ def add_temporal_tendencies_to_vn_numpy(
     dtime: float,
 ) -> np.ndarray:
     vn_nnew = vn_nnow + dtime * (
-        ddt_vn_apc_ntl1 + ddt_vn_phy - dycore_consts.cpd * z_theta_v_e * z_gradh_exner
+        ddt_vn_apc_ntl1 + ddt_vn_phy - constants.CPD * z_theta_v_e * z_gradh_exner
     )
     return vn_nnew
 
@@ -46,6 +44,7 @@ class TestAddTemporalTendenciesToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vn_nnow: np.ndarray,
         ddt_vn_apc_ntl1: np.ndarray,
         ddt_vn_phy: np.ndarray,
@@ -55,7 +54,12 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         **kwargs: Any,
     ) -> dict:
         vn_nnew = add_temporal_tendencies_to_vn_numpy(
-            vn_nnow, ddt_vn_apc_ntl1, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime
+            vn_nnow=vn_nnow,
+            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            ddt_vn_phy=ddt_vn_phy,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            dtime=dtime,
         )
         return dict(vn_nnew=vn_nnew)
 

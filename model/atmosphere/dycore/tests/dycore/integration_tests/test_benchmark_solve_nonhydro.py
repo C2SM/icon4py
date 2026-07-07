@@ -24,6 +24,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends, utils as common_utils
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -54,7 +55,7 @@ def solve_nonhydro(
     mesh = geometry_field_source.grid
 
     config = solve_nh.NonHydrostaticConfig(
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
     )
@@ -201,6 +202,7 @@ def solve_nonhydro(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=geometry_field_source.get("cell_owner_mask"),
+        exchange=decomposition.single_node_exchange,
         backend=backend_like,
     )
 
@@ -214,7 +216,7 @@ def solve_nonhydro(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_benchmark_solve_nonhydro(
+def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_manager: gm.GridManager,
     solve_nonhydro: solve_nh.SolveNonhydro,
     at_first_substep: bool,

@@ -17,16 +17,8 @@ import netCDF4 as nc4
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
-from icon4py.model.common.decomposition import (
-    definitions as decomposition,
-    mpi_decomposition as mpi_decomp,
-)
-from icon4py.model.common.grid import (
-    base,
-    icon as icon_grid,
-    states as grid_states,
-    vertical as v_grid,
-)
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -230,6 +222,7 @@ def model_initialization_serialbox(
 
 
 def read_initial_state(
+    *,
     grid: icon_grid.IconGrid,
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
@@ -325,6 +318,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
+    *,
     path: pathlib.Path,
     grid_file: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
@@ -388,10 +382,10 @@ def _grid_savepoint(
     grid_file: pathlib.Path,
     rank: int,
 ) -> sb.IconGridSavepoint:
-    global_grid_params, grid_uuid = _create_grid_global_params(grid_file)
+    grid_params, grid_uuid = _create_grid_params(grid_file)
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_uuid,
-        global_grid_params,
+        grid_params,
     )
     return sp
 
@@ -541,7 +535,7 @@ def configure_logging(
     run_path: str,
     experiment_name: str,
     enable_output: bool = True,
-    process_props: decomposition.ProcessProperties = None,
+    process_props: decomposition.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
@@ -571,8 +565,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    # TODO(OngChia): modify here when single_dispatch is ready
-    console_handler.addFilter(mpi_decomp.ParallelLogger(process_props))
+    console_handler.addFilter(decomposition.ParallelLogger(process_props))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
@@ -582,17 +575,17 @@ def configure_logging(
 
 
 @functools.cache
-def _create_grid_global_params(
+def _create_grid_params(
     grid_file: pathlib.Path,
-) -> tuple[icon_grid.GlobalGridParams, str]:
+) -> tuple[icon_grid.GridParams, str]:
     """
-    Create global grid params and its uuid.
+    Create grid params and its uuid.
 
     Args:
         grid_file: path of the grid file
 
     Returns:
-        global_grid_params: GlobalGridParams
+        grid_params: GridParams
         grid_uuid: id (uuid) of the horizontal grid
     """
     grid = nc4.Dataset(grid_file, "r", format="NETCDF4")
@@ -600,31 +593,28 @@ def _create_grid_global_params(
     grid_level = grid.getncattr("grid_level")
     grid_uuid = grid.getncattr("uuidOfHGrid")
     try:
-        grid_geometry_type = base.GeometryType(grid.getncattr("grid_geometry"))
+        grid_geometry_type = icon_grid.GeometryType(grid.getncattr("grid_geometry"))
     except AttributeError:
         log.warning(
             "Global attribute grid_geometry is not found in the grid. Icosahedral grid is assumed."
         )
-        grid_geometry_type = base.GeometryType.ICOSAHEDRON
+        grid_geometry_type = icon_grid.GeometryType.ICOSAHEDRON
 
     match grid_geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
-            global_grid_params = icon_grid.GlobalGridParams(
-                grid_shape=icon_grid.GridShape(
-                    geometry_type=grid_geometry_type,
+        case icon_grid.GeometryType.ICOSAHEDRON:
+            grid_params = icon_grid.GridParams(
+                icon_grid.IcosahedronParams(
                     subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
                 ),
             )
-    match grid_geometry_type:
-        case base.GeometryType.TORUS:
-            global_grid_params = icon_grid.GlobalGridParams(
-                grid_shape=icon_grid.GridShape(
-                    geometry_type=grid_geometry_type,
+        case icon_grid.GeometryType.TORUS:
+            grid_params = icon_grid.GridParams(
+                icon_grid.TorusParams(
+                    domain_length=grid.getncattr("domain_length"),
+                    domain_height=grid.getncattr("domain_height"),
                 ),
-                domain_length=grid.getncattr("domain_length"),
-                domain_height=grid.getncattr("domain_height"),
             )
 
     grid.close()
 
-    return global_grid_params, grid_uuid
+    return grid_params, grid_uuid

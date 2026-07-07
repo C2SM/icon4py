@@ -6,24 +6,26 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from types import ModuleType
 
 import gt4py.next.typing as gtx_typing
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
-from icon4py.model.common.math.helpers import (
-    arc_length_on_edges,
-    cross_product_on_edges,
-    diff_on_edges_torus,
-    distance_on_edges_torus,
+from icon4py.model.common.math.coordinate_transformations import (
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
-    normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
+)
+from icon4py.model.common.math.distance import (
+    arc_length_on_edges,
+    diff_on_edges_torus,
+    distance_on_edges_torus,
+)
+from icon4py.model.common.math.vector_operations import (
+    cross_product_on_edges,
+    normalize_cartesian_vector_on_edges,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -187,18 +189,18 @@ def cartesian_coordinates_edge_tangent_and_normal(
         vertex_lat, vertex_lon, edge_orientation
     )
     normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal(
-        edge_lat,
-        edge_lon,
-        tangent_x,
-        tangent_y,
-        tangent_z,
+        edge_lat=edge_lat,
+        edge_lon=edge_lon,
+        edge_tangent_x=tangent_x,
+        edge_tangent_y=tangent_y,
+        edge_tangent_z=tangent_z,
     )
 
     return tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z
 
 
 @gtx.field_operator
-def cartesian_coordinates_edge_tangent_and_normal_torus(
+def cartesian_coordinates_edge_tangent_and_normal_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     edge_x: fa.EdgeField[ta.wpfloat],
@@ -220,18 +222,18 @@ def cartesian_coordinates_edge_tangent_and_normal_torus(
 ]:
     """Compute normalized cartesian vectors of edge tangent and edge normal."""
     tangent_x, tangent_y, tangent_z = cartesian_coordinates_of_edge_tangent_torus(
-        vertex_x,
-        vertex_y,
-        edge_orientation,
-        domain_length,
-        domain_height,
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        edge_orientation=edge_orientation,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
     tangent_u = tangent_x
     tangent_v = tangent_y
 
     normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal_torus(
-        tangent_x,
-        tangent_y,
+        edge_tangent_x=tangent_x,
+        edge_tangent_y=tangent_y,
     )
     normal_u = normal_x
     normal_v = normal_y
@@ -251,7 +253,7 @@ def cartesian_coordinates_edge_tangent_and_normal_torus(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cartesian_coordinates_of_edge_tangent_and_normal(
+def compute_cartesian_coordinates_of_edge_tangent_and_normal(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -267,18 +269,18 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_edge_tangent_and_normal(
-        vertex_lat,
-        vertex_lon,
-        edge_lat,
-        edge_lon,
-        edge_orientation,
+        vertex_lat=vertex_lat,
+        vertex_lon=vertex_lon,
+        edge_lat=edge_lat,
+        edge_lon=edge_lon,
+        edge_orientation=edge_orientation,
         out=(tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(
+def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     edge_x: fa.EdgeField[ta.wpfloat],
@@ -300,13 +302,13 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_edge_tangent_and_normal_torus(
-        vertex_x,
-        vertex_y,
-        edge_x,
-        edge_y,
-        edge_orientation,
-        domain_length,
-        domain_height,
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        edge_x=edge_x,
+        edge_y=edge_y,
+        edge_orientation=edge_orientation,
+        domain_length=domain_length,
+        domain_height=domain_height,
         out=(
             tangent_x,
             tangent_y,
@@ -395,7 +397,7 @@ def zonal_and_meridional_component_of_edge_field_at_vertex(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
+def compute_zonal_and_meridional_component_of_edge_field_at_vertex(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -413,11 +415,11 @@ def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
     horizontal_end: gtx.int32,
 ):
     zonal_and_meridional_component_of_edge_field_at_vertex(
-        vertex_lat,
-        vertex_lon,
-        x,
-        y,
-        z,
+        vertex_lat=vertex_lat,
+        vertex_lon=vertex_lon,
+        x=x,
+        y=y,
+        z=z,
         out=(
             u_vertex_1,
             v_vertex_1,
@@ -479,7 +481,7 @@ def zonal_and_meridional_component_of_edge_field_at_cell_center(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
+def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -493,11 +495,11 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
     horizontal_end: gtx.int32,
 ):
     zonal_and_meridional_component_of_edge_field_at_cell_center(
-        cell_lat,
-        cell_lon,
-        x,
-        y,
-        z,
+        cell_lat=cell_lat,
+        cell_lon=cell_lon,
+        x=x,
+        y=y,
+        z=z,
         out=(
             u_cell_1,
             v_cell_1,
@@ -649,7 +651,7 @@ def edge_length(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_length(
+def compute_edge_length(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
@@ -658,16 +660,16 @@ def compute_edge_length(
     horizontal_end: gtx.int32,
 ):
     edge_length(
-        vertex_lat,
-        vertex_lon,
-        radius,
+        vertex_lat=vertex_lat,
+        vertex_lon=vertex_lon,
+        radius=radius,
         out=length,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cell_center_arc_distance(
+def compute_cell_center_arc_distance(  # noqa: PLR0917 [too-many-positional-arguments]
     edge_neighbor_0_lat: fa.EdgeField[ta.wpfloat],
     edge_neighbor_0_lon: fa.EdgeField[ta.wpfloat],
     edge_neighbor_1_lat: fa.EdgeField[ta.wpfloat],
@@ -678,18 +680,18 @@ def compute_cell_center_arc_distance(
     horizontal_end: gtx.int32,
 ):
     cell_center_arc_distance(
-        edge_neighbor_0_lat,
-        edge_neighbor_0_lon,
-        edge_neighbor_1_lat,
-        edge_neighbor_1_lon,
-        radius,
+        lat_neighbor_0=edge_neighbor_0_lat,
+        lon_neighbor_0=edge_neighbor_0_lon,
+        lat_neighbor_1=edge_neighbor_1_lat,
+        lon_neighbor_1=edge_neighbor_1_lon,
+        radius=radius,
         out=dual_edge_length,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_arc_distance_of_far_edges_in_diamond(
+def compute_arc_distance_of_far_edges_in_diamond(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
@@ -698,16 +700,16 @@ def compute_arc_distance_of_far_edges_in_diamond(
     horizontal_end: gtx.int32,
 ):
     arc_distance_of_far_edges_in_diamond(
-        vertex_lat,
-        vertex_lon,
-        radius,
+        vertex_lat=vertex_lat,
+        vertex_lon=vertex_lon,
+        radius=radius,
         out=far_vertex_distance,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_distance_of_far_edges_in_diamond_torus(
+def compute_distance_of_far_edges_in_diamond_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     vertex_x: fa.VertexField[ta.wpfloat],
     vertex_y: fa.VertexField[ta.wpfloat],
     domain_length: ta.wpfloat,
@@ -717,10 +719,10 @@ def compute_distance_of_far_edges_in_diamond_torus(
     horizontal_end: gtx.int32,
 ):
     distance_of_far_edges_in_diamond_torus(
-        vertex_x,
-        vertex_y,
-        domain_length,
-        domain_height,
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
         out=far_vertex_distance,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -747,7 +749,7 @@ def edge_area(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_area(
+def compute_edge_area(  # noqa: PLR0917 [too-many-positional-arguments]
     owner_mask: fa.EdgeField[bool],
     primal_edge_length: fa.EdgeField[ta.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
@@ -756,9 +758,9 @@ def compute_edge_area(
     horizontal_end: gtx.int32,
 ):
     edge_area(
-        owner_mask,
-        primal_edge_length,
-        dual_edge_length,
+        owner_mask=owner_mask,
+        primal_edge_length=primal_edge_length,
+        dual_edge_length=dual_edge_length,
         out=area,
         domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -797,7 +799,7 @@ def coriolis_parameter_on_edges_torus(
     xp = data_alloc.import_array_ns(backend)
     coriolis_parameter = gtx.as_field(
         (dims.EdgeDim,),
-        coriolis_coefficient * xp.ones(num_edges),
+        xp.full(num_edges, coriolis_coefficient),
         dtype=ta.wpfloat,
         allocator=backend,
     )
@@ -813,8 +815,8 @@ def compute_coriolis_parameter_on_edges(
     horizontal_end: gtx.int32,
 ) -> None:
     coriolis_parameter_on_edges(
-        edge_center_lat,
-        angular_velocity,
+        edge_center_lat=edge_center_lat,
+        angular_velocity=angular_velocity,
         out=coriolis_parameter,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -824,8 +826,8 @@ def compute_primal_cart_normal(
     primal_cart_normal_x: data_alloc.NDArray,
     primal_cart_normal_y: data_alloc.NDArray,
     primal_cart_normal_z: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(primal_cart_normal_x)
     primal_cart_normal = array_ns.transpose(
         array_ns.stack(
             (

@@ -12,28 +12,37 @@ from gt4py.next import common as gt_common
 
 from icon4py.model.common.io.ugrid import dimension_mapping, ugrid_attributes
 from icon4py.model.common.states.model import FieldMetaData
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def to_data_array(
     field: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
     attrs: FieldMetaData | dict | None = None,
-    is_on_interface: bool = False,
+    is_on_half_levels: bool = False,
+    to_host: bool = False,
 ) -> xa.DataArray:
     """Convert a gt4py field to a xarray data array.
 
     Args:
         field: gt4py field,
         attrs: optional dictionary of metadata attributes to be added to the data array, empty by default.
-        is_on_interface: optional boolean flag indicating if the 2d field is defined on the interface, False by default.
+            The dictionary is copied, the caller's instance is left untouched.
+        is_on_half_levels: optional boolean flag indicating if the 2d field is defined on the half (interface) levels, False by default.
+        to_host: if True, copy the data buffer to host (numpy). netCDF4 cannot consume
+            device arrays, so set this when the result is written from a GPU backend.
+
+    Note:
+        The data buffer is not copied: the result usually references ``field`` (a view).
+        ``to_host=True`` is a copy only on GPU; on CPU it still references ``field``.
+        Callers that keep the DataArray past the next mutation of ``field`` must copy it.
     """
-    if attrs is None:
-        attrs = {}
-    dims = tuple(dimension_mapping(d, is_on_interface) for d in field.domain.dims)
-    horizontal_dim = next(filter(lambda d: _is_horizontal(d), field.domain.dims))
+    attrs = {} if attrs is None else dict(attrs)
+    dims = tuple(dimension_mapping(d, is_on_half_levels) for d in field.domain.dims)
+    horizontal_dim = next(d for d in field.domain.dims if _is_horizontal(d))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    assert isinstance(attrs, dict)
     attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility
-    return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
+    data = data_alloc.as_numpy(field) if to_host else field.ndarray
+    return xa.DataArray(data=data, dims=dims, attrs=attrs)
 
 
 def _is_horizontal(dim: gtx.Dimension) -> bool:

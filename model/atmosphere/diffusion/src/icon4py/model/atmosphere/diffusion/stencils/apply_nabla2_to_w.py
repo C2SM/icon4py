@@ -42,11 +42,11 @@ def apply_nabla2_to_w(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_nabla2_to_w(
-        area,
-        z_nabla2_c,
-        geofac_n2s,
-        w,
-        diff_multfac_w,
+        area=area,
+        z_nabla2_c=z_nabla2_c,
+        geofac_n2s=geofac_n2s,
+        w=w,
+        diff_multfac_w=diff_multfac_w,
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
@@ -24,6 +24,7 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_description,
     geometry_from_savepoint,
     grid_savepoint,
     icon_grid,
@@ -40,10 +41,6 @@ if TYPE_CHECKING:
     from gt4py.next import typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
-
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 def _get_slice_tuple_from_horizontal_range(
@@ -90,12 +87,12 @@ def _get_slice_tuple_from_horizontal_range(
         (attrs.COEFF_GRADEKIN, "coeff_gradekin", None),
     ],
 )
-def test_distributed_metrics_attrs(
+def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -151,12 +148,12 @@ def test_distributed_metrics_attrs(
         (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
-def test_distributed_metrics_attrs_no_halo(
+def test_distributed_metrics_attrs_no_halo(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -183,12 +180,12 @@ def test_distributed_metrics_attrs_no_halo(
         (attrs.ZD_VERTOFFSET, "zd_vertoffset"),
     ],
 )
-def test_distributed_metrics_attrs_no_halo_regional(
+def test_distributed_metrics_attrs_no_halo_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
@@ -197,7 +194,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
-    if experiment == test_defs.Experiments.EXCLAIM_APE:
+    if experiment.description == test_defs.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
@@ -212,12 +209,12 @@ def test_distributed_metrics_attrs_no_halo_regional(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_metrics_wgtfacq_e(
+def test_distributed_metrics_wgtfacq_e(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -234,11 +231,11 @@ def test_distributed_metrics_wgtfacq_e(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_metrics_nflat_gradp(
+def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    process_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     experiment: test_defs.Experiment,
 ) -> None:

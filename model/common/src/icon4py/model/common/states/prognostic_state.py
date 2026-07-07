@@ -12,6 +12,7 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.states.tracer_state import TracerConfig, TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -35,9 +36,9 @@ class PrognosticState:
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
     exner: fa.CellKField[ta.wpfloat]  # exner function, exner(nrpoma, nlev, nblks_c)
     theta_v: fa.CellKField[ta.wpfloat]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
-    tracer: list[fa.CellKField[ta.wpfloat]] = dataclasses.field(
-        default_factory=list
-    )  # tracer concentration (nproma,nlev,nblks_c,ntracer) [kg/kg]
+    tracer: TracerState = dataclasses.field(
+        default_factory=TracerState
+    )  # tracer concentration, one CellKField per active tracer [kg/kg]
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
@@ -47,9 +48,11 @@ class PrognosticState:
 def initialize_prognostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    ntracer: int = 0,
+    tracer_config: TracerConfig | None = None,
 ) -> PrognosticState:
     """Initialize the prognostic state with zero fields."""
+    if tracer_config is None:
+        tracer_config = TracerConfig.none()
     rho = data_alloc.zero_field(
         grid,
         dims.CellDim,
@@ -86,14 +89,12 @@ def initialize_prognostic_state(
         allocator=allocator,
         dtype=ta.wpfloat,
     )
-    tracer = [
-        data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=allocator,
-            dtype=ta.wpfloat,
-        )
-        for _ in range(ntracer)
-    ]
+    tracer = TracerState(
+        **{
+            name: data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+            )
+            for name in tracer_config.active_names
+        }
+    )
     return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v, tracer=tracer)

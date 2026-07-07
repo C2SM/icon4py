@@ -21,10 +21,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-dycore_consts: Final = constants.PhysicsConstants()
-
-
 def compute_results_for_thermodynamic_variables_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
@@ -54,10 +52,7 @@ def compute_results_for_thermodynamic_variables_numpy(
         - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
     theta_v_new = (
-        rho_now
-        * theta_v_now
-        * ((exner_new / exner_now - 1.0) * dycore_consts.cvd_o_rd + 1.0)
-        / rho_new
+        rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * constants.CVD_O_RD + 1.0) / rho_new
     )
     return rho_new, exner_new, theta_v_new
 
@@ -69,6 +64,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_rho_expl: np.ndarray,
         vwind_impl_wgt: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
@@ -85,7 +81,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         **kwargs: Any,
     ) -> dict:
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
-            connectivities,
+            connectivities=connectivities,
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
             inv_ddqz_z_full=inv_ddqz_z_full,

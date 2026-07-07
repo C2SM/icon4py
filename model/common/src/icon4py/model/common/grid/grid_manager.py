@@ -66,7 +66,6 @@ class GridManager:
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(msimberg): remove to separate vertical and horizontal grid
         offset_transformation: gridfile.IndexTransformation = _fortran_to_python_transformer,
-        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._offset_transformation = offset_transformation
         self._file_name = str(grid_file)
@@ -77,7 +76,6 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
-        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -106,8 +104,8 @@ class GridManager:
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        process_props=_single_process_props,
-    ):
+        process_props: decomposition.ProcessProperties = _single_process_props,
+    ) -> None:
         if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer
         ):
@@ -117,9 +115,9 @@ class GridManager:
             self.open()
 
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
+            geometry_type = icon.GeometryType(geometry_type)
         else:
-            geometry_type = base.GeometryType.ICOSAHEDRON
+            geometry_type = icon.GeometryType.ICOSAHEDRON
 
         self._construct_decomposed_grid(
             allocator=allocator,
@@ -136,7 +134,7 @@ class GridManager:
     def _read_coordinates(
         self,
         allocator: gtx_typing.Allocator,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
@@ -198,7 +196,7 @@ class GridManager:
             },
         }
 
-        if geometry_type == base.GeometryType.TORUS:
+        if geometry_type == icon.GeometryType.TORUS:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),
@@ -372,6 +370,11 @@ class GridManager:
         return refinement_control_fields
 
     @property
+    def file_path(self) -> str:
+        """Path of the ICON grid file this manager reads from."""
+        return self._file_name
+
+    @property
     def grid(self) -> icon.IconGrid:
         return self._grid
 
@@ -391,7 +394,7 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
-        geometry_type: base.GeometryType,
+        geometry_type: icon.GeometryType,
         decomposer: decomp.Decomposer,
         process_props: decomposition.ProcessProperties,
     ) -> None:
@@ -409,8 +412,8 @@ class GridManager:
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
         global_size = self._read_full_grid_size()
-        global_params = self._construct_global_params(allocator, global_size, geometry_type)
-        limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
+        global_params = self._construct_grid_params(geometry_type)
+        limited_area = refinement.is_limited_area_grid(cell_refinement)
 
         if limited_area and not process_props.is_single_rank():
             raise NotImplementedError("Limited-area grids are not supported in distributed runs")
@@ -441,10 +444,10 @@ class GridManager:
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
         distributed_size = self._decomposition_info.get_horizontal_size()
 
-        neighbor_tables = self._get_local_connectivities(global_neighbor_tables, array_ns=xp)
+        neighbor_tables = self._get_local_connectivities(global_neighbor_tables)
 
         # COMPUTE remaining derived connectivities
-        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+        neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
@@ -452,7 +455,6 @@ class GridManager:
             refinement.compute_domain_bounds,
             refinement_fields=refinement_fields,
             decomposition_info=self._decomposition_info,
-            array_ns=xp,
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
@@ -465,25 +467,23 @@ class GridManager:
         )
 
         self._grid = icon.icon_grid(
-            self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
+            id_=self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
             allocator=allocator,
             config=grid_config,
             neighbor_tables=neighbor_tables,
             start_index=start_index,
             end_index=end_index,
-            global_properties=global_params,
+            grid_params=global_params,
             refinement_control=refinement_fields,
         )
 
     def _get_local_connectivities(
         self,
         neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
-        array_ns,
     ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
-        global_to_local = functools.partial(halo.global_to_local, array_ns=array_ns)
         if self.decomposition_info.is_distributed():
             return {
-                k: global_to_local(
+                k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),
                     v[self._decomposition_info.global_index(k.target[0])],
                 )
@@ -492,28 +492,28 @@ class GridManager:
         else:
             return neighbor_tables_global
 
-    def _construct_global_params(
-        self,
-        allocator: gtx_typing.Allocator,
-        global_size: base.HorizontalGridSize,
-        geometry_type: base.GeometryType,
-    ):
+    def _construct_grid_params(self, geometry_type: icon.GeometryType):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-        return icon.GlobalGridParams(
-            grid_shape=icon.GridShape(
-                geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            ),
-            radius=sphere_radius,
-            domain_length=domain_length,
-            domain_height=domain_height,
-            num_cells=global_size.num_cells,
-        )
+        match geometry_type:
+            case icon.GeometryType.ICOSAHEDRON:
+                return icon.GridParams(
+                    icon.IcosahedronParams(
+                        subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+                        radius=sphere_radius,
+                    ),
+                )
+            case icon.GeometryType.TORUS:
+                return icon.GridParams(
+                    icon.TorusParams(
+                        domain_length=domain_length,
+                        domain_height=domain_height,
+                    ),
+                )
 
     def _read_full_grid_size(self) -> base.HorizontalGridSize:
         """
@@ -546,8 +546,9 @@ class GridManager:
 
 
 def _get_derived_connectivities(
-    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray], array_ns: ModuleType = np
+    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
 ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(next(iter(neighbor_tables.values())))
     e2v_table = neighbor_tables[dims.E2V]
     c2v_table = neighbor_tables[dims.C2V]
     e2c_table = neighbor_tables[dims.E2C]
@@ -557,19 +558,18 @@ def _get_derived_connectivities(
         e2v_table,
         c2v_table,
         e2c_table,
-        array_ns=array_ns,
     )
-    e2c2e = _construct_diamond_edges(e2c_table, c2e_table, array_ns=array_ns)
+    e2c2e = _construct_diamond_edges(e2c_table, c2e_table)
     e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0])), e2c2e))
 
-    c2e2c2e = _construct_triangle_edges(c2e2c_table, c2e_table, array_ns=array_ns)
+    c2e2c2e = _construct_triangle_edges(c2e2c_table, c2e_table)
     c2e2c0 = array_ns.column_stack(
         (
             array_ns.asarray(range(c2e2c_table.shape[0])),
             (c2e2c_table),
         )
     )
-    c2e2c2e2c = _construct_butterfly_cells(c2e2c_table, array_ns=array_ns)
+    c2e2c2e2c = _construct_butterfly_cells(c2e2c_table)
 
     return {
         dims.C2E2CO: c2e2c0,
@@ -585,7 +585,6 @@ def _construct_diamond_vertices(
     e2v: data_alloc.NDArray,
     c2v: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
@@ -614,19 +613,25 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
-    dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
-    expanded = dummy_c2v[e2c, :]
-    sh = expanded.shape
-    flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = array_ns.zeros_like(e2v)
-    # TODO(halungge): vectorize speed this up?
-    for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
-    return array_ns.hstack((e2v, far_indices))
+    array_ns = data_alloc.array_namespace(e2v)
+    e2c_c2v = _patch_with_dummy_lastline(c2v)[e2c, :]
+    # `flat` includes duplicated e2v vertices (v1, v3), shape (n_edges, 6).
+    flat = e2c_c2v.reshape(e2c_c2v.shape[0], -1)
+
+    far_indices_mask = (flat != e2v[:, 0, array_ns.newaxis]) & (flat != e2v[:, 1, array_ns.newaxis])
+
+    neighbor_idx = array_ns.arange(flat.shape[1], dtype=gtx.int32)
+    # identify v0 and v2 positions with the mask, and replace v1 and v3 positions with 6
+    far_indices_pos = array_ns.where(
+        far_indices_mask, neighbor_idx, neighbor_idx.shape[0]
+    )  # (n_edges, 6)
+    far_indices_pos = array_ns.sort(far_indices_pos, axis=1)[:, :2]
+    e2v_far = array_ns.take_along_axis(flat, far_indices_pos, axis=1)
+    return array_ns.hstack((e2v, e2v_far))
 
 
 def _determine_center_position(
-    centers: data_alloc.NDArray, neighbors: data_alloc.NDArray, array_ns: ModuleType = np
+    centers: data_alloc.NDArray, neighbors: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """Determine the position of the values in `center` in the local neighbor array `neighbors`
     Args:
@@ -638,6 +643,7 @@ def _determine_center_position(
          of neighbors or 0
 
     """
+    array_ns = data_alloc.array_namespace(centers)
     center_idx = array_ns.where(neighbors == centers)
     me_cell = array_ns.zeros(centers.shape[0], dtype=gtx.int32)
     me_cell[center_idx[0]] = center_idx[1]
@@ -645,7 +651,7 @@ def _determine_center_position(
 
 
 def _construct_diamond_edges(
-    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
+    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
@@ -672,18 +678,19 @@ def _construct_diamond_edges(
     Returns: ndarray containing the connectivity table for central edge-to- boundary edges
              on the diamond
     """
+    array_ns = data_alloc.array_namespace(e2c)
     # used to make sure that the local neighborhood is ordered in the same way as in ICON. At least
     # the compute_e_flx_avg function depends on that.
     icon_edge_order = array_ns.asarray([[1, 2], [2, 0], [0, 1]])
 
-    dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
+    dummy_c2e = _patch_with_dummy_lastline(c2e)
     expanded = dummy_c2e[e2c[:, :], :]
     n_edges, n_e2c, n_c2e = expanded.shape
     flattened = expanded.reshape(n_edges, n_e2c * n_c2e)
 
     centers = array_ns.arange(n_edges, dtype=gtx.int32)[:, None]
-    me_cell1 = _determine_center_position(centers, expanded[:, 0, :], array_ns=array_ns)
-    me_cell2 = _determine_center_position(centers, expanded[:, 1, :], array_ns=array_ns)
+    me_cell1 = _determine_center_position(centers, expanded[:, 0, :])
+    me_cell2 = _determine_center_position(centers, expanded[:, 1, :])
     ordered_local_index = array_ns.hstack(
         (icon_edge_order[me_cell1], icon_edge_order[me_cell2] + n_c2e)
     )
@@ -692,7 +699,7 @@ def _construct_diamond_edges(
 
 
 def _construct_triangle_edges(
-    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
+    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
@@ -717,13 +724,14 @@ def _construct_triangle_edges(
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
             edges of its cell neighbors
     """
-    dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
+    array_ns = data_alloc.array_namespace(c2e2c)
+    dummy_c2e = _patch_with_dummy_lastline(c2e)
     table = array_ns.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
 
 
 def _construct_butterfly_cells(
-    c2e2c: data_alloc.NDArray, array_ns: ModuleType = np
+    c2e2c: data_alloc.NDArray,
 ) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
 
@@ -750,12 +758,13 @@ def _construct_butterfly_cells(
     Returns:
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
-    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c, array_ns=array_ns)
+    array_ns = data_alloc.array_namespace(c2e2c)
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
     c2e2c2e2c = array_ns.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
     return c2e2c2e2c
 
 
-def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
+def _patch_with_dummy_lastline(ar):
     """
     Patch an array for easy access with another offset containing invalid indices (-1).
 
@@ -768,9 +777,10 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
     Returns: same array with an additional line containing only GridFile.INVALID_INDEX
 
     """
+    array_ns = data_alloc.array_namespace(ar)
     patched_ar = array_ns.append(
         ar,
-        gridfile.GridFile.INVALID_INDEX * array_ns.ones((1, ar.shape[1]), dtype=gtx.int32),
+        array_ns.full((1, ar.shape[1]), gridfile.GridFile.INVALID_INDEX, dtype=gtx.int32),
         axis=0,
     )
     return patched_ar

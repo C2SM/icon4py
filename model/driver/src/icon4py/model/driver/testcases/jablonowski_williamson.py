@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
 import math
 import pathlib
@@ -39,6 +38,7 @@ log = logging.getLogger(__name__)
 
 
 def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
+    *,
     grid: icon_grid.IconGrid,
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
@@ -70,7 +70,11 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         variables (now and next).
     """
     data_provider = sb.IconSerialDataProvider(
-        backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+        backend=backend,
+        fname_prefix="icon_pydycore",
+        path=str(path.absolute()),
+        do_print=False,
+        mpi_rank=rank,
     )
 
     allocator = model_backends.get_allocator(backend)
@@ -238,32 +242,30 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    vn_ndarray = functools.partial(testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp)(
-        grid,
-        jw_u0,
-        jw_up,
-        lat_perturbation_center,
-        lon_perturbation_center,
-        edge_lat,
-        edge_lon,
-        primal_normal_x,
-        eta_v_e.ndarray,
+    vn_ndarray = testcases_utils.zonalwind_2_normalwind_ndarray(
+        grid=grid,
+        jw_u0=jw_u0,
+        jw_up=jw_up,
+        lat_perturbation_center=lat_perturbation_center,
+        lon_perturbation_center=lon_perturbation_center,
+        edge_lat=edge_lat,
+        edge_lon=edge_lon,
+        primal_normal_x=primal_normal_x,
+        eta_v_e=eta_v_e.ndarray,
     )
     log.info("U2vn computation completed.")
 
-    rho_ndarray, exner_ndarray, theta_v_ndarray = functools.partial(
-        testcases_utils.hydrostatic_adjustment_ndarray, array_ns=xp
-    )(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho_ndarray,
-        exner_ndarray,
-        theta_v_ndarray,
-        num_levels,
+    rho_ndarray, exner_ndarray, theta_v_ndarray = testcases_utils.hydrostatic_adjustment_ndarray(
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        rho=rho_ndarray,
+        exner=exner_ndarray,
+        theta_v=theta_v_ndarray,
+        num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
@@ -287,14 +289,14 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         u,
         v,
     ) = testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
-        vn_ndarray,
-        w_ndarray,
-        exner_ndarray,
-        rho_ndarray,
-        theta_v_ndarray,
-        temperature_ndarray,
-        pressure_ndarray,
-        pressure_ifc_ndarray,
+        vn_ndarray=vn_ndarray,
+        w_ndarray=w_ndarray,
+        exner_ndarray=exner_ndarray,
+        rho_ndarray=rho_ndarray,
+        theta_v_ndarray=theta_v_ndarray,
+        temperature_ndarray=temperature_ndarray,
+        pressure_ndarray=pressure_ndarray,
+        pressure_ifc_ndarray=pressure_ifc_ndarray,
         grid=grid,
         allocator=allocator,
     )

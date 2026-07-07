@@ -127,6 +127,7 @@ def customize_backend(
 
 
 def setup_program(
+    *,
     program: gtx_typing.Program,
     backend: gtx_typing.Backend
     | model_backends.DeviceType

@@ -13,10 +13,6 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
-from icon4py.model.atmosphere.dycore.dycore_states import (
-    HorizontalPressureDiscretizationType,
-    RhoThetaAdvectionType,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     compute_rho_theta_pgrad_and_update_vn,
 )
@@ -26,11 +22,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
-rhotheta_avd_type = RhoThetaAdvectionType()
-horzpres_discr_type = HorizontalPressureDiscretizationType()
-
-
 def compute_theta_rho_face_value_by_miura_scheme_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
@@ -67,10 +60,10 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     primal_normal_cell_y = np.expand_dims(primal_normal_cell_y, axis=-1)
     dual_normal_cell_y = np.expand_dims(dual_normal_cell_y, axis=-1)
 
-    z_ntdistv_bary_1 = -(
+    z_ntdistv_bary_1 = np.negative(
         vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_x[:, 0], pos_on_tplane_e_x[:, 1])
     )
-    z_ntdistv_bary_2 = -(
+    z_ntdistv_bary_2 = np.negative(
         tangential_wind * p_dthalf
         + np.where(lvn_pos, pos_on_tplane_e_y[:, 0], pos_on_tplane_e_y[:, 1])
     )
@@ -122,7 +115,6 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.uses_as_offset
 @pytest.mark.continuous_benchmarking
 class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = compute_rho_theta_pgrad_and_update_vn
@@ -163,6 +155,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_at_edges_on_model_levels: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
         horizontal_pressure_gradient: np.ndarray,

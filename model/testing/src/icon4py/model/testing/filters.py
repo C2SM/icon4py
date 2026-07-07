@@ -14,7 +14,7 @@ from typing import NamedTuple, TypeAlias, TypeVar
 
 import pytest
 
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import device_utils
 from icon4py.model.testing import test_utils
 
@@ -55,10 +55,6 @@ item_marker_filters: dict[str, ItemFilter] = {
             pytest.xfail, " gt4py _compiled_programs returns error when backend is None."
         ),
     ),
-    pytest.mark.uses_as_offset.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
-        action=functools.partial(pytest.xfail, "Embedded backend does not support as_offset."),
-    ),
     pytest.mark.uses_concat_where.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(pytest.xfail, "Embedded backend does not support concat_where."),
@@ -72,7 +68,10 @@ item_marker_filters: dict[str, ItemFilter] = {
     pytest.mark.skip_value_error.name: ItemFilter(
         condition=lambda item: (
             (grid := test_utils.get_fixture_value("grid", item)).limited_area
-            or grid.geometry_type == base.GeometryType.ICOSAHEDRON
+            or (
+                isinstance(grid, icon_grid.IconGrid)
+                and grid.grid_params.geometry_type == icon_grid.GeometryType.ICOSAHEDRON
+            )
         ),
         action=functools.partial(
             pytest.skip,

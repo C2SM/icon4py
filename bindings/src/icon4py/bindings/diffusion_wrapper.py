@@ -34,6 +34,10 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    DiffusionType,
+    ForcingType,
+    SmagorinskyStencilType,
+    TemperatureDiscretizationType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -59,7 +63,7 @@ granule: DiffusionGranule | None = None
 
 
 @icon4py_export.export
-def diffusion_init(
+def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[wpfloat],
     wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
@@ -84,11 +88,20 @@ def diffusion_init(
     hdiff_efdt_ratio: gtx.float64,
     hdiff_w_efdt_ratio: gtx.float64,
     smagorinski_scaling_factor: gtx.float64,
+    smagorinski_scaling_factor2: gtx.float64,
+    smagorinski_scaling_factor3: gtx.float64,
+    smagorinski_scaling_factor4: gtx.float64,
+    smagorinski_scaling_height: gtx.float64,
+    smagorinski_scaling_height2: gtx.float64,
+    smagorinski_scaling_height3: gtx.float64,
+    smagorinski_scaling_height4: gtx.float64,
     hdiff_temp: bool,
     denom_diffu_v: float,
     nudge_max_coeff: float,  # note: this is the scaled ICON value, i.e. not the namelist value
     itype_sher: gtx.int32,
-    ltkeshs: bool,
+    iforcing: gtx.int32,
+    a_hshr: gtx.float64,
+    loutshs: bool,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -107,22 +120,31 @@ def diffusion_init(
 
     # Diffusion parameters
     config = DiffusionConfig(
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
+        diffusion_type=DiffusionType(diffusion_type),
+        apply_to_vertical_wind=hdiff_w,
+        apply_to_horizontal_wind=hdiff_vn,
+        apply_smag_diff_to_vertical_wind=hdiff_smag_w,
+        apply_zdiffusion_t=zdiffu_t,
+        type_t_diffu=TemperatureDiscretizationType(type_t_diffu),
+        type_vn_diffu=SmagorinskyStencilType(type_vn_diffu),
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
-        hdiff_temp=hdiff_temp,
-        n_substeps=ndyn_substeps,
-        velocity_boundary_diffusion_denom=denom_diffu_v,
+        smagorinski_scaling_factor2=smagorinski_scaling_factor2,
+        smagorinski_scaling_factor3=smagorinski_scaling_factor3,
+        smagorinski_scaling_factor4=smagorinski_scaling_factor4,
+        smagorinski_scaling_height=smagorinski_scaling_height,
+        smagorinski_scaling_height2=smagorinski_scaling_height2,
+        smagorinski_scaling_height3=smagorinski_scaling_height3,
+        smagorinski_scaling_height4=smagorinski_scaling_height4,
+        apply_to_temperature=hdiff_temp,
+        ndyn_substeps=int(ndyn_substeps),
+        velocity_boundary_diffusion_denominator=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
-        ltkeshs=ltkeshs,
+        iforcing=ForcingType(iforcing),
+        a_hshr=a_hshr,
+        loutshs=loutshs,
     )
 
     diffusion_params = DiffusionParams(config)
@@ -241,7 +263,7 @@ def diffusion_init(
 
 
 @icon4py_export.export
-def diffusion_run(
+def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
     exner: fa.CellKField[wpfloat],
@@ -281,13 +303,9 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    if linit:
-        granule.diffusion.initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
-        )
-    else:
-        granule.diffusion.run(
-            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
-        )
+    granule.diffusion.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
+        initial_run=linit,
+    )

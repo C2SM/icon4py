@@ -5,8 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import dataclasses
 import functools
 import logging
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -15,7 +20,6 @@ import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgec
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
-    base,
     geometry,
     geometry_attributes as geometry_attrs,
     grid_refinement as refinement,
@@ -38,14 +42,109 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 log = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class InterpolationConfig:
+    divergence_averaging_central_cell_weight: float = 0.5  # divavg_cntrwgt in ICON
+    """
+    Central-cell weight used in divergence averaging.
+    """
+
+    max_nudging_coefficient: float | None = None  # default: 0.375, set in __post_init__
+    """
+    Maximum nudging coefficient applied in the lateral nudging zone.
+    """
+
+    #: Raw namelist value (nudge_max_coeff in mo_interpol_nml.f90), scaled to
+    #: max_nudging_coefficient in __post_init__ if provided.
+    _nudge_max_coeff: float | None = None
+
+    nudge_efold_width: float = 2.0
+    """
+    E-folding width controlling the exponential decay of nudging strength.
+    """
+
+    nudge_zone_width: int = 10
+    """
+    Width of the lateral nudging zone in grid refinement levels.
+    """
+
+    rbf_kernel_cell: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
+    """
+    Radial basis function kernel used for cell-based interpolation.
+    """
+
+    rbf_kernel_edge: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
+    """
+    Radial basis function kernel used for edge-based interpolation.
+    """
+
+    rbf_kernel_vertex: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
+    """
+    Radial basis function kernel used for vertex-based interpolation.
+    """
+
+    lsq_dim_unk: int = 2
+    """
+    Number of unknowns in the least-squares reconstruction.
+    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    """
+
+    lsq_dim_c: int = 3
+    """
+    Dimension of the least-squares coefficient space.
+    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    """
+
+    lsq_wgt_exp: int = 2
+    """
+    Exponent used in distance-based least-squares weighting.
+    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    """
+
+    lsq_dim_stencil: int = 3
+    """
+    Stencil size used for least-squares reconstruction.
+    """
+
+    def __post_init__(self):
+        if self._nudge_max_coeff is not None and self.max_nudging_coefficient is not None:
+            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
+        elif self.max_nudging_coefficient is not None:
+            pass
+        elif self._nudge_max_coeff is not None:
+            self.max_nudging_coefficient = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * self._nudge_max_coeff
+            )
+        else:  # default value in ICON
+            self.max_nudging_coefficient = 0.375
+
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> InterpolationConfig:
+        interpol_nml = atmo_dict["interpol_nml"]
+        dynamics_nml = atmo_dict["dynamics_nml"]
+        return cls(
+            divergence_averaging_central_cell_weight=dynamics_nml["divavg_cntrwgt"],
+            _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+            nudge_efold_width=interpol_nml["nudge_efold_width"],
+            nudge_zone_width=interpol_nml["nudge_zone_width"],
+            rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+            rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+            rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+            lsq_dim_stencil=interpol_nml["lsq_high_ord"],
+            **overrides,
+        )
+
+
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
+        config: InterpolationConfig,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
     ):
         self._backend = backend
@@ -57,25 +156,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
-        domain_length = self.grid.global_properties.domain_length
-        domain_height = self.grid.global_properties.domain_height
-        # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {
-            "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
-            "weighting_factor": 0.0,
-            "max_nudging_coefficient": 0.375,
-            "nudge_efold_width": 2.0,
-            "nudge_zone_width": 10,
-            "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
-            "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
-            "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
-            "lsq_dim_unk": 2,
-            "lsq_dim_c": 3,
-            "lsq_wgt_exp": 2,
-            "lsq_dim_stencil": 3,
-            "domain_length": 0.0 if domain_length is None else domain_length,
-            "domain_height": 0.0 if domain_height is None else domain_height,
-        }
+        self._config = config
+        domain_length = self.grid.grid_params.domain_length
+        domain_height = self.grid.grid_params.domain_height
+        self._domain_length = 0.0 if domain_length is None else domain_length
+        self._domain_height = 0.0 if domain_height is None else domain_height
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -83,7 +168,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
-                {
+                fields={
                     "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
                 }
             )
@@ -96,7 +181,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry,))
+        return factory.CompositeSource(me=self, others=(self._geometry,))
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
@@ -113,9 +198,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "max_nudging_coefficient": self._config["max_nudging_coefficient"],
-                "nudge_efold_width": self._config["nudge_efold_width"],
-                "nudge_zone_width": self._config["nudge_zone_width"],
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "nudge_efold_width": self._config.nudge_efold_width,
+                "nudge_zone_width": self._config.nudge_zone_width,
             },
             do_exchange=True,
         )
@@ -151,13 +236,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_rot)
 
         geofac_n2s = factory.NumpyDataProvider(
-            func=functools.partial(
-                interpolation_fields.compute_geofac_n2s,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
-            ),
+            func=interpolation_fields.compute_geofac_n2s,
             fields=(attrs.GEOFAC_N2S,),
             domain=(dims.CellDim, dims.C2E2CODim),
             deps={
@@ -170,17 +249,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(geofac_n2s)
 
         geofac_grdiv = factory.NumpyDataProvider(
-            func=functools.partial(
-                interpolation_fields.compute_geofac_grdiv,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
-            ),
+            func=interpolation_fields.compute_geofac_grdiv,
             fields=(attrs.GEOFAC_GRDIV,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
             deps={
@@ -194,6 +268,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
 
         self.register_provider(geofac_grdiv)
@@ -206,7 +281,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
             fields=(attrs.RBF_SCALE_CELL,),
         )
@@ -220,7 +295,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
             fields=(attrs.RBF_SCALE_EDGE,),
         )
@@ -234,7 +309,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
             fields=(attrs.RBF_SCALE_VERTEX,),
         )
@@ -243,13 +318,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         lsq_pseudoinv = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_lsq_coeffs,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
+                exchange=self._exchange,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
-            domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
+            domain=(dims.CellDim, dims.LsqUnkDim, dims.C2E2CDim),
             deps={
                 "cell_center_x": geometry_attrs.CELL_CENTER_X,
                 "cell_center_y": geometry_attrs.CELL_CENTER_Y,
@@ -259,33 +331,28 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2c": dims.C2E2CDim},
             params={
-                "domain_length": self._config["domain_length"],
-                "domain_height": self._config["domain_height"],
+                "domain_length": self._domain_length,
+                "domain_height": self._domain_height,
                 "grid_sphere_radius": constants.EARTH_RADIUS,
-                "lsq_dim_unk": self._config["lsq_dim_unk"],
-                "lsq_dim_c": self._config["lsq_dim_c"],
-                "lsq_wgt_exp": self._config["lsq_wgt_exp"],
-                "lsq_dim_stencil": self._config["lsq_dim_stencil"],
+                "lsq_dim_unk": self._config.lsq_dim_unk,
+                "lsq_dim_c": self._config.lsq_dim_c,
+                "lsq_wgt_exp": self._config.lsq_wgt_exp,
+                "lsq_dim_stencil": self._config.lsq_dim_stencil,
                 "start_idx": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "min_rlcell_int": self.grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2)),
-                "geometry_type": self.grid.global_properties.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,
             },
         )
         self.register_provider(lsq_pseudoinv)
 
-        match self.grid.global_properties.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
+        match self.grid.grid_params.geometry_type:
+            case icon.GeometryType.ICOSAHEDRON:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.CellDim,
-                            stream=decomposition.BLOCK,
-                        ),
-                        array_ns=self._xp,
+                        exchange=self._exchange,
                     ),
                     fields=(attrs.C_BLN_AVG,),
                     domain=(dims.CellDim, dims.C2E2CODim),
@@ -303,9 +370,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
-                        "divergence_averaging_central_cell_weight": self._config[
-                            "divergence_averaging_central_cell_weight"
-                        ],
+                        "divergence_averaging_central_cell_weight": self._config.divergence_averaging_central_cell_weight,
                     },
                 )
                 self.register_provider(cell_average_weight)
@@ -313,7 +378,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s,
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
@@ -324,20 +388,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "edges_lon": geometry_attrs.EDGE_LON,
                     },
                     connectivities={"c2e": dims.C2EDim},
-                    params={"weighting_factor": self._config["weighting_factor"]},
                 )
                 self.register_provider(e_bln_c_s)
 
                 pos_on_tplane_e_x_y = factory.NumpyDataProvider(
-                    func=functools.partial(
-                        interpolation_fields.compute_pos_on_tplane_e_x_y,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.EdgeDim,
-                            stream=decomposition.BLOCK,
-                        ),
-                        array_ns=self._xp,
-                    ),
+                    func=interpolation_fields.compute_pos_on_tplane_e_x_y,
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),
                     deps={
@@ -358,19 +413,15 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                         ),
                     },
+                    do_exchange=True,
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
 
-            case base.GeometryType.TORUS:
+            case icon.GeometryType.TORUS:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight_torus,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.CellDim,
-                            stream=decomposition.BLOCK,
-                        ),
-                        array_ns=self._xp,
+                        exchange=self._exchange,
                     ),
                     fields=(attrs.C_BLN_AVG,),
                     domain=(dims.CellDim, dims.C2E2CODim),
@@ -386,9 +437,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
-                        "divergence_averaging_central_cell_weight": self._config[
-                            "divergence_averaging_central_cell_weight"
-                        ],
+                        "divergence_averaging_central_cell_weight": self._config.divergence_averaging_central_cell_weight,
                     },
                 )
                 self.register_provider(cell_average_weight)
@@ -396,7 +445,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s_torus,
-                        array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
@@ -407,15 +455,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 self.register_provider(e_bln_c_s)
 
                 pos_on_tplane_e_x_y = factory.NumpyDataProvider(
-                    func=functools.partial(
-                        interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
-                        exchange=functools.partial(
-                            self._exchange.exchange,
-                            dims.EdgeDim,
-                            stream=decomposition.BLOCK,
-                        ),
-                        array_ns=self._xp,
-                    ),
+                    func=interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),
                     deps={
@@ -423,17 +463,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                     connectivities={"e2c": dims.E2CDim},
                     params={},
+                    do_exchange=True,
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
 
         c_lin_e = factory.NumpyDataProvider(
-            func=functools.partial(
-                interpolation_fields.compute_c_lin_e,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
-            ),
+            func=interpolation_fields.compute_c_lin_e,
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
             deps={
@@ -446,16 +481,14 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(c_lin_e)
 
         geofac_grg = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_geofac_grg,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
+                exchange=self._exchange,
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -478,10 +511,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_flx_avg = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_e_flx_avg,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
+                exchange=self._exchange,
             ),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -511,15 +541,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(e_flx_avg)
 
         cells_aw_verts = factory.NumpyDataProvider(
-            func=functools.partial(
-                interpolation_fields.compute_cells_aw_verts,
-                exchange=functools.partial(
-                    self._exchange.exchange,
-                    dims.VertexDim,
-                    stream=decomposition.BLOCK,
-                ),
-                array_ns=self._xp,
-            ),
+            func=interpolation_fields.compute_cells_aw_verts,
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
             deps={
@@ -538,17 +560,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(cells_aw_verts)
 
         rbf_vec_coeff_c = factory.NumpyDataProvider(
-            func=functools.partial(
-                rbf.compute_rbf_interpolation_coeffs_cell,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
-            ),
+            func=rbf.compute_rbf_interpolation_coeffs_cell,
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
             deps={
@@ -567,30 +584,25 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_cell"].value,
-                "geometry_type": self._grid.global_properties.geometry_type.value,
+                "rbf_kernel": self._config.rbf_kernel_cell.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
-                "domain_length": self._grid.global_properties.domain_length
-                if self._grid.global_properties.domain_length
+                "domain_length": self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length
                 else -1.0,
-                "domain_height": self._grid.global_properties.domain_height
-                if self._grid.global_properties.domain_height
+                "domain_height": self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height
                 else -1.0,
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_c)
 
         rbf_vec_coeff_e = factory.NumpyDataProvider(
-            func=functools.partial(
-                rbf.compute_rbf_interpolation_coeffs_edge,
-                exchange=functools.partial(
-                    self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK
-                ),
-                array_ns=self._xp,
-            ),
+            func=rbf.compute_rbf_interpolation_coeffs_edge,
             fields=(attrs.RBF_VEC_COEFF_E,),
             domain=(dims.EdgeDim, dims.E2C2EDim),
             deps={
@@ -608,32 +620,25 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_edge"].value,
-                "geometry_type": self._grid.global_properties.geometry_type.value,
+                "rbf_kernel": self._config.rbf_kernel_edge.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
-                "domain_length": self._grid.global_properties.domain_length
-                if self._grid.global_properties.domain_length
+                "domain_length": self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length
                 else -1.0,
-                "domain_height": self._grid.global_properties.domain_height
-                if self._grid.global_properties.domain_height
+                "domain_height": self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height
                 else -1.0,
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_e)
 
         rbf_vec_coeff_v = factory.NumpyDataProvider(
-            func=functools.partial(
-                rbf.compute_rbf_interpolation_coeffs_vertex,
-                exchange=functools.partial(
-                    self._exchange.exchange,
-                    dims.VertexDim,
-                    stream=decomposition.BLOCK,
-                ),
-                array_ns=self._xp,
-            ),
+            func=rbf.compute_rbf_interpolation_coeffs_vertex,
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),
             deps={
@@ -652,19 +657,20 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.V2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_vertex"].value,
-                "geometry_type": self._grid.global_properties.geometry_type.value,
+                "rbf_kernel": self._config.rbf_kernel_vertex.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL)),
-                "domain_length": self._grid.global_properties.domain_length
-                if self._grid.global_properties.domain_length
+                "domain_length": self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length
                 else -1.0,
-                "domain_height": self._grid.global_properties.domain_height
-                if self._grid.global_properties.domain_height
+                "domain_height": self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height
                 else -1.0,
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_v)
 

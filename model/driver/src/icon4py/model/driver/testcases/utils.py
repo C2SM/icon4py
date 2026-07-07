@@ -5,11 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from types import ModuleType
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -22,6 +20,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def hydrostatic_adjustment_ndarray(
+    *,
     wgtfac_c: data_alloc.NDArray,
     ddqz_z_half: data_alloc.NDArray,
     exner_ref_mc: data_alloc.NDArray,
@@ -32,8 +31,8 @@ def hydrostatic_adjustment_ndarray(
     exner: data_alloc.NDArray,
     theta_v: data_alloc.NDArray,
     num_levels: int,
-    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(wgtfac_c)
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -63,6 +62,7 @@ def hydrostatic_adjustment_ndarray(
 
 
 def hydrostatic_adjustment_constant_thetav_ndarray(
+    *,
     wgtfac_c: data_alloc.NDArray,
     ddqz_z_half: data_alloc.NDArray,
     exner_ref_mc: data_alloc.NDArray,
@@ -103,6 +103,7 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
 
 
 def zonalwind_2_normalwind_ndarray(
+    *,
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
@@ -112,7 +113,6 @@ def zonalwind_2_normalwind_ndarray(
     edge_lon: data_alloc.NDArray,
     primal_normal_x: data_alloc.NDArray,
     eta_v_e: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
@@ -130,6 +130,7 @@ def zonalwind_2_normalwind_ndarray(
     Returns: normal wind
     """
     # TODO(OngChia): this function needs a test
+    array_ns = data_alloc.array_namespace(edge_lat)
 
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
@@ -193,7 +194,7 @@ def _compute_perturbed_exner(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_perturbed_exner(
+def compute_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
     exner: fa.CellKField[ta.wpfloat],
     reference_exner: fa.CellKField[ta.vpfloat],
     perturbed_exner: fa.CellKField[ta.wpfloat],
@@ -203,8 +204,8 @@ def compute_perturbed_exner(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_perturbed_exner(
-        exner,
-        reference_exner,
+        exner=exner,
+        reference_exner=reference_exner,
         out=perturbed_exner,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -214,6 +215,7 @@ def compute_perturbed_exner(
 
 
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
+    *,
     vn_ndarray: data_alloc.NDArray,
     w_ndarray: data_alloc.NDArray,
     exner_ndarray: data_alloc.NDArray,
@@ -247,7 +249,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
     temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
-    virutal_temperature = gtx.as_field(
+    virtual_temperature = gtx.as_field(
         (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
     )
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
@@ -277,7 +279,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
         rho_next,
         theta_v_next,
         temperature,
-        virutal_temperature,
+        virtual_temperature,
         pressure,
         pressure_ifc,
         u,

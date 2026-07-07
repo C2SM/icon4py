@@ -470,10 +470,11 @@ def simple_grid(
     }
 
     return base.Grid(
-        id="simple_grid",
+        # A real grid's id is the file's uuidOfHGrid; use a fixed synthetic UUID here so the
+        # synthetic grid behaves like one (e.g. the IO layer can parse it with uuid.UUID).
+        id="12345678-1234-5678-1234-567812345678",
         config=config,
         connectivities=connectivities,
-        geometry_type=base.GeometryType.TORUS,
         start_index=simple_start_index,
         end_index=simple_end_index,
     )

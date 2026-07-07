@@ -17,7 +17,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
 from ...fixtures import backend_like, process_props
-from ...grid.utils import main_horizontal_dims
 from .. import utils
 from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
@@ -61,9 +60,9 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
     my_halo = decomp_info.global_index(dim, definitions.DecompositionInfo.EntryType.HALO)
     print(f"rank = {process_props.rank}: has halo {dim} : {my_halo}")
     expected = len(utils.HALO[dim][process_props.rank])
-    assert (
-        my_halo.size == expected
-    ), f" rank = {process_props.rank}: total halo size does not match for dim {dim}- expected {expected} bot was {my_halo.size}"
+    assert my_halo.size == expected, (
+        f" rank = {process_props.rank}: total halo size does not match for dim {dim}- expected {expected} bot was {my_halo.size}"
+    )
     assert (
         missing := np.setdiff1d(
             my_halo, utils.HALO[dim][process_props.rank], assume_unique=True
@@ -86,20 +85,20 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
     print(f"{dim.value}: rank {process_props.rank} has halo levels {my_halo_levels} ")
-    assert np.all(
-        my_halo_levels != definitions.DecompositionFlag.UNDEFINED
-    ), "All indices should have a defined DecompositionFlag"
+    assert np.all(my_halo_levels != definitions.DecompositionFlag.UNDEFINED), (
+        "All indices should have a defined DecompositionFlag"
+    )
 
-    assert np.where(my_halo_levels == definitions.DecompositionFlag.OWNED)[0].size == len(
+    assert np.nonzero(my_halo_levels == definitions.DecompositionFlag.OWNED)[0].size == len(
         utils.OWNED[dim][process_props.rank]
     )
     owned_local_indices = decomp_info.local_index(
         dim, definitions.DecompositionInfo.EntryType.OWNED
     )
-    assert np.all(
-        my_halo_levels[owned_local_indices] == definitions.DecompositionFlag.OWNED
-    ), "owned local indices should have DecompositionFlag.OWNED"
-    first_halo_level_local_index = np.where(
+    assert np.all(my_halo_levels[owned_local_indices] == definitions.DecompositionFlag.OWNED), (
+        "owned local indices should have DecompositionFlag.OWNED"
+    )
+    first_halo_level_local_index = np.nonzero(
         my_halo_levels == definitions.DecompositionFlag.FIRST_HALO_LEVEL
     )[0]
     first_halo_level_global_index = decomp_info.global_index(
@@ -108,7 +107,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     utils.assert_same_entries(
         dim, first_halo_level_global_index, utils.FIRST_HALO_LINE, process_props.rank
     )
-    second_halo_level_local_index = np.where(
+    second_halo_level_local_index = np.nonzero(
         my_halo_levels == definitions.DecompositionFlag.SECOND_HALO_LEVEL
     )[0]
     second_halo_level_global_index = decomp_info.global_index(
@@ -117,7 +116,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     utils.assert_same_entries(
         dim, second_halo_level_global_index, utils.SECOND_HALO_LINE, process_props.rank
     )
-    third_halo_level_index = np.where(
+    third_halo_level_index = np.nonzero(
         my_halo_levels == definitions.DecompositionFlag.THIRD_HALO_LEVEL
     )[0]
     third_halo_level_global_index = decomp_info.global_index(
@@ -151,7 +150,8 @@ def test_no_halo():
     assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
     # vertices
     test_utils.assert_dallclose(
-        np.arange(grid_size.num_vertices), decomposition_info.global_index(dims.VertexDim)
+        np.arange(grid_size.num_vertices),
+        decomposition_info.global_index(dims.VertexDim),
     )
     assert np.all(
         decomposition_info.halo_levels(dims.VertexDim) == definitions.DecompositionFlag.OWNED
@@ -175,7 +175,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
 def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
     process_props = utils.DummyProps(rank=rank)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
-    distribution = (process_props.comm_size + 1) * np.ones((num_cells,), dtype=int)
+    distribution = np.full(num_cells, process_props.comm_size + 1, dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
@@ -195,17 +195,15 @@ def test_owned_halo_mask_contiguous(rank):
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
 
-    for dim in main_horizontal_dims():
+    for dim in dims.horizontal_dims():
         owner_mask = decomp_info.owner_mask(dim)
-        owned_indices = np.where(owner_mask)[0]
+        owned_indices = np.nonzero(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are
         # supported for icon4py domain decomposition.
-        assert test_utils.is_sorted(
-            decomp_info.halo_levels(dim)
-        ), f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
-        assert (
-            owned_indices == np.arange(owned_indices.size)
-        ).all(), (
+        assert test_utils.is_sorted(decomp_info.halo_levels(dim)), (
+            f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
+        )
+        assert (owned_indices == np.arange(owned_indices.size)).all(), (
             f"Owned indices for {dim} should be contiguous and start at 0, but are {owned_indices=}"
         )
 
@@ -215,9 +213,7 @@ def test_owned_halo_mask_contiguous(rank):
 def test_global_to_local_index(offset, rank):
     grid = simple.simple_grid()
     neighbor_tables = {
-        k: v.ndarray
-        for k, v in grid.connectivities.items()
-        if gtx_common.is_neighbor_connectivity(v)
+        k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     process_props = dummy_four_ranks(rank)
     halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)
@@ -241,9 +237,8 @@ def test_global_to_local_index(offset, rank):
                 # global index is not on this local patch:
                 assert not np.isin(offset_full_grid[i][k], neighbor_index_full_grid)
             else:
-                (
-                    neighbor_index_full_grid[k_] == offset_full_grid[i][k],
-                    f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]",
+                assert neighbor_index_full_grid[k_] == offset_full_grid[i][k], (
+                    f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]"
                 )
 
 
@@ -258,14 +253,14 @@ def test_horizontal_size(rank):
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     horizontal_size = decomp_info.get_horizontal_size()
     expected_verts = len(utils.OWNED[dims.VertexDim][rank]) + len(utils.HALO[dims.VertexDim][rank])
-    assert (
-        horizontal_size.num_vertices == expected_verts
-    ), f"local size mismatch on rank={rank} for {dims.VertexDim}: expected {expected_verts}, but was {horizontal_size.num_vertices}"
+    assert horizontal_size.num_vertices == expected_verts, (
+        f"local size mismatch on rank={rank} for {dims.VertexDim}: expected {expected_verts}, but was {horizontal_size.num_vertices}"
+    )
     expected_edges = len(utils.OWNED[dims.EdgeDim][rank]) + len(utils.HALO[dims.EdgeDim][rank])
-    assert (
-        horizontal_size.num_edges == expected_edges
-    ), f"local size mismatch on rank={rank} for {dims.EdgeDim}: expected {expected_edges}, but was {horizontal_size.num_edges}"
+    assert horizontal_size.num_edges == expected_edges, (
+        f"local size mismatch on rank={rank} for {dims.EdgeDim}: expected {expected_edges}, but was {horizontal_size.num_edges}"
+    )
     expected_cells = len(utils.OWNED[dims.CellDim][rank]) + len(utils.HALO[dims.CellDim][rank])
-    assert (
-        horizontal_size.num_cells == expected_cells
-    ), f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
+    assert horizontal_size.num_cells == expected_cells, (
+        f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
+    )

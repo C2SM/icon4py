@@ -96,6 +96,7 @@ _SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = di
 class SaturationAdjustment:
     def __init__(
         self,
+        *,
         config: SaturationAdjustmentConfig,
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
@@ -203,7 +204,7 @@ class SaturationAdjustment:
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.END))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     def _not_converged(self) -> bool:
         return self._xp.any(
@@ -215,6 +216,7 @@ class SaturationAdjustment:
 
     def run(
         self,
+        *,
         dtime: ta.wpfloat,
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],

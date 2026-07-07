@@ -112,11 +112,16 @@ Additionally, you can enable profiling by setting the environment variable `PY2F
 
 Note that debugging and profiling are not available if Python is set to optimized mode.
 
-### Known problems
+### Booleans
 
-- On the Fortran side we use standard 4-byte logicals to represent Python booleans.
-  Currently, we do not create views of the boolean arrays, but instead copy the data to 1-byte boolean arrays on the Python side.
-  Therefore, these arrays are read-only.
+Booleans use the 1-byte chain `unsigned char` (C) / `logical(kind=c_bool)`
+(Fortran) / NumPy `bool_` (Python). The C side is `unsigned char` rather than
+`_Bool` because some Fortran compilers (notably NVHPC) write `.TRUE.` as `-1`
+(byte `0xFF`), which CFFI's strict `_Bool` validator rejects. `unsigned char`
+accepts any byte value; on the Python side a non-zero byte still reads as
+`True` through the `bool_` view.
+
+Callers must declare boolean scalar and array arguments as `logical(kind=c_bool)` (not the default `logical`); converting from a default `logical` is the caller's responsibility.
 
 ### Future improvements
 

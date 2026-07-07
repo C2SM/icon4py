@@ -14,7 +14,6 @@ import logging
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
-from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
     dimension as dims,
@@ -53,7 +52,7 @@ class DivergenceDampingType(enum.IntEnum):
     COMBINED = 32
 
 
-class DivergenceDampingOrder(FrozenNamespace[int]):
+class DivergenceDampingOrder(gtx.int32, enum.Enum):
     #: 2nd order divergence damping
     SECOND_ORDER = 2
     #: 4th order divergence damping
@@ -62,7 +61,7 @@ class DivergenceDampingOrder(FrozenNamespace[int]):
     COMBINED = 24
 
 
-class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
+class HorizontalPressureDiscretizationType(gtx.int32, enum.Enum):
     """Parameter called igradp_method in ICON namelist."""
 
     #: conventional discretization with metric correction term
@@ -77,7 +76,7 @@ class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
     POLYNOMIAL_HYDRO = 5
 
 
-class RhoThetaAdvectionType(FrozenNamespace[int]):
+class RhoThetaAdvectionType(gtx.int32, enum.Enum):
     """Parameter called iadv_rhotheta in ICON namelist."""
 
     #: simple 2nd order upwind-biased scheme
@@ -91,7 +90,7 @@ class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     # `max_vertical_cfl` stored as 0-d array of type ta.wpfloat (to be able to avoid cupy synchronization)
-    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]
+    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]  # type: ignore[type-var] # TODO(ricoh): find out what this is about
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """
@@ -175,7 +174,7 @@ class DiagnosticStateNonHydro:
     Declared as exner_dyn_incr in ICON.
     """
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not data_alloc.is_rank0_ndarray(self.max_vertical_cfl):
             # TODO(havogt): instead of this check, we could refactor to a special dataclass-like which promotes to 0-d array on assignment
             raise TypeError(

@@ -64,10 +64,10 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-        ddqz_z_half,
-        z_w_con_c,
-        cfl_w_limit,
-        dtime,
+        ddqz_z_half=ddqz_z_half,
+        z_w_con_c=z_w_con_c,
+        cfl_w_limit=cfl_w_limit,
+        dtime=dtime,
         out=(cfl_clipping, vcfl, z_w_con_c),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
