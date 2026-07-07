@@ -7,6 +7,7 @@ source_roots = [
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
     "model/atmosphere/subgrid_scale_physics/muphys/src",
     "model/atmosphere/subgrid_scale_physics/physics_interface/src",
+    "model/atmosphere/subgrid_scale_physics/tmx/src",
     "model/standalone_driver/src",
     "model/common/src",
     "model/driver/src",
@@ -43,6 +44,10 @@ depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_interface"
+depends_on = [{ path = "icon4py.model.common" }]
+
+[[modules]]
+path = "icon4py.model.atmosphere.subgrid_scale_physics.tmx"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
