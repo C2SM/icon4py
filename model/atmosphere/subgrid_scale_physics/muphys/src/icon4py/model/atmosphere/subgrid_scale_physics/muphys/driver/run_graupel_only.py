@@ -68,8 +68,13 @@ def setup_graupel(
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
 ):
-    if enable_dace_hooks:
-        assert model_backends.is_backend_descriptor(backend)
+    if enable_dace_hooks and model_backends.is_backend_descriptor(backend):
+        # The graupel scan needs two dace auto-opt hooks. They can only be injected into
+        # the backend *descriptor* (a dict), before it is turned into a concrete backend.
+        # A concrete/resolved backend (e.g. the gtfn backend the standalone driver threads
+        # in) is not a descriptor: gtfn does not use these hooks, so we pass it through
+        # unmodified. The dace path always drives muphys with a descriptor, so it still
+        # gets the hooks.
         backend = copy.deepcopy(backend)
         if "optimization_args" not in backend:
             backend["optimization_args"] = {}

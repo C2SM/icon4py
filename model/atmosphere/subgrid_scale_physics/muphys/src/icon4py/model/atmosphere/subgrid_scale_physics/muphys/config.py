@@ -13,7 +13,6 @@ import dataclasses
 
 @dataclasses.dataclass(frozen=True)
 class MuphysConfig:
-    """Configuration for the muphys microphysics component.
-    """
+    """Configuration for the muphys microphysics component."""
 
-    qnc: float
+    qnc: float = 50.0 # Cloud droplet number concentration [cm^-3], default value hardcoded

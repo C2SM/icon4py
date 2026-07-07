@@ -201,7 +201,12 @@ def create_experiment_configuration(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
+
+    tracer_config = (
+        tracer_state.TracerConfig.all()
+        if experiment_description == definitions.Experiments.EXCLAIM_APE_AES
+        else tracer_state.TracerConfig.from_ntracer(ntracer)
+    )
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run

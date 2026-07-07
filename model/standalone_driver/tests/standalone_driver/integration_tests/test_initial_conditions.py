@@ -111,9 +111,13 @@ def test_initial_conditions(
         atol=1e-12,
     )
 
-    # Moist experiments (e.g. APE) initialize the water-vapour tracer
+    # Moist experiments (e.g. APE) initialize the water-vapour tracer. qv is produced by an
+    # iterative solve (qv_from_relative_humidity), so it agrees with ICON only to round-off;
+    # use an absolute tolerance like the other prognostic checks above rather than the
+    # default atol=0 (max abs diff observed ~2e-14 on qv values ~1e-2).
     if prognostic_state_now.tracer.qv is not None:
         test_utils.assert_dallclose(
             prognostic_state_now.tracer.qv.asnumpy(),
             prognostics_savepoint.tracer_now(QV).asnumpy(),
+            atol=1e-13,
         )

@@ -105,7 +105,7 @@ class State(PhysicsState):
                 "vertical_start": gtx.int32(self._num_levels),
                 "vertical_end": gtx.int32(self._num_levels + 1),
             },
-            offset_provider={"Koff": dims.KDim},  # type: ignore[dict-item]
+            offset_provider={},
         )
         self._diagnose_pressure = model_options.setup_program(
             program=diagnose_pressure.diagnose_pressure,
@@ -139,10 +139,8 @@ class State(PhysicsState):
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
         self._tracers: tracer_state.TracerState | None = None
-        self.te = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )  # temperature
-        self.p = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)  # pressure
+        self.te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+        self.p = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.tv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.pressure_on_cells_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -187,14 +185,12 @@ class State(PhysicsState):
             temperature=self.te,
         )
 
-        # Diagnose surface pressure into the surface slot of pressure_on_cells_half_levels, ...
         self._diagnose_surface_pressure(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,
             surface_pressure=self.pressure_on_cells_half_levels,
         )
-        # diagnose full-level pressure p
         surface_pressure = gtx.as_field(
             (dims.CellDim,),
             self.pressure_on_cells_half_levels.ndarray[:, -1],

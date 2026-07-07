@@ -93,9 +93,6 @@ class DriverConfig:
     enable_statistics_output: bool = False
     enable_output: bool = False
 
-    # TODO (Yilu): we can add a post_int()
-    # TODO (Yilu): use the name from ModelTimeVariables
-
     @classmethod
     def from_fortran_dict(
         cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
@@ -211,7 +208,13 @@ def read_config(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
+
+    is_ape_aes = "exclaim_ape_aesPhys" in config_file_path.name
+    tracer_config = (
+        tracer_state.TracerConfig.all()
+        if is_ape_aes
+        else tracer_state.TracerConfig.from_ntracer(ntracer)
+    )
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     graupel_config = (
@@ -220,8 +223,7 @@ def read_config(
         else None
     )
 
-    # TODO (Yilu): setup muphys_config here, muphys_config  =  MuphysConfig(qnc = <namelist key, or per-experiment value>)
-    # TODO (Yilu): where does qnc come from? namelist or experiment value
+    muphys_configuration = muphys_config.MuphysConfig() if is_ape_aes else None
 
     initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
@@ -252,7 +254,7 @@ def read_config(
         tracer_config=tracer_config,
         tracer_advection=tracer_advection_config,
         graupel=graupel_config,
-        # TODO (Yilu): muphys = muphys_config
+        muphys=muphys_configuration,
         initial_condition=initial_condition_config,
         driver=driver_cfg,
     )
