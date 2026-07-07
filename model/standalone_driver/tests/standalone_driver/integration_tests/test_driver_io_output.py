@@ -21,9 +21,8 @@ import gt4py.next.typing as gtx_typing
 import netCDF4 as nc
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.time import NumTimeSteps
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_io,
@@ -61,7 +60,7 @@ def test_standalone_driver_writes_output(
         driver={
             "output_path": tmp_path / "io_driver_output",
             "enable_output": True,
-            "end_of_simulation": NumTimeSteps(1),
+            "end_of_simulation": time.NumTimeSteps(1),
         }
     )
 

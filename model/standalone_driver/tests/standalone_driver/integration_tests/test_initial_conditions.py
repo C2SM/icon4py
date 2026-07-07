@@ -13,8 +13,7 @@ import pytest
 
 from icon4py.model.common import initial_condition, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.states.data import QV
+from icon4py.model.common.states import data, prognostic_state as prognostics
 from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -114,5 +113,5 @@ def test_initial_conditions(
     if prognostic_state_now.tracer.qv is not None:
         test_utils.assert_dallclose(
             prognostic_state_now.tracer.qv.asnumpy(),
-            prognostics_savepoint.tracer_now(QV).asnumpy(),
+            prognostics_savepoint.tracer_now(data.QV).asnumpy(),
         )

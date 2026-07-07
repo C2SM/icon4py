@@ -39,7 +39,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.states.static_fields import StaticFieldFactories
+    from icon4py.model.common.states import static_fields
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     config: JablonowskiWilliamsonConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    static_fields: StaticFieldFactories,
+    static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,

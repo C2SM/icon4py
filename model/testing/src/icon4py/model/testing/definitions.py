@@ -14,7 +14,7 @@ import pathlib
 from typing import Final
 
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.standalone_driver.config import ExperimentConfig
+from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config
 
 
@@ -162,10 +162,12 @@ class ExperimentDescription:
 @dataclasses.dataclass
 class Experiment:
     description: ExperimentDescription
-    _config: ExperimentConfig
+    _config: driver_config.ExperimentConfig
 
     def __init__(
-        self, experiment_description: ExperimentDescription, experiment_config: ExperimentConfig
+        self,
+        experiment_description: ExperimentDescription,
+        experiment_config: driver_config.ExperimentConfig,
     ) -> None:
         self.description = experiment_description
         self._config = experiment_config
@@ -179,7 +181,7 @@ class Experiment:
         return self.description.grid
 
     @property
-    def config(self) -> ExperimentConfig:
+    def config(self) -> driver_config.ExperimentConfig:
         # Return a deep copy so that tests cannot mutate the shared cached config.
         return copy.deepcopy(self._config)
 

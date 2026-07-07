@@ -26,6 +26,7 @@ from icon4py.model.common import (
     dimension as dims,
     initial_condition,
     model_backends,
+    time,
     topography,
     type_alias as ta,
 )
@@ -42,8 +43,8 @@ from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
+    static_fields,
 )
-from icon4py.model.common.time import AbsoluteTime
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -65,7 +66,7 @@ class Icon4pyDriver:
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
-        static_field_factories: driver_states.StaticFieldFactories,
+        static_field_factories: static_fields.StaticFieldFactories,
         granules: driver_utils.Granules,
         vertical_grid_config: v_grid.VerticalGridConfig,
         exchange: decomposition_defs.ExchangeRuntime,
@@ -120,7 +121,7 @@ class Icon4pyDriver:
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
-        simulation_current_datetime: AbsoluteTime,
+        simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
 

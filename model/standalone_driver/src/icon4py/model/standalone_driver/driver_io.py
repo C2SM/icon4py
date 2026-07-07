@@ -26,7 +26,7 @@ from typing import Any, Final
 import gt4py.next as gtx
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.diagnostic_calculations.stencils import diagnose_temperature
@@ -34,7 +34,6 @@ from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, v
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
 from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
-from icon4py.model.common.time import NumTimeSteps
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -259,7 +258,7 @@ def create_io_monitor(
     vertical_grid: v_grid.VerticalGrid,
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
-    output_interval: common_io.OutputInterval = NumTimeSteps(1),
+    output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
     process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.

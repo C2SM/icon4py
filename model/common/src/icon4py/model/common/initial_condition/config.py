@@ -26,8 +26,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-    from icon4py.model.common.states import prognostic_state as prognostics
-    from icon4py.model.common.states.static_fields import StaticFieldFactories
+    from icon4py.model.common.states import prognostic_state as prognostics, static_fields
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +88,7 @@ def create(
     config: InitialConditionConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    static_fields: StaticFieldFactories,
+    static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,

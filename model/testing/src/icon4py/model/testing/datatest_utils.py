@@ -15,7 +15,7 @@ import urllib.parse
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.standalone_driver.config import read_experiment_config_from_fortran
+from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 
@@ -135,6 +135,6 @@ def download_experiment(
 def create_experiment_configuration(
     experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
-) -> definitions.ExperimentConfig:
+) -> driver_config.ExperimentConfig:
     experiment_path = get_path_for_experiment(experiment_description, processor_props)
-    return read_experiment_config_from_fortran(experiment_path)
+    return driver_config.read_experiment_config_from_fortran(experiment_path)

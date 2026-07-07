@@ -9,6 +9,7 @@
 """Time-related type aliases shared across the model."""
 
 import datetime
+import time as _std_time
 from typing import TypeAlias
 
 
@@ -16,3 +17,6 @@ RelativeTime: TypeAlias = datetime.timedelta
 AbsoluteTime: TypeAlias = datetime.datetime
 NumTimeSteps: TypeAlias = int
 EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
+
+# Re-exported from the standard library so callers use a single time module.
+localtime = _std_time.localtime

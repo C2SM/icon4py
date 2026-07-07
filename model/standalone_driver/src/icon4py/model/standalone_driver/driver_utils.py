@@ -13,7 +13,6 @@ import logging
 import os
 import pathlib
 import sys
-import time
 from typing import Any, Literal
 
 import gt4py.next as gtx
@@ -26,6 +25,7 @@ from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
     model_backends,
+    time,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
@@ -44,9 +44,8 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.states import factory as states_factory, static_fields
 from icon4py.model.common.states.tracer_state import TracerConfig
-from icon4py.model.common.time import AbsoluteTime, NumTimeSteps, RelativeTime
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
@@ -170,7 +169,7 @@ def create_static_field_factories(
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
-) -> driver_states.StaticFieldFactories:
+) -> static_fields.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
@@ -208,7 +207,7 @@ def create_static_field_factories(
         global_reductions=global_reductions,
     )
 
-    return driver_states.StaticFieldFactories(
+    return static_fields.StaticFieldFactories(
         geometry_field_source, interpolation_field_source, metrics_field_source
     )
 
@@ -218,7 +217,7 @@ def initialize_granules(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
-    static_field_factories: driver_states.StaticFieldFactories,
+    static_field_factories: static_fields.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
@@ -533,11 +532,11 @@ def display_driver_setup_in_log_file(
     log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
     log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
     match config.end_of_simulation:
-        case NumTimeSteps():
+        case time.NumTimeSteps():
             log.info("Running mode           : num_timesteps")
-        case RelativeTime():
+        case time.RelativeTime():
             log.info("Running mode           : relative_time")
-        case AbsoluteTime():
+        case time.AbsoluteTime():
             log.info("Running mode           : absolute_time")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")

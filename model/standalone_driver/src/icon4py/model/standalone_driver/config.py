@@ -24,14 +24,13 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common import initial_condition, topography, type_alias as ta
+from icon4py.model.common import initial_condition, time, topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
-from icon4py.model.common.initial_condition.from_file import FromFileConfig
+from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
-from icon4py.model.common.time import AbsoluteTime, EndOfSimulation, RelativeTime
 from icon4py.model.common.utils import fortran_config
 
 
@@ -77,9 +76,9 @@ class DriverConfig:
 
     experiment_name: str
     profiling_stats: ProfilingStats | None
-    dtime: RelativeTime
-    start_of_simulation: AbsoluteTime
-    end_of_simulation: EndOfSimulation
+    dtime: time.RelativeTime
+    start_of_simulation: time.AbsoluteTime
+    end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
@@ -221,7 +220,9 @@ def read_experiment_config_from_fortran(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
-    if not do_tracer_advection and isinstance(initial_condition_cfg.config, FromFileConfig):
+    if not do_tracer_advection and isinstance(
+        initial_condition_cfg.config, from_file.FromFileConfig
+    ):
         initial_condition_cfg = dataclasses.replace(
             initial_condition_cfg,
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
