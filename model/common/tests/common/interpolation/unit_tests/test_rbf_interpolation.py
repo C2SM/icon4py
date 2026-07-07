@@ -164,7 +164,7 @@ def test_rbf_interpolation_coeffs_cell(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
@@ -239,7 +239,7 @@ def test_rbf_interpolation_coeffs_vertex(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
@@ -314,7 +314,7 @@ def test_rbf_interpolation_coeffs_edge(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
