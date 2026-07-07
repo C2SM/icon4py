@@ -1962,6 +1962,118 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class IconTimeStepExitSavepoint(IconSavepoint):
+    """End-of-timestep prognostic state, written in perform_nh_timeloop right after
+    integrate_nh returns: all physics tendencies applied, time levels swapped."""
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def w(self):
+        return self._get_field("w", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("exner", dims.CellDim, dims.KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+
+class IconAesGraupelSavepoint(IconSavepoint):
+    """Common fields of the aes-graupel-init/exit savepoints written around the mig
+    block (cloud_mig = satad + graupel + satad) in aes_phy_main. tend_ta/tend_tracers
+    are the prm_tend accumulators: exit minus init isolates the mig contribution."""
+
+    def temperature(self):
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def tend_tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tend_tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+
+class IconAesGraupelInitSavepoint(IconAesGraupelSavepoint):
+    def dz(self):
+        return self._get_field("dz", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
+
+    def dtime(self):
+        return self.serializer.read("dtime", self.savepoint)[0]
+
+    def jks_cloudy(self):
+        return int(self.serializer.read("jks_cloudy", self.savepoint)[0])
+
+
+class IconAesGraupelExitSavepoint(IconAesGraupelSavepoint):
+    def rsfl(self):
+        # surface rain rate
+        return self._get_field("rsfl", dims.CellDim)
+
+    def ssfl(self):
+        # surface frozen precip rate: ice + snow + graupel
+        return self._get_field("ssfl", dims.CellDim)
+
+    def pr(self):
+        # total surface precip rate
+        return self._get_field("pr", dims.CellDim)
+
+    def ufcs(self):
+        # surface precip energy flux
+        return self._get_field("ufcs", dims.CellDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -2251,5 +2363,23 @@ class IconSerialDataProvider:
             self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
         return IconSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_time_step_exit(self, date: str) -> IconTimeStepExitSavepoint:
+        savepoint = self.serializer.savepoint["time-step-exit"].id[1].date[date].as_savepoint()
+        return IconTimeStepExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_aes_graupel_init(self, date: str) -> IconAesGraupelInitSavepoint:
+        savepoint = self.serializer.savepoint["aes-graupel-init"].id[1].date[date].as_savepoint()
+        return IconAesGraupelInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_aes_graupel_exit(self, date: str) -> IconAesGraupelExitSavepoint:
+        savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
+        return IconAesGraupelExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
