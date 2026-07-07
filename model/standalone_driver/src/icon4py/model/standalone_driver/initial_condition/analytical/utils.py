@@ -6,7 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    thermodynamic_functions as thermo,
+)
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -99,8 +104,8 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
 def zonalwind_2_normalwind_ndarray(
     *,
     grid: icon_grid.IconGrid,
-    jw_u0: float,
-    jw_baroclinic_amplitude: float,
+    u0: float,
+    baroclinic_amplitude: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
     edge_lat: data_alloc.NDArray,
@@ -113,8 +118,8 @@ def zonalwind_2_normalwind_ndarray(
 
     Args:
         grid: IconGrid
-        jw_u0: base zonal wind speed factor, or maximum wind speed
-        jw_baroclinic_amplitude: perturbation amplitude
+        u0: base zonal wind speed factor, or maximum wind speed
+        baroclinic_amplitude: perturbation amplitude
         lat_perturbation_center: perturbation center in latitude
         lon_perturbation_center: perturbation center in longitude
         edge_lat: edge center latitude
@@ -142,14 +147,14 @@ def zonalwind_2_normalwind_ndarray(
     )
     u = array_ns.where(
         mask,
-        jw_u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
+        u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
         0.0,
     )
-    if jw_baroclinic_amplitude > 1.0e-20:
+    if baroclinic_amplitude > 1.0e-20:
         u = array_ns.where(
             mask,
             u
-            + jw_baroclinic_amplitude
+            + baroclinic_amplitude
             * array_ns.exp(
                 -(
                     (
@@ -219,3 +224,93 @@ def init_w(
     w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
     return w
+
+
+def init_inwp_tracers(
+    *,
+    rho: data_alloc.NDArray,
+    virtual_temperature: data_alloc.NDArray,
+    pressure: data_alloc.NDArray,
+    cell_area: data_alloc.NDArray,
+    ddqz_z_full: data_alloc.NDArray,
+    qv: data_alloc.NDArray,
+    global_reductions: decomposition_defs.Reductions,
+    n_iter: int,
+    rh_at_1000hpa: float,
+    qv_max: float,
+    global_moisture_content: float,
+    normalize_global_moisture: bool,
+) -> None:
+    """Initialize the water-vapour tracer ``qv`` from a relative-humidity profile.
+
+    Host port of ``init_nh_inwp_tracers`` (mo_nh_jabw_exp.f90): qv follows a
+    linearly decreasing relative humidity with height, is iterated against the
+    moisture-dependent temperature, and (for the APE cases) finally rescaled so the
+    global mean column-integrated moisture matches ``global_moisture_content``. The
+    other hydrometeors keep their zero-initialized value.
+
+    ``pressure`` is the hydrostatic pressure and ``virtual_temperature`` is
+    ``theta_v * exner``; both are independent of qv and passed in already diagnosed.
+    ``rho`` is the dry-air density from the hydrostatic adjustment (no moisture
+    feedback).
+    """
+    array_ns = data_alloc.array_namespace(rho)
+
+    # linearly decreasing relative humidity with height (independent of qv)
+    relative_humidity = array_ns.maximum(
+        rh_at_1000hpa - 0.5 + pressure / phy_const.RELATIVE_HUMIDITY_REFERENCE_PRESSURE, 0.0
+    )
+
+    def _qv(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
+        q = thermo.qv_from_relative_humidity(temperature, pressure, rho, relative_humidity)
+        # stratosphere and tropics caps (init_nh_inwp_tracers)
+        q = array_ns.where(
+            pressure <= phy_const.STRATOSPHERE_PRESSURE_THRESHOLD,
+            array_ns.minimum(q, phy_const.STRATOSPHERIC_QV_CAP),
+            q,
+        )
+        return array_ns.minimum(q, qv_max)
+
+    # first guess uses qv = 0, i.e. temperature == virtual temperature
+    temperature = virtual_temperature
+    qv_values = _qv(temperature)
+    for _ in range(n_iter - 1):
+        # re-diagnose the actual temperature with the moisture feedback; the other
+        # hydrometeors are zero here, so only qv enters (see diagnose_temperature).
+        temperature = virtual_temperature / (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_values)
+        qv_values = _qv(temperature)
+
+    if normalize_global_moisture:
+        # rescale qv so the global mean column-integrated moisture matches the
+        # prescribed value (Fortran opt_global_moist / ztmc_ape). The per-cell
+        # qv_max and stratosphere caps are not re-applied after this uniform
+        # rescale, matching init_nh_inwp_tracers in mo_nh_jabw_exp.f90.
+        column_moisture = global_reductions.sum(
+            ddqz_z_full * rho * qv_values * cell_area[:, array_ns.newaxis]
+        )
+        total_area = global_reductions.sum(cell_area)
+        mean_column_moisture = column_moisture / total_area
+        if mean_column_moisture > 1.0e-25:
+            qv_values = qv_values * (global_moisture_content / mean_column_moisture)
+
+    qv[:, :] = qv_values
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers (used by individual analytical IC modules)
+# ---------------------------------------------------------------------------
+
+
+def zone_indices(grid: icon_grid.IconGrid) -> dict[str, int]:
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    return {
+        "end_edge_lateral_boundary_level_2": grid.end_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "end_edge_end": grid.end_index(edge_domain(h_grid.Zone.END)),
+        "end_cell_lateral_boundary_level_2": grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "end_cell_end": grid.end_index(cell_domain(h_grid.Zone.END)),
+    }

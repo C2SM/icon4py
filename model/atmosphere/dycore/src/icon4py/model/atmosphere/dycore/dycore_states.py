@@ -90,7 +90,7 @@ class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     # `max_vertical_cfl` stored as 0-d array of type ta.wpfloat (to be able to avoid cupy synchronization)
-    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]
+    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]  # type: ignore[type-var] # TODO(ricoh): find out what this is about
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """
@@ -174,7 +174,7 @@ class DiagnosticStateNonHydro:
     Declared as exner_dyn_incr in ICON.
     """
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not data_alloc.is_rank0_ndarray(self.max_vertical_cfl):
             # TODO(havogt): instead of this check, we could refactor to a special dataclass-like which promotes to 0-d array on assignment
             raise TypeError(

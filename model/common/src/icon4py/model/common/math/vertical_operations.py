@@ -14,9 +14,10 @@ on cell and edge fields.
 """
 
 from gt4py import next as gtx
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -35,7 +36,7 @@ def average_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(Koff[1]))
+    return 0.5 * (half_level_field + half_level_field(KDim + 1))
 
 
 @gtx.field_operator
@@ -53,7 +54,7 @@ def average_level_plus1_on_edges(
     Returns: fa.EdgeKField[wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(Koff[1]))
+    return 0.5 * (half_level_field + half_level_field(KDim + 1))
 
 
 @gtx.field_operator
@@ -71,7 +72,29 @@ def difference_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
-    return half_level_field - half_level_field(Koff[1])
+    return half_level_field - half_level_field(KDim + 1)
+
+
+@gtx.field_operator
+def with_boundaries_on_half_levels_on_cells(
+    top: fa.CellKField[wpfloat],
+    interior: fa.CellKField[wpfloat],
+    bottom: fa.CellKField[wpfloat],
+    nlev: gtx.int32,
+) -> fa.CellKField[wpfloat]:
+    """
+    Assemble a half-level field: ``top`` at k==0, ``bottom`` at k==nlev, ``interior`` in between.
+
+    Each branch is evaluated only on its own region, so vertical (``Koff``) shifts in the
+    arguments need to be in bounds only within that region.
+    """
+    result = concat_where(
+        (dims.KDim > 0) & (dims.KDim < nlev),
+        interior,
+        0.0,
+    )
+    result = concat_where(dims.KDim == 0, top, result)
+    return concat_where(dims.KDim == nlev, bottom, result)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

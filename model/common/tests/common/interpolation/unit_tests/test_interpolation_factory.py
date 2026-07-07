@@ -70,7 +70,7 @@ def _get_interpolation_factory(
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
@@ -91,7 +91,7 @@ def test_factory_raises_error_on_unknown_field(
     backend: gtx_typing.Backend | None,
     decomposition_info: decomposition.DecompositionInfo,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
