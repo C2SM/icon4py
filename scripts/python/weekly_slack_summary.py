@@ -396,6 +396,63 @@ def _collect_gitlab_ci(
     }
 
 
+def _format_pr_line(pr: dict[str, Any], *, merged_status: bool = False) -> str:
+    if merged_status:
+        merged = "merged" if pr.get("merged_at") else "closed"
+        return f"- [{pr['title']}]({pr['url']}) by {pr['author']} ({merged})"
+    return f"- [{pr['title']}]({pr['url']}) by {pr['author']}"
+
+
+def _format_closed_pr_lines(pr: dict[str, Any]) -> list[str]:
+    lines = [_format_pr_line(pr, merged_status=True)]
+    if pr.get("commits"):
+        lines.append("  Commits:")
+        lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
+    if pr.get("comments") or pr.get("review_comments"):
+        all_comments = pr.get("comments", []) + pr.get("review_comments", [])
+        lines.append(f"  Recent comments: {len(all_comments)}")
+    return lines
+
+
+def _format_active_pr_lines(pr: dict[str, Any]) -> list[str]:
+    lines = [_format_pr_line(pr)]
+    if pr.get("updated_at"):
+        lines.append(f"  Last updated: {pr['updated_at']}")
+    return lines
+
+
+def _format_inactive_pr_lines(pr: dict[str, Any]) -> list[str]:
+    return [f"- [{pr['title']}]({pr['url']}) by {pr['author']} (updated {pr['updated_at']})"]
+
+
+def _format_issue_lines(issue: dict[str, Any], *, closed: bool = False) -> list[str]:
+    if closed:
+        return [
+            f"- [{issue['title']}]({issue['url']}) by {issue['author']} "
+            f"(reason: {issue.get('state_reason') or 'n/a'})"
+        ]
+    return [f"- [{issue['title']}]({issue['url']}) by {issue['author']}"]
+
+
+def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
+    lines = [
+        f"- Status: **{gitlab_ci['status']}**",
+        f"- URL: {gitlab_ci['url']}",
+    ]
+    if gitlab_ci.get("message"):
+        lines.append(f"- Message: {gitlab_ci['message']}")
+    if gitlab_ci.get("failed_jobs"):
+        lines.append(f"- Failed jobs ({len(gitlab_ci['failed_jobs'])}):")
+        lines.extend(
+            f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
+            for job in gitlab_ci["failed_jobs"]
+        )
+    if gitlab_ci.get("running_jobs"):
+        lines.append(f"- Running jobs ({len(gitlab_ci['running_jobs'])}):")
+        lines.extend(f"  - [{job['name']}]({job['url']})" for job in gitlab_ci["running_jobs"])
+    return lines
+
+
 def _format_context_markdown(
     week_start: datetime.datetime,
     week_end: datetime.datetime,
@@ -416,58 +473,28 @@ def _format_context_markdown(
 
     lines.append(f"### Closed PRs ({len(github_prs['closed_prs'])})")
     for pr in github_prs["closed_prs"]:
-        merged = "merged" if pr.get("merged_at") else "closed"
-        lines.append(f"- [{pr['title']}]({pr['url']}) by {pr['author']} ({merged})")
-        if pr.get("commits"):
-            lines.append("  Commits:")
-            for commit in pr["commits"]:
-                lines.append(f"  - [{commit['sha']}] {commit['message']}")
-        if pr.get("comments") or pr.get("review_comments"):
-            all_comments = pr.get("comments", []) + pr.get("review_comments", [])
-            lines.append(f"  Recent comments: {len(all_comments)}")
+        lines.extend(_format_closed_pr_lines(pr))
 
-    lines.append("")
-    lines.append(f"### Active Open PRs ({len(github_prs['active_prs'])})")
+    lines.extend(["", f"### Active Open PRs ({len(github_prs['active_prs'])})", ""])
     for pr in github_prs["active_prs"]:
-        lines.append(f"- [{pr['title']}]({pr['url']}) by {pr['author']}")
-        if pr.get("updated_at"):
-            lines.append(f"  Last updated: {pr['updated_at']}")
+        lines.extend(_format_active_pr_lines(pr))
 
-    lines.append("")
-    lines.append(f"### Inactive Open PRs ({len(github_prs['inactive_prs'])})")
+    lines.extend(["", f"### Inactive Open PRs ({len(github_prs['inactive_prs'])})", ""])
     for pr in github_prs["inactive_prs"]:
-        lines.append(
-            f"- [{pr['title']}]({pr['url']}) by {pr['author']} (updated {pr['updated_at']})"
-        )
+        lines.extend(_format_inactive_pr_lines(pr))
 
-    lines.extend(["", "## Issues", ""])
-    lines.append(f"### Opened Issues ({len(github_issues['opened_issues'])})")
+    lines.extend(
+        ["", "## Issues", "", f"### Opened Issues ({len(github_issues['opened_issues'])})", ""]
+    )
     for issue in github_issues["opened_issues"]:
-        lines.append(f"- [{issue['title']}]({issue['url']}) by {issue['author']}")
+        lines.extend(_format_issue_lines(issue))
 
-    lines.append("")
-    lines.append(f"### Closed Issues ({len(github_issues['closed_issues'])})")
+    lines.extend(["", f"### Closed Issues ({len(github_issues['closed_issues'])})", ""])
     for issue in github_issues["closed_issues"]:
-        lines.append(
-            f"- [{issue['title']}]({issue['url']}) by {issue['author']} "
-            f"(reason: {issue.get('state_reason') or 'n/a'})"
-        )
+        lines.extend(_format_issue_lines(issue, closed=True))
 
     lines.extend(["", "## GitLab Weekly CI", ""])
-    lines.append(f"- Status: **{gitlab_ci['status']}**")
-    lines.append(f"- URL: {gitlab_ci['url']}")
-    if gitlab_ci.get("message"):
-        lines.append(f"- Message: {gitlab_ci['message']}")
-    if gitlab_ci.get("failed_jobs"):
-        lines.append(f"- Failed jobs ({len(gitlab_ci['failed_jobs'])}):")
-        for job in gitlab_ci["failed_jobs"]:
-            lines.append(
-                f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
-            )
-    if gitlab_ci.get("running_jobs"):
-        lines.append(f"- Running jobs ({len(gitlab_ci['running_jobs'])}):")
-        for job in gitlab_ci["running_jobs"]:
-            lines.append(f"  - [{job['name']}]({job['url']})")
+    lines.extend(_format_gitlab_ci_lines(gitlab_ci))
 
     return "\n".join(lines) + "\n"
 
@@ -569,6 +596,7 @@ def _collect_all(
 
 @_cli.command(name="generate")
 def generate(
+    *,
     output_dir: Annotated[
         pathlib.Path,
         typer.Option(

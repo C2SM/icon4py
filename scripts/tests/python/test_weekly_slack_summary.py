@@ -19,7 +19,6 @@ from unittest import mock
 
 import pytest
 import typer
-
 import weekly_slack_summary
 
 
