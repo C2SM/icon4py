@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Time-related type aliases shared across the model."""
+"""Time-related type aliases (and more) shared across the model."""
 
 import datetime
 import time as _std_time
