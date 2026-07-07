@@ -34,7 +34,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         run: |
           uv run -q --frozen --isolated --python 3.12 --only-group scripts \
-            python3 scripts/python/weekly_slack_summary.py generate \
+            python3 scripts/python/weekly_slack_summary.py \
             --output-dir weekly_slack_summary_output
 
       - name: Upload summary artifact

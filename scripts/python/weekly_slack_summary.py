@@ -565,8 +565,8 @@ def _post_to_slack(
         ) from e
 
 
-def _basic_auth_token() -> str | None:
-    """Return a base64-encoded GitHub App token if available, else raw token."""
+def _github_token() -> str | None:
+    """Return a GitHub API token from the environment, if available."""
     return os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 
 
@@ -628,7 +628,7 @@ def generate(
     ] = None,
 ) -> None:
     """Collect activity data and produce a weekly Slack summary."""
-    token = github_token or _basic_auth_token()
+    token = github_token or _github_token()
     output_dir = output_dir.resolve()
 
     typer.echo("Collecting GitHub activity and GitLab CI status...")

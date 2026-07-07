@@ -29,7 +29,7 @@ require_cmd uv
 
 log_info "Running weekly Slack summary generator..."
 uv run -q --frozen --isolated --python 3.12 --only-group scripts \
-    python3 "${REPO_ROOT}/scripts/python/weekly_slack_summary.py" generate \
+    python3 "${REPO_ROOT}/scripts/python/weekly_slack_summary.py" \
     ${DRY_RUN} ${SKIP_OPENCODE} "${EXTRA_ARGS[@]}"
 
 log_info "Weekly Slack summary complete."
