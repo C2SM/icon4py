@@ -382,7 +382,7 @@ class TestGenerateCommand:
         monkeypatch.setattr(weekly_slack_summary, "_collect_all", fake_collect_all)
 
         with pytest.raises(typer.Exit) as exc_info:
-            weekly_slack_summary.generate(
+            weekly_slack_summary.generate_cmd(
                 output_dir=tmp_path,
                 dry_run=True,
                 skip_opencode=True,
@@ -401,7 +401,7 @@ class TestGenerateCommand:
 
     def test_offline_dry_run_writes_files(self, tmp_path):
         with pytest.raises(typer.Exit) as exc_info:
-            weekly_slack_summary.generate(
+            weekly_slack_summary.generate_cmd(
                 output_dir=tmp_path,
                 dry_run=True,
                 skip_opencode=True,
@@ -409,8 +409,22 @@ class TestGenerateCommand:
             )
         assert exc_info.value.exit_code == 0
 
+        context_json = tmp_path / "weekly_slack_summary_context.json"
+        context_md = tmp_path / "weekly_slack_summary_context.md"
         summary_md = tmp_path / "weekly_slack_summary.md"
+        assert context_json.exists()
+        assert context_md.exists()
         assert summary_md.exists()
+
+        data = json.loads(context_json.read_text())
+        assert data["repository"] == "C2SM/icon4py"
+        assert len(data["github_prs"]["closed_prs"]) == 1
+        assert len(data["github_prs"]["active_prs"]) == 1
+        assert len(data["github_prs"]["inactive_prs"]) == 1
+        assert len(data["github_issues"]["opened_issues"]) == 1
+        assert len(data["github_issues"]["closed_issues"]) == 1
+        assert data["gitlab_ci"]["status"] == "success"
+
         markdown = summary_md.read_text()
         assert "Closed PRs" in markdown
         assert "Active Open PRs" in markdown

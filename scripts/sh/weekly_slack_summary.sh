@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # [help] Generate and optionally post the weekly Slack activity summary.
-# Invoked via: ./scripts/run weekly-slack-summary [--dry-run]
+# Invoked via: ./scripts/run weekly-slack-summary [--dry-run] [--skip-opencode] [--offline]
 
 source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
@@ -32,7 +32,7 @@ require_cmd uv
 
 log_info "Running weekly Slack summary generator..."
 uv run -q --frozen --isolated --python 3.12 --only-group scripts \
-    python3 "${REPO_ROOT}/scripts/python/weekly_slack_summary.py" \
+    python3 "${REPO_ROOT}/scripts/python/weekly_slack_summary.py" generate \
     ${DRY_RUN} ${SKIP_OPENCODE} ${OFFLINE} "${EXTRA_ARGS[@]}"
 
 log_info "Weekly Slack summary complete."

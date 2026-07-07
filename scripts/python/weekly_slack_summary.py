@@ -25,12 +25,14 @@ import urllib.request
 from typing import Annotated, Any, Final
 
 import typer
-from helpers import common
 
 
 # NOTE: this script is intentionally not auto-discovered by ``scripts/run``;
 # the user-facing entry point is ``scripts/sh/weekly_slack_summary.sh``.
 _cli = typer.Typer(no_args_is_help=True, help=__doc__)
+
+
+_SCRIPTS_DIR: Final[pathlib.Path] = pathlib.Path(__file__).resolve().parents[1]
 
 
 GITHUB_REPO_OWNER: Final[str] = "C2SM"
@@ -42,7 +44,7 @@ GITLAB_PIPELINE_URL_TEMPLATE: Final[str] = (
 )
 GITLAB_API_BASE: Final[str] = "https://gitlab.com/api/v4"
 INSTRUCTIONS_FILE: Final[pathlib.Path] = (
-    common.SCRIPTS_DIR / "data" / "weekly_slack_summary_instructions.md"
+    _SCRIPTS_DIR / "data" / "weekly_slack_summary_instructions.md"
 )
 
 
@@ -405,9 +407,13 @@ def _format_closed_pr_lines(pr: dict[str, Any]) -> list[str]:
     if pr.get("commits"):
         lines.append("  Commits:")
         lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
-    if pr.get("comments") or pr.get("review_comments"):
-        all_comments = pr.get("comments", []) + pr.get("review_comments", [])
-        lines.append(f"  Recent comments: {len(all_comments)}")
+    all_comments = pr.get("comments", []) + pr.get("review_comments", [])
+    if all_comments:
+        lines.append(f"  Recent comments ({len(all_comments)}):")
+        for comment in all_comments:
+            body = comment.get("body", "")
+            snippet = body[:200].replace("\n", " ")
+            lines.append(f"    - {comment.get('author', 'unknown')}: {snippet}")
     return lines
 
 
@@ -415,6 +421,13 @@ def _format_active_pr_lines(pr: dict[str, Any]) -> list[str]:
     lines = [_format_pr_line(pr)]
     if pr.get("updated_at"):
         lines.append(f"  Last updated: {pr['updated_at']}")
+    all_comments = pr.get("comments", []) + pr.get("review_comments", [])
+    if all_comments:
+        lines.append(f"  Recent comments ({len(all_comments)}):")
+        for comment in all_comments:
+            body = comment.get("body", "")
+            snippet = body[:200].replace("\n", " ")
+            lines.append(f"    - {comment.get('author', 'unknown')}: {snippet}")
     return lines
 
 
@@ -578,10 +591,11 @@ def _collect_all(
     token: str | None = None,
 ) -> dict[str, Any]:
     """Collect all static inputs for the weekly summary."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
     week_start, week_end = _previous_week_bounds(now)
-    # Extend the GitLab window by ~30 hours before Monday 08:00 UTC
-    gitlab_start = week_start - datetime.timedelta(hours=30)
-    gitlab_end = week_end + datetime.timedelta(hours=8)
+    # Look for the latest weekly GitLab CI pipeline in the ~30 hours before now.
+    gitlab_start = now - datetime.timedelta(hours=30)
+    gitlab_end = now
 
     github_prs = _collect_github_prs(week_start, week_end, token=token)
     github_issues = _collect_github_issues(week_start, week_end, token=token)
@@ -682,7 +696,7 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
 
 
 @_cli.command(name="generate")
-def generate(
+def generate_cmd(
     *,
     output_dir: Annotated[
         pathlib.Path,
@@ -766,6 +780,12 @@ def generate(
     summary_text = summary_path.read_text(encoding="utf-8")
     _post_to_slack(webhook, channel, summary_text)
     typer.echo("Summary posted to Slack.")
+
+
+@_cli.command(name="version")
+def version_cmd() -> None:
+    """Print the script version."""
+    typer.echo("weekly_slack_summary 0.1.0")
 
 
 if __name__ == "__main__":
