@@ -528,14 +528,15 @@ def _run_opencode(
     cmd = [
         "opencode",
         "run",
-        "--instructions",
+        "--quiet",
+        "--file",
         str(instructions_path),
-        "--input",
+        "--file",
         str(context_path),
-        "--output",
-        str(output_path),
+        "Generate the weekly Slack summary following the attached instructions and context.",
     ]
-    subprocess.run(cmd, check=True)
+    result = subprocess.run(cmd, capture_output=True, check=True, text=True)
+    output_path.write_text(result.stdout, encoding="utf-8")
 
 
 def _post_to_slack(
