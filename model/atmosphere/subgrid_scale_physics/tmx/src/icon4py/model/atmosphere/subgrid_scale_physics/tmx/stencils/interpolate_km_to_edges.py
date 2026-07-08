@@ -6,10 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import maximum, neighbor_sum
+from gt4py.next import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2CDim
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
+    _cell_2_edge_interpolation,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -27,8 +29,9 @@ def _interpolate_km_to_edges(
         km_ie = max(km_min, sum_{c in E2C} c_lin_e * km_ic(c))
 
     Port of ``interpolate_eddy_viscosity2half_edge`` in ICON's
-    ``mo_vdf_atmo.f90`` (``cells2edges_scalar`` with ``ptr_int%c_lin_e``
-    followed by the ``MAX(km_min, ...)`` loop), with the floor fused into the
+    ``mo_vdf_atmo.f90`` (``cells2edges_scalar`` with ``ptr_int%c_lin_e``,
+    reusing the common field operator ``_cell_2_edge_interpolation``, followed
+    by the ``MAX(km_min, ...)`` loop), with the floor fused into the
     interpolation. The single-neighbor lateral-boundary fill of
     ``cells2edges_scalar`` (edges with ``refin_ctrl`` 1..2) is not reached at
     this call site (``opt_rlstart = grf_bdywidth_e``) and is not ported.
@@ -56,7 +59,7 @@ def _interpolate_km_to_edges(
     Returns:
         eddy viscosity at half-level edges (nlev + 1 levels)
     """
-    return maximum(km_min, neighbor_sum(km_ic(E2C) * c_lin_e, axis=E2CDim))
+    return maximum(km_min, _cell_2_edge_interpolation(km_ic, c_lin_e))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

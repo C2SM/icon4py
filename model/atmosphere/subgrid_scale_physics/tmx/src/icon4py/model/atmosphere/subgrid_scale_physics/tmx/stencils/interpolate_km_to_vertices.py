@@ -6,10 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import maximum, neighbor_sum
+from gt4py.next import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import V2C, V2CDim
+from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
+    _compute_cell_2_vertex_interpolation,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -27,7 +29,8 @@ def _interpolate_km_to_vertices(
         km_iv = max(km_min, sum_{c in V2C} cells_aw_verts * km_ic(c))
 
     Port of ``interpolate_eddy_viscosity2half_vertex`` in ICON's
-    ``mo_vdf_atmo.f90`` (``cells2verts_scalar`` with ``ptr_int%cells_aw_verts``
+    ``mo_vdf_atmo.f90`` (``cells2verts_scalar`` with ``ptr_int%cells_aw_verts``,
+    reusing the common field operator ``_compute_cell_2_vertex_interpolation``,
     followed by the ``MAX(km_min, ...)`` loop), with the floor fused into the
     interpolation.
 
@@ -54,7 +57,7 @@ def _interpolate_km_to_vertices(
     Returns:
         eddy viscosity at half-level vertices (nlev + 1 levels)
     """
-    return maximum(km_min, neighbor_sum(cells_aw_verts * km_ic(V2C), axis=V2CDim))
+    return maximum(km_min, _compute_cell_2_vertex_interpolation(km_ic, cells_aw_verts))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

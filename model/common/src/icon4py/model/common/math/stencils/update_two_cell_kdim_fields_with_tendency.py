@@ -30,7 +30,7 @@ def _update_two_cell_kdim_fields_with_tendency(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def update_two_cell_kdim_fields_with_tendency(  # noqa: PLR0917 [too-many-positional-arguments]
+def update_two_cell_kdim_fields_with_tendency(
     field_1: fa.CellKField[wpfloat],
     field_2: fa.CellKField[wpfloat],
     tendency_1: fa.CellKField[wpfloat],
