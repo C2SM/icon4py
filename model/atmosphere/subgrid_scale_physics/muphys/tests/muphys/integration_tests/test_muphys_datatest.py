@@ -12,7 +12,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
+    component as muphys_component,
+    config as muphys_config,
+)
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils
 
@@ -62,30 +65,26 @@ if TYPE_CHECKING:
     "date",
     ["2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000", "2008-09-01T00:15:00.000"],
 )
-def test_aes_graupel_granule(
+def test_muphys_granule(
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     icon_grid: icon_grid_types.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
-    init_savepoint = data_provider.from_savepoint_aes_graupel_init(date=date)
-    exit_savepoint = data_provider.from_savepoint_aes_graupel_exit(date=date)
+    init_savepoint = data_provider.from_savepoint_muphys_init(date=date)
+    exit_savepoint = data_provider.from_savepoint_muphys_exit(date=date)
 
     dtime = init_savepoint.dtime()
     # numpy index of the first level ICON computes the scheme on (Fortran jks_cloudy is 1-based)
     jks = init_savepoint.jks_cloudy() - 1
 
-    # the Fortran reference uses cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90) and the
-    # granule consumes qnc in the same SI slot; MuphysConfig().qnc = 50.0 is labelled
-    # cm^-3 and reaches the granule unconverted through the driver wiring (factor-1e6
-    # bug there), so the Fortran value is passed explicitly here
-    fortran_cloud_num = 50.0e6
+    # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90)
     component = muphys_component.MuphysComponent(
         ncells=icon_grid.num_cells,
         nlev=icon_grid.num_levels,
         dtime=datetime.timedelta(seconds=dtime),
-        qnc=fortran_cloud_num,
+        qnc=muphys_config.MuphysConfig().qnc,
         backend=backend,
     )
 

@@ -2003,7 +2003,7 @@ class IconTimeStepExitSavepoint(IconSavepoint):
         return self.tracer(QG)
 
 
-class IconAesGraupelSavepoint(IconSavepoint):
+class IconMuphysSavepoint(IconSavepoint):
     """Common fields of the aes-graupel-init/exit savepoints written around the mig
     block (cloud_mig = satad + graupel + satad) in aes_phy_main. tend_ta/tend_tracers
     are the prm_tend accumulators: exit minus init isolates the mig contribution."""
@@ -2039,7 +2039,7 @@ class IconAesGraupelSavepoint(IconSavepoint):
         return self.tracer(QG)
 
 
-class IconAesGraupelInitSavepoint(IconAesGraupelSavepoint):
+class IconMuphysInitSavepoint(IconMuphysSavepoint):
     def dz(self):
         return self._get_field("dz", dims.CellDim, dims.KDim)
 
@@ -2056,7 +2056,7 @@ class IconAesGraupelInitSavepoint(IconAesGraupelSavepoint):
         return int(self.serializer.read("jks_cloudy", self.savepoint)[0])
 
 
-class IconAesGraupelExitSavepoint(IconAesGraupelSavepoint):
+class IconMuphysExitSavepoint(IconMuphysSavepoint):
     def rsfl(self):
         # surface rain rate
         return self._get_field("rsfl", dims.CellDim)
@@ -2372,14 +2372,14 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_aes_graupel_init(self, date: str) -> IconAesGraupelInitSavepoint:
+    def from_savepoint_muphys_init(self, date: str) -> IconMuphysInitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-init"].id[1].date[date].as_savepoint()
-        return IconAesGraupelInitSavepoint(
+        return IconMuphysInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_aes_graupel_exit(self, date: str) -> IconAesGraupelExitSavepoint:
+    def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
-        return IconAesGraupelExitSavepoint(
+        return IconMuphysExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
