@@ -10,6 +10,9 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_wp import (
+    _interpolate_edge_field_to_half_levels_wp,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -29,7 +32,8 @@ def _interpolate_vn_to_half_levels_with_boundary(
     Interpolate the normal velocity from full levels to half levels (edge interfaces).
 
     Port of ``interpolate_normal_velocity_edge_interface`` in ICON's ``mo_vdf_atmo.f90``:
-    - interior half levels (0 < k < nlev) are linearly interpolated with ``wgtfac_e``,
+    - interior half levels (0 < k < nlev) are linearly interpolated with ``wgtfac_e``
+      (reuses the common field operator ``_interpolate_edge_field_to_half_levels_wp``),
     - the top half level (k == 0) is extrapolated quadratically from the first three
       full levels with ``wgtfacq1_e_1/2/3``,
     - the bottom half level (k == nlev) is extrapolated quadratically from the last
@@ -52,7 +56,7 @@ def _interpolate_vn_to_half_levels_with_boundary(
     Returns:
         normal velocity on half levels (nlev + 1 levels)
     """
-    vn_ie_interior = wgtfac_e * vn + (wpfloat("1.0") - wgtfac_e) * vn(KDim - 1)
+    vn_ie_interior = _interpolate_edge_field_to_half_levels_wp(wgtfac_e=wgtfac_e, interpolant=vn)
     vn_ie_top = wgtfacq1_e_1 * vn + wgtfacq1_e_2 * vn(KDim + 1) + wgtfacq1_e_3 * vn(KDim + 2)
     vn_ie_bottom = (
         wgtfacq_e_1 * vn(KDim - 1) + wgtfacq_e_2 * vn(KDim - 2) + wgtfacq_e_3 * vn(KDim - 3)
