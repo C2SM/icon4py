@@ -152,6 +152,10 @@ def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) 
 def _nox_session_name(base: str, params: str) -> str:
     """Return the nox session name used for collection.
 
+    *params* must be the comma-separated parameter values exactly as nox
+    renders them in session names (e.g. ``"basic, common"``), not keyword
+    assignments.
+
     When collection runs with ``ICON4PY_NOX_USE_ACTIVE_VENV=1`` nox ignores the
     ``python=`` parametrization and names sessions without a Python-version
     suffix.
@@ -261,9 +265,7 @@ def _model_cells(
                                 "BACKEND": backend,
                                 "GRID": grid,
                             },
-                            session=_nox_session_name(
-                                "test_model", f"selection='stencils', subpackage='{subpackage}'"
-                            ),
+                            session=_nox_session_name("test_model", f"stencils, {subpackage}"),
                             pytest_args=[
                                 "--collect-only",
                                 "-n0",
@@ -298,9 +300,7 @@ def _model_cells(
                                 "BACKEND": backend,
                                 "LEVEL": level,
                             },
-                            session=_nox_session_name(
-                                "test_model", f"selection='{subset}', subpackage='{subpackage}'"
-                            ),
+                            session=_nox_session_name("test_model", f"{subset}, {subpackage}"),
                             pytest_args=pytest_args,
                         )
                     )
@@ -321,7 +321,7 @@ def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
                 extends=".test_tools_aarch64",
                 variables={},
                 matrix={"SELECTION": selection},
-                session=_nox_session_name("test_tools_and_bindings", f"selection='{selection}'"),
+                session=_nox_session_name("test_tools_and_bindings", selection),
                 pytest_args=pytest_args,
             )
         )
@@ -360,9 +360,7 @@ def _model_mpi_cells(
                                 "BACKEND": backend,
                                 "LEVEL": level,
                             },
-                            session=_nox_session_name(
-                                "test_model_mpi", f"selection='{subset}', subpackage='{subpackage}'"
-                            ),
+                            session=_nox_session_name("test_model_mpi", f"{subset}, {subpackage}"),
                             pytest_args=pytest_args,
                         )
                     )

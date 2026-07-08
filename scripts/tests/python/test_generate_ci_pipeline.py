@@ -64,7 +64,7 @@ def test_run_nox_collection_constructs_command(monkeypatch):
 
     env = {"ICON4PY_NOX_USE_ACTIVE_VENV": "1"}
     count = gcp._run_nox_collection(
-        "test_model-3.13(selection='basic', subpackage='common')",
+        "test_model-3.13(basic, common)",
         ["--collect-only", "-n0", "--backend=dace_cpu", "--level=unit"],
         env,
         300,
@@ -73,7 +73,7 @@ def test_run_nox_collection_constructs_command(monkeypatch):
     assert captured["cmd"] == [
         "nox",
         "-s",
-        "test_model-3.13(selection='basic', subpackage='common')",
+        "test_model-3.13(basic, common)",
         "--",
         "--collect-only",
         "-n0",
@@ -185,7 +185,7 @@ def test_tools_cells_use_correct_session(monkeypatch):
         sessions="tools",
         tools_subsets="unittest",
     )
-    assert captured["session"] == "test_tools_and_bindings(selection='unittest')"
+    assert captured["session"] == "test_tools_and_bindings(unittest)"
     assert "--datatest-skip" in captured["args"]
 
 
@@ -206,4 +206,4 @@ def test_model_mpi_cells_use_correct_session(monkeypatch):
         backends="dace_cpu",
         levels="unit",
     )
-    assert captured["session"] == "test_model_mpi(selection='basic', subpackage='common')"
+    assert captured["session"] == "test_model_mpi(basic, common)"
