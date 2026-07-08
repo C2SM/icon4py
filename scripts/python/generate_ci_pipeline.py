@@ -31,7 +31,7 @@ import os
 import re
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -381,6 +381,7 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
 
     env = _collection_env()
     kept: list[_MatrixCell] = []
+    processed: set[Future] = set()
 
     with ThreadPoolExecutor(max_workers=_COLLECTION_MAX_WORKERS) as executor:
         futures = {
@@ -395,6 +396,7 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
         }
         try:
             for future in as_completed(futures, timeout=_COLLECTION_TOTAL_TIMEOUT_SECONDS):
+                processed.add(future)
                 cell = futures[future]
                 try:
                     count = future.result(timeout=0)
@@ -406,8 +408,11 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
             # Total timeout expired. Be conservative: evaluate every remaining
             # future. Pending futures are cancelled but their cells are kept;
             # done futures are inspected and kept unless they definitively
-            # collected zero tests.
+            # collected zero tests. Already-processed futures are skipped to
+            # avoid duplicate matrix entries.
             for future, cell in futures.items():
+                if future in processed:
+                    continue
                 if not future.done():
                     future.cancel()
                     kept.append(cell)

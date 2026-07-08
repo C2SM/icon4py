@@ -303,3 +303,15 @@ def test_total_timeout_keeps_pending_futures(monkeypatch):
 
     assert gcp._collect_cells([cell]) == [cell]
     assert pending.cancelled()
+
+
+def test_total_timeout_no_duplicate_done_futures_with_positive_count(monkeypatch):
+    """A done future yielded before timeout is kept exactly once."""
+    cell_positive = _make_cell("positive")
+    cell_other = _make_cell("other")
+    futures = [_future_with_result(5), _future_with_result(0)]
+    monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
+    monkeypatch.setattr(gcp, "as_completed", _as_completed_first_then_timeout)
+
+    kept = gcp._collect_cells([cell_positive, cell_other])
+    assert kept == [cell_positive]
