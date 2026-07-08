@@ -17,29 +17,40 @@ source of facts.
 
 ## Output format
 
-1. `*icon4py weekly summary: <start-date> - <end-date>*`
-2. `*Closed PRs*` — for each closed/merged PR, include:
-   - title as a raw URL link
-   - author
-   - a one-sentence summary that explains what the PR actually does
-   - if the title is vague or acronym-heavy, also include the most informative
-     commit message line in parentheses after the summary
-3. `*Ongoing PRs*` — title, author, one-sentence status/description, link.
-4. `*Inactive open PRs*` — up to 15 highlights with reason tags.
-5. `*Opened issues*` — title, author, one-sentence description, link.
-6. `*Closed issues*` — title, author, one-sentence description, link.
-7. `*Weekly CI status*` — short report.
+Produce a numbered summary with a horizontal separator (`---`) between sections.
 
-For every item, the one-sentence summary must describe what it is actually
-about, not restate the title. Use the body, commit messages, or comments to
-infer the real content when needed.
+01. `*icon4py weekly summary: <start-date> - <end-date>*`
+02. `---`
+03. `*Closed PRs*`
+    1. `<title>` by <author> — <one-sentence summary> <url>
+    2. ...
+04. `---`
+05. `*Ongoing PRs*`
+    1. `<title>` by <author> — <one-sentence status> <url>
+    2. ...
+06. `---`
+07. `*Inactive open PRs*`
+    1. `<title>` (<reason tag>) <url>
+    2. ...
+08. `---`
+09. `*Opened issues*`
+    1. `<title>` by <author> — <one-sentence summary> <url>
+10. `---`
+11. `*Closed issues*`
+    1. `<title>` by <author> — <one-sentence summary> <url>
+12. `---`
+13. `*Weekly CI status*` — short report.
+
+For every PR and issue, include a one-sentence description of what it is
+actually about. Do not just repeat the title. Use body, comments, or commits to
+infer content when the title is unclear.
 
 ## Tone and style
 
 - Keep the whole summary under 45 lines.
 - Mention blockers briefly when present.
 - For CI, distinguish: all-good, no recent pipeline, still running, failed jobs.
-- Do not include raw JSON or commit hashes unless they add meaningful context.
+- Do not include raw JSON or commit hashes.
 
 ## Weekly Easter Egg
 
