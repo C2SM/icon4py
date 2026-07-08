@@ -390,7 +390,7 @@ class TestRunOpenCode:
 
 
 class TestGenerateCommand:
-    def test_dry_run_writes_files(self, tmp_path, monkeypatch):
+    def test_dummy_output_writes_files(self, tmp_path, monkeypatch):
         def fake_collect_all(*args, **kwargs):
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
@@ -416,8 +416,9 @@ class TestGenerateCommand:
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
                 output_dir=tmp_path,
-                dry_run=True,
-                skip_opencode=True,
+                dummy_input_data=False,
+                dummy_summarization=True,
+                dummy_output=True,
             )
         assert exc_info.value.exit_code == 0
 
@@ -431,13 +432,13 @@ class TestGenerateCommand:
         data = json.loads(context_json.read_text())
         assert data["repository"] == "C2SM/icon4py"
 
-    def test_offline_dry_run_writes_files(self, tmp_path):
+    def test_dummy_input_data_and_output_writes_files(self, tmp_path):
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
                 output_dir=tmp_path,
-                dry_run=True,
-                skip_opencode=True,
-                offline=True,
+                dummy_input_data=True,
+                dummy_summarization=True,
+                dummy_output=True,
             )
         assert exc_info.value.exit_code == 0
 
@@ -464,6 +465,72 @@ class TestGenerateCommand:
         assert "Opened Issues" in markdown
         assert "Closed Issues" in markdown
         assert "GitLab Weekly CI" in markdown
+
+    def test_dummy_output_prints_summary(self, tmp_path, capsys):
+        with pytest.raises(typer.Exit) as exc_info:
+            weekly_slack_summary.generate_cmd(
+                output_dir=tmp_path,
+                dummy_input_data=True,
+                dummy_summarization=True,
+                dummy_output=True,
+            )
+        assert exc_info.value.exit_code == 0
+
+        summary_md = tmp_path / "weekly_slack_summary.md"
+        assert summary_md.exists()
+
+        captured = capsys.readouterr()
+        assert summary_md.read_text(encoding="utf-8") in captured.out
+
+    def test_default_mode_calls_opencode_and_posts(self, tmp_path, monkeypatch):
+        def fake_collect_all(*args, **kwargs):
+            return {
+                "week_start": "2024-07-01T00:00:00+00:00",
+                "week_end": "2024-07-07T23:59:59+00:00",
+                "repository": "C2SM/icon4py",
+                "github_prs": {
+                    "closed_prs": [],
+                    "active_prs": [],
+                    "inactive_prs": [],
+                },
+                "github_issues": {"opened_issues": [], "closed_issues": []},
+                "gitlab_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+            }
+
+        monkeypatch.setattr(weekly_slack_summary, "_collect_all", fake_collect_all)
+
+        opencode_calls: list[pathlib.Path] = []
+
+        def fake_run_opencode(instructions, context, output):
+            opencode_calls.append(output)
+            output.write_text("polished summary", encoding="utf-8")
+
+        monkeypatch.setattr(weekly_slack_summary, "_run_opencode", fake_run_opencode)
+
+        slack_calls: list[tuple[str, str | None, str]] = []
+
+        def fake_post_to_slack(webhook_url, channel, markdown):
+            slack_calls.append((webhook_url, channel, markdown))
+
+        monkeypatch.setattr(weekly_slack_summary, "_post_to_slack", fake_post_to_slack)
+
+        weekly_slack_summary.generate_cmd(
+            output_dir=tmp_path,
+            slack_webhook_url="https://hooks.slack.com/test",
+            slack_channel="#test",
+        )
+
+        summary_md = tmp_path / "weekly_slack_summary.md"
+        assert summary_md.exists()
+        assert summary_md.read_text(encoding="utf-8") == "polished summary"
+        assert opencode_calls == [summary_md]
+        assert slack_calls == [("https://hooks.slack.com/test", "#test", "polished summary")]
 
     def test_missing_webhook_exits_nonzero(self, tmp_path, monkeypatch):
         monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
@@ -493,7 +560,8 @@ class TestGenerateCommand:
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
                 output_dir=tmp_path,
-                dry_run=False,
-                skip_opencode=True,
+                dummy_input_data=False,
+                dummy_summarization=True,
+                dummy_output=False,
             )
         assert exc_info.value.exit_code == 1

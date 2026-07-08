@@ -27,9 +27,11 @@ from typing import Annotated, Any, Final
 import typer
 
 
-# NOTE: this script is intentionally not auto-discovered by ``scripts/run``;
-# the user-facing entry point is ``scripts/sh/weekly_slack_summary.sh``.
-_cli = typer.Typer(no_args_is_help=True, help=__doc__)
+cli = typer.Typer(
+    name=__name__.split(".")[-1].replace("_", "-"),
+    no_args_is_help=True,
+    help=__doc__,
+)
 
 
 _SCRIPTS_DIR: Final[pathlib.Path] = pathlib.Path(__file__).resolve().parents[1]
@@ -714,7 +716,7 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
     }
 
 
-@_cli.command(name="generate")
+@cli.command(name="generate")
 def generate_cmd(
     *,
     output_dir: Annotated[
@@ -725,17 +727,26 @@ def generate_cmd(
             help="Directory where context and generated summary files are written.",
         ),
     ] = pathlib.Path("weekly_slack_summary_output"),
-    dry_run: Annotated[
+    dummy_input_data: Annotated[
         bool,
-        typer.Option("--dry-run", help="Generate files but do not post to Slack."),
+        typer.Option(
+            "--dummy-input-data",
+            help="Use synthetic fixture data instead of live GitHub/GitLab API calls.",
+        ),
     ] = False,
-    skip_opencode: Annotated[
+    dummy_summarization: Annotated[
         bool,
-        typer.Option("--skip-opencode", help="Skip the OpenCode generation step."),
+        typer.Option(
+            "--dummy-summarization",
+            help="Use the deterministic direct Markdown formatter instead of invoking OpenCode.",
+        ),
     ] = False,
-    offline: Annotated[
+    dummy_output: Annotated[
         bool,
-        typer.Option("--offline", help="Use synthetic data instead of calling external APIs."),
+        typer.Option(
+            "--dummy-output",
+            help="Skip posting to Slack and print the final Markdown summary to stdout.",
+        ),
     ] = False,
     github_token: Annotated[
         str | None,
@@ -753,8 +764,8 @@ def generate_cmd(
     """Collect activity data and produce a weekly Slack summary."""
     output_dir = output_dir.resolve()
 
-    if offline:
-        typer.echo("Using offline/sample data...")
+    if dummy_input_data:
+        typer.echo("Using dummy input data...")
         context = _sample_context()
     else:
         token = github_token or _github_token()
@@ -772,9 +783,9 @@ def generate_cmd(
     typer.echo(f"Wrote context markdown: {context_md_path}")
 
     summary_path = output_dir / "weekly_slack_summary.md"
-    if skip_opencode:
+    if dummy_summarization:
         summary_path.write_text(markdown_context, encoding="utf-8")
-        typer.echo(f"Wrote summary (OpenCode skipped): {summary_path}")
+        typer.echo(f"Wrote summary (dummy summarization): {summary_path}")
     else:
         instructions = INSTRUCTIONS_FILE
         if not instructions.exists():
@@ -783,8 +794,10 @@ def generate_cmd(
         _run_opencode(instructions, context_md_path, summary_path)
         typer.echo(f"Wrote summary: {summary_path}")
 
-    if dry_run:
-        typer.echo("Dry-run mode: skipping Slack post.")
+    if dummy_output:
+        summary_text = summary_path.read_text(encoding="utf-8")
+        typer.echo(summary_text)
+        typer.echo("Dummy output mode: skipping Slack post.")
         raise typer.Exit(code=0)
 
     webhook = slack_webhook_url or os.environ.get("SLACK_WEBHOOK_URL")
@@ -801,11 +814,11 @@ def generate_cmd(
     typer.echo("Summary posted to Slack.")
 
 
-@_cli.command(name="version")
+@cli.command(name="version")
 def version_cmd() -> None:
     """Print the script version."""
     typer.echo("weekly_slack_summary 0.1.0")
 
 
 if __name__ == "__main__":
-    sys.exit(_cli())
+    sys.exit(cli())

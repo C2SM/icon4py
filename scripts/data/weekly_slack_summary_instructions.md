@@ -1,4 +1,4 @@
-# OpenCode Instructions: Weekly Slack Summary
+# Weekly Slack Summary Instructions
 
 You are generating a concise weekly activity summary for the icon4py repository.
 The summary will be posted to a Slack channel. Use the provided Markdown context
@@ -23,7 +23,6 @@ Produce a single Markdown document with exactly these sections, in order:
 - Keep the whole summary short (aim for under 40 lines).
 - Use full links; Slack will unfurl them if configured.
 - One-sentence summaries only.
-- Be factual; do not invent details not present in the context.
 - For CI, explicitly distinguish these cases:
   - all-good (green)
   - no recent pipeline found
