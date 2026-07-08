@@ -129,6 +129,14 @@ class TestCollectGitHubPRs:
                 ]
             if "/comments" in decoded or "/review_comments" in decoded:
                 return []
+            if "/pulls/44" in decoded:
+                return {
+                    "number": 44,
+                    "comments": 2,
+                    "review_comments": 1,
+                    "draft": False,
+                    "mergeable_state": "clean",
+                }
             raise AssertionError(f"Unexpected URL: {url}")
 
         with mock.patch.object(
@@ -147,6 +155,14 @@ class TestCollectGitHubPRs:
         assert result["active_prs"][0]["commits"][0]["sha"] == "abc1234"
         assert len(result["inactive_prs"]) == 1
         assert result["inactive_prs"][0]["number"] == 44
+        assert result["inactive_prs"][0]["comments_count"] == 2
+        assert result["inactive_prs"][0]["review_comments_count"] == 1
+        assert len(result["inactive_pr_highlights"]) == 1
+        assert result["inactive_pr_highlights"][0]["reasons"] == [
+            "newest inactive",
+            "oldest inactive",
+            "most active inactive",
+        ]
 
 
 class TestCollectGitHubIssues:
@@ -306,6 +322,22 @@ class TestFormatContextMarkdown:
                     "author": "carol",
                     "url": "https://github.com/C2SM/icon4py/pull/3",
                     "updated_at": "2024-06-01T12:00:00Z",
+                    "comments_count": 0,
+                    "review_comments_count": 0,
+                    "draft": False,
+                    "mergeable_state": "clean",
+                }
+            ],
+            "inactive_pr_highlights": [
+                {
+                    "number": 3,
+                    "title": "Inactive PR",
+                    "author": "carol",
+                    "url": "https://github.com/C2SM/icon4py/pull/3",
+                    "updated_at": "2024-06-01T12:00:00Z",
+                    "reasons": ["newest inactive", "oldest inactive"],
+                    "draft": False,
+                    "mergeable_state": "clean",
                 }
             ],
         }
@@ -343,9 +375,98 @@ class TestFormatContextMarkdown:
         assert "Closed PRs (1)" in markdown
         assert "Active Open PRs (1)" in markdown
         assert "Inactive Open PRs (1)" in markdown
+        assert "A selection of up to 15 highlighted inactive PRs" in markdown
+        assert "(newest inactive & oldest inactive)" in markdown
         assert "Opened Issues (1)" in markdown
         assert "Closed Issues (1)" in markdown
         assert "Status: **success**" in markdown
+
+
+class TestInactivePRHighlights:
+    def test_selects_newest_oldest_most_active_and_deduplicates(self):
+        prs = [
+            {
+                "number": 1,
+                "title": "PR one",
+                "author": "a1",
+                "url": "https://github.com/C2SM/icon4py/pull/1",
+                "updated_at": "2024-07-10T00:00:00Z",
+                "comments_count": 1,
+                "review_comments_count": 0,
+                "draft": False,
+                "mergeable_state": "clean",
+            },
+            {
+                "number": 2,
+                "title": "PR two",
+                "author": "a2",
+                "url": "https://github.com/C2SM/icon4py/pull/2",
+                "updated_at": "2024-07-05T00:00:00Z",
+                "comments_count": 10,
+                "review_comments_count": 0,
+                "draft": False,
+                "mergeable_state": "clean",
+            },
+            {
+                "number": 3,
+                "title": "PR three",
+                "author": "a3",
+                "url": "https://github.com/C2SM/icon4py/pull/3",
+                "updated_at": "2024-07-01T00:00:00Z",
+                "comments_count": 0,
+                "review_comments_count": 0,
+                "draft": False,
+                "mergeable_state": "clean",
+            },
+            {
+                "number": 4,
+                "title": "PR four",
+                "author": "a4",
+                "url": "https://github.com/C2SM/icon4py/pull/4",
+                "updated_at": "2024-07-08T00:00:00Z",
+                "comments_count": 5,
+                "review_comments_count": 0,
+                "draft": False,
+                "mergeable_state": "clean",
+            },
+            {
+                "number": 5,
+                "title": "PR five",
+                "author": "a5",
+                "url": "https://github.com/C2SM/icon4py/pull/5",
+                "updated_at": "2024-06-15T00:00:00Z",
+                "comments_count": 0,
+                "review_comments_count": 0,
+                "draft": False,
+                "mergeable_state": "clean",
+            },
+            {
+                "number": 6,
+                "title": "PR six",
+                "author": "a6",
+                "url": "https://github.com/C2SM/icon4py/pull/6",
+                "updated_at": "2024-06-20T00:00:00Z",
+                "comments_count": 3,
+                "review_comments_count": 0,
+                "draft": False,
+                "mergeable_state": "clean",
+            },
+        ]
+        highlights = weekly_slack_summary._select_inactive_pr_highlights(prs)
+
+        assert len(highlights) == 6
+        assert [h["number"] for h in highlights] == [1, 4, 2, 3, 6, 5]
+        assert set(highlights[0]["reasons"]) == {"newest inactive", "most active inactive"}
+        for highlight in highlights[1:-1]:
+            assert set(highlight["reasons"]) == {
+                "newest inactive",
+                "oldest inactive",
+                "most active inactive",
+            }
+        assert highlights[5]["reasons"] == ["oldest inactive"]
+
+    def test_empty_inactive_prs_returns_empty_highlights(self):
+        assert weekly_slack_summary._select_inactive_pr_highlights([]) == []
 
 
 class TestRunOpenCode:
@@ -368,15 +489,17 @@ class TestRunOpenCode:
         monkeypatch.setattr(weekly_slack_summary.shutil, "which", lambda _name: "/usr/bin/opencode")
 
         def fake_run(cmd, *, capture_output, check, text):
+            # The prompt is a positional [message..] argument for `opencode run`;
+            # --file attachments must follow it. See https://opencode.ai/docs/cli
             assert cmd == [
                 "opencode",
                 "run",
                 "--quiet",
+                "Generate the weekly Slack summary following the attached instructions and context.",
                 "--file",
                 str(instructions),
                 "--file",
                 str(context),
-                "Generate the weekly Slack summary following the attached instructions and context.",
             ]
             assert capture_output is True
             assert check is True
@@ -400,6 +523,7 @@ class TestGenerateCommand:
                     "closed_prs": [],
                     "active_prs": [],
                     "inactive_prs": [],
+                    "inactive_pr_highlights": [],
                 },
                 "github_issues": {"opened_issues": [], "closed_issues": []},
                 "gitlab_ci": {
@@ -492,6 +616,7 @@ class TestGenerateCommand:
                     "closed_prs": [],
                     "active_prs": [],
                     "inactive_prs": [],
+                    "inactive_pr_highlights": [],
                 },
                 "github_issues": {"opened_issues": [], "closed_issues": []},
                 "gitlab_ci": {
@@ -544,6 +669,7 @@ class TestGenerateCommand:
                     "closed_prs": [],
                     "active_prs": [],
                     "inactive_prs": [],
+                    "inactive_pr_highlights": [],
                 },
                 "github_issues": {"opened_issues": [], "closed_issues": []},
                 "gitlab_ci": {

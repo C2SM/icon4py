@@ -155,6 +155,71 @@ def _github_pr_review_comments(pr_number: int, *, token: str | None = None) -> l
     return _github_fetch_paginated(url, token=token)
 
 
+def _github_pr_details(pr_number: int, *, token: str | None = None) -> dict[str, Any]:
+    """Fetch details for a single pull request."""
+    url = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pulls/{pr_number}"
+    result = _github_api_request(url, token=token)
+    if not isinstance(result, dict):
+        raise RuntimeError(f"Unexpected GitHub PR details response type: {type(result)}")
+    return result
+
+
+def _select_inactive_pr_highlights(
+    inactive_prs: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Select up to 15 highlight PRs: newest, oldest, most active (deduplicated)."""
+    if not inactive_prs:
+        return []
+
+    newest = sorted(
+        inactive_prs,
+        key=lambda pr: pr.get("updated_at") or "",
+        reverse=True,
+    )[:5]
+    oldest = sorted(
+        inactive_prs,
+        key=lambda pr: pr.get("updated_at") or "",
+    )[:5]
+    most_active = sorted(
+        inactive_prs,
+        key=lambda pr: pr.get("comments_count", 0) + pr.get("review_comments_count", 0),
+        reverse=True,
+    )[:5]
+
+    newest_numbers = {pr["number"] for pr in newest}
+    oldest_numbers = {pr["number"] for pr in oldest}
+    most_active_numbers = {pr["number"] for pr in most_active}
+
+    highlights: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for pr in newest + oldest + most_active:
+        number = pr["number"]
+        if number in seen:
+            continue
+        seen.add(number)
+        reasons: list[str] = []
+        if number in newest_numbers:
+            reasons.append("newest inactive")
+        if number in oldest_numbers:
+            reasons.append("oldest inactive")
+        if number in most_active_numbers:
+            reasons.append("most active inactive")
+        highlights.append(
+            {
+                "number": number,
+                "title": pr["title"],
+                "author": pr["author"],
+                "url": pr["url"],
+                "updated_at": pr.get("updated_at"),
+                "reasons": reasons,
+                "draft": pr.get("draft", False),
+                "mergeable_state": pr.get("mergeable_state"),
+            }
+        )
+
+    return highlights
+
+
 def _collect_github_prs(
     start: datetime.datetime,
     end: datetime.datetime,
@@ -252,21 +317,31 @@ def _collect_github_prs(
             }
         )
 
-    inactive_prs: list[dict[str, Any]] = [
-        {
-            "number": item["number"],
-            "title": item["title"],
-            "author": item["user"]["login"] if item.get("user") else None,
-            "url": item["html_url"],
-            "updated_at": item.get("updated_at"),
-        }
-        for item in inactive_prs_raw
-    ]
+    inactive_prs: list[dict[str, Any]] = []
+    for item in inactive_prs_raw:
+        pr_number = item["number"]
+        details = _github_pr_details(pr_number, token=token)
+        inactive_prs.append(
+            {
+                "number": pr_number,
+                "title": item["title"],
+                "author": item["user"]["login"] if item.get("user") else None,
+                "url": item["html_url"],
+                "updated_at": item.get("updated_at"),
+                "comments_count": details.get("comments", 0),
+                "review_comments_count": details.get("review_comments", 0),
+                "draft": details.get("draft", False),
+                "mergeable_state": details.get("mergeable_state"),
+            }
+        )
+
+    inactive_pr_highlights = _select_inactive_pr_highlights(inactive_prs)
 
     return {
         "closed_prs": closed_prs,
         "active_prs": active_prs,
         "inactive_prs": inactive_prs,
+        "inactive_pr_highlights": inactive_pr_highlights,
     }
 
 
@@ -446,7 +521,19 @@ def _format_active_pr_lines(pr: dict[str, Any]) -> list[str]:
 
 
 def _format_inactive_pr_lines(pr: dict[str, Any]) -> list[str]:
-    return [f"- [{pr['title']}]({pr['url']}) by {pr['author']} (updated {pr['updated_at']})"]
+    reasons = pr.get("reasons", [])
+    reason_tag = f" ({' & '.join(reasons)})" if reasons else ""
+    draft_note = " [draft]" if pr.get("draft") else ""
+    mergeable_state = pr.get("mergeable_state")
+    blocker_note = (
+        f" [state: {mergeable_state}]"
+        if mergeable_state and mergeable_state not in ("clean", "unknown")
+        else ""
+    )
+    return [
+        f"- [{pr['title']}]({pr['url']}) by {pr['author']} "
+        f"(updated {pr['updated_at']}){reason_tag}{draft_note}{blocker_note}"
+    ]
 
 
 def _format_issue_lines(issue: dict[str, Any], *, closed: bool = False) -> list[str]:
@@ -508,8 +595,11 @@ def _format_context_markdown(
     for pr in github_prs["active_prs"]:
         lines.extend(_format_active_pr_lines(pr))
 
-    lines.extend(["", f"### Inactive Open PRs ({len(github_prs['inactive_prs'])})", ""])
-    for pr in github_prs["inactive_prs"]:
+    inactive_prs = github_prs.get("inactive_prs", [])
+    highlights = github_prs.get("inactive_pr_highlights", [])
+    lines.extend(["", f"### Inactive Open PRs ({len(inactive_prs)})", ""])
+    lines.append(f"A selection of up to 15 highlighted inactive PRs ({len(highlights)} shown):")
+    for pr in highlights:
         lines.extend(_format_inactive_pr_lines(pr))
 
     lines.extend(
@@ -554,15 +644,17 @@ def _run_opencode(
             "Install it with 'npm install -g opencode-ai' or ensure it is on PATH."
         )
 
+    # The prompt is a positional [message..] argument; --file attachments must
+    # follow it. See https://opencode.ai/docs/cli
     cmd = [
         "opencode",
         "run",
         "--quiet",
+        "Generate the weekly Slack summary following the attached instructions and context.",
         "--file",
         str(instructions_path),
         "--file",
         str(context_path),
-        "Generate the weekly Slack summary following the attached instructions and context.",
     ]
     result = subprocess.run(cmd, capture_output=True, check=True, text=True)
     output_path.write_text(result.stdout, encoding="utf-8")
@@ -679,6 +771,26 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
                     "author": "carol",
                     "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pull/44",
                     "updated_at": "2024-06-01T12:00:00Z",
+                    "comments_count": 2,
+                    "review_comments_count": 1,
+                    "draft": False,
+                    "mergeable_state": "clean",
+                }
+            ],
+            "inactive_pr_highlights": [
+                {
+                    "number": 44,
+                    "title": "Refactor old module",
+                    "author": "carol",
+                    "url": f"https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pull/44",
+                    "updated_at": "2024-06-01T12:00:00Z",
+                    "reasons": [
+                        "newest inactive",
+                        "oldest inactive",
+                        "most active inactive",
+                    ],
+                    "draft": False,
+                    "mergeable_state": "clean",
                 }
             ],
         },
