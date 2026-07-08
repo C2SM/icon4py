@@ -589,7 +589,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
         str | None,
         typer.Option(
             "--tools-subsets",
-            help="Colon/comma-separated tools/b bindings test subset filter (datatest, unittest)",
+            help="Colon/comma-separated tools/bindings test subset filter (datatest, unittest)",
         ),
     ] = None,
     backends: Annotated[
