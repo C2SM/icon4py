@@ -79,9 +79,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_horiz
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_vertical_diffusion_rhs import (
     compute_w_vertical_diffusion_rhs,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_cell_kdim_field_with_zero import (
-    init_cell_kdim_field_with_zero,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_height_above_ground import (
     init_height_above_ground,
 )
@@ -160,6 +157,9 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
+)
+from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -993,7 +993,7 @@ class Tmx:
         # CALL init(...) zero fills (whole array, tendencies before the solves)
         self.init_cell_kdim_field_with_zero = setup_program(
             backend=backend,
-            program=init_cell_kdim_field_with_zero,
+            program=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": gtx.int32(0),
                 "horizontal_end": self._cell_end_end,
@@ -1199,7 +1199,7 @@ class Tmx:
         # full-level variant, one more K row
         self.init_cell_kdim_half_field_with_zero = setup_program(
             backend=backend,
-            program=init_cell_kdim_field_with_zero,
+            program=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": gtx.int32(0),
                 "horizontal_end": self._cell_end_end,
@@ -2012,7 +2012,7 @@ class Tmx:
             ("qi", input_state.qi, tendency_state.ddt_qi, new_state.qi, self._zero_surface_flux),
         )
         for name, state, tend, new, sfc_flx in tracers:
-            self.init_cell_kdim_field_with_zero(field=tend)
+            self.init_cell_kdim_field_with_zero(field_with_zero_wp=tend)
             self.compute_surface_flux_rhs(sfc_flx=sfc_flx, rhs=self._rhs, prefac=1.0)
             self._solve_scalar_vertical_diffusion(var=state, tend=tend, dtime=dtime)
 
@@ -2071,7 +2071,7 @@ class Tmx:
         """
         log.debug("tmx Stage C (Compute_diffusion_temperature): start")
 
-        self.init_cell_kdim_field_with_zero(field=self.tend_energy)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=self.tend_energy)
 
         self.compute_energy_from_temperature(
             temperature=input_state.temperature,
@@ -2184,8 +2184,8 @@ class Tmx:
 
         # CALL init(tend_u/tend_v): the RBF interpolation only writes cells
         # 2..min_rlcell_int, everything outside must be zero
-        self.init_cell_kdim_field_with_zero(field=tendency_state.ddt_u)
-        self.init_cell_kdim_field_with_zero(field=tendency_state.ddt_v)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.ddt_u)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.ddt_v)
 
         # S7: CALL sync_patch_array(SYNC_C, patch, rho) in mo_vdf.f90
         log.debug("communication of rho (cells): start")
@@ -2286,8 +2286,8 @@ class Tmx:
 
         # CALL init(tend) / init(new_state): ddt_w is accumulated and new_w is
         # only written on the interior half levels
-        self.init_cell_kdim_half_field_with_zero(field=tendency_state.ddt_w)
-        self.init_cell_kdim_half_field_with_zero(field=new_state.w)
+        self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=tendency_state.ddt_w)
+        self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=new_state.w)
 
         self.compute_tangential_wind_full_levels(vn=diagnostic_state.vn)
         self.compute_w_vertical_diffusion_rhs(
@@ -2358,7 +2358,7 @@ class Tmx:
 
         # CALL init(heating): zero fill of the whole array; the update stencil
         # only writes the domain cells
-        self.init_cell_kdim_field_with_zero(field=diagnostic_state.heating)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=diagnostic_state.heating)
         self.update_temperature_with_dissipation_heating(
             u=input_state.u,
             v=input_state.v,

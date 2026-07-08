@@ -10,14 +10,14 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     _update_density_exner_wind,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
+)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
