@@ -12,6 +12,10 @@ NumPy/CuPy counterparts of the elemental functions in ICON's
 ``mo_thdyn_functions.f90``. These operate on host arrays (e.g. during initial
 condition setup) and are not GT4Py field operators; the saturation-adjustment
 microphysics has its own GT4Py implementation in the muphys package.
+
+Note: despite the module-name pairing, this is not the ``array_ns`` counterpart
+of ``physics/thermodynamics.py``, which ports the internal-energy helpers of
+``mo_aes_thermo.f90``; the two may converge into a true GT4Py/host pair later.
 """
 
 from __future__ import annotations

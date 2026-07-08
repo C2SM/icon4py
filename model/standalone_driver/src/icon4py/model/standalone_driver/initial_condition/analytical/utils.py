@@ -8,11 +8,7 @@
 
 import math
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    thermodynamic_functions as thermo,
-)
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -22,6 +18,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
+from icon4py.model.common.physics import thermodynamics_array_ns as thermo
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

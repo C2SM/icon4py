@@ -12,18 +12,14 @@ import dataclasses
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    model_backends,
-    thermodynamic_functions as thermo,
-)
+from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
     vertical as v_grid,
 )
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics import thermodynamics_array_ns as thermo
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
