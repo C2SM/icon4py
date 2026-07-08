@@ -34,9 +34,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_brunt_v
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_energy_from_temperature import (
     compute_energy_from_temperature,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_inverse_air_mass import (
-    compute_inverse_air_mass,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_nabla2_flux import (
     compute_scalar_nabla2_flux,
 )
@@ -78,9 +75,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_horiz
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_vertical_diffusion_rhs import (
     compute_w_vertical_diffusion_rhs,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_height_above_ground import (
-    init_height_above_ground,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_louis_scaling_factor import (
     init_louis_scaling_factor,
@@ -157,6 +151,10 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
+)
+from icon4py.model.common.math.stencils.generic_math_operations import (
+    compute_reciprocal_on_cell_k,
+    subtract_cell_field_on_cell_k,
 )
 from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -579,11 +577,16 @@ class Tmx:
             offset_provider={},
         )
         # compute_geopotential_height_above_ground (mo_vdf_atmo.f90): tmx t_domain
-        # cells (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels
+        # cells (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels.
+        # ghf = z_mc - z_ifc_sfc; despite the Fortran name it is the geometric
+        # height in meters (gravity is only applied later, e.g. in
+        # compute_static_energy). z_ifc_sfc is the surface slice z_ifc[:, nlev],
+        # passed as a 2D field because GT4Py offsets are relative and cannot
+        # address a fixed absolute K row.
         self.init_height_above_ground = setup_program(
             backend=backend,
-            program=init_height_above_ground,
-            constant_args={"z_mc": self._metric_state.z_mc, "z_ifc_sfc": z_ifc_sfc},
+            program=subtract_cell_field_on_cell_k,
+            constant_args={"minuend": self._metric_state.z_mc, "subtrahend_cell": z_ifc_sfc},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -972,7 +975,7 @@ class Tmx:
             # the Fortran init only computes the Louis scaling factor if the
             # Louis stability correction is enabled; the field stays zero otherwise
             self.init_louis_scaling_factor(scaling_factor_louis=self.louis_factor)
-        self.init_height_above_ground(height_above_ground=self.ghf)
+        self.init_height_above_ground(difference=self.ghf)
 
     def _setup_scalar_diffusion_programs(
         self,
@@ -1004,11 +1007,13 @@ class Tmx:
             },
             offset_provider={},
         )
-        # inverse air mass (the ``inv_mair`` loops of mo_vdf.f90)
+        # inverse air mass (the ``inv_mair`` loops of mo_vdf.f90): inv_mair
+        # scales the rows of the vertical diffusion matrix
+        # ('prepare_diffusion_matrix') and the surface flux right-hand side
         self.compute_inverse_air_mass = setup_program(
             backend=backend,
-            program=compute_inverse_air_mass,
-            constant_args={"inv_air_mass": self._inv_air_mass},
+            program=compute_reciprocal_on_cell_k,
+            constant_args={"output_field": self._inv_air_mass},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -1992,7 +1997,7 @@ class Tmx:
         """
         log.debug("tmx Stage B (Compute_diffusion_hydrometeors): start")
 
-        self.compute_inverse_air_mass(air_mass=input_state.air_mass)
+        self.compute_inverse_air_mass(input_field=input_state.air_mass)
         self.prepare_tridiagonal_matrix_hydrometeors(
             zk=diagnostic_state.kh_ic,
             a=self._matrix_a,
@@ -2100,7 +2105,7 @@ class Tmx:
             flux_x=self._flux_x,
         )
 
-        self.compute_inverse_air_mass(air_mass=input_state.air_mass)
+        self.compute_inverse_air_mass(input_field=input_state.air_mass)
         self.prepare_tridiagonal_matrix_energy(
             zk=diagnostic_state.kh_ic,
             a=self._matrix_a,

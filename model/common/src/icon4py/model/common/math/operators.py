@@ -48,3 +48,20 @@ def _compute_difference_on_cell_k(
     field_b: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     return field_a - astype(field_b, wpfloat)
+
+
+@gtx.field_operator
+def _compute_reciprocal_on_cell_k(
+    input_field: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """Compute the elementwise reciprocal ``1 / input_field``."""
+    return wpfloat("1.0") / input_field
+
+
+@gtx.field_operator
+def _subtract_cell_field_on_cell_k(
+    minuend: fa.CellKField[ta.wpfloat],
+    subtrahend_cell: fa.CellField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """Subtract a single-level cell field from every K level of a cell K field."""
+    return minuend - subtrahend_cell

@@ -26,7 +26,8 @@ def _compute_static_energy(
         static_energy = spec_heat * temperature + grav * height_above_ground
 
     ``height_above_ground`` is the geometric height of the full levels above the
-    surface (``ghf`` in the Fortran code, see ``init_height_above_ground``), so
+    surface (``ghf`` in the Fortran code, computed at init time by the granule's
+    ``init_height_above_ground`` program), so
     ``grav * height_above_ground`` is the geopotential above ground. At the tmx
     call sites ``spec_heat`` is the specific heat of dry air at constant
     pressure, ``cpd``, giving ``ctgz = cpd * T + g * ghf``.

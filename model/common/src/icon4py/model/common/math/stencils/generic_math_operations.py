@@ -9,7 +9,11 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.math.operators import _compute_difference_on_cell_k
+from icon4py.model.common.math.operators import (
+    _compute_difference_on_cell_k,
+    _compute_reciprocal_on_cell_k,
+    _subtract_cell_field_on_cell_k,
+)
 
 
 @gtx.program
@@ -26,6 +30,46 @@ def compute_difference_on_cell_k(
         field_a,
         field_b,
         out=output_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_reciprocal_on_cell_k(
+    input_field: fa.CellKField[ta.wpfloat],
+    output_field: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_reciprocal_on_cell_k(
+        input_field=input_field,
+        out=output_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def subtract_cell_field_on_cell_k(
+    minuend: fa.CellKField[ta.wpfloat],
+    subtrahend_cell: fa.CellField[ta.wpfloat],
+    difference: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _subtract_cell_field_on_cell_k(
+        minuend=minuend,
+        subtrahend_cell=subtrahend_cell,
+        out=difference,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
