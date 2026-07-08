@@ -14,7 +14,7 @@ import sys
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Final, Literal, TypeAlias
+from typing import Final, Literal, TypeAlias, TypedDict
 
 import nox
 
@@ -30,8 +30,19 @@ def _use_active_venv() -> bool:
     return os.environ.get("ICON4PY_NOX_USE_ACTIVE_VENV") == "1"
 
 
-nox.options.default_venv_backend = "none" if _use_active_venv() else "uv"
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
+
+
+class _VenvBackendKwargs(TypedDict, total=False):
+    venv_backend: str
+
+
+# When running inside the already-active project venv, avoid creating per-session
+# venvs. Applied only to test sessions; benchmark/bencher sessions keep their
+# default uv backend.
+_VENV_BACKEND_KWARG: Final[_VenvBackendKwargs] = (
+    {"venv_backend": "none"} if _use_active_venv() else {}
+)
 
 _rank = (
     os.environ.get("PMI_RANK")
@@ -172,7 +183,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 # Model test sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(
@@ -195,7 +206,7 @@ def test_model(
 # nox.options.envdir to ".nox/mpi-rank-<rank>" at import time when an MPI
 # rank variable is present. Note that the session assumes that MPI is wrapped
 # around the nox call; nox will not call mpirun or srun itself.
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_MPI_TESTS_SUBSETS)
 def test_model_mpi(
@@ -219,7 +230,7 @@ def test_model_mpi(
         )
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
@@ -227,7 +238,7 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 
 # Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("selection", TOOLS_BINDINGS_TESTS_SUBSETS)
 def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsSubset) -> None:
     """Run tests for the Fortran bindings and integration tools."""
