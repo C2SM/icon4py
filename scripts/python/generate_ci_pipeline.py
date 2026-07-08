@@ -70,7 +70,7 @@ ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
 # enabled since that would run the same tests in multiple jobs.
 # TODO(msimberg): Revisit this to see if the levels, names, or something else
 # should be changed to simplify this.
-ALL_LEVELS = ["unit", "integration"]
+ALL_LEVELS = ["unit", "integration", "validation"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 
 # Collection tuning. Per-cell timeout should be generous enough for the first

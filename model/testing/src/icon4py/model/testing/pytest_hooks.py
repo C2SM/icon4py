@@ -25,7 +25,7 @@ __all__ = [
     "pytest_sessionfinish",
 ]
 
-_TEST_LEVELS = ("any", "unit", "integration")
+_TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
 def pytest_configure(config):
@@ -35,7 +35,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit or integration tests, tests without this marker are implicitly treated as 'unit'",
+        "level(name): marks test as unit, integration, or validation tests. Validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
@@ -100,7 +100,7 @@ def pytest_addoption(parser: pytest.Parser):
             "--level",
             action="store",
             choices=_TEST_LEVELS,
-            help="Set level (unit, integration) of the tests to run. Tests without a level marker are implicitly 'unit'. Defaults to 'any'.",
+            help="Set level (unit, integration, validation) of the tests to run. Defaults to 'any', which excludes validation tests.",
             default="any",
         )
     with contextlib.suppress(ValueError):
@@ -133,6 +133,17 @@ def pytest_collection_modifyitems(config, items):
 
     test_level = config.getoption("--level")
     if test_level == "any":
+        for item in items:
+            if (marker := item.get_closest_marker("level")) is not None:
+                assert all(level in _TEST_LEVELS for level in marker.args), (
+                    f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
+                )
+                if "validation" in marker.args:
+                    item.add_marker(
+                        pytest.mark.skip(
+                            reason="Validation tests must be explicitly requested with --level=validation."
+                        )
+                    )
         return
 
     def _matches_level(item: pytest.Item) -> bool:
