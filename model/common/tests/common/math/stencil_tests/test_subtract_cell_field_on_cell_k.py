@@ -13,9 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.math.stencils.generic_math_operations import (
-    subtract_cell_field_on_cell_k,
-)
+from icon4py.model.common.math.stencils.generic_math_operations import subtract_cell_field_on_cell_k
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
