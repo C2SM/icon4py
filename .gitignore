@@ -139,3 +139,6 @@ venv.bak/
 ### Others ###
 .obsidian
 pyrightconfig.json
+
+# Git worktrees
+.worktrees/
