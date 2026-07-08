@@ -200,9 +200,6 @@ variables:
     GIT_STRATEGY: fetch
     KUBERNETES_MEMORY_REQUEST: 4Gi
     KUBERNETES_MEMORY_LIMIT: 4Gi
-  before_script:
-    - cd /icon4py
-    - source .venv/bin/activate
   script:
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml

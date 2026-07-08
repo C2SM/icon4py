@@ -10,18 +10,11 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 from collections.abc import Sequence
 from datetime import datetime
-from pathlib import Path
 from typing import Final, Literal, TypeAlias, TypedDict
 
 import nox
-
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from scripts.python.helpers.test_selection import ModelTestsSubset, _selection_to_pytest_args
 
 
 # -- nox configuration --
@@ -32,6 +25,26 @@ def _use_active_venv() -> bool:
 
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 nox.options.default_venv_backend = "uv"
+
+
+ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
+
+
+def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
+    """Return pytest CLI flags for a model test subset."""
+    match selection:
+        case "datatest":
+            return ["--datatest-only"]
+        case "stencils":
+            return ["-k", "stencil_tests"]
+        case "basic":
+            return [
+                "--datatest-skip",
+                "-k",
+                "not stencil_tests and not benchmark_only",
+            ]
+        case _:
+            raise AssertionError(f"Invalid selection: {selection}")
 
 
 class _VenvBackendKwargs(TypedDict, total=False):
@@ -85,11 +98,6 @@ SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13
 
 
 # -- nox sessions --
-#: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
-#: is not guaranteed to be available in the venv where `nox` is running.
-NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
-
-
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
@@ -199,7 +207,6 @@ def test_model(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
-            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
 
@@ -227,7 +234,6 @@ def test_model_mpi(
             "-k mpi_tests",
             *pytest_args,
             *session.posargs,
-            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
 
@@ -255,13 +261,11 @@ def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsS
             session.run(
                 *pytest_base.split(),
                 *session.posargs,
-                success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
             )
     with session.chdir("bindings"):
         session.run(
             *pytest_base.split(),
             *session.posargs,
-            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
 

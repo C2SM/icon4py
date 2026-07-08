@@ -31,7 +31,7 @@ import os
 import re
 import subprocess
 import sys
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -167,32 +167,7 @@ def _collection_env() -> dict[str, str]:
     """Return environment variables for the offline collection runs."""
     return {
         "ICON4PY_NOX_USE_ACTIVE_VENV": "1",
-        "ICON4PY_ENABLE_GRID_DOWNLOAD": "false",
-        "ICON4PY_ENABLE_TESTDATA_DOWNLOAD": "false",
-        "GT4PY_BUILD_CACHE_LIFETIME": "persistent",
     }
-
-
-def _parse_collected_count(output: str) -> int | None:
-    """Parse pytest --collect-only terminal output for the selected test count.
-
-    Returns the number of tests that would run, or None if the count cannot be
-    parsed. The "selected" number is preferred when pytest reports both
-    collected and selected counts.
-    """
-    pattern = re.compile(
-        r"collected\s+(?P<collected>\d+)\s+items?"
-        r"(?:\s*/\s*\d+\s*deselected\s*/\s*(?P<selected>\d+)\s*selected)?"
-    )
-    # The summary is at the end of the output; search backwards.
-    for line in reversed(output.splitlines()):
-        match = pattern.search(line)
-        if match:
-            selected = match.group("selected")
-            if selected is not None:
-                return int(selected)
-            return int(match.group("collected"))
-    return None
 
 
 def _run_nox_collection(
@@ -200,33 +175,33 @@ def _run_nox_collection(
     pytest_args: list[str],
     env: dict[str, str],
     timeout: float,
-) -> int | None:
-    """Run a nox session with --collect-only and return the test count.
+) -> bool:
+    """Run a nox session with --collect-only and return whether to keep the cell.
 
-    Returns None if the subprocess fails, times out, or the output cannot be
-    parsed. A return value of 0 means the cell collected no tests.
+    Returns True when nox exits 0 (the cell collected at least one runnable
+    test). Returns False when nox exits 1 (the cell collected zero tests).
+
+    Raises on any other nox exit code, subprocess timeout, or OSError.
     """
     cmd = ["nox", "-s", session_name, "--", *pytest_args]
     full_env = os.environ.copy()
     full_env.update(env)
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            env=full_env,
-            check=False,
-        )
-    except (subprocess.TimeoutExpired, OSError):
-        return None
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env=full_env,
+        check=False,
+    )
 
-    # pytest exits with 5 when no tests were collected; this is a valid outcome
-    # for filtering purposes.
-    if result.returncode not in (0, 5):
-        return None
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
 
-    return _parse_collected_count(result.stdout + "\n" + result.stderr)
+    output = (result.stdout + "\n" + result.stderr).strip()
+    raise subprocess.CalledProcessError(result.returncode, cmd, output=output, stderr=result.stderr)
 
 
 @dataclass(frozen=True)
@@ -370,8 +345,9 @@ def _model_mpi_cells(
 def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
     """Run collection for every cell in parallel and return cells with tests.
 
-    Cells where collection fails, times out, or cannot be parsed are kept
-    conservatively.
+    Cells where nox exits 0 are kept. Cells where nox exits 1 are dropped.
+    Any collection failure, subprocess timeout, or non-0/1 exit code aborts
+    pipeline generation.
     """
     if os.environ.get("ICON4PY_CI_SKIP_COLLECTION"):
         return cells
@@ -381,7 +357,6 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
 
     env = _collection_env()
     kept: list[_MatrixCell] = []
-    processed: set[Future] = set()
 
     with ThreadPoolExecutor(max_workers=_COLLECTION_MAX_WORKERS) as executor:
         futures = {
@@ -396,33 +371,13 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
         }
         try:
             for future in as_completed(futures, timeout=_COLLECTION_TOTAL_TIMEOUT_SECONDS):
-                processed.add(future)
                 cell = futures[future]
-                try:
-                    count = future.result(timeout=0)
-                except Exception:
-                    count = None
-                if count is None or count > 0:
+                if future.result():
                     kept.append(cell)
         except TimeoutError:
-            # Total timeout expired. Be conservative: evaluate every remaining
-            # future. Pending futures are cancelled but their cells are kept;
-            # done futures are inspected and kept unless they definitively
-            # collected zero tests. Already-processed futures are skipped to
-            # avoid duplicate matrix entries.
-            for future, cell in futures.items():
-                if future in processed:
-                    continue
-                if not future.done():
-                    future.cancel()
-                    kept.append(cell)
-                    continue
-                try:
-                    count = future.result(timeout=0)
-                except Exception:
-                    count = None
-                if count is None or count > 0:
-                    kept.append(cell)
+            for future in futures:
+                future.cancel()
+            raise
 
     return kept
 
@@ -464,6 +419,9 @@ def _generate_child_pipeline(
     Each subset is expanded into a separate job definition with a
     ``parallel:matrix`` for the remaining dimensions. Matrix entries that
     collect zero tests are omitted.
+
+    GitLab limits each ``parallel:matrix`` to 200 instances; callers must
+    ensure the expanded matrix does not exceed this limit.
     """
     requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
     _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)

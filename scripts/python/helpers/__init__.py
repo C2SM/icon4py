@@ -12,6 +12,6 @@ from __future__ import annotations
 import lazy_loader as lazy
 
 
-submodules = ["common", "pyproject", "test_selection"]
+submodules = ["common", "pyproject"]
 
 __getattr__, __dir__, _ = lazy.attach(__name__, submodules)
