@@ -26,13 +26,16 @@ jobs:
           activate-environment: true
 
       - name: Install opencode
-        run: npm install -g opencode-ai
+        run: npm install -g opencode-ai @ai-sdk/openai-compatible
 
       - name: Generate weekly summary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          OPENCODE_CONFIG: ${{ github.workspace }}/.opencode/config.json
+          OPENCODE_MODEL: cscs-inference/moonshotai/Kimi-K2.7-Code
+          CSCS_INFERENCE_BASE_URL: https://api.inference.cscs.ch/v1
+          CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_API_KEY }}
         run: |
           ./scripts/run weekly-slack-summary generate \
             ${{ inputs.dummy_input_data == true && '--dummy-input-data' || '' }}
