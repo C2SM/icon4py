@@ -285,17 +285,18 @@ def _install_session_venv(
 
 
 def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
-    """Return pytest CLI flags for a model test subset."""
+    pytest_args = []
+
     match selection:
         case "datatest":
-            return ["--datatest-only"]
+            pytest_args.extend(["--datatest-only"])
         case "stencils":
-            return ["--datatest-skip", "-k", "stencil_tests"]
+            pytest_args.extend(["--datatest-skip", "-k", "stencil_tests"])
         case "basic":
-            return [
-                "--datatest-skip",
-                "-k",
-                "not stencil_tests and not benchmark_only",
-            ]
+            pytest_args.extend(
+                ["--datatest-skip", "-k", "not stencil_tests and not benchmark_only"]
+            )
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
+
+    return pytest_args
