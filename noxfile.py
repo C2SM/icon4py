@@ -36,7 +36,7 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
         case "datatest":
             return ["--datatest-only"]
         case "stencils":
-            return ["-k", "stencil_tests"]
+            return ["--datatest-skip", "-k", "stencil_tests"]
         case "basic":
             return [
                 "--datatest-skip",

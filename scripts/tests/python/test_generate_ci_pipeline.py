@@ -206,7 +206,6 @@ def test_tools_cells_use_correct_session(monkeypatch):
         tools_subsets="unittest",
     )
     assert captured["session"] == "test_tools_and_bindings(unittest)"
-    assert "--datatest-skip" in captured["args"]
     assert captured["args"][2:4] == ["-p", "no:tach"]
 
 

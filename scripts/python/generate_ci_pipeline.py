@@ -248,7 +248,6 @@ def _model_cells(
                                 "no:tach",
                                 f"--backend={backend}",
                                 f"--grid={grid}",
-                                "--datatest-skip",
                             ],
                         )
                     )
@@ -267,8 +266,6 @@ def _model_cells(
                         f"--backend={backend}",
                         f"--level={level}",
                     ]
-                    if subset != "datatest":
-                        pytest_args.append("--datatest-skip")
                     cells.append(
                         _MatrixCell(
                             job_name=f"test_model_{subset}_aarch64",
@@ -292,8 +289,6 @@ def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
     cells: list[_MatrixCell] = []
     for selection in selections:
         pytest_args = ["--collect-only", "-n0", "-p", "no:tach"]
-        if selection != "datatest":
-            pytest_args.append("--datatest-skip")
         cells.append(
             _MatrixCell(
                 job_name="test_tools_aarch64",
@@ -329,8 +324,6 @@ def _model_mpi_cells(
                         f"--backend={backend}",
                         f"--level={level}",
                     ]
-                    if subset != "datatest":
-                        pytest_args.append("--datatest-skip")
                     cells.append(
                         _MatrixCell(
                             job_name=f"test_model_mpi_{subset}_aarch64",
