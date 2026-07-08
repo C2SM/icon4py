@@ -646,32 +646,15 @@ def _run_opencode(
 
     # The prompt is a positional [message..] argument; --file attachments must
     # follow it. See https://opencode.ai/docs/cli
-    context_mode = os.environ.get("_WEEKLY_SUMMARY_CONTEXT_MODE", "markdown")
-    json_path = output_path.parent / "weekly_slack_summary_context.json"
-    if context_mode == "json-content":
-        prompt = (
-            "Generate the weekly Slack summary using the attached JSON context "
-            "and instructions. The JSON file contains the raw collected data; "
-            "produce a Markdown summary with the same sections and style as "
-            "described in the instructions."
-        )
-        attachments = [str(instructions_path), str(json_path)]
-    elif context_mode == "json-path":
-        prompt = (
-            "Generate the weekly Slack summary described in the attached "
-            f"instructions. Read the raw collected data from {json_path} and "
-            "produce a Markdown summary with the requested sections and style."
-        )
-        attachments = [str(instructions_path)]
-    else:
-        prompt = (
-            "Generate the weekly Slack summary following the attached instructions and context."
-        )
-        attachments = [str(instructions_path), str(context_path)]
-
-    cmd = ["opencode", "run", prompt]
-    for attachment in attachments:
-        cmd.extend(["--file", attachment])
+    cmd = [
+        "opencode",
+        "run",
+        "Generate the weekly Slack summary following the attached instructions and context.",
+        "--file",
+        str(instructions_path),
+        "--file",
+        str(context_path),
+    ]
     result = subprocess.run(cmd, capture_output=True, check=True, text=True)
     output_path.write_text(result.stdout, encoding="utf-8")
 
