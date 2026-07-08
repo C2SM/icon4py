@@ -28,13 +28,21 @@ jobs:
       - name: Install opencode
         run: npm install -g opencode-ai @ai-sdk/openai-compatible
 
+      - name: Generate OpenCode config
+        env:
+          OPENCODE_MODEL_ID: google/gemma-4-31B-it
+          CSCS_INFERENCE_BASE_URL: https://api.inference.cscs.ch/v1
+        run: |
+          ./scripts/run generate-weekly-summary-opencode-config \
+            --output-path /tmp/weekly-slack-summary-opencode-config.json \
+            --base-url "$CSCS_INFERENCE_BASE_URL" \
+            --model-id "$OPENCODE_MODEL_ID"
+
       - name: Generate weekly summary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          OPENCODE_CONFIG: ${{ github.workspace }}/.opencode/config.json
-          OPENCODE_MODEL: cscs-inference/moonshotai/Kimi-K2.7-Code
-          CSCS_INFERENCE_BASE_URL: https://api.inference.cscs.ch/v1
+          OPENCODE_CONFIG: /tmp/weekly-slack-summary-opencode-config.json
           CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_API_KEY }}
         run: |
           ./scripts/run weekly-slack-summary generate \

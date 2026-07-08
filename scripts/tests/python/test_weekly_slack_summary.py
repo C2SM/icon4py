@@ -17,6 +17,7 @@ import urllib.parse
 from typing import Any
 from unittest import mock
 
+import generate_weekly_summary_opencode_config
 import pytest
 import typer
 import weekly_slack_summary
@@ -689,3 +690,27 @@ class TestGenerateCommand:
                 dummy_output=False,
             )
         assert exc_info.value.exit_code == 1
+
+
+class TestGenerateOpenCodeConfig:
+    def test_writes_config_with_model_and_base_url(self, tmp_path):
+        output = tmp_path / "opencode-config.json"
+        generate_weekly_summary_opencode_config.generate_cmd(
+            output_path=output,
+            base_url="https://api.inference.cscs.ch/v1",
+            model_id="google/gemma-4-31B-it",
+        )
+        data = json.loads(output.read_text(encoding="utf-8"))
+        assert data["model"] == "cscs-inference/google/gemma-4-31B-it"
+        assert (
+            data["provider"]["cscs-inference"]["options"]["baseURL"]
+            == "https://api.inference.cscs.ch/v1"
+        )
+        assert (
+            data["provider"]["cscs-inference"]["models"]["google/gemma-4-31B-it"]["name"]
+            == "google/gemma-4-31B-it"
+        )
+        assert (
+            data["provider"]["cscs-inference"]["options"]["apiKey"]
+            == "{env:CSCS_INFERENCE_API_KEY}"
+        )

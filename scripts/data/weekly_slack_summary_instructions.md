@@ -48,3 +48,12 @@ Produce a single Markdown document with exactly these sections, in order:
   - failed jobs; list each failed job with name, link, and whether it looks like
     an infrastructure failure (runner, network, container) or a test failure.
 - Do not include raw JSON or commit hashes unless they add meaningful context.
+
+## Weekly Easter Egg
+
+End the summary with a short, lighthearted sign-off for the week: a joke, quote,
+or nerdy observation. It should relate in some way to icon4py's world —
+icosohedral grids, weather/climate simulations, Fortran, Python, stencil
+computations, or parallel computing. Keep it to one or two lines, make it silly
+or witty, and do not attribute a quote to a real person unless it actually is
+one.
