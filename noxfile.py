@@ -37,6 +37,7 @@ class _VenvBackendKwargs(TypedDict, total=False):
 _VENV_BACKEND_KWARG: Final[_VenvBackendKwargs] = (
     {"venv_backend": "none"} if _use_active_venv() else {}
 )
+NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 
 _rank = (
     os.environ.get("PMI_RANK")
@@ -183,12 +184,16 @@ def test_model(
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
+    success_codes = (
+        [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
+    )
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             "tests",
             *session.posargs,
+            success_codes=success_codes,
         )
 
 
@@ -206,6 +211,9 @@ def test_model_mpi(
     _install_session_venv(session, extras=["all"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
+    success_codes = (
+        [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
+    )
     with session.chdir(f"model/{subpackage}"):
         session.run(
             "pytest",
@@ -217,6 +225,7 @@ def test_model_mpi(
             *pytest_args,
             "tests",
             *session.posargs,
+            success_codes=success_codes,
         )
 
 
@@ -238,6 +247,9 @@ def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsS
 
     datatest_flag = "--datatest-only" if selection == "datatest" else "--datatest-skip"
     pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
+    success_codes = (
+        [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
+    )
     if selection == "unittest":
         # tools/ only has unit tests, so skip it in datatest mode
         with session.chdir("tools"):
@@ -245,12 +257,14 @@ def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsS
                 *pytest_base.split(),
                 "tests",
                 *session.posargs,
+                success_codes=success_codes,
             )
     with session.chdir("bindings"):
         session.run(
             *pytest_base.split(),
             "tests",
             *session.posargs,
+            success_codes=success_codes,
         )
 
 
