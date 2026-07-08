@@ -44,17 +44,17 @@ if TYPE_CHECKING:
 # accumulators isolates the mig contribution even if other AES processes ever
 # run before mig in this experiment (today they contribute exactly zero).
 #
-# KNOWN DIVERGENCES vs the icon-nwp tree that generates the reference data (the
-# port follows the older muphys C++ reference, icon-nwp carries the newer MPIM
-# rain-microphysics revisions); expect real physics differences, not roundoff,
-# wherever these paths are active:
-#   - cloud_to_rain: accretion kernel is a polynomial in log(rho*qr) in Fortran
-#     (mo_aes_graupel.f90:601), a constant AC_KERNEL=5.25 here; the Fortran
-#     version also takes rho.
-#   - rain_to_vapor: exp-polynomial evaporation in Fortran (mo_aes_graupel.f90:714)
-#     vs the older power-law here.
+# The granule runs with MuphysScheme.ICON_NWP, the port of the icon-nwp
+# formulation (mo_aes_graupel.f90) that generates the reference data, so
+# near-roundoff agreement is expected. Remaining known deviations:
 #   - Fortran clamps tendencies to full depletion (MAX(-q/dt), mo_cloud_mig.f90)
-#     while the granule reports raw (new-old)/dt.
+#     while the granule reports raw (new-old)/dt; differs only where the scheme
+#     drives a species below zero.
+#   - Fortran cvd is computed as cpd - rd (1 ULP off the icon4py literal 717.60);
+#     likewise tfrz_hom/tfrz_het2 are computed as tmelt-37/tmelt-25 (1 ULP below
+#     the icon4py literals 236.15/248.15) — both only matter at exact thresholds.
+#   - Fortran ice_sticking carries a cia tuning factor (cloud_mig_nml, default
+#     1.0 and not set in the experiment, hence a no-op here).
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -79,13 +79,16 @@ def test_muphys_granule(
     # numpy index of the first level ICON computes the scheme on (Fortran jks_cloudy is 1-based)
     jks = init_savepoint.jks_cloudy() - 1
 
-    # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90)
+    # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90);
+    # the default scheme is ICON_NWP, matching the Fortran that generated the data
+    muphys_configuration = muphys_config.MuphysConfig()
     component = muphys_component.MuphysComponent(
         ncells=icon_grid.num_cells,
         nlev=icon_grid.num_levels,
         dtime=datetime.timedelta(seconds=dtime),
-        qnc=muphys_config.MuphysConfig().qnc,
+        qnc=muphys_configuration.qnc,
         backend=backend,
+        scheme=muphys_configuration.scheme,
     )
 
     state = {
@@ -102,10 +105,8 @@ def test_muphys_granule(
     }
     outputs = component(state, datetime.datetime.fromisoformat(date))
 
-    # provisional tolerances assuming matching formulas; the known divergences listed
-    # above will show up as real physics differences wherever accretion/evaporation
-    # are active — measure on the archive (ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL=true)
-    # and either port the newer Fortran formulas or loosen with a documented rationale
+    # provisional tolerances; measure on the archive
+    # (ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL=true) and tighten
     for name, tracer_index in (
         ("tend_qv", QV),
         ("tend_qc", QC),
