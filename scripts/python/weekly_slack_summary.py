@@ -661,13 +661,10 @@ def _run_opencode(
 
 def _post_to_slack(
     webhook_url: str,
-    channel: str | None,
     markdown: str,
 ) -> None:
     """Post the Markdown summary to Slack via an incoming webhook."""
     payload: dict[str, Any] = {"text": markdown}
-    if channel:
-        payload["channel"] = channel
     data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         webhook_url,
@@ -867,10 +864,6 @@ def generate_cmd(
         str | None,
         typer.Option("--slack-webhook-url", help="Slack incoming webhook URL."),
     ] = None,
-    slack_channel: Annotated[
-        str | None,
-        typer.Option("--slack-channel", help="Optional Slack channel override."),
-    ] = None,
 ) -> None:
     """Collect activity data and produce a weekly Slack summary."""
     output_dir = output_dir.resolve()
@@ -919,9 +912,8 @@ def generate_cmd(
         )
         raise typer.Exit(code=1)
 
-    channel = slack_channel or os.environ.get("SLACK_CHANNEL")
     summary_text = summary_path.read_text(encoding="utf-8")
-    _post_to_slack(webhook, channel, summary_text)
+    _post_to_slack(webhook, summary_text)
     typer.echo("Summary posted to Slack.")
 
 
