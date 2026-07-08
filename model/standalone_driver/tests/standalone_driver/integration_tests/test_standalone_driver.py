@@ -29,160 +29,82 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
+    "experiment_description, timeloop_date_exit, step_date_exit",
     [
         (
             test_defs.Experiments.JW,
-            2,
-            5,
-            "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
-            False,
-            False,
         ),
         (
             test_defs.Experiments.GAUSS3D,
-            2,
-            5,
-            "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
-            False,
-            False,
+        ),
+        (
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
         ),
         # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
     ],
 )
 def test_standalone_driver(
     experiment_description: test_defs.ExperimentDescription,
-    timeloop_date_init: str,
     timeloop_date_exit: str,
-    timeloop_diffusion_linit_init: bool,
+    step_date_exit: str,
     *,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
-    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
-    substep_exit: int,
-    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
+    data_provider: sb.IconSerialDataProvider,
 ) -> None:
+    """End-to-end standalone-driver validation over one large time step.
+
+    Runs on both dry experiments (JW, GAUSS3D) and the moist AES aquaplanet
+    (EXCLAIM_APE_AES), branching on whether physics is enabled (``config.muphys``):
+
+    - No physics: the final prognostic state comes purely from the dynamical core,
+      validated against the mid-time-step dynamics savepoints at tight tolerances.
+    - muphys enabled: validated against the end-of-time-step (``time-step-exit``)
+      savepoint. The driver runs muphys with ``MuphysScheme.ICON_NWP`` (the
+      MuphysConfig default) -- the port of the exact icon-nwp formulation that
+      generated the reference -- and the ICON reference runs graupel only (everything
+      else off), so the full prognostic state including the fields muphys writes
+      (exner, tracers) can be compared.
+
+    The muphys-written fields still use provisional, loose tolerances because of known
+    structural gaps in the driver's phy2dyn coupling that are not yet ported:
+
+    - exner / theta_v: ``scatter_to_prognostic`` applies a *linearized* increment to
+      exner and leaves theta_v untouched. Since exner, rho and theta_v are tied by the
+      equation of state, incrementing exner alone leaves the thermodynamic state
+      EOS-inconsistent, and theta_v never receives the latent-heating update -- so its
+      bound (atol=2.0) is wide enough to absorb the entire un-applied increment and is
+      effectively unchecked. ICON instead updates theta_v from the new virtual
+      temperature and recomputes exner via the exact EOS.
+      TODO(Yilu): port ICON's phy2dyn thermodynamic update
+      (mo_interface_iconam_aes.f90) -- update theta_v from the new T_v and re-diagnose
+      exner via the EOS so the exner/rho/theta_v trio stays consistent -- then tighten
+      the exner and theta_v tolerances on the regenerated archive.
+    - negative tracers: ICON clips them before (iqneg_d2p) and after (iqneg_p2d)
+      physics; the driver does not.
+    - vertical extent: ICON runs graupel on jks_cloudy..nlev (zmaxcloudy); muphys runs
+      the full column.
+
+    The muphys granule itself is validated in isolation against the aes-graupel
+    savepoints in test_muphys_datatest.py.
+    """
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_config(config_file_path)
-    config = config.with_overrides(
-        driver={
-            "output_path": tmp_path / "ci_driver_output",
-            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
-                tzinfo=datetime.timezone.utc
-            ),
-        }
-    )
-
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-        process_props=process_props,
-    )
-    ds, _ = standalone_driver.run_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-
-    rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = savepoint_diffusion_exit.exner()
-    theta_sp = savepoint_diffusion_exit.theta_v()
-    vn_sp = savepoint_diffusion_exit.vn()
-    w_sp = savepoint_diffusion_exit.w()
-
-    test_utils.assert_dallclose(
-        ds.prognostics.current.vn.asnumpy(),
-        vn_sp.asnumpy(),
-        atol=6e-7,
-    )
-
-    test_utils.assert_dallclose(
-        ds.prognostics.current.w.asnumpy(),
-        w_sp.asnumpy(),
-        atol=8e-9,
-    )
-
-    test_utils.assert_dallclose(
-        ds.prognostics.current.exner.asnumpy(),
-        exner_sp.asnumpy(),
-        atol=2e-10,
-    )
-
-    test_utils.assert_dallclose(
-        ds.prognostics.current.theta_v.asnumpy(),
-        theta_sp.asnumpy(),
-        atol=1e-7,
-    )
-
-    test_utils.assert_dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
-
-
-# ---------------------------------------------------------------------------
-# APE_aes (moist) end-to-end: runs muphys inside the driver time loop on the AES
-# aquaplanet (initialized with the JW initial condition, start 2008-09-01T00:00:00,
-# dtime 300 s, ndyn_substeps 5) and validates the FULL prognostic state against the
-# `time-step-exit` savepoint, written by ICON in perform_nh_timeloop right after
-# integrate_nh returns: all physics tendencies applied, time levels swapped. The
-# reference run has only graupel microphysics active (dt_mig on, everything else
-# off), matching the driver's process set exactly.
-#
-# Known structural fidelity gaps of the driver's muphys coupling vs ICON's phy2dyn
-# (mo_interface_iconam_aes.f90), reflected in the looser tolerances below until
-# they are ported:
-#   - ICON recomputes exner via the exact EOS and updates theta_v from the new
-#     virtual temperature; muphys/state.py::scatter_to_prognostic applies a
-#     linearized exner increment and leaves theta_v untouched.
-#   - ICON clips negative tracers before (iqneg_d2p=2) and after (iqneg_p2d=2)
-#     physics; the driver does not.
-#   - ICON restricts graupel to jks_cloudy..nlev (zmaxcloudy); muphys runs the
-#     full column.
-# The driver runs muphys with MuphysScheme.ICON_NWP (MuphysConfig default), the
-# port of the exact icon-nwp formulation that generates the reference data. The
-# muphys granule itself is validated in isolation against the
-# aes-graupel-init/exit savepoints in muphys/tests/.../test_muphys_datatest.py.
-# ---------------------------------------------------------------------------
-@pytest.mark.datatest
-@pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "experiment_description, timeloop_date_exit, step_date_exit",
-    [
-        (
-            test_defs.Experiments.EXCLAIM_APE_AES,
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-        ),
-    ],
-)
-def test_standalone_driver_moist_physics(
-    experiment_description: test_defs.ExperimentDescription,
-    timeloop_date_exit: str,
-    *,
-    tmp_path: pathlib.Path,
-    process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
-    savepoint_time_step_exit: sb.IconTimeStepExitSavepoint,
-) -> None:
-    allocator = model_backends.get_allocator(backend)
-
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-
-    config = driver_config.read_config(config_file_path)
-    # muphys is enabled for exclaim_ape_aesPhys via read_config's name-based gating;
-    # assert it here so a regression in that gating fails loudly rather than silently
-    # running a dynamics-only driver.
-    assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
+    if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
+        # Guard the name-based muphys gating: if it regressed, the APE_aes run would
+        # silently take the dry branch below instead of failing loudly here.
+        assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
 
     config = config.with_overrides(
         driver={
@@ -208,27 +130,54 @@ def test_standalone_driver_moist_physics(
 
     prognostics = ds.prognostics.current
 
+    if config.muphys is None:
+        # Dry experiments (no physics): the final prognostic state is produced by the
+        # dynamical core, so validate it against the mid-time-step dynamics savepoints.
+        # istep=2 (corrector), substep=5 (last dyn substep) and linit=False are constant
+        # for JW and GAUSS3D.
+        nonhydro_exit = data_provider.from_savepoint_nonhydro_exit(
+            istep=2, date=step_date_exit, substep=5
+        )
+        diffusion_exit = data_provider.from_savepoint_diffusion_exit(
+            linit=False, date=step_date_exit
+        )
+        test_utils.assert_dallclose(
+            prognostics.vn.asnumpy(), diffusion_exit.vn().asnumpy(), atol=6e-7
+        )
+        test_utils.assert_dallclose(
+            prognostics.w.asnumpy(), diffusion_exit.w().asnumpy(), atol=8e-9
+        )
+        test_utils.assert_dallclose(
+            prognostics.rho.asnumpy(), nonhydro_exit.rho_new().asnumpy(), atol=9e-10
+        )
+        test_utils.assert_dallclose(
+            prognostics.exner.asnumpy(), diffusion_exit.exner().asnumpy(), atol=2e-10
+        )
+        test_utils.assert_dallclose(
+            prognostics.theta_v.asnumpy(), diffusion_exit.theta_v().asnumpy(), atol=1e-7
+        )
+        return
+
+    # Physics enabled (EXCLAIM_APE_AES): validate the full prognostic state against the
+    # end-of-time-step savepoint (see the docstring for the reference setup and the
+    # provisional-tolerance rationale).
+    time_step_exit = data_provider.from_savepoint_time_step_exit(date=step_date_exit)
+
     # fields graupel does not touch: expect the dry-run tolerances
+    test_utils.assert_dallclose(prognostics.vn.asnumpy(), time_step_exit.vn().asnumpy(), atol=6e-7)
+    test_utils.assert_dallclose(prognostics.w.asnumpy(), time_step_exit.w().asnumpy(), atol=8e-9)
     test_utils.assert_dallclose(
-        prognostics.vn.asnumpy(), savepoint_time_step_exit.vn().asnumpy(), atol=6e-7
-    )
-    test_utils.assert_dallclose(
-        prognostics.w.asnumpy(), savepoint_time_step_exit.w().asnumpy(), atol=8e-9
-    )
-    test_utils.assert_dallclose(
-        prognostics.rho.asnumpy(), savepoint_time_step_exit.rho().asnumpy(), atol=9e-10
+        prognostics.rho.asnumpy(), time_step_exit.rho().asnumpy(), atol=9e-10
     )
 
-    # fields muphys writes: provisional tolerances, to be measured on the
-    # regenerated archive (ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL=true) and
-    # tightened once the phy2dyn fidelity gaps above are closed
+    # fields muphys writes: provisional tolerances, to be measured on the regenerated
+    # archive (ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL=true) and tightened once the
+    # fidelity gaps noted in the docstring are closed
     test_utils.assert_dallclose(
-        prognostics.exner.asnumpy(), savepoint_time_step_exit.exner().asnumpy(), atol=1e-6
+        prognostics.exner.asnumpy(), time_step_exit.exner().asnumpy(), atol=1e-6
     )
-    # theta_v carries the full latent-heating update in ICON but is untouched by
-    # the driver's muphys coupling: the deviation is the physics increment itself
     test_utils.assert_dallclose(
-        prognostics.theta_v.asnumpy(), savepoint_time_step_exit.theta_v().asnumpy(), atol=2.0
+        prognostics.theta_v.asnumpy(), time_step_exit.theta_v().asnumpy(), atol=2.0
     )
 
     tracers = prognostics.tracer
@@ -243,6 +192,6 @@ def test_standalone_driver_moist_physics(
         assert field is not None, f"tracer {name} must be allocated for the APE_aes experiment"
         test_utils.assert_dallclose(
             field.asnumpy(),
-            getattr(savepoint_time_step_exit, name)().asnumpy(),
+            getattr(time_step_exit, name)().asnumpy(),
             atol=1e-10,
         )
