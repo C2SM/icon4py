@@ -124,9 +124,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_exchange_coefficient_diagnostics import (
     update_exchange_coefficient_diagnostics,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_horizontal_wind import (
-    update_horizontal_wind,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_temperature_with_dissipation_heating import (
     update_temperature_with_dissipation_heating,
 )
@@ -158,6 +155,9 @@ from icon4py.model.common.math.stencils.generic_math_operations import (
 )
 from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
+)
+from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendency import (
+    update_two_cell_kdim_fields_with_tendency,
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -1353,10 +1353,12 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-        # final update loop: tmx t_domain cells, all full levels
+        # final update loop of Compute_diffusion_hor_wind (mo_vdf.f90): tmx
+        # t_domain cells, all full levels; new_u/v = u/v + tend * dtime with
+        # the tendencies from the RBF cell interpolation of tot_tend
         self.update_horizontal_wind = setup_program(
             backend=backend,
-            program=update_horizontal_wind,
+            program=update_two_cell_kdim_fields_with_tendency,
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -2240,12 +2242,12 @@ class Tmx:
             p_v_out=tendency_state.ddt_v,
         )
         self.update_horizontal_wind(
-            u=input_state.u,
-            v=input_state.v,
-            tend_u=tendency_state.ddt_u,
-            tend_v=tendency_state.ddt_v,
-            new_u=new_state.u,
-            new_v=new_state.v,
+            field_1=input_state.u,
+            field_2=input_state.v,
+            tendency_1=tendency_state.ddt_u,
+            tendency_2=tendency_state.ddt_v,
+            new_field_1=new_state.u,
+            new_field_2=new_state.v,
             dtime=dtime,
         )
 
