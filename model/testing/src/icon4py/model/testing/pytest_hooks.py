@@ -25,7 +25,7 @@ __all__ = [
     "pytest_sessionfinish",
 ]
 
-_TEST_LEVELS = ("any", "unit", "integration")
+_TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
 def pytest_configure(config):
@@ -35,7 +35,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "level(name): marks test as unit or integration tests, tests without this marker are implicitly treated as 'unit'",
+        "level(name): marks test as unit, integration, or validation tests. Validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
@@ -104,7 +104,7 @@ def pytest_addoption(parser: pytest.Parser):
             "--level",
             action="store",
             choices=_TEST_LEVELS,
-            help="Set level (unit, integration) of the tests to run. Tests without a level marker are implicitly 'unit'. Defaults to 'any'.",
+            help="Set level (unit, integration, validation) of the tests to run. Defaults to 'any', which excludes validation tests.",
             default="any",
         )
     with contextlib.suppress(ValueError):
@@ -136,20 +136,26 @@ def pytest_collection_modifyitems(config, items):
             pytest.exit("No tests assigned to this MPI subcomm group", returncode=0)
 
     test_level = config.getoption("--level")
-    if test_level == "any":
-        return
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
             assert all(level in _TEST_LEVELS for level in marker.args), (
                 f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             )
-            if test_level not in marker.args:
+            if test_level == "any":
+                # Default mode: run unit and integration, but exclude validation tests
+                if "validation" in marker.args:
+                    item.add_marker(
+                        pytest.mark.skip(
+                            reason="Validation tests must be explicitly requested with --level=validation."
+                        )
+                    )
+            elif test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(
                         reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
                     )
                 )
-        elif test_level != "unit":
+        elif test_level not in ("unit", "any"):
             item.add_marker(
                 pytest.mark.skip(
                     reason=f"Selected level '{test_level}' does not match the implicit level 'unit' for this test."

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
+import os
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -16,7 +17,7 @@ import numpy.typing as npt
 import pytest
 from typing_extensions import Buffer
 
-from icon4py.model.common import model_options
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.testing import config, tolerances
 
 
@@ -46,6 +47,26 @@ def _warn_if_tolerance_drifted(
     max_abs, _ = tolerances.max_differences(actual, desired)
     if 0.0 < max_abs * tolerances.DRIFT_FACTOR < atol:
         recorder.record_drift(field=label, atol=atol, max_abs=max_abs)
+
+
+def get_mpi_comparison_tolerance(
+    backend: gtx_typing.Backend | None,
+    *,
+    atol: float,
+    rtol: float,
+) -> tuple[float, float]:
+    """Return (atol, rtol) for single-rank vs multi-rank field comparisons.
+
+    When ``ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE`` is set and the backend is a
+    known-good CPU backend (``gtfn`` or ``dace``), tolerances are overridden to
+    zero for bitwise-exact comparison. Otherwise the caller-supplied tolerances
+    are returned unchanged.
+    """
+    if os.environ.get("ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE") == "1" and (
+        model_backends.is_cpu_backend(backend) and (is_gtfn_backend(backend) or is_dace(backend))
+    ):
+        return 0.0, 0.0
+    return atol, rtol
 
 
 def dallclose(

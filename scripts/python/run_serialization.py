@@ -75,6 +75,7 @@ class SerializationSettings:
             definitions.Experiments.MCH_CH_R04B09,
             definitions.Experiments.JW,
             definitions.Experiments.EXCLAIM_APE,
+            definitions.Experiments.EXCLAIM_APE_AES,
             definitions.Experiments.GAUSS3D,
             definitions.Experiments.WEISMAN_KLEMP_TORUS,
         ]
