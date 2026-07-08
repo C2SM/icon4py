@@ -53,7 +53,7 @@ Produce a single Markdown document with exactly these sections, in order:
 
 End the summary with a short, lighthearted sign-off for the week: a joke, quote,
 or nerdy observation. It should relate in some way to icon4py's world —
-icosohedral grids, weather/climate simulations, Fortran, Python, stencil
+icosahedral grids, weather/climate simulations, Fortran, Python, stencil
 computations, or parallel computing. Keep it to one or two lines, make it silly
 or witty, and do not attribute a quote to a real person unless it actually is
 one.

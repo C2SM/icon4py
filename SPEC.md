@@ -82,8 +82,8 @@ Create an automated weekly Slack activity summary for the icon4py repository.
 - [x] Phase 5 — CLI redesign (dummy flags, drop shell wrapper, workflow simplification)
 - [x] Phase 5 — Content and invocation fixes (opencode order, descriptions, inactive PR highlights, style rules)
 - [x] Phase 5 — OpenCode provider config and Slack channel cleanup
-- [ ] Phase 6 — Local verification and review convergence
-- [ ] Phase 7 — Human review / PR
+- [x] Phase 6 — Local verification and review convergence
+- [ ] Phase 7 — Human review / PR (ready)
 
 ## Decisions
 
