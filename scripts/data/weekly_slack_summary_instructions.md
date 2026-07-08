@@ -15,35 +15,36 @@ source of facts.
 - Do not use Markdown headings. Use `*Section Title*` for section titles.
 - Format links as raw URLs.
 
+## Required content for every PR and issue
+
+For each PR or issue you list, you MUST include all of:
+
+1. Title
+2. Author (the user who opened it)
+3. Link
+4. A brief LLM-summarized description of what it is actually about
+
+The description MUST NOT simply restate the title. Read the body, commit
+messages, review comments, and issue comments to produce a meaningful summary.
+If the title is vague (e.g. "fix bug" or "update foo"), explain the concrete
+change. If the body is empty or unhelpful, infer the purpose from commit
+messages. If there is truly no information beyond the title, state that
+explicitly.
+
+Example bad summary: "Update driver readme with configuration details" (this is
+just the title).
+Example good summary: "Adds a configuration section to the driver readme
+covering mixed-precision and backend settings."
+
 ## Output format
 
-Produce a numbered summary with a horizontal separator (`---`) between sections.
-
-01. `*icon4py weekly summary: <start-date> - <end-date>*`
-02. `---`
-03. `*Closed PRs*`
-    1. `<title>` by <author> — <one-sentence summary> <url>
-    2. ...
-04. `---`
-05. `*Ongoing PRs*`
-    1. `<title>` by <author> — <one-sentence status> <url>
-    2. ...
-06. `---`
-07. `*Inactive open PRs*`
-    1. `<title>` (<reason tag>) <url>
-    2. ...
-08. `---`
-09. `*Opened issues*`
-    1. `<title>` by <author> — <one-sentence summary> <url>
-10. `---`
-11. `*Closed issues*`
-    1. `<title>` by <author> — <one-sentence summary> <url>
-12. `---`
-13. `*Weekly CI status*` — short report.
-
-For every PR and issue, include a one-sentence description of what it is
-actually about. Do not just repeat the title. Use body, comments, or commits to
-infer content when the title is unclear.
+1. `*icon4py weekly summary: <start-date> - <end-date>*`
+2. `*Closed PRs*` — title, author, link, description.
+3. `*Ongoing PRs*` — title, author, link, status/description.
+4. `*Inactive open PRs*` — up to 15 highlights with reason tags.
+5. `*Opened issues*` — title, author, link, description.
+6. `*Closed issues*` — title, author, link, description.
+7. `*Weekly CI status*` — short report.
 
 ## Tone and style
 
