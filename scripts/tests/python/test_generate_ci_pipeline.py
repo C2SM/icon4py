@@ -26,6 +26,10 @@ def test_parse_collected_count_basic():
     assert gcp._parse_collected_count("collected 42 items") == 42
 
 
+def test_parse_collected_count_singular():
+    assert gcp._parse_collected_count("collected 1 item") == 1
+
+
 def test_parse_collected_count_with_selected():
     output = "collected 42 items / 5 deselected / 37 selected"
     assert gcp._parse_collected_count(output) == 37

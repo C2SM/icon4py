@@ -181,7 +181,7 @@ def _parse_collected_count(output: str) -> int | None:
     collected and selected counts.
     """
     pattern = re.compile(
-        r"collected\s+(?P<collected>\d+)\s+items"
+        r"collected\s+(?P<collected>\d+)\s+items?"
         r"(?:\s*/\s*\d+\s*deselected\s*/\s*(?P<selected>\d+)\s*selected)?"
     )
     # The summary is at the end of the output; search backwards.
