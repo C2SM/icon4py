@@ -143,7 +143,7 @@ def pytest_collection_modifyitems(config, items):
             return test_level in marker.args
         return test_level == "unit"
 
-    matched_items = [item for item in items if _matches_level(item)]
+    matched_items = {item for item in items if _matches_level(item)}
     removed_items = [item for item in items if item not in matched_items]
     if removed_items:
         config.hook.pytest_deselected(items=removed_items)
