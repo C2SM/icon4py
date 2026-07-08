@@ -11,13 +11,23 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tangential_wind_wp import (
-    compute_tangential_wind_wp,
-)
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    compute_tangential_wind,
+    compute_tangential_wind_wp,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
+
+
+def compute_tangential_wind_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray], vn: np.ndarray, rbf_vec_coeff_e: np.ndarray
+) -> np.ndarray:
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    e2c2e = connectivities[dims.E2C2EDim]
+    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+    return vt
 
 
 def tangential_wind_reference(
@@ -72,7 +82,7 @@ def tangential_wind_input_data(grid: base.Grid, on_half_levels: bool) -> dict[st
 
 
 class TestComputeTangentialWindWpHalfLevels(stencil_tests.StencilTest):
-    """Stage A use: vt_ie from vn_ie on half levels (nlev + 1 rows)."""
+    """Half-level input (nlev + 1 rows), e.g. vt_ie from vn_ie in tmx Stage A."""
 
     PROGRAM = compute_tangential_wind_wp
     OUTPUTS = ("vt",)
@@ -85,7 +95,7 @@ class TestComputeTangentialWindWpHalfLevels(stencil_tests.StencilTest):
 
 
 class TestComputeTangentialWindWpFullLevels(stencil_tests.StencilTest):
-    """Stage E1 use: vt from vn on full levels (nlev rows)."""
+    """Full-level input (nlev rows), e.g. vt from vn in tmx Stage E1."""
 
     PROGRAM = compute_tangential_wind_wp
     OUTPUTS = ("vt",)
@@ -95,3 +105,40 @@ class TestComputeTangentialWindWpFullLevels(stencil_tests.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
         return tangential_wind_input_data(grid, on_half_levels=False)
+
+
+@pytest.mark.embedded_remap_error
+class TestComputeTangentialWind(stencil_tests.StencilTest):
+    """Variable-precision variant used by the dycore velocity advection."""
+
+    PROGRAM = compute_tangential_wind
+    OUTPUTS = ("vt",)
+
+    @staticmethod
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        vn: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        vt = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
+        return dict(vt=vt)
+
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict[str, Any]:
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        rbf_vec_coeff_e = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat
+        )
+        vt = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+
+        return dict(
+            vn=vn,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            vt=vt,
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=gtx.int32(grid.num_levels),
+        )

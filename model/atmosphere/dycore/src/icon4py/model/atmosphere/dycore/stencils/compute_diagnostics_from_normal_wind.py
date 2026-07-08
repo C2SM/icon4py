@@ -15,15 +15,15 @@ from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction i
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
     _compute_horizontal_advection_term_for_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
-    _compute_tangential_wind,
-)
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    _compute_tangential_wind,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

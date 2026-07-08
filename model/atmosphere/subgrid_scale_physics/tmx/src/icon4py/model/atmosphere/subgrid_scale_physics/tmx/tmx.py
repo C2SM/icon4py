@@ -55,9 +55,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_flux_rhs import (
     compute_surface_flux_rhs,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tangential_wind_wp import (
-    compute_tangential_wind_wp,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_temperature_from_energy_and_tendency import (
     compute_temperature_from_energy_and_tendency,
 )
@@ -151,6 +148,9 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 )
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
+)
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    compute_tangential_wind_wp,
 )
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,

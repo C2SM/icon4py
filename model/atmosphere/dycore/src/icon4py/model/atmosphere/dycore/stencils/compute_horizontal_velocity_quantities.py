@@ -22,15 +22,15 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
 from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import (
     _compute_mass_and_temperature_flux,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
-    _compute_tangential_wind,
-)
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity import (
     _spatially_average_flux_or_velocity,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    _compute_tangential_wind,
+)
 from icon4py.model.common.type_alias import vpfloat
 
 

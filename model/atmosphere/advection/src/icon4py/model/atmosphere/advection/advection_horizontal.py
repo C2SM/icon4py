@@ -19,9 +19,6 @@ from icon4py.model.atmosphere.advection.stencils.apply_positive_definite_horizon
 from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
 )
-from icon4py.model.atmosphere.advection.stencils.compute_edge_tangential import (
-    compute_edge_tangential,
-)
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
@@ -45,6 +42,9 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    compute_tangential_wind_wp,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -533,9 +533,9 @@ class SemiLagrangian(FiniteVolume):
         # stencils
         self._compute_edge_tangential = model_options.setup_program(
             backend=self._backend,
-            program=compute_edge_tangential,
+            program=compute_tangential_wind_wp,
             constant_args={
-                "ptr_coeff": self._interpolation_state.rbf_vec_coeff_e,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
             },
             horizontal_sizes={
                 "horizontal_start": self._start_edge_lateral_boundary_level_2,
@@ -603,12 +603,12 @@ class SemiLagrangian(FiniteVolume):
         ## tracer-independent part
 
         # compute tangential velocity
-        log.debug("running stencil compute_edge_tangential - start")
+        log.debug("running stencil compute_tangential_wind_wp - start")
         self._compute_edge_tangential(
-            p_vn_in=prep_adv.vn_traj,
-            p_vt_out=self._z_real_vt,
+            vn=prep_adv.vn_traj,
+            vt=self._z_real_vt,
         )
-        log.debug("running stencil compute_edge_tangential - end")
+        log.debug("running stencil compute_tangential_wind_wp - end")
 
         # backtrajectory calculation
         log.debug("running stencil compute_barycentric_backtrajectory_alt - start")
