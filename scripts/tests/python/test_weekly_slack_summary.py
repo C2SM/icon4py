@@ -358,6 +358,36 @@ class TestRunOpenCode:
                 pathlib.Path("out.md"),
             )
 
+    def test_runs_opencode_and_writes_stdout(self, tmp_path, monkeypatch):
+        instructions = tmp_path / "instructions.md"
+        context = tmp_path / "context.md"
+        output = tmp_path / "out.md"
+        instructions.write_text("instructions", encoding="utf-8")
+        context.write_text("context", encoding="utf-8")
+
+        monkeypatch.setattr(weekly_slack_summary.shutil, "which", lambda _name: "/usr/bin/opencode")
+
+        def fake_run(cmd, *, capture_output, check, text):
+            assert cmd == [
+                "opencode",
+                "run",
+                "--quiet",
+                "--file",
+                str(instructions),
+                "--file",
+                str(context),
+                "Generate the weekly Slack summary following the attached instructions and context.",
+            ]
+            assert capture_output is True
+            assert check is True
+            assert text is True
+            return mock.Mock(stdout="polished summary", stderr="")
+
+        monkeypatch.setattr(weekly_slack_summary.subprocess, "run", fake_run)
+
+        weekly_slack_summary._run_opencode(instructions, context, output)
+        assert output.read_text(encoding="utf-8") == "polished summary"
+
 
 class TestGenerateCommand:
     def test_dry_run_writes_files(self, tmp_path, monkeypatch):
