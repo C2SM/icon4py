@@ -102,8 +102,6 @@ def test_standalone_driver(
 
     config = driver_config.read_config(config_file_path)
     if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
-        # Guard the name-based muphys gating: if it regressed, the APE_aes run would
-        # silently take the dry branch below instead of failing loudly here.
         assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
 
     config = config.with_overrides(
