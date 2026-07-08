@@ -147,7 +147,7 @@ def test_standalone_driver(
 #     physics; the driver does not.
 #   - ICON restricts graupel to jks_cloudy..nlev (zmaxcloudy); muphys runs the
 #     full column.
-# The driver runs muphys with MuphysScheme.ICON_NWP (MuphysConfig default), the
+# The driver runs muphys with MuphysScheme.AES_GRAUPEL (MuphysConfig default), the
 # port of the exact icon-nwp formulation that generates the reference data. The
 # muphys granule itself is validated in isolation against the
 # aes-graupel-init/exit savepoints in muphys/tests/.../test_muphys_datatest.py.

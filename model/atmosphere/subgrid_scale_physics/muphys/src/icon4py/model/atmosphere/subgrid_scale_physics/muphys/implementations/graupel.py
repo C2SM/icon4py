@@ -25,16 +25,16 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _ice_number,
     _ice_sticking,
     _snow_lambda,
-    _snow_lambda_icon_nwp,
+    _snow_lambda_aes_graupel,
     _snow_number,
-    _snow_number_icon_nwp,
+    _snow_number_aes_graupel,
     _vel_scale_factor_default_scalar,
     _vel_scale_factor_ice_scalar,
     _vel_scale_factor_snow_scalar,
-    _vm_graupel_icon_nwp_scalar,
-    _vm_ice_icon_nwp_scalar,
-    _vm_rain_icon_nwp_scalar,
-    _vm_snow_icon_nwp_scalar,
+    _vm_graupel_aes_graupel_scalar,
+    _vm_ice_aes_graupel_scalar,
+    _vm_rain_aes_graupel_scalar,
+    _vm_snow_aes_graupel_scalar,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
     _internal_energy_scalar,
@@ -45,16 +45,16 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import (
     _cloud_to_graupel,
     _cloud_to_rain,
-    _cloud_to_rain_icon_nwp,
+    _cloud_to_rain_aes_graupel,
     _cloud_to_snow,
-    _cloud_to_snow_icon_nwp,
+    _cloud_to_snow_aes_graupel,
     _cloud_x_ice,
     _graupel_to_rain,
     _ice_to_graupel,
     _ice_to_snow,
     _rain_to_graupel,
     _rain_to_vapor,
-    _rain_to_vapor_icon_nwp,
+    _rain_to_vapor_aes_graupel,
     _snow_to_graupel,
     _snow_to_rain,
     _vapor_x_graupel,
@@ -87,7 +87,7 @@ class IntegrationState(NamedTuple):
     t_state: TempState
     rho: ta.wpfloat
     pflx_tot: ta.wpfloat
-    # input temperature of the level, carried for the ICON_NWP snow fall speed of
+    # input temperature of the level, carried for the AES_GRAUPEL snow fall speed of
     # the next level (snow_number depends on the previous level's temperature)
     t_in: ta.wpfloat
 
@@ -134,7 +134,7 @@ def precip_qx_level_update(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def precip_qx_level_update_icon_nwp(  # noqa: PLR0917 [too-many-positional-arguments]
+def precip_qx_level_update_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level_q: PrecipStateQx,
     zeta: ta.wpfloat,  # dt/(2dz)
     q: ta.wpfloat,  # specific mass of hydrometeor
@@ -143,7 +143,7 @@ def precip_qx_level_update_icon_nwp(  # noqa: PLR0917 [too-many-positional-argum
     vt_prev: ta.wpfloat,  # vm at the level-averaged density of the level above
     mask: bool,
 ) -> PrecipStateQx:
-    # ICON_NWP variant: the fall speeds are evaluated by the caller with the full
+    # AES_GRAUPEL variant: the fall speeds are evaluated by the caller with the full
     # species-specific vm formulas (clamped densities, previous-level rho and t),
     # so no vc factor is carried in the state
     current_level_activated = previous_level_q.activated | mask
@@ -244,7 +244,7 @@ def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     mask_g: bool,
     dt: ta.wpfloat,
     dz: ta.wpfloat,
-    use_icon_nwp: bool,
+    use_aes_graupel: bool,
 ) -> IntegrationState:
     zeta = dt / (wpfloat(2.0) * dz)
     xrho = sqrt(GraupelConsts.rho_00 / rho)
@@ -264,59 +264,59 @@ def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     current_level_activated = any_mask | previous_level_activated
     # TODO(): Use of combined if-statement to reduce checks in case any of the masks or previous levels are not activated. Can be made unnecessary with future transformations.
     if current_level_activated:
-        if use_icon_nwp:
+        if use_aes_graupel:
             # full vm formulas: fall_speed at this level's hydrometeor density,
             # vt at the level-averaged density using the previous level's rho and t
-            r_update = precip_qx_level_update_icon_nwp(
+            r_update = precip_qx_level_update_aes_graupel(
                 previous_level.r,
                 zeta,
                 q.r,
                 rho,
-                _vm_rain_icon_nwp_scalar(q.r * rho, rho),
-                _vm_rain_icon_nwp_scalar(
+                _vm_rain_aes_graupel_scalar(q.r * rho, rho),
+                _vm_rain_aes_graupel_scalar(
                     (previous_level.r.x + q.r) * wpfloat(0.5) * previous_level.rho,
                     previous_level.rho,
                 ),
                 mask_r,
             )
-            s_update = precip_qx_level_update_icon_nwp(
+            s_update = precip_qx_level_update_aes_graupel(
                 previous_level.s,
                 zeta,
                 q.s,
                 rho,
-                _vm_snow_icon_nwp_scalar(q.s * rho, rho, t),
-                _vm_snow_icon_nwp_scalar(
+                _vm_snow_aes_graupel_scalar(q.s * rho, rho, t),
+                _vm_snow_aes_graupel_scalar(
                     (previous_level.s.x + q.s) * wpfloat(0.5) * previous_level.rho,
                     previous_level.rho,
                     previous_level.t_in,
                 ),
                 mask_s,
             )
-            i_update = precip_qx_level_update_icon_nwp(
+            i_update = precip_qx_level_update_aes_graupel(
                 previous_level.i,
                 zeta,
                 q.i,
                 rho,
-                _vm_ice_icon_nwp_scalar(q.i * rho, rho),
-                _vm_ice_icon_nwp_scalar(
+                _vm_ice_aes_graupel_scalar(q.i * rho, rho),
+                _vm_ice_aes_graupel_scalar(
                     (previous_level.i.x + q.i) * wpfloat(0.5) * previous_level.rho,
                     previous_level.rho,
                 ),
                 mask_i,
             )
-            g_update = precip_qx_level_update_icon_nwp(
+            g_update = precip_qx_level_update_aes_graupel(
                 previous_level.g,
                 zeta,
                 q.g,
                 rho,
-                _vm_graupel_icon_nwp_scalar(q.g * rho, rho),
-                _vm_graupel_icon_nwp_scalar(
+                _vm_graupel_aes_graupel_scalar(q.g * rho, rho),
+                _vm_graupel_aes_graupel_scalar(
                     (previous_level.g.x + q.g) * wpfloat(0.5) * previous_level.rho,
                     previous_level.rho,
                 ),
                 mask_g,
             )
-        else:
+        else:  # KOKKOS_MUPHYS (gt4py cannot prove an if/elif on a bool exhaustive)
             r_update = precip_qx_level_update(
                 previous_level.r,
                 previous_level.rho,
@@ -449,7 +449,7 @@ def _q_t_update(  # noqa: PLR0917, PLR0915 [too-many-positional-arguments, too-m
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
     enable_masking: bool,
-    use_icon_nwp: bool,
+    use_aes_graupel: bool,
 ) -> tuple[
     Q,
     fa.CellKField[ta.wpfloat],
@@ -462,10 +462,10 @@ def _q_t_update(  # noqa: PLR0917, PLR0915 [too-many-positional-arguments, too-m
     dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
     dvsi = q.v - qvsi
-    if use_icon_nwp:
-        n_snow = _snow_number_icon_nwp(t, rho * q.s)
-        l_snow = _snow_lambda_icon_nwp(rho * q.s, n_snow)
-    else:
+    if use_aes_graupel:
+        n_snow = _snow_number_aes_graupel(t, rho * q.s)
+        l_snow = _snow_lambda_aes_graupel(rho * q.s, n_snow)
+    else:  # KOKKOS_MUPHYS (gt4py cannot prove an if/elif on a bool exhaustive)
         n_snow = _snow_number(t, rho, q.s)
         l_snow = _snow_lambda(rho, q.s, n_snow)
 
@@ -473,17 +473,17 @@ def _q_t_update(  # noqa: PLR0917, PLR0915 [too-many-positional-arguments, too-m
     t_at_least_tmelt = ~t_below_tmelt
 
     # Define conversion 'matrix'
-    if use_icon_nwp:
-        c2r = _cloud_to_rain_icon_nwp(t, rho, q.c, q.r, qnc)
-        r2v = _rain_to_vapor_icon_nwp(t, rho, q.c, q.r, dvsw, dt)
-    else:
+    if use_aes_graupel:
+        c2r = _cloud_to_rain_aes_graupel(t, rho, q.c, q.r, qnc)
+        r2v = _rain_to_vapor_aes_graupel(t, rho, q.c, q.r, dvsw, dt)
+    else:  # KOKKOS_MUPHYS (gt4py cannot prove an if/elif on a bool exhaustive)
         c2r = _cloud_to_rain(t, q.c, q.r, qnc)
         r2v = _rain_to_vapor(t, rho, q.c, q.r, dvsw, dt)
     c2i, i2c = symmetric(_cloud_x_ice(t, q.c, q.i, dt))
 
-    if use_icon_nwp:
-        c2s = _cloud_to_snow_icon_nwp(t, q.c, q.s, n_snow, l_snow)
-    else:
+    if use_aes_graupel:
+        c2s = _cloud_to_snow_aes_graupel(t, q.c, q.s, n_snow, l_snow)
+    else:  # KOKKOS_MUPHYS (gt4py cannot prove an if/elif on a bool exhaustive)
         c2s = _cloud_to_snow(t, q.c, q.s, n_snow, l_snow)
     c2g = _cloud_to_graupel(t, rho, q.c, q.g)
 
@@ -499,7 +499,7 @@ def _q_t_update(  # noqa: PLR0917, PLR0915 [too-many-positional-arguments, too-m
     v2i, i2v = cond_symmetric(
         t_below_tmelt & is_sig_present, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt)
     )
-    if use_icon_nwp:
+    if use_aes_graupel:
         # icon-nwp computes ice_dep from the vapor_x_ice deposition alone, BEFORE
         # the nucleation contribution is added (and only where is_sig_present)
         ice_dep = where(t_below_tmelt & is_sig_present, minimum(v2i, dvsi / dt), wpfloat(0.0))
@@ -508,7 +508,7 @@ def _q_t_update(  # noqa: PLR0917, PLR0915 [too-many-positional-arguments, too-m
             v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt),
             wpfloat(0.0),
         )
-    else:
+    else:  # KOKKOS_MUPHYS (gt4py cannot prove an if/elif on a bool exhaustive)
         v2i = where(
             t_below_tmelt,
             v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt),
@@ -619,7 +619,7 @@ def _precipitation_effects(  # noqa: PLR0917 [too-many-positional-arguments]
     rho: fa.CellKField[ta.wpfloat],  # density
     dz: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
-    use_icon_nwp: bool,
+    use_aes_graupel: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -646,7 +646,7 @@ def _precipitation_effects(  # noqa: PLR0917 [too-many-positional-arguments]
         kmin_g,
         dt,
         dz,
-        use_icon_nwp,
+        use_aes_graupel,
     )
     qr = precip_state.r.x
     pr = precip_state.r.p
@@ -676,7 +676,7 @@ def graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
     enable_masking: bool,
-    use_icon_nwp: bool,
+    use_aes_graupel: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     Q,
@@ -699,12 +699,12 @@ def graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     q, t = where(
         mask,
         _q_t_update(
-            te, p, rho, q, dt, qnc, enable_masking=enable_masking, use_icon_nwp=use_icon_nwp
+            te, p, rho, q, dt, qnc, enable_masking=enable_masking, use_aes_graupel=use_aes_graupel
         ),
         (q, te),
     )
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt, use_icon_nwp
+        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt, use_aes_graupel
     )
 
     return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
@@ -732,7 +732,7 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
     enable_masking: bool,
-    use_icon_nwp: bool,
+    use_aes_graupel: bool,
 ) -> None:
     graupel(
         last_level=vertical_end - 1,
@@ -744,7 +744,7 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dt=dt,
         qnc=qnc,
         enable_masking=enable_masking,
-        use_icon_nwp=use_icon_nwp,
+        use_aes_graupel=use_aes_graupel,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain=(
             # t_out

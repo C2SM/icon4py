@@ -53,7 +53,7 @@ class MuphysComponent:
         qnc: float,
         backend: gtx_typing.Backend | None = None,
         *,
-        scheme: muphys_config.MuphysScheme = muphys_config.MuphysScheme.CPP_REFERENCE,
+        scheme: muphys_config.MuphysScheme = muphys_config.MuphysScheme.KOKKOS_MUPHYS,
         step: Callable[..., Any] | None = None,
     ) -> None:
         self._ncells = ncells

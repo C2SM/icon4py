@@ -68,8 +68,17 @@ def setup_graupel(
     vertical_end: int,
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
-    scheme: config.MuphysScheme = config.MuphysScheme.CPP_REFERENCE,
+    scheme: config.MuphysScheme = config.MuphysScheme.KOKKOS_MUPHYS,
 ):
+    # the GT4Py operators branch on a plain bool (the DSL has no match statement)
+    match scheme:
+        case config.MuphysScheme.AES_GRAUPEL:
+            use_aes_graupel = True
+        case config.MuphysScheme.KOKKOS_MUPHYS:
+            use_aes_graupel = False
+        case _:
+            raise ValueError(f"unknown muphys scheme: {scheme}")
+
     if enable_dace_hooks and model_backends.is_backend_descriptor(backend):
         # The graupel scan needs two dace auto-opt hooks. They can only be injected into
         # the backend *descriptor* (a dict), before it is turned into a concrete backend.
@@ -92,7 +101,7 @@ def setup_graupel(
                 "dt": ta.wpfloat(dt),
                 "qnc": ta.wpfloat(qnc),
                 "enable_masking": enable_masking,
-                "use_icon_nwp": scheme is config.MuphysScheme.ICON_NWP,
+                "use_aes_graupel": use_aes_graupel,
             },
             horizontal_sizes={
                 "horizontal_start": horizontal_start,
