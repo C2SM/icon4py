@@ -46,15 +46,13 @@ NumTimeSteps: TypeAlias = int
 EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
-def datetime_from_iconformat(value: str) -> datetime.datetime:
-    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+def absolutetime_from_iconformat(value: str) -> AbsoluteTime:
+    return AbsoluteTime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def timedelta_from_iconformat(dtime: float, modeltimestep: str) -> datetime.timedelta:
+def relativetime_from_iconformat(dtime: float, modeltimestep: str) -> RelativeTime:
     return (
-        _timedelta_from_iso8601(modeltimestep)
-        if modeltimestep
-        else datetime.timedelta(seconds=dtime)
+        _relativetime_from_iso8601(modeltimestep) if modeltimestep else RelativeTime(seconds=dtime)
     )
 
 
@@ -74,8 +72,8 @@ _ISO8601_DURATION = re.compile(
 )
 
 
-def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
-    """Parse an ISO 8601 duration such as 'PT300S' into a 'datetime.timedelta'.
+def _relativetime_from_iso8601(duration: str) -> RelativeTime:
+    """Parse an ISO 8601 duration such as 'PT300S' into a 'RelativeTime'.
 
     Only the components convertible to a fixed duration are supported (weeks,
     days, hours, minutes, seconds).
@@ -84,7 +82,7 @@ def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
     if match is None or not any(match.groups()):
         raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
     components = {name: float(value) for name, value in match.groupdict().items() if value}
-    return datetime.timedelta(**components)
+    return RelativeTime(**components)
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -107,7 +105,7 @@ class DriverConfig:
                 ),
                 converter=lambda model_namelist_filename: model_namelist_filename.removeprefix(
                     "NAMELIST_"
-                ).removeprefix("_sb_atm"),
+                ).removesuffix("_sb_atm"),
             ),
         ),
     ]
@@ -139,7 +137,7 @@ class DriverConfig:
                         converter=str.strip,
                     ),
                 ],
-                converter=timedelta_from_iconformat,
+                converter=relativetime_from_iconformat,
             ),
         ),
     ]
@@ -153,7 +151,7 @@ class DriverConfig:
                     "master_cfg",
                     "master_time_control_nml",
                 ),
-                converter=datetime_from_iconformat,
+                converter=absolutetime_from_iconformat,
             ),
         ),
     ]
@@ -167,7 +165,7 @@ class DriverConfig:
                     "master_cfg",
                     "master_time_control_nml",
                 ),
-                converter=datetime_from_iconformat,
+                converter=absolutetime_from_iconformat,
             ),
         ),
     ]
@@ -391,7 +389,7 @@ def prepare_output_directory(
 
     if is_rank_zero:
         if output_path.exists():
-            current_time = datetime.datetime.now()
+            current_time = AbsoluteTime.now()
             log.warning(f"output path {output_path} already exists, a time stamp will be added")
             output_path = (
                 output_path.parent
