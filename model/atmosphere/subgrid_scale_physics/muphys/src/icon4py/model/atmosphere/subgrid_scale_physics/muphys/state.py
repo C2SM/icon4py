@@ -25,6 +25,7 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure,
     diagnose_surface_pressure,
     diagnose_temperature,
+    update_exner_and_theta_v,
 )
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.metrics import metrics_attributes
@@ -64,11 +65,12 @@ class State(PhysicsState):
 
     muphys role
       - input      : fed to muphys via ``as_component_input`` -- dz, rho, q, te, p
-      - returned   : muphys updates it; te/q changes come back as tendencies
-                     (tend_T -> exner, tend_q -> tracers).
+      - returned   : muphys updates it; te/q changes come back as tendencies. tend_q
+                     updates the tracers; tend_T drives the exner + theta_v update
+                     (via the exact EOS, mirroring ICON's phy2dyn coupling).
                      rho and p are input-only.
       - internal   : not a muphys fields -- tv, pressure_on_cells_half_levels -- used only
-                     to diagnose p and to convert tend_T into an exner increment.
+                     to diagnose p and to recompute exner/theta_v from tend_T.
       - diagnostic : a muphys output stored for reporting -- pflx, pr, ps, pi, pg, pre.
 
     memory ownership
@@ -134,8 +136,8 @@ class State(PhysicsState):
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._calculate_exner_tendency = model_options.setup_program(
-            program=calculate_tendency.calculate_exner_tendency,
+        self._update_exner_and_theta_v = model_options.setup_program(
+            program=update_exner_and_theta_v.update_exner_and_theta_v,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -155,9 +157,6 @@ class State(PhysicsState):
         # INTERNAL
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._exner_tendency = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )
         self._precip_diagnostics: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
     def gather_from_prognostic(
@@ -226,7 +225,7 @@ class State(PhysicsState):
                 output_field=tracer,
             )
 
-        # 2. tend_T -> exner. new_te = te + tend_T*dt
+        # 2. tend_T -> new temperature: new_te = te + tend_T*dt
         self._apply_tendency(
             field_a=self.te,
             coeff=dt,
@@ -247,19 +246,17 @@ class State(PhysicsState):
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
         )
-        # d(exner)/dt from dTv/dt, then exner += d(exner)/dt * dt.
-        self._calculate_exner_tendency(
-            dtime=dt,
+        # Recompute exner via the exact EOS from the updated virtual temperature and
+        # diagnose theta_v = Tv/exner, mirroring ICON's phy2dyn coupling
+        # (mo_interface_iconam_aes.f90). rho is unchanged by the fast physics, so the
+        # exner/rho/theta_v trio stays EOS-consistent.
+        self._update_exner_and_theta_v(
+            rho=self.rho,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
+            dtime=dt,
             exner=prognostic.exner,
-            exner_tendency=self._exner_tendency,
-        )
-        self._apply_tendency(
-            field_a=prognostic.exner,
-            coeff=dt,
-            field_b=self._exner_tendency,
-            output_field=prognostic.exner,
+            theta_v=prognostic.theta_v,
         )
 
         # 3. Store precip diagnostics (references; never applied to prognostic state).

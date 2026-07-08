@@ -73,20 +73,18 @@ def test_standalone_driver(
       else off), so the full prognostic state including the fields muphys writes
       (exner, tracers) can be compared.
 
-    The muphys-written fields still use provisional, loose tolerances because of known
-    structural gaps in the driver's phy2dyn coupling that are not yet ported:
+    The muphys-written fields use provisional tolerances. The exner/theta_v coupling
+    now mirrors ICON exactly, but residual deviations remain from other phy2dyn gaps
+    not yet ported, so the tolerances stay loose until measured on the regenerated
+    archive:
 
-    - exner / theta_v: ``scatter_to_prognostic`` applies a *linearized* increment to
-      exner and leaves theta_v untouched. Since exner, rho and theta_v are tied by the
-      equation of state, incrementing exner alone leaves the thermodynamic state
-      EOS-inconsistent, and theta_v never receives the latent-heating update -- so its
-      bound (atol=2.0) is wide enough to absorb the entire un-applied increment and is
-      effectively unchecked. ICON instead updates theta_v from the new virtual
-      temperature and recomputes exner via the exact EOS.
-      TODO(Yilu): port ICON's phy2dyn thermodynamic update
-      (mo_interface_iconam_aes.f90) -- update theta_v from the new T_v and re-diagnose
-      exner via the EOS so the exner/rho/theta_v trio stays consistent -- then tighten
-      the exner and theta_v tolerances on the regenerated archive.
+    - exner / theta_v: ``scatter_to_prognostic`` recomputes exner via the exact EOS
+      from the updated virtual temperature and diagnoses theta_v = Tv/exner, mirroring
+      ICON's phy2dyn coupling (mo_interface_iconam_aes.f90), so the exner/rho/theta_v
+      trio stays EOS-consistent. The exner (atol=1e-6) and theta_v (atol=2.0) bounds are
+      still the pre-port provisional values; with the coupling ported they should
+      tighten substantially -- limited now only by the tracer gaps below feeding into
+      the virtual temperature -- and must be re-measured on the archive.
     - negative tracers: ICON clips them before (iqneg_d2p) and after (iqneg_p2d)
       physics; the driver does not.
     - vertical extent: ICON runs graupel on jks_cloudy..nlev (zmaxcloudy); muphys runs
