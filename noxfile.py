@@ -27,26 +27,6 @@ nox.options.sessions = ["test_model", "test_tools_and_bindings"]
 nox.options.default_venv_backend = "uv"
 
 
-ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-
-
-def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
-    """Return pytest CLI flags for a model test subset."""
-    match selection:
-        case "datatest":
-            return ["--datatest-only"]
-        case "stencils":
-            return ["--datatest-skip", "-k", "stencil_tests"]
-        case "basic":
-            return [
-                "--datatest-skip",
-                "-k",
-                "not stencil_tests and not benchmark_only",
-            ]
-        case _:
-            raise AssertionError(f"Invalid selection: {selection}")
-
-
 class _VenvBackendKwargs(TypedDict, total=False):
     venv_backend: str
 
@@ -83,6 +63,7 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
 ]
 
+ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
@@ -297,3 +278,20 @@ def _install_session_venv(
         session.run_install(
             "uv", "pip", "install", *((item,) if isinstance(item, str) else item), env=env
         )
+
+
+def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
+    """Return pytest CLI flags for a model test subset."""
+    match selection:
+        case "datatest":
+            return ["--datatest-only"]
+        case "stencils":
+            return ["--datatest-skip", "-k", "stencil_tests"]
+        case "basic":
+            return [
+                "--datatest-skip",
+                "-k",
+                "not stencil_tests and not benchmark_only",
+            ]
+        case _:
+            raise AssertionError(f"Invalid selection: {selection}")
