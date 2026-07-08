@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_diffusion_cells import (
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.tridiagonal import (
     _tridiagonal_back_substitution,
     _tridiagonal_forward_sweep,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
