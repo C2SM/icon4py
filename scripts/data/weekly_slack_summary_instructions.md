@@ -15,34 +15,33 @@ source of facts.
 - Do not use Markdown headings. Use `*Section Title*` for section titles.
 - Format links as raw URLs.
 - One-sentence summaries only.
-- No Easter egg at the end.
 
 ## Output format
 
-Produce one compact block with these sections:
-
 1. `*icon4py weekly summary: <start-date> - <end-date>*`
-2. `*Closed PRs*` — one line per PR using this exact format:
-   `:white_check_mark: <title> — <one-sentence summary> (<author>) <url>`
-3. `*Ongoing PRs*` — one line per PR:
-   `:arrows_counterclockwise: <title> — <one-sentence summary> (<author>) <url>`
-4. `*Inactive open PRs*` — one line per highlight:
-   `:sleeping: <title> — <reason tag> <url>`
-5. `*Opened issues*` — one line per issue:
-   `:new: <title> — <one-sentence summary> (<author>) <url>`
-6. `*Closed issues*` — one line per issue:
-   `:white_check_mark: <title> — <one-sentence summary> (<author>) <url>`
-7. `*Weekly CI status*` — one line:
-   `:large_green_circle:`, `:yellow_circle:`, `:red_circle:`, or `:gray_circle:`
-   followed by a short note.
+2. `*Closed PRs*`
+   - Under `*Infrastructure / Tooling*`, list PRs about CI, build, packaging,
+     tests, linting, or developer tooling.
+   - Under `*Model / Science*`, list PRs about physics, numerics, dycore,
+     advection, microphysics, or grid behavior.
+   - Each entry: title, author, one-sentence description, link.
+3. `*Ongoing PRs*` — title, author, one-sentence status, link.
+4. `*Inactive open PRs*` — up to 15 highlights with reason tags.
+5. `*Opened issues*` — title, author, description, link.
+6. `*Closed issues*` — title, author, description, link.
+7. `*Weekly CI status*` — short report.
 
-If a section has no entries, write `*Section Title*`: `(none)`.
-
-For every PR and issue, the one-sentence summary must describe what it is
-actually about, not just restate the title.
+For every PR and issue, include a one-sentence description of what it is
+actually about. Do not just repeat the title.
 
 ## Tone and style
 
-- Keep the whole summary under 25 lines.
+- Keep the whole summary under 45 lines.
 - Mention blockers briefly when present.
+- For CI, distinguish: all-good, no recent pipeline, still running, failed jobs.
 - Do not include raw JSON or commit hashes.
+
+## Weekly Easter Egg
+
+End with a short, silly/nerdy sign-off related to icon4py's world. One or two
+lines max.
