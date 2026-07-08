@@ -18,7 +18,7 @@ from icon4py.model.standalone_driver import config as driver_config
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
     atm_dict = {
         "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
-        "run_nml": run_nml,
+        "run_nml": {"ltestcase": True} | run_nml,
     }
     master_dict = {
         "master_time_control_nml": {
