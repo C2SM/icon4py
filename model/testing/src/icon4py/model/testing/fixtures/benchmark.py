@@ -116,7 +116,7 @@ def metrics_field_source(
         config=config,
         grid_manager=grid_manager,
         backend=generic_concrete_backend,
-        exchange=decomposition.create_exchange(decomposition.SingleNodeProcessProperties()),
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
