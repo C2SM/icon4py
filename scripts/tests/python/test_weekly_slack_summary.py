@@ -637,24 +637,23 @@ class TestGenerateCommand:
 
         monkeypatch.setattr(weekly_slack_summary, "_run_opencode", fake_run_opencode)
 
-        slack_calls: list[tuple[str, str | None, str]] = []
+        slack_calls: list[tuple[str, str]] = []
 
-        def fake_post_to_slack(webhook_url, channel, markdown):
-            slack_calls.append((webhook_url, channel, markdown))
+        def fake_post_to_slack(webhook_url, markdown):
+            slack_calls.append((webhook_url, markdown))
 
         monkeypatch.setattr(weekly_slack_summary, "_post_to_slack", fake_post_to_slack)
 
         weekly_slack_summary.generate_cmd(
             output_dir=tmp_path,
             slack_webhook_url="https://hooks.slack.com/test",
-            slack_channel="#test",
         )
 
         summary_md = tmp_path / "weekly_slack_summary.md"
         assert summary_md.exists()
         assert summary_md.read_text(encoding="utf-8") == "polished summary"
         assert opencode_calls == [summary_md]
-        assert slack_calls == [("https://hooks.slack.com/test", "#test", "polished summary")]
+        assert slack_calls == [("https://hooks.slack.com/test", "polished summary")]
 
     def test_missing_webhook_exits_nonzero(self, tmp_path, monkeypatch):
         monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
