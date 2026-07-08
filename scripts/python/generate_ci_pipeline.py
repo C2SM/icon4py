@@ -336,9 +336,9 @@ def _model_mpi_cells(
 ) -> list[_MatrixCell]:
     """Build collection cells for the MPI model test sessions."""
     cells: list[_MatrixCell] = []
+    if not subpackages or not backends or not levels:
+        return cells
     for subset in subsets:
-        if not subpackages or not backends or not levels:
-            continue
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
