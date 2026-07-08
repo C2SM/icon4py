@@ -147,14 +147,11 @@ def test_standalone_driver(
 #     physics; the driver does not.
 #   - ICON restricts graupel to jks_cloudy..nlev (zmaxcloudy); muphys runs the
 #     full column.
-#   - The driver feeds muphys qnc = MuphysConfig().qnc = 50.0 (labelled cm^-3)
-#     without unit conversion, while the Fortran scheme uses cloud_num = 50.0e6
-#     m^-3 in the same formula slot: autoconversion is off by (1e6)^2.
 #   - The muphys port follows the older muphys C++ reference; the icon-nwp tree
 #     carries newer rain microphysics (rho-dependent accretion, exp-polynomial
-#     evaporation) — see test_aes_graupel_datatest.py for details.
+#     evaporation) — see test_muphys_datatest.py for details.
 # The muphys granule itself is validated in isolation against the
-# aes-graupel-init/exit savepoints in muphys/tests/.../test_aes_graupel_datatest.py.
+# aes-graupel-init/exit savepoints in muphys/tests/.../test_muphys_datatest.py.
 # ---------------------------------------------------------------------------
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error

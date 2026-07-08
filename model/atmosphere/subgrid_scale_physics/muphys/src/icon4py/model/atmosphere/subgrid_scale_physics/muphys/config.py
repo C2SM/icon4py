@@ -15,4 +15,4 @@ import dataclasses
 class MuphysConfig:
     """Configuration for the muphys microphysics component."""
 
-    qnc: float = 50.0e6 # Cloud droplet number concentration [cm^-3], default value hardcoded
+    qnc: float = 50.0e6  # cloud droplet number concentration [m^-3], matches Fortran cloud_num
