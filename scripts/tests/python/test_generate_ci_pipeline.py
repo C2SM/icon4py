@@ -10,9 +10,57 @@
 
 from __future__ import annotations
 
+from concurrent.futures import Future
+
 import generate_ci_pipeline as gcp
 import pytest
 import yaml
+
+
+def _make_cell(name: str) -> gcp._MatrixCell:
+    return gcp._MatrixCell(
+        job_name=name,
+        extends=".test",
+        variables={},
+        matrix={"NAME": name},
+        session=f"test({name})",
+        pytest_args=[],
+    )
+
+
+def _future_with_result(value: int | BaseException) -> Future:
+    future: Future = Future()
+    if isinstance(value, BaseException):
+        future.set_exception(value)
+    else:
+        future.set_result(value)
+    return future
+
+
+def _fake_executor_factory(futures: list[Future]):
+    class _FakeExecutor:
+        def __init__(self, max_workers: int) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def submit(self, fn, *args, **kwargs):
+            return futures.pop(0)
+
+    return _FakeExecutor
+
+
+def _as_completed_timeout_immediately(futures, timeout=None):
+    raise TimeoutError
+
+
+def _as_completed_first_then_timeout(futures, timeout=None):
+    yield from list(futures.keys())[:1]
+    raise TimeoutError
 
 
 class _SubprocessResult:
@@ -211,3 +259,47 @@ def test_model_mpi_cells_use_correct_session(monkeypatch):
         levels="unit",
     )
     assert captured["session"] == "test_model_mpi(basic, common)"
+
+
+def test_total_timeout_drops_done_futures_with_zero_count(monkeypatch):
+    """A done future reporting zero tests is dropped after total timeout."""
+    cell = _make_cell("zero")
+    futures = [_future_with_result(0)]
+    monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
+    monkeypatch.setattr(gcp, "as_completed", _as_completed_timeout_immediately)
+
+    assert gcp._collect_cells([cell]) == []
+
+
+def test_total_timeout_keeps_done_futures_with_positive_count(monkeypatch):
+    """Done futures not yet yielded with positive counts are kept on timeout."""
+    cell_zero = _make_cell("zero")
+    cell_positive = _make_cell("positive")
+    futures = [_future_with_result(0), _future_with_result(5)]
+    monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
+    monkeypatch.setattr(gcp, "as_completed", _as_completed_first_then_timeout)
+
+    kept = gcp._collect_cells([cell_zero, cell_positive])
+    assert kept == [cell_positive]
+
+
+def test_total_timeout_keeps_done_futures_with_exception(monkeypatch):
+    """Done futures that raised are kept conservatively after total timeout."""
+    cell = _make_cell("failed")
+    futures = [_future_with_result(RuntimeError("boom"))]
+    monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
+    monkeypatch.setattr(gcp, "as_completed", _as_completed_timeout_immediately)
+
+    assert gcp._collect_cells([cell]) == [cell]
+
+
+def test_total_timeout_keeps_pending_futures(monkeypatch):
+    """Pending futures are cancelled and their cells kept after total timeout."""
+    cell = _make_cell("pending")
+    pending = Future()
+    futures = [pending]
+    monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
+    monkeypatch.setattr(gcp, "as_completed", _as_completed_timeout_immediately)
+
+    assert gcp._collect_cells([cell]) == [cell]
+    assert pending.cancelled()

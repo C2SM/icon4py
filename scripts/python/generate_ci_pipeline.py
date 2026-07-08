@@ -403,11 +403,20 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
                 if count is None or count > 0:
                     kept.append(cell)
         except TimeoutError:
-            # Total timeout expired: keep all remaining pending cells.
+            # Total timeout expired. Be conservative: evaluate every remaining
+            # future. Pending futures are cancelled but their cells are kept;
+            # done futures are inspected and kept unless they definitively
+            # collected zero tests.
             for future, cell in futures.items():
                 if not future.done():
                     future.cancel()
-                if not future.done() or future.cancelled():
+                    kept.append(cell)
+                    continue
+                try:
+                    count = future.result(timeout=0)
+                except Exception:
+                    count = None
+                if count is None or count > 0:
                     kept.append(cell)
 
     return kept
