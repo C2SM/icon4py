@@ -120,7 +120,7 @@ class DriverConfig:
     dtime: typing.Annotated[
         RelativeTime,
         common_conf_opt.ConfigOption(
-            description="Time step duration in seconds.",
+            description="Time step duration.",
             icon_equivalent=common_conf_opt.IconMultiOption(
                 options=[
                     common_conf_opt.IconOption(
@@ -146,7 +146,7 @@ class DriverConfig:
     start_of_simulation: typing.Annotated[
         AbsoluteTime,
         common_conf_opt.ConfigOption(
-            description="This is the start date of an experiment, given in ISO format (proleptic gregorian calendar).",
+            description="Start date and time of a simulation.",
             icon_equivalent=common_conf_opt.IconOption(
                 name="experimentstartdate",
                 path=(
@@ -160,7 +160,7 @@ class DriverConfig:
     end_of_simulation: typing.Annotated[
         EndOfSimulation,
         common_conf_opt.ConfigOption(
-            description="This is the date an experiment is finished, given in ISO format.",
+            description="End date and time of a simulation.",
             icon_equivalent=common_conf_opt.IconOption(
                 name="experimentstopdate",
                 path=(
@@ -181,7 +181,11 @@ class DriverConfig:
     apply_extra_second_order_divdamp: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
-            description="Whether to apply additional second order divergence damping.",  # TODO(ricoh): ask for a better description
+            description=(
+                "Whether or not to apply additional second order divergence damping. "
+                "Not a namelist variable, coded as follows in mo_nh_stepping.f90: "
+                "# IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)"
+            ),
             icon_equivalent=common_conf_opt.IconOption(
                 name="ltestcase",
                 path=(
@@ -211,7 +215,7 @@ class DriverConfig:
     ndyn_substeps: typing.Annotated[
         int,
         common_conf_opt.ConfigOption(
-            description="Number of dynamics substeps per fast-physics step.",
+            description="Number of dynamics substeps per time step.",
             icon_equivalent=common_conf_opt.IconOption(
                 "ndyn_substeps",
                 (
@@ -224,14 +228,17 @@ class DriverConfig:
     enable_statistics_output: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
-            description="Enable statistics output.",  # TODO(ricoh): c35 -- ask for better description
+            description="Compute and log variable statistics.",
             icon_equivalent=None,
         ),
     ] = False
     enable_output: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
-            description="Enable output.",  # TODO(ricoh): c35 -- ask for better description
+            description=(
+                "Enable output to file. For now this is only documented in "
+                "'icon4py.model.standalone_driver.driver_io'."
+            ),
             icon_equivalent=None,
         ),
     ] = False
