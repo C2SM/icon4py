@@ -79,7 +79,7 @@ ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 # real timings are available.
 _COLLECTION_TIMEOUT_SECONDS = 5 * 60
 _COLLECTION_TOTAL_TIMEOUT_SECONDS = 30 * 60
-_COLLECTION_MAX_WORKERS = 8
+_COLLECTION_MAX_WORKERS = int(os.environ.get("ICON4PY_NOX_COLLECTION_WORKERS", "8"))
 
 
 def _parse_list(raw: str | None) -> list[str]:

@@ -187,6 +187,7 @@ def test_model(
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
+            "tests",
             *session.posargs,
         )
 
@@ -214,6 +215,7 @@ def test_model_mpi(
             "--only-mpi",
             "-k mpi_tests",
             *pytest_args,
+            "tests",
             *session.posargs,
         )
 
@@ -241,11 +243,13 @@ def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsS
         with session.chdir("tools"):
             session.run(
                 *pytest_base.split(),
+                "tests",
                 *session.posargs,
             )
     with session.chdir("bindings"):
         session.run(
             *pytest_base.split(),
+            "tests",
             *session.posargs,
         )
 

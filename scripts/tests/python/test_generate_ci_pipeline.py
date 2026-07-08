@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import importlib
 import subprocess
 from concurrent.futures import Future
 
@@ -69,6 +70,20 @@ class _SubprocessResult:
 def test_collection_env():
     env = gcp._collection_env()
     assert env == {"ICON4PY_NOX_USE_ACTIVE_VENV": "1"}
+
+
+def test_collection_max_workers_default():
+    importlib.reload(gcp)
+    assert gcp._COLLECTION_MAX_WORKERS == 8
+
+
+def test_collection_max_workers_from_env(monkeypatch):
+    monkeypatch.setenv("ICON4PY_NOX_COLLECTION_WORKERS", "64")
+    importlib.reload(gcp)
+    assert gcp._COLLECTION_MAX_WORKERS == 64
+    monkeypatch.delenv("ICON4PY_NOX_COLLECTION_WORKERS", raising=False)
+    importlib.reload(gcp)
+    assert gcp._COLLECTION_MAX_WORKERS == 8
 
 
 def test_run_nox_collection_constructs_command(monkeypatch):

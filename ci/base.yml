@@ -198,8 +198,7 @@ variables:
   timeout: 1h
   variables:
     GIT_STRATEGY: fetch
-    KUBERNETES_MEMORY_REQUEST: 4Gi
-    KUBERNETES_MEMORY_LIMIT: 4Gi
+    ICON4PY_NOX_COLLECTION_WORKERS: "64"
   script:
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml
