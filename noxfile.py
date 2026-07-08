@@ -10,11 +10,16 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from collections.abc import Sequence
 from datetime import datetime
+from pathlib import Path
 from typing import Final, Literal, TypeAlias
 
 import nox
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from scripts.python.helpers.test_selection import ModelTestsSubset, _selection_to_pytest_args
 
