@@ -814,11 +814,5 @@ def generate_cmd(
     typer.echo("Summary posted to Slack.")
 
 
-@cli.command(name="version")
-def version_cmd() -> None:
-    """Print the script version."""
-    typer.echo("weekly_slack_summary 0.1.0")
-
-
 if __name__ == "__main__":
     sys.exit(cli())
