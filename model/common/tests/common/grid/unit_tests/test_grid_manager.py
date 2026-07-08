@@ -353,7 +353,11 @@ def test_gridmanager_given_file_not_found_then_abort(
             config=v_grid.VerticalGridConfig(num_levels=80),
             offset_transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
-        manager(allocator=cpu_allocator, keep_skip_values=True)
+        manager(
+            allocator=cpu_allocator,
+            keep_skip_values=True,
+            process_props=decomp_defs.SingleNodeProcessProperties(),
+        )
 
 
 @pytest.mark.parametrize("size", [100, 1500, 20000])

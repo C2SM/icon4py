@@ -34,7 +34,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
-_single_process_props = decomposition.SingleNodeProcessProperties()
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 
 
@@ -103,8 +102,8 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
+        process_props: decomposition.ProcessProperties,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        process_props: decomposition.ProcessProperties = _single_process_props,
     ) -> None:
         if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer

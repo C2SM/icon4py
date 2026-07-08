@@ -62,8 +62,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         granules: driver_utils.Granules,
         vertical_grid_config: v_grid.VerticalGridConfig,
-        exchange: decomposition_defs.ExchangeRuntime,
-        global_reductions: decomposition_defs.Reductions,
+        process_props: decomposition_defs.ProcessProperties,
         io_monitor: common_io.IOMonitor | None = None,
     ):
         self.config = config
@@ -78,8 +77,10 @@ class Icon4pyDriver:
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
-        self.exchange = exchange
-        self.global_reductions = global_reductions
+        self.exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+        self.global_reductions = decomposition_defs.create_reduction(
+            process_props, decomposition_info
+        )
 
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
@@ -578,7 +579,6 @@ def initialize_driver(
 
     decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
@@ -602,8 +602,6 @@ def initialize_driver(
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
         process_props=process_props,
-        exchange=exchange,
-        global_reductions=global_reductions,
         geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
@@ -648,8 +646,7 @@ def initialize_driver(
         static_field_factories=static_field_factories,
         granules=granules,
         vertical_grid_config=config.vertical_grid,
-        exchange=exchange,
-        global_reductions=global_reductions,
+        process_props=process_props,
         io_monitor=io_monitor,
     )
 

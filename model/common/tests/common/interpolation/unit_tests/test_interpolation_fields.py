@@ -189,7 +189,7 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, exchange=decomposition.single_node_exchange
+        compute_geofac_grg, exchange=decomposition.SingleNodeExchange()
     )(
         primal_normal_cell_x=primal_normal_cell_x,
         primal_normal_cell_y=primal_normal_cell_y,
@@ -275,7 +275,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
                 horizontal_start_level_3=horizontal_start_p2,
-                exchange=decomposition.single_node_exchange,
+                exchange=decomposition.SingleNodeExchange(),
             )
         case icon.GeometryType.TORUS:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
@@ -285,7 +285,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
                 horizontal_start_level_3=horizontal_start_p2,
-                exchange=decomposition.single_node_exchange,
+                exchange=decomposition.SingleNodeExchange(),
             )
 
     assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
@@ -313,7 +313,7 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.single_node_exchange)(
+    e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.SingleNodeExchange())(
         c_bln_avg=c_bln_avg,
         geofac_div=geofac_div,
         owner_mask=owner_mask,

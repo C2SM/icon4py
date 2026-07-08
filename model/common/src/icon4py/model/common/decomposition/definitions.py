@@ -13,6 +13,7 @@ import dataclasses
 import functools
 import logging
 import warnings
+import weakref
 from enum import Enum
 from typing import Any, ClassVar, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
@@ -583,42 +584,108 @@ def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> 
     return SingleNodeProcessProperties()
 
 
+@dataclasses.dataclass
+class _ExchangeCacheEntry:
+    exchange: ExchangeRuntime
+    process_props_ref: weakref.ref
+    decomp_info_ref: weakref.ref | None
+
+
+@dataclasses.dataclass
+class _ReductionCacheEntry:
+    reductions: Reductions
+    process_props_ref: weakref.ref
+    decomp_info_ref: weakref.ref | None
+
+
+_exchange_cache: dict[tuple[int, int], _ExchangeCacheEntry] = {}
+_reduction_cache: dict[tuple[int, int], _ReductionCacheEntry] = {}
+
+
+def clear_exchange_cache() -> None:
+    _exchange_cache.clear()
+
+
+def clear_reductions_cache() -> None:
+    _reduction_cache.clear()
+
+
 @functools.singledispatch
+def _create_exchange_impl(
+    process_props: ProcessProperties,
+    decomp_info: DecompositionInfo | None = None,
+) -> ExchangeRuntime:
+    if process_props.is_single_rank():
+        return SingleNodeExchange()
+    raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
+
+
 def create_exchange(
-    process_props: ProcessProperties, decomp_info: DecompositionInfo
+    process_props: ProcessProperties,
+    decomp_info: DecompositionInfo | None = None,
 ) -> ExchangeRuntime:
     """
     Create an Exchange depending on the runtime size.
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
-    raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
+    key = (id(process_props), id(decomp_info))
+    if (entry := _exchange_cache.get(key)) is not None:
+        if entry.process_props_ref() is None or (
+            entry.decomp_info_ref is not None and entry.decomp_info_ref() is None
+        ):
+            del _exchange_cache[key]
+        else:
+            return entry.exchange
+    exchange = _create_exchange_impl(process_props, decomp_info)
+    _exchange_cache[key] = _ExchangeCacheEntry(
+        exchange=exchange,
+        process_props_ref=weakref.ref(process_props),
+        decomp_info_ref=weakref.ref(decomp_info) if decomp_info is not None else None,
+    )
+    return exchange
 
 
-@create_exchange.register(SingleNodeProcessProperties)
-def create_single_node_exchange(
-    process_props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
-) -> ExchangeRuntime:
-    return SingleNodeExchange()
+create_exchange.register = _create_exchange_impl.register  # type: ignore[attr-defined]
 
 
 @functools.singledispatch
+def _create_reduction_impl(
+    process_props: ProcessProperties,
+    decomposition_info: DecompositionInfo | None = None,
+) -> Reductions:
+    if process_props.is_single_rank():
+        return SingleNodeReductions()
+    raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
+
+
 def create_reduction(
-    process_props: ProcessProperties, decomposition_info: DecompositionInfo
+    process_props: ProcessProperties,
+    decomposition_info: DecompositionInfo | None = None,
 ) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
-    raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
+    key = (id(process_props), id(decomposition_info))
+    if (entry := _reduction_cache.get(key)) is not None:
+        if entry.process_props_ref() is None or (
+            entry.decomp_info_ref is not None and entry.decomp_info_ref() is None
+        ):
+            del _reduction_cache[key]
+        else:
+            return entry.reductions
+    reductions = _create_reduction_impl(process_props, decomposition_info)
+    _reduction_cache[key] = _ReductionCacheEntry(
+        reductions=reductions,
+        process_props_ref=weakref.ref(process_props),
+        decomp_info_ref=weakref.ref(decomposition_info) if decomposition_info is not None else None,
+    )
+    return reductions
 
 
-@create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(
-    process_props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo
-) -> Reductions:
-    return SingleNodeReductions()
+create_reduction.register = _create_reduction_impl.register  # type: ignore[attr-defined]
 
 
 class DecompositionFlag(int, Enum):
@@ -673,7 +740,3 @@ class ParallelLogger(logging.Filter):
         return record.levelno >= logging.WARNING or (
             self._print_distributed_debug_msg and record.levelno == logging.DEBUG
         )
-
-
-single_node_exchange = SingleNodeExchange()
-single_node_reductions = SingleNodeReductions()

@@ -200,7 +200,7 @@ def solve_nonhydro(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=geometry_field_source.get("cell_owner_mask"),
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
         backend=backend_like,
     )
 

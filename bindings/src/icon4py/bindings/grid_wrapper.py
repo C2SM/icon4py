@@ -129,7 +129,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     if comm_id is None:
         process_props = decomposition_defs.SingleNodeProcessProperties()
-        exchange_runtime = decomposition_defs.SingleNodeExchange()
+        exchange_runtime = decomposition_defs.create_exchange(process_props)
     else:
         # Set MultiNodeExchange as exchange runtime
         (
