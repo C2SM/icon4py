@@ -649,7 +649,6 @@ def _run_opencode(
     cmd = [
         "opencode",
         "run",
-        "--quiet",
         "Generate the weekly Slack summary following the attached instructions and context.",
         "--file",
         str(instructions_path),

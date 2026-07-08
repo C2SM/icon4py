@@ -494,7 +494,6 @@ class TestRunOpenCode:
             assert cmd == [
                 "opencode",
                 "run",
-                "--quiet",
                 "Generate the weekly Slack summary following the attached instructions and context.",
                 "--file",
                 str(instructions),
