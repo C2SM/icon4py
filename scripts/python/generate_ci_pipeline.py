@@ -244,6 +244,8 @@ def _model_cells(
                             pytest_args=[
                                 "--collect-only",
                                 "-n0",
+                                "-p",
+                                "no:tach",
                                 f"--backend={backend}",
                                 f"--grid={grid}",
                                 "--datatest-skip",
@@ -260,6 +262,8 @@ def _model_cells(
                     pytest_args = [
                         "--collect-only",
                         "-n0",
+                        "-p",
+                        "no:tach",
                         f"--backend={backend}",
                         f"--level={level}",
                     ]
@@ -287,7 +291,7 @@ def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
     """Build collection cells for the tools/bindings test session."""
     cells: list[_MatrixCell] = []
     for selection in selections:
-        pytest_args = ["--collect-only", "-n0"]
+        pytest_args = ["--collect-only", "-n0", "-p", "no:tach"]
         if selection != "datatest":
             pytest_args.append("--datatest-skip")
         cells.append(
@@ -320,6 +324,8 @@ def _model_mpi_cells(
                     pytest_args = [
                         "--collect-only",
                         "-n0",
+                        "-p",
+                        "no:tach",
                         f"--backend={backend}",
                         f"--level={level}",
                     ]

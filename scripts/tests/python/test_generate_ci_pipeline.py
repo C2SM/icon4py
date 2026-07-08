@@ -84,7 +84,7 @@ def test_run_nox_collection_constructs_command(monkeypatch):
     env = {"ICON4PY_NOX_USE_ACTIVE_VENV": "1"}
     keep = gcp._run_nox_collection(
         "test_model(basic, common)",
-        ["--collect-only", "-n0", "--backend=dace_cpu", "--level=unit"],
+        ["--collect-only", "-n0", "-p", "no:tach", "--backend=dace_cpu", "--level=unit"],
         env,
         300,
     )
@@ -96,6 +96,8 @@ def test_run_nox_collection_constructs_command(monkeypatch):
         "--",
         "--collect-only",
         "-n0",
+        "-p",
+        "no:tach",
         "--backend=dace_cpu",
         "--level=unit",
     ]
@@ -205,6 +207,7 @@ def test_tools_cells_use_correct_session(monkeypatch):
     )
     assert captured["session"] == "test_tools_and_bindings(unittest)"
     assert "--datatest-skip" in captured["args"]
+    assert captured["args"][2:4] == ["-p", "no:tach"]
 
 
 def test_model_mpi_cells_use_correct_session(monkeypatch):
@@ -213,6 +216,7 @@ def test_model_mpi_cells_use_correct_session(monkeypatch):
 
     def mock_run(session: str, args: list[str], env: dict, timeout: float) -> bool:
         captured["session"] = session
+        captured["args"] = args
         return True
 
     monkeypatch.setattr("generate_ci_pipeline._run_nox_collection", mock_run)
@@ -225,6 +229,7 @@ def test_model_mpi_cells_use_correct_session(monkeypatch):
         levels="unit",
     )
     assert captured["session"] == "test_model_mpi(basic, common)"
+    assert captured["args"][2:4] == ["-p", "no:tach"]
 
 
 def test_collect_cells_keeps_true_and_drops_false(monkeypatch):
