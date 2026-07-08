@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
@@ -26,7 +27,6 @@ from icon4py.model.testing import definitions, test_utils
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATES,
-    assert_scaled_allclose,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -137,4 +137,12 @@ def test_tmx_init_and_run_diagnostics_single_step(
     for attr_name, accessor_name, k_slice in fields:
         actual = getattr(diagnostic_state, attr_name).asnumpy()[:, k_slice]
         desired = getattr(exit_savepoint, accessor_name)().asnumpy()[:, k_slice]
-        assert_scaled_allclose(actual, desired, err_msg=attr_name)
+        # atol scaled to the reference-field magnitude to absorb near-zero
+        # entries (see verify_full_run_fields in utils.py)
+        test_utils.assert_dallclose(
+            actual,
+            desired,
+            rtol=1.0e-11,
+            atol=1.0e-9 * float(np.max(np.abs(desired))),
+            err_msg=attr_name,
+        )

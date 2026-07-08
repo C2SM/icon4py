@@ -23,16 +23,16 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import model_backends
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATES,
-    assert_scaled_allclose,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -170,7 +170,16 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(
         (setup.new_state.v, exit_savepoint.va_new(), "va_new"),
     )
     for actual, desired, name in fields:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+        desired_np = desired.asnumpy()
+        # atol scaled to the reference-field magnitude to absorb near-zero
+        # entries (see verify_full_run_fields in utils.py)
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired_np,
+            rtol=1.0e-11,
+            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            err_msg=name,
+        )
 
 
 @pytest.mark.datatest
@@ -224,4 +233,13 @@ def test_tmx_run_vertical_wind_diffusion_single_step(
         (setup.new_state.w, exit_savepoint.wa_new(), "wa_new"),
     )
     for actual, desired, name in fields:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+        desired_np = desired.asnumpy()
+        # atol scaled to the reference-field magnitude to absorb near-zero
+        # entries (see verify_full_run_fields in utils.py)
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired_np,
+            rtol=1.0e-11,
+            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            err_msg=name,
+        )

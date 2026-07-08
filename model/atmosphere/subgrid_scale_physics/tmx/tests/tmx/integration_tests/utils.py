@@ -34,29 +34,6 @@ if TYPE_CHECKING:
 TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
 
-def assert_scaled_allclose(
-    actual: np.ndarray,
-    desired: np.ndarray,
-    *,
-    rtol: float = 1.0e-11,
-    atol_scale: float = 1.0e-9,
-    err_msg: str = "",
-) -> None:
-    """
-    'assert_dallclose' with an absolute tolerance scaled to the reference field.
-
-    The tmx fields verified against the Fortran reference agree to a few ulp of
-    the field magnitude, but a plain relative tolerance blows up on near-zero
-    entries (e.g. tendencies crossing zero, v-wind on a zonally symmetric
-    aquaplanet). ``atol = atol_scale * max|desired|`` gives every field an
-    absolute floor tied to its own scale; the measured normalized deviations
-    (max abs diff / max|desired|) on the v06 archive are all below 6e-11, and
-    the largest relative deviations away from zero are below 3e-12.
-    """
-    atol = atol_scale * float(np.max(np.abs(desired)))
-    test_utils.assert_dallclose(actual, desired, rtol=rtol, atol=atol, err_msg=err_msg)
-
-
 def verify_full_run_fields(
     *,
     diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -65,6 +42,14 @@ def verify_full_run_fields(
     num_levels: int,
 ) -> None:
     """Verify the outputs of a full ``Tmx.run`` against the tmx-exit savepoint."""
+    # The absolute tolerance is scaled to the reference-field magnitude: the tmx
+    # fields agree with the Fortran reference to a few ulp of the field
+    # magnitude, but a plain relative tolerance blows up on near-zero entries
+    # (e.g. tendencies crossing zero, v-wind on a zonally symmetric aquaplanet).
+    # ``atol = 1e-9 * max|desired|`` gives every field an absolute floor tied to
+    # its own scale; the measured normalized deviations (max abs diff /
+    # max|desired|) on the v06 archive are all below 6e-11, and the largest
+    # relative deviations away from zero are below 3e-12.
     # final tendencies and Stage F diagnostics
     fields = (
         (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
@@ -78,7 +63,14 @@ def verify_full_run_fields(
         (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke"),
     )
     for actual, desired, name in fields:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+        desired_np = desired.asnumpy()
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired_np,
+            rtol=1.0e-11,
+            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            err_msg=name,
+        )
 
     # Stage G vertically integrated diagnostics (2D)
     integrals = (
@@ -92,7 +84,14 @@ def verify_full_run_fields(
         ),
     )
     for actual, desired, name in integrals:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+        desired_np = desired.asnumpy()
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired_np,
+            rtol=1.0e-11,
+            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            err_msg=name,
+        )
 
     # Stage G km/kh diagnostics: the bottom (nlev) row is excluded, it holds
     # the tile-aggregated surface exchange coefficients in the Fortran
@@ -102,9 +101,12 @@ def verify_full_run_fields(
         (diagnostic_state.km, exit_savepoint.km(), "km"),
         (diagnostic_state.kh, exit_savepoint.kh(), "kh"),
     ):
-        assert_scaled_allclose(
+        desired_np = desired.asnumpy()[:, : num_levels - 1]
+        test_utils.assert_dallclose(
             actual.asnumpy()[:, : num_levels - 1],
-            desired.asnumpy()[:, : num_levels - 1],
+            desired_np,
+            rtol=1.0e-11,
+            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
             err_msg=name,
         )
 
