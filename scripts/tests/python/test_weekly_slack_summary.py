@@ -464,3 +464,36 @@ class TestGenerateCommand:
         assert "Opened Issues" in markdown
         assert "Closed Issues" in markdown
         assert "GitLab Weekly CI" in markdown
+
+    def test_missing_webhook_exits_nonzero(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+
+        def fake_collect_all(*args, **kwargs):
+            return {
+                "week_start": "2024-07-01T00:00:00+00:00",
+                "week_end": "2024-07-07T23:59:59+00:00",
+                "repository": "C2SM/icon4py",
+                "github_prs": {
+                    "closed_prs": [],
+                    "active_prs": [],
+                    "inactive_prs": [],
+                },
+                "github_issues": {"opened_issues": [], "closed_issues": []},
+                "gitlab_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+            }
+
+        monkeypatch.setattr(weekly_slack_summary, "_collect_all", fake_collect_all)
+
+        with pytest.raises(typer.Exit) as exc_info:
+            weekly_slack_summary.generate_cmd(
+                output_dir=tmp_path,
+                dry_run=False,
+                skip_opencode=True,
+            )
+        assert exc_info.value.exit_code == 1
