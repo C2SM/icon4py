@@ -790,10 +790,10 @@ def generate_cmd(
     webhook = slack_webhook_url or os.environ.get("SLACK_WEBHOOK_URL")
     if not webhook:
         typer.echo(
-            "Warning: no Slack webhook URL provided; summary saved but not posted.",
+            "Error: no Slack webhook URL provided; summary saved but not posted.",
             err=True,
         )
-        raise typer.Exit(code=0)
+        raise typer.Exit(code=1)
 
     channel = slack_channel or os.environ.get("SLACK_CHANNEL")
     summary_text = summary_path.read_text(encoding="utf-8")
