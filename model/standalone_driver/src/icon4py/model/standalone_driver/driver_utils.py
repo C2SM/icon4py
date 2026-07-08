@@ -451,6 +451,7 @@ def initialize_granules(
                 dtime=config.driver.dtime,
                 qnc=config.muphys.qnc,
                 backend=backend,
+                scheme=config.muphys.scheme,
             ),
             state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
             time_control=physics_driver.ProcessTimeControl(
