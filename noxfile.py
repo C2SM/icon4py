@@ -31,6 +31,7 @@ def _use_active_venv() -> bool:
 
 
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
+nox.options.default_venv_backend = "uv"
 
 
 class _VenvBackendKwargs(TypedDict, total=False):
