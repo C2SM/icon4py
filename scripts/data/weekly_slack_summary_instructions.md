@@ -14,32 +14,32 @@ source of facts.
 - Do not use em-dashes (`—`); use hyphens (`-`) or colons instead.
 - Do not use Markdown headings. Use `*Section Title*` for section titles.
 - Format links as raw URLs.
-- One-sentence summaries only.
 
 ## Output format
 
 1. `*icon4py weekly summary: <start-date> - <end-date>*`
-2. `*Closed PRs*`
-   - Under `*Infrastructure / Tooling*`, list PRs about CI, build, packaging,
-     tests, linting, or developer tooling.
-   - Under `*Model / Science*`, list PRs about physics, numerics, dycore,
-     advection, microphysics, or grid behavior.
-   - Each entry: title, author, one-sentence description, link.
-3. `*Ongoing PRs*` — title, author, one-sentence status, link.
+2. `*Closed PRs*` — for each closed/merged PR, include:
+   - title as a raw URL link
+   - author
+   - a one-sentence summary that explains what the PR actually does
+   - if the title is vague or acronym-heavy, also include the most informative
+     commit message line in parentheses after the summary
+3. `*Ongoing PRs*` — title, author, one-sentence status/description, link.
 4. `*Inactive open PRs*` — up to 15 highlights with reason tags.
-5. `*Opened issues*` — title, author, description, link.
-6. `*Closed issues*` — title, author, description, link.
+5. `*Opened issues*` — title, author, one-sentence description, link.
+6. `*Closed issues*` — title, author, one-sentence description, link.
 7. `*Weekly CI status*` — short report.
 
-For every PR and issue, include a one-sentence description of what it is
-actually about. Do not just repeat the title.
+For every item, the one-sentence summary must describe what it is actually
+about, not restate the title. Use the body, commit messages, or comments to
+infer the real content when needed.
 
 ## Tone and style
 
 - Keep the whole summary under 45 lines.
 - Mention blockers briefly when present.
 - For CI, distinguish: all-good, no recent pipeline, still running, failed jobs.
-- Do not include raw JSON or commit hashes.
+- Do not include raw JSON or commit hashes unless they add meaningful context.
 
 ## Weekly Easter Egg
 
