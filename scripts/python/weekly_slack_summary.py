@@ -484,17 +484,22 @@ def _append_job(
     """Append a job/bridge to the appropriate list, fetching a log tail if failed."""
     status = job.get("status")
     job_url = job.get("web_url")
+    is_bridge = job.get("downstream_pipeline") is not None
     info = _job_info(job)
-    if status == "failed" and isinstance(job_url, str):
+    if status == "failed" and isinstance(job_url, str) and not is_bridge:
         try:
             info["log_snippet"] = _gitlab_job_log(job_url)
         except RuntimeError as exc:
             if "401" in str(exc):
                 info["log_snippet"] = "(job log requires GITLAB_TOKEN)"
+            elif "404" in str(exc):
+                info["log_snippet"] = "(raw log not available for this job)"
             else:
                 raise
         failed_jobs.append(info)
     elif status == "failed":
+        if is_bridge:
+            info["log_snippet"] = "(bridge job; see downstream pipeline for details)"
         failed_jobs.append(info)
     elif status == "running":
         running_jobs.append(info)

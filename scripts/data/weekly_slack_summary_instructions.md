@@ -68,6 +68,6 @@ If a section is empty, write `(none)`.
 
 ## Weekly Easter Egg
 
-End with a short, silly/nerdy sign-off related to icon4py's world — icosahedral
-grids, weather/climate simulations, Fortran, Python, stencil computations,
-parallel computing, Slurm, or distributed filesystems. One or two lines max.
+End with a short, silly joke related to icon4py's world — icosahedral grids,
+weather/climate simulations, Fortran, Python, stencil computations, parallel
+computing, Slurm, or distributed filesystems. One or two lines max.
