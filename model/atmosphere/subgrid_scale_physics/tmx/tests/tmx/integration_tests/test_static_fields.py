@@ -43,7 +43,7 @@ from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import topography_savepoint  # noqa: F401
 
 from ..fixtures import *  # noqa: F401, F403  (re-exports experiment, decomposition_info, etc.)
-from .utils import construct_interpolation_state, construct_metric_state
+from .utils import assert_scaled_allclose, construct_interpolation_state, construct_metric_state
 
 
 if TYPE_CHECKING:
@@ -176,8 +176,6 @@ def test_factory_static_states_match_savepoints(
     for f in dataclasses.fields(metric_ref):
         actual = getattr(metric_actual, f.name)
         ref = getattr(metric_ref, f.name)
-        # assert_scaled_allclose requires 2-D arrays; skip 1-D or special fields
-        from .utils import assert_scaled_allclose
         assert_scaled_allclose(
             actual.asnumpy(),
             ref.asnumpy(),
@@ -187,7 +185,6 @@ def test_factory_static_states_match_savepoints(
     for f in dataclasses.fields(interp_ref):
         actual = getattr(interp_actual, f.name)
         ref = getattr(interp_ref, f.name)
-        from .utils import assert_scaled_allclose
         assert_scaled_allclose(
             actual.asnumpy(),
             ref.asnumpy(),

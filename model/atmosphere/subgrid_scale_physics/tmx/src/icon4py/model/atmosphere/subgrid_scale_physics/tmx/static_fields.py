@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
@@ -199,7 +199,7 @@ def build_tmx_static_states(
     Returns:
         (TmxMetricState, TmxInterpolationState)
     """
-    allocator = backend  # gtx.as_field accepts backend as allocator
+    allocator = model_backends.get_allocator(backend)
 
     # ------------------------------------------------------------------
     # 1. Fetch fields directly from factory sources
