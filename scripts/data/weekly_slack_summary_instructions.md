@@ -46,8 +46,11 @@ change. If there is no additional information beyond the title, say so.
 7. `*Weekly CI status*`
    - Report the status for the current week (Monday to Sunday), even though the
      PRs and issues above are from the previous week.
-   - Distinguish green / no recent pipeline / running / failed jobs (with job
-     name and failure type).
+   - Always include the pipeline URL as a clickable `<URL|pipeline>` link.
+   - For failed jobs, list each job name with a clickable `<job URL|job name>`
+     link and a one-sentence summary of what failed. Use the truncated log tail
+     provided in the context for the summary; do not copy the raw log verbatim.
+   - Distinguish green / no recent pipeline / running / failed jobs.
 
 If a section is empty, write `(none)`.
 

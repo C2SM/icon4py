@@ -252,8 +252,13 @@ class TestCollectGitLabCI:
                 ]
             raise AssertionError(f"Unexpected URL: {url}")
 
-        with mock.patch.object(
-            weekly_slack_summary, "_gitlab_api_request", side_effect=fake_request
+        with (
+            mock.patch.object(
+                weekly_slack_summary, "_gitlab_api_request", side_effect=fake_request
+            ),
+            mock.patch.object(
+                weekly_slack_summary, "_gitlab_job_log", return_value="ERROR: test-dycore failed"
+            ),
         ):
             start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
             end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
@@ -262,6 +267,7 @@ class TestCollectGitLabCI:
         assert result["status"] == "failed"
         assert len(result["failed_jobs"]) == 1
         assert result["failed_jobs"][0]["name"] == "test-dycore"
+        assert result["failed_jobs"][0]["log_snippet"] == "ERROR: test-dycore failed"
 
     def test_running_pipeline_lists_running_jobs(self):
         def fake_request(url: str):

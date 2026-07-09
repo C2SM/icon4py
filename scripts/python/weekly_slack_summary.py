@@ -420,6 +420,43 @@ def _gitlab_api_request(url: str) -> dict[str, Any] | list[Any]:
     return json.loads(body.decode("utf-8"))
 
 
+def _gitlab_raw_request(url: str, *, token: str | None = None) -> bytes:
+    """Make a GitLab API request and return the raw response body."""
+    headers = {"User-Agent": "icon4py-weekly-slack-summary"}
+    if token is None:
+        token = os.environ.get("GITLAB_TOKEN")
+    if token:
+        headers["PRIVATE-TOKEN"] = token
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return response.read()
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"GitLab API request failed ({e.code}): {e.reason}\n{error_body}") from e
+
+
+def _gitlab_job_log(
+    project_path: str,
+    job_id: int,
+    *,
+    max_bytes: int = 16384,
+    tail_chars: int = 3000,
+) -> str:
+    """Fetch the tail of a GitLab job log.
+
+    Logs can be very large, so only the last ``tail_chars`` characters of the
+    first ``max_bytes`` bytes are returned.
+    """
+    url = f"{GITLAB_API_BASE}/projects/{project_path}/jobs/{job_id}/trace"
+    body = _gitlab_raw_request(url)
+    truncated = body[:max_bytes]
+    text = truncated.decode("utf-8", errors="replace")
+    if len(text) > tail_chars:
+        text = "..." + text[-tail_chars:]
+    return text.strip()
+
+
 def _collect_gitlab_ci(
     start: datetime.datetime,
     end: datetime.datetime,
@@ -469,15 +506,19 @@ def _collect_gitlab_ci(
             raise RuntimeError(f"Unexpected GitLab jobs response type: {type(jobs)}")
         for job in jobs:
             job_status = job.get("status")
-            job_info = {
-                "id": job.get("id"),
+            job_id = job.get("id")
+            job_info: dict[str, Any] = {
+                "id": job_id,
                 "name": job.get("name"),
                 "stage": job.get("stage"),
                 "status": job_status,
                 "url": job.get("web_url"),
                 "failure_reason": job.get("failure_reason"),
             }
-            if job_status == "failed":
+            if job_status == "failed" and isinstance(job_id, int):
+                job_info["log_snippet"] = _gitlab_job_log(project_path, job_id)
+                failed_jobs.append(job_info)
+            elif job_status == "failed":
                 failed_jobs.append(job_info)
             elif job_status == "running":
                 running_jobs.append(job_info)
@@ -560,16 +601,20 @@ def _format_issue_lines(issue: dict[str, Any], *, closed: bool = False) -> list[
 def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
     lines = [
         f"- Status: **{gitlab_ci['status']}**",
-        f"- URL: {gitlab_ci['url']}",
+        f"- Pipeline URL: {gitlab_ci['url']}",
     ]
     if gitlab_ci.get("message"):
         lines.append(f"- Message: {gitlab_ci['message']}")
     if gitlab_ci.get("failed_jobs"):
         lines.append(f"- Failed jobs ({len(gitlab_ci['failed_jobs'])}):")
-        lines.extend(
-            f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
-            for job in gitlab_ci["failed_jobs"]
-        )
+        for job in gitlab_ci["failed_jobs"]:
+            lines.append(
+                f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
+            )
+            log = job.get("log_snippet")
+            if log:
+                lines.append("    - Truncated log tail:")
+                lines.extend(f"      {line}" for line in log.splitlines())
     elif gitlab_ci.get("status") == "failed":
         lines.append(
             "- The pipeline status is failed, but no individual failed jobs were retrieved. "
