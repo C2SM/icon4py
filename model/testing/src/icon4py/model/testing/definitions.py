@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
@@ -180,6 +181,7 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
+    geometry: GeometryConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: driver_config.DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
