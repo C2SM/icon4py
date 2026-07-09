@@ -44,8 +44,10 @@ change. If there is no additional information beyond the title, say so.
 6. `*Closed issues*`
    - `<issue URL|title>` by <author>: <one-sentence summary>
 7. `*Weekly CI status*`
-   - Status summary, distinguishing green / no recent pipeline / running /
-     failed jobs (with job name and failure type).
+   - Report the status for the current week (Monday to Sunday), even though the
+     PRs and issues above are from the previous week.
+   - Distinguish green / no recent pipeline / running / failed jobs (with job
+     name and failure type).
 
 If a section is empty, write `(none)`.
 
@@ -58,5 +60,5 @@ If a section is empty, write `(none)`.
 ## Weekly Easter Egg
 
 End with a short, silly/nerdy sign-off related to icon4py's world — icosahedral
-grids, weather/climate simulations, Fortran, Python, stencil computations, or
-parallel computing. One or two lines max.
+grids, weather/climate simulations, Fortran, Python, stencil computations,
+parallel computing, Slurm, or distributed filesystems. One or two lines max.

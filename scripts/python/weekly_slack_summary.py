@@ -68,6 +68,18 @@ def _previous_week_bounds(
     return previous_monday, previous_sunday
 
 
+def _current_week_bounds(
+    now: datetime.datetime | None = None,
+) -> tuple[datetime.datetime, datetime.datetime]:
+    """Return the current Monday 00:00 UTC to Sunday 23:59:59 UTC."""
+    if now is None:
+        now = datetime.datetime.now(datetime.timezone.utc)
+    current_monday = now - datetime.timedelta(days=now.weekday())
+    current_monday = current_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+    current_sunday = current_monday + datetime.timedelta(days=6, hours=23, minutes=59, seconds=59)
+    return current_monday, current_sunday
+
+
 def _github_api_request(
     url: str,
     *,
@@ -436,7 +448,7 @@ def _collect_gitlab_ci(
         return {
             "status": "no_recent_pipeline",
             "url": GITLAB_PIPELINE_URL_TEMPLATE,
-            "message": "No weekly pipeline found in the last ~30 hours.",
+            "message": "No weekly pipeline found in the current week (since Monday).",
             "failed_jobs": [],
             "running_jobs": [],
         }
@@ -575,6 +587,8 @@ def _format_context_markdown(
     github_prs: dict[str, list[dict[str, Any]]],
     github_issues: dict[str, list[dict[str, Any]]],
     gitlab_ci: dict[str, Any],
+    *,
+    ci_week_start: datetime.datetime | None = None,
 ) -> str:
     """Format the collected data as Markdown context for OpenCode."""
     lines: list[str] = [
@@ -582,10 +596,10 @@ def _format_context_markdown(
         "",
         f"**Repository:** {GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}",
         f"**Week:** {week_start.date().isoformat()} to {week_end.date().isoformat()} UTC",
-        "",
-        "## Pull Requests",
-        "",
     ]
+    if ci_week_start is not None:
+        lines.append(f"**CI window:** {ci_week_start.date().isoformat()} (Mon) to end of week UTC")
+    lines.extend(["", "## Pull Requests", ""])
 
     lines.append(f"### Closed PRs ({len(github_prs['closed_prs'])})")
     for pr in github_prs["closed_prs"]:
@@ -695,17 +709,18 @@ def _collect_all(
     """Collect all static inputs for the weekly summary."""
     now = now or datetime.datetime.now(datetime.timezone.utc)
     week_start, week_end = _previous_week_bounds(now)
-    # Look for the latest weekly GitLab CI pipeline in the ~30 hours before now.
-    gitlab_start = now - datetime.timedelta(hours=30)
-    gitlab_end = now
+    # CI pipeline status reflects the current week (Monday-Sunday), while PRs
+    # and issues are reported for the previous week.
+    ci_week_start, ci_week_end = _current_week_bounds(now)
 
     github_prs = _collect_github_prs(week_start, week_end, token=token)
     github_issues = _collect_github_issues(week_start, week_end, token=token)
-    gitlab_ci = _collect_gitlab_ci(gitlab_start, gitlab_end)
+    gitlab_ci = _collect_gitlab_ci(ci_week_start, ci_week_end)
 
     return {
         "week_start": week_start.isoformat(),
         "week_end": week_end.isoformat(),
+        "ci_week_start": ci_week_start.isoformat(),
         "repository": f"{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}",
         "github_prs": github_prs,
         "github_issues": github_issues,
@@ -716,9 +731,11 @@ def _collect_all(
 def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
     """Return synthetic context for offline/demo runs."""
     week_start, week_end = _previous_week_bounds(now)
+    ci_week_start, _ = _current_week_bounds(now)
     return {
         "week_start": week_start.isoformat(),
         "week_end": week_end.isoformat(),
+        "ci_week_start": ci_week_start.isoformat(),
         "repository": f"{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}",
         "github_prs": {
             "closed_prs": [
@@ -881,6 +898,7 @@ def generate_cmd(
         context["github_prs"],
         context["github_issues"],
         context["gitlab_ci"],
+        ci_week_start=datetime.datetime.fromisoformat(context["ci_week_start"]),
     )
     json_path, context_md_path = _write_context_files(output_dir, context, markdown_context)
     typer.echo(f"Wrote context: {json_path}")

@@ -40,6 +40,15 @@ def test_previous_week_bounds_sunday_boundary():
     assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
 
 
+def test_current_week_bounds_from_thursday():
+    # 2024-07-11 is a Thursday; the current week is Mon 2024-07-08 to
+    # Sun 2024-07-14.
+    thursday = datetime.datetime(2024, 7, 11, 12, 0, tzinfo=datetime.timezone.utc)
+    start, end = weekly_slack_summary._current_week_bounds(thursday)
+    assert start == datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.timezone.utc)
+    assert end == datetime.datetime(2024, 7, 14, 23, 59, 59, tzinfo=datetime.timezone.utc)
+
+
 @pytest.fixture
 def sample_closed_pr():
     return {
@@ -294,6 +303,7 @@ class TestFormatContextMarkdown:
     def test_contains_all_sections(self):
         start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
         end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+        ci_start = datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.timezone.utc)
         github_prs = {
             "closed_prs": [
                 {
@@ -370,7 +380,7 @@ class TestFormatContextMarkdown:
         }
 
         markdown = weekly_slack_summary._format_context_markdown(
-            start, end, github_prs, github_issues, gitlab_ci
+            start, end, github_prs, github_issues, gitlab_ci, ci_week_start=ci_start
         )
 
         assert "Closed PRs (1)" in markdown
@@ -380,6 +390,7 @@ class TestFormatContextMarkdown:
         assert "(newest inactive & oldest inactive)" in markdown
         assert "Opened Issues (1)" in markdown
         assert "Closed Issues (1)" in markdown
+        assert "CI window:** 2024-07-08 (Mon) to end of week UTC" in markdown
         assert "Status: **success**" in markdown
 
 
@@ -518,6 +529,7 @@ class TestGenerateCommand:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
+                "ci_week_start": "2024-07-08T00:00:00+00:00",
                 "repository": "C2SM/icon4py",
                 "github_prs": {
                     "closed_prs": [],
@@ -611,6 +623,7 @@ class TestGenerateCommand:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
+                "ci_week_start": "2024-07-08T00:00:00+00:00",
                 "repository": "C2SM/icon4py",
                 "github_prs": {
                     "closed_prs": [],
@@ -663,6 +676,7 @@ class TestGenerateCommand:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
+                "ci_week_start": "2024-07-08T00:00:00+00:00",
                 "repository": "C2SM/icon4py",
                 "github_prs": {
                     "closed_prs": [],
