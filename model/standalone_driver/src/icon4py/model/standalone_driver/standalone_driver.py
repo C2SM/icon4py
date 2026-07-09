@@ -277,7 +277,7 @@ class Icon4pyDriver:
             self.granules.physics.run(
                 prognostic=prognostic_states.next,
                 tracers=prognostic_states.next.tracer,
-                dt=self.model_time_variables.dtime_in_seconds,
+                dtime=self.config.driver.dtime,
                 simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
             )
 
@@ -610,8 +610,10 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
+        geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
     )

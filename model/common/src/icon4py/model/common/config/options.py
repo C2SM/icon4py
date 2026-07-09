@@ -45,6 +45,7 @@ class IconOption:
     # is the 0-based member position within one record (i.e. one domain),
     # while ``name`` only serves as documentation.
     unnamed_index: int | None = None
+    converter: typing.Callable[[typing.Any], typing.Any] | None = None
 
 
 @dataclasses.dataclass
@@ -149,7 +150,8 @@ def iter_pairs_from_icon(
                 if opt.icon_equivalent.list_to_value
                 else raw_value
             )
-            yield name, annotations[name](de_listified)
+            converter = opt.icon_equivalent.converter or annotations[name]
+            yield name, converter(de_listified)
 
 
 def construct_config_from_icon(

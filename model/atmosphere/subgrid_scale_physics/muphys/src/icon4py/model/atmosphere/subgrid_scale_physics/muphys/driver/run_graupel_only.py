@@ -19,6 +19,7 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import (
     graupel,
@@ -67,6 +68,7 @@ def setup_graupel(
     vertical_end: int,
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
+    scheme: config.MuphysScheme = config.MuphysScheme.CPP_REFERENCE,
 ):
     if enable_dace_hooks and model_backends.is_backend_descriptor(backend):
         # The graupel scan needs two dace auto-opt hooks. They can only be injected into
@@ -90,6 +92,7 @@ def setup_graupel(
                 "dt": ta.wpfloat(dt),
                 "qnc": ta.wpfloat(qnc),
                 "enable_masking": enable_masking,
+                "use_icon_nwp": scheme is config.MuphysScheme.ICON_NWP,
             },
             horizontal_sizes={
                 "horizontal_start": horizontal_start,

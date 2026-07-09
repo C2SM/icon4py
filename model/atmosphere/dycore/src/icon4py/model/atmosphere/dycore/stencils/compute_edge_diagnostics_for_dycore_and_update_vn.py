@@ -417,7 +417,7 @@ def compute_rho_theta_pgrad_and_update_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_solve_nonhydro_stencil_15_to_28_predictor.
 

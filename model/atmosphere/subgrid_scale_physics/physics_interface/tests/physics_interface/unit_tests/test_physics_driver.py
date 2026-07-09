@@ -172,8 +172,8 @@ class RecordingPhysicsState:
     def as_component_input(self) -> dict:
         return {"foo": "bar"}
 
-    def scatter_to_prognostic(self, prognostic, outputs, dt) -> None:
-        self.scatter_calls.append((prognostic, outputs, dt))
+    def scatter_to_prognostic(self, prognostic, outputs, dtime) -> None:
+        self.scatter_calls.append((prognostic, outputs, dtime))
 
 
 def test_recording_doubles_record_calls() -> None:
@@ -186,12 +186,12 @@ def test_recording_doubles_record_calls() -> None:
     # Simulate what PhysicsDriver would do.
     state.gather_from_prognostic("prog", "tracers")
     out = component(state.as_component_input(), _T0)
-    state.scatter_to_prognostic("prog", out, 300.0)
+    state.scatter_to_prognostic("prog", out, datetime.timedelta(seconds=300))
 
     assert state.gather_calls == ["prog"]
     assert component.call_count == 1
     assert component.last_state == {"foo": "bar"}  # what as_component_input returned
-    assert state.scatter_calls == [("prog", out, 300.0)]
+    assert state.scatter_calls == [("prog", out, datetime.timedelta(seconds=300))]
 
 
 def test_run_invokes_components_in_order() -> None:
@@ -212,7 +212,12 @@ def test_run_invokes_components_in_order() -> None:
         ],
     )
 
-    driver.run(prognostic="prog", tracers="tracers", dt=300.0, simulation_current_datetime=_T0)
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        dtime=datetime.timedelta(seconds=300),
+        simulation_current_datetime=_T0,
+    )
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
@@ -235,7 +240,12 @@ def test_disabled_process_is_skipped() -> None:
         ],
     )
 
-    driver.run(prognostic="prog", tracers="tracers", dt=300.0, simulation_current_datetime=_T0)
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        dtime=datetime.timedelta(seconds=300),
+        simulation_current_datetime=_T0,
+    )
 
     assert comp.call_count == 0
     assert state.scatter_calls == []
@@ -255,7 +265,12 @@ def test_out_of_window_process_does_nothing() -> None:
         processes=[PhysicsProcess(name="future", component=comp, state=state, time_control=tc)],
     )
 
-    driver.run(prognostic="prog", tracers="tracers", dt=300.0, simulation_current_datetime=_T0)
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        dtime=datetime.timedelta(seconds=300),
+        simulation_current_datetime=_T0,
+    )
 
     assert comp.call_count == 0
     assert state.scatter_calls == []
@@ -271,10 +286,17 @@ def test_active_call_caches_outputs_and_applies_them() -> None:
         processes=[PhysicsProcess(name="p", component=comp, state=state, time_control=_tc())],
     )
 
-    driver.run(prognostic="prog", tracers="tracers", dt=300.0, simulation_current_datetime=_T0)
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        dtime=datetime.timedelta(seconds=300),
+        simulation_current_datetime=_T0,
+    )
 
     assert comp.call_count == 1
-    assert state.scatter_calls == [("prog", {"tend_temperature": "FRESH"}, 300.0)]
+    assert state.scatter_calls == [
+        ("prog", {"tend_temperature": "FRESH"}, datetime.timedelta(seconds=300))
+    ]
 
 
 def test_inactive_in_window_recycles_cached_outputs() -> None:
@@ -296,14 +318,14 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
     driver.run(
         prognostic="prog",
         tracers="tracers",
-        dt=_DT.total_seconds(),
+        dtime=_DT,
         simulation_current_datetime=_T0,
     )
     # Step 2: in window, but not active (elapsed == _DT, not a multiple of 2*_DT).
     driver.run(
         prognostic="prog",
         tracers="tracers",
-        dt=_DT.total_seconds(),
+        dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
 
@@ -333,9 +355,9 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
     driver.run(
         prognostic="prog",
         tracers="tracers",
-        dt=_DT.total_seconds(),
+        dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
 
     assert comp.call_count == 1
-    assert state.scatter_calls == [("prog", {"tend_temperature": "FRESH"}, _DT.total_seconds())]
+    assert state.scatter_calls == [("prog", {"tend_temperature": "FRESH"}, _DT)]

@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 
 if TYPE_CHECKING:
+    import datetime
+
     from icon4py.model.common.states import prognostic_state, tracer_state
 
 
@@ -32,5 +34,8 @@ class PhysicsState(Protocol):
     ) -> None: ...
     def as_component_input(self) -> dict[str, Any]: ...
     def scatter_to_prognostic(
-        self, prognostic: prognostic_state.PrognosticState, outputs: dict[str, Any], dt: float
+        self,
+        prognostic: prognostic_state.PrognosticState,
+        outputs: dict[str, Any],
+        dtime: datetime.timedelta,
     ) -> None: ...

@@ -81,11 +81,9 @@ class PhysicsDriver:
         self,
         prognostic: prognostic_state.PrognosticState,
         tracers: tracer_state.TracerState,
-        dt: float,
+        dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
-        # TODO (Yilu): currently, ForcingMode is not applied, because muphys is always APPLY mode.
-        # TODO (Yilu): later on, when a non-APPLY process exits
         for proc in self._processes:
             state = proc.state
             state.gather_from_prognostic(prognostic, tracers)
@@ -104,4 +102,14 @@ class PhysicsDriver:
             else:
                 # recycle
                 outputs = self._recycle_cache[proc.name]
-            state.scatter_to_prognostic(prognostic, outputs, dt)
+            # ForcingMode.DIAGNOSTIC (compute without applying) is not implemented yet:
+            # scatter_to_prognostic both applies tendencies and stores diagnostics, so a
+            # compute-only path needs that split first (to be done with the State-protocol
+            # formalization). Fail loud rather than silently apply for a DIAGNOSTIC process.
+            if proc.forcing_mode is not ForcingMode.APPLY:
+                raise NotImplementedError(
+                    f"process '{proc.name}': only ForcingMode.APPLY is implemented; "
+                    "DIAGNOSTIC requires splitting scatter_to_prognostic into "
+                    "apply-tendencies vs store-diagnostics"
+                )
+            state.scatter_to_prognostic(prognostic, outputs, dtime)

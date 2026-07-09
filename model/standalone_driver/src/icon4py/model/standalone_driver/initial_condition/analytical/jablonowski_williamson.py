@@ -13,6 +13,8 @@ import logging
 import math
 from typing import TYPE_CHECKING, ClassVar
 
+import gt4py.next as gtx
+
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
@@ -48,9 +50,7 @@ class JablonowskiWilliamsonConfig:
     # reads zp_ape from the nh_testcase_nml
     # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
     p_sfc: float = 100000.0
-    #: amplitude of the u-perturbation [m/s] (jw_up). Default matches the ICON
-    #: namelist default (1.0); the jabw_s/jabw_m cases reset it to 0.0 (see
-    #: mo_nh_testcases.f90 and the initial_condition dispatcher).
+    # amplitude of the u-perturbation [m/s] (jw_up); jabw_s resets it to 0.0.
     baroclinic_amplitude: float = 1.0
     u0: float = 35.0
     temp0: float = 288.0
@@ -64,14 +64,12 @@ class JablonowskiWilliamsonConfig:
     # mo_nh_jabw_exp.f90). Relevant only when transport is active.
     rh_at_1000hpa: float = 0.7
     qv_max: float = 20e-3
-    #: number of iterations to converge qv against the moisture-dependent
-    #: temperature (Fortran l_rediag=.TRUE. => 10 iterations).
+    # number of iterations to converge qv against the moisture-dependent
+    # temperature (Fortran l_rediag=.TRUE. => 10 iterations).
     moisture_init_iterations: int = 10
-    #: target column-integrated moisture [kg/m**2] (ztmc_ape). Only used by the
-    #: APE test cases, which rescale qv to match this global value.
+    # target column-integrated moisture for APE cases [kg/m**2] (ztmc_ape).
     global_moisture_content: float = 25.006
-    #: whether to rescale qv to ``global_moisture_content``; enabled for the APE
-    #: cases (mirrors the optional ``opt_global_moist`` argument in Fortran).
+    # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
     normalize_global_moisture: bool = False
 
     fortran_name_map: ClassVar[dict[str, str]] = {
@@ -128,7 +126,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
     ddqz_z_full_field = metrics.get(metrics_attributes.DDQZ_Z_FULL)
-    ddqz_z_full = ddqz_z_full_field.ndarray
     c_lin_e = interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 
@@ -295,10 +292,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         # pre-adjust temperature_jw); it is independent of qv and feeds both the
         # hydrostatic pressure diagnosis and the moist-iteration first guess, so the
         # iteration converges to the same fixed point as Fortran.
-        virtual_temperature = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        virtual_temperature = gtx.as_field(
+            (dims.CellDim, dims.KDim), theta_v_ndarray * exner_ndarray, allocator=allocator
         )
-        virtual_temperature.ndarray[:, :] = theta_v_ndarray * exner_ndarray
         pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
             grid=grid,
             backend=backend,
@@ -312,7 +308,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             virtual_temperature=virtual_temperature.ndarray,
             pressure=pressure_ndarray,
             cell_area=cell_area,
-            ddqz_z_full=ddqz_z_full,
+            ddqz_z_full=ddqz_z_full_field.ndarray,
             qv=prognostic_state_now.tracer.qv.ndarray,
             global_reductions=global_reductions,
             n_iter=config.moisture_init_iterations,

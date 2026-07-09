@@ -40,6 +40,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    geometry_config as geometry_configuration,
     grid_manager as gm,
     gridfile,
     icon as icon_grid,
@@ -168,8 +169,10 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    process_props: decomposition_defs.ProcessProperties,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
 ) -> driver_states.StaticFieldFactories:
@@ -180,6 +183,8 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        config=geometry_config,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
     )
@@ -451,6 +456,7 @@ def initialize_granules(
                 dtime=config.driver.dtime,
                 qnc=config.muphys.qnc,
                 backend=backend,
+                scheme=config.muphys.scheme,
             ),
             state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
             time_control=physics_driver.ProcessTimeControl(

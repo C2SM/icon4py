@@ -483,6 +483,21 @@ def savepoint_diffusion_exit(
 
 
 @pytest.fixture
+def savepoint_time_step_exit(
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_exit: str,
+) -> serialbox.IconTimeStepExitSavepoint:
+    """
+    Load data from the ICON savepoint written at the end of the full time step,
+    after all physics tendencies have been applied.
+
+    date of the timestamp to be selected can be set separately by overriding the
+    'step_date_exit' fixture, passing 'step_date_exit=<iso_string>'
+    """
+    return data_provider.from_savepoint_time_step_exit(date=step_date_exit)
+
+
+@pytest.fixture
 def istep_init() -> int:
     return 1
 
