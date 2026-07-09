@@ -16,6 +16,7 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -179,7 +180,7 @@ def _github_pr_details(pr_number: int, *, token: str | None = None) -> dict[str,
 def _select_inactive_pr_highlights(
     inactive_prs: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Select up to 15 highlight PRs: newest, oldest, most active (deduplicated)."""
+    """Select up to 9 highlight PRs: 3 newest, 3 oldest, 3 most active (deduplicated)."""
     if not inactive_prs:
         return []
 
@@ -187,16 +188,16 @@ def _select_inactive_pr_highlights(
         inactive_prs,
         key=lambda pr: pr.get("updated_at") or "",
         reverse=True,
-    )[:5]
+    )[:3]
     oldest = sorted(
         inactive_prs,
         key=lambda pr: pr.get("updated_at") or "",
-    )[:5]
+    )[:3]
     most_active = sorted(
         inactive_prs,
         key=lambda pr: pr.get("comments_count", 0) + pr.get("review_comments_count", 0),
         reverse=True,
-    )[:5]
+    )[:3]
 
     newest_numbers = {pr["number"] for pr in newest}
     oldest_numbers = {pr["number"] for pr in oldest}
@@ -436,22 +437,28 @@ def _gitlab_raw_request(url: str, *, token: str | None = None) -> bytes:
         raise RuntimeError(f"GitLab API request failed ({e.code}): {e.reason}\n{error_body}") from e
 
 
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_ESCAPE_RE.sub("", text)
+
+
 def _gitlab_job_log(
-    project_path: str,
-    job_id: int,
+    job_url: str,
     *,
-    max_bytes: int = 16384,
-    tail_chars: int = 3000,
+    max_bytes: int = 65536,
+    tail_chars: int = 6000,
 ) -> str:
-    """Fetch the tail of a GitLab job log.
+    """Fetch the tail of a GitLab job log from the public ``/raw`` URL.
 
     Logs can be very large, so only the last ``tail_chars`` characters of the
-    first ``max_bytes`` bytes are returned.
+    first ``max_bytes`` bytes are returned. ANSI escape sequences are stripped.
     """
-    url = f"{GITLAB_API_BASE}/projects/{project_path}/jobs/{job_id}/trace"
-    body = _gitlab_raw_request(url)
+    raw_url = f"{job_url.rstrip('/')}/raw"
+    body = _gitlab_raw_request(raw_url)
     truncated = body[:max_bytes]
-    text = truncated.decode("utf-8", errors="replace")
+    text = _strip_ansi(truncated.decode("utf-8", errors="replace"))
     if len(text) > tail_chars:
         text = "..." + text[-tail_chars:]
     return text.strip()
@@ -476,11 +483,11 @@ def _append_job(
 ) -> None:
     """Append a job/bridge to the appropriate list, fetching a log tail if failed."""
     status = job.get("status")
-    job_id = job.get("id")
+    job_url = job.get("web_url")
     info = _job_info(job)
-    if status == "failed" and isinstance(job_id, int):
+    if status == "failed" and isinstance(job_url, str):
         try:
-            info["log_snippet"] = _gitlab_job_log(project_path, job_id)
+            info["log_snippet"] = _gitlab_job_log(job_url)
         except RuntimeError as exc:
             if "401" in str(exc):
                 info["log_snippet"] = "(job log requires GITLAB_TOKEN)"
@@ -652,6 +659,26 @@ def _format_issue_lines(issue: dict[str, Any], *, closed: bool = False) -> list[
     return [f"- [{issue['title']}]({issue['url']}) by {issue['author']}"]
 
 
+def _classify_failure_log(log: str) -> str:
+    """Classify a job log tail into a coarse failure category."""
+    text = log.lower()
+    if any(
+        phrase in text
+        for phrase in (
+            "compute node never connected",
+            "compute node did not connect",
+        )
+    ):
+        return "runner_failure"
+    if any(phrase in text for phrase in ("slurm", "sbatch", "salloc")) and "fail" in text:
+        return "runner_failure"
+    if "pytest" in text or "failed" in text or "= failures =" in text or "error: " in text:
+        return "test_failure"
+    if "no space left" in text or "disk quota exceeded" in text:
+        return "infrastructure_failure"
+    return "other_failure"
+
+
 def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
     lines = [
         f"- Status: **{gitlab_ci['status']}**",
@@ -661,17 +688,25 @@ def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
         lines.append(f"- Message: {gitlab_ci['message']}")
     failed_jobs = gitlab_ci.get("failed_jobs", [])
     if failed_jobs:
-        lines.append(f"- Failed jobs ({len(failed_jobs)} total):")
-        for job in failed_jobs[:12]:
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for job in failed_jobs:
+            log = job.get("log_snippet", "")
+            category = _classify_failure_log(log)
+            groups.setdefault(category, []).append(job)
+        lines.append(f"- Failed jobs ({len(failed_jobs)} total, {len(groups)} categories):")
+        for category, jobs in list(groups.items())[:5]:
+            rep = jobs[0]
+            category_label = category.replace("_", " ").title()
             lines.append(
-                f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
+                f"  - {category_label}: {len(jobs)} job(s). "
+                f"Representative: [{rep['name']}]({rep['url']})"
             )
-            log = job.get("log_snippet")
+            log = rep.get("log_snippet")
             if log:
                 lines.append("    - Truncated log tail:")
                 lines.extend(f"      {line}" for line in log.splitlines())
-        if len(failed_jobs) > 12:
-            lines.append(f"  - ... and {len(failed_jobs) - 12} more failed jobs")
+        if len(groups) > 5:
+            lines.append(f"  - ... and {len(groups) - 5} more failure categories")
     elif gitlab_ci.get("status") == "failed":
         lines.append(
             "- The pipeline status is failed, but no individual failed jobs were retrieved. "
@@ -714,7 +749,7 @@ def _format_context_markdown(
     inactive_prs = github_prs.get("inactive_prs", [])
     highlights = github_prs.get("inactive_pr_highlights", [])
     lines.extend(["", f"### Inactive Open PRs ({len(inactive_prs)})", ""])
-    lines.append(f"A selection of up to 15 highlighted inactive PRs ({len(highlights)} shown):")
+    lines.append(f"A selection of up to 9 highlighted inactive PRs ({len(highlights)} shown):")
     for pr in highlights:
         lines.extend(_format_inactive_pr_lines(pr))
 

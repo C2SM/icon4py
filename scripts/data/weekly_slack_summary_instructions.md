@@ -38,7 +38,8 @@ change. If there is no additional information beyond the title, say so.
 3. `*Ongoing PRs*`
    - `<PR URL|title>` by <author>: \<one-sentence status/summary>
 4. `*Inactive open PRs*`
-   - `<PR URL|title>` by <author> \[<reason tags>\]
+   - List up to 9 highlighted inactive PRs: 3 newest, 3 oldest, 3 most active.
+   - Format: `<PR URL|title>` by <author> \[<reason tags>\]
 5. `*Opened issues*`
    - `<issue URL|title>` by <author>: <one-sentence summary>
 6. `*Closed issues*`
@@ -47,18 +48,14 @@ change. If there is no additional information beyond the title, say so.
    - Report the status for the current week (Monday to Sunday), even though the
      PRs and issues above are from the previous week.
    - Always include the pipeline URL as a clickable `<URL|pipeline>` link.
-   - For failed jobs, list up to 12 representative failed jobs. Each entry must
-     have a clickable `<job URL|job name>` link, the `failure_reason` in
-     parentheses, and a one-sentence plain-English summary of what the job was
-     trying to do and what went wrong. Example:
-     `<job URL|test_model_stencils_aarch64: [gtfn_gpu, icon_global, dycore]>`
-     (script_failure): the aarch64 stencil tests for the dycore on the global
-     icon grid using the gtfn_gpu backend failed to run their test script.
-   - Use the truncated log tail in the context when available; if no log tail is
-     provided, infer the summary from the job name and failure reason. Do not
-     copy raw log text verbatim.
-   - If there are more than 12 failed jobs, state the total count and point to
-     the pipeline link for the full list.
+   - For failed jobs, group them by failure category (e.g., runner failures,
+     test failures, infrastructure failures). Show up to 5 categories. For each
+     category, give the total count, one representative clickable
+     `<job URL|job name>` link, and a one-sentence summary based on the
+     truncated raw log tail. Distinguish CI/runner failures from actual test
+     failures.
+   - If there are more than 5 categories, state the total number of categories
+     and point to the pipeline link for details.
    - Distinguish green / no recent pipeline / running / failed jobs.
 
 If a section is empty, write `(none)`.

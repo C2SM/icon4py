@@ -396,7 +396,7 @@ class TestFormatContextMarkdown:
         assert "Closed PRs (1)" in markdown
         assert "Active Open PRs (1)" in markdown
         assert "Inactive Open PRs (1)" in markdown
-        assert "A selection of up to 15 highlighted inactive PRs" in markdown
+        assert "A selection of up to 9 highlighted inactive PRs" in markdown
         assert "(newest inactive & oldest inactive)" in markdown
         assert "Opened Issues (1)" in markdown
         assert "Closed Issues (1)" in markdown
@@ -477,14 +477,15 @@ class TestInactivePRHighlights:
         highlights = weekly_slack_summary._select_inactive_pr_highlights(prs)
 
         assert len(highlights) == 6
-        assert [h["number"] for h in highlights] == [1, 4, 2, 3, 6, 5]
-        assert set(highlights[0]["reasons"]) == {"newest inactive", "most active inactive"}
-        for highlight in highlights[1:-1]:
-            assert set(highlight["reasons"]) == {
-                "newest inactive",
-                "oldest inactive",
-                "most active inactive",
-            }
+        assert [h["number"] for h in highlights] == [1, 4, 2, 5, 6, 3]
+        assert highlights[0]["reasons"] == ["newest inactive"]
+        assert set(highlights[1]["reasons"]) == {"newest inactive", "most active inactive"}
+        assert set(highlights[2]["reasons"]) == {
+            "newest inactive",
+            "most active inactive",
+        }
+        assert highlights[3]["reasons"] == ["oldest inactive"]
+        assert set(highlights[4]["reasons"]) == {"oldest inactive", "most active inactive"}
         assert highlights[5]["reasons"] == ["oldest inactive"]
 
     def test_empty_inactive_prs_returns_empty_highlights(self):
