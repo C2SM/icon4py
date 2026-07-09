@@ -457,6 +457,42 @@ def _gitlab_job_log(
     return text.strip()
 
 
+def _job_info(job: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": job.get("id"),
+        "name": job.get("name"),
+        "stage": job.get("stage"),
+        "status": job.get("status"),
+        "url": job.get("web_url"),
+        "failure_reason": job.get("failure_reason"),
+    }
+
+
+def _append_job(
+    job: dict[str, Any],
+    project_path: str,
+    failed_jobs: list[dict[str, Any]],
+    running_jobs: list[dict[str, Any]],
+) -> None:
+    """Append a job/bridge to the appropriate list, fetching a log tail if failed."""
+    status = job.get("status")
+    job_id = job.get("id")
+    info = _job_info(job)
+    if status == "failed" and isinstance(job_id, int):
+        try:
+            info["log_snippet"] = _gitlab_job_log(project_path, job_id)
+        except RuntimeError as exc:
+            if "401" in str(exc):
+                info["log_snippet"] = "(job log requires GITLAB_TOKEN)"
+            else:
+                raise
+        failed_jobs.append(info)
+    elif status == "failed":
+        failed_jobs.append(info)
+    elif status == "running":
+        running_jobs.append(info)
+
+
 def _collect_pipeline_jobs(
     project_path: str,
     pipeline_id: int,
@@ -472,16 +508,6 @@ def _collect_pipeline_jobs(
     visited: set[int] = set()
     queue = [pipeline_id]
 
-    def _job_info(job: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "id": job.get("id"),
-            "name": job.get("name"),
-            "stage": job.get("stage"),
-            "status": job.get("status"),
-            "url": job.get("web_url"),
-            "failure_reason": job.get("failure_reason"),
-        }
-
     while queue:
         pid = queue.pop(0)
         if pid in visited:
@@ -492,16 +518,7 @@ def _collect_pipeline_jobs(
         jobs = _gitlab_api_request(jobs_url)
         if isinstance(jobs, list):
             for job in jobs:
-                job_status = job.get("status")
-                job_id = job.get("id")
-                info = _job_info(job)
-                if job_status == "failed" and isinstance(job_id, int):
-                    info["log_snippet"] = _gitlab_job_log(project_path, job_id)
-                    failed_jobs.append(info)
-                elif job_status == "failed":
-                    failed_jobs.append(info)
-                elif job_status == "running":
-                    running_jobs.append(info)
+                _append_job(job, project_path, failed_jobs, running_jobs)
 
         bridges_url = (
             f"{GITLAB_API_BASE}/projects/{project_path}/pipelines/{pid}/bridges?per_page=100"
@@ -512,14 +529,7 @@ def _collect_pipeline_jobs(
                 downstream = bridge.get("downstream_pipeline")
                 if downstream and downstream.get("id"):
                     queue.append(downstream["id"])
-                bridge_status = bridge.get("status")
-                bridge_id = bridge.get("id")
-                info = _job_info(bridge)
-                if bridge_status == "failed" and isinstance(bridge_id, int):
-                    info["log_snippet"] = _gitlab_job_log(project_path, bridge_id)
-                    failed_jobs.append(info)
-                elif bridge_status == "running":
-                    running_jobs.append(info)
+                _append_job(bridge, project_path, failed_jobs, running_jobs)
 
     return failed_jobs, running_jobs
 
