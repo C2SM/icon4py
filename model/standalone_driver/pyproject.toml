@@ -31,6 +31,7 @@ dependencies = [
   "icon4py-atmosphere-diffusion~=0.2.0",
   "icon4py-atmosphere-physics-interface~=0.2.0",
   "icon4py-atmosphere-muphys~=0.2.0",
+  "icon4py-atmosphere-tmx~=0.2.0",
   "icon4py-common[io]~=0.2.0",
   "icon4py-testing~=0.2.0",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies

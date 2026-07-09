@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx as tmx_module
 from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
@@ -149,6 +150,7 @@ class ExperimentConfig:
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None
+    tmx: tmx_module.TmxConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}

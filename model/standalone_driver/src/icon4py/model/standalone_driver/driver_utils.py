@@ -27,6 +27,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     state as muphys_state,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
+    component as tmx_component,
+    state as tmx_state,
+    static_fields as tmx_static_fields,
+)
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
@@ -446,7 +451,8 @@ def initialize_granules(
             exchange=exchange,
         )
 
-    physics_granule: physics_driver.PhysicsDriver | None = None
+    processes: list[physics_driver.PhysicsProcess] = []
+
     if config.muphys is not None:
         muphys_process = physics_driver.PhysicsProcess(
             name="muphys",
@@ -466,7 +472,55 @@ def initialize_granules(
                 enable_process=True,
             ),
         )
-        physics_granule = physics_driver.PhysicsDriver([muphys_process])
+        processes.append(muphys_process)
+
+    if config.tmx is not None:
+        tmx_metric_state, tmx_interpolation_state = tmx_static_fields.build_tmx_static_states(
+            grid=grid,
+            geometry_source=geometry_field_source,
+            interpolation_source=interpolation_field_source,
+            metrics_source=metrics_field_source,
+            backend=backend,
+        )
+        tmx_process = physics_driver.PhysicsProcess(
+            name="tmx",
+            component=tmx_component.TmxComponent(
+                grid=grid,
+                config=config.tmx,
+                metric_state=tmx_metric_state,
+                interpolation_state=tmx_interpolation_state,
+                edge_params=edge_geometry,
+                cell_params=cell_geometry,
+                dtime=config.driver.dtime,
+                backend=backend,
+                exchange=exchange,
+            ),
+            state=tmx_state.TmxState(
+                grid=grid,
+                ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
+                rbf_coeff_c1=interpolation_field_source.get(
+                    interpolation_attributes.RBF_VEC_COEFF_C1
+                ),
+                rbf_coeff_c2=interpolation_field_source.get(
+                    interpolation_attributes.RBF_VEC_COEFF_C2
+                ),
+                c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
+                primal_normal_cell_x=edge_geometry.primal_normal_cell[0],
+                primal_normal_cell_y=edge_geometry.primal_normal_cell[1],
+                backend=backend,
+            ),
+            time_control=physics_driver.ProcessTimeControl(
+                interval=config.driver.dtime,
+                start_date=config.driver.start_of_simulation,
+                end_date=model_time_variables.simulation_end_datetime,
+                enable_process=True,
+            ),
+        )
+        processes.append(tmx_process)
+
+    physics_granule: physics_driver.PhysicsDriver | None = (
+        physics_driver.PhysicsDriver(processes) if processes else None
+    )
 
     return Granules(
         solve_nonhydro=solve_nonhydro_granule,

@@ -70,3 +70,29 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
     assert config.dtime == datetime.timedelta(seconds=120)
+
+
+def test_experiment_config_tmx_defaults_to_none() -> None:
+    """ExperimentConfig.tmx must default to None (TMX is opt-in)."""
+    atm_dict, master_dict = _make_dicts({"dtime": 300.0, "modeltimestep": "PT300S"})
+    driver_cfg = driver_config.DriverConfig.from_fortran_dict(
+        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+    )
+    # Build a minimal ExperimentConfig with required fields only; all optional physics
+    # configs (including tmx) should be absent / None.
+    import dataclasses
+
+    from icon4py.model.common.grid import vertical as v_grid
+    from icon4py.model.common.grid.geometry_config import GeometryConfig
+    from icon4py.model.common.interpolation import interpolation_factory
+    from icon4py.model.common.metrics import metrics_factory
+    from icon4py.model.common import topography
+    from icon4py.model.standalone_driver import initial_condition as ic_module
+
+    # Use dataclasses.replace to get a valid ExperimentConfig with only required fields
+    # by building the minimum set needed.  The simplest approach is to check that the
+    # *field* exists and has a default of None; instantiation is heavy so we inspect
+    # the dataclass fields directly.
+    fields = {f.name: f for f in dataclasses.fields(driver_config.ExperimentConfig)}
+    assert "tmx" in fields, "ExperimentConfig must have a 'tmx' field"
+    assert fields["tmx"].default is None, "ExperimentConfig.tmx must default to None"
