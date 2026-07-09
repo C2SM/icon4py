@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -207,7 +208,7 @@ class State(PhysicsState):
         self,
         prognostic: prognostics.PrognosticState,
         outputs: dict[str, fa.CellKField[ta.wpfloat]],
-        dt: float,
+        dtime: datetime.timedelta,
     ) -> None:
         """Outbound translation: apply muphys output (tendencies) back to the prognostic state.
 
@@ -215,12 +216,14 @@ class State(PhysicsState):
         output is got from muphys, and the tendencies in output will be applied to the prognostic state.
         """
         assert self._tracers is not None, "gather_from_prognostic must be called first"
+        # convert to seconds only at the gt4py boundary (stencils take a scalar dt)
+        dt_seconds = dtime.total_seconds()
         # 1. Apply moisture tendencies to the tracers (in place; tracers were bound in gather).
         for s in SPECIES:
             tracer = _require(getattr(self._tracers, f"q{s}"), f"q{s}")
             self._apply_tendency(
                 field_a=tracer,
-                coeff=dt,
+                coeff=dt_seconds,
                 field_b=outputs[f"tend_q{s}"],
                 output_field=tracer,
             )
@@ -228,14 +231,14 @@ class State(PhysicsState):
         # 2. tend_T -> new temperature: new_te = te + tend_T*dt
         self._apply_tendency(
             field_a=self.te,
-            coeff=dt,
+            coeff=dt_seconds,
             field_b=outputs["tend_temperature"],
             output_field=self._new_te,
         )
 
         # dTv/dt from the new temperature and the species just updated in step 1
         self._calculate_virtual_temperature_tendency(
-            dtime=dt,
+            dtime=dt_seconds,
             qv=_require(self._tracers.qv, "qv"),
             qc=_require(self._tracers.qc, "qc"),
             qi=_require(self._tracers.qi, "qi"),
@@ -254,7 +257,7 @@ class State(PhysicsState):
             rho=self.rho,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
-            dtime=dt,
+            dtime=dt_seconds,
             exner=prognostic.exner,
             theta_v=prognostic.theta_v,
         )

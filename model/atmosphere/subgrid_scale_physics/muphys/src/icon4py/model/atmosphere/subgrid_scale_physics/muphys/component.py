@@ -20,7 +20,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     data as muphys_data,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphys import (
+    setup_muphys,
+)
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
@@ -39,8 +41,9 @@ if TYPE_CHECKING:
 
 
 class MuphysComponent:
-    # TODO (Yilu): later on this should be cleared that it inherit from the component protocol
     """The muphys Granule: a per-process adapter wrapping the muphys microphysics program."""
+
+    # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
 
     inputs_properties = muphys_data.INPUTS_PROPERTIES
     outputs_properties = muphys_data.OUTPUTS_PROPERTIES
@@ -86,7 +89,7 @@ class MuphysComponent:
 
         if step is None:
             sizes = types.SimpleNamespace(ncells=ncells, nlev=nlev)
-            step = run_full_muphys.setup_muphys(
+            step = setup_muphys(
                 inp=sizes,  # type: ignore[arg-type]  # only .ncells/.nlev are read
                 dt=self._dt_seconds,
                 qnc=qnc,

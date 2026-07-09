@@ -277,7 +277,7 @@ class Icon4pyDriver:
             self.granules.physics.run(
                 prognostic=prognostic_states.next,
                 tracers=prognostic_states.next.tracer,
-                dt=self.model_time_variables.dtime_in_seconds,
+                dtime=self.config.driver.dtime,
                 simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
             )
 
