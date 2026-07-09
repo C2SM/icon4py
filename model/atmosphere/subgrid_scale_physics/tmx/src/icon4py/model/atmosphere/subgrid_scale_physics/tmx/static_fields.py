@@ -39,12 +39,11 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import numpy as np
 
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
-
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 
 
 if TYPE_CHECKING:
@@ -236,11 +235,11 @@ def build_tmx_static_states(
     # ------------------------------------------------------------------
     # 2. Get connectivity tables (numpy) for interpolation derivations
     # ------------------------------------------------------------------
-    e2c_arr = grid.get_connectivity(dims.E2C.value).ndarray   # (nedges, 2)
-    v2c_arr = grid.get_connectivity(dims.V2C.value).ndarray   # (nverts, v2c_size)
+    e2c_arr = grid.get_connectivity(dims.E2C.value).ndarray  # (nedges, 2)
+    v2c_arr = grid.get_connectivity(dims.V2C.value).ndarray  # (nverts, v2c_size)
 
-    c_lin_e_arr = c_lin_e.asnumpy()                    # (nedges, 2)
-    cells_aw_verts_arr = cells_aw_verts.asnumpy()       # (nverts, v2c_size)
+    c_lin_e_arr = c_lin_e.asnumpy()  # (nedges, 2)
+    cells_aw_verts_arr = cells_aw_verts.asnumpy()  # (nverts, v2c_size)
 
     # ------------------------------------------------------------------
     # 3. Derived metric fields
@@ -293,15 +292,11 @@ def build_tmx_static_states(
 
     # --- 3g. wgtfacq1_c (top-boundary, derived from z_ifc) ---
     wgtfacq1_c_arr = compute_wgtfacq1_c(z_ifc_arr)  # (ncells, 3) Fortran order
-    wgtfacq1_c = gtx.as_field(
-        (dims.CellDim, dims.KDim), wgtfacq1_c_arr, allocator=allocator
-    )
+    wgtfacq1_c = gtx.as_field((dims.CellDim, dims.KDim), wgtfacq1_c_arr, allocator=allocator)
 
     # --- 3h. wgtfacq1_e (cell→edge interpolation of wgtfacq1_c) ---
     wgtfacq1_e_arr = compute_wgtfacq1_e(wgtfacq1_c_arr, c_lin_e_arr, e2c_arr)
-    wgtfacq1_e = gtx.as_field(
-        (dims.EdgeDim, dims.KDim), wgtfacq1_e_arr, allocator=allocator
-    )
+    wgtfacq1_e = gtx.as_field((dims.EdgeDim, dims.KDim), wgtfacq1_e_arr, allocator=allocator)
 
     # ------------------------------------------------------------------
     # 4. Assemble output states

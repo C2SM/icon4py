@@ -22,7 +22,9 @@ class _FakeGranule:
     def __init__(self):
         self.calls = []
 
-    def run(self, *, input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime):
+    def run(
+        self, *, input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+    ):
         self.calls.append(dtime)
 
 
@@ -42,9 +44,15 @@ def test_call_runs_granule_and_returns_output_contract():
     grid = simple.simple_grid()
     fake = _FakeGranule()
     comp = tmx_component.TmxComponent(
-        grid=grid, config=None, metric_state=None, interpolation_state=None,
-        edge_params=None, cell_params=None,
-        dtime=datetime.timedelta(seconds=300), backend=None, granule=fake,
+        grid=grid,
+        config=None,
+        metric_state=None,
+        interpolation_state=None,
+        edge_params=None,
+        cell_params=None,
+        dtime=datetime.timedelta(seconds=300),
+        backend=None,
+        granule=fake,
     )
     out = comp(_input_dict(grid), datetime.datetime(2008, 9, 1))
     assert fake.calls == [300.0]

@@ -21,8 +21,14 @@ def test_inputs_cover_input_and_surface_flux_states():
 def test_outputs_cover_tendencies_and_diagnostics():
     tendency_keys = {f.name for f in dataclasses.fields(tmx_states.TmxTendencyState)}
     diagnostic_keys = {
-        "km", "kh", "heating", "dissip_ke",
-        "cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend",
+        "km",
+        "kh",
+        "heating",
+        "dissip_ke",
+        "cptgz_vi",
+        "dissip_ke_vi",
+        "int_energy_vi",
+        "int_energy_vi_tend",
     }
     assert set(tmx_data.OUTPUTS_PROPERTIES) == tendency_keys | diagnostic_keys
     for key in tendency_keys:

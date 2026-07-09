@@ -25,7 +25,7 @@
 - Commit messages end with:
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`
 
----
+______________________________________________________________________
 
 ### Task 1: Baseline — verify the PR's TMX datatest runs locally
 
@@ -43,16 +43,19 @@ Expected: PASS (first run downloads `mpitask1_exclaim_ape_aesPhys_v06` into `tes
 Run: `ls testdata/ser_icondata/ | grep aesPhys`
 Expected output contains: `mpitask1_exclaim_ape_aesPhys_v06` (v05 may also still be there; fine).
 
----
+______________________________________________________________________
 
 ### Task 2: `data.py` — Component I/O metadata
 
 **Files:**
+
 - Create: `TMXPKG/data.py`
 - Test: `TMXTESTS/unit_tests/__init__.py` (empty file with copyright header), `TMXTESTS/unit_tests/test_data.py`
 
 **Interfaces:**
+
 - Produces: `INPUTS_PROPERTIES: dict[str, model.FieldMetaData]` with exactly the 21 keys: `temperature, virtual_temperature, pressure, pressure_ifc, u, v, w, qv, qc, qi, qr, qs, qg, rho, air_mass, cv_air, evapotranspiration, sensible_heat_flux, u_stress, v_stress, q_snocpymlt`.
+
 - Produces: `OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData]` with exactly the 15 keys: `ddt_temperature, ddt_qv, ddt_qc, ddt_qi, ddt_u, ddt_v, ddt_w` (each with `kind="tendency"` semantics via `data.tendency_of`) and `km, kh, heating, dissip_ke, cptgz_vi, dissip_ke_vi, int_energy_vi, int_energy_vi_tend` (diagnostics).
 
 - [ ] **Step 1: Write the failing test**
@@ -74,8 +77,14 @@ def test_inputs_cover_input_and_surface_flux_states():
 def test_outputs_cover_tendencies_and_diagnostics():
     tendency_keys = {f.name for f in dataclasses.fields(tmx_states.TmxTendencyState)}
     diagnostic_keys = {
-        "km", "kh", "heating", "dissip_ke",
-        "cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend",
+        "km",
+        "kh",
+        "heating",
+        "dissip_ke",
+        "cptgz_vi",
+        "dissip_ke_vi",
+        "int_energy_vi",
+        "int_energy_vi_tend",
     }
     assert set(tmx_data.OUTPUTS_PROPERTIES) == tendency_keys | diagnostic_keys
     for key in tendency_keys:
@@ -116,8 +125,12 @@ _TMX_ONLY_INPUTS: dict[str, model.FieldMetaData] = {
     "sensible_heat_flux": model.FieldMetaData(
         standard_name="surface_upward_sensible_heat_flux", units="W m-2"
     ),
-    "u_stress": model.FieldMetaData(standard_name="surface_downward_eastward_stress", units="N m-2"),
-    "v_stress": model.FieldMetaData(standard_name="surface_downward_northward_stress", units="N m-2"),
+    "u_stress": model.FieldMetaData(
+        standard_name="surface_downward_eastward_stress", units="N m-2"
+    ),
+    "v_stress": model.FieldMetaData(
+        standard_name="surface_downward_northward_stress", units="N m-2"
+    ),
     "q_snocpymlt": model.FieldMetaData(
         standard_name="heating_used_to_melt_snow_on_canopy", units="W m-2"
     ),
@@ -182,16 +195,19 @@ git add model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/
 git commit -m "feat(tmx): add Component I/O metadata contract (data.py)"
 ```
 
----
+______________________________________________________________________
 
 ### Task 3: `state_stencils.py` — air_mass and cv_air
 
 **Files:**
+
 - Create: `TMXPKG/state_stencils.py`
 - Test: `TMXTESTS/unit_tests/test_state_stencils.py`
 
 **Interfaces:**
+
 - Produces GT4Py programs:
+
   - `compute_air_mass(rho, ddqz_z_full, air_mass, horizontal_start, horizontal_end, vertical_start, vertical_end)` — `air_mass = rho * ddqz_z_full` (all `fa.CellKField[ta.wpfloat]`).
   - `compute_cv_air(qv, qc, qi, qr, qs, qg, air_mass, cv_air, horizontal_start, horizontal_end, vertical_start, vertical_end)` — port of `get_cvair` in `icon-mpim/src/atm_phy_aes/mo_aes_phy_diag.f90:215-252`:
     `cv = cvd*(1 - qtot) + cvv*qv + clw*(qc+qr) + ci*(qi+qs+qg)`, `cv_air = cv * air_mass`, with `qtot = qv+qc+qr+qi+qs+qg`.
@@ -233,7 +249,9 @@ def test_compute_air_mass_is_rho_dz():
 def test_compute_cv_air_matches_fortran_formula():
     grid = simple.simple_grid()
     q = dict(qv=1e-3, qc=2e-4, qi=1e-4, qr=5e-5, qs=3e-5, qg=1e-5)
-    fields = {k: data_alloc.constant_field(grid, val, dims.CellDim, dims.KDim) for k, val in q.items()}
+    fields = {
+        k: data_alloc.constant_field(grid, val, dims.CellDim, dims.KDim) for k, val in q.items()
+    }
     air_mass = data_alloc.constant_field(grid, 300.0, dims.CellDim, dims.KDim)
     cv_air = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
     _run(state_stencils.compute_cv_air, grid, **fields, air_mass=air_mass, cv_air=cv_air)
@@ -339,7 +357,12 @@ def compute_cv_air(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_cv_air(
-        qv=qv, qc=qc, qi=qi, qr=qr, qs=qs, qg=qg,
+        qv=qv,
+        qc=qc,
+        qi=qi,
+        qr=qr,
+        qs=qs,
+        qg=qg,
         air_mass=air_mass,
         out=cv_air,
         domain={
@@ -363,17 +386,21 @@ git add model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/
 git commit -m "feat(tmx): add air_mass and cv_air adapter stencils"
 ```
 
----
+______________________________________________________________________
 
 ### Task 4: `state.py` — TmxState gather + as_component_input
 
 **Files:**
+
 - Create: `TMXPKG/state.py`
 - Test: `TMXTESTS/unit_tests/test_state.py`
 
 **Interfaces:**
+
 - Consumes: `state_stencils.compute_air_mass`, `state_stencils.compute_cv_air` (Task 3).
+
 - Produces: `class TmxState(PhysicsState)` with:
+
   - `__init__(self, *, grid, ddqz_z_full, rbf_coeff_c1, rbf_coeff_c2, c_lin_e, primal_normal_cell_x, primal_normal_cell_y, backend=None)` — the last five are for gather (u,v from vn) and scatter (vn projection, Task 5); field types as in `tmx_states.TmxInterpolationState` / `EdgeParams`.
   - `gather_from_prognostic(prognostic, tracers) -> None`
   - `as_component_input() -> dict[str, ...]` returning exactly the 21 `INPUTS_PROPERTIES` keys (Task 2).
@@ -414,8 +441,10 @@ def _tmx_state(grid):
 def test_as_component_input_matches_contract():
     grid = simple.simple_grid()
     state = _tmx_state(grid)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)  # copy helper from muphys test_state
-    tracers = _tracer_state(grid, qv=1e-3)                             # copy helper from muphys test_state
+    prognostic = _uniform_prognostic(
+        grid, exner=0.95, theta_v=300.0
+    )  # copy helper from muphys test_state
+    tracers = _tracer_state(grid, qv=1e-3)  # copy helper from muphys test_state
     state.gather_from_prognostic(prognostic, tracers)
     inp = state.as_component_input()
     assert set(inp) == set(tmx_data.INPUTS_PROPERTIES)
@@ -445,13 +474,19 @@ Expected: FAIL with `ImportError` (no `tmx.state`).
 Model directly on `muphys/src/.../muphys/state.py` (its `State` class shows the exact `setup_program` calls, the `_require` tracer guard, and the temperature/pressure diagnosis sequence — reuse all of it):
 
 - Constructor: store grid sizes/backend; `setup_program` the same three diagnosis programs muphys uses (`diagnose_virtual_temperature_and_temperature`, `diagnose_surface_pressure`, `diagnose_pressure`) plus:
+
   - `edge_2_cell_vector_rbf_interpolation` (from `icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation`) with offset provider from the grid for `C2E2C2E` (mirror how another consumer sets its `offset_provider=` — grep usages in `model/`),
   - `state_stencils.compute_air_mass`, `state_stencils.compute_cv_air` (Task 3),
   - `compute_vn_from_uv` (used in Task 5; wire the program now, offset provider `E2C`).
+
 - Owned buffers (`data_alloc.zero_field`): `temperature`, `virtual_temperature`, `pressure`, `pressure_ifc` (KDim+1), `u`, `v`, `air_mass`, `cv_air`; the five 2-D surface-flux buffers (`dims.CellDim` only); scratch for scatter (Task 5): `_new_te`, `_tv_tendency`, `_exner_tendency`, `_ddt_vn` (EdgeKField).
+
 - References set by gather: `self._rho`, `self._w`, `self._vn`, `self._tracers`.
+
 - `gather_from_prognostic`: bind refs; run temperature/pressure diagnosis exactly as muphys does; run `edge_2_cell_vector_rbf_interpolation(p_e_in=prognostic.vn, ptr_coeff_1=self._rbf_coeff_c1, ptr_coeff_2=self._rbf_coeff_c2, p_u_out=self.u, p_v_out=self.v, ...)`; run `compute_air_mass(rho=..., ddqz_z_full=..., air_mass=...)` then `compute_cv_air(...)`.
+
 - `as_component_input`: dict of the 21 keys → owned buffers / references (tracers via `_require`, `w=self._w`, `rho=self._rho`).
+
 - `scatter_to_prognostic`: for THIS task, `raise NotImplementedError` — implemented in Task 5.
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -466,16 +501,19 @@ git add model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/
 git commit -m "feat(tmx): add TmxState gather / component-input adapter"
 ```
 
----
+______________________________________________________________________
 
 ### Task 5: `state.py` — scatter_to_prognostic
 
 **Files:**
+
 - Modify: `TMXPKG/state.py` (replace the `NotImplementedError`)
 - Test: `TMXTESTS/unit_tests/test_state.py` (append)
 
 **Interfaces:**
+
 - Consumes: `compute_vn_from_uv` from `TMXPKG/stencils/compute_vn_from_uv.py` (PR-owned, imported not edited); muphys' exner-update stencils (`calculate_virtual_temperature_tendency`, `calculate_exner_tendency`, `compute_field_a_plus_coeff_times_field_b_on_cell_k` — same modules muphys `state.py` imports).
+
 - Produces: `scatter_to_prognostic(prognostic, outputs, dtime: datetime.timedelta)` where `outputs` has the 15 `OUTPUTS_PROPERTIES` keys — **the protocol takes a `datetime.timedelta` since the l2 merge**; first line `dt = dtime.total_seconds()` (scalar for stencils, mirror post-merge `muphys/state.py`). Apply order: (1) `qv/qc/qi += ddt*dt`; (2) `ddt_temperature` → exner via the muphys path (verbatim structure from muphys `scatter_to_prognostic` steps 2); (3) `compute_vn_from_uv` on `(ddt_u, ddt_v)` → `self._ddt_vn`, then `vn += dt*_ddt_vn`; (4) `w += dt*ddt_w`; (5) store diagnostics as attributes (`self.km`, `self.kh`, `self.heating`, `self.dissip_ke`, `self.cptgz_vi`, `self.dissip_ke_vi`, `self.int_energy_vi`, `self.int_energy_vi_tend`).
 
 - [ ] **Step 1: Write the failing test (append to test_state.py)**
@@ -487,10 +525,18 @@ def _tmx_outputs(grid, *, ddt_u=0.0, ddt_v=0.0, ddt_w=0.0, ddt_qv=0.0):
 
     out = {
         "ddt_temperature": ck(0.0),
-        "ddt_qv": ck(ddt_qv), "ddt_qc": ck(0.0), "ddt_qi": ck(0.0),
-        "ddt_u": ck(ddt_u), "ddt_v": ck(ddt_v),
-        "ddt_w": data_alloc.constant_field(grid, ddt_w, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
-        "km": ck(0.0), "kh": ck(0.0), "heating": ck(0.0), "dissip_ke": ck(0.0),
+        "ddt_qv": ck(ddt_qv),
+        "ddt_qc": ck(0.0),
+        "ddt_qi": ck(0.0),
+        "ddt_u": ck(ddt_u),
+        "ddt_v": ck(ddt_v),
+        "ddt_w": data_alloc.constant_field(
+            grid, ddt_w, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        ),
+        "km": ck(0.0),
+        "kh": ck(0.0),
+        "heating": ck(0.0),
+        "dissip_ke": ck(0.0),
     }
     for key in ("cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend"):
         out[key] = data_alloc.constant_field(grid, 0.0, dims.CellDim)
@@ -559,7 +605,9 @@ def apply_tendency_on_edge_k(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_tendency_on_edge_k(
-        field_a=field_a, coeff=coeff, field_b=field_b,
+        field_a=field_a,
+        coeff=coeff,
+        field_b=field_b,
         out=output_field,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -580,15 +628,17 @@ git add model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/
 git commit -m "feat(tmx): TmxState scatter with exner, tracer, vn and w updates"
 ```
 
----
+______________________________________________________________________
 
 ### Task 6: `component.py` — TmxComponent
 
 **Files:**
+
 - Create: `TMXPKG/component.py`
 - Test: `TMXTESTS/unit_tests/test_component.py`
 
 **Interfaces:**
+
 - Consumes: `tmx.Tmx`, `tmx.TmxConfig`, `tmx.TmxParams`, `tmx_states.*` (PR-owned, imported); `data.py` (Task 2).
 - Produces:
 
@@ -598,11 +648,14 @@ class TmxComponent:
     outputs_properties = tmx_data.OUTPUTS_PROPERTIES
 
     def __init__(
-        self, *,
-        grid, config: tmx.TmxConfig,
+        self,
+        *,
+        grid,
+        config: tmx.TmxConfig,
         metric_state: tmx_states.TmxMetricState,
         interpolation_state: tmx_states.TmxInterpolationState,
-        edge_params, cell_params,
+        edge_params,
+        cell_params,
         dtime: datetime.timedelta,
         backend=None,
         exchange=decomposition.single_node_exchange,
@@ -612,8 +665,9 @@ class TmxComponent:
     def __call__(self, state: dict, time_step: datetime.datetime) -> dict: ...
 ```
 
-  - Constructor builds `Tmx(grid=..., config=..., params=tmx.TmxParams(config), vertical_grid=None, metric_state=..., interpolation_state=..., edge_params=..., cell_params=..., backend=..., exchange=...)` when `granule is None`; allocates `TmxDiagnosticState.allocate(grid, allocator)`, `TmxTendencyState.allocate(...)`, `TmxNewState.allocate(...)` once (`model_backends.get_allocator(backend)`).
-  - `__call__` packs `tmx_states.TmxInputState(**{f: state[f] for f in input fields})` and `TmxSurfaceFluxState(**...)` (frozen dataclasses of references — build fresh each call, no copy), calls `self._granule.run(input_state=..., surface_flux_state=..., diagnostic_state=..., tendency_state=..., new_state=..., dtime=self._dt_seconds)`, returns the 15-key outputs dict referencing `self._tendency_state.*` and `self._diagnostic_state.{km,kh,heating,dissip_ke,cptgz_vi,dissip_ke_vi,int_energy_vi,int_energy_vi_tend}`.
+- Constructor builds `Tmx(grid=..., config=..., params=tmx.TmxParams(config), vertical_grid=None, metric_state=..., interpolation_state=..., edge_params=..., cell_params=..., backend=..., exchange=...)` when `granule is None`; allocates `TmxDiagnosticState.allocate(grid, allocator)`, `TmxTendencyState.allocate(...)`, `TmxNewState.allocate(...)` once (`model_backends.get_allocator(backend)`).
+
+- `__call__` packs `tmx_states.TmxInputState(**{f: state[f] for f in input fields})` and `TmxSurfaceFluxState(**...)` (frozen dataclasses of references — build fresh each call, no copy), calls `self._granule.run(input_state=..., surface_flux_state=..., diagnostic_state=..., tendency_state=..., new_state=..., dtime=self._dt_seconds)`, returns the 15-key outputs dict referencing `self._tendency_state.*` and `self._diagnostic_state.{km,kh,heating,dissip_ke,cptgz_vi,dissip_ke_vi,int_energy_vi,int_energy_vi_tend}`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -635,7 +689,9 @@ class _FakeGranule:
     def __init__(self):
         self.calls = []
 
-    def run(self, *, input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime):
+    def run(
+        self, *, input_state, surface_flux_state, diagnostic_state, tendency_state, new_state, dtime
+    ):
         self.calls.append(dtime)
 
 
@@ -655,9 +711,15 @@ def test_call_runs_granule_and_returns_output_contract():
     grid = simple.simple_grid()
     fake = _FakeGranule()
     comp = tmx_component.TmxComponent(
-        grid=grid, config=None, metric_state=None, interpolation_state=None,
-        edge_params=None, cell_params=None,
-        dtime=datetime.timedelta(seconds=300), backend=None, granule=fake,
+        grid=grid,
+        config=None,
+        metric_state=None,
+        interpolation_state=None,
+        edge_params=None,
+        cell_params=None,
+        dtime=datetime.timedelta(seconds=300),
+        backend=None,
+        granule=fake,
     )
     out = comp(_input_dict(grid), datetime.datetime(2008, 9, 1))
     assert fake.calls == [300.0]
@@ -686,15 +748,17 @@ git add model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/
 git commit -m "feat(tmx): add TmxComponent (Component protocol around Tmx.run)"
 ```
 
----
+______________________________________________________________________
 
 ### Task 7: `static_fields.py` — TMX static states from field factories
 
 **Files:**
+
 - Create: `TMXPKG/static_fields.py`
 - Test: `TMXTESTS/integration_tests/test_static_fields.py` (datatest)
 
 **Interfaces:**
+
 - Consumes: geometry/interpolation/metrics field sources (the driver's `StaticFieldFactories` members), attribute constants:
   - metrics: `DDQZ_Z_FULL`, `INV_DDQZ_Z_FULL`, `DDQZ_Z_HALF`, `DDQZ_Z_FULL_E`, `WGTFAC_C`, `WGTFAC_E`, `WGTFACQ_C`, `WGTFACQ_E`, `Z_MC`, `Z_IFC` (`metrics_attributes`)
   - interpolation: `C_LIN_E`, `E_BLN_C_S`, `GEOFAC_DIV`, `CELL_AW_VERTS`, `RBF_VEC_COEFF_V1/V2/E/C1/C2` (`interpolation_attributes`)
@@ -702,6 +766,7 @@ git commit -m "feat(tmx): add TmxComponent (Component protocol around Tmx.run)"
 - Produces: `build_tmx_static_states(*, grid, geometry_source, interpolation_source, metrics_source, backend) -> tuple[tmx_states.TmxMetricState, tmx_states.TmxInterpolationState]`
 
 Derivations (numpy at init time — one-shot, then `gtx.as_field(..., allocator=...)`):
+
 - `inv_ddqz_z_half = 1 / ddqz_z_half` (mo_vertical_grid.f90:2159)
 - `inv_ddqz_z_full_e = 1 / ddqz_z_full_e` (mo_vertical_grid.f90:~2140)
 - `inv_ddqz_z_half_e` = cells→edges of `inv_ddqz_z_half` with `c_lin_e` over `E2C` (mo_vertical_grid.f90:2184, `cells2edges_scalar`)
@@ -721,6 +786,7 @@ wgtfacq1_c = np.stack([w1, w2, w3], axis=1)  # Fortran order: row k multiplies f
 ```
 
 - `wgtfacq1_e`: mirror `compute_weight_factors.compute_wgtfacq_e_dsl` (which builds edge coefficients from the cell aux coefficients interpolated with `c_lin_e`), substituting the top-boundary `z1/z2/z3` above; cross-check against `mo_vertical_grid.f90` around lines 989-1014 (`z_aux_c(:,4:6,:) = wgtfacq1_c` then edge interpolation). The datatest in Step 1 is the arbiter — iterate until it passes.
+
 - `edge_cell_length = geometry_source.get(geometry_attributes.EDGE_CELL_DISTANCE)`
 
 - [ ] **Step 1: Write the failing datatest**
@@ -750,14 +816,16 @@ def test_factory_static_states_match_savepoints(
 ):
     allocator = model_backends.get_allocator(backend)
     metric_ref = utils.construct_metric_state(
-        metrics_savepoint=metrics_savepoint, init_savepoint=init_savepoint,
-        grid_savepoint=grid_savepoint, allocator=allocator,
+        metrics_savepoint=metrics_savepoint,
+        init_savepoint=init_savepoint,
+        grid_savepoint=grid_savepoint,
+        allocator=allocator,
     )
     interp_ref = utils.construct_interpolation_state(interpolation_savepoint)
 
     metric_actual, interp_actual = static_fields.build_tmx_static_states(
         grid=icon_grid,
-        geometry_source=geometry_source,          # from the factory construction above
+        geometry_source=geometry_source,  # from the factory construction above
         interpolation_source=interpolation_source,
         metrics_source=metrics_source,
         backend=backend,
@@ -794,7 +862,7 @@ git add model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/
 git commit -m "feat(tmx): build TmxMetricState/TmxInterpolationState from field factories"
 ```
 
----
+______________________________________________________________________
 
 ### Task 8: Component end-to-end datatest (entry → exit through the wrapper)
 
@@ -803,9 +871,11 @@ The design's primary DoD: `TmxComponent` driven through the dict interface repro
 **2026-07-09 amendment:** the l2 merge added `muphys/tests/muphys/integration_tests/test_muphys_datatest.py` — read it as the PRIMARY structural template for a component-level datatest (alongside `test_tmx_run.py` for the tmx savepoint accessors).
 
 **Files:**
+
 - Test: `TMXTESTS/integration_tests/test_component_datatest.py`
 
 **Interfaces:**
+
 - Consumes: `TmxComponent` (Task 6), savepoint constructors from `TMXTESTS/integration_tests/utils.py`, PR fixtures (`tmx_config`, `tmx_dtime`, savepoints — from `TMXTESTS/fixtures.py`, same imports as `test_tmx_run.py`).
 
 - [ ] **Step 1: Write the failing test**
@@ -816,16 +886,26 @@ Mirror `test_tmx_run.py` construction, but route through the Component contract:
 @pytest.mark.datatest
 @pytest.mark.parametrize("date", utils.TMX_DATES)
 def test_tmx_component_reproduces_exit_savepoint(
-    date, icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint,
-    init_savepoint, data_provider, tmx_config, tmx_dtime, backend,
+    date,
+    icon_grid,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    init_savepoint,
+    data_provider,
+    tmx_config,
+    tmx_dtime,
+    backend,
 ):
     allocator = model_backends.get_allocator(backend)
     comp = tmx_component.TmxComponent(
         grid=icon_grid,
         config=tmx_config,
         metric_state=utils.construct_metric_state(
-            metrics_savepoint=metrics_savepoint, init_savepoint=init_savepoint,
-            grid_savepoint=grid_savepoint, allocator=allocator,
+            metrics_savepoint=metrics_savepoint,
+            init_savepoint=init_savepoint,
+            grid_savepoint=grid_savepoint,
+            allocator=allocator,
         ),
         interpolation_state=utils.construct_interpolation_state(interpolation_savepoint),
         edge_params=grid_savepoint.construct_edge_geometry(),
@@ -833,8 +913,10 @@ def test_tmx_component_reproduces_exit_savepoint(
         dtime=datetime.timedelta(seconds=tmx_dtime),
         backend=backend,
     )
-    entry = data_provider.from_savepoint_tmx_entry(date=date)        # match test_tmx_run.py's
-    fluxes = data_provider.from_savepoint_tmx_surface_fluxes(date=date)  # savepoint accessors exactly
+    entry = data_provider.from_savepoint_tmx_entry(date=date)  # match test_tmx_run.py's
+    fluxes = data_provider.from_savepoint_tmx_surface_fluxes(
+        date=date
+    )  # savepoint accessors exactly
     exit_sp = data_provider.from_savepoint_tmx_exit(date=date)
 
     input_state = utils.construct_input_state(entry)
@@ -870,7 +952,7 @@ Expected: 2 PASS (both dates), tolerances identical to the PR's own full-run tes
 
 Add (inside the same test, after the first verification): call `comp(state_dict, ...)` a second time with the same inputs and verify `verify_full_run_fields` still passes — this catches state leaking between steps in the reused output buffers.
 
-Then add a second test in the same file — the spec's gather-thermodynamics layer. The entry savepoint carries both the raw state (rho, q*) and the derived `mair`/`cvair`, so our stencils can be checked against Fortran on real data:
+Then add a second test in the same file — the spec's gather-thermodynamics layer. The entry savepoint carries both the raw state (rho, q\*) and the derived `mair`/`cvair`, so our stencils can be checked against Fortran on real data:
 
 ```python
 @pytest.mark.datatest
@@ -878,16 +960,23 @@ Then add a second test in the same file — the spec's gather-thermodynamics lay
 def test_gather_air_mass_and_cv_air_match_savepoint(
     date, icon_grid, metrics_savepoint, data_provider, backend
 ):
-    entry = data_provider.from_savepoint_tmx_entry(date=date)  # accessor spelling from test_tmx_run.py
+    entry = data_provider.from_savepoint_tmx_entry(
+        date=date
+    )  # accessor spelling from test_tmx_run.py
     grid = icon_grid
     air_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
     cv_air = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
     # invoke the Task-3 programs directly (same setup_program pattern as in state.py)
     run_air_mass(rho=entry.rho(), ddqz_z_full=metrics_savepoint.ddqz_z_full(), air_mass=air_mass)
     run_cv_air(
-        qv=entry.qv(), qc=entry.qc(), qi=entry.qi(),
-        qr=entry.qr(), qs=entry.qs(), qg=entry.qg(),
-        air_mass=air_mass, cv_air=cv_air,
+        qv=entry.qv(),
+        qc=entry.qc(),
+        qi=entry.qi(),
+        qr=entry.qr(),
+        qs=entry.qs(),
+        qg=entry.qg(),
+        air_mass=air_mass,
+        cv_air=cv_air,
     )
     utils.assert_scaled_allclose(air_mass.asnumpy(), entry.mair().asnumpy(), err_msg="mair")
     utils.assert_scaled_allclose(cv_air.asnumpy(), entry.cvair().asnumpy(), err_msg="cvair")
@@ -905,19 +994,21 @@ git add model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/t
 git commit -m "test(tmx): component-level datatest against tmx entry/exit savepoints"
 ```
 
----
+______________________________________________________________________
 
 ### Task 9: Driver config and registration
 
 **2026-07-09 amendments:** (a) the l2 merge moved things around — before coding, confirm where the `muphys` config member lives now (`ExperimentConfig` in `model/testing/.../definitions.py` vs `standalone_driver/config.py`) and put the `tmx` member NEXT TO IT, wherever that is; (b) the muphys registration block in `driver_utils.initialize_granules` now passes `scheme=config.muphys.scheme` — leave it untouched; (c) `create_static_field_factories` gained `process_props` and `geometry_config` params — we only consume its outputs, no change needed; (d) the `tach check` step below is amended: it fails pre-existing on this branch (spurious "does not depend on common", 11 modules) — the gate is "no NEW ❌ lines beyond that baseline" after you add the standalone_driver→tmx dependency to `tach.toml`.
 
 **Files:**
+
 - Modify: `model/standalone_driver/src/icon4py/model/standalone_driver/config.py` (add `tmx` member to `ExperimentConfig`, default `None`; no auto-enable)
 - Modify: `model/standalone_driver/src/icon4py/model/standalone_driver/driver_utils.py` (`initialize_granules`: register TMX process after muphys)
 - Modify: `model/standalone_driver/pyproject.toml` (add `icon4py-atmosphere-tmx` dependency), `tach.toml` (add tmx to `icon4py.model.standalone_driver` `depends_on`)
 - Test: `model/standalone_driver/tests/standalone_driver/unit_tests/test_config.py` (or nearest existing config test file — check what exists and append there)
 
 **Interfaces:**
+
 - Consumes: `TmxComponent` (Task 6), `TmxState` (Tasks 4-5), `build_tmx_static_states` (Task 7), `tmx.TmxConfig`.
 - Produces: `ExperimentConfig.tmx: tmx.TmxConfig | None = None`. In `initialize_granules`, inside the existing `if config.muphys is not None:` block gains a sibling:
 
@@ -997,21 +1088,24 @@ git add model/standalone_driver/src/icon4py/model/standalone_driver/config.py mo
 git commit -m "feat(driver): register TMX as an opt-in second physics process"
 ```
 
----
+______________________________________________________________________
 
 ### Task 10: Driver smoke test — APE_aes with muphys + TMX
 
 **2026-07-09 amendment:** `test_standalone_driver.py` was substantially rewritten by the l2 merge (validation test from #1303, new fixtures incl. geometry config). RE-READ the current file before copying anything; where this task's earlier description of that file conflicts with what you find, the file wins — keep only this task's REQUIREMENTS (new opt-in TMX smoke test; don't touch the existing moist-physics test; finite-field assertions; process-list assertion).
 
 **Files:**
+
 - Test: `model/standalone_driver/tests/standalone_driver/integration_tests/test_standalone_driver.py` (append a new test; do NOT touch `test_standalone_driver_moist_physics`)
 
 **Interfaces:**
+
 - Consumes: everything above.
 
 - [ ] **Step 1: Write the failing test**
 
 Name it `test_standalone_driver_moist_physics_with_tmx`. Copy the structure of `test_standalone_driver_moist_physics` (same `EXCLAIM_APE_AES` parametrization and driver construction), with these differences:
+
 - after loading the experiment config, enable TMX: `config = dataclasses.replace(config, tmx=tmx.TmxConfig.from_fortran_dict(atm_dict))` if the namelist dicts are reachable at that point, else `tmx=tmx.TmxConfig()` (defaults match the aquaplanet namelist for everything the smoke test cares about);
 - run the same number of steps as the moist test (1 driver step, 00:00 → 00:05);
 - do NOT assert savepoint equality for `vn`/`w` (TMX writes them by design); instead assert:
@@ -1047,11 +1141,12 @@ git add model/standalone_driver/tests/standalone_driver/integration_tests/test_s
 git commit -m "test(driver): APE_aes smoke test running muphys + tmx in the PhysicsDriver"
 ```
 
----
+______________________________________________________________________
 
 ### Task 11: Full verification sweep and wrap-up
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-07-07-tmx-component-integration-design.md` (mark open items resolved: record the verified `cv_air` formula source, the `ddt_w` boundary finding, and the TMX opt-in decision from Task 9)
 
 - [ ] **Step 1: Run the complete affected test set**
@@ -1080,17 +1175,17 @@ git commit -m "docs: close out phase-1 open items in the TMX integration spec"
 
 Summarize: component datatest tolerance achieved, smoke test steps/duration, any deviations from this plan (esp. `wgtfacq1_e` derivation and the `ddt_w` boundary-row finding), and the re-merge status of `pr-1359-tmx`.
 
----
+______________________________________________________________________
 
 ## Verification checklist (maps to the spec's DoD)
 
-| Spec requirement | Task |
-| --- | --- |
-| TMX registered as second process after muphys | 9, 10 |
-| Zero surface fluxes in driver (phase-2 seam) | 4 |
-| Momentum coupling ddt_u/v → vn, ddt_w → w | 5 |
-| Component datatest reproduces tmx-exit at rtol 1e-11 | 8 |
-| Static states from factories verified vs savepoints | 7 |
-| air_mass/cv_air verified vs savepoint mair/cvair | 3 (formula unit tests), 8 Step 4 (datatest vs entry-savepoint mair/cvair) |
-| APE_aes driver smoke, finite fields | 10 |
-| No PR-owned file edited | all (checked in 11 via `git diff pr-1359-tmx -- model/.../tmx/src/.../tmx/{tmx.py,tmx_states.py,stencils}` = empty) |
+| Spec requirement                                     | Task                                                                                                                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| TMX registered as second process after muphys        | 9, 10                                                                                                               |
+| Zero surface fluxes in driver (phase-2 seam)         | 4                                                                                                                   |
+| Momentum coupling ddt_u/v → vn, ddt_w → w            | 5                                                                                                                   |
+| Component datatest reproduces tmx-exit at rtol 1e-11 | 8                                                                                                                   |
+| Static states from factories verified vs savepoints  | 7                                                                                                                   |
+| air_mass/cv_air verified vs savepoint mair/cvair     | 3 (formula unit tests), 8 Step 4 (datatest vs entry-savepoint mair/cvair)                                           |
+| APE_aes driver smoke, finite fields                  | 10                                                                                                                  |
+| No PR-owned file edited                              | all (checked in 11 via `git diff pr-1359-tmx -- model/.../tmx/src/.../tmx/{tmx.py,tmx_states.py,stencils}` = empty) |

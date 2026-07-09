@@ -30,6 +30,7 @@ dependencies = [
   "icon4py-common~=0.2.0",
   # external dependencies
   "gt4py==1.1.11",
+  "numpy>=1.23.3",
   "packaging>=20.0"
 ]
 description = "ICON AES turbulent mixing (tmx) parameterization."

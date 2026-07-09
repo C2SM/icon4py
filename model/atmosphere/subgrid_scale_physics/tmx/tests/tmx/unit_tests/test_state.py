@@ -123,10 +123,16 @@ def _tmx_outputs(grid, *, ddt_u=0.0, ddt_v=0.0, ddt_w=0.0, ddt_qv=0.0):
 
     out = {
         "ddt_temperature": ck(0.0),
-        "ddt_qv": ck(ddt_qv), "ddt_qc": ck(0.0), "ddt_qi": ck(0.0),
-        "ddt_u": ck(ddt_u), "ddt_v": ck(ddt_v),
+        "ddt_qv": ck(ddt_qv),
+        "ddt_qc": ck(0.0),
+        "ddt_qi": ck(0.0),
+        "ddt_u": ck(ddt_u),
+        "ddt_v": ck(ddt_v),
         "ddt_w": _ddt_w,
-        "km": ck(0.0), "kh": ck(0.0), "heating": ck(0.0), "dissip_ke": ck(0.0),
+        "km": ck(0.0),
+        "kh": ck(0.0),
+        "heating": ck(0.0),
+        "dissip_ke": ck(0.0),
     }
     for key in ("cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend"):
         out[key] = data_alloc.constant_field(grid, 0.0, dims.CellDim)

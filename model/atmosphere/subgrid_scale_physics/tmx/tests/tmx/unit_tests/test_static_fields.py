@@ -36,6 +36,7 @@ from icon4py.model.common import constants
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_z_ifc(ncells: int, nlev: int) -> np.ndarray:
     """Build a synthetic z_ifc array: monotonically decreasing from top to bottom.
 
@@ -63,6 +64,7 @@ def _make_z_ifc_nonuniform(ncells: int, nlev: int, z_top: float = 15_000.0) -> n
 # ---------------------------------------------------------------------------
 # (a) wgtfacq1_c — top-boundary quadratic extrapolation coefficients
 # ---------------------------------------------------------------------------
+
 
 class TestWgtfacq1C:
     """Tests for compute_wgtfacq1_c using independent mathematical properties.
@@ -100,24 +102,26 @@ class TestWgtfacq1C:
 
         # Sample points (signed distances from top interface) — same definitions
         # as in the Fortran source; negative because heights decrease downward.
-        z1 = 0.5 * (z_ifc[:, 1] - z_ifc[:, 0])                    # midpoint of level 0
-        z2 = 0.5 * (z_ifc[:, 1] + z_ifc[:, 2]) - z_ifc[:, 0]      # midpoint of level 1
-        z3 = 0.5 * (z_ifc[:, 2] + z_ifc[:, 3]) - z_ifc[:, 0]      # midpoint of level 2
+        z1 = 0.5 * (z_ifc[:, 1] - z_ifc[:, 0])  # midpoint of level 0
+        z2 = 0.5 * (z_ifc[:, 1] + z_ifc[:, 2]) - z_ifc[:, 0]  # midpoint of level 1
+        z3 = 0.5 * (z_ifc[:, 2] + z_ifc[:, 3]) - z_ifc[:, 0]  # midpoint of level 2
 
         # Test several random quadratics: p(x) = a*x^2 + b*x + c, p(0) = c
         for _ in range(10):
             a, b, c = rng.uniform(-1.0, 1.0, 3)
-            pz1 = a * z1 ** 2 + b * z1 + c
-            pz2 = a * z2 ** 2 + b * z2 + c
-            pz3 = a * z3 ** 2 + b * z3 + c
+            pz1 = a * z1**2 + b * z1 + c
+            pz2 = a * z2**2 + b * z2 + c
+            pz3 = a * z3**2 + b * z3 + c
             approx = weights[:, 0] * pz1 + weights[:, 1] * pz2 + weights[:, 2] * pz3
             # Tolerance: z-values are O(100–2000 m), so a*z^2 can reach ~10^6 while
             # p(0)=c is O(1).  Catastrophic cancellation limits accuracy to ~1e-10
             # absolute; rtol=1e-8 still catches any formula error by 7+ orders of
             # magnitude while remaining robust across all random seeds.
             np.testing.assert_allclose(
-                approx, c,
-                rtol=1.0e-8, atol=1.0e-8,
+                approx,
+                c,
+                rtol=1.0e-8,
+                atol=1.0e-8,
                 err_msg=f"quadratic extrapolation failed for a={a:.4f}, b={b:.4f}, c={c:.4f}",
             )
 
@@ -150,6 +154,7 @@ class TestWgtfacq1C:
 # ---------------------------------------------------------------------------
 # (b) geopot_agl_ifc — geopotential above ground level
 # ---------------------------------------------------------------------------
+
 
 class TestGeopot:
     """Tests for compute_geopot_agl_ifc."""
@@ -186,10 +191,12 @@ class TestGeopot:
         """Surface level (z_ifc[:, -1]) at non-zero height: ground level still 0."""
         ncells, nlev = 2, 4
         # Create z_ifc with non-zero ground level
-        z_ifc = np.array([
-            [5000.0, 4000.0, 3000.0, 2000.0, 1000.0],
-            [4500.0, 3500.0, 2500.0, 1500.0,  500.0],
-        ])  # shape (2, 5), ground at z_ifc[:, -1] = [1000, 500]
+        z_ifc = np.array(
+            [
+                [5000.0, 4000.0, 3000.0, 2000.0, 1000.0],
+                [4500.0, 3500.0, 2500.0, 1500.0, 500.0],
+            ]
+        )  # shape (2, 5), ground at z_ifc[:, -1] = [1000, 500]
         result = static_fields.compute_geopot_agl_ifc(z_ifc)
         expected = constants.GRAV * (z_ifc - z_ifc[:, -1:])
         np.testing.assert_allclose(result, expected, rtol=1.0e-14)
@@ -199,6 +206,7 @@ class TestGeopot:
 # ---------------------------------------------------------------------------
 # (c) inv_ddqz_z_half — reciprocal field
 # ---------------------------------------------------------------------------
+
 
 class TestInvReciprocal:
     """Tests for compute_inv_reciprocal (used for all inv_ddqz_z_* fields)."""
@@ -234,6 +242,7 @@ class TestInvReciprocal:
 #     compute_wgtfacq1_e, dsl_to_fortran_order
 # ---------------------------------------------------------------------------
 
+
 class TestCellsToEdges:
     """Unit tests for cells_to_edges with hand-crafted connectivity."""
 
@@ -244,14 +253,16 @@ class TestCellsToEdges:
         or transposed connectivity.
         """
         # 4 cells, 3 edges, 2 levels
-        cell_field = np.array([
-            [1.0, 2.0],   # cell 0
-            [3.0, 4.0],   # cell 1
-            [5.0, 6.0],   # cell 2
-            [7.0, 8.0],   # cell 3
-        ])  # shape (4, 2)
+        cell_field = np.array(
+            [
+                [1.0, 2.0],  # cell 0
+                [3.0, 4.0],  # cell 1
+                [5.0, 6.0],  # cell 2
+                [7.0, 8.0],  # cell 3
+            ]
+        )  # shape (4, 2)
 
-        e2c = np.array([[0, 1], [1, 2], [2, 3]], dtype=int)   # (3, 2)
+        e2c = np.array([[0, 1], [1, 2], [2, 3]], dtype=int)  # (3, 2)
         c_lin_e = np.array([[0.4, 0.6], [0.5, 0.5], [0.3, 0.7]])  # (3, 2)
 
         result = static_fields.cells_to_edges(cell_field, c_lin_e, e2c)
@@ -281,7 +292,7 @@ class TestCellsToEdges:
         """Edge with one boundary neighbor (c_lin_e weight = 0) gives single-cell value."""
         cell_field = np.array([[10.0], [20.0]])  # 2 cells, 1 level
         e2c = np.array([[0, -1]], dtype=int)  # boundary edge; skip neighbor at index -1
-        c_lin_e = np.array([[1.0, 0.0]])      # weight 0 on skip neighbor
+        c_lin_e = np.array([[1.0, 0.0]])  # weight 0 on skip neighbor
 
         result = static_fields.cells_to_edges(cell_field, c_lin_e, e2c)
         # 1.0*cell[0] + 0.0*cell[-1] = 10.0  (cell[-1] = cell[1] = 20.0, but weight = 0)
@@ -307,19 +318,23 @@ class TestCellsToVerts:
         or transposed connectivity.
         """
         # 4 cells, 3 vertices, 2 levels
-        cell_field = np.array([
-            [1.0, 2.0],   # cell 0
-            [3.0, 4.0],   # cell 1
-            [5.0, 6.0],   # cell 2
-            [7.0, 8.0],   # cell 3
-        ])  # shape (4, 2)
+        cell_field = np.array(
+            [
+                [1.0, 2.0],  # cell 0
+                [3.0, 4.0],  # cell 1
+                [5.0, 6.0],  # cell 2
+                [7.0, 8.0],  # cell 3
+            ]
+        )  # shape (4, 2)
 
         v2c = np.array([[0, 1, 2], [1, 2, 3], [0, 2, 3]], dtype=int)  # (3 verts, 3 neighbors)
-        cells_aw_verts = np.array([
-            [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],   # vertex 0 — equal weights
-            [0.50, 0.25, 0.25],                    # vertex 1 — asymmetric
-            [0.20, 0.30, 0.50],                    # vertex 2 — asymmetric
-        ])  # (3, 3)
+        cells_aw_verts = np.array(
+            [
+                [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],  # vertex 0 — equal weights
+                [0.50, 0.25, 0.25],  # vertex 1 — asymmetric
+                [0.20, 0.30, 0.50],  # vertex 2 — asymmetric
+            ]
+        )  # (3, 3)
 
         result = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c)
 
@@ -364,14 +379,16 @@ class TestWgtfacq1E:
         or transposed connectivity.
         """
         # 3 cells, 2 edges, each cell has 3 quadratic coefficients
-        wgtfacq1_c = np.array([
-            [0.6, 0.3, 0.1],   # cell 0
-            [0.5, 0.3, 0.2],   # cell 1
-            [0.4, 0.4, 0.2],   # cell 2
-        ])  # (3, 3)
+        wgtfacq1_c = np.array(
+            [
+                [0.6, 0.3, 0.1],  # cell 0
+                [0.5, 0.3, 0.2],  # cell 1
+                [0.4, 0.4, 0.2],  # cell 2
+            ]
+        )  # (3, 3)
 
-        e2c = np.array([[0, 1], [1, 2]], dtype=int)          # (2, 2)
-        c_lin_e = np.array([[0.4, 0.6], [0.7, 0.3]])         # (2, 2)
+        e2c = np.array([[0, 1], [1, 2]], dtype=int)  # (2, 2)
+        c_lin_e = np.array([[0.4, 0.6], [0.7, 0.3]])  # (2, 2)
 
         result = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c)
 
@@ -385,7 +402,7 @@ class TestWgtfacq1E:
     def test_asymmetric_weights_are_not_equal(self) -> None:
         """Swapping cell order changes the result (catches transposed e2c in einsum)."""
         wgtfacq1_c = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])  # (2, 3)
-        e2c_forward  = np.array([[0, 1]], dtype=int)
+        e2c_forward = np.array([[0, 1]], dtype=int)
         e2c_backward = np.array([[1, 0]], dtype=int)
         c_lin_e = np.array([[0.3, 0.7]])
 

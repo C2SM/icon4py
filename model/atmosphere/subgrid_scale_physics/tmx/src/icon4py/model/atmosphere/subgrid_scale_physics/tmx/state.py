@@ -223,15 +223,11 @@ class TmxState:
         )
 
         # --- Owned buffers: diagnosed/computed each step ---
-        self.temperature = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )
+        self.temperature = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.virtual_temperature = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
-        self.pressure = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )
+        self.pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         # Half-level pressure: one extra interface level above top
         self.pressure_ifc = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -251,9 +247,7 @@ class TmxState:
 
         # --- Scratch buffers for scatter (Task 5) ---
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._tv_tendency = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )
+        self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._exner_tendency = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend
         )

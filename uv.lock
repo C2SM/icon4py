@@ -2688,6 +2688,8 @@ source = { editable = "model/atmosphere/subgrid_scale_physics/tmx" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
     { name = "packaging" },
 ]
 
@@ -2695,6 +2697,7 @@ dependencies = [
 requires-dist = [
     { name = "gt4py", specifier = "==1.1.11" },
     { name = "icon4py-common", editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 

@@ -87,7 +87,12 @@ def compute_cv_air(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_cv_air(
-        qv=qv, qc=qc, qi=qi, qr=qr, qs=qs, qg=qg,
+        qv=qv,
+        qc=qc,
+        qi=qi,
+        qr=qr,
+        qs=qs,
+        qg=qg,
         air_mass=air_mass,
         out=cv_air,
         domain={
@@ -118,7 +123,9 @@ def apply_tendency_on_edge_k(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_tendency_on_edge_k(
-        field_a=field_a, coeff=coeff, field_b=field_b,
+        field_a=field_a,
+        coeff=coeff,
+        field_b=field_b,
         out=output_field,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

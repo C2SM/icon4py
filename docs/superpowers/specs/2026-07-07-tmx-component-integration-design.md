@@ -46,13 +46,13 @@ only, prescribed SST.
 
 ## Decisions already taken
 
-| Decision | Choice |
-| --- | --- |
-| Code baseline | New branch `physics_driver_tmx`; source branches untouched; re-merge `pr-1359-tmx` as the draft PR evolves |
-| Surface fluxes | Staged: zero in phase 1, bulk-flux provider in phase 2 |
-| Momentum | Applied in phase 1 (cells→edges projection, mirroring `mo_interface_iconam_aes`) |
-| Wrapper architecture | Muphys pattern: new files inside the tmx package; `PhysicsDriver` unchanged |
-| Process order | muphys → tmx (Fortran: mig → rad → vdf; rad not yet ported) |
+| Decision             | Choice                                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Code baseline        | New branch `physics_driver_tmx`; source branches untouched; re-merge `pr-1359-tmx` as the draft PR evolves |
+| Surface fluxes       | Staged: zero in phase 1, bulk-flux provider in phase 2                                                     |
+| Momentum             | Applied in phase 1 (cells→edges projection, mirroring `mo_interface_iconam_aes`)                           |
+| Wrapper architecture | Muphys pattern: new files inside the tmx package; `PhysicsDriver` unchanged                                |
+| Process order        | muphys → tmx (Fortran: mig → rad → vdf; rad not yet ported)                                                |
 
 ## Architecture
 
@@ -95,14 +95,14 @@ physics_granule = physics_driver.PhysicsDriver([muphys_process, tmx_process])
 
 **gather_from_prognostic** (prognostic → `TmxInputState` fields):
 
-| Field | Source |
-| --- | --- |
-| `rho`, `w`, `qv…qg` | direct references (levels already match; `w` is KDim+1) |
-| `temperature`, `virtual_temperature`, `pressure`, `pressure_ifc` | diagnosed from `theta_v`/`exner` with the same stencils muphys' `State` uses |
-| `u`, `v` | RBF edge→cell from `vn` (existing common stencil), inside gather so TMX sees post-muphys wind |
-| `air_mass` | new small stencil, ρ·Δz (`ddqz_z_full`), formula per `mo_interface_aes_tmx` |
-| `cv_air` | new small stencil, moist heat capacity per `mo_interface_aes_tmx` |
-| surface fluxes | zero-filled `TmxSurfaceFluxState` buffers (phase-2 seam) |
+| Field                                                            | Source                                                                                        |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `rho`, `w`, `qv…qg`                                              | direct references (levels already match; `w` is KDim+1)                                       |
+| `temperature`, `virtual_temperature`, `pressure`, `pressure_ifc` | diagnosed from `theta_v`/`exner` with the same stencils muphys' `State` uses                  |
+| `u`, `v`                                                         | RBF edge→cell from `vn` (existing common stencil), inside gather so TMX sees post-muphys wind |
+| `air_mass`                                                       | new small stencil, ρ·Δz (`ddqz_z_full`), formula per `mo_interface_aes_tmx`                   |
+| `cv_air`                                                         | new small stencil, moist heat capacity per `mo_interface_aes_tmx`                             |
+| surface fluxes                                                   | zero-filled `TmxSurfaceFluxState` buffers (phase-2 seam)                                      |
 
 `air_mass` and `cv_air` appear in the `tmx-entry` savepoint (`mair`, `cvair`), so both stencils
 are datatest-verifiable.
@@ -152,22 +152,22 @@ Cheapest first; datatests use experiment `exclaim_ape_aesPhys` **v06** (the PR b
 add `tmx-entry`/`tmx-surface-fluxes`/`tmx-exit` savepoints; same experiment as the muphys tests,
 auto-downloaded by the datatest infra).
 
-| Layer | Test | Proves |
-| --- | --- | --- |
-| Unit | adapter round-trip on synthetic fields; momentum projection sanity (uniform u,v → expected vn) | gather/scatter bookkeeping |
-| Datatest | factory-built static states vs savepoint-built | derived metric/interpolation fields correct |
-| Datatest | gather-computed `air_mass`/`cv_air` vs savepoint `mair`/`cvair` | thermodynamic formulas match Fortran |
-| Datatest | `TmxComponent.__call__` fed from `tmx-entry` vs `tmx-exit`, rtol 1e-11 | wrapper adds no error on top of the PR's own verification |
-| Integration | APE_aes standalone run, muphys + TMX, same step count as the existing muphys smoke test, finite-field checks (extend `test_standalone_driver_runs_ape_aes`) | end-to-end wiring |
+| Layer       | Test                                                                                                                                                        | Proves                                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Unit        | adapter round-trip on synthetic fields; momentum projection sanity (uniform u,v → expected vn)                                                              | gather/scatter bookkeeping                                |
+| Datatest    | factory-built static states vs savepoint-built                                                                                                              | derived metric/interpolation fields correct               |
+| Datatest    | gather-computed `air_mass`/`cv_air` vs savepoint `mair`/`cvair`                                                                                             | thermodynamic formulas match Fortran                      |
+| Datatest    | `TmxComponent.__call__` fed from `tmx-entry` vs `tmx-exit`, rtol 1e-11                                                                                      | wrapper adds no error on top of the PR's own verification |
+| Integration | APE_aes standalone run, muphys + TMX, same step count as the existing muphys smoke test, finite-field checks (extend `test_standalone_driver_runs_ape_aes`) | end-to-end wiring                                         |
 
 ## Open items
 
-| Item | Resolution path |
-| --- | --- |
-| `cv_air` exact formula | pinned during implementation from `mo_interface_aes_tmx`; gather datatest enforces it |
-| `ddt_w` boundary rows | one-line check during scatter implementation |
-| PR #1359 churn | re-merge `pr-1359-tmx` periodically; only workspace files (`pyproject.toml`, `tach.toml`, `uv.lock`, CI) can conflict since our files are new-only |
-| Testdata v06 | closed as design risk; download on first datatest run |
+| Item                   | Resolution path                                                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cv_air` exact formula | pinned during implementation from `mo_interface_aes_tmx`; gather datatest enforces it                                                              |
+| `ddt_w` boundary rows  | one-line check during scatter implementation                                                                                                       |
+| PR #1359 churn         | re-merge `pr-1359-tmx` periodically; only workspace files (`pyproject.toml`, `tach.toml`, `uv.lock`, CI) can conflict since our files are new-only |
+| Testdata v06           | closed as design risk; download on first datatest run                                                                                              |
 
 ## Phase 2 sketch (not in this cycle)
 

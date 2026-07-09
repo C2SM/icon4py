@@ -82,11 +82,11 @@ def test_experiment_config_tmx_defaults_to_none() -> None:
     # configs (including tmx) should be absent / None.
     import dataclasses
 
+    from icon4py.model.common import topography
     from icon4py.model.common.grid import vertical as v_grid
     from icon4py.model.common.grid.geometry_config import GeometryConfig
     from icon4py.model.common.interpolation import interpolation_factory
     from icon4py.model.common.metrics import metrics_factory
-    from icon4py.model.common import topography
     from icon4py.model.standalone_driver import initial_condition as ic_module
 
     # Use dataclasses.replace to get a valid ExperimentConfig with only required fields

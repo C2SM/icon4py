@@ -14,10 +14,7 @@ import dataclasses
 import datetime
 from typing import TYPE_CHECKING
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
-    data as tmx_data,
-    tmx_states,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data, tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.tmx import Tmx, TmxConfig, TmxParams
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -58,7 +55,10 @@ class TmxComponent:
         edge_params: grid_states.EdgeParams | None,
         cell_params: grid_states.CellParams | None,
         dtime: datetime.timedelta,
-        backend: gtx_typing.Backend | model_backends.DeviceType | model_backends.BackendDescriptor | None = None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None = None,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
         granule: object | None = None,
     ) -> None:
@@ -68,9 +68,7 @@ class TmxComponent:
 
         if granule is None:
             # All physics state arguments must be provided when building the real granule.
-            assert config is not None, (
-                "config must not be None when granule is not injected"
-            )
+            assert config is not None, "config must not be None when granule is not injected"
             assert metric_state is not None, (
                 "metric_state must not be None when granule is not injected"
             )
@@ -102,11 +100,11 @@ class TmxComponent:
         self._diagnostic_state: tmx_states.TmxDiagnosticState = (
             tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
         )
-        self._tendency_state: tmx_states.TmxTendencyState = (
-            tmx_states.TmxTendencyState.allocate(grid, allocator=allocator)
+        self._tendency_state: tmx_states.TmxTendencyState = tmx_states.TmxTendencyState.allocate(
+            grid, allocator=allocator
         )
-        self._new_state: tmx_states.TmxNewState = (
-            tmx_states.TmxNewState.allocate(grid, allocator=allocator)
+        self._new_state: tmx_states.TmxNewState = tmx_states.TmxNewState.allocate(
+            grid, allocator=allocator
         )
 
         # Pre-compute output field names from dataclass introspection so __call__
@@ -148,18 +146,12 @@ class TmxComponent:
         """
         # Pack TmxInputState from references into state dict (no copy).
         input_state = tmx_states.TmxInputState(
-            **{
-                f.name: state[f.name]
-                for f in dataclasses.fields(tmx_states.TmxInputState)
-            }
+            **{f.name: state[f.name] for f in dataclasses.fields(tmx_states.TmxInputState)}
         )
 
         # Pack TmxSurfaceFluxState from references into state dict (no copy).
         surface_flux_state = tmx_states.TmxSurfaceFluxState(
-            **{
-                f.name: state[f.name]
-                for f in dataclasses.fields(tmx_states.TmxSurfaceFluxState)
-            }
+            **{f.name: state[f.name] for f in dataclasses.fields(tmx_states.TmxSurfaceFluxState)}
         )
 
         self._granule.run(

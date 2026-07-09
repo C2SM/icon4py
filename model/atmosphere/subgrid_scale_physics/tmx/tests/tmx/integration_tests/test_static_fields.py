@@ -40,9 +40,9 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.testing import definitions
-from icon4py.model.testing.fixtures.datatest import topography_savepoint  # noqa: F401
+from icon4py.model.testing.fixtures.datatest import topography_savepoint
 
-from ..fixtures import *  # noqa: F401, F403  (re-exports experiment, decomposition_info, etc.)
+from ..fixtures import *  # noqa: F403  (re-exports experiment, decomposition_info, etc.)
 from .utils import assert_scaled_allclose, construct_interpolation_state, construct_metric_state
 
 

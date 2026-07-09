@@ -39,7 +39,9 @@ def test_compute_air_mass_is_rho_dz():
 def test_compute_cv_air_matches_fortran_formula():
     grid = simple.simple_grid()
     q = dict(qv=1e-3, qc=2e-4, qi=1e-4, qr=5e-5, qs=3e-5, qg=1e-5)
-    fields = {k: data_alloc.constant_field(grid, val, dims.CellDim, dims.KDim) for k, val in q.items()}
+    fields = {
+        k: data_alloc.constant_field(grid, val, dims.CellDim, dims.KDim) for k, val in q.items()
+    }
     air_mass = data_alloc.constant_field(grid, 300.0, dims.CellDim, dims.KDim)
     cv_air = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
     _run(state_stencils.compute_cv_air, grid, **fields, air_mass=air_mass, cv_air=cv_air)
