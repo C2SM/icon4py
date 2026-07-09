@@ -160,14 +160,15 @@ auto-downloaded by the datatest infra).
 | Datatest    | `TmxComponent.__call__` fed from `tmx-entry` vs `tmx-exit`, rtol 1e-11                                                                                      | wrapper adds no error on top of the PR's own verification |
 | Integration | APE_aes standalone run, muphys + TMX, same step count as the existing muphys smoke test, finite-field checks (extend `test_standalone_driver_runs_ape_aes`) | end-to-end wiring                                         |
 
-## Open items
+## Open items (status as of 2026-07-09, phase-1 implementation complete)
 
-| Item                   | Resolution path                                                                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cv_air` exact formula | pinned during implementation from `mo_interface_aes_tmx`; gather datatest enforces it                                                              |
-| `ddt_w` boundary rows  | one-line check during scatter implementation                                                                                                       |
-| PR #1359 churn         | re-merge `pr-1359-tmx` periodically; only workspace files (`pyproject.toml`, `tach.toml`, `uv.lock`, CI) can conflict since our files are new-only |
-| Testdata v06           | closed as design risk; download on first datatest run                                                                                              |
+| Item | Status |
+| --- | --- |
+| `cv_air` exact formula | **Closed.** Ported from `get_cvair` in `mo_aes_phy_diag.f90:215-252` (`cv = cvd(1-qtot) + cvv*qv + clw*(qc+qr) + ci*(qi+qs+qg)`, `cv_air = cv*mair`); unit-tested; savepoint datatest written. Note: `cvair` is per-unit-area (J m-2 K-1) — the `[J/(kg K)]` docstring in upstream `tmx_states.py` is inaccurate (worth flagging on PR #1359). |
+| `ddt_w` boundary rows | **Closed.** Scatter applies `w += dt*ddt_w` over all nlev+1 rows; the tendency state is zero-filled and the granule's implicit w-solve leaves untouched boundary rows at zero, so blanket application is safe. |
+| PR #1359 churn | **Managed.** Our files are new-only with one documented exception: `numpy` added to the tmx package `pyproject.toml` (required by our `static_fields.py`; flag for upstream). Re-merge cadence unchanged. |
+| Testdata v06 | **OPEN (external).** `mpitask1_exclaim_ape_aesPhys_v06.tar.gz` returns 403 (unpublished). All datatests are written, import-clean and collect (static-fields, component end-to-end x2, gather-thermo x2, driver smoke) but locally unexecuted; first execution is CSCS CI or post-publication. Known first-run risk: savepoint `mair` may include a deep-atmosphere factor (one-stencil amend if so, not a test defect). |
+| tach check baseline | **Documented.** `tach check` fails pre-existing on `physics_driver_l2` too (spurious "does not depend on common", 11-module baseline here); `tach check-external` is clean. |
 
 ## Phase 2 sketch (not in this cycle)
 
