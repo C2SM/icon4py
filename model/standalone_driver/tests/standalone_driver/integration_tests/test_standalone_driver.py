@@ -6,12 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 import datetime
 import pathlib
 
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx as tmx_module
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
@@ -24,6 +27,26 @@ from icon4py.model.testing import (
 )
 
 from ..fixtures import *  # noqa: F403
+
+
+def _assert_tmx_plumbing() -> None:
+    """Called at module load time to verify TMX registration plumbing is intact.
+
+    NOTE: ``driver_utils.initialize_granules`` cannot be exercised in a unit test
+    without real grid fixtures (geometry/interpolation/metrics factories require a
+    grid file).  The smoke test ``test_standalone_driver_moist_physics_with_tmx``
+    covers the full end-to-end registration path when serialized data are available.
+    This import-time helper verifies the config-layer wiring at zero cost.
+    """
+    _fields = {f.name: f for f in dataclasses.fields(driver_config.ExperimentConfig)}
+    assert "tmx" in _fields, "ExperimentConfig must have a 'tmx' field"
+    assert _fields["tmx"].default is None, "ExperimentConfig.tmx must default to None"
+    # Verify TmxConfig is constructable with defaults (no exceptions should be raised)
+    _cfg = tmx_module.TmxConfig()
+    assert _cfg is not None
+
+
+_assert_tmx_plumbing()
 
 
 @pytest.mark.datatest
@@ -191,3 +214,95 @@ def test_standalone_driver(
             getattr(time_step_exit, name)().asnumpy(),
             atol=1e-10,
         )
+
+
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment_description, timeloop_date_exit",
+    [
+        (
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            "2008-09-01T00:05:00.000",
+        ),
+    ],
+)
+def test_standalone_driver_moist_physics_with_tmx(
+    experiment_description: test_defs.ExperimentDescription,
+    timeloop_date_exit: str,
+    *,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    """Smoke test: one large time step over EXCLAIM_APE_AES with muphys + TMX enabled.
+
+    TMX is injected into the config with default parameters, which match the
+    aquaplanet namelist values used in the EXCLAIM_APE_AES experiment.
+
+    Config injection: ``TmxConfig()`` (defaults) is used rather than
+    ``TmxConfig.from_fortran_dict(atm_dict)`` because the atm_dict is not
+    surfaced by ``read_config`` and re-reading it here would duplicate logic.
+    The defaults match the APE aquaplanet namelist for all parameters that
+    affect this smoke test.
+
+    Assertions:
+    - The physics driver has exactly the two registered processes ["muphys", "tmx"].
+    - All prognostic fields (vn, w, exner, theta_v, rho) and moisture tracers
+      (qv, qc, qi) are finite after the step.
+
+    No savepoint equality is asserted for vn/w because TMX writes them by design.
+    """
+    allocator = model_backends.get_allocator(backend)
+
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
+    config = driver_config.read_config(config_file_path)
+    assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
+
+    config = config.with_overrides(
+        driver={
+            "output_path": tmp_path / "ci_driver_output",
+            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
+                tzinfo=datetime.timezone.utc
+            ),
+        }
+    )
+
+    # Inject TMX with default parameters (defaults match the aquaplanet namelist;
+    # use TmxConfig() rather than from_fortran_dict because atm_dict is internal
+    # to read_config and re-reading it here would duplicate the loading logic).
+    config = dataclasses.replace(config, tmx=tmx_module.TmxConfig())
+
+    grid_manager = driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+    ds, icon4py_driver = standalone_driver.run_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
+    )
+
+    granules = icon4py_driver.granules
+    prognostic = ds.prognostics.current
+    tracers = prognostic.tracer
+
+    assert granules.physics is not None
+    assert [p.name for p in granules.physics._processes] == ["muphys", "tmx"]
+    for name, field in (
+        ("vn", prognostic.vn),
+        ("w", prognostic.w),
+        ("exner", prognostic.exner),
+        ("theta_v", prognostic.theta_v),
+        ("rho", prognostic.rho),
+        ("qv", tracers.qv),
+        ("qc", tracers.qc),
+        ("qi", tracers.qi),
+    ):
+        arr = field.asnumpy()
+        assert np.isfinite(arr).all(), f"{name} has non-finite entries after muphys+tmx step"
