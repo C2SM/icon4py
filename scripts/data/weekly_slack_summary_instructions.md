@@ -33,18 +33,22 @@ change. If there is no additional information beyond the title, say so.
 ## Output format
 
 1. `*icon4py weekly summary: <start-date> - <end-date>*`
-2. `*Closed PRs*`
+2. `*Merged PRs*`
    - `<PR URL|title>` by <author>: <one-sentence summary>
-3. `*Ongoing PRs*`
+3. `*Closed PRs (without merging)*`
+   - Same format as merged PRs. Omit this section entirely if there are none.
+4. `*Ongoing PRs*`
    - `<PR URL|title>` by <author>: \<one-sentence status/summary>
-4. `*Inactive open PRs*`
+5. `*Inactive open PRs*`
    - List up to 9 highlighted inactive PRs: 3 newest, 3 oldest, 3 most active.
    - Format: `<PR URL|title>` by <author> \[<reason tags>\]
-5. `*Opened issues*`
+   - Mention how many more inactive PRs exist and that the listed ones are a
+     selection.
+6. `*Opened issues*`
    - `<issue URL|title>` by <author>: <one-sentence summary>
-6. `*Closed issues*`
+7. `*Closed issues*`
    - `<issue URL|title>` by <author>: <one-sentence summary>
-7. `*Weekly CI status*`
+8. `*Weekly CI status*`
    - Report the status for the current week (Monday to Sunday), even though the
      PRs and issues above are from the previous week.
    - Always include the pipeline URL as a clickable `<URL|pipeline>` link.
@@ -57,6 +61,9 @@ change. If there is no additional information beyond the title, say so.
    - If there are more than 5 categories, state the total number of categories
      and point to the pipeline link for details.
    - Distinguish green / no recent pipeline / running / failed jobs.
+9. `*Nightly benchmarking CI status*`
+   - Report the status of the nightly benchmarking pipeline for the last 24
+     hours, using the same format as the weekly CI status.
 
 If a section is empty, write `(none)`.
 

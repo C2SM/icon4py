@@ -41,9 +41,15 @@ _SCRIPTS_DIR: Final[pathlib.Path] = pathlib.Path(__file__).resolve().parents[1]
 GITHUB_REPO_OWNER: Final[str] = "C2SM"
 GITHUB_REPO_NAME: Final[str] = "icon4py"
 GITLAB_PROJECT_ID: Final[str] = "5125340235196978"
+GITLAB_WEEKLY_PIPELINE_SUFFIX: Final[str] = "2255149825504677"
+GITLAB_NIGHTLY_PIPELINE_SUFFIX: Final[str] = "2255149825504672"
 GITLAB_PIPELINE_URL_TEMPLATE: Final[str] = (
     "https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/"
-    f"{GITLAB_PROJECT_ID}/2255149825504677/-/pipelines"
+    f"{GITLAB_PROJECT_ID}/{GITLAB_WEEKLY_PIPELINE_SUFFIX}/-/pipelines"
+)
+GITLAB_NIGHTLY_PIPELINE_URL_TEMPLATE: Final[str] = (
+    "https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/"
+    f"{GITLAB_PROJECT_ID}/{GITLAB_NIGHTLY_PIPELINE_SUFFIX}/-/pipelines"
 )
 GITLAB_API_BASE: Final[str] = "https://gitlab.com/api/v4"
 INSTRUCTIONS_FILE: Final[pathlib.Path] = (
@@ -349,9 +355,12 @@ def _collect_github_prs(
         )
 
     inactive_pr_highlights = _select_inactive_pr_highlights(inactive_prs)
+    merged_prs = [pr for pr in closed_prs if pr.get("merged_at")]
+    closed_without_merge_prs = [pr for pr in closed_prs if not pr.get("merged_at")]
 
     return {
-        "closed_prs": closed_prs,
+        "merged_prs": merged_prs,
+        "closed_without_merge_prs": closed_without_merge_prs,
         "active_prs": active_prs,
         "inactive_prs": inactive_prs,
         "inactive_pr_highlights": inactive_pr_highlights,
@@ -549,12 +558,22 @@ def _collect_pipeline_jobs(
 def _collect_gitlab_ci(
     start: datetime.datetime,
     end: datetime.datetime,
+    *,
+    project_path: str | None = None,
+    pipeline_url_template: str | None = None,
+    no_pipeline_message: str | None = None,
 ) -> dict[str, Any]:
-    """Collect the latest GitLab weekly CI pipeline status within the window."""
-    project_path = urllib.parse.quote(
-        f"cscs-ci/ci-testing/webhook-ci/mirrors/{GITLAB_PROJECT_ID}/2255149825504677",
-        safe="",
-    )
+    """Collect the latest GitLab CI pipeline status within the window."""
+    if project_path is None:
+        project_path = urllib.parse.quote(
+            f"cscs-ci/ci-testing/webhook-ci/mirrors/{GITLAB_PROJECT_ID}/{GITLAB_WEEKLY_PIPELINE_SUFFIX}",
+            safe="",
+        )
+    if pipeline_url_template is None:
+        pipeline_url_template = GITLAB_PIPELINE_URL_TEMPLATE
+    if no_pipeline_message is None:
+        no_pipeline_message = "No weekly pipeline found in the current week (since Monday)."
+
     url = f"{GITLAB_API_BASE}/projects/{project_path}/pipelines?order_by=id&sort=desc&per_page=20"
     pipelines = _gitlab_api_request(url)
     if not isinstance(pipelines, list):
@@ -573,15 +592,15 @@ def _collect_gitlab_ci(
     if latest is None:
         return {
             "status": "no_recent_pipeline",
-            "url": GITLAB_PIPELINE_URL_TEMPLATE,
-            "message": "No weekly pipeline found in the current week (since Monday).",
+            "url": pipeline_url_template,
+            "message": no_pipeline_message,
             "failed_jobs": [],
             "running_jobs": [],
         }
 
     pipeline_id = latest["id"]
     status = latest.get("status", "unknown")
-    pipeline_web_url = latest.get("web_url", GITLAB_PIPELINE_URL_TEMPLATE)
+    pipeline_web_url = latest.get("web_url", pipeline_url_template)
 
     failed_jobs: list[dict[str, Any]] = []
     running_jobs: list[dict[str, Any]] = []
@@ -730,6 +749,7 @@ def _format_context_markdown(
     github_issues: dict[str, list[dict[str, Any]]],
     gitlab_ci: dict[str, Any],
     *,
+    gitlab_nightly_ci: dict[str, Any],
     ci_week_start: datetime.datetime | None = None,
 ) -> str:
     """Format the collected data as Markdown context for OpenCode."""
@@ -743,33 +763,48 @@ def _format_context_markdown(
         lines.append(f"**CI window:** {ci_week_start.date().isoformat()} (Mon) to end of week UTC")
     lines.extend(["", "## Pull Requests", ""])
 
-    lines.append(f"### Closed PRs ({len(github_prs['closed_prs'])})")
-    for pr in github_prs["closed_prs"]:
+    merged_prs = github_prs.get("merged_prs", [])
+    lines.append(f"### Merged PRs ({len(merged_prs)})")
+    for pr in merged_prs:
         lines.extend(_format_closed_pr_lines(pr))
 
-    lines.extend(["", f"### Active Open PRs ({len(github_prs['active_prs'])})", ""])
+    closed_without_merge = github_prs.get("closed_without_merge_prs", [])
+    if closed_without_merge:
+        lines.extend(["", f"### Closed PRs (without merging) ({len(closed_without_merge)})", ""])
+        for pr in closed_without_merge:
+            lines.extend(_format_closed_pr_lines(pr))
+
+    lines.extend(["", f"### Active Open PRs ({len(github_prs['active_prs'])})"])
     for pr in github_prs["active_prs"]:
         lines.extend(_format_active_pr_lines(pr))
 
     inactive_prs = github_prs.get("inactive_prs", [])
     highlights = github_prs.get("inactive_pr_highlights", [])
-    lines.extend(["", f"### Inactive Open PRs ({len(inactive_prs)})", ""])
-    lines.append(f"A selection of up to 9 highlighted inactive PRs ({len(highlights)} shown):")
+    remaining = len(inactive_prs) - len(highlights)
+    lines.extend(["", f"### Inactive Open PRs ({len(inactive_prs)} total)"])
+    lines.append(
+        f"Selection of up to 9 highlights ({len(highlights)} shown): "
+        f"3 most recent, 3 oldest, and 3 most active inactive PRs. "
+        f"{remaining} more inactive PR{'s' if remaining != 1 else ''} not listed."
+    )
     for pr in highlights:
         lines.extend(_format_inactive_pr_lines(pr))
 
     lines.extend(
-        ["", "## Issues", "", f"### Opened Issues ({len(github_issues['opened_issues'])})", ""]
+        ["", "## Issues", "", f"### Opened Issues ({len(github_issues['opened_issues'])})"]
     )
     for issue in github_issues["opened_issues"]:
         lines.extend(_format_issue_lines(issue))
 
-    lines.extend(["", f"### Closed Issues ({len(github_issues['closed_issues'])})", ""])
+    lines.extend(["", f"### Closed Issues ({len(github_issues['closed_issues'])})"])
     for issue in github_issues["closed_issues"]:
         lines.extend(_format_issue_lines(issue, closed=True))
 
     lines.extend(["", "## GitLab Weekly CI", ""])
     lines.extend(_format_gitlab_ci_lines(gitlab_ci))
+
+    lines.extend(["", "## GitLab Nightly Benchmarking CI", ""])
+    lines.extend(_format_gitlab_ci_lines(gitlab_nightly_ci))
 
     return "\n".join(lines) + "\n"
 
@@ -859,6 +894,20 @@ def _collect_all(
     github_issues = _collect_github_issues(week_start, week_end, token=token)
     gitlab_ci = _collect_gitlab_ci(ci_week_start, ci_week_end)
 
+    nightly_project_path = urllib.parse.quote(
+        f"cscs-ci/ci-testing/webhook-ci/mirrors/{GITLAB_PROJECT_ID}/{GITLAB_NIGHTLY_PIPELINE_SUFFIX}",
+        safe="",
+    )
+    nightly_start = now - datetime.timedelta(hours=24)
+    nightly_end = now
+    gitlab_nightly_ci = _collect_gitlab_ci(
+        nightly_start,
+        nightly_end,
+        project_path=nightly_project_path,
+        pipeline_url_template=GITLAB_NIGHTLY_PIPELINE_URL_TEMPLATE,
+        no_pipeline_message="No nightly benchmarking pipeline found in the last 24 hours.",
+    )
+
     return {
         "week_start": week_start.isoformat(),
         "week_end": week_end.isoformat(),
@@ -867,6 +916,7 @@ def _collect_all(
         "github_prs": github_prs,
         "github_issues": github_issues,
         "gitlab_ci": gitlab_ci,
+        "gitlab_nightly_ci": gitlab_nightly_ci,
     }
 
 
@@ -880,7 +930,7 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
         "ci_week_start": ci_week_start.isoformat(),
         "repository": f"{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}",
         "github_prs": {
-            "closed_prs": [
+            "merged_prs": [
                 {
                     "number": 42,
                     "title": "Fix boundary handling",
@@ -948,6 +998,7 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
                     "mergeable_state": "clean",
                 }
             ],
+            "closed_without_merge_prs": [],
         },
         "github_issues": {
             "opened_issues": [
@@ -977,6 +1028,13 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
             "pipeline_id": 123,
             "created_at": "2024-07-06T01:00:00Z",
             "message": None,
+            "failed_jobs": [],
+            "running_jobs": [],
+        },
+        "gitlab_nightly_ci": {
+            "status": "no_recent_pipeline",
+            "url": GITLAB_NIGHTLY_PIPELINE_URL_TEMPLATE,
+            "message": "No nightly benchmarking pipeline found in the last 24 hours.",
             "failed_jobs": [],
             "running_jobs": [],
         },
@@ -1040,6 +1098,7 @@ def generate_cmd(
         context["github_prs"],
         context["github_issues"],
         context["gitlab_ci"],
+        gitlab_nightly_ci=context["gitlab_nightly_ci"],
         ci_week_start=datetime.datetime.fromisoformat(context["ci_week_start"]),
     )
     json_path, context_md_path = _write_context_files(output_dir, context, markdown_context)

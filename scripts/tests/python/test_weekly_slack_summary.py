@@ -156,9 +156,10 @@ class TestCollectGitHubPRs:
             end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
             result = weekly_slack_summary._collect_github_prs(start, end, token="fake")
 
-        assert len(result["closed_prs"]) == 1
-        assert result["closed_prs"][0]["number"] == 42
-        assert result["closed_prs"][0]["merged_at"] is not None
+        assert len(result["merged_prs"]) == 1
+        assert result["merged_prs"][0]["number"] == 42
+        assert result["merged_prs"][0]["merged_at"] is not None
+        assert len(result["closed_without_merge_prs"]) == 0
         assert len(result["active_prs"]) == 1
         assert result["active_prs"][0]["number"] == 43
         assert len(result["active_prs"][0]["commits"]) == 1
@@ -315,10 +316,10 @@ class TestFormatContextMarkdown:
         end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
         ci_start = datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.timezone.utc)
         github_prs = {
-            "closed_prs": [
+            "merged_prs": [
                 {
                     "number": 1,
-                    "title": "Closed PR",
+                    "title": "Merged PR",
                     "author": "alice",
                     "url": "https://github.com/C2SM/icon4py/pull/1",
                     "merged_at": "2024-07-03T10:00:00Z",
@@ -327,6 +328,7 @@ class TestFormatContextMarkdown:
                     "review_comments": [],
                 }
             ],
+            "closed_without_merge_prs": [],
             "active_prs": [
                 {
                     "number": 2,
@@ -388,15 +390,28 @@ class TestFormatContextMarkdown:
             "failed_jobs": [],
             "running_jobs": [],
         }
+        gitlab_nightly_ci = {
+            "status": "no_recent_pipeline",
+            "url": "https://gitlab.com/pipelines/nightly",
+            "message": "No nightly benchmarking pipeline found in the last 24 hours.",
+            "failed_jobs": [],
+            "running_jobs": [],
+        }
 
         markdown = weekly_slack_summary._format_context_markdown(
-            start, end, github_prs, github_issues, gitlab_ci, ci_week_start=ci_start
+            start,
+            end,
+            github_prs,
+            github_issues,
+            gitlab_ci,
+            gitlab_nightly_ci=gitlab_nightly_ci,
+            ci_week_start=ci_start,
         )
 
-        assert "Closed PRs (1)" in markdown
+        assert "Merged PRs (1)" in markdown
         assert "Active Open PRs (1)" in markdown
-        assert "Inactive Open PRs (1)" in markdown
-        assert "A selection of up to 9 highlighted inactive PRs" in markdown
+        assert "Inactive Open PRs (1 total)" in markdown
+        assert "Selection of up to 9 highlights" in markdown
         assert "(newest inactive & oldest inactive)" in markdown
         assert "Opened Issues (1)" in markdown
         assert "Closed Issues (1)" in markdown
@@ -543,7 +558,8 @@ class TestGenerateCommand:
                 "ci_week_start": "2024-07-08T00:00:00+00:00",
                 "repository": "C2SM/icon4py",
                 "github_prs": {
-                    "closed_prs": [],
+                    "merged_prs": [],
+                    "closed_without_merge_prs": [],
                     "active_prs": [],
                     "inactive_prs": [],
                     "inactive_pr_highlights": [],
@@ -552,6 +568,13 @@ class TestGenerateCommand:
                 "gitlab_ci": {
                     "status": "no_recent_pipeline",
                     "url": "https://gitlab.com/pipelines",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+                "gitlab_nightly_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines/nightly",
                     "message": "none",
                     "failed_jobs": [],
                     "running_jobs": [],
@@ -598,7 +621,7 @@ class TestGenerateCommand:
 
         data = json.loads(context_json.read_text())
         assert data["repository"] == "C2SM/icon4py"
-        assert len(data["github_prs"]["closed_prs"]) == 1
+        assert len(data["github_prs"]["merged_prs"]) == 1
         assert len(data["github_prs"]["active_prs"]) == 1
         assert len(data["github_prs"]["inactive_prs"]) == 1
         assert len(data["github_issues"]["opened_issues"]) == 1
@@ -606,7 +629,7 @@ class TestGenerateCommand:
         assert data["gitlab_ci"]["status"] == "success"
 
         markdown = summary_md.read_text()
-        assert "Closed PRs" in markdown
+        assert "Merged PRs" in markdown
         assert "Active Open PRs" in markdown
         assert "Inactive Open PRs" in markdown
         assert "Opened Issues" in markdown
@@ -637,7 +660,8 @@ class TestGenerateCommand:
                 "ci_week_start": "2024-07-08T00:00:00+00:00",
                 "repository": "C2SM/icon4py",
                 "github_prs": {
-                    "closed_prs": [],
+                    "merged_prs": [],
+                    "closed_without_merge_prs": [],
                     "active_prs": [],
                     "inactive_prs": [],
                     "inactive_pr_highlights": [],
@@ -646,6 +670,13 @@ class TestGenerateCommand:
                 "gitlab_ci": {
                     "status": "no_recent_pipeline",
                     "url": "https://gitlab.com/pipelines",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+                "gitlab_nightly_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines/nightly",
                     "message": "none",
                     "failed_jobs": [],
                     "running_jobs": [],
@@ -690,7 +721,8 @@ class TestGenerateCommand:
                 "ci_week_start": "2024-07-08T00:00:00+00:00",
                 "repository": "C2SM/icon4py",
                 "github_prs": {
-                    "closed_prs": [],
+                    "merged_prs": [],
+                    "closed_without_merge_prs": [],
                     "active_prs": [],
                     "inactive_prs": [],
                     "inactive_pr_highlights": [],
@@ -699,6 +731,13 @@ class TestGenerateCommand:
                 "gitlab_ci": {
                     "status": "no_recent_pipeline",
                     "url": "https://gitlab.com/pipelines",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+                "gitlab_nightly_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines/nightly",
                     "message": "none",
                     "failed_jobs": [],
                     "running_jobs": [],

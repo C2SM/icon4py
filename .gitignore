@@ -139,3 +139,10 @@ venv.bak/
 ### Others ###
 .obsidian
 pyrightconfig.json
+
+### Weekly Slack summary local secrets / outputs ###
+.inference-key
+.slack-webhook-url
+.github-token
+weekly_slack_summary_output/
+.opencode
