@@ -51,25 +51,26 @@ change. If there is no additional information beyond the title, say so.
 8. `*Weekly CI status*`
    - Report the status for the current week (Monday to Sunday), even though the
      PRs and issues above are from the previous week.
-   - Always include the pipeline URL as a clickable `<URL|pipeline>` link.
+   - Use a single compact line when possible: `<status> — <pipeline URL|pipeline>`.
    - For failed jobs, group them by failure category (e.g., runner failures,
      test failures, infrastructure failures). Show up to 5 categories. For each
      category, give the total count, one representative clickable
-     `<job URL|job name>` link, and a one-sentence summary based on the
-     truncated raw log tail. Distinguish CI/runner failures from actual test
-     failures.
+     `<job URL|job name>` link, and a short (few-word) summary. Present the
+     category line compactly, e.g.
+     `Runner failure: 100 jobs — <job URL|job name> (compute nodes failed to connect)`.
    - If there are more than 5 categories, state the total number of categories
      and point to the pipeline link for details.
    - Distinguish green / no recent pipeline / running / failed jobs.
 9. `*Nightly benchmarking CI status*`
    - Report the status of the nightly benchmarking pipeline for the last 24
-     hours, using the same format as the weekly CI status.
+     hours, using the same compact format as the weekly CI status.
 
 If a section is empty, write `(none)`.
 
 ## Tone and style
 
-- Keep the whole summary under 45 lines.
+- Keep the whole summary under 45 lines and **under 3,500 characters** so it
+  stays within a single Slack message. Be terse in CI sections.
 - Mention blockers briefly when present.
 - Do not include raw JSON or commit hashes.
 

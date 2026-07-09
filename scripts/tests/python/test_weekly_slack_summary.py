@@ -139,6 +139,13 @@ class TestCollectGitHubPRs:
                 ]
             if "/comments" in decoded or "/review_comments" in decoded:
                 return []
+            if "/pulls/42" in decoded:
+                return {
+                    "number": 42,
+                    "merged": True,
+                    "merged_at": sample_closed_pr["merged_at"],
+                    "merged_by": {"login": "alice"},
+                }
             if "/pulls/44" in decoded:
                 return {
                     "number": 44,

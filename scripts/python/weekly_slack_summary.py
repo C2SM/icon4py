@@ -265,42 +265,49 @@ def _collect_github_prs(
     active_prs_raw = _github_search_issues(active_open_query, token=token)
     inactive_prs_raw = _github_search_issues(inactive_open_query, token=token)
 
-    closed_prs: list[dict[str, Any]] = []
+    merged_prs: list[dict[str, Any]] = []
+    closed_without_merge_prs: list[dict[str, Any]] = []
     for item in closed_prs_raw:
         pr_number = item["number"]
+        details = _github_pr_details(pr_number, token=token)
         commits = _github_pr_commits(pr_number, token=token)
         comments = _github_pr_comments(pr_number, token=token)
         review_comments = _github_pr_review_comments(pr_number, token=token)
-        closed_prs.append(
-            {
-                "number": pr_number,
-                "title": item["title"],
-                "author": item["user"]["login"] if item.get("user") else None,
-                "url": item["html_url"],
-                "state_reason": item.get("state_reason"),
-                "merged_at": item.get("merged_at"),
-                "closed_at": item.get("closed_at"),
-                "body": item.get("body") or "",
-                "commits": [
-                    {
-                        "sha": c.get("sha", "")[:7],
-                        "message": (c.get("commit", {}).get("message") or "").split("\n")[0],
-                        "url": c.get("html_url", ""),
-                    }
-                    for c in commits
-                ],
-                "comments": [
-                    {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
-                    for c in comments
-                    if c.get("user")
-                ],
-                "review_comments": [
-                    {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
-                    for c in review_comments
-                    if c.get("user")
-                ],
-            }
-        )
+        pr_data = {
+            "number": pr_number,
+            "title": item["title"],
+            "author": item["user"]["login"] if item.get("user") else None,
+            "url": item["html_url"],
+            "state_reason": item.get("state_reason"),
+            "merged_at": details.get("merged_at"),
+            "merged_by": (
+                details.get("merged_by", {}).get("login") if details.get("merged_by") else None
+            ),
+            "closed_at": item.get("closed_at"),
+            "body": item.get("body") or "",
+            "commits": [
+                {
+                    "sha": c.get("sha", "")[:7],
+                    "message": (c.get("commit", {}).get("message") or "").split("\n")[0],
+                    "url": c.get("html_url", ""),
+                }
+                for c in commits
+            ],
+            "comments": [
+                {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
+                for c in comments
+                if c.get("user")
+            ],
+            "review_comments": [
+                {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
+                for c in review_comments
+                if c.get("user")
+            ],
+        }
+        if details.get("merged_at") or details.get("merged"):
+            merged_prs.append(pr_data)
+        else:
+            closed_without_merge_prs.append(pr_data)
 
     active_prs: list[dict[str, Any]] = []
     for item in active_prs_raw:
@@ -355,8 +362,6 @@ def _collect_github_prs(
         )
 
     inactive_pr_highlights = _select_inactive_pr_highlights(inactive_prs)
-    merged_prs = [pr for pr in closed_prs if pr.get("merged_at")]
-    closed_without_merge_prs = [pr for pr in closed_prs if not pr.get("merged_at")]
 
     return {
         "merged_prs": merged_prs,
