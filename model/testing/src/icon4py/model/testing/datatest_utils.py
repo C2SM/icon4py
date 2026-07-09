@@ -232,7 +232,7 @@ def create_experiment_configuration(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=None,
-        enable_statistics_output=False,
+        enable_statistics_logging=False,
     )
 
     return definitions.ExperimentConfig(

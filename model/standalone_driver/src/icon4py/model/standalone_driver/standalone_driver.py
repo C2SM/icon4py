@@ -494,7 +494,7 @@ class Icon4pyDriver:
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
         absolute maximum value of rho, vn, and w, as well as the levels at which their maximum value is found.
         """
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
                 prognostic_states.rho,
@@ -523,7 +523,7 @@ class Icon4pyDriver:
     def _compute_total_mass_and_energy(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
             cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
@@ -541,7 +541,7 @@ class Icon4pyDriver:
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
             vn_ndarray = prognostic_states.vn.ndarray
             w_ndarray = prognostic_states.w.ndarray

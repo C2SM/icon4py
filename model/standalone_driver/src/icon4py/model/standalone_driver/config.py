@@ -223,7 +223,7 @@ class DriverConfig:
             ),
         ),
     ] = 5
-    enable_statistics_output: typing.Annotated[
+    enable_statistics_logging: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
             description="Compute and log variable statistics.",
