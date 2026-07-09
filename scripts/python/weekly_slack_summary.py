@@ -457,6 +457,73 @@ def _gitlab_job_log(
     return text.strip()
 
 
+def _collect_pipeline_jobs(
+    project_path: str,
+    pipeline_id: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Collect failed and running jobs from a pipeline and its child pipelines.
+
+    Parent pipelines may delegate real work to child pipelines via bridge jobs.
+    This function walks the pipeline tree so that failures in child pipelines
+    are surfaced.
+    """
+    failed_jobs: list[dict[str, Any]] = []
+    running_jobs: list[dict[str, Any]] = []
+    visited: set[int] = set()
+    queue = [pipeline_id]
+
+    def _job_info(job: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": job.get("id"),
+            "name": job.get("name"),
+            "stage": job.get("stage"),
+            "status": job.get("status"),
+            "url": job.get("web_url"),
+            "failure_reason": job.get("failure_reason"),
+        }
+
+    while queue:
+        pid = queue.pop(0)
+        if pid in visited:
+            continue
+        visited.add(pid)
+
+        jobs_url = f"{GITLAB_API_BASE}/projects/{project_path}/pipelines/{pid}/jobs?per_page=100"
+        jobs = _gitlab_api_request(jobs_url)
+        if isinstance(jobs, list):
+            for job in jobs:
+                job_status = job.get("status")
+                job_id = job.get("id")
+                info = _job_info(job)
+                if job_status == "failed" and isinstance(job_id, int):
+                    info["log_snippet"] = _gitlab_job_log(project_path, job_id)
+                    failed_jobs.append(info)
+                elif job_status == "failed":
+                    failed_jobs.append(info)
+                elif job_status == "running":
+                    running_jobs.append(info)
+
+        bridges_url = (
+            f"{GITLAB_API_BASE}/projects/{project_path}/pipelines/{pid}/bridges?per_page=100"
+        )
+        bridges = _gitlab_api_request(bridges_url)
+        if isinstance(bridges, list):
+            for bridge in bridges:
+                downstream = bridge.get("downstream_pipeline")
+                if downstream and downstream.get("id"):
+                    queue.append(downstream["id"])
+                bridge_status = bridge.get("status")
+                bridge_id = bridge.get("id")
+                info = _job_info(bridge)
+                if bridge_status == "failed" and isinstance(bridge_id, int):
+                    info["log_snippet"] = _gitlab_job_log(project_path, bridge_id)
+                    failed_jobs.append(info)
+                elif bridge_status == "running":
+                    running_jobs.append(info)
+
+    return failed_jobs, running_jobs
+
+
 def _collect_gitlab_ci(
     start: datetime.datetime,
     end: datetime.datetime,
@@ -498,30 +565,7 @@ def _collect_gitlab_ci(
     running_jobs: list[dict[str, Any]] = []
 
     if status in ("failed", "running"):
-        jobs_url = (
-            f"{GITLAB_API_BASE}/projects/{project_path}/pipelines/{pipeline_id}/jobs?per_page=100"
-        )
-        jobs = _gitlab_api_request(jobs_url)
-        if not isinstance(jobs, list):
-            raise RuntimeError(f"Unexpected GitLab jobs response type: {type(jobs)}")
-        for job in jobs:
-            job_status = job.get("status")
-            job_id = job.get("id")
-            job_info: dict[str, Any] = {
-                "id": job_id,
-                "name": job.get("name"),
-                "stage": job.get("stage"),
-                "status": job_status,
-                "url": job.get("web_url"),
-                "failure_reason": job.get("failure_reason"),
-            }
-            if job_status == "failed" and isinstance(job_id, int):
-                job_info["log_snippet"] = _gitlab_job_log(project_path, job_id)
-                failed_jobs.append(job_info)
-            elif job_status == "failed":
-                failed_jobs.append(job_info)
-            elif job_status == "running":
-                running_jobs.append(job_info)
+        failed_jobs, running_jobs = _collect_pipeline_jobs(project_path, pipeline_id)
 
     return {
         "status": status,

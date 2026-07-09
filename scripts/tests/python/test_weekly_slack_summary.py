@@ -241,6 +241,8 @@ class TestCollectGitLabCI:
                         "failure_reason": None,
                     },
                 ]
+            if "/bridges" in url:
+                return []
             if "/pipelines" in url:
                 return [
                     {
@@ -282,6 +284,8 @@ class TestCollectGitLabCI:
                         "failure_reason": None,
                     }
                 ]
+            if "/bridges" in url:
+                return []
             if "/pipelines" in url:
                 return [
                     {
