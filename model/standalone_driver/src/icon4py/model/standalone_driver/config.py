@@ -52,7 +52,7 @@ def absolutetime_from_iconformat(value: str) -> AbsoluteTime:
 
 def relativetime_from_iconformat(dtime: float, modeltimestep: str) -> RelativeTime:
     return (
-        _relativetime_from_iso8601(modeltimestep) if modeltimestep else RelativeTime(seconds=dtime)
+        relativetime_from_iso8601(modeltimestep) if modeltimestep else RelativeTime(seconds=dtime)
     )
 
 
@@ -72,8 +72,9 @@ _ISO8601_DURATION = re.compile(
 )
 
 
-def _relativetime_from_iso8601(duration: str) -> RelativeTime:
-    """Parse an ISO 8601 duration such as 'PT300S' into a 'RelativeTime'.
+def relativetime_from_iso8601(duration: str) -> RelativeTime:
+    """
+    Parse an ISO 8601 duration such as 'PT300S' into a 'RelativeTime'.
 
     Only the components convertible to a fixed duration are supported (weeks,
     days, hours, minutes, seconds).

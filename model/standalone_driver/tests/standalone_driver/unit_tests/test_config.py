@@ -41,16 +41,16 @@ def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
         ("PT0.5S", 0.5),
     ],
 )
-def test_timedelta_from_iso8601_valid(duration: str, expected_seconds: float) -> None:
-    assert driver_config._timedelta_from_iso8601(duration) == datetime.timedelta(
+def test_relativetime_from_iso8601_valid(duration: str, expected_seconds: float) -> None:
+    assert driver_config.relativetime_from_iso8601(duration) == datetime.timedelta(
         seconds=expected_seconds
     )
 
 
 @pytest.mark.parametrize("duration", ["", "P", "PT", "P1Y", "P1M", "300", "PT300", "P1DT", "P1WT"])
-def test_timedelta_from_iso8601_invalid(duration: str) -> None:
+def test_relativetime_from_iso8601_invalid(duration: str) -> None:
     with pytest.raises(ValueError, match="Invalid ISO 8601 duration"):
-        driver_config._timedelta_from_iso8601(duration)
+        driver_config.relativetime_from_iso8601(duration)
 
 
 def test_modeltimestep_takes_priority_over_dtime() -> None:
