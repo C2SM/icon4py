@@ -29,24 +29,12 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
-def _assert_tmx_plumbing() -> None:
-    """Called at module load time to verify TMX registration plumbing is intact.
-
-    NOTE: ``driver_utils.initialize_granules`` cannot be exercised in a unit test
-    without real grid fixtures (geometry/interpolation/metrics factories require a
-    grid file).  The smoke test ``test_standalone_driver_moist_physics_with_tmx``
-    covers the full end-to-end registration path when serialized data are available.
-    This import-time helper verifies the config-layer wiring at zero cost.
-    """
-    _fields = {f.name: f for f in dataclasses.fields(driver_config.ExperimentConfig)}
-    assert "tmx" in _fields, "ExperimentConfig must have a 'tmx' field"
-    assert _fields["tmx"].default is None, "ExperimentConfig.tmx must default to None"
-    # Verify TmxConfig is constructable with defaults (no exceptions should be raised)
-    _cfg = tmx_module.TmxConfig()
-    assert _cfg is not None
-
-
-_assert_tmx_plumbing()
+def test_tmx_plumbing() -> None:
+    """Config-layer TMX wiring: ExperimentConfig.tmx exists, defaults to None, TmxConfig constructs."""
+    fields = {f.name: f for f in dataclasses.fields(driver_config.ExperimentConfig)}
+    assert "tmx" in fields, "ExperimentConfig must have a 'tmx' field"
+    assert fields["tmx"].default is None, "ExperimentConfig.tmx must default to None"
+    assert tmx_module.TmxConfig() is not None
 
 
 @pytest.mark.datatest
