@@ -248,9 +248,6 @@ class TmxState:
         # --- Scratch buffers for scatter (Task 5) ---
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._exner_tendency = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )
         self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
         # --- Prognostic references — bound during gather ---

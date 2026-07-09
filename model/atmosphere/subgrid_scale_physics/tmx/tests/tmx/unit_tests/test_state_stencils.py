@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import state_stencils
 from icon4py.model.common import constants, dimension as dims
