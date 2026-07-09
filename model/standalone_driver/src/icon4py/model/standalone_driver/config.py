@@ -57,7 +57,7 @@ def relativetime_from_iconformat(dtime: float, modeltimestep: str) -> RelativeTi
 
 
 @dataclasses.dataclass
-class ProfilingStats:
+class ProfilingConfig:
     gt4py_metrics_level: int = gtx_metrics.ALL
     gt4py_metrics_output_file: str = "gt4py_metrics.json"
     skip_first_timestep: bool = True
@@ -110,11 +110,9 @@ class DriverConfig:
             ),
         ),
     ]
-    profiling_stats: typing.Annotated[
-        ProfilingStats | None,
-        common_conf_opt.ConfigOption(
-            description=""  # TODO(ricoh): c35 -- Add a description
-        ),
+    profiling_options: typing.Annotated[
+        ProfilingConfig | None,
+        common_conf_opt.ConfigOption(description="Performance profiling options."),
     ]
     dtime: typing.Annotated[
         RelativeTime,
@@ -356,11 +354,11 @@ def read_config(
             config=dataclasses.replace(initial_condition_config.config, ntracer=0),
         )
 
-    profiling_stats = ProfilingStats() if enable_profiling else None
+    profiling_options = ProfilingConfig() if enable_profiling else None
     driver_cfg = DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
-        profiling_stats=profiling_stats,
+        profiling_options=profiling_options,
     )
 
     return ExperimentConfig(

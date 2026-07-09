@@ -231,7 +231,7 @@ def create_experiment_configuration(
     driver_cfg = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,
         master_dict=master_dict,
-        profiling_stats=None,
+        profiling_options=None,
         enable_statistics_logging=False,
     )
 

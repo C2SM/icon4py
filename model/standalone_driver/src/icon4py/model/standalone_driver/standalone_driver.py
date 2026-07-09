@@ -164,10 +164,13 @@ class Icon4pyDriver:
                 )
 
             for time_step in range(self.model_time_variables.n_time_steps):
-                if self.config.driver.profiling_stats is not None:
-                    if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
+                if self.config.driver.profiling_options is not None:
+                    if (
+                        not self.config.driver.profiling_options.skip_first_timestep
+                        or time_step > 0
+                    ):
                         gtx_config.COLLECT_METRICS_LEVEL = (
-                            self.config.driver.profiling_stats.gt4py_metrics_level
+                            self.config.driver.profiling_options.gt4py_metrics_level
                         )
 
                 log.info(
@@ -208,11 +211,11 @@ class Icon4pyDriver:
 
         self.timer_collection.show_timer_report()
         if (
-            self.config.driver.profiling_stats is not None
-            and self.config.driver.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
+            self.config.driver.profiling_options is not None
+            and self.config.driver.profiling_options.gt4py_metrics_level > gtx_metrics.DISABLED
         ):
             print(gtx_metrics.dumps())
-            gtx_metrics.dump_json(self.config.driver.profiling_stats.gt4py_metrics_output_file)
+            gtx_metrics.dump_json(self.config.driver.profiling_options.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,

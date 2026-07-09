@@ -59,7 +59,7 @@ def test_modeltimestep_takes_priority_over_dtime() -> None:
         {"dtime": 999.0, "modeltimestep": "PT300S                          "}
     )
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.dtime == datetime.timedelta(seconds=300)
 
@@ -67,6 +67,6 @@ def test_modeltimestep_takes_priority_over_dtime() -> None:
 def test_empty_modeltimestep_falls_back_to_dtime() -> None:
     atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "        "})
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.dtime == datetime.timedelta(seconds=120)
