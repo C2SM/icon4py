@@ -659,9 +659,10 @@ def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
     ]
     if gitlab_ci.get("message"):
         lines.append(f"- Message: {gitlab_ci['message']}")
-    if gitlab_ci.get("failed_jobs"):
-        lines.append(f"- Failed jobs ({len(gitlab_ci['failed_jobs'])}):")
-        for job in gitlab_ci["failed_jobs"]:
+    failed_jobs = gitlab_ci.get("failed_jobs", [])
+    if failed_jobs:
+        lines.append(f"- Failed jobs ({len(failed_jobs)} total):")
+        for job in failed_jobs[:12]:
             lines.append(
                 f"  - [{job['name']}]({job['url']}): {job.get('failure_reason') or 'failed'}"
             )
@@ -669,6 +670,8 @@ def _format_gitlab_ci_lines(gitlab_ci: dict[str, Any]) -> list[str]:
             if log:
                 lines.append("    - Truncated log tail:")
                 lines.extend(f"      {line}" for line in log.splitlines())
+        if len(failed_jobs) > 12:
+            lines.append(f"  - ... and {len(failed_jobs) - 12} more failed jobs")
     elif gitlab_ci.get("status") == "failed":
         lines.append(
             "- The pipeline status is failed, but no individual failed jobs were retrieved. "
