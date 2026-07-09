@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
@@ -26,6 +25,7 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
+    RTOL,
     TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
@@ -99,7 +99,9 @@ def test_tmx_init_and_run_diagnostics_single_step(
     granule.run_diagnostics(construct_input_state(entry_savepoint), diagnostic_state)
 
     nlev = icon_grid.num_levels
-    # (diagnostic state attribute, exit savepoint accessor, K slice compared)
+    # (diagnostic state attribute, exit savepoint accessor, K slice compared,
+    # absolute tolerance; see verify_full_run_fields in utils.py for how the
+    # tolerances are chosen)
     # K rows are excluded only where the Fortran leaves them dead:
     # - bruvais: brunt_vaisala_freq (mo_nh_vert_interp_les.f90) computes
     #   jk = 2..nlev (1-based), i.e. rows 1..nlev-1; rows 0 and nlev are never
@@ -113,36 +115,32 @@ def test_tmx_init_and_run_diagnostics_single_step(
     interior = slice(1, nlev)
     everything = slice(None)
     fields = (
-        ("cptgz", "cptgz", everything),
-        ("theta_v", "theta_v", everything),
-        ("rho_ic", "rho_ic", everything),
-        ("bruvais", "bruvais", interior),
-        ("vn", "vn", everything),
-        ("w_vert", "w_vert", everything),
-        ("w_ie", "w_ie", everything),
-        ("u_vert", "u_vert", everything),
-        ("v_vert", "v_vert", everything),
-        ("vn_ie", "vn_ie", everything),
-        ("vt_ie", "vt_ie", everything),
-        ("shear", "shear", everything),
-        ("div_of_stress", "div_of_stress", everything),
-        ("div_c", "div_c", everything),
-        ("mech_prod", "mech_prod", interior),
-        ("km_ic", "km_ic", everything),
-        ("kh_ic", "kh_ic", everything),
-        ("km_c", "km_c", everything),
-        ("km_iv", "km_iv", everything),
-        ("km_ie", "km_ie", everything),
+        ("cptgz", "cptgz", everything, 7.0e-11),
+        ("theta_v", "theta_v", everything, 2.0e-13),
+        ("rho_ic", "rho_ic", everything, 6.0e-16),
+        ("bruvais", "bruvais", interior, 4.0e-17),
+        ("vn", "vn", everything, 2.0e-14),
+        ("w_vert", "w_vert", everything, 2.0e-18),
+        ("w_ie", "w_ie", everything, 1.0e-18),
+        ("u_vert", "u_vert", everything, 2.0e-14),
+        ("v_vert", "v_vert", everything, 5.0e-15),
+        ("vn_ie", "vn_ie", everything, 3.0e-14),
+        ("vt_ie", "vt_ie", everything, 2.0e-14),
+        ("shear", "shear", everything, 4.0e-18),
+        ("div_of_stress", "div_of_stress", everything, 2.0e-19),
+        ("div_c", "div_c", everything, 2.0e-19),
+        ("mech_prod", "mech_prod", interior, 2.0e-18),
+        ("km_ic", "km_ic", everything, 5.0e-12),
+        ("kh_ic", "kh_ic", everything, 2.0e-11),
+        ("km_c", "km_c", everything, 5.0e-12),
+        ("km_iv", "km_iv", everything, 9.0e-13),
+        ("km_ie", "km_ie", everything, 3.0e-12),
     )
-    for attr_name, accessor_name, k_slice in fields:
-        actual = getattr(diagnostic_state, attr_name).asnumpy()[:, k_slice]
-        desired = getattr(exit_savepoint, accessor_name)().asnumpy()[:, k_slice]
-        # atol scaled to the reference-field magnitude to absorb near-zero
-        # entries (see verify_full_run_fields in utils.py)
+    for attr_name, accessor_name, k_slice, atol in fields:
         test_utils.assert_dallclose(
-            actual,
-            desired,
-            rtol=1.0e-11,
-            atol=1.0e-9 * float(np.max(np.abs(desired))),
+            getattr(diagnostic_state, attr_name).asnumpy()[:, k_slice],
+            getattr(exit_savepoint, accessor_name)().asnumpy()[:, k_slice],
+            rtol=RTOL,
+            atol=atol,
             err_msg=attr_name,
         )

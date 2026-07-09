@@ -23,7 +23,6 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
@@ -32,6 +31,7 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
+    RTOL,
     TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
@@ -162,22 +162,21 @@ def test_tmx_run_horizontal_wind_diffusion_single_step(
         dtime=setup.dtime,
     )
 
+    # (actual, desired, name, absolute tolerance; see verify_full_run_fields in
+    # utils.py for how the tolerances are chosen)
     fields = (
-        (setup.granule.tot_tend, exit_savepoint.tot_tend(), "tot_tend"),
-        (setup.tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua"),
-        (setup.tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va"),
-        (setup.new_state.u, exit_savepoint.ua_new(), "ua_new"),
-        (setup.new_state.v, exit_savepoint.va_new(), "va_new"),
+        (setup.granule.tot_tend, exit_savepoint.tot_tend(), "tot_tend", 4.0e-17),
+        (setup.tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua", 4.0e-17),
+        (setup.tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va", 3.0e-17),
+        (setup.new_state.u, exit_savepoint.ua_new(), "ua_new", 2.0e-14),
+        (setup.new_state.v, exit_savepoint.va_new(), "va_new", 1.0e-14),
     )
-    for actual, desired, name in fields:
-        desired_np = desired.asnumpy()
-        # atol scaled to the reference-field magnitude to absorb near-zero
-        # entries (see verify_full_run_fields in utils.py)
+    for actual, desired, name, atol in fields:
         test_utils.assert_dallclose(
             actual.asnumpy(),
-            desired_np,
-            rtol=1.0e-11,
-            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
             err_msg=name,
         )
 
@@ -229,17 +228,14 @@ def test_tmx_run_vertical_wind_diffusion_single_step(
     )
 
     fields = (
-        (setup.tendency_state.ddt_w, final_savepoint.tend_wa(), "tend_wa"),
-        (setup.new_state.w, exit_savepoint.wa_new(), "wa_new"),
+        (setup.tendency_state.ddt_w, final_savepoint.tend_wa(), "tend_wa", 1.0e-20),
+        (setup.new_state.w, exit_savepoint.wa_new(), "wa_new", 3.0e-18),
     )
-    for actual, desired, name in fields:
-        desired_np = desired.asnumpy()
-        # atol scaled to the reference-field magnitude to absorb near-zero
-        # entries (see verify_full_run_fields in utils.py)
+    for actual, desired, name, atol in fields:
         test_utils.assert_dallclose(
             actual.asnumpy(),
-            desired_np,
-            rtol=1.0e-11,
-            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
             err_msg=name,
         )

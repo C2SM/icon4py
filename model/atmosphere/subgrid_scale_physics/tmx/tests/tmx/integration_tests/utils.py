@@ -33,6 +33,9 @@ if TYPE_CHECKING:
 # so the verification tests parametrize over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
+# Relative tolerance of all tmx integration datatests, see verify_full_run_fields.
+RTOL: float = 3.0e-12
+
 
 def verify_full_run_fields(
     *,
@@ -42,54 +45,53 @@ def verify_full_run_fields(
     num_levels: int,
 ) -> None:
     """Verify the outputs of a full ``Tmx.run`` against the tmx-exit savepoint."""
-    # The absolute tolerance is scaled to the reference-field magnitude: the tmx
-    # fields agree with the Fortran reference to a few ulp of the field
+    # The tmx fields agree with the Fortran reference to a few ulp of the field
     # magnitude, but a plain relative tolerance blows up on near-zero entries
-    # (e.g. tendencies crossing zero, v-wind on a zonally symmetric aquaplanet).
-    # ``atol = 1e-9 * max|desired|`` gives every field an absolute floor tied to
-    # its own scale; the measured normalized deviations (max abs diff /
-    # max|desired|) on the v06 archive are all below 6e-11, and the largest
-    # relative deviations away from zero are below 3e-12.
+    # (e.g. tendencies crossing zero, v-wind on a zonally symmetric aquaplanet),
+    # hence the per-field absolute floor. Each atol is the largest deviation
+    # measured on the v06 archive (gtfn_cpu and embedded, both serialized
+    # timesteps), rounded up to one significant digit with ~20% of headroom.
+    # RTOL is set from the largest relative deviation away from zero, reached by
+    # km/kh (2.1e-12); it is above the double-precision default of assert_dallclose.
     # final tendencies and Stage F diagnostics
     fields = (
-        (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
-        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv"),
-        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc"),
-        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi"),
-        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua"),
-        (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va"),
-        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa"),
-        (diagnostic_state.heating, exit_savepoint.heating(), "heating"),
-        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke"),
+        (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
+        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 2.0e-19),
+        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 0.0),
+        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 0.0),
+        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua", 1.0e-16),
+        (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va", 4.0e-17),
+        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa", 6.0e-19),
+        (diagnostic_state.heating, exit_savepoint.heating(), "heating", 7.0e-13),
+        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke", 7.0e-13),
     )
-    for actual, desired, name in fields:
-        desired_np = desired.asnumpy()
+    for actual, desired, name, atol in fields:
         test_utils.assert_dallclose(
             actual.asnumpy(),
-            desired_np,
-            rtol=1.0e-11,
-            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
             err_msg=name,
         )
 
     # Stage G vertically integrated diagnostics (2D)
     integrals = (
-        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi"),
-        (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi"),
-        (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), "int_energy_vi"),
+        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi", 3.0e-6),
+        (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi", 3.0e-12),
+        (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), "int_energy_vi", 3.0e-6),
         (
             diagnostic_state.int_energy_vi_tend,
             exit_savepoint.tend_int_energy_vi(),
             "tend_int_energy_vi",
+            7.0e-9,
         ),
     )
-    for actual, desired, name in integrals:
-        desired_np = desired.asnumpy()
+    for actual, desired, name, atol in integrals:
         test_utils.assert_dallclose(
             actual.asnumpy(),
-            desired_np,
-            rtol=1.0e-11,
-            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
             err_msg=name,
         )
 
@@ -97,16 +99,15 @@ def verify_full_run_fields(
     # the tile-aggregated surface exchange coefficients in the Fortran
     # (km_sfc/kh_sfc from mo_vdf_diag_smag.f90, out of scope of the
     # atmosphere-only port; the granule writes zero there)
-    for actual, desired, name in (
-        (diagnostic_state.km, exit_savepoint.km(), "km"),
-        (diagnostic_state.kh, exit_savepoint.kh(), "kh"),
+    for actual, desired, name, atol in (
+        (diagnostic_state.km, exit_savepoint.km(), "km", 5.0e-12),
+        (diagnostic_state.kh, exit_savepoint.kh(), "kh", 2.0e-11),
     ):
-        desired_np = desired.asnumpy()[:, : num_levels - 1]
         test_utils.assert_dallclose(
             actual.asnumpy()[:, : num_levels - 1],
-            desired_np,
-            rtol=1.0e-11,
-            atol=1.0e-9 * float(np.max(np.abs(desired_np))),
+            desired.asnumpy()[:, : num_levels - 1],
+            rtol=RTOL,
+            atol=atol,
             err_msg=name,
         )
 
