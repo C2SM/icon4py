@@ -32,13 +32,16 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.diagnostic_calculations.stencils import (
+    calculate_tendency,
     diagnose_pressure,
     diagnose_surface_pressure,
     diagnose_temperature,
+    update_exner_and_theta_v,
 )
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -175,6 +178,49 @@ class TmxState:
             vertical_sizes=full_vertical,
             offset_provider=grid.connectivities,
         )
+        # Scatter programs (Task 5)
+        self._apply_tendency = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
+        )
+        # w has KDim+1 half-levels — same stencil, but domain extends to nlev+1
+        self._apply_tendency_w = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._num_levels + 1),
+            },
+            offset_provider={},
+        )
+        self._apply_tendency_vn = model_options.setup_program(
+            program=state_stencils.apply_tendency_on_edge_k,
+            backend=backend,
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": gtx.int32(grid.num_edges),
+            },
+            vertical_sizes=full_vertical,
+            offset_provider={},
+        )
+        self._calculate_virtual_temperature_tendency = model_options.setup_program(
+            program=calculate_tendency.calculate_virtual_temperature_tendency,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
+        )
+        self._update_exner_and_theta_v = model_options.setup_program(
+            program=update_exner_and_theta_v.update_exner_and_theta_v,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
+        )
 
         # --- Owned buffers: diagnosed/computed each step ---
         self.temperature = data_alloc.zero_field(
@@ -310,8 +356,89 @@ class TmxState:
         outputs: dict[str, fa.CellKField[ta.wpfloat]],
         dtime: datetime.timedelta,
     ) -> None:
-        """Outbound translation (implemented in Task 5)."""
-        raise NotImplementedError
+        """Outbound translation: apply TMX output tendencies back to the prognostic state.
+
+        Apply order (must match brief):
+        1. Moisture tracers: qv/qc/qi += ddt * dt  (qr/qs/qg untouched — TMX does not diffuse them)
+        2. ddt_temperature → new_temperature → Tv tendency → update exner + theta_v (muphys path)
+        3. Project (ddt_u, ddt_v) → _ddt_vn via compute_vn_from_uv, then vn += dt * _ddt_vn
+        4. w += dt * ddt_w  (KDim+1 half-levels)
+        5. Store 8 diagnostics as attributes
+        """
+        assert self._tracers is not None, "gather_from_prognostic must be called first"
+        dt = dtime.total_seconds()
+
+        # 1. Moisture tendencies: only qv, qc, qi (TMX does not diffuse qr/qs/qg)
+        for name in ("qv", "qc", "qi"):
+            tracer = _require(getattr(self._tracers, name), name)
+            self._apply_tendency(
+                field_a=tracer,
+                coeff=ta.wpfloat(dt),
+                field_b=outputs[f"ddt_{name}"],
+                output_field=tracer,
+            )
+
+        # 2. ddt_temperature → exner/theta_v (verbatim muphys scatter step 2)
+        # 2a. new_temperature = temperature + ddt_temperature * dt
+        self._apply_tendency(
+            field_a=self.temperature,
+            coeff=ta.wpfloat(dt),
+            field_b=outputs["ddt_temperature"],
+            output_field=self._new_te,
+        )
+        # 2b. Tv tendency: uses updated tracers (post step-1) and new temperature
+        self._calculate_virtual_temperature_tendency(
+            dtime=ta.wpfloat(dt),
+            qv=_require(self._tracers.qv, "qv"),
+            qc=_require(self._tracers.qc, "qc"),
+            qi=_require(self._tracers.qi, "qi"),
+            qr=_require(self._tracers.qr, "qr"),
+            qs=_require(self._tracers.qs, "qs"),
+            qg=_require(self._tracers.qg, "qg"),
+            temperature=self._new_te,
+            virtual_temperature=self.virtual_temperature,
+            virtual_temperature_tendency=self._tv_tendency,
+        )
+        # 2c. Recompute exner via exact EOS; diagnose theta_v = Tv_new / exner_new
+        self._update_exner_and_theta_v(
+            rho=self._rho,
+            virtual_temperature=self.virtual_temperature,
+            virtual_temperature_tendency=self._tv_tendency,
+            dtime=ta.wpfloat(dt),
+            exner=prognostic.exner,
+            theta_v=prognostic.theta_v,
+        )
+
+        # 3. Project wind tendencies (ddt_u, ddt_v) onto edge normals, then apply
+        self._compute_vn_from_uv(
+            u=outputs["ddt_u"],
+            v=outputs["ddt_v"],
+            vn=self._ddt_vn,
+        )
+        self._apply_tendency_vn(
+            field_a=prognostic.vn,
+            coeff=ta.wpfloat(dt),
+            field_b=self._ddt_vn,
+            output_field=prognostic.vn,
+        )
+
+        # 4. w (KDim+1 half-levels)
+        self._apply_tendency_w(
+            field_a=prognostic.w,
+            coeff=ta.wpfloat(dt),
+            field_b=outputs["ddt_w"],
+            output_field=prognostic.w,
+        )
+
+        # 5. Store 8 diagnostics as attributes
+        self.km = outputs["km"]
+        self.kh = outputs["kh"]
+        self.heating = outputs["heating"]
+        self.dissip_ke = outputs["dissip_ke"]
+        self.cptgz_vi = outputs["cptgz_vi"]
+        self.dissip_ke_vi = outputs["dissip_ke_vi"]
+        self.int_energy_vi = outputs["int_energy_vi"]
+        self.int_energy_vi_tend = outputs["int_energy_vi_tend"]
 
     def as_component_input(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
         """Return exactly the 21 ``INPUTS_PROPERTIES`` keys mapped to GT4Py fields."""

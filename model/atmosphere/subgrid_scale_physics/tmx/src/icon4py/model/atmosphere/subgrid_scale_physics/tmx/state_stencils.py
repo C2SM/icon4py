@@ -95,3 +95,33 @@ def compute_cv_air(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+
+@gtx.field_operator
+def _apply_tendency_on_edge_k(
+    field_a: fa.EdgeKField[wpfloat],
+    coeff: wpfloat,
+    field_b: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    return field_a + coeff * field_b
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def apply_tendency_on_edge_k(
+    field_a: fa.EdgeKField[wpfloat],
+    coeff: wpfloat,
+    field_b: fa.EdgeKField[wpfloat],
+    output_field: fa.EdgeKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _apply_tendency_on_edge_k(
+        field_a=field_a, coeff=coeff, field_b=field_b,
+        out=output_field,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
