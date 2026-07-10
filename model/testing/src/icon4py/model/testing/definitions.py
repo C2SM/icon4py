@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 )
 from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
@@ -179,6 +180,7 @@ class ExperimentConfig:
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
+    geometry: GeometryConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: driver_config.DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -227,6 +229,11 @@ class Experiments:
     EXCLAIM_APE: Final = ExperimentDescription(
         name="exclaim_ape_R02B04",
         long_name="EXCLAIM Aquaplanet experiment",
+        grid=Grids.R02B04_GLOBAL,
+    )
+    EXCLAIM_APE_AES: Final = ExperimentDescription(
+        name="exclaim_ape_aesPhys",
+        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(

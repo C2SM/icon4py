@@ -57,7 +57,7 @@ def _get_metrics_factory(
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
         vertical_config = experiment.config.vertical_grid
         vertical_grid = v_grid.VerticalGrid(
