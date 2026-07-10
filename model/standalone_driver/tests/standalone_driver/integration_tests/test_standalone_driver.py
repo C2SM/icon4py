@@ -67,7 +67,7 @@ def test_standalone_driver(
     - No physics: the final prognostic state comes purely from the dynamical core,
       validated against the mid-time-step dynamics savepoints at tight tolerances.
     - muphys enabled: validated against the end-of-time-step (``time-step-exit``)
-      savepoint. The driver runs muphys with ``MuphysScheme.ICON_NWP`` (the
+      savepoint. The driver runs muphys with ``MuphysScheme.AES_GRAUPEL`` (the
       MuphysConfig default) -- the port of the exact icon-nwp formulation that
       generated the reference -- and the ICON reference runs graupel only (everything
       else off), so the full prognostic state including the fields muphys writes

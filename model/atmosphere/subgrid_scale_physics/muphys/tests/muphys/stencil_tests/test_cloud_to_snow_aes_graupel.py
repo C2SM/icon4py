@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import (
-    cloud_to_snow_icon_nwp,
+    cloud_to_snow_aes_graupel,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
@@ -18,8 +18,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-class TestCloudToSnowIconNwp(StencilTest):
-    PROGRAM = cloud_to_snow_icon_nwp
+class TestCloudToSnowAesGraupel(StencilTest):
+    PROGRAM = cloud_to_snow_aes_graupel
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod

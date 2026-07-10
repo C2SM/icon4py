@@ -85,9 +85,9 @@ class IndexConsts(ta.wpfloat, enum.Enum):
     offset_g = 1.0e-08
 
 
-class IconNwpConsts(ta.wpfloat, enum.Enum):
+class AesGraupelConsts(ta.wpfloat, enum.Enum):
     # Constants of the newer MPIM rain-microphysics revisions carried by icon-nwp
-    # (mo_aes_graupel.f90), used by the ICON_NWP scheme variants only.
+    # (mo_aes_graupel.f90), used by the AES_GRAUPEL scheme variants only.
     # Hydrometeor-density clamp bounds, shared by all polynomial fits and fall speeds
     rhox_mn = 3.26216e-08
     rhox_mx = 6.97604e-03
