@@ -105,6 +105,9 @@ def test_run_nox_collection_constructs_command(monkeypatch):
     )
     assert keep is True
     assert captured["cmd"] == [
+        "uv",
+        "run",
+        "--no-sync",
         "nox",
         "-s",
         "test_model(basic, common)",

@@ -199,7 +199,7 @@ def _run_nox_collection(
 
     Raises on any other nox exit code, subprocess timeout, or OSError.
     """
-    cmd = ["nox", "-s", session_name, "--", *pytest_args]
+    cmd = ["uv", "run", "--no-sync", "nox", "-s", session_name, "--", *pytest_args]
     full_env = os.environ.copy()
     full_env.update(env)
     result = subprocess.run(
