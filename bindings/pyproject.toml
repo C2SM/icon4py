@@ -28,7 +28,7 @@ dependencies = [
   'icon4py-atmosphere-diffusion~=0.2.0',
   'icon4py-atmosphere-dycore~=0.2.0',
   'icon4py-atmosphere-muphys~=0.2.0',
-  'icon4py-common~=0.2.0',
+  'icon4py-common[distributed]~=0.2.0',
   'icon4py-tools~=0.2.0',
   # external dependencies
   'cffi>=1.5',
@@ -46,7 +46,6 @@ requires-python = '>=3.12'
 version = "0.2.0"
 
 [project.optional-dependencies]
-cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 cuda13 = ['cupy-cuda13x>=14.0', 'gt4py[cuda13]']
 profiling = ['viztracer>=1.1.0']
