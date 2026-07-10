@@ -108,6 +108,8 @@ def test_run_nox_collection_constructs_command(monkeypatch):
         "uv",
         "run",
         "--no-sync",
+        "--with",
+        "nox",
         "nox",
         "-s",
         "test_model(basic, common)",
