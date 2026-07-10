@@ -56,7 +56,8 @@ def test_jablonowski_williamson_topography(
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         data_alloc.as_numpy(topo_c),
         topo_c_ref,
+        err_msg="topo_c",
     )

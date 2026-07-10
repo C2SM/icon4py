@@ -157,24 +157,29 @@ def test_standalone_driver(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=tolerances["vn"],
+        err_msg="vn",
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=tolerances["w"],
+        err_msg="w",
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.exner.asnumpy(),
         exner_sp.asnumpy(),
         atol=tolerances["exner"],
+        err_msg="exner",
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=tolerances["theta_v"],
+        err_msg="theta_v",
     )
     test_utils.assert_dallclose(
         ds.prognostics.current.rho.asnumpy(),
         rho_sp.asnumpy(),
         atol=tolerances["rho"],
+        err_msg="rho",
     )
