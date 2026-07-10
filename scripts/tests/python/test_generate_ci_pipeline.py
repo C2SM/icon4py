@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import importlib
+import pathlib
 import subprocess
 from concurrent.futures import Future
 
@@ -69,7 +70,9 @@ class _SubprocessResult:
 
 def test_collection_env():
     env = gcp._collection_env()
-    assert env == {"ICON4PY_NOX_USE_ACTIVE_VENV": "1"}
+    assert env["ICON4PY_NOX_USE_ACTIVE_VENV"] == "1"
+    assert "VIRTUAL_ENV" in env
+    assert pathlib.Path(env["VIRTUAL_ENV"]).name == ".venv"
 
 
 def test_collection_max_workers_default():
@@ -108,6 +111,7 @@ def test_run_nox_collection_constructs_command(monkeypatch):
         "uv",
         "run",
         "--no-sync",
+        "--active",
         "--with",
         "nox",
         "nox",

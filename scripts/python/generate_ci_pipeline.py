@@ -28,7 +28,9 @@ script does the filtering at generation time instead.
 from __future__ import annotations
 
 import os
+import pathlib
 import re
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -165,9 +167,15 @@ def _nox_session_name(base: str, params: str) -> str:
 
 def _collection_env() -> dict[str, str]:
     """Return environment variables for the offline collection runs."""
-    return {
+    env: dict[str, str] = {
         "ICON4PY_NOX_USE_ACTIVE_VENV": "1",
     }
+    # Point uv to the project venv (e.g. /icon4py/.venv in the CI image),
+    # which contains pytest and icon4py, but not nox.
+    pytest_path = shutil.which("pytest")
+    if pytest_path:
+        env["VIRTUAL_ENV"] = str(pathlib.Path(pytest_path).parent.parent)
+    return env
 
 
 def _log_collection_output(
@@ -203,6 +211,7 @@ def _run_nox_collection(
         "uv",
         "run",
         "--no-sync",
+        "--active",
         "--with",
         "nox",
         "nox",
