@@ -18,5 +18,5 @@ AbsoluteTime: TypeAlias = datetime.datetime
 NumTimeSteps: TypeAlias = int
 EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
-# Re-exported from the standard library so callers use a single time module.
+# Re-exported from the standard library so callers use a single time module
 localtime = _std_time.localtime
