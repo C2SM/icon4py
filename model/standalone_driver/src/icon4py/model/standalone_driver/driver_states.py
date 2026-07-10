@@ -21,20 +21,17 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import (
-    geometry as grid_geometry,
-    horizontal as h_grid,
-    icon as icon_grid,
-)
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
-from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
+    static_fields,
 )
 from icon4py.model.common.states.tracer_state import TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -46,21 +43,6 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-
-
-class StaticFieldFactories(NamedTuple):
-    """
-    Factories of static fields for the driver and components.
-
-    Attributes:
-        geometry: grid geometry field factory that stores geometrical properties of a grid
-        interpolation: interpolation field factory that stores pre-computed coefficients for interpolation employed in the model
-        metrics: metrics field factory that stores pre-computed coefficients for numerical operations employed in the model
-    """
-
-    geometry: grid_geometry.GridGeometry
-    interpolation: interpolation_factory.InterpolationFieldsFactory
-    metrics: metrics_factory.MetricsFieldsFactory
 
 
 class DriverStates(NamedTuple):
@@ -91,11 +73,11 @@ class ModelTimeVariables:
     Runtime time/date variables derived from config at initialisation.
     """
 
-    simulation_current_datetime: driver_config.AbsoluteTime
-    simulation_start_datetime: driver_config.AbsoluteTime
-    simulation_end_datetime: driver_config.AbsoluteTime
-    n_time_steps: driver_config.NumTimeSteps
-    dtime: driver_config.RelativeTime
+    simulation_current_datetime: time.AbsoluteTime
+    simulation_start_datetime: time.AbsoluteTime
+    simulation_end_datetime: time.AbsoluteTime
+    n_time_steps: time.NumTimeSteps
+    dtime: time.RelativeTime
     ndyn_substeps_var: int
     max_ndyn_substeps: int
     elapsed_time_in_seconds: ta.wpfloat
@@ -108,15 +90,15 @@ class ModelTimeVariables:
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
         match config.end_of_simulation:
-            case driver_config.NumTimeSteps() as n:
+            case time.NumTimeSteps() as n:
                 self.n_time_steps = n
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
-            case driver_config.RelativeTime() as relative:
+            case time.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = config.start_of_simulation + relative
-            case driver_config.AbsoluteTime() as absolute:
+            case time.AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
                 self.simulation_current_datetime = config.start_of_simulation
                 self.simulation_end_datetime = absolute
@@ -226,7 +208,7 @@ def assemble_driver_states(
     allocator: gtx_typing.Allocator,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-    static_fields: StaticFieldFactories,
+    static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
