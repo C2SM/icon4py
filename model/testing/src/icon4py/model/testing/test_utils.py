@@ -8,6 +8,7 @@
 
 import hashlib
 import os
+import sys
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -31,6 +32,28 @@ def _as_numeric_array(a: npt.ArrayLike) -> np.ndarray:
     if arr.dtype == np.bool_:
         arr = arr.astype(np.int8)
     return arr
+
+
+def _max_diffs(actual: np.ndarray, desired: np.ndarray) -> tuple[float, float]:
+    """
+    Max absolute and max relative difference, for choosing 'atol' and 'rtol'.
+
+    The relative difference is 'abs(actual - desired) / abs(desired)', matching
+    the 'rtol' term of 'numpy.allclose'. It is 'inf' where 'desired' is zero and
+    'actual' is not, since no 'rtol' can cover that case, only 'atol'.
+    """
+    if actual.size == 0 or desired.size == 0:
+        return 0.0, 0.0
+    abs_diff = np.abs(actual.astype(np.float64) - desired.astype(np.float64))
+    denominator = np.abs(desired.astype(np.float64))
+    rel_diff = np.divide(
+        abs_diff,
+        denominator,
+        out=np.full(abs_diff.shape, np.inf),
+        where=denominator != 0.0,
+    )
+    rel_diff[abs_diff == 0.0] = 0.0
+    return float(np.max(abs_diff)), float(np.max(rel_diff))
 
 
 def get_mpi_comparison_tolerance(
@@ -89,11 +112,16 @@ def assert_dallclose(
     actual_arr = _as_numeric_array(actual)
     desired_arr = _as_numeric_array(desired)
     if config.DALLCLOSE_PRINT_INSTEAD_OF_FAIL:
-        # Non-blocking version: prints max diff instead of raising errors.
+        # Non-blocking version: prints max diffs instead of raising errors.
         # Prints red if delta > 0, green otherwise.
-        max_diff = np.max(np.abs(actual_arr - desired_arr))
-        color = "\033[1;31m" if max_diff > 0 else "\033[32m"
-        print(f"{color}{err_msg} max diff {max_diff}\033[0m")
+        # Goes to stderr: pytest-xdist discards worker stdout when capturing is
+        # off ('-s'), which is how the nox sessions run pytest.
+        max_abs_diff, max_rel_diff = _max_diffs(actual_arr, desired_arr)
+        color = "\033[1;31m" if max_abs_diff > 0 else "\033[32m"
+        print(
+            f"{color}{err_msg} max abs diff {max_abs_diff} max rel diff {max_rel_diff}\033[0m",
+            file=sys.stderr,
+        )
     else:
         np_testing.assert_allclose(
             actual_arr,
