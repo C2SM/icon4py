@@ -170,6 +170,22 @@ def _collection_env() -> dict[str, str]:
     }
 
 
+def _log_collection_output(
+    prefix: str, cmd: list[str], returncode: int, stdout: str, stderr: str
+) -> None:
+    """Print nox/pytest collection output to stderr for diagnostics."""
+    print(f"\n{'=' * 60}", file=sys.stderr)
+    print(f"{prefix}: {' '.join(cmd)}", file=sys.stderr)
+    print(f"exit code: {returncode}", file=sys.stderr)
+    print("-" * 60, file=sys.stderr)
+    output = (stdout + "\n" + stderr).strip()
+    if output:
+        print(output, file=sys.stderr)
+    else:
+        print("<no output>", file=sys.stderr)
+    print(f"{'=' * 60}\n", file=sys.stderr)
+
+
 def _run_nox_collection(
     session_name: str,
     pytest_args: list[str],
@@ -198,8 +214,22 @@ def _run_nox_collection(
     if result.returncode == 0:
         return True
     if result.returncode == 1:
+        _log_collection_output(
+            "DEBUG: nox collection returned exit 1 (zero tests)",
+            cmd,
+            result.returncode,
+            result.stdout,
+            result.stderr,
+        )
         return False
 
+    _log_collection_output(
+        "ERROR: nox collection failed",
+        cmd,
+        result.returncode,
+        result.stdout,
+        result.stderr,
+    )
     output = (result.stdout + "\n" + result.stderr).strip()
     raise subprocess.CalledProcessError(result.returncode, cmd, output=output, stderr=result.stderr)
 
