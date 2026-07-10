@@ -31,7 +31,9 @@ jobs:
             * `MODEL_MPI_SUBPACKAGES`: subpackages for MPI tests (as above)
             * `BACKENDS`: backends
             * `GRIDS`: grids for stencil tests (`simple`, `icon_regional`, or `icon_global`)
-            * `LEVELS`: testing level for non-stencil tests (`any`, `unit`, or `integration`)
+            * `LEVELS`: testing level for non-stencil tests (`unit` or `integration`)
+
+            For each option, `all` can be used as a shorthand for all possible values of that variable, e.g. `LEVELS=all`.
 
             See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
 

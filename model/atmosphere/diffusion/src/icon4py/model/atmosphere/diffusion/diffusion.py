@@ -347,11 +347,7 @@ class DiffusionConfig:
     max_nudging_coefficient: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description=(
-                "Parameter describing the lateral boundary nudging in limited area mode."
-                "Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,"
-                "from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows."
-            ),
+            description="Maximum relaxation coefficient for lateral boundary nudging",
             icon_equivalent=common_conf_opt.IconOption(
                 name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
             ),

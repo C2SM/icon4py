@@ -298,7 +298,7 @@ def compute_perturbed_quantities_and_interpolation(
     end_cell_halo_level_2: gtx.int32,
     model_top: gtx.int32,
     surface_level: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_solve_nonhydro_stencil_1_to_13_predictor.
 
