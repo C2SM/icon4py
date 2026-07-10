@@ -233,7 +233,7 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
 module = [
-  "icon4py.model.standalone_driver.initial_condition.*"
+  "icon4py.model.common.initial_condition.*"
 ]
 
 [[tool.mypy.overrides]]
@@ -343,11 +343,11 @@ typing-modules = ['gt4py.eve.extended_typing']
 unfixable = []
 
 [tool.ruff.lint.flake8-bugbear]
-# DeltaT / NumTimeSteps are aliases of immutable types (timedelta / int), so calling them
+# RelativeTime / NumTimeSteps are aliases of immutable types (timedelta / int), so calling them
 # in argument or dataclass defaults is safe (B008, RUF009).
 extend-immutable-calls = [
-  "icon4py.model.common.io.io.DeltaT",
-  "icon4py.model.common.io.io.NumTimeSteps"
+  "icon4py.model.common.time.NumTimeSteps",
+  "icon4py.model.common.time.RelativeTime"
 ]
 
 [tool.ruff.lint.isort]

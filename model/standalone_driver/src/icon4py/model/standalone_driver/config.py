@@ -14,7 +14,7 @@ import json
 import logging
 import pathlib
 import re
-from typing import Any, TypeAlias
+from typing import Any
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
@@ -24,24 +24,17 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common import topography, type_alias as ta
+from icon4py.model.common import initial_condition, time, topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
+from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver import initial_condition
-from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
 
 
 log = logging.getLogger(__name__)
-
-
-RelativeTime: TypeAlias = datetime.timedelta
-AbsoluteTime: TypeAlias = datetime.datetime
-NumTimeSteps: TypeAlias = int
-EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
 
 
 @dataclasses.dataclass
@@ -60,8 +53,8 @@ _ISO8601_DURATION = re.compile(
 )
 
 
-def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
-    """Parse an ISO 8601 duration such as 'PT300S' into a 'datetime.timedelta'.
+def _timedelta_from_iso8601(duration: str) -> time.RelativeTime:
+    """Parse an ISO 8601 duration such as 'PT300S' into a 'time.RelativeTime'.
 
     Only the components convertible to a fixed duration are supported (weeks,
     days, hours, minutes, seconds).
@@ -70,7 +63,7 @@ def _timedelta_from_iso8601(duration: str) -> datetime.timedelta:
     if match is None or not any(match.groups()):
         raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
     components = {name: float(value) for name, value in match.groupdict().items() if value}
-    return datetime.timedelta(**components)
+    return time.RelativeTime(**components)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -83,9 +76,9 @@ class DriverConfig:
 
     experiment_name: str
     profiling_stats: ProfilingStats | None
-    dtime: RelativeTime
-    start_of_simulation: AbsoluteTime
-    end_of_simulation: EndOfSimulation
+    dtime: time.RelativeTime
+    start_of_simulation: time.AbsoluteTime
+    end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
@@ -107,7 +100,7 @@ class DriverConfig:
         dtime = (
             _timedelta_from_iso8601(modeltimestep)
             if modeltimestep
-            else datetime.timedelta(seconds=run_nml["dtime"])
+            else time.RelativeTime(seconds=run_nml["dtime"])
         )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
@@ -134,12 +127,11 @@ class DriverConfig:
 
 @dataclasses.dataclass(frozen=True)
 class ExperimentConfig:
-    # NOTE: This has a duplicate in testing/definitions.py to avoid circular imports.
+    geometry: GeometryConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
-    geometry: GeometryConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -159,11 +151,13 @@ class ExperimentConfig:
         return dataclasses.replace(self, **replacements)
 
 
-def read_config(
+def read_experiment_config_from_fortran(
     config_file_path: pathlib.Path,
+    *,
     enable_profiling: bool = False,
+    enable_statistics_output: bool = False,
 ) -> ExperimentConfig:
-    # NOTE: This has a duplicate in testing/datatest_utils.py to avoid circular imports.
+    """Assemble an :class:`ExperimentConfig` from a directory of serialized Fortran namelists."""
 
     with (config_file_path / fortran_config.ATM_DICT_FNAME).open() as f:
         atm_dict = json.load(f)
@@ -172,24 +166,26 @@ def read_config(
     with (config_file_path / fortran_config.INPUT_DICT_FNAME).open() as f:
         input_dict = json.load(f)
 
-    metrics_config = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
+    geometry_cfg = GeometryConfig(use_analytical_means=True)
 
-    interpolation_config = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
+    metrics_cfg = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
 
-    vertical_grid_config = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
+    interpolation_cfg = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
 
-    topography_config = topography.TopographyConfig.from_fortran_dict(
+    vertical_grid_cfg = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
+
+    topography_cfg = topography.TopographyConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
-    nonhydro_config = solve_nh.NonHydrostaticConfig.from_fortran_dict(
+    nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
+        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
-    diffusion_config = diffusion.DiffusionConfig.from_fortran_dict(
+    diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_config.max_nudging_coefficient,
+        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     do_tracer_advection = not (
@@ -200,7 +196,7 @@ def read_config(
     # that has not been ported to ICON4Py and can not be used for testing.
     # TODO (jcanton): this isn't the right place to keep a special case
     # handling. Either fix these experiments or move the special case handling.
-    tracer_advection_config = (
+    tracer_advection_cfg = (
         tracer_advection.AdvectionConfig.from_fortran_dict(atm_dict)
         if do_tracer_advection
         else None
@@ -208,30 +204,28 @@ def read_config(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
+    tracer_cfg = tracer_state.TracerConfig.from_ntracer(ntracer)
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
     # without microphysics and we have to skip parsing the graupel config which
     # relies on some of these parameters.
-    graupel_config = (
+    graupel_cfg = (
         graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
         if do_physics
         else None
     )
 
-    geometry_config = GeometryConfig(use_analytical_means=True)
-
-    initial_condition_config = initial_condition.InitialConditionConfig.from_fortran_dict(
+    initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
     if not do_tracer_advection and isinstance(
-        initial_condition_config.config, from_file_ic.FromFileConfig
+        initial_condition_cfg.config, from_file.FromFileConfig
     ):
-        initial_condition_config = dataclasses.replace(
-            initial_condition_config,
-            config=dataclasses.replace(initial_condition_config.config, ntracer=0),
+        initial_condition_cfg = dataclasses.replace(
+            initial_condition_cfg,
+            config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
 
     profiling_stats = ProfilingStats() if enable_profiling else None
@@ -239,20 +233,21 @@ def read_config(
         atm_dict=atm_dict,
         master_dict=master_dict,
         profiling_stats=profiling_stats,
+        enable_statistics_output=enable_statistics_output,
     )
 
     return ExperimentConfig(
-        metrics=metrics_config,
-        interpolation=interpolation_config,
-        vertical_grid=vertical_grid_config,
-        topography=topography_config,
-        geometry=geometry_config,
-        nonhydrostatic=nonhydro_config,
-        diffusion=diffusion_config,
-        tracer_config=tracer_config,
-        tracer_advection=tracer_advection_config,
-        graupel=graupel_config,
-        initial_condition=initial_condition_config,
+        geometry=geometry_cfg,
+        metrics=metrics_cfg,
+        interpolation=interpolation_cfg,
+        vertical_grid=vertical_grid_cfg,
+        topography=topography_cfg,
+        nonhydrostatic=nonhydro_cfg,
+        diffusion=diffusion_cfg,
+        tracer_config=tracer_cfg,
+        tracer_advection=tracer_advection_cfg,
+        graupel=graupel_cfg,
+        initial_condition=initial_condition_cfg,
         driver=driver_cfg,
     )
 
