@@ -341,21 +341,23 @@ def _model_mpi_cells(
     return cells
 
 
-def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
-    """Run collection for every cell in parallel and return cells with tests.
+def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_MatrixCell]]:
+    """Run collection for every cell in parallel and return kept/dropped cells.
 
-    Cells where nox exits 0 are kept. Cells where nox exits 1 are dropped.
+    Cells where nox exits 0 are kept. Cells where nox exits 1 are dropped
+    because the corresponding matrix cell contains no tests.
     Any collection failure, subprocess timeout, or non-0/1 exit code aborts
     pipeline generation.
     """
     if os.environ.get("ICON4PY_CI_SKIP_COLLECTION"):
-        return cells
+        return cells, []
 
     if not cells:
-        return cells
+        return cells, []
 
     env = _collection_env()
     kept: list[_MatrixCell] = []
+    dropped: list[_MatrixCell] = []
 
     with ThreadPoolExecutor(max_workers=_COLLECTION_MAX_WORKERS) as executor:
         futures = {
@@ -373,12 +375,14 @@ def _collect_cells(cells: list[_MatrixCell]) -> list[_MatrixCell]:
                 cell = futures[future]
                 if future.result():
                     kept.append(cell)
+                else:
+                    dropped.append(cell)
         except TimeoutError:
             for future in futures:
                 future.cancel()
             raise
 
-    return kept
+    return kept, dropped
 
 
 def _build_pipeline(cells: list[_MatrixCell]) -> dict:
@@ -399,6 +403,56 @@ def _build_pipeline(cells: list[_MatrixCell]) -> dict:
     pipeline.update(jobs)
 
     return pipeline
+
+
+def _format_cell(cell: _MatrixCell) -> str:
+    matrix = ", ".join(f"{key}={value}" for key, value in cell.matrix.items())
+    return f"  {cell.job_name}: {matrix}"
+
+
+def _print_collection_summary(
+    *,
+    sessions: list[str],
+    model_subpackages: list[str],
+    model_mpi_subpackages: list[str],
+    model_subsets: list[str],
+    model_mpi_subsets: list[str],
+    tools_subsets: list[str],
+    backends: list[str],
+    levels: list[str],
+    grids: list[str],
+    kept: list[_MatrixCell],
+    dropped: list[_MatrixCell],
+) -> None:
+    """Print a human-readable summary of the collection results."""
+    print("INFO: CI pipeline collection summary")
+    print(f"  sessions: {sessions}")
+    if model_subpackages:
+        print(f"  model_subpackages: {model_subpackages}")
+    if model_mpi_subpackages:
+        print(f"  model_mpi_subpackages: {model_mpi_subpackages}")
+    if model_subsets:
+        print(f"  model_subsets: {model_subsets}")
+    if model_mpi_subsets:
+        print(f"  model_mpi_subsets: {model_mpi_subsets}")
+    if tools_subsets:
+        print(f"  tools_subsets: {tools_subsets}")
+    if backends:
+        print(f"  backends: {backends}")
+    if levels:
+        print(f"  levels: {levels}")
+    if grids:
+        print(f"  grids: {grids}")
+    print(f"  eligible cells: {len(kept) + len(dropped)}")
+    print(f"  selected cells: {len(kept)}")
+    for cell in kept:
+        print(_format_cell(cell))
+    print(
+        f"  unselected cells: {len(dropped)} "
+        "(dropped because collection found zero tests in the matrix cell)"
+    )
+    for cell in dropped:
+        print(_format_cell(cell))
 
 
 def _generate_child_pipeline(
@@ -495,14 +549,29 @@ def _generate_child_pipeline(
             )
         )
 
-    cells = _collect_cells(cells)
+    kept_cells, dropped_cells = _collect_cells(cells)
 
-    pipeline = _build_pipeline(cells)
+    _print_collection_summary(
+        sessions=requested_sessions,
+        model_subpackages=requested_model_subpackages,
+        model_mpi_subpackages=requested_model_mpi_subpackages,
+        model_subsets=requested_model_subsets,
+        model_mpi_subsets=requested_model_mpi_subsets,
+        tools_subsets=requested_tools_subsets,
+        backends=requested_backends,
+        levels=requested_levels,
+        grids=requested_grids,
+        kept=kept_cells,
+        dropped=dropped_cells,
+    )
+
+    pipeline = _build_pipeline(kept_cells)
 
     test_jobs = [k for k in pipeline if k != "include"]
     if not test_jobs:
         print(
-            "ERROR: no test jobs matched the filter",
+            "ERROR: no test jobs matched the filter; all eligible matrix cells "
+            "were dropped because collection found zero tests in each of them.",
             file=sys.stderr,
         )
         sys.exit(1)

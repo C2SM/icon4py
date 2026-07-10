@@ -254,8 +254,9 @@ def test_collect_cells_keeps_true_and_drops_false(monkeypatch):
     monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
     monkeypatch.setattr(gcp, "as_completed", lambda futures, timeout=None: futures.keys())
 
-    kept = gcp._collect_cells([keep_cell, drop_cell])
+    kept, dropped = gcp._collect_cells([keep_cell, drop_cell])
     assert kept == [keep_cell]
+    assert dropped == [drop_cell]
 
 
 def test_collect_cells_raises_on_future_exception(monkeypatch):
