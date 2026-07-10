@@ -424,35 +424,36 @@ def _print_collection_summary(
     kept: list[_MatrixCell],
     dropped: list[_MatrixCell],
 ) -> None:
-    """Print a human-readable summary of the collection results."""
-    print("INFO: CI pipeline collection summary")
-    print(f"  sessions: {sessions}")
+    """Print a human-readable summary of the collection results to stderr."""
+    print("INFO: CI pipeline collection summary", file=sys.stderr)
+    print(f"  sessions: {sessions}", file=sys.stderr)
     if model_subpackages:
-        print(f"  model_subpackages: {model_subpackages}")
+        print(f"  model_subpackages: {model_subpackages}", file=sys.stderr)
     if model_mpi_subpackages:
-        print(f"  model_mpi_subpackages: {model_mpi_subpackages}")
+        print(f"  model_mpi_subpackages: {model_mpi_subpackages}", file=sys.stderr)
     if model_subsets:
-        print(f"  model_subsets: {model_subsets}")
+        print(f"  model_subsets: {model_subsets}", file=sys.stderr)
     if model_mpi_subsets:
-        print(f"  model_mpi_subsets: {model_mpi_subsets}")
+        print(f"  model_mpi_subsets: {model_mpi_subsets}", file=sys.stderr)
     if tools_subsets:
-        print(f"  tools_subsets: {tools_subsets}")
+        print(f"  tools_subsets: {tools_subsets}", file=sys.stderr)
     if backends:
-        print(f"  backends: {backends}")
+        print(f"  backends: {backends}", file=sys.stderr)
     if levels:
-        print(f"  levels: {levels}")
+        print(f"  levels: {levels}", file=sys.stderr)
     if grids:
-        print(f"  grids: {grids}")
-    print(f"  eligible cells: {len(kept) + len(dropped)}")
-    print(f"  selected cells: {len(kept)}")
+        print(f"  grids: {grids}", file=sys.stderr)
+    print(f"  eligible cells: {len(kept) + len(dropped)}", file=sys.stderr)
+    print(f"  selected cells: {len(kept)}", file=sys.stderr)
     for cell in kept:
-        print(_format_cell(cell))
+        print(_format_cell(cell), file=sys.stderr)
     print(
         f"  unselected cells: {len(dropped)} "
-        "(dropped because collection found zero tests in the matrix cell)"
+        "(dropped because collection found zero tests in the matrix cell)",
+        file=sys.stderr,
     )
     for cell in dropped:
-        print(_format_cell(cell))
+        print(_format_cell(cell), file=sys.stderr)
 
 
 def _generate_child_pipeline(
