@@ -110,6 +110,7 @@ variables:
     NCCL_NCHANNELS_PER_NET_PEER: 4
     NCCL_SOCKET_NTHREADS: 4
     NCCL_NSOCKS_PERTHREAD: 1
+    NCCL_MULTI_RANK_GPU_ENABLE: 1
     NCCL_DEBUG: TRACE
     SLURM_NETWORK: disable_rdzv_get
     # The default without MPS is 8 for both max connection variables. With MPS
