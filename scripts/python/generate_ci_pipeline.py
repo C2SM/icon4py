@@ -170,10 +170,12 @@ def _collection_env() -> dict[str, str]:
     env: dict[str, str] = {
         "ICON4PY_NOX_USE_ACTIVE_VENV": "1",
     }
-    # Point uv to the project venv (e.g. /icon4py/.venv in the CI image),
-    # which contains pytest and icon4py, but not nox.
-    pytest_path = shutil.which("pytest")
-    if pytest_path:
+    # Point uv to the project venv, which contains pytest and icon4py.
+    # In the CI image the venv is at /icon4py/.venv and is exposed via
+    # ICON4PY_COLLECTION_VENV; locally it is discovered from pytest in PATH.
+    if configured_venv := os.environ.get("ICON4PY_COLLECTION_VENV"):
+        env["VIRTUAL_ENV"] = configured_venv
+    elif pytest_path := shutil.which("pytest"):
         env["VIRTUAL_ENV"] = str(pathlib.Path(pytest_path).parent.parent)
     return env
 

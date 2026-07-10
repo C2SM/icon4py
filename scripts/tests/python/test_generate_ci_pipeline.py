@@ -75,6 +75,12 @@ def test_collection_env():
     assert pathlib.Path(env["VIRTUAL_ENV"]).name == ".venv"
 
 
+def test_collection_env_uses_configured_venv(monkeypatch):
+    monkeypatch.setenv("ICON4PY_COLLECTION_VENV", "/icon4py/.venv")
+    env = gcp._collection_env()
+    assert env["VIRTUAL_ENV"] == "/icon4py/.venv"
+
+
 def test_collection_max_workers_default():
     importlib.reload(gcp)
     assert gcp._COLLECTION_MAX_WORKERS == 8
