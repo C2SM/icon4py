@@ -85,30 +85,35 @@ def test_initial_conditions(
     test_utils.assert_dallclose(
         prognostic_state_now.rho.asnumpy(),
         prognostics_savepoint.rho_now().asnumpy(),
+        err_msg="rho",
     )
 
     test_utils.assert_dallclose(
         prognostic_state_now.exner.asnumpy(),
         prognostics_savepoint.exner_now().asnumpy(),
         atol=1e-14,
+        err_msg="exner",
     )
 
     test_utils.assert_dallclose(
         prognostic_state_now.theta_v.asnumpy(),
         prognostics_savepoint.theta_v_now().asnumpy(),
         atol=1e-11,
+        err_msg="theta_v",
     )
 
     test_utils.assert_dallclose(
         prognostic_state_now.vn.asnumpy(),
         prognostics_savepoint.vn_now().asnumpy(),
         atol=1e-12,
+        err_msg="vn",
     )
 
     test_utils.assert_dallclose(
         prognostic_state_now.w.asnumpy(),
         prognostics_savepoint.w_now().asnumpy(),
         atol=1e-12,
+        err_msg="w",
     )
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
@@ -116,4 +121,5 @@ def test_initial_conditions(
         test_utils.assert_dallclose(
             prognostic_state_now.tracer.qv.asnumpy(),
             prognostics_savepoint.tracer_now(QV).asnumpy(),
+            err_msg="qv",
         )
