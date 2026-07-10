@@ -2200,8 +2200,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=main#f4e8607509bfcf03a7de2095365419452b6a30d6"}
-version = "1.1.11.post25+f4e86075"
+source = {git = "https://github.com/GridTools/gt4py?branch=main#44bb8b2819ee98e37f5f1c8c4dc9cbe6e62f4a19"}
+version = "1.1.11.post26+44bb8b28"
 
 [package.optional-dependencies]
 cuda12 = [
