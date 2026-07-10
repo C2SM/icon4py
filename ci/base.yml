@@ -210,7 +210,7 @@ variables:
   needs: [build_image_aarch64]
   timeout: 1h
   variables:
-    ICON4PY_NOX_COLLECTION_WORKERS: "24"
+    ICON4PY_NOX_COLLECTION_WORKERS: "16"
   script:
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml
