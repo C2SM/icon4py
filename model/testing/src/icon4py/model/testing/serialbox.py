@@ -1962,6 +1962,423 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class IconTimeStepExitSavepoint(IconSavepoint):
+    """End-of-timestep prognostic state, written in perform_nh_timeloop right after
+    integrate_nh returns: all physics tendencies applied, time levels swapped."""
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def w(self):
+        return self._get_field("w", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("exner", dims.CellDim, dims.KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+
+class IconMuphysSavepoint(IconSavepoint):
+    """Common fields of the aes-graupel-init/exit savepoints written around the mig
+    block (cloud_mig = satad + graupel + satad) in aes_phy_main. tend_ta/tend_tracers
+    are the prm_tend accumulators: exit minus init isolates the mig contribution."""
+
+    def temperature(self):
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def tend_tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tend_tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+
+class IconMuphysInitSavepoint(IconMuphysSavepoint):
+    def dz(self):
+        return self._get_field("dz", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
+
+    def dtime(self):
+        return self.serializer.read("dtime", self.savepoint)[0]
+
+    def jks_cloudy(self):
+        return int(self.serializer.read("jks_cloudy", self.savepoint)[0])
+
+
+class IconMuphysExitSavepoint(IconMuphysSavepoint):
+    def rsfl(self):
+        # surface rain rate
+        return self._get_field("rsfl", dims.CellDim)
+
+    def ssfl(self):
+        # surface frozen precip rate: ice + snow + graupel
+        return self._get_field("ssfl", dims.CellDim)
+
+    def pr(self):
+        # total surface precip rate
+        return self._get_field("pr", dims.CellDim)
+
+    def ufcs(self):
+        # surface precip energy flux
+        return self._get_field("ufcs", dims.CellDim)
+
+
+class TmxInitSavepoint(IconSavepoint):
+    """
+    Static savepoint of the TMX (AES turbulent mixing) scheme.
+
+    Written once at the initial time step of vdf Compute_diagnostics in mo_vdf_atmo.f90,
+    after Smagorinsky_init has filled mix_len_sq and the Louis scaling factor.
+    """
+
+    def inv_ddqz_z_half(self):
+        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KDim)
+
+    def inv_ddqz_z_half_e(self):
+        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KDim)
+
+    def inv_ddqz_z_half_v(self):
+        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KDim)
+
+    def inv_ddqz_z_full_e(self):
+        return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
+
+    def wgtfacq1_c(self):
+        # Top-extrapolation coefficients: unlike `wgtfacq_c` (bottom extrapolation, stored
+        # surface-first, i.e. reversed w.r.t. increasing k, hence flipped in its accessor),
+        # `wgtfacq1_c(jc,k,jb)` with k=1..3 multiplies the full level k counted from the model
+        # top (mo_vertical_grid.f90 ll. 955-968), which already matches icon4py's top-down KDim
+        # orientation. No flip needed.
+        return self._get_field("wgtfacq1_c", dims.CellDim, dims.KDim)
+
+    def wgtfacq1_e(self):
+        # No flip, see `wgtfacq1_c`. Usage in mo_vdf_atmo.f90 (interpolate_normal_velocity_
+        # edge_interface, ll. 1247-1250): vn_ie(je,1,jb) = sum_k wgtfacq1_e(je,k,jb)*vn(je,k,jb).
+        return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
+
+    def geopot_agl_ifc(self):
+        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KDim)
+
+    def mix_len_sq(self):
+        return self._get_field("mix_len_sq", dims.CellDim, dims.KDim)
+
+    def scaling_factor_louis(self):
+        return self._get_field("scaling_factor_louis", dims.CellDim)
+
+
+class TmxEntrySavepoint(IconSavepoint):
+    """Savepoint at entry of vdf Compute in mo_vdf.f90 (inputs of the TMX scheme)."""
+
+    def ta(self):
+        return self._get_field("ta", dims.CellDim, dims.KDim)
+
+    def ta_phy(self):
+        # Sanity twin of `ta`: prm_field%ta, must be identical to the tmx input temp_c.
+        return self._get_field("ta_phy", dims.CellDim, dims.KDim)
+
+    def ua(self):
+        return self._get_field("ua", dims.CellDim, dims.KDim)
+
+    def va(self):
+        return self._get_field("va", dims.CellDim, dims.KDim)
+
+    def wa(self):
+        return self._get_field("wa", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("qg", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def tempv(self):
+        return self._get_field("tempv", dims.CellDim, dims.KDim)
+
+    def pres(self):
+        return self._get_field("pres", dims.CellDim, dims.KDim)
+
+    def pres_ifc(self):
+        return self._get_field("pres_ifc", dims.CellDim, dims.KDim)
+
+    def mair(self):
+        return self._get_field("mair", dims.CellDim, dims.KDim)
+
+    def cvair(self):
+        return self._get_field("cvair", dims.CellDim, dims.KDim)
+
+
+class TmxSurfaceFluxesSavepoint(IconSavepoint):
+    """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
+
+    def evspsbl(self):
+        return self._get_field("evspsbl", dims.CellDim)
+
+    def hfss(self):
+        return self._get_field("hfss", dims.CellDim)
+
+    def tauu(self):
+        return self._get_field("tauu", dims.CellDim)
+
+    def tauv(self):
+        return self._get_field("tauv", dims.CellDim)
+
+    def q_snocpymlt(self):
+        return self._get_field("q_snocpymlt", dims.CellDim)
+
+
+class TmxDiagnosticsExitSavepoint(IconSavepoint):
+    """Savepoint at exit of vdf Compute_diagnostics in mo_vdf_atmo.f90."""
+
+    def theta_v(self):
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+
+    def cptgz(self):
+        return self._get_field("cptgz", dims.CellDim, dims.KDim)
+
+    def ghf(self):
+        return self._get_field("ghf", dims.CellDim, dims.KDim)
+
+    def bruvais(self):
+        return self._get_field("bruvais", dims.CellDim, dims.KDim)
+
+    def rho_ic(self):
+        return self._get_field("rho_ic", dims.CellDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def u_vert(self):
+        return self._get_field("u_vert", dims.VertexDim, dims.KDim)
+
+    def v_vert(self):
+        return self._get_field("v_vert", dims.VertexDim, dims.KDim)
+
+    def w_vert(self):
+        return self._get_field("w_vert", dims.VertexDim, dims.KDim)
+
+    def vn_ie(self):
+        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
+
+    def vt_ie(self):
+        return self._get_field("vt_ie", dims.EdgeDim, dims.KDim)
+
+    def w_ie(self):
+        return self._get_field("w_ie", dims.EdgeDim, dims.KDim)
+
+    def shear(self):
+        return self._get_field("shear", dims.EdgeDim, dims.KDim)
+
+    def div_of_stress(self):
+        return self._get_field("div_of_stress", dims.EdgeDim, dims.KDim)
+
+    def div_c(self):
+        return self._get_field("div_c", dims.CellDim, dims.KDim)
+
+    def mech_prod(self):
+        return self._get_field("mech_prod", dims.CellDim, dims.KDim)
+
+    def km_ic(self):
+        return self._get_field("km_ic", dims.CellDim, dims.KDim)
+
+    def kh_ic(self):
+        return self._get_field("kh_ic", dims.CellDim, dims.KDim)
+
+    def km_c(self):
+        return self._get_field("km_c", dims.CellDim, dims.KDim)
+
+    def km_iv(self):
+        return self._get_field("km_iv", dims.VertexDim, dims.KDim)
+
+    def km_ie(self):
+        return self._get_field("km_ie", dims.EdgeDim, dims.KDim)
+
+
+class TmxHydroExitSavepoint(IconSavepoint):
+    """Savepoint after Compute_diffusion_hydrometeors in mo_vdf.f90."""
+
+    def tend_qv(self):
+        return self._get_field("tend_qv", dims.CellDim, dims.KDim)
+
+    def tend_qc(self):
+        return self._get_field("tend_qc", dims.CellDim, dims.KDim)
+
+    def tend_qi(self):
+        return self._get_field("tend_qi", dims.CellDim, dims.KDim)
+
+    def qv_new(self):
+        return self._get_field("qv_new", dims.CellDim, dims.KDim)
+
+    def qc_new(self):
+        return self._get_field("qc_new", dims.CellDim, dims.KDim)
+
+    def qi_new(self):
+        return self._get_field("qi_new", dims.CellDim, dims.KDim)
+
+
+class TmxTemperatureExitSavepoint(IconSavepoint):
+    """Savepoint at exit of Compute_diffusion_temperature in mo_vdf.f90."""
+
+    def energy(self):
+        return self._get_field("energy", dims.CellDim, dims.KDim)
+
+    def tend_energy(self):
+        return self._get_field("tend_energy", dims.CellDim, dims.KDim)
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def ta_new(self):
+        return self._get_field("ta_new", dims.CellDim, dims.KDim)
+
+
+class TmxHorWindExitSavepoint(IconSavepoint):
+    """Savepoint at exit of Compute_diffusion_hor_wind in mo_vdf.f90."""
+
+    def tot_tend(self):
+        # Edge-normal (vn) wind tendency at full levels; RBF-interpolated to the
+        # cell-based tend_ua/tend_va in the Fortran code.
+        return self._get_field("tot_tend", dims.EdgeDim, dims.KDim)
+
+    def tend_ua(self):
+        return self._get_field("tend_ua", dims.CellDim, dims.KDim)
+
+    def tend_va(self):
+        return self._get_field("tend_va", dims.CellDim, dims.KDim)
+
+    def ua_new(self):
+        return self._get_field("ua_new", dims.CellDim, dims.KDim)
+
+    def va_new(self):
+        return self._get_field("va_new", dims.CellDim, dims.KDim)
+
+
+class TmxVertWindExitSavepoint(IconSavepoint):
+    """Savepoint after Compute_diffusion_vert_wind in mo_vdf.f90."""
+
+    def tend_wa(self):
+        return self._get_field("tend_wa", dims.CellDim, dims.KDim)
+
+    def wa_new(self):
+        return self._get_field("wa_new", dims.CellDim, dims.KDim)
+
+
+class TmxExitSavepoint(IconSavepoint):
+    """Savepoint at exit of vdf Compute in mo_vdf.f90 (after Update_diagnostics)."""
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def tend_qv(self):
+        return self._get_field("tend_qv", dims.CellDim, dims.KDim)
+
+    def tend_qc(self):
+        return self._get_field("tend_qc", dims.CellDim, dims.KDim)
+
+    def tend_qi(self):
+        return self._get_field("tend_qi", dims.CellDim, dims.KDim)
+
+    def tend_ua(self):
+        return self._get_field("tend_ua", dims.CellDim, dims.KDim)
+
+    def tend_va(self):
+        return self._get_field("tend_va", dims.CellDim, dims.KDim)
+
+    def tend_wa(self):
+        return self._get_field("tend_wa", dims.CellDim, dims.KDim)
+
+    def heating(self):
+        return self._get_field("heating", dims.CellDim, dims.KDim)
+
+    def dissip_ke(self):
+        return self._get_field("dissip_ke", dims.CellDim, dims.KDim)
+
+    def cptgzvi(self):
+        return self._get_field("cptgzvi", dims.CellDim)
+
+    def dissip_ke_vi(self):
+        return self._get_field("dissip_ke_vi", dims.CellDim)
+
+    def int_energy_vi(self):
+        return self._get_field("int_energy_vi", dims.CellDim)
+
+    def tend_int_energy_vi(self):
+        return self._get_field("tend_int_energy_vi", dims.CellDim)
+
+    def km(self):
+        # Cell-based eddy viscosity at full levels (not the interface field km_ic).
+        return self._get_field("km", dims.CellDim, dims.KDim)
+
+    def kh(self):
+        # Cell-based eddy diffusivity at full levels (not the interface field kh_ic).
+        return self._get_field("kh", dims.CellDim, dims.KDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -2251,5 +2668,81 @@ class IconSerialDataProvider:
             self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
         return IconSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
+        return TmxInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_entry(self, date: str) -> TmxEntrySavepoint:
+        savepoint = self.serializer.savepoint["tmx-entry"].id[1].date[date].as_savepoint()
+        return TmxEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_surface_fluxes(self, date: str) -> TmxSurfaceFluxesSavepoint:
+        savepoint = self.serializer.savepoint["tmx-surface-fluxes"].id[1].date[date].as_savepoint()
+        return TmxSurfaceFluxesSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_diagnostics_exit(self, date: str) -> TmxDiagnosticsExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["tmx-diagnostics-exit"].id[1].date[date].as_savepoint()
+        )
+        return TmxDiagnosticsExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_hydro_exit(self, date: str) -> TmxHydroExitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-hydro-exit"].id[1].date[date].as_savepoint()
+        return TmxHydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_temperature_exit(self, date: str) -> TmxTemperatureExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["tmx-temperature-exit"].id[1].date[date].as_savepoint()
+        )
+        return TmxTemperatureExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_hor_wind_exit(self, date: str) -> TmxHorWindExitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-hor-wind-exit"].id[1].date[date].as_savepoint()
+        return TmxHorWindExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_vert_wind_exit(self, date: str) -> TmxVertWindExitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-vert-wind-exit"].id[1].date[date].as_savepoint()
+        return TmxVertWindExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_exit(self, date: str) -> TmxExitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-exit"].id[1].date[date].as_savepoint()
+        return TmxExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_time_step_exit(self, date: str) -> IconTimeStepExitSavepoint:
+        savepoint = self.serializer.savepoint["time-step-exit"].id[1].date[date].as_savepoint()
+        return IconTimeStepExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_muphys_init(self, date: str) -> IconMuphysInitSavepoint:
+        savepoint = self.serializer.savepoint["aes-graupel-init"].id[1].date[date].as_savepoint()
+        return IconMuphysInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
+        savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
+        return IconMuphysExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

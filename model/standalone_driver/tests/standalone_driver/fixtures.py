@@ -24,6 +24,7 @@ from icon4py.model.testing.fixtures import (
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
+    savepoint_time_step_exit,
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,

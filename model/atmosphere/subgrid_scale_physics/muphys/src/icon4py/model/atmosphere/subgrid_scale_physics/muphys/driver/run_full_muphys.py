@@ -17,6 +17,7 @@ from collections.abc import Callable
 
 from gt4py import next as gtx
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import (
     common,
@@ -115,6 +116,7 @@ def setup_muphys(
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
+    scheme: config.MuphysScheme = config.MuphysScheme.CPP_REFERENCE,
 ):
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
@@ -122,7 +124,11 @@ def setup_muphys(
             muphys_program = model_options.setup_program(
                 backend=backend,
                 program=muphys.muphys_run,
-                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc)},
+                constant_args={
+                    "dt": ta.wpfloat(dt),
+                    "qnc": ta.wpfloat(qnc),
+                    "use_icon_nwp": scheme is config.MuphysScheme.ICON_NWP,
+                },
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
                     "horizontal_end": inp.ncells,
@@ -145,6 +151,7 @@ def setup_muphys(
             vertical_start=0,
             vertical_end=inp.nlev,
             enable_masking=True,
+            scheme=scheme,
         )
         with utils.recursion_limit(10**5):  # TODO(havogt): make an option in gt4py?
             saturation_adjustment_program = model_options.setup_program(

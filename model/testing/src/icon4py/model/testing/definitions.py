@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import topography
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
@@ -188,6 +189,10 @@ class ExperimentConfig:
     tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+    # Kept in sync with standalone_driver/config.py::ExperimentConfig so driver_utils can
+    # read `config.muphys` from either duplicate. create_experiment_configuration leaves it
+    # None (the IC/other datatests don't run physics); only read_config populates it.
+    muphys: muphys_config.MuphysConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}
@@ -233,8 +238,9 @@ class Experiments:
     )
     EXCLAIM_APE_AES: Final = ExperimentDescription(
         name="exclaim_ape_aesPhys",
-        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
+        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics (TMX turbulent mixing)",
         grid=Grids.R02B04_GLOBAL,
+        version=6,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",

@@ -24,6 +24,8 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx as tmx_module
 from icon4py.model.common import topography, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
@@ -147,6 +149,8 @@ class ExperimentConfig:
     tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+    muphys: muphys_config.MuphysConfig | None = None
+    tmx: tmx_module.TmxConfig | None = None
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}
@@ -208,17 +212,22 @@ def read_config(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    tracer_config = tracer_state.TracerConfig.from_ntracer(ntracer)
+
+    is_ape_aes = "exclaim_ape_aesPhys" in config_file_path.name
+    tracer_config = (
+        tracer_state.TracerConfig.all()
+        if is_ape_aes
+        else tracer_state.TracerConfig.from_ntracer(ntracer)
+    )
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
-    # If these two namelists are missing it means that the experiment was run
-    # without microphysics and we have to skip parsing the graupel config which
-    # relies on some of these parameters.
     graupel_config = (
         graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
         if do_physics
         else None
     )
+
+    muphys_configuration = muphys_config.MuphysConfig() if is_ape_aes else None
 
     geometry_config = GeometryConfig(use_analytical_means=True)
 
@@ -252,6 +261,7 @@ def read_config(
         tracer_config=tracer_config,
         tracer_advection=tracer_advection_config,
         graupel=graupel_config,
+        muphys=muphys_configuration,
         initial_condition=initial_condition_config,
         driver=driver_cfg,
     )
