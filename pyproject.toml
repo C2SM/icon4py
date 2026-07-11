@@ -161,6 +161,7 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/type_alias.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from typing import Literal, TypeAlias
+from typing import TypeAlias
 
 import gt4py.next as gtx
 
@@ -22,7 +22,7 @@ anyfloat: TypeAlias = gtx.float32 | gtx.float64
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
 
-def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
+def set_precision(new_precision: str) -> None:
     global precision  # noqa: PLW0603 [global-statement]
     global vpfloat  # noqa: PLW0603 [global-statement]
     global wpfloat  # noqa: PLW0603 [global-statement]
@@ -32,10 +32,10 @@ def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
         case "double":
             vpfloat = wpfloat
         case "mixed":
-            vpfloat = gtx.float32
+            vpfloat = gtx.float32  # type: ignore[assignment]  # GT4Py type plugin blurs float32/float64 to builtins.float in type positions only, not value positions
         case "single":
-            vpfloat = gtx.float32
-            wpfloat = gtx.float32
+            vpfloat = gtx.float32  # type: ignore[assignment]  # GT4Py type plugin blurs float32/float64 to builtins.float in type positions only, not value positions
+            wpfloat = gtx.float32  # type: ignore[assignment]  # GT4Py type plugin blurs float32/float64 to builtins.float in type positions only, not value positions
         case _:
             raise ValueError("Only 'double', 'mixed' and 'single' precision are supported.")
 
