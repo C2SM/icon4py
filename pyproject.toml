@@ -263,6 +263,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/driver/tests/driver/integration_tests/__init__.py',
   '$MYPY_CONFIG_FILE_DIR/model/driver/tests/driver/unit_tests/__init__.py',
   '$MYPY_CONFIG_FILE_DIR/model/driver/tests/driver/conftest.py',
+  '$MYPY_CONFIG_FILE_DIR/model/driver/tests/driver/fixtures.py',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
   '$MYPY_CONFIG_FILE_DIR/tools/src/',
