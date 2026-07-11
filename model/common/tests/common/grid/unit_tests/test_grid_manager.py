@@ -109,6 +109,7 @@ def test_grid_manager_refin_ctrl(
         experiment.grid, keep_skip_values=True, backend=backend
     ).grid.refinement_control
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
+    assert refin_ctrl is not None, "refinement_control should be present for this grid"
     assert np.all(
         refin_ctrl_serialized.ndarray
         == refin.convert_to_non_nested_refinement_values(refin_ctrl[dim].ndarray, dim)
