@@ -106,7 +106,7 @@ class InterpolationConfig:
     Stencil size used for least-squares reconstruction.
     """
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self._nudge_max_coeff is not None and self.max_nudging_coefficient is not None:
             raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
         elif self.max_nudging_coefficient is not None:
@@ -149,7 +149,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
@@ -157,6 +157,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         self._exchange = exchange
         self._config = config
+        assert self.grid.grid_params.domain_length is not None, (
+            "domain_length must not be None for interpolation"
+        )
+        assert self.grid.grid_params.domain_height is not None, (
+            "domain_height must not be None for interpolation"
+        )
         domain_length = self.grid.grid_params.domain_length
         domain_height = self.grid.grid_params.domain_height
         self._domain_length = 0.0 if domain_length is None else domain_length
@@ -166,6 +172,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         log.debug(f"using array_ns {self._xp} ")
 
+        assert self._grid.refinement_control is not None, "refinement_control must not be None"
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 fields={
@@ -198,7 +205,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,  # type: ignore[dict-item]  # max_nudging_coefficient is float | None
                 "nudge_efold_width": self._config.nudge_efold_width,
                 "nudge_zone_width": self._config.nudge_zone_width,
             },
@@ -281,7 +288,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
             },
             fields=(attrs.RBF_SCALE_CELL,),
         )
@@ -295,7 +302,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
             },
             fields=(attrs.RBF_SCALE_EDGE,),
         )
@@ -309,7 +316,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
             },
             fields=(attrs.RBF_SCALE_VERTEX,),
         )
@@ -342,7 +349,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "min_rlcell_int": self.grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2)),
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self.grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
             },
         )
         self.register_provider(lsq_pseudoinv)
@@ -585,16 +592,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
                 "rbf_kernel": self._config.rbf_kernel_cell.value,
-                "geometry_type": self._grid.grid_params.geometry_type.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.grid_params.domain_length
-                if self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length is not None
                 else -1.0,
                 "domain_height": self._grid.grid_params.domain_height
-                if self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height is not None
                 else -1.0,
             },
             do_exchange=True,
@@ -621,16 +628,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
                 "rbf_kernel": self._config.rbf_kernel_edge.value,
-                "geometry_type": self._grid.grid_params.geometry_type.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.grid_params.domain_length
-                if self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length is not None
                 else -1.0,
                 "domain_height": self._grid.grid_params.domain_height
-                if self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height is not None
                 else -1.0,
             },
             do_exchange=True,
@@ -658,16 +665,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.V2EDim},
             params={
                 "rbf_kernel": self._config.rbf_kernel_vertex.value,
-                "geometry_type": self._grid.grid_params.geometry_type.value,
+                "geometry_type": self._grid.grid_params.geometry_type.value,  # type: ignore[union-attr]  # geometry_type is not None for IconGrid
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "horizontal_end": self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.grid_params.domain_length
-                if self._grid.grid_params.domain_length
+                if self._grid.grid_params.domain_length is not None
                 else -1.0,
                 "domain_height": self._grid.grid_params.domain_height
-                if self._grid.grid_params.domain_height
+                if self._grid.grid_params.domain_height is not None
                 else -1.0,
             },
             do_exchange=True,
