@@ -173,6 +173,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/model.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/model_options.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/gridfile.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/diagnostic_calculations/stencils/diagnose_surface_pressure.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/diagnostic_calculations/stencils/diagnose_pressure.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/diagnostic_calculations/stencils/calculate_tendency.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/geometry_config.py',
