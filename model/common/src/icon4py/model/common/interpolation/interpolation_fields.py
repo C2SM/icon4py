@@ -58,9 +58,9 @@ def compute_c_lin_e(
 @gtx.field_operator
 def compute_geofac_div(
     primal_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_orientation: gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    edge_orientation: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     area: fa.CellField[ta.wpfloat],
-) -> gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat]:
+) -> gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for divergence.
 
@@ -78,10 +78,10 @@ def compute_geofac_div(
 @gtx.field_operator
 def compute_geofac_rot(
     dual_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_orientation: gtx.Field[[dims.VertexDim, dims.V2EDim], ta.wpfloat],
+    edge_orientation: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
     dual_area: fa.VertexField[ta.wpfloat],
     owner_mask: fa.VertexField[bool],
-) -> gtx.Field[[dims.VertexDim, dims.V2EDim], ta.wpfloat]:
+) -> gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for curl.
 
@@ -458,7 +458,10 @@ def _force_mass_conservation_to_c_bln_avg(
     array_ns = data_alloc.array_namespace(c2e2c0)
 
     def _compute_local_weights(
-        c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
+        c_bln_avg: data_alloc.NDArray,
+        cell_areas: data_alloc.NDArray,
+        c2e2c0: data_alloc.NDArray,
+        inverse_neighbor_idx: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
         Compute the total weight which each local point contributes to the sum.
