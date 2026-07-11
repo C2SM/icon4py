@@ -8,9 +8,8 @@
 import dataclasses
 import functools
 from collections.abc import Sequence
-from typing import Literal, Protocol, TypeAlias, TypedDict, runtime_checkable
+from typing import Any, Literal, Protocol, TypeAlias, TypedDict, runtime_checkable
 
-import gt4py._core.definitions as gt_coredefs
 import gt4py.next as gtx
 import gt4py.next.common as gt_common
 import numpy.typing as np_t
@@ -60,8 +59,8 @@ class DataField(Protocol):
 
 @dataclasses.dataclass
 class ModelField(DataField):
-    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]
-    attrs: FieldMetaData
+    data: gtx.Field[gtx.Dims[gt_common.DimsT], Any]
+    attrs: FieldMetaData  # type: ignore[assignment]  # FieldMetaData is a TypedDict, not a subtype of dict in mypy
 
     @functools.cached_property
     def metadata(self) -> FieldMetaData:
