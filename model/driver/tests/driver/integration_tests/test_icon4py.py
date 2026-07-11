@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
 import pytest
 
@@ -35,7 +35,7 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.grid import icon as grid_icon
     from icon4py.model.testing import serialbox as sb
 
 
@@ -105,7 +105,7 @@ def test_run_timeloop_single_step(
     timeloop_diffusion_linit_init: bool,
     *,
     grid_savepoint: sb.IconGridSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: grid_icon.IconGrid,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
@@ -114,14 +114,16 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
-):
+) -> None:
     diffusion_config = experiment.config.diffusion
+    assert diffusion_config is not None  # datatest always has diffusion config
     nonhydro_config = experiment.config.nonhydrostatic
+    assert nonhydro_config is not None  # datatest always has nonhydrostatic config
     icon4pyrun_config = driver_config.Icon4pyRunConfig(
         dtime=experiment.config.driver.dtime,
         start_date=datetime.fromisoformat(timeloop_date_init),
         end_date=datetime.fromisoformat(timeloop_date_exit),
-        n_substeps=experiment.config.diffusion.ndyn_substeps,
+        n_substeps=diffusion_config.ndyn_substeps,
         apply_initial_stabilization=timeloop_diffusion_linit_init,
         restart_mode=False
         if experiment.description == definitions.Experiments.JW
@@ -283,7 +285,8 @@ def test_run_timeloop_single_step(
             sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
+            sp_v.ddt_w_adv_pc(cast(Literal[0, 1], current_index)),
+            sp_v.ddt_w_adv_pc(cast(Literal[0, 1], next_index)),
         ),
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
@@ -379,13 +382,13 @@ def test_run_timeloop_single_step(
     ],
 )
 def test_driver(
-    experiment,
-    experiment_type,
-    process_props,
+    experiment: definitions.Experiment,
+    experiment_type: str,
+    process_props: decomposition.ProcessProperties,
     *,
-    data_provider,
-    backend_like,
-):
+    data_provider: sb.IconSerialDataProvider,
+    backend_like: model_backends.BackendLike,
+) -> None:
     """
     This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
     The timeloop is verified by test_run_timeloop_single_step above.
