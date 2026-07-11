@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
 import datetime
-import functools
 import logging
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
@@ -44,10 +43,6 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
-    @functools.cached_property
-    def backend(self):
-        return self.backend
-
 
 @dataclasses.dataclass
 class Icon4pyConfig:
@@ -61,7 +56,7 @@ def read_config(
     experiment_type: driver_init.ExperimentType,
     backend: model_backends.BackendLike,
 ) -> Icon4pyConfig:
-    def _mch_ch_r04b09_vertical_config():
+    def _mch_ch_r04b09_vertical_config() -> v_grid.VerticalGridConfig:
         return v_grid.VerticalGridConfig(
             num_levels=65,
             lowest_layer_thickness=20.0,
@@ -70,7 +65,7 @@ def read_config(
             rayleigh_damping_height=12500.0,
         )
 
-    def _mch_ch_r04b09_diffusion_config():
+    def _mch_ch_r04b09_diffusion_config() -> diffusion.DiffusionConfig:
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             apply_to_vertical_wind=True,
@@ -87,20 +82,20 @@ def read_config(
             shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         )
 
-    def _mch_ch_r04b09_nonhydro_config():
+    def _mch_ch_r04b09_nonhydro_config() -> solve_nh.NonHydrostaticConfig:
         return solve_nh.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
 
-    def _jabw_vertical_config():
+    def _jabw_vertical_config() -> v_grid.VerticalGridConfig:
         return v_grid.VerticalGridConfig(
             num_levels=35,
             rayleigh_damping_height=45000.0,
         )
 
-    def _jabw_diffusion_config(n_substeps: int):
+    def _jabw_diffusion_config(n_substeps: int) -> diffusion.DiffusionConfig:
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             apply_to_vertical_wind=True,
@@ -116,14 +111,19 @@ def read_config(
             velocity_boundary_diffusion_denominator=200.0,
         )
 
-    def _jabw_nonhydro_config():
+    def _jabw_nonhydro_config() -> solve_nh.NonHydrostaticConfig:
         return solve_nh.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
         )
 
-    def _mch_ch_r04b09_config():
+    def _mch_ch_r04b09_config() -> tuple[
+        Icon4pyRunConfig,
+        v_grid.VerticalGridConfig,
+        diffusion.DiffusionConfig,
+        solve_nh.NonHydrostaticConfig,
+    ]:
         return (
             Icon4pyRunConfig(
                 dtime=datetime.timedelta(seconds=10.0),
@@ -138,7 +138,12 @@ def read_config(
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _jablonowski_williamson_config():
+    def _jablonowski_williamson_config() -> tuple[
+        Icon4pyRunConfig,
+        v_grid.VerticalGridConfig,
+        diffusion.DiffusionConfig,
+        solve_nh.NonHydrostaticConfig,
+    ]:
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
             end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
@@ -156,24 +161,29 @@ def read_config(
             jabw_nonhydro_config,
         )
 
-    def _gauss3d_vertical_config():
+    def _gauss3d_vertical_config() -> v_grid.VerticalGridConfig:
         return v_grid.VerticalGridConfig(
             num_levels=35,
             rayleigh_damping_height=45000.0,
         )
 
-    def _gauss3d_diffusion_config(n_substeps: int):
+    def _gauss3d_diffusion_config(n_substeps: int) -> diffusion.DiffusionConfig:
         return diffusion.DiffusionConfig(
             ndyn_substeps=n_substeps,
         )
 
-    def _gauss3d_nonhydro_config():
+    def _gauss3d_nonhydro_config() -> solve_nh.NonHydrostaticConfig:
         return solve_nh.NonHydrostaticConfig(
-            igradp_method=3,
+            igradp_method=dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
             fourth_order_divdamp_factor=0.0025,
         )
 
-    def _gauss3d_config():
+    def _gauss3d_config() -> tuple[
+        Icon4pyRunConfig,
+        v_grid.VerticalGridConfig,
+        diffusion.DiffusionConfig,
+        solve_nh.NonHydrostaticConfig,
+    ]:
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=4.0),
             end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
