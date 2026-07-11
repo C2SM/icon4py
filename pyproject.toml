@@ -215,6 +215,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/diagnostic_calculations/pressure.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/icon.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/vertical.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/coordinate_transformations.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',
