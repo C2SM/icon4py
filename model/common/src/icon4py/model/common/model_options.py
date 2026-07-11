@@ -98,14 +98,14 @@ def customize_backend(
         log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
         return backend
 
-    backend_descriptor = (
+    backend_descriptor: model_backends.BackendDescriptor = (
         {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
     )
     backend_descriptor = get_options(program_name, **backend_descriptor)
     backend_descriptor["device"] = backend_descriptor.get(
         "device", model_backends.CPU
     )  # set default device
-    backend_factory: Any = backend_descriptor.pop(
+    backend_factory = backend_descriptor.pop(
         "backend_factory", model_backends.make_custom_dace_backend
     )
     custom_backend = backend_factory(**backend_descriptor)

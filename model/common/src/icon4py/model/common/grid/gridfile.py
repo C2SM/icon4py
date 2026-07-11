@@ -15,6 +15,7 @@ from gt4py import next as gtx
 from typing_extensions import Self
 
 from icon4py.model.common import exceptions
+from icon4py.model.common.states.model import DTypeT
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -363,7 +364,7 @@ class GridFile:
         name: FieldName,
         indices: data_alloc.NDArray | None = None,
         transpose: bool = False,
-        dtype: Any = gtx.float64,
+        dtype: DTypeT = gtx.float64,
     ) -> np.ndarray:
         """Read a field from the grid file.
 
@@ -384,10 +385,10 @@ class GridFile:
             n = (variable.shape[0],) if variable_size > 1 else ()
             target_shape = (*n, -1)
 
-            slicer = [slice(None) for _ in range(variable_size)]
+            slicer: list[Any] = [slice(None) for _ in range(variable_size)]
             if indices is not None and indices.size > 0:
                 # apply the slicing to the correct dimension
-                slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)  # type: ignore[call-overload]  # assigning ndarray to list item
+                slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)
             _log.debug(f"reading {name}: transposing = {transpose}")
             data = np.asarray(variable[tuple(slicer)])
             data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
