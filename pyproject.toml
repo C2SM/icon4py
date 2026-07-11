@@ -172,6 +172,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/horizontal.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/model.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/model_options.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/gridfile.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/geometry_config.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/projection.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/stencils/generic_math_operations_array_ns.py',

@@ -12,6 +12,7 @@ from typing import Any, Protocol
 
 import numpy as np
 from gt4py import next as gtx
+from typing_extensions import Self
 
 from icon4py.model.common import exceptions
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -24,10 +25,10 @@ try:
     from netCDF4 import Dataset
 except ImportError:
 
-    class Dataset:
+    class Dataset:  # type: ignore[no-redef]  # fallback when netCDF4 is not installed
         """Dummy class to make import run when (optional) netcdf dependency is not installed."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             raise ModuleNotFoundError("NetCDF4 is not installed.")
 
 
@@ -156,7 +157,7 @@ class DynamicDimension(DimensionName):
 class FixedSizeDimension(DimensionName):
     size: int
 
-    def __new__(cls, value: str, size_: int):
+    def __new__(cls, value: str, size_: int) -> Self:
         obj = str.__new__(cls)
         obj._value_ = value
         obj.size = size_
@@ -179,10 +180,10 @@ class FixedSizeDimension(DimensionName):
     EDGE_GRF = ("edge_grf", 28)
     VERTEX_GRF = ("vert_grf", 14)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.name}: {self.size})"
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.name, self.size))
 
     def __eq__(self, other: Any) -> bool:
@@ -312,7 +313,7 @@ class GridFile:
     def __init__(self, file_name: str, offset_transformation: IndexTransformation):
         self._filename = file_name
         self._offset_transformation = offset_transformation
-        self._dataset = None
+        self._dataset: Any = None
 
     def dimension(self, name: DimensionName) -> int:
         """Read a dimension with name 'name' from the grid file."""
@@ -362,7 +363,7 @@ class GridFile:
         name: FieldName,
         indices: data_alloc.NDArray | None = None,
         transpose: bool = False,
-        dtype: np.dtype = gtx.float64,
+        dtype: Any = gtx.float64,
     ) -> np.ndarray:
         """Read a field from the grid file.
 
@@ -386,7 +387,7 @@ class GridFile:
             slicer = [slice(None) for _ in range(variable_size)]
             if indices is not None and indices.size > 0:
                 # apply the slicing to the correct dimension
-                slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)
+                slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)  # type: ignore[call-overload]  # assigning ndarray to list item
             _log.debug(f"reading {name}: transposing = {transpose}")
             data = np.asarray(variable[tuple(slicer)])
             data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
@@ -397,16 +398,16 @@ class GridFile:
             _log.debug(f"Error: {err}")
             raise exceptions.IconGridError(msg) from err
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.open()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         self._dataset.close()
 
-    def open(self):
+    def open(self) -> None:
         self._dataset = Dataset(self._filename, "r", format="NETCDF4")
         _log.debug(f"opened data set: {self._dataset}")
