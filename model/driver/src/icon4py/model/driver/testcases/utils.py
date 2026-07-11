@@ -244,25 +244,30 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
+    # gtx.as_field expects NDArrayObject; numpy ndarrays don't conform (GT4Py limitation)
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)  # type: ignore[arg-type]
     virtual_temperature = gtx.as_field(
-        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
+        (dims.CellDim, dims.KDim),
+        temperature_ndarray,  # type: ignore[arg-type]
+        allocator=allocator,
     )
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)  # type: ignore[arg-type]
     pressure_ifc = gtx.as_field(
-        (dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=allocator
+        (dims.CellDim, dims.KDim),
+        pressure_ifc_ndarray,  # type: ignore[arg-type]
+        allocator=allocator,
     )
 
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)  # type: ignore[arg-type]
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)  # type: ignore[arg-type]
 
     u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
