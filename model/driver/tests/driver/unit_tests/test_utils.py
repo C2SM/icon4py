@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -17,7 +18,7 @@ from icon4py.model.testing.fixtures import backend
 from ..fixtures import *  # noqa: F403
 
 
-def test_hydrostatic_adjustment_ndarray(backend):
+def test_hydrostatic_adjustment_ndarray(backend: gtx_typing.Backend | None) -> None:
     # TODO(jcanton,OngChia): these tests could be better
     num_cells = 10
     num_levels = 10
@@ -74,7 +75,9 @@ def test_hydrostatic_adjustment_ndarray(backend):
     )
 
 
-def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
+def test_hydrostatic_adjustment_constant_thetav_ndarray(
+    backend: gtx_typing.Backend | None,
+) -> None:
     # TODO(jcanton,OngChia): these tests could be better
     num_cells = 10
     num_levels = 10
