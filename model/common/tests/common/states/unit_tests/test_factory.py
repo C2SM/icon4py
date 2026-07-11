@@ -193,7 +193,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         "input_field": "height_coordinate",
     }
     fields = {"average": "output_f"}
-    provider = factory.ProgramFieldProvider(
+    provider = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain; fix requires factory.py (Level 4)
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
     provider(
@@ -219,7 +219,7 @@ def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFiel
         "input_field": "height_coordinate",
     }
     fields = {"result": "output_f"}
-    provider = factory.ProgramFieldProvider(
+    provider = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain; fix requires factory.py (Level 4)
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
     with pytest.raises(ValueError, match="Missing dependency: 'height_coordinate'"):
