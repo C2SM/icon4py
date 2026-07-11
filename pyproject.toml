@@ -221,6 +221,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/stencils/compute_nabla2_on_cell_k.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/stencils/generic_math_operations.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/compute_weight_factors.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/metric_fields.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',
