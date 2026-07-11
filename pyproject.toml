@@ -173,6 +173,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/model.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/model_options.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/gridfile.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/interpolation/interpolation_attributes.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/utils.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/states.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/grid_refinement.py',
