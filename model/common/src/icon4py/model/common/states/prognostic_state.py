@@ -42,7 +42,7 @@ class PrognosticState:
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
-        return self.w[dims.KDim(0)]
+        return self.w[dims.KDim(0)]  # type: ignore[return-value]  # GT4Py __getitem__ doesn't express dimension reduction
 
 
 def initialize_prognostic_state(
