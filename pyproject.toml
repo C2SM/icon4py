@@ -173,6 +173,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/model.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/model_options.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/gridfile.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/interpolation/stencils/interpolate_to_cell_center.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/interpolation/stencils/interpolate_edge_field_to_half_levels_vp.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/interpolation/stencils/interpolate_cell_field_to_half_levels_wp.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/interpolation/stencils/interpolate_cell_field_to_half_levels_vp.py',
