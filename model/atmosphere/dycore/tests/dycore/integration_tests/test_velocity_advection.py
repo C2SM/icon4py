@@ -115,15 +115,15 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-posi
     ],
 )
 def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments]
-    interpolation_savepoint,
-    metrics_savepoint,
-    experiment,
-    step_date_init,
-    savepoint_velocity_init,
-    icon_grid,
-    grid_savepoint,
-    backend,
-):
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend | None,
+) -> None:
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -163,18 +163,18 @@ def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments
     ],
 )
 def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    savepoint_velocity_init,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_velocity_exit,
-    backend,
-    caplog,
-):
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    backend: gtx_typing.Backend | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
@@ -185,38 +185,61 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=None,
-        perturbed_exner_at_cells_on_model_levels=None,
-        rho_at_cells_on_half_levels=None,
-        exner_tendency_due_to_slow_physics=None,
-        grf_tend_rho=None,
-        grf_tend_thv=None,
-        grf_tend_w=None,
-        mass_flux_at_edges_on_model_levels=None,
-        normal_wind_tendency_due_to_slow_physics_process=None,
-        grf_tend_vn=None,
+        theta_v_at_cells_on_half_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        rho_at_cells_on_half_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        exner_tendency_due_to_slow_physics=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        grf_tend_rho=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_thv=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_w=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        grf_tend_vn=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_iau_increment=None,
-        normal_wind_iau_increment=None,
-        exner_iau_increment=None,
-        exner_dynamical_increment=None,
+        rho_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        normal_wind_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        exner_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        exner_dynamical_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
         vn=init_savepoint.vn(),
-        theta_v=None,
-        rho=None,
-        exner=None,
+        theta_v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        rho=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        exner=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
     )
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry = grid_savepoint.construct_cell_geometry()
+    assert cell_geometry.area is not None
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
     vertical_config = experiment.config.vertical_grid
@@ -270,7 +293,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[
+        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[  # type: ignore[attr-defined]
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
@@ -279,7 +302,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
+        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),  # type: ignore[attr-defined]
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -307,19 +330,19 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     ],
 )
 def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
+) -> None:
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
@@ -331,33 +354,55 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=None,
-        perturbed_exner_at_cells_on_model_levels=None,
-        rho_at_cells_on_half_levels=None,
-        exner_tendency_due_to_slow_physics=None,
-        grf_tend_rho=None,
-        grf_tend_thv=None,
-        grf_tend_w=None,
-        mass_flux_at_edges_on_model_levels=None,
-        normal_wind_tendency_due_to_slow_physics_process=None,
-        grf_tend_vn=None,
+        theta_v_at_cells_on_half_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        rho_at_cells_on_half_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        exner_tendency_due_to_slow_physics=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        grf_tend_rho=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_thv=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_w=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        grf_tend_vn=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_iau_increment=None,
-        normal_wind_iau_increment=None,
-        exner_iau_increment=None,  # sp.exner_incr(),
-        exner_dynamical_increment=None,
+        rho_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
+        normal_wind_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        exner_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),  # sp.exner_incr(),
+        exner_dynamical_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        ),
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
         vn=init_savepoint.vn(),
-        theta_v=None,
-        rho=None,
-        exner=None,
+        theta_v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        rho=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        exner=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
     )
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -365,6 +410,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry = grid_savepoint.construct_cell_geometry()
+    assert cell_geometry.area is not None
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
     vertical_config = experiment.config.vertical_grid
@@ -395,14 +441,14 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[
+        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[  # type: ignore[attr-defined]
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
+        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),  # type: ignore[attr-defined]
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )
@@ -424,17 +470,17 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     ],
 )
 def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
-    backend,
-):
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    backend: gtx_typing.Backend | None,
+) -> None:
     edge_domain = h_grid.domain(dims.EdgeDim)
 
     tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
@@ -559,19 +605,19 @@ def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positi
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    istep_init,
-    istep_exit,
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_velocity_exit,
-    backend,
-    savepoint_velocity_init,
-):
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    istep_init: int,
+    istep_exit: int,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    backend: gtx_typing.Backend | None,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+) -> None:
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
@@ -579,7 +625,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
     contravariant_correction_at_cells_on_half_levels = savepoint_velocity_init.w_concorr_c()
     w = savepoint_velocity_init.w()
     horizontal_advection_of_w_at_edges_on_half_levels = savepoint_velocity_exit.z_v_grad_w()
-    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
+    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)  # type: ignore[arg-type]
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
@@ -595,7 +641,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
-    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)
+    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)  # type: ignore[arg-type]
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
     icon_result_cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
@@ -707,19 +753,19 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    istep_init,
-    istep_exit,
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_velocity_exit,
-    savepoint_velocity_init,
-    backend,
-):
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    istep_init: int,
+    istep_exit: int,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    backend: gtx_typing.Backend | None,
+) -> None:
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
@@ -727,7 +773,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     w = savepoint_velocity_init.w()
     tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
-    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
+    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)  # type: ignore[arg-type]
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
@@ -745,7 +791,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
-    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)
+    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)  # type: ignore[arg-type]
     icon_result_cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
@@ -845,25 +891,25 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    istep_init,
-    istep_exit,
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
-):
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    istep_init: int,
+    istep_exit: int,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+) -> None:
     vn = savepoint_velocity_init.vn()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_exit.z_kin_hor_e()
     tangential_wind = savepoint_velocity_exit.vt()
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_exit.z_w_con_c_full()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
-    normal_wind_advective_tendency = savepoint_velocity_init.ddt_vn_apc_pc(istep_init - 1)
+    normal_wind_advective_tendency = savepoint_velocity_init.ddt_vn_apc_pc(istep_init - 1)  # type: ignore[arg-type]
 
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     geofac_rot = interpolation_savepoint.geofac_rot()
@@ -884,7 +930,7 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)
+    icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)  # type: ignore[arg-type]
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()

@@ -299,10 +299,6 @@ module = [
   'icon4py.bindings.muphys_wrapper'
 ]
 
-[[tool.mypy.overrides]]
-disallow_untyped_defs = false
-module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
-
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
 module = [

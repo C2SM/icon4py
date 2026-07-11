@@ -36,7 +36,7 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.grid import icon
     from icon4py.model.testing import serialbox as sb
 
 
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint: sb.IconGridSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     config = solve_nh.NonHydrostaticConfig()
@@ -157,26 +157,27 @@ def test_time_step_flags(
     ],
 )
 def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    substep_init,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    experiment,
-    at_initial_timestep,
-    caplog,
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    substep_init: int,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    experiment: definitions.Experiment,
+    at_initial_timestep: bool,
+    caplog: pytest.LogCaptureFixture,
+    backend: gtx_typing.Backend,
+) -> None:
     caplog.set_level(logging.WARN)
     config = experiment.config.nonhydrostatic
+    assert config is not None
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -479,27 +480,29 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     ],
 )
 def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    substep_init,
-    istep_exit,
-    substep_exit,
-    at_initial_timestep,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    experiment,
-    caplog,
-    backend,
-):
+    istep_init: int,
+    substep_init: int,
+    istep_exit: int,
+    substep_exit: int,
+    at_initial_timestep: bool,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    experiment: definitions.Experiment,
+    caplog: pytest.LogCaptureFixture,
+    backend: gtx_typing.Backend,
+) -> None:
     caplog.set_level(logging.WARN)
     config = experiment.config.nonhydrostatic
+    assert config is not None
+    assert experiment.config.diffusion is not None
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
@@ -669,28 +672,30 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     ],
 )
 def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    substep_init,
-    istep_exit,
-    substep_exit,
-    at_initial_timestep,
-    step_date_init,
-    step_date_exit,
-    experiment,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_final,
-    caplog,
-    backend,
-):
+    istep_init: int,
+    substep_init: int,
+    istep_exit: int,
+    substep_exit: int,
+    at_initial_timestep: bool,
+    step_date_init: str,
+    step_date_exit: str,
+    experiment: definitions.Experiment,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    savepoint_nonhydro_step_final: sb.IconNonHydroFinalSavepoint,
+    caplog: pytest.LogCaptureFixture,
+    backend: gtx_typing.Backend,
+) -> None:
     caplog.set_level(logging.WARN)
     config = experiment.config.nonhydrostatic
+    assert config is not None
+    assert experiment.config.diffusion is not None
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
@@ -793,26 +798,28 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     ],
 )
 def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    istep_init,
-    substep_init,
-    step_date_init,
-    istep_exit,
-    substep_exit,
-    step_date_exit,
-    at_initial_timestep,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_final,
-    backend,
-):
+    experiment: definitions.Experiment,
+    istep_init: int,
+    substep_init: int,
+    step_date_init: str,
+    istep_exit: int,
+    substep_exit: int,
+    step_date_exit: str,
+    at_initial_timestep: bool,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    savepoint_nonhydro_step_final: sb.IconNonHydroFinalSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     config = experiment.config.nonhydrostatic
+    assert config is not None
+    assert experiment.config.diffusion is not None
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -953,7 +960,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
-def test_non_hydrostatic_params(savepoint_nonhydro_init):
+def test_non_hydrostatic_params(savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint) -> None:
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
 
@@ -982,21 +989,21 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     ],
 )
 def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-many-positional-arguments]
-    at_initial_timestep,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
-    savepoint_nonhydro_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_nonhydro_exit,
-    backend,
-):
+    at_initial_timestep: bool,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    substep_init: int,
+    substep_exit: int,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init: sb.NonHydroInitEdgeDiagnosticsUpdateVnSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     sp_init = savepoint_nonhydro_init
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
@@ -1037,6 +1044,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     )
 
     config = experiment.config.nonhydrostatic
+    assert config is not None
     igradp_method = config.igradp_method
 
     nflatlev = vertical_params.nflatlev
@@ -1188,23 +1196,23 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     ],
 )
 def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-positional-arguments]
-    at_initial_timestep,
-    istep_init,
-    istep_exit,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
-    savepoint_nonhydro_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_nonhydro_exit,
-    backend,
-):
+    at_initial_timestep: bool,
+    istep_init: int,
+    istep_exit: int,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    substep_init: int,
+    substep_exit: int,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init: sb.NonHydroInitEdgeDiagnosticsUpdateVnSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     sp_init = savepoint_nonhydro_init
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
@@ -1324,24 +1332,24 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     ],
 )
 def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
-    backend,
-):
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    istep_init: int,
+    substep_init: int,
+    substep_exit: int,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init: sb.NonHydroInitEdgeDiagnosticsUpdateVnSavepoint,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit: sb.NonHydroExitEdgeDiagnosticsUpdateVnSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     sp_nh_init = savepoint_nonhydro_init
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
@@ -1387,6 +1395,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = experiment.config.nonhydrostatic
+    assert config is not None
     primal_normal_cell_1 = grid_savepoint.primal_normal_cell_x()
     primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
@@ -1521,25 +1530,25 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
     ],
 )
 def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    substep_init,
-    istep_exit,
-    substep_exit,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
-    backend,
-):
+    istep_init: int,
+    substep_init: int,
+    istep_exit: int,
+    substep_exit: int,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init: sb.NonHydroInitEdgeDiagnosticsUpdateVnSavepoint,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit: sb.NonHydroExitEdgeDiagnosticsUpdateVnSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     sp_nh_init = savepoint_nonhydro_init
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
@@ -1560,6 +1569,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = experiment.config.nonhydrostatic
+    assert config is not None
     mean_cell_area = grid_savepoint.mean_cell_area()
 
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
@@ -1669,23 +1679,23 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    step_date_init,
-    step_date_exit,
-    experiment,
-    icon_grid,
-    grid_savepoint,
-    savepoint_dycore_30_to_38_init,
-    savepoint_dycore_30_to_38_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    substep_init: int,
+    substep_exit: int,
+    step_date_init: str,
+    step_date_exit: str,
+    experiment: definitions.Experiment,
+    icon_grid: icon.IconGrid,
+    grid_savepoint: sb.IconGridSavepoint,
+    savepoint_dycore_30_to_38_init: sb.IconDycoreInit30To38Savepoint,
+    savepoint_dycore_30_to_38_exit: sb.IconDycoreExit30To38Savepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     edge_domain = h_grid.domain(dims.EdgeDim)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
@@ -1837,24 +1847,24 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
     ],
 )
 def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    step_date_init,
-    step_date_exit,
-    experiment,
-    icon_grid,
-    at_first_substep,
-    grid_savepoint,
-    savepoint_dycore_30_to_38_init,
-    savepoint_dycore_30_to_38_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    substep_init: int,
+    substep_exit: int,
+    step_date_init: str,
+    step_date_exit: str,
+    experiment: definitions.Experiment,
+    icon_grid: icon.IconGrid,
+    at_first_substep: bool,
+    grid_savepoint: sb.IconGridSavepoint,
+    savepoint_dycore_30_to_38_init: sb.IconDycoreInit30To38Savepoint,
+    savepoint_dycore_30_to_38_exit: sb.IconDycoreExit30To38Savepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     edge_domain = h_grid.domain(dims.EdgeDim)
 
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
@@ -1868,6 +1878,7 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     vn = savepoint_dycore_30_to_38_init.vn()
     z_rho_e = savepoint_dycore_30_to_38_init.z_rho_e()
     z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
+    assert experiment.config.diffusion is not None
     r_nsubsteps = 1.0 / experiment.config.diffusion.ndyn_substeps
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
@@ -1952,28 +1963,29 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     ],
 )
 def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    at_initial_timestep,
-    substep_init,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    istep_init,
-    istep_exit,
-    substep_exit,
-    savepoint_vertically_implicit_dycore_solver_init,
-    backend,
-):
+    at_initial_timestep: bool,
+    substep_init: int,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    istep_init: int,
+    istep_exit: int,
+    substep_exit: int,
+    savepoint_vertically_implicit_dycore_solver_init: sb.NonHydroInitVerticallyImplicitSolverSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
     config = experiment.config.nonhydrostatic
+    assert config is not None
     xp = data_alloc.import_array_ns(backend)
 
     vertical_config = experiment.config.vertical_grid
@@ -2104,10 +2116,9 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
     # Since dwdz_at_cells_on_model_levels is computed for all levels in icon4py, we have to
     # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
+    scaling_factor = metrics_savepoint.scaling_factor_for_3d_divdamp()  # type: ignore[attr-defined]
     starting_vertical_index_for_3d_divdamp = (
-        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
-        if config.divdamp_type == 32
-        else 0
+        xp.min(xp.where(scaling_factor.ndarray > 0.0))[0] if config.divdamp_type == 32 else 0
     )
     z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = z_dwdz_dd_ref.asnumpy()
     z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0:starting_vertical_index_for_3d_divdamp] = 0.0
@@ -2141,25 +2152,25 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     ],
 )
 def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    substep_init,
-    istep_exit,
-    substep_exit,
-    at_initial_timestep,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    is_iau_active,
-    iau_wgt_dyn,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    savepoint_vertically_implicit_dycore_solver_init,
-    backend,
-):
+    istep_init: int,
+    substep_init: int,
+    istep_exit: int,
+    substep_exit: int,
+    at_initial_timestep: bool,
+    experiment: definitions.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    is_iau_active: bool,
+    iau_wgt_dyn: float,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    savepoint_vertically_implicit_dycore_solver_init: sb.NonHydroInitVerticallyImplicitSolverSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
     vertical_config = experiment.config.vertical_grid
@@ -2168,6 +2179,8 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
     config = experiment.config.nonhydrostatic
+    assert config is not None
+    assert experiment.config.diffusion is not None
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
