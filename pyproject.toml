@@ -173,6 +173,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/model.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/model_options.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/gridfile.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/vertical_operations.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/smagorinsky.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/gradient.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/derivative.py',
