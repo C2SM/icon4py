@@ -225,6 +225,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/reference_atmosphere.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/geometry_stencils.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/grid_manager.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/simple.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',

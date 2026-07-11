@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Final
+from typing import Final, cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -46,7 +46,7 @@ class SimpleGridData:
         self.xp = data_alloc.array_ns(on_gpu)
 
     @functools.cached_property
-    def c2v_table(self):
+    def c2v_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 1, 4],
@@ -72,7 +72,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def e2c2v_table(self):
+    def e2c2v_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 1, 4, 6],  # 0
@@ -107,7 +107,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def e2c_table(self):
+    def e2c_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 15],
@@ -142,7 +142,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def e2v_table(self):
+    def e2v_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 1],
@@ -177,7 +177,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def e2c2e_table(self):
+    def e2c2e_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [1, 5, 19, 20],
@@ -212,7 +212,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def e2c2eO_table(self):
+    def e2c2eO_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 1, 5, 19, 20],
@@ -247,7 +247,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def c2e_table(self):
+    def c2e_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 1, 5],  # cell 0
@@ -273,7 +273,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def v2c_table(self):
+    def v2c_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [17, 14, 3, 0, 2, 15],
@@ -290,7 +290,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def v2e_table(self):
+    def v2e_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [0, 1, 2, 6, 25, 20],
@@ -307,7 +307,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def c2e2cO_table(self):
+    def c2e2cO_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [15, 4, 3, 0],
@@ -333,7 +333,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def c2e2c_table(self):
+    def c2e2c_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [15, 4, 3],
@@ -359,7 +359,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def c2e2c2e_table(self):
+    def c2e2c2e_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [19, 20, 0, 1, 2, 9, 4, 5, 12],  # 0c
@@ -385,7 +385,7 @@ class SimpleGridData:
         )
 
     @functools.cached_property
-    def c2e2c2e2c_table(self):
+    def c2e2c2e2c_table(self) -> data_alloc.NDArray:
         return self.xp.asarray(
             [
                 [15, 4, 3, 12, 14, 1, 7, 6, 2],  # 1c
@@ -463,7 +463,7 @@ def simple_grid(
     }
 
     connectivities = {
-        offset.value: base.construct_connectivity(
+        cast(str, offset.value): base.construct_connectivity(
             offset, table, skip_value=None, allocator=allocator
         )
         for offset, table in neighbor_tables.items()
