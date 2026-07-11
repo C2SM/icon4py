@@ -173,6 +173,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/model.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/model_options.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/grid/gridfile.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/metadata.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/states/data.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/metrics_attributes.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/math/stencils/cell_horizontal_gradients_by_green_gauss_method.py',
