@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import MutableMapping
-from typing import TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 import gt4py.next as gtx
 import xarray as xa
@@ -26,6 +26,6 @@ GTXFieldType: TypeAlias = gtx.Field[DimsT, T]
 FieldType: TypeAlias = gtx.Field[DimsT, T] | data_alloc.NDArray
 
 
-def to_data_array(field: FieldType, attrs: MutableMapping[str, ...]):
+def to_data_array(field: FieldType, attrs: MutableMapping[str, Any]) -> xa.DataArray:
     data = data_alloc.as_numpy(field)
     return xa.DataArray(data, attrs=attrs)
