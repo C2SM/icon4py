@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+from typing import Any
 
 from gt4py import next as gtx
 
@@ -17,27 +18,27 @@ class EdgeParams:
     def __init__(
         self,
         *,
-        tangent_orientation=None,
-        primal_edge_lengths=None,
-        inverse_primal_edge_lengths=None,
-        dual_edge_lengths=None,
-        inverse_dual_edge_lengths=None,
-        inverse_vertex_vertex_lengths=None,
-        primal_normal_vert_x=None,
-        primal_normal_vert_y=None,
-        dual_normal_vert_x=None,
-        dual_normal_vert_y=None,
-        primal_normal_cell_x=None,
-        dual_normal_cell_x=None,
-        primal_normal_cell_y=None,
-        dual_normal_cell_y=None,
-        edge_areas=None,
-        coriolis_frequency=None,
-        edge_center_lat=None,
-        edge_center_lon=None,
-        primal_normal_x=None,
-        primal_normal_y=None,
-    ):
+        tangent_orientation: Any = None,
+        primal_edge_lengths: Any = None,
+        inverse_primal_edge_lengths: Any = None,
+        dual_edge_lengths: Any = None,
+        inverse_dual_edge_lengths: Any = None,
+        inverse_vertex_vertex_lengths: Any = None,
+        primal_normal_vert_x: Any = None,
+        primal_normal_vert_y: Any = None,
+        dual_normal_vert_x: Any = None,
+        dual_normal_vert_y: Any = None,
+        primal_normal_cell_x: Any = None,
+        dual_normal_cell_x: Any = None,
+        primal_normal_cell_y: Any = None,
+        dual_normal_cell_y: Any = None,
+        edge_areas: Any = None,
+        coriolis_frequency: Any = None,
+        edge_center_lat: Any = None,
+        edge_center_lon: Any = None,
+        primal_normal_x: Any = None,
+        primal_normal_y: Any = None,
+    ) -> None:
         self.tangent_orientation: fa.EdgeField[float] = tangent_orientation
         r"""
         Orientation of vector product of the edge and the adjacent cell centers
@@ -107,8 +108,8 @@ class EdgeParams:
         """
 
         self.primal_normal_vert: tuple[
-            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
-            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
         ] = (
             primal_normal_vert_x,
             primal_normal_vert_y,
@@ -122,8 +123,8 @@ class EdgeParams:
         """
 
         self.dual_normal_vert: tuple[
-            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
-            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
         ] = (
             dual_normal_vert_x,
             dual_normal_vert_y,
@@ -137,8 +138,8 @@ class EdgeParams:
         """
 
         self.primal_normal_cell: tuple[
-            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
-            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
         ] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
@@ -152,8 +153,8 @@ class EdgeParams:
         """
 
         self.dual_normal_cell: tuple[
-            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
-            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
         ] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
@@ -191,8 +192,8 @@ class EdgeParams:
         """
 
         self.primal_normal: tuple[
-            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
-            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
         ] = (
             primal_normal_x,
             primal_normal_y,
