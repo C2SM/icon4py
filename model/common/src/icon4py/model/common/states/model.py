@@ -20,7 +20,16 @@ import icon4py.model.common.type_alias as ta
 """Contains type definitions used for the model`s state representation."""
 DimensionNames: TypeAlias = Literal["cell", "edge", "vertex"]
 BufferT: TypeAlias = np_t.ArrayLike | gtx.Field
-DTypeT: TypeAlias = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+DTypeT: TypeAlias = (
+    type[ta.wpfloat]
+    | type[ta.vpfloat]
+    | type[gtx.int32]
+    | type[gtx.int64]
+    | type[gtx.float32]
+    | type[gtx.float64]
+    | type[bool]
+    | type[int]
+)
 
 
 class OptionalMetaData(TypedDict, total=False):
@@ -32,10 +41,21 @@ class OptionalMetaData(TypedDict, total=False):
     icon_var_list_index: int
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension]
-    dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+    dtype: (
+        type[ta.wpfloat]
+        | type[ta.vpfloat]
+        | type[gtx.int32]
+        | type[gtx.int64]
+        | type[gtx.float32]
+        | type[gtx.float64]
+        | type[bool]
+        | type[int]
+    )
     #: whether the vertical dimension of the field lives on interface (half) levels
     #: rather than full levels
     is_on_half_levels: bool
+    #: CF convention: direction of increase for vertical coordinate
+    positive: str
 
 
 class RequiredMetaData(TypedDict, total=True):
