@@ -243,7 +243,7 @@ class Zone(enum.Enum):
     NUDGING_LEVEL_2 = ("nudging_level", 2)
 
     @property
-    def value(self) -> str:
+    def value(self) -> str:  # type: ignore[override]  # Zone overrides Enum.value to return a combined name_level string
         return self._value_str
 
     def __str__(self) -> str:
@@ -434,7 +434,7 @@ def get_ordered_domains(dim: gtx.Dimension) -> Iterator[Domain]:
     return domains
 
 
-def get_last_nudging(dim):
+def get_last_nudging(dim: gtx.Dimension) -> Domain:
     zone = Zone.NUDGING if dim in (dims.VertexDim, dims.CellDim) else Zone.NUDGING_LEVEL_2
     return domain(dim)(zone)
 
@@ -443,7 +443,7 @@ def get_start_end_idx_from_icon_arrays(
     dim: gtx.Dimension,
     start_indices: dict[gtx.Dimension, np.ndarray],
     end_indices: dict[gtx.Dimension, np.ndarray],
-) -> tuple[dict[Domain, gtx.int32], dict[Domain, gtx.int32]]:  # type: ignore [name-defined]
+) -> tuple[dict[Domain, gtx.int32], dict[Domain, gtx.int32]]:
     """
     Translates ICON type start_idx and end_idx arrays to mapping of Domains to index values
     Args:
@@ -461,9 +461,9 @@ def get_start_end_idx_from_icon_arrays(
 
 def _map_icon_array_to_domains(
     dim: gtx.Dimension, pre_computed_bounds: np.ndarray
-) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
+) -> dict[Domain, gtx.int32]:
     domains = get_domains_for_dim(dim)
     return {
-        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_array_index(dim, d.zone)].item())  # type: ignore [attr-defined]
+        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_array_index(dim, d.zone)].item())
         for d in domains
     }
