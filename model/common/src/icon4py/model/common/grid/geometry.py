@@ -222,8 +222,10 @@ class GridGeometry(factory.FieldSource):
         match self._geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
                 radius = grid_params.radius
+                # runtime invariant: icosahedron grid_params always has radius
                 assert radius is not None, "radius must not be None for icosahedron"
                 subdivision = grid_params.subdivision
+                # runtime invariant: icosahedron grid_params always has subdivision
                 assert subdivision is not None, "subdivision must not be None for icosahedron"
                 root = subdivision.root
                 level = subdivision.level
@@ -856,8 +858,7 @@ class GridGeometry(factory.FieldSource):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_typing.Backend:
-        assert self._backend is not None, "backend must not be None"
+    def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
     @property
@@ -899,7 +900,9 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
-            assert field_src is not None, "field_src must not be None"
+            # field_src may be None when the wrapped provider's fields are
+            # already computed; cast preserves the pre-assert pass-through.
+            field_src = cast(factory.FieldSource, field_src)
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:

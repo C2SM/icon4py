@@ -157,12 +157,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         self._exchange = exchange
         self._config = config
-        assert self.grid.grid_params.domain_length is not None, (
-            "domain_length must not be None for interpolation"
-        )
-        assert self.grid.grid_params.domain_height is not None, (
-            "domain_height must not be None for interpolation"
-        )
         domain_length = self.grid.grid_params.domain_length
         domain_height = self.grid.grid_params.domain_height
         self._domain_length = 0.0 if domain_length is None else domain_length
@@ -172,6 +166,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         log.debug(f"using array_ns {self._xp} ")
 
+        # runtime invariant: icon_grid() always sets refinement_control to {} or a dict
         assert self._grid.refinement_control is not None, "refinement_control must not be None"
         self.register_provider(
             factory.PrecomputedFieldProvider(

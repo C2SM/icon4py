@@ -17,7 +17,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition,
@@ -123,6 +123,11 @@ class GridManager:
             self.open()
         assert self._reader is not None, "GridManager must be opened before use"
 
+        if allocator is None:
+            # None selects the embedded backend; resolve to the default CPU
+            # allocator so downstream methods (typed Allocator) work correctly.
+            allocator = model_backends.get_allocator(None)
+
         if attr := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = icon.GeometryType(attr)
         else:
@@ -135,7 +140,6 @@ class GridManager:
             decomposer=decomposer,
             process_props=process_props,
         )
-        assert allocator is not None, "allocator must not be None"
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self._geometry = self._read_geometry_fields(allocator)
 
@@ -410,7 +414,7 @@ class GridManager:
 
     def _construct_decomposed_grid(
         self,
-        allocator: gtx_typing.Allocator | None,
+        allocator: gtx_typing.Allocator,
         keep_skip_values: bool,
         geometry_type: icon.GeometryType,
         decomposer: decomp.Decomposer,
@@ -470,7 +474,6 @@ class GridManager:
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
-        assert allocator is not None, "allocator must not be None"
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
         domain_bounds_constructor = functools.partial(
@@ -504,7 +507,9 @@ class GridManager:
         neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
     ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
         if self.decomposition_info.is_distributed():
-            assert self._decomposition_info is not None
+            assert self._decomposition_info is not None, (
+                "decomposition_info must be set by __call__"
+            )
             return {
                 k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),

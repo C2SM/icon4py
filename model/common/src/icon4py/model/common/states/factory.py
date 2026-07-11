@@ -390,6 +390,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             log.debug(f"computing fields  {self.fields.keys()}")
+            # runtime invariant: field computation requires a non-None source
             assert field_src is not None, "field_src must not be None"
             self._compute(field_src, grid)
             self.exchange(self.fields, exchange)
@@ -477,7 +478,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
 
         def _allocate(
             grid_provider: GridProvider,
-            backend: gtx_typing.Backend,
+            backend: gtx_typing.Backend | None,
             array_ns: ModuleType,
             dtype: Any = ta.wpfloat,
         ) -> gtx.Field:
@@ -486,7 +487,6 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             buffer = array_ns.zeros(shape, dtype=dtype)
             return gtx.as_field(dims, data=buffer, allocator=backend, dtype=dtype)
 
-        assert backend is not None, "backend must not be None"
         return {
             k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
             for k in self._fields
@@ -614,6 +614,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
+            # runtime invariant: field computation requires a non-None source
             assert field_src is not None, "field_src must not be None"
             self._compute(field_src=field_src, grid=grid, backend=backend)
             self.exchange(self.fields, exchange=exchange)
@@ -637,6 +638,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)  # type: ignore[arg-type]
         deps.update({k: self._fields[v] for k, v in self._output.items()})  # type: ignore[misc]
+        # runtime invariant: ProgramFieldProvider needs a vertical grid
         assert grid.vertical_grid is not None, "vertical_grid must not be None"
         dims = self._domain_args(grid.grid, grid.vertical_grid)
         offset_providers = self._get_offset_providers(grid.grid)

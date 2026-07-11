@@ -192,6 +192,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             self._decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
             allocator=self._allocator,
         )
+        # runtime invariant: icon_grid() always sets refinement_control to {} or a dict
         assert self._grid.refinement_control is not None, "refinement_control must not be None"
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
