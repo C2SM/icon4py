@@ -472,7 +472,7 @@ attrs: dict[str, model.FieldMetaData] = {
 
 
 def metadata_for_inverse(metadata: model.FieldMetaData) -> model.FieldMetaData:
-    def inv_name(name: str):
+    def inv_name(name: str) -> str:
         x = name.split("%", 1)
         x[-1] = f"inv_{x[-1]}"
         return "%".join(x)
@@ -480,13 +480,15 @@ def metadata_for_inverse(metadata: model.FieldMetaData) -> model.FieldMetaData:
     standard_name = f"inverse_of_{metadata['standard_name']}"
     units = f"{metadata['units']}-1"
     long_name = f"inverse of {metadata.get('long_name')}" if metadata.get("long_name") else ""
-    inverse_meta = dict(
+    inverse_meta: model.FieldMetaData = dict(
         standard_name=standard_name,
         units=units,
-        dims=metadata.get("dims"),
-        dtype=metadata.get("dtype"),
         long_name=long_name,
-        icon_var_name=inv_name(metadata.get("icon_var_name")),
+        icon_var_name=inv_name(metadata.get("icon_var_name", "")),
     )
+    if "dims" in metadata:
+        inverse_meta["dims"] = metadata["dims"]
+    if "dtype" in metadata:
+        inverse_meta["dtype"] = metadata["dtype"]
 
     return inverse_meta
