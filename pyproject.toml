@@ -202,7 +202,7 @@ $MYPY_CONFIG_FILE_DIR/tools/src:
 $MYPY_CONFIG_FILE_DIR/bindings/src:
 '''
 namespace_packages = true
-plugins = ["gt4py.next.type_system.mypy_plugin"]
+plugins = ["gt4py.next.type_system.mypy_plugin", "icon4py.model.common.type_system.mypy_plugin"]
 # install_types = true
 # non_interactive = true
 show_column_numbers = true
@@ -234,17 +234,6 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 disable_error_code = ["index", "misc"]
 module = [
   "icon4py.model.standalone_driver.initial_condition.*"
-]
-
-[[tool.mypy.overrides]]
-disable_error_code = [
-  "valid-type"  # vfloat is not a valid type
-]
-module = [
-  "icon4py.model.atmosphere.advection.stencils.*",
-  "icon4py.model.atmosphere.diffusion.stencils.*",
-  "icon4py.model.atmosphere.dycore.dycore_states",
-  "icon4py.model.atmosphere.dycore.stencils.*"
 ]
 
 # -- pytest --
