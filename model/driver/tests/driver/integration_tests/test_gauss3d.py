@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.grid import icon as grid_icon
     from icon4py.model.testing import serialbox as sb
 
 
@@ -42,7 +42,7 @@ def test_gauss3d_initial_condition(  # noqa: PLR0917 [too-many-positional-argume
     rank: int,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: grid_icon.IconGrid,
 ) -> None:
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
