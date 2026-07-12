@@ -25,7 +25,7 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.grid import icon as grid_icon
     from icon4py.model.testing import serialbox as sb
 
 
@@ -46,7 +46,7 @@ def test_saturation_adjustement(
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: grid_icon.IconGrid,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
