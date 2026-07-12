@@ -31,7 +31,7 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import icon as grid_icon
     from icon4py.model.testing import serialbox as sb
 
 
@@ -51,9 +51,9 @@ def test_graupel(
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: icon_grid.IconGrid,
+    icon_grid: grid_icon.IconGrid,
     backend: gtx_typing.Backend,
-):
+) -> None:
     vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -78,16 +78,26 @@ def test_graupel(
         qs=entry_savepoint.qs(),
         qg=entry_savepoint.qg(),
     )
+    assert tracer_state.qv is not None
+    assert tracer_state.qc is not None
+    assert tracer_state.qr is not None
+    assert tracer_state.qi is not None
+    assert tracer_state.qs is not None
+    assert tracer_state.qg is not None
     prognostic_state = prognostics.PrognosticState(
-        rho=entry_savepoint.rho(), vn=None, w=None, exner=None, theta_v=None
+        rho=entry_savepoint.rho(),
+        vn=None,  # type: ignore[arg-type] # not used in microphysics test
+        w=None,  # type: ignore[arg-type] # not used in microphysics test
+        exner=None,  # type: ignore[arg-type] # not used in microphysics test
+        theta_v=None,  # type: ignore[arg-type] # not used in microphysics test
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=entry_savepoint.temperature(),
-        virtual_temperature=None,
+        virtual_temperature=None,  # type: ignore[arg-type] # not used in microphysics test
         pressure=entry_savepoint.pressure(),
-        pressure_ifc=None,
-        u=None,
-        v=None,
+        pressure_ifc=None,  # type: ignore[arg-type] # not used in microphysics test
+        u=None,  # type: ignore[arg-type] # not used in microphysics test
+        v=None,  # type: ignore[arg-type] # not used in microphysics test
     )
 
     graupel_config = experiment.config.graupel
