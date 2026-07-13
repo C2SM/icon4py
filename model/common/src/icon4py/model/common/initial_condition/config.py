@@ -13,11 +13,14 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common.initial_condition import from_file as from_file_ic
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.initial_condition import from_file as from_file_ic, states as ic_states
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
 )
+from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.utils import fortran_config
 
 
@@ -83,6 +86,27 @@ class InitialConditionConfig:
         return cls(config=config)
 
 
+def _compute_perturbed_exner(
+    *,
+    grid: icon_grid.IconGrid,
+    static_fields: static_fields.StaticFieldFactories,
+    exner: fa.CellKField[ta.wpfloat],
+    perturbed_exner: fa.CellKField[ta.wpfloat],
+    backend: gtx_typing.Backend | None,
+) -> None:
+    """Diagnose exner_pr from the initial state (compute_exner_pert in mo_nh_stepping.f90)."""
+    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
+        field_a=exner,
+        field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
+        output_field=perturbed_exner,
+        horizontal_start=0,
+        horizontal_end=grid.num_cells,
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider={},
+    )
+
+
 def create(
     *,
     config: InitialConditionConfig,
@@ -93,8 +117,28 @@ def create(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    dycore_initial_fields: ic_states.DycoreInitialFields | None = None,
 ) -> None:
-    """Fill a PrognosticState by dispatching on the type of ``config.config``."""
+    """
+    Fill a PrognosticState by dispatching on the type of ``config.config``.
+
+    When the dycore fields are given, they are initialized too: the perturbed exner
+    pressure is diagnosed from the initial state, or, when restarting, read from the
+    serialized data together with the advective tendencies of the previous time step.
+    """
+    if isinstance(config.config, from_file_ic.FromFileConfig) and config.config.is_restart:
+        if dycore_initial_fields is None:
+            raise ValueError("restarting needs the dycore fields to initialize.")
+        from_file_ic.read_restart_from_file(
+            config=config.config,
+            grid=grid,
+            prognostic_state_now=prognostic_state_now,
+            dycore_initial_fields=dycore_initial_fields,
+            backend=backend,
+            exchange=exchange,
+        )
+        return
+
     match config.config:
         case jw_ic.JablonowskiWilliamsonConfig():
             jw_ic.jablonowski_williamson(
@@ -118,7 +162,7 @@ def create(
                 exchange=exchange,
             )
         case from_file_ic.FromFileConfig():
-            from_file_ic.read_from_file(
+            from_file_ic.read_initial_condition_from_file(
                 config=config.config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
@@ -127,3 +171,12 @@ def create(
             )
         case _:
             raise TypeError(f"Unknown initial conditions config type: {type(config.config)!r}")
+
+    if dycore_initial_fields is not None:
+        _compute_perturbed_exner(
+            grid=grid,
+            static_fields=static_fields,
+            exner=prognostic_state_now.exner,
+            perturbed_exner=dycore_initial_fields.perturbed_exner_at_cells_on_model_levels,
+            backend=backend,
+        )

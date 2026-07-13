@@ -125,6 +125,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         tracer_config=single_rank_icon4py_driver.config.tracer_config,
     )
+    single_rank_dycore_diagnostic = driver_states.initialize_dycore_diagnostic_state(
+        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    )
     initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
@@ -134,6 +137,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
         global_reductions=single_rank_icon4py_driver.global_reductions,
+        dycore_initial_fields=driver_states.dycore_initial_fields(single_rank_dycore_diagnostic),
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -147,6 +151,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=single_rank_prognostic,
         diagnostic_state=single_rank_diagnostic,
         experiment_config=single_rank_icon4py_driver.config,
+        solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
     )
 
     multi_rank_config = experiment.config.with_overrides(
@@ -172,6 +177,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         tracer_config=multi_rank_icon4py_driver.config.tracer_config,
     )
+    multi_rank_dycore_diagnostic = driver_states.initialize_dycore_diagnostic_state(
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    )
     initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
@@ -181,6 +189,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
         global_reductions=multi_rank_icon4py_driver.global_reductions,
+        dycore_initial_fields=driver_states.dycore_initial_fields(multi_rank_dycore_diagnostic),
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
@@ -194,6 +203,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=multi_rank_prognostic,
         diagnostic_state=multi_rank_diagnostic,
         experiment_config=multi_rank_icon4py_driver.config,
+        solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
     )
 
     fields_to_check: list[tuple[str, object, object]] = [

@@ -80,6 +80,9 @@ class DriverConfig:
     start_of_simulation: time.AbsoluteTime
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
+    # Beginning of the time loop. None means the beginning of the simulation; set it to
+    # a later date to restart from there.
+    start_of_timestepping: time.AbsoluteTime | None = None
     apply_extra_second_order_divdamp: bool = False
     # lprep_adv in fortran. The default matches the namelist default of ltransport.
     do_prep_adv: bool = False
@@ -145,6 +148,16 @@ class ExperimentConfig:
     tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+
+    def __post_init__(self) -> None:
+        # The file-based initial condition needs the clock of the driver to know which
+        # savepoint to read: the initial state, or the state of a later time step when
+        # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
+        initial_condition_config = self.initial_condition.config
+        if isinstance(initial_condition_config, from_file.FromFileConfig):
+            initial_condition_config.start_of_simulation = self.driver.start_of_simulation
+            initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
+            initial_condition_config.dtime = self.driver.dtime
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}

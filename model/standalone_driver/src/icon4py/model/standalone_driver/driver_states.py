@@ -24,10 +24,9 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.initial_condition import states as ic_states
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
-from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -89,24 +88,29 @@ class ModelTimeVariables:
 
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
+        # The time loop starts at the beginning of the simulation, unless restarting.
+        start_of_timestepping = config.start_of_timestepping or config.start_of_simulation
+        self.simulation_current_datetime = start_of_timestepping
         match config.end_of_simulation:
             case time.NumTimeSteps() as n:
                 self.n_time_steps = n
-                self.simulation_current_datetime = config.start_of_simulation
-                self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
+                self.simulation_end_datetime = start_of_timestepping + n * config.dtime
             case time.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_current_datetime = config.start_of_simulation
-                self.simulation_end_datetime = config.start_of_simulation + relative
+                self.simulation_end_datetime = start_of_timestepping + relative
             case time.AbsoluteTime() as absolute:
-                self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
-                self.simulation_current_datetime = config.start_of_simulation
+                self.n_time_steps = int((absolute - start_of_timestepping) / config.dtime)
                 self.simulation_end_datetime = absolute
         self.dtime = config.dtime
-        self.elapsed_time_in_seconds = ta.wpfloat("0.0")
+        # ICON measures elapsed_time_global from the beginning of the simulation, also
+        # when restarting (mo_nh_stepping.f90).
+        self.elapsed_time_in_seconds = ta.wpfloat(
+            (start_of_timestepping - config.start_of_simulation).total_seconds()
+        )
         self.ndyn_substeps_var = config.ndyn_substeps
         self.max_ndyn_substeps = config.ndyn_substeps + 7
-        self.is_first_step_in_simulation = True
+        # linit_dyn in fortran: false when restarting.
+        self.is_first_step_in_simulation = start_of_timestepping == config.start_of_simulation
         self.cfl_watch_mode = False
 
         if self.n_time_steps <= 0:
@@ -213,6 +217,37 @@ class TimerCollection:
                 )
 
 
+def initialize_dycore_diagnostic_state(
+    *,
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.Allocator,
+) -> dycore_states.DiagnosticStateNonHydro:
+    """
+    Allocate the diagnostic state of the dycore, before the initial condition is created.
+
+    The initial condition fills the fields that it owns (see 'dycore_initial_fields'),
+    so it needs the state to exist beforehand.
+    """
+    return dycore_states.initialize_solve_nonhydro_diagnostic_state(
+        perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=allocator
+        ),
+        grid=grid,
+        allocator=allocator,
+    )
+
+
+def dycore_initial_fields(
+    solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+) -> ic_states.DycoreInitialFields:
+    """The fields of the dycore diagnostic state that the initial condition initializes."""
+    return ic_states.DycoreInitialFields(
+        perturbed_exner_at_cells_on_model_levels=solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels,
+        normal_wind_advective_tendency=solve_nonhydro_diagnostic_state.normal_wind_advective_tendency,
+        vertical_wind_advective_tendency=solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency,
+    )
+
+
 def assemble_driver_states(
     *,
     grid: icon_grid.IconGrid,
@@ -223,6 +258,7 @@ def assemble_driver_states(
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
+    solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -262,18 +298,6 @@ def assemble_driver_states(
     )
     exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
-    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
-        field_a=prognostic_states.current.exner,
-        field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
-        output_field=perturbed_exner,
-        horizontal_start=0,
-        horizontal_end=grid.num_cells,
-        vertical_start=0,
-        vertical_end=grid.num_levels,
-        offset_provider={},
-    )
-
     diffusion_enabled = experiment_config.diffusion is not None
     solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
     tracer_advection_enabled = experiment_config.tracer_advection is not None
@@ -281,15 +305,6 @@ def assemble_driver_states(
     diffusion_diagnostic_state = (
         diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
         if diffusion_enabled
-        else None
-    )
-    solve_nonhydro_diagnostic_state = (
-        dycore_states.initialize_solve_nonhydro_diagnostic_state(
-            perturbed_exner_at_cells_on_model_levels=perturbed_exner,
-            grid=grid,
-            allocator=allocator,
-        )
-        if solve_nonhydro_enabled
         else None
     )
     prep_adv = (
