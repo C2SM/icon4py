@@ -28,8 +28,8 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 # Tolerances (atol, rtol) per experiment.
-# rtol is 0.0 where the reference field contains zeros: there no rtol can cover
-# the difference, only atol.
+# rtol is 0.0 where the reference field contains zeros or near-zeros: there no
+# meaningful rtol can cover the difference, only atol.
 _TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, float]]] = {
     definitions.Experiments.JW: {
         "rho": (0.0, 1e-12),

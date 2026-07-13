@@ -118,8 +118,12 @@ def assert_dallclose(
         # off ('-s'), which is how the nox sessions run pytest.
         max_abs_diff, max_rel_diff = _max_diffs(actual_arr, desired_arr)
         color = "\033[1;31m" if max_abs_diff > 0 else "\033[32m"
+        # Prefix with the test id: under pytest-xdist these prints interleave
+        # with the terminal reporter, so they cannot be attributed to a test
+        # from their position in the output alone.
+        test_id = os.environ.get("PYTEST_CURRENT_TEST", "").partition(" (")[0]
         print(
-            f"{color}{err_msg} max abs diff {max_abs_diff} max rel diff {max_rel_diff}\033[0m",
+            f"{color}{test_id} {err_msg} max abs diff {max_abs_diff} max rel diff {max_rel_diff}\033[0m",
             file=sys.stderr,
         )
     else:

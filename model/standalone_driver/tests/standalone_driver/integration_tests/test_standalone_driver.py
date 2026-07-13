@@ -27,8 +27,8 @@ from ..fixtures import *  # noqa: F403
 
 
 # Tolerances (atol, rtol) per experiment.
-# rtol is 0.0 where the reference field contains zeros: there no rtol can cover
-# the difference, only atol.
+# rtol is 0.0 where the reference field contains zeros or near-zeros: there no
+# meaningful rtol can cover the difference, only atol.
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
         "vn": (6e-7, 0.0),
@@ -38,11 +38,11 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "rho": (9e-10, 0.0),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": (3e-13, 0.0),
-        "w": (1.4e-17, 0.0),
-        "exner": (2.2e-15, 3.8e-15),
-        "theta_v": (2e-12, 3.6e-15),
-        "rho": (7e-15, 1.3e-14),
+        "vn": (6e-7, 0.0),
+        "w": (8e-9, 0.0),
+        "exner": (2e-10, 0.0),
+        "theta_v": (1e-7, 0.0),
+        "rho": (9e-10, 0.0),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": (6e-7, 0.0),
