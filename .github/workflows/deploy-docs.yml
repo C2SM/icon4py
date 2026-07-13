@@ -18,7 +18,7 @@ jobs:
           version: "0.6.16"
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Build documentation
         run: |
           cd model/atmosphere/dycore/docs/
