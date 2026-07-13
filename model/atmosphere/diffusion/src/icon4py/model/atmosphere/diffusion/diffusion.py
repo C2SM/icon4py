@@ -925,16 +925,8 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        self.apply_diffusion_to_vn(
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            z_nabla2_e=self.z_nabla2_e,
-            kh_smag_e=self.kh_smag_e,
-            diff_multfac_vn=diff_multfac_vn,
-            vn=prognostic_state.vn,
-        )
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): DISABLED (BISECT)")
+        pass  # BISECT: apply_diffusion_to_vn disabled
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
@@ -969,39 +961,7 @@ class Diffusion:
         log.debug("communication of prognostic.vn - end")
 
         if self.config.apply_to_temperature:
-            log.debug(
-                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
-            )
-            self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-                theta_v=prognostic_state.theta_v,
-                kh_smag_e=self.kh_smag_e,
-            )
-            log.debug(
-                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
-            )
-            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
-            self.copy_field(
-                prognostic_state.theta_v, self.theta_v_tmp
-            )  # TODO(): write in a way that we can avoid the copy
-            self.apply_diffusion_to_theta_and_exner(
-                kh_smag_e=self.kh_smag_e,
-                theta_v_in=self.theta_v_tmp,
-                theta_v=prognostic_state.theta_v,
-                exner=prognostic_state.exner,
-            )
-            # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
-            # computations, which happen right after diffusion, do not require the halo lines to be correct and there
-            # is another halo exchange after the physics are applied.
-            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
-            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
-                log.debug("communication of prognostic cell fields: theta and exner - start")
-                self._exchange.exchange(
-                    dims.CellDim,
-                    prognostic_state.theta_v,
-                    prognostic_state.exner,
-                    stream=decomposition.DEFAULT_STREAM,
-                )
-                log.debug("communication of prognostic cell fields: theta and exner - done")
+            pass  # BISECT: temperature diffusion disabled (enhanced + apply)
 
         # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
         # computations, which happen right after diffusion, do not require the halo lines to be correct and there
