@@ -76,6 +76,9 @@ If a section is empty, write `(none)`.
 
 ## Weekly Easter Egg
 
-End with a short, silly joke related to icon4py's world — icosahedral grids,
-weather/climate simulations, Fortran, Python, stencil computations, parallel
-computing, Slurm, or distributed filesystems. One or two lines max.
+End with a short, silly joke or humorous observation related to icon4py's world
+— icosahedral grids, weather/climate simulations, Fortran, Python, stencil
+computations, parallel computing, Slurm, or distributed filesystems. One or two
+lines max.
+
+**Strictly forbidden:** "Why did the X" or "Why does the X" joke format. No setup-punchline jokes of any kind. Use wordplay, puns, absur observations, or deadpan humor instead.
