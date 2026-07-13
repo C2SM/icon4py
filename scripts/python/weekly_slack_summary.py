@@ -295,12 +295,12 @@ def _collect_github_prs(
             "comments": [
                 {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
                 for c in comments
-                if c.get("user")
+                if c.get("user") and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
             ],
             "review_comments": [
                 {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
                 for c in review_comments
-                if c.get("user")
+                if c.get("user") and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
             ],
         }
         if details.get("merged_at") or details.get("merged"):
@@ -333,11 +333,13 @@ def _collect_github_prs(
                     {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
                     for c in comments
                     if c.get("user")
+                    and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
                 ],
                 "review_comments": [
                     {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
                     for c in review_comments
                     if c.get("user")
+                    and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
                 ],
             }
         )
@@ -450,7 +452,20 @@ def _gitlab_raw_request(url: str, *, token: str | None = None) -> bytes:
         raise RuntimeError(f"GitLab API request failed ({e.code}): {e.reason}\n{error_body}") from e
 
 
+_CSCI_RUN_RE = re.compile(r"^cscs-ci run\b", re.IGNORECASE)
+_NOISE_AUTHORS = {"github-actions[bot]", "Copilot"}
+
+
+def _is_noise_comment(author: str, body: str) -> bool:
+    """Return True for comments that add no summarizable content."""
+    if author in _NOISE_AUTHORS:
+        return True
+    return bool(_CSCI_RUN_RE.match(body.strip()))
+
+
 _ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _strip_ansi(text: str) -> str:
