@@ -8,11 +8,10 @@
 
 import enum
 import logging
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 import numpy as np
 from gt4py import next as gtx
-from typing_extensions import Self
 
 from icon4py.model.common import exceptions
 from icon4py.model.common.states.model import DTypeT
@@ -61,7 +60,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
-class GridFileName(str, enum.Enum):
+class GridFileName(enum.StrEnum):
     pass
 
 

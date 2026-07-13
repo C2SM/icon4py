@@ -8,7 +8,7 @@
 
 import dataclasses
 import logging
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 import numpy as np
 from gt4py import next as gtx
@@ -42,7 +42,7 @@ class GridState:
 
 grid_state: GridState | None = None  # TODO(havogt): remove module global state
 
-NumpyInt32Array1D: TypeAlias = Annotated[
+type NumpyInt32Array1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -52,7 +52,7 @@ NumpyInt32Array1D: TypeAlias = Annotated[
     ),
 ]
 
-NumpyBoolArray1D: TypeAlias = Annotated[
+type NumpyBoolArray1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -201,7 +201,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Vertical parameters
     vertical_grid = vertical.VerticalGrid(
         config=vertical_config,
-        vct_a=vct_a,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        vct_a=vct_a,
         vct_b=None,
     )
 
@@ -229,9 +229,9 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Cell geometry
     cell_params = grid_states.CellParams(
-        cell_center_lat=cell_center_lat,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        cell_center_lon=cell_center_lon,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        area=cell_areas,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        area=cell_areas,
         mean_cell_area=mean_cell_area,
     )
 

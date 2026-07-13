@@ -215,7 +215,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Metric state
     metric_state = DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,
-        wgtfac_c=wgtfac_c,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        wgtfac_c=wgtfac_c,
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
@@ -232,13 +232,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=e_bln_c_s,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=geofac_div,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        geofac_n2s=geofac_n2s,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        geofac_grg_x=geofac_grg_x,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        geofac_grg_y=geofac_grg_y,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        geofac_div=geofac_div,
+        geofac_n2s=geofac_n2s,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
 
@@ -282,7 +282,7 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
-        w=w,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        w=w,
         vn=vn,
         exner=exner,
         theta_v=theta_v,
@@ -298,10 +298,10 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     if dwdy is None:
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
     diagnostic_state = DiffusionDiagnosticState(
-        hdef_ic=hdef_ic,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        div_ic=div_ic,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        dwdx=dwdx,  # type: ignore[arg-type]  # GT4Py Field dim variance
-        dwdy=dwdy,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        hdef_ic=hdef_ic,
+        div_ic=div_ic,
+        dwdx=dwdx,
+        dwdy=dwdy,
     )
 
     granule.diffusion.run(

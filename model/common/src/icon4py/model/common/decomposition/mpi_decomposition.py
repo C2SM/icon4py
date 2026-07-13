@@ -27,17 +27,17 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex  # type: ignore [import-not-found]
+    import ghex  # type: ignore [import-untyped]
     import mpi4py
-    from ghex.context import make_context  # type: ignore [import-not-found]
-    from ghex.unstructured import (  # type: ignore [import-not-found]
+    from ghex.context import make_context  # type: ignore [import-untyped]
+    from ghex.unstructured import (  # type: ignore [import-untyped]
         DomainDescriptor,
         HaloGenerator,
         make_communication_object,
         make_field_descriptor,
         make_pattern,
     )
-    from ghex.util import Architecture  # type: ignore [import-not-found]
+    from ghex.util import Architecture  # type: ignore [import-untyped]
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True

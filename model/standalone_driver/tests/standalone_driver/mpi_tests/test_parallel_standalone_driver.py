@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
@@ -46,13 +46,13 @@ _log = logging.getLogger(__file__)
     [
         pytest.param(
             test_defs.Experiments.JW,
-            driver_config.NumTimeSteps(1),
+            time.NumTimeSteps(1),
             marks=[pytest.mark.level("integration")],
             id="integration",
         ),
         pytest.param(
             test_defs.Experiments.JW,
-            driver_config.RelativeTime(days=7),
+            time.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
             id="validation",
         ),
@@ -61,7 +61,7 @@ _log = logging.getLogger(__file__)
 def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
-    end_of_simulation: driver_config.EndOfSimulation,
+    end_of_simulation: time.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
@@ -77,7 +77,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
 
 def _run_standalone_driver_compare_single_multi_rank(
     experiment_description: test_defs.ExperimentDescription,
-    end_of_simulation: driver_config.EndOfSimulation,
+    end_of_simulation: time.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
@@ -102,7 +102,7 @@ def _run_standalone_driver_compare_single_multi_rank(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
     single_rank_config = config.with_overrides(

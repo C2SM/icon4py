@@ -8,7 +8,7 @@
 import dataclasses
 import functools
 from collections.abc import Sequence
-from typing import Literal, Protocol, TypeAlias, TypedDict, runtime_checkable
+from typing import Literal, Protocol, TypedDict, runtime_checkable
 
 import gt4py.next as gtx
 import gt4py.next.common as gt_common
@@ -19,9 +19,9 @@ import icon4py.model.common.type_alias as ta
 
 
 """Contains type definitions used for the model`s state representation."""
-DimensionNames: TypeAlias = Literal["cell", "edge", "vertex"]
-BufferT: TypeAlias = np_t.ArrayLike | gtx.Field
-DTypeT: TypeAlias = (
+type DimensionNames = Literal["cell", "edge", "vertex"]
+type BufferT = np_t.ArrayLike | gtx.Field
+type DTypeT = (
     type[ta.wpfloat]
     | type[ta.vpfloat]
     | type[gtx.int32]

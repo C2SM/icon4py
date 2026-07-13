@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import initial_condition, model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -22,7 +22,6 @@ from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_states,
     driver_utils,
-    initial_condition,
     standalone_driver,
 )
 from icon4py.model.testing import (
@@ -110,10 +109,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=single_rank_process_props,
     )
-    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=single_rank_config,  # type: ignore[arg-type]  # DriverConfig vs ExperimentConfig type mismatch
+            config=single_rank_config,
             grid_manager=single_rank_grid_manager,
             process_props=single_rank_process_props,
             backend=backend,
@@ -158,10 +156,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=process_props,
     )
-    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=multi_rank_config,  # type: ignore[arg-type]  # DriverConfig vs ExperimentConfig type mismatch
+            config=multi_rank_config,
             grid_manager=multi_rank_grid_manager,
             process_props=process_props,
             backend=backend,

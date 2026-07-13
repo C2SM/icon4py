@@ -79,8 +79,6 @@ classifiers = [
   'Programming Language :: Python',
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.10',
-  'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: 3.12',
   'Programming Language :: Python :: 3.13',
   'Programming Language :: Python :: 3.14',
@@ -103,7 +101,7 @@ description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
 name = "icon4py"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 # managed by bump-my-version:
 version = "0.2.0"
 
@@ -197,7 +195,8 @@ module = [
 # shape attr, dtype type-var. Cannot be fixed in user code.
 disable_error_code = ["arg-type", "attr-defined", "misc", "type-var", "assignment"]
 module = [
-  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.common"
+  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.common",
+  "icon4py.model.common.initial_condition.*"
 ]
 
 [[tool.mypy.overrides]]
@@ -253,7 +252,7 @@ pythonpath = [
 line-length = 100
 respect-gitignore = true
 show-fixes = true
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -311,11 +310,11 @@ typing-modules = ['gt4py.eve.extended_typing']
 unfixable = []
 
 [tool.ruff.lint.flake8-bugbear]
-# DeltaT / NumTimeSteps are aliases of immutable types (timedelta / int), so calling them
+# RelativeTime / NumTimeSteps are aliases of immutable types (timedelta / int), so calling them
 # in argument or dataclass defaults is safe (B008, RUF009).
 extend-immutable-calls = [
-  "icon4py.model.common.io.io.DeltaT",
-  "icon4py.model.common.io.io.NumTimeSteps"
+  "icon4py.model.common.time.NumTimeSteps",
+  "icon4py.model.common.time.RelativeTime"
 ]
 
 [tool.ruff.lint.isort]
