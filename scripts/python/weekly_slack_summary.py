@@ -143,17 +143,16 @@ def _github_fetch_paginated(
 ) -> list[dict[str, Any]]:
     """Fetch a paginated GitHub REST endpoint and return all items."""
     items: list[dict[str, Any]] = []
-    page_url = url
-    while page_url:
-        separator = "&" if "?" in page_url else "?"
-        paginated_url = f"{page_url}{separator}per_page={per_page}"
-        result = _github_api_request(paginated_url, token=token)
+    page = 1
+    separator = "&" if "?" in url else "?"
+    while True:
+        page_url = f"{url}{separator}per_page={per_page}&page={page}"
+        result = _github_api_request(page_url, token=token)
         if isinstance(result, list):
             items.extend(result)
-            # GitHub paginates via Link header; detect next by length for simplicity
             if len(result) < per_page:
                 break
-            page_url = f"{url}{separator}per_page={per_page}&page={len(items) // per_page + 1}"
+            page += 1
         else:
             break
     return items
