@@ -13,10 +13,10 @@ import time as _std_time
 from typing import TypeAlias
 
 
-RelativeTime: TypeAlias = datetime.timedelta
-AbsoluteTime: TypeAlias = datetime.datetime
-NumTimeSteps: TypeAlias = int
-EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps
+RelativeTime: TypeAlias = datetime.timedelta  # noqa: UP040
+AbsoluteTime: TypeAlias = datetime.datetime  # noqa: UP040
+NumTimeSteps: TypeAlias = int  # noqa: UP040
+EndOfSimulation: TypeAlias = RelativeTime | AbsoluteTime | NumTimeSteps  # noqa: UP040
 
 # Re-exported from the standard library so callers use a single time module
 localtime = _std_time.localtime

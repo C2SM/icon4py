@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 #: Output schedule given as either a number of model steps or a simulation-time delta.
 #: A time delta is normalized to a number of steps internally (using the model time step),
 #: so the schedule is always evaluated in steps.
-OutputInterval: TypeAlias = time.RelativeTime | time.NumTimeSteps
+OutputInterval: TypeAlias = time.RelativeTime | time.NumTimeSteps  # noqa: UP040
 
 
 def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
