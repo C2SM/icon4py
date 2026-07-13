@@ -408,19 +408,9 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-disable_error_code = ["attr-defined"]
-module = ['*.stencil_tests.*', '*.unit_tests.*']
-
-[[tool.mypy.overrides]]
 ignore_errors = true
 module = [
   'icon4py.model.testing.serialbox'
-]
-
-[[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
-disable_error_code = ["index", "misc"]
-module = [
-  "icon4py.model.standalone_driver.initial_condition.*"
 ]
 
 [[tool.mypy.overrides]]
