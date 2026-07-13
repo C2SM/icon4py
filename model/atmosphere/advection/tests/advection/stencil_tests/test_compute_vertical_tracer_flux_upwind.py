@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
-from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
