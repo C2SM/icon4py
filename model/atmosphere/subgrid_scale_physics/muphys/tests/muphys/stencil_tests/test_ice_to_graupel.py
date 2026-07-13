@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,12 +37,12 @@ class TestIceToGraupel(StencilTest):
         qg: np.ndarray,
         qi: np.ndarray,
         sticking_eff: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             rho=data_alloc.constant_field(grid, 1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
             qr=data_alloc.constant_field(grid, 6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),
