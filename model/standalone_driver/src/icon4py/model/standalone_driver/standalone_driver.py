@@ -169,6 +169,8 @@ class Icon4pyDriver:
                     prognostic_states.current, self.model_time_variables.simulation_current_datetime
                 )
 
+            self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
+
             for time_step in range(self.model_time_variables.n_time_steps):
                 if self.config.driver.profiling_stats is not None:
                     if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
@@ -459,6 +461,38 @@ class Icon4pyDriver:
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
             0.0, self._allocator
+        )
+
+    def _diffuse_before_time_loop(
+        self,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
+        prognostic_state: prognostics.PrognosticState,
+    ) -> None:
+        """
+        Extra diffusion call before the first time step of a real data run.
+
+        mo_nh_stepping.f90 (integrate_nh): 'For real-data runs, perform an extra
+        diffusion call before the first time step because no other filtering of the
+        interpolated velocity field is done'. It is called on the current state, with
+        the model time step, and not for a restart (linit_dyn).
+        """
+        if not self.config.driver.diffuse_before_time_loop:
+            return
+        if not self.model_time_variables.is_first_step_in_simulation:
+            return
+        if self.granules.diffusion is None:
+            return
+        # lhdiff_vn in fortran
+        if not self.granules.diffusion.config.apply_to_horizontal_wind:
+            return
+
+        assert diffusion_diagnostic_state is not None
+        log.info("running diffusion to filter the initial state, before the time loop")
+        self.granules.diffusion.run(
+            diffusion_diagnostic_state,
+            prognostic_state,
+            self.model_time_variables.dtime_in_seconds,
+            initial_run=True,
         )
 
     def _second_order_divdamp_factor(self) -> ta.wpfloat:

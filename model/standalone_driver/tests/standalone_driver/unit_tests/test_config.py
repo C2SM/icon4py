@@ -91,6 +91,26 @@ def test_do_prep_adv_from_ltransport(run_nml: dict, expected: bool) -> None:
     assert config.do_prep_adv is expected
 
 
+# The extra diffusion call before the time loop is only made for real data runs. The
+# fortran defaults are ltestcase = .TRUE. and ldynamics = .TRUE. (mo_run_nml.f90).
+@pytest.mark.parametrize(
+    ("run_nml", "expected"),
+    [
+        ({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": False, "ldynamics": True}, True),
+        ({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": True, "ldynamics": True}, False),
+        ({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": False, "ldynamics": False}, False),
+        ({"dtime": 10.0, "modeltimestep": "  "}, False),
+    ],
+)
+def test_diffuse_before_time_loop(run_nml: dict, expected: bool) -> None:
+    atm_dict, master_dict = _make_dicts(run_nml)
+    config = driver_config.DriverConfig.from_fortran_dict(
+        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+    )
+    assert config.diffuse_before_time_loop is expected
+    assert config.apply_extra_second_order_divdamp is (not run_nml.get("ltestcase", True))
+
+
 def _driver_config(
     start_of_timestepping: datetime.datetime | None = None,
 ) -> driver_config.DriverConfig:
