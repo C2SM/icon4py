@@ -26,30 +26,30 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
-# Absolute tolerances for the prognostic fields, per experiment. JW and GAUSS3D
-# reproduce the serialized reference to roundoff; MCH_CH_R04B09 is looser,
-# probably because of rbf coeffs (under investigation).
-_TOLERANCES = {
+# Tolerances (atol, rtol) per experiment.
+# rtol is 0.0 where the reference field contains zeros: there no rtol can cover
+# the difference, only atol.
+_TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
-        "vn": 6e-7,
-        "w": 8e-9,
-        "exner": 2e-10,
-        "theta_v": 1e-7,
-        "rho": 9e-10,
+        "vn": (6e-7, 0.0),
+        "w": (8e-9, 0.0),
+        "exner": (2e-10, 0.0),
+        "theta_v": (1e-7, 0.0),
+        "rho": (9e-10, 0.0),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": 6e-7,
-        "w": 8e-9,
-        "exner": 2e-10,
-        "theta_v": 1e-7,
-        "rho": 9e-10,
+        "vn": (3e-13, 0.0),
+        "w": (1.4e-17, 0.0),
+        "exner": (2.2e-15, 3.8e-15),
+        "theta_v": (2e-12, 3.6e-15),
+        "rho": (7e-15, 1.3e-14),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
-        "vn": 6e-7,
-        "w": 8e-9,
-        "exner": 2e-10,
-        "theta_v": 1e-7,
-        "rho": 9e-10,
+        "vn": (6e-7, 0.0),
+        "w": (8e-9, 0.0),
+        "exner": (2e-10, 0.0),
+        "theta_v": (1e-7, 0.0),
+        "rho": (9e-10, 0.0),
     },
 }
 
@@ -145,41 +145,30 @@ def test_standalone_driver(
         backend=backend,
     )
 
-    rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = savepoint_diffusion_exit.exner()
-    theta_sp = savepoint_diffusion_exit.theta_v()
-    vn_sp = savepoint_diffusion_exit.vn()
-    w_sp = savepoint_diffusion_exit.w()
+    prognostics = ds.prognostics.current
+    computed = {
+        "vn": prognostics.vn,
+        "w": prognostics.w,
+        "exner": prognostics.exner,
+        "theta_v": prognostics.theta_v,
+        "rho": prognostics.rho,
+    }
+    references = {
+        "vn": savepoint_diffusion_exit.vn(),
+        "w": savepoint_diffusion_exit.w(),
+        "exner": savepoint_diffusion_exit.exner(),
+        "theta_v": savepoint_diffusion_exit.theta_v(),
+        "rho": savepoint_nonhydro_exit.rho_new(),
+    }
 
     tolerances = _TOLERANCES[experiment_description]
 
-    test_utils.assert_dallclose(
-        ds.prognostics.current.vn.asnumpy(),
-        vn_sp.asnumpy(),
-        atol=tolerances["vn"],
-        err_msg="vn",
-    )
-    test_utils.assert_dallclose(
-        ds.prognostics.current.w.asnumpy(),
-        w_sp.asnumpy(),
-        atol=tolerances["w"],
-        err_msg="w",
-    )
-    test_utils.assert_dallclose(
-        ds.prognostics.current.exner.asnumpy(),
-        exner_sp.asnumpy(),
-        atol=tolerances["exner"],
-        err_msg="exner",
-    )
-    test_utils.assert_dallclose(
-        ds.prognostics.current.theta_v.asnumpy(),
-        theta_sp.asnumpy(),
-        atol=tolerances["theta_v"],
-        err_msg="theta_v",
-    )
-    test_utils.assert_dallclose(
-        ds.prognostics.current.rho.asnumpy(),
-        rho_sp.asnumpy(),
-        atol=tolerances["rho"],
-        err_msg="rho",
-    )
+    for name, reference in references.items():
+        atol, rtol = tolerances[name]
+        test_utils.assert_dallclose(
+            computed[name].asnumpy(),
+            reference.asnumpy(),
+            atol=atol,
+            rtol=rtol,
+            err_msg=name,
+        )

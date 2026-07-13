@@ -27,6 +27,42 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
+# Tolerances (atol, rtol) per experiment.
+# rtol is 0.0 where the reference field contains zeros: there no rtol can cover
+# the difference, only atol.
+_TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, float]]] = {
+    definitions.Experiments.JW: {
+        "rho": (0.0, 1e-12),
+        "exner": (1e-14, 1e-12),
+        "theta_v": (1e-11, 1e-12),
+        "vn": (1e-12, 1e-12),
+        "w": (1e-12, 1e-12),
+    },
+    definitions.Experiments.EXCLAIM_APE_AES: {
+        "rho": (0.0, 1e-12),
+        "exner": (1e-14, 1e-12),
+        "theta_v": (1e-11, 1e-12),
+        "vn": (1e-12, 1e-12),
+        "w": (1e-12, 1e-12),
+        "qv": (0.0, 1e-12),
+    },
+    definitions.Experiments.GAUSS3D: {
+        "rho": (0.0, 1e-12),
+        "exner": (1e-14, 1e-12),
+        "theta_v": (1e-11, 1e-12),
+        "vn": (1e-12, 1e-12),
+        "w": (1e-12, 1e-12),
+    },
+    definitions.Experiments.MCH_CH_R04B09: {
+        "rho": (0.0, 1e-12),
+        "exner": (1e-14, 1e-12),
+        "theta_v": (1e-11, 1e-12),
+        "vn": (1e-12, 1e-12),
+        "w": (1e-12, 1e-12),
+    },
+}
+
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description",
@@ -39,7 +75,9 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 @pytest.mark.datatest
 def test_initial_conditions(
+    experiment_description: definitions.ExperimentDescription,
     experiment: definitions.Experiment,
+    *,
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
@@ -82,44 +120,34 @@ def test_initial_conditions(
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
-    test_utils.assert_dallclose(
-        prognostic_state_now.rho.asnumpy(),
-        prognostics_savepoint.rho_now().asnumpy(),
-        err_msg="rho",
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.exner.asnumpy(),
-        prognostics_savepoint.exner_now().asnumpy(),
-        atol=1e-14,
-        err_msg="exner",
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.theta_v.asnumpy(),
-        prognostics_savepoint.theta_v_now().asnumpy(),
-        atol=1e-11,
-        err_msg="theta_v",
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.vn.asnumpy(),
-        prognostics_savepoint.vn_now().asnumpy(),
-        atol=1e-12,
-        err_msg="vn",
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.w.asnumpy(),
-        prognostics_savepoint.w_now().asnumpy(),
-        atol=1e-12,
-        err_msg="w",
-    )
+    computed = {
+        "rho": prognostic_state_now.rho,
+        "exner": prognostic_state_now.exner,
+        "theta_v": prognostic_state_now.theta_v,
+        "vn": prognostic_state_now.vn,
+        "w": prognostic_state_now.w,
+    }
+    references = {
+        "rho": prognostics_savepoint.rho_now(),
+        "exner": prognostics_savepoint.exner_now(),
+        "theta_v": prognostics_savepoint.theta_v_now(),
+        "vn": prognostics_savepoint.vn_now(),
+        "w": prognostics_savepoint.w_now(),
+    }
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
     if prognostic_state_now.tracer.qv is not None:
+        computed["qv"] = prognostic_state_now.tracer.qv
+        references["qv"] = prognostics_savepoint.tracer_now(QV)
+
+    tolerances = _TOLERANCES[experiment_description]
+
+    for name, reference in references.items():
+        atol, rtol = tolerances[name]
         test_utils.assert_dallclose(
-            prognostic_state_now.tracer.qv.asnumpy(),
-            prognostics_savepoint.tracer_now(QV).asnumpy(),
-            err_msg="qv",
+            computed[name].asnumpy(),
+            reference.asnumpy(),
+            atol=atol,
+            rtol=rtol,
+            err_msg=name,
         )
