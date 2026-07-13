@@ -21,6 +21,7 @@ from icon4py.bindings import (
     icon4py_export,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
@@ -121,7 +122,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     limited_area: bool,
     backend: gtx.int32,
 ) -> None:
-    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = data_alloc.array_namespace(c2e) != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -156,15 +157,15 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         vertex_ends=vertex_ends,
         edge_starts=edge_starts,
         edge_ends=edge_ends,
-        c2e=c2e.ndarray,
-        e2c=e2c.ndarray,
-        c2e2c=c2e2c.ndarray,
-        e2c2e=e2c2e.ndarray,
-        e2v=e2v.ndarray,
-        v2e=v2e.ndarray,
-        v2c=v2c.ndarray,
-        e2c2v=e2c2v.ndarray,
-        c2v=c2v.ndarray,
+        c2e=c2e.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        e2c=e2c.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        c2e2c=c2e2c.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        e2c2e=e2c2e.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        e2v=e2v.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        v2e=v2e.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        v2c=v2c.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        e2c2v=e2c2v.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        c2v=c2v.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
         grid_id="icon_grid",
         num_vertices=num_vertices,
         num_cells=num_cells,
@@ -200,7 +201,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Vertical parameters
     vertical_grid = vertical.VerticalGrid(
         config=vertical_config,
-        vct_a=vct_a,
+        vct_a=vct_a,  # type: ignore[arg-type]  # GT4Py Field dim variance
         vct_b=None,
     )
 
@@ -228,9 +229,9 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Cell geometry
     cell_params = grid_states.CellParams(
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        area=cell_areas,
+        cell_center_lat=cell_center_lat,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        cell_center_lon=cell_center_lon,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        area=cell_areas,  # type: ignore[arg-type]  # GT4Py Field dim variance
         mean_cell_area=mean_cell_area,
     )
 
