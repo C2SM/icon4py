@@ -432,6 +432,14 @@ module = [
 ]
 
 [[tool.mypy.overrides]]
+# GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
+# shape attr, dtype type-var. Cannot be fixed in user code.
+disable_error_code = ["arg-type", "attr-defined", "assignment"]
+module = [
+  "icon4py.bindings.dycore_wrapper"
+]
+
+[[tool.mypy.overrides]]
 # dace has no type stubs.
 disable_error_code = ["import-untyped"]
 module = [

@@ -21,10 +21,10 @@ from icon4py.bindings import (
     icon4py_export,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
 
 
