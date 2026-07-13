@@ -421,7 +421,8 @@ url = 'https://pypi.amd.com/rocm-7.0.2/simple'
 
 [tool.uv.sources]
 # dace = {index = "gridtools"}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+dace = {git = "https://github.com/GridTools/dace", branch = "dace_toolchain_deterministic"}
+gt4py = {git = "https://github.com/GridTools/gt4py", branch = "dace_toolchain_deterministic"}
 # gt4py = {index = "test.pypi"}
 amd-cupy = {index = "amd"}
 dace = {index = "gridtools"}
