@@ -32,6 +32,7 @@ from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
 from icon4py.model.common.utils import fortran_config
+from icon4py.model.standalone_driver import prescribed_tendencies
 
 
 log = logging.getLogger(__name__)
@@ -155,6 +156,9 @@ class ExperimentConfig:
     topography: topography.TopographyConfig
     initial_condition: initial_condition.InitialConditionConfig
     driver: DriverConfig
+    prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig = dataclasses.field(
+        default_factory=prescribed_tendencies.PrescribedTendenciesConfig
+    )
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
     tracer_config: tracer_state.TracerConfig | None = None
@@ -279,6 +283,9 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         initial_condition=initial_condition_cfg,
+        prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
+            atm_dict=atm_dict, data_path=config_file_path
+        ),
         driver=driver_cfg,
     )
 

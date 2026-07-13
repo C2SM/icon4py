@@ -2268,6 +2268,7 @@ dependencies = [
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
+  {name = "serialbox4py"},
   {name = "typer"}
 ]
 name = "icon4py-standalone-driver"
@@ -2282,6 +2283,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},
+  {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "typer", specifier = ">=0.20.0"}
 ]
 

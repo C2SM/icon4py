@@ -52,6 +52,7 @@ from icon4py.model.standalone_driver import (
     driver_io,
     driver_states,
     driver_utils,
+    prescribed_tendencies,
 )
 
 
@@ -72,6 +73,7 @@ class Icon4pyDriver:
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
         io_monitor: common_io.IOMonitor | None = None,
+        tendencies: prescribed_tendencies.SerializedTendencies | None = None,
     ):
         self.config = config
         self.io_monitor = io_monitor
@@ -87,6 +89,8 @@ class Icon4pyDriver:
         )
         self.exchange = exchange
         self.global_reductions = global_reductions
+        # Lateral boundary and slow physics tendencies, prescribed for real data runs.
+        self.tendencies = tendencies
 
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
@@ -185,6 +189,14 @@ class Icon4pyDriver:
                 )
 
                 self.model_time_variables.advance_simulation_datetime()
+
+                if self.tendencies is not None:
+                    assert solve_nonhydro_diagnostic_state is not None
+                    # the savepoints are stamped with the date of the end of their time step
+                    self.tendencies.update(
+                        diagnostic_state_nh=solve_nonhydro_diagnostic_state,
+                        at_datetime=self.model_time_variables.simulation_current_datetime,
+                    )
 
                 self._integrate_one_time_step(
                     diffusion_diagnostic_state=diffusion_diagnostic_state,
@@ -698,6 +710,12 @@ def initialize_driver(
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,
+        tendencies=prescribed_tendencies.create(
+            config=config.prescribed_tendencies,
+            grid=grid_manager.grid,
+            backend=backend,
+            exchange=exchange,
+        ),
         io_monitor=io_monitor,
     )
 
