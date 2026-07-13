@@ -70,3 +70,21 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
     assert config.dtime == datetime.timedelta(seconds=120)
+
+
+# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false
+# for the dry testcases (JW, GAUSS3D). The fortran default is false.
+@pytest.mark.parametrize(
+    ("run_nml", "expected"),
+    [
+        ({"dtime": 10.0, "modeltimestep": "  ", "ltransport": True}, True),
+        ({"dtime": 10.0, "modeltimestep": "  ", "ltransport": False}, False),
+        ({"dtime": 10.0, "modeltimestep": "  "}, False),
+    ],
+)
+def test_do_prep_adv_from_ltransport(run_nml: dict, expected: bool) -> None:
+    atm_dict, master_dict = _make_dicts(run_nml)
+    config = driver_config.DriverConfig.from_fortran_dict(
+        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+    )
+    assert config.do_prep_adv is expected

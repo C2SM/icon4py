@@ -145,7 +145,6 @@ class Icon4pyDriver:
     def time_integration(
         self,
         ds: driver_states.DriverStates,
-        do_prep_adv: bool,
     ) -> None:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
@@ -191,7 +190,6 @@ class Icon4pyDriver:
                     tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
-                    do_prep_adv=do_prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
                 )
                 device_utils.sync(self.backend)
@@ -229,7 +227,6 @@ class Icon4pyDriver:
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
-        do_prep_adv: bool,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
     ) -> None:
         if self.config.nonhydrostatic is not None:
@@ -240,7 +237,6 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                do_prep_adv,
             )
 
         if self.granules.diffusion is not None:
@@ -325,7 +321,6 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        do_prep_adv: bool,
     ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
 
@@ -353,7 +348,7 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    lprep_adv=do_prep_adv,
+                    lprep_adv=self.config.driver.do_prep_adv,
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )
@@ -710,5 +705,5 @@ def run_driver(
         granules=icon4py_driver.granules,
         states=ds,
     )
-    icon4py_driver.time_integration(ds, do_prep_adv=False)
+    icon4py_driver.time_integration(ds)
     return ds, icon4py_driver

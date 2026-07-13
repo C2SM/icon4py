@@ -81,6 +81,8 @@ class DriverConfig:
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
+    # lprep_adv in fortran. The default matches the namelist default of ltransport.
+    do_prep_adv: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
@@ -119,6 +121,10 @@ class DriverConfig:
             # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
             # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
             apply_extra_second_order_divdamp=not run_nml.get("ltestcase", False),
+            # mo_nh_stepping.f90 (perform_dyn_substepping):
+            # lprep_adv = ltransport .OR. (n_childdom > 0 .AND. grf_intmethod_e == 6)
+            # There are no nested domains in ICON4Py, so lprep_adv is ltransport.
+            do_prep_adv=run_nml.get("ltransport", False),
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             **overrides,
