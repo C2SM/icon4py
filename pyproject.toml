@@ -414,12 +414,7 @@ module = ['*.stencil_tests.*', '*.unit_tests.*']
 [[tool.mypy.overrides]]
 ignore_errors = true
 module = [
-  'icon4py.model.testing.pytest_hooks',
-  'icon4py.model.testing.serialbox',
-  'icon4py.bindings.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.bindings.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.bindings.grid_wrapper',
-  'icon4py.bindings.muphys_wrapper'
+  'icon4py.model.testing.serialbox'
 ]
 
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
