@@ -29,5 +29,3 @@ generate_test_child_pipeline:
 
 trigger_test_child_pipeline:
   extends: [.trigger_test_child_pipeline]
-  rules:
-    - when: never
