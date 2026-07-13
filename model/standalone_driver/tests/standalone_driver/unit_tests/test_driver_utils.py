@@ -1,4 +1,14 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Unit tests for ``standalone_driver.driver_utils`` (data-free)."""
+
+import itertools
 
 import pytest
 
@@ -37,6 +47,4 @@ def test_spinup_second_order_divdamp_factor_decreases_after_the_initial_period()
         )
         for elapsed_time_in_seconds in range(1800, 7201, 100)
     ]
-    assert all(later < earlier for earlier, later in zip(factors, factors[1:], strict=False)), (
-        factors
-    )
+    assert all(later < earlier for earlier, later in itertools.pairwise(factors)), factors
