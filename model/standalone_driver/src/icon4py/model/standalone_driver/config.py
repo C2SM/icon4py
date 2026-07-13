@@ -124,7 +124,7 @@ class DriverConfig:
             # mo_nh_stepping.f90 (perform_dyn_substepping):
             # lprep_adv = ltransport .OR. (n_childdom > 0 .AND. grf_intmethod_e == 6)
             # There are no nested domains in ICON4Py, so lprep_adv is ltransport.
-            do_prep_adv=run_nml.get("ltransport", False),
+            do_prep_adv=run_nml["ltransport"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             **overrides,
