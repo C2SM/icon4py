@@ -5,13 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base, type_alias as ta
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
@@ -85,7 +88,7 @@ class TestCalculateNabla4(StencilTest):
         z_nabla2_e: np.ndarray,
         inv_vert_vert_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
             connectivities=connectivities,
@@ -100,7 +103,7 @@ class TestCalculateNabla4(StencilTest):
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 

@@ -68,7 +68,7 @@ class TestApplyDiffusionToVn(StencilTest):
         start_2nd_nudge_line_idx_e: np.int32,
         limited_area: bool,
         **kwargs: Any,
-    ):
+    ) -> dict:
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
     calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -45,7 +48,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
         w: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
             connectivities, w, geofac_grg_x, geofac_grg_y
@@ -53,7 +56,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid) -> dict:
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

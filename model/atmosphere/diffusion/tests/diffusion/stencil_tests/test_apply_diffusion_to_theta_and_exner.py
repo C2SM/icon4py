@@ -82,7 +82,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(self, grid: base.Grid) -> dict:
         kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         theta_v_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -93,7 +93,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            zd_vertoffset[:, :, k] = rng.integers(
+            zd_vertoffset[:, :, k] = rng.integers(  # type: ignore[index]  # NDArrayObject Protocol limitation
                 low=0 - k,
                 high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
