@@ -147,32 +147,18 @@ version = "{current_version}"
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
+exclude = '''(?x)^(
+  .*/serialbox\.py$|
+  .*/docs/.*|
+  ^bindings/tests/.*|
+  ^tools/tests/.*|
+  ^scripts/.*|
+  ^noxfile\.py$|
+  ^scripts-cli\.py$
+)$'''
 explicit_package_bases = true
 files = [
-  # TODO(egparedes): activate for all sources and tests
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
-  # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/testing/tests/__init__.py',
-  '$MYPY_CONFIG_FILE_DIR/model/testing/tests/testing/__init__.py',
-  '$MYPY_CONFIG_FILE_DIR/model/testing/tests/testing/conftest.py',
-  '$MYPY_CONFIG_FILE_DIR/tools/src/',
-  '$MYPY_CONFIG_FILE_DIR/bindings/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests'
+  '$MYPY_CONFIG_FILE_DIR'
 ]
 ignore_missing_imports = false
 implicit_reexport = true
