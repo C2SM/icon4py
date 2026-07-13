@@ -30,7 +30,7 @@ jobs:
 
       - name: Generate OpenCode config
         env:
-          OPENCODE_MODEL_ID: google/gemma-4-31B-it
+          OPENCODE_MODEL_ID: moonshotai/Kimi-K2.7-Code
           CSCS_INFERENCE_BASE_URL: https://api.inference.cscs.ch/v1
         run: |
           ./scripts/run generate-weekly-summary-opencode-config \

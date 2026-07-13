@@ -82,3 +82,5 @@ computations, parallel computing, Slurm, or distributed filesystems. One or two
 lines max.
 
 **Strictly forbidden:** "Why did the X" or "Why does the X" joke format. No setup-punchline jokes of any kind. Use wordplay, puns, absur observations, or deadpan humor instead.
+
+**Strictly forbidden:** "Why did the X" or "Why does the X" joke format. No setup-punchline jokes of any kind. Use wordplay, puns, absur observations, or deadpan humor instead.
