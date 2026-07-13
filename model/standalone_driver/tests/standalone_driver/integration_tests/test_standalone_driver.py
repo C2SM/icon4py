@@ -26,23 +26,27 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
-# Tolerances (atol, rtol) per experiment.
+# Tolerances (atol, rtol) per experiment, measured with the gtfn_cpu backend.
 # rtol is 0.0 where the reference field contains zeros or near-zeros: there no
 # meaningful rtol can cover the difference, only atol.
+# TODO(jcanton): the MCH_CH_R04B09 values are placeholders. The driver does not
+# reproduce this experiment yet: it misses the initial diffusion call, the
+# spin-up second-order divergence damping is wrong, and the lateral boundary and
+# slow-physics tendencies are zeroed. Measure once those are fixed.
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
-        "vn": (6e-7, 0.0),
+        "vn": (5.3e-7, 0.0),
         "w": (8e-9, 0.0),
-        "exner": (2e-10, 0.0),
-        "theta_v": (1e-7, 0.0),
-        "rho": (9e-10, 0.0),
+        "exner": (4.5e-11, 5.5e-11),
+        "theta_v": (5.5e-8, 1.3e-10),
+        "rho": (1.5e-10, 2.2e-10),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": (6e-7, 0.0),
-        "w": (8e-9, 0.0),
-        "exner": (2e-10, 0.0),
-        "theta_v": (1e-7, 0.0),
-        "rho": (9e-10, 0.0),
+        "vn": (4.1e-13, 0.0),
+        "w": (8e-14, 0.0),
+        "exner": (1.3e-10, 1.3e-10),
+        "theta_v": (9.3e-8, 3.1e-10),
+        "rho": (1.6e-15, 2.4e-15),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": (6e-7, 0.0),

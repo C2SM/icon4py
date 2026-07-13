@@ -26,38 +26,40 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
-# Tolerances (atol, rtol) per experiment.
+# Tolerances (atol, rtol) per experiment, measured with the gtfn_cpu backend.
 # rtol is 0.0 where the reference field contains zeros or near-zeros: there no
 # meaningful rtol can cover the difference, only atol.
+# MCH_CH_R04B09 reads its initial state from the serialized data, hence the
+# exact reproduction.
 _TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, float]]] = {
     definitions.Experiments.JW: {
-        "rho": (0.0, 1e-12),
-        "exner": (1e-14, 1e-12),
-        "theta_v": (1e-11, 1e-12),
-        "vn": (1e-12, 1e-12),
-        "w": (1e-12, 1e-12),
+        "rho": (6.3e-15, 1.2e-14),
+        "exner": (1.9e-15, 3.4e-15),
+        "theta_v": (2e-12, 3.7e-15),
+        "vn": (3.2e-13, 0.0),
+        "w": (1.5e-17, 0.0),
     },
+    # No 'qv' yet: the tracers arrive with C2SM/icon4py#1301.
     definitions.Experiments.EXCLAIM_APE_AES: {
-        "rho": (0.0, 1e-12),
-        "exner": (1e-14, 1e-12),
-        "theta_v": (1e-11, 1e-12),
-        "vn": (1e-12, 1e-12),
-        "w": (1e-12, 1e-12),
-        "qv": (0.0, 1e-12),
+        "rho": (6.4e-15, 1.2e-14),
+        "exner": (2e-15, 3.4e-15),
+        "theta_v": (2.1e-12, 3.5e-15),
+        "vn": (3.2e-13, 0.0),
+        "w": (0.0, 0.0),
     },
     definitions.Experiments.GAUSS3D: {
-        "rho": (0.0, 1e-12),
-        "exner": (1e-14, 1e-12),
-        "theta_v": (1e-11, 1e-12),
-        "vn": (1e-12, 1e-12),
-        "w": (1e-12, 1e-12),
+        "rho": (1.2e-15, 3e-15),
+        "exner": (4.5e-16, 1.2e-15),
+        "theta_v": (1.2e-13, 4e-16),
+        "vn": (0.0, 0.0),
+        "w": (0.0, 0.0),
     },
     definitions.Experiments.MCH_CH_R04B09: {
-        "rho": (0.0, 1e-12),
-        "exner": (1e-14, 1e-12),
-        "theta_v": (1e-11, 1e-12),
-        "vn": (1e-12, 1e-12),
-        "w": (1e-12, 1e-12),
+        "rho": (0.0, 0.0),
+        "exner": (0.0, 0.0),
+        "theta_v": (0.0, 0.0),
+        "vn": (0.0, 0.0),
+        "w": (0.0, 0.0),
     },
 }
 
