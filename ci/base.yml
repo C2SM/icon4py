@@ -206,16 +206,21 @@ variables:
 .generate_test_child_pipeline:
   stage: generate_test
   extends: .container-runner-lightweight-gh200
+  tags: [languard-k8s]
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   needs: [build_image_aarch64]
   timeout: 1h
   variables:
-    ICON4PY_NOX_COLLECTION_WORKERS: "8"
+    # Run many collections concurrently. Each pytest collection needs a few
+    # hundred MiB, so the pod resources below are sized for ~128 parallel
+    # collections.
+    ICON4PY_NOX_COLLECTION_WORKERS: "128"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
-    KUBERNETES_CPU_REQUEST: "4"
-    KUBERNETES_CPU_LIMIT: "4"
-    KUBERNETES_MEMORY_REQUEST: "4Gi"
-    KUBERNETES_MEMORY_LIMIT: "4Gi"
+    KUBERNETES_CPU_REQUEST: "32"
+    KUBERNETES_CPU_LIMIT: "32"
+    KUBERNETES_MEMORY_REQUEST: "64Gi"
+    KUBERNETES_MEMORY_LIMIT: "64Gi"
+    KUBERNETES_NODE_SELECTOR_ARCH: "kubernetes.io/arch=arm64"
   script:
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml
