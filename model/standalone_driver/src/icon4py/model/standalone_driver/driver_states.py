@@ -120,6 +120,17 @@ class ModelTimeVariables:
     def substep_timestep(self) -> ta.wpfloat:
         return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
+    @property
+    def elapsed_time_at_step_midpoint_in_seconds(self) -> ta.wpfloat:
+        """
+        Elapsed time at the middle of the current time step.
+
+        elapsed_time_global = (jstep - 0.5) * dtime in mo_nh_stepping.f90, with a
+        one-based jstep. 'advance_simulation_datetime' is called before the step is
+        integrated, so 'elapsed_time_in_seconds' is already at the end of it.
+        """
+        return ta.wpfloat(self.elapsed_time_in_seconds - 0.5 * self.dtime_in_seconds)
+
     def advance_simulation_datetime(self) -> None:
         self.simulation_current_datetime += self.dtime
         self.elapsed_time_in_seconds += self.dtime_in_seconds

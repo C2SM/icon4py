@@ -191,6 +191,8 @@ class Icon4pyDriver:
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
+                    # updated once per time step, as in mo_nh_stepping.f90
+                    second_order_divdamp_factor=self._second_order_divdamp_factor(),
                 )
                 device_utils.sync(self.backend)
 
@@ -228,6 +230,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
+        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None
@@ -237,6 +240,7 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
+                second_order_divdamp_factor,
             )
 
         if self.granules.diffusion is not None:
@@ -321,6 +325,7 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
+        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
 
@@ -344,7 +349,7 @@ class Icon4pyDriver:
                     diagnostic_state_nh=solve_nonhydro_diagnostic_state,
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
-                    second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
+                    second_order_divdamp_factor=second_order_divdamp_factor,
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
@@ -456,38 +461,45 @@ class Icon4pyDriver:
             0.0, self._allocator
         )
 
-    def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
-        if self.config.driver.apply_extra_second_order_divdamp:
-            assert self.config.nonhydrostatic is not None
-            fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
-            if (
-                self.model_time_variables.elapsed_time_in_seconds
-                <= driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-            ):
-                return (
-                    driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP
-                    * fourth_order_divdamp_factor
-                )
-            elif (
-                self.model_time_variables.elapsed_time_in_seconds
-                <= driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-            ):
-                return (
-                    driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP
-                    * fourth_order_divdamp_factor
-                    * (
-                        self.model_time_variables.elapsed_time_in_seconds
-                        - driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-                    )
-                    / (
-                        driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-                        - driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-                    )
-                )
-            else:
-                return ta.wpfloat("0.0")
-        else:
+    def _second_order_divdamp_factor(self) -> ta.wpfloat:
+        """
+        Second order divergence damping factor (divdamp_fac_o2) for the current time step.
+
+        mo_nh_stepping.f90, in the time loop, before integrate_nh:
+
+            IF (divdamp_order==24) THEN
+              elapsed_time_global = (REAL(jstep,wp)-0.5_wp)*dtime
+              IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase) THEN
+                CALL update_spinup_damping(elapsed_time_global)
+              ELSE
+                divdamp_fac_o2 = 0._wp
+              ENDIF
+            ENDIF
+        """
+        assert self.config.nonhydrostatic is not None
+        fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
+        if (
+            self.config.nonhydrostatic.divdamp_order
+            != dycore_states.DivergenceDampingOrder.COMBINED
+        ):
+            # divdamp_fac_o2 is only updated at runtime for divdamp_order = 24. Otherwise it
+            # keeps the value it is initialized with in mo_nonhydrostatic_nml.f90: divdamp_fac.
+            return fourth_order_divdamp_factor
+
+        elapsed_time_in_seconds = self.model_time_variables.elapsed_time_at_step_midpoint_in_seconds
+        spinup_cutoff = driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP + (
+            0.5 * self.model_time_variables.dtime_in_seconds
+        )
+        if (
+            not self.config.driver.apply_extra_second_order_divdamp
+            or elapsed_time_in_seconds > spinup_cutoff
+        ):
             return ta.wpfloat("0.0")
+
+        return driver_utils.spinup_second_order_divdamp_factor(
+            elapsed_time_in_seconds=elapsed_time_in_seconds,
+            fourth_order_divdamp_factor=fourth_order_divdamp_factor,
+        )
 
     def _compute_statistics(
         self, current_dyn_substep: int, prognostic_states: prognostics.PrognosticState
