@@ -925,8 +925,16 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): DISABLED (BISECT)")
-        pass  # BISECT: apply_diffusion_to_vn disabled
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start (BISECT exp 2)")
+        self.apply_diffusion_to_vn(
+            u_vert=self.u_vert,
+            v_vert=self.v_vert,
+            z_nabla2_e=self.z_nabla2_e,
+            kh_smag_e=self.kh_smag_e,
+            diff_multfac_vn=diff_multfac_vn,
+            vn=prognostic_state.vn,
+        )
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end (BISECT exp 2)")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
