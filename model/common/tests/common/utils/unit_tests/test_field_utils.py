@@ -85,8 +85,9 @@ class TestIndex2Offset:
         # indices: [2, 1, 3, 0], positions: [0, 1, 2, 3]
         # offsets: [2-0, 1-1, 3-2, 0-3] = [2, 0, 1, -3]  # noqa: ERA001
         index_field = gtx.as_field(
-            {dims.CellDim: range(0, 4)}, np.array([2, 1, 3, 0], dtype=np.int32)
-        )  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
+            {dims.CellDim: range(0, 4)},
+            np.array([2, 1, 3, 0], dtype=np.int32),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
+        )
         result = field_utils.index2offset(index_field, dims.CellDim, allocator=allocator)
 
         assert np.array_equal(result.ndarray, [2, 0, 1, -3])  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
@@ -96,8 +97,9 @@ class TestIndex2Offset:
         # indices: [5, 3, 4, 2], positions: [2, 3, 4, 5]
         # offsets: [5-2, 3-3, 4-4, 2-5] = [3, 0, 0, -3]  # noqa: ERA001
         index_field = gtx.as_field(
-            {dims.CellDim: range(2, 6)}, np.array([5, 3, 4, 2], dtype=np.int32)
-        )  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
+            {dims.CellDim: range(2, 6)},
+            np.array([5, 3, 4, 2], dtype=np.int32),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
+        )
         result = field_utils.index2offset(index_field, dims.CellDim, allocator=allocator)
 
         assert np.array_equal(result.ndarray, [3, 0, 0, -3])  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
