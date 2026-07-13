@@ -205,23 +205,25 @@ variables:
 
 .generate_test_child_pipeline:
   stage: generate_test
-  extends: .container-runner-lightweight-gh200
-  tags: [languard-k8s]
+  # Run the generator on a GH200 container runner so it can use more than the
+  # 4 CPU / 4 Gi limit of the lightweight K8s runner.
+  extends: .container-runner-santis-gh200
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   needs: [build_image_aarch64]
   timeout: 1h
   variables:
     # Run many collections concurrently. Each pytest collection needs a few
-    # hundred MiB, so the pod resources below are sized for ~128 parallel
+    # hundred MiB, so the resources below are sized for ~128 parallel
     # collections.
     ICON4PY_NOX_COLLECTION_WORKERS: "128"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
-    KUBERNETES_CPU_REQUEST: "32"
-    KUBERNETES_CPU_LIMIT: "32"
-    KUBERNETES_MEMORY_REQUEST: "64Gi"
-    KUBERNETES_MEMORY_LIMIT: "64Gi"
-    KUBERNETES_NODE_SELECTOR_ARCH: "kubernetes.io/arch=arm64"
+    # Single task using 32 cores; memory is requested per CPU so the allocation
+    # is 32 cores * 2 GiB/CPU = 64 GiB total.
+    SLURM_NTASKS: "1"
+    SLURM_CPUS_PER_TASK: "32"
+    SLURM_MEM_PER_CPU: "2G"
   script:
+    - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml
   artifacts:
