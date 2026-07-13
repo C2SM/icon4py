@@ -51,7 +51,7 @@ def cloud_to_graupel(
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
     qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
     riming_graupel_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _cloud_to_graupel(t=t, rho=rho, qc=qc, qg=qg, out=riming_graupel_rate)
 
 
@@ -106,7 +106,7 @@ def cloud_to_rain(
     qr: fa.CellKField[ta.wpfloat],  # Rain water specific mass
     nc: ta.wpfloat,  # Cloud water number concentration
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _cloud_to_rain(t=t, qc=qc, qr=qr, nc=nc, out=conversion_rate)
 
 
@@ -149,7 +149,7 @@ def cloud_to_snow(  # noqa: PLR0917 [too-many-positional-arguments]
     ns: fa.CellKField[ta.wpfloat],  # Snow number
     lam: fa.CellKField[ta.wpfloat],  # Snow slope parameter
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _cloud_to_snow(t=t, qc=qc, qs=qs, ns=ns, lam=lam, out=riming_snow_rate)
 
 
@@ -184,7 +184,7 @@ def cloud_x_ice(
     qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
     dt: ta.wpfloat,  # time step
     freezing_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _cloud_x_ice(t=t, qc=qc, qi=qi, dt=dt, out=freezing_rate)
 
 
@@ -237,7 +237,7 @@ def graupel_to_rain(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
     qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
     rain_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _graupel_to_rain(t=t, p=p, rho=rho, dvsw0=dvsw0, qg=qg, out=rain_rate)
 
 
@@ -287,7 +287,7 @@ def ice_to_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
     sticking_eff: fa.CellKField[ta.wpfloat],  # Sticking efficiency
     aggregation: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _ice_to_graupel(rho=rho, qr=qr, qg=qg, qi=qi, sticking_eff=sticking_eff, out=aggregation)
 
 
@@ -329,7 +329,7 @@ def ice_to_snow(
     lam: fa.CellKField[ta.wpfloat],  # Snow intercept parameter
     sticking_eff: fa.CellKField[ta.wpfloat],  # Sticking efficiency
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _ice_to_snow(qi=qi, ns=ns, lam=lam, sticking_eff=sticking_eff, out=conversion_rate)
 
 
@@ -401,7 +401,7 @@ def rain_to_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water (T)
     dt: ta.wpfloat,  # time step
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _rain_to_graupel(
         t=t, rho=rho, qc=qc, qr=qr, qi=qi, qs=qs, mi=mi, dvsw=dvsw, dt=dt, out=conversion_rate
     )
@@ -461,7 +461,7 @@ def rain_to_vapor(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water (T)
     dt: ta.wpfloat,  # time step
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _rain_to_vapor(t=t, rho=rho, qc=qc, qr=qr, dvsw=dvsw, dt=dt, out=conversion_rate)
 
 
@@ -500,7 +500,7 @@ def snow_to_graupel(
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _snow_to_graupel(t=t, rho=rho, qc=qc, qs=qs, out=conversion_rate)
 
 
@@ -553,7 +553,7 @@ def snow_to_rain(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _snow_to_rain(t=t, p=p, rho=rho, dvsw0=dvsw0, qs=qs, out=conversion_rate)
 
 
@@ -616,7 +616,7 @@ def vapor_x_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
     dt: ta.wpfloat,  # time step
     exchange_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _vapor_x_graupel(
         t=t, p=p, rho=rho, qg=qg, dvsw=dvsw, dvsi=dvsi, dvsw0=dvsw0, dt=dt, out=exchange_rate
     )
@@ -669,7 +669,7 @@ def vapor_x_ice(  # noqa: PLR0917 [too-many-positional-arguments]
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     dt: ta.wpfloat,  # time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _vapor_x_ice(qi=qi, mi=mi, eta=eta, dvsi=dvsi, rho=rho, dt=dt, out=vapor_deposition_rate)
 
 
