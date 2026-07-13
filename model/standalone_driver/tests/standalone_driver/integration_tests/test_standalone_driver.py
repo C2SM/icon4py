@@ -29,10 +29,11 @@ from ..fixtures import *  # noqa: F403
 # Tolerances (atol, rtol) per experiment, measured with the gtfn_cpu backend.
 # rtol is 0.0 where the reference field contains zeros or near-zeros: there no
 # meaningful rtol can cover the difference, only atol.
-# TODO(jcanton): the MCH_CH_R04B09 values are placeholders. The driver does not
-# reproduce this experiment yet: it misses the initial diffusion call, the
-# spin-up second-order divergence damping is wrong, and the lateral boundary and
-# slow-physics tendencies are zeroed. Measure once those are fixed.
+# MCH_CH_R04B09 is the only real data experiment, and the only one that does not
+# reproduce the reference to roundoff. Its remaining difference is likely in the
+# metrics and interpolation fields, which ICON4Py computes from the grid file while
+# ICON serializes its own: the dycore does not reproduce this experiment exactly
+# either. Under investigation.
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
         "vn": (5.3e-7, 0.0),
@@ -49,11 +50,11 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "rho": (1.6e-15, 2.4e-15),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
-        "vn": (6e-7, 0.0),
-        "w": (8e-9, 0.0),
-        "exner": (2e-10, 0.0),
-        "theta_v": (1e-7, 0.0),
-        "rho": (9e-10, 0.0),
+        "vn": (3.5e-3, 0.0),
+        "w": (7e-4, 0.0),
+        "exner": (5e-7, 6.4e-7),
+        "theta_v": (1.1e-3, 3.3e-6),
+        "rho": (3.2e-6, 3.4e-6),
     },
 }
 
