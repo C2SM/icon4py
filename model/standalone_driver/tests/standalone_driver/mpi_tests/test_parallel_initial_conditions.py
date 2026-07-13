@@ -113,7 +113,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=single_rank_config,  # type: ignore[arg-type]
+            config=single_rank_config,  # type: ignore[arg-type]  # DriverConfig vs ExperimentConfig type mismatch
             grid_manager=single_rank_grid_manager,
             process_props=single_rank_process_props,
             backend=backend,
@@ -161,7 +161,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=multi_rank_config,  # type: ignore[arg-type]
+            config=multi_rank_config,  # type: ignore[arg-type]  # DriverConfig vs ExperimentConfig type mismatch
             grid_manager=multi_rank_grid_manager,
             process_props=process_props,
             backend=backend,

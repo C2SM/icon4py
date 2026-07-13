@@ -121,7 +121,7 @@ class GridGeometry(factory.FieldSource):
         self._providers = {}
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py constructors don't expose .partial in type stubs
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
@@ -890,7 +890,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         self._pairs = pairs
         self._do_exchange = do_exchange
 
-    def __call__(  # type: ignore[override]
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,

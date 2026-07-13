@@ -79,10 +79,10 @@ def diagnose_pressure_surface_to_top(
     # surface pressure lives at the bottom interface; extract it as a cell field
     # fmt: off
     # NDArrayObject Protocol lacks __setitem__; see SPEC D4
-    surface_pressure.ndarray[:] = (  # type: ignore[index]
+    surface_pressure.ndarray[:] = (  # type: ignore[index]  # NDArrayObject Protocol limitation
         pressure_on_cells_half_levels.ndarray[:, num_levels]
     )
-    pressure_on_cells_half_levels.ndarray[:, -1] = surface_pressure.ndarray  # type: ignore[index]
+    pressure_on_cells_half_levels.ndarray[:, -1] = surface_pressure.ndarray  # type: ignore[index]  # NDArrayObject Protocol limitation
     # fmt: on
 
     diagnose_pressure_stencil.diagnose_pressure.with_backend(backend)(

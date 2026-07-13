@@ -44,7 +44,7 @@ def get_neighbor_tables_for_simple_grid() -> dict[str, np.ndarray]:
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
-    return neighbor_tables  # type: ignore[return-value]
+    return neighbor_tables  # type: ignore[return-value]  # NDArrayObject Protocol mismatch
 
 
 offsets = [dims.E2C, dims.E2V, dims.C2E, dims.C2E2C, dims.V2C, dims.V2E, dims.C2V, dims.E2C2V]

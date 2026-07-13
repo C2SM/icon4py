@@ -291,7 +291,7 @@ def test_exchange_on_dummy_data(
     local_points = data_alloc.as_numpy(
         decomposition_info.local_index(dimension, decomp_defs.DecompositionInfo.EntryType.OWNED)
     )
-    assert bool((input_field.ndarray == number).all())  # type: ignore[attr-defined]
+    assert bool((input_field.ndarray == number).all())  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks .all() method
     exchange.exchange(dimension, input_field, stream=decomp_defs.BLOCK)
     result = input_field.asnumpy()
     _log.info(f"rank={process_props.rank} - num of halo points ={halo_points.shape}")

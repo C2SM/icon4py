@@ -293,7 +293,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[  # type: ignore[attr-defined]
+        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks asnumpy() in type stubs
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
@@ -302,7 +302,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),  # type: ignore[attr-defined]
+        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks asnumpy() in type stubs
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -441,14 +441,14 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[  # type: ignore[attr-defined]
+        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks asnumpy() in type stubs
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),  # type: ignore[attr-defined]
+        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks asnumpy() in type stubs
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )
@@ -625,7 +625,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
     contravariant_correction_at_cells_on_half_levels = savepoint_velocity_init.w_concorr_c()
     w = savepoint_velocity_init.w()
     horizontal_advection_of_w_at_edges_on_half_levels = savepoint_velocity_exit.z_v_grad_w()
-    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)  # type: ignore[arg-type]
+    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)  # type: ignore[arg-type]  # serialbox savepoint return type is Any
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
@@ -641,7 +641,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
-    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)  # type: ignore[arg-type]
+    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)  # type: ignore[arg-type]  # serialbox savepoint return type is Any
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
     icon_result_cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
@@ -773,7 +773,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     w = savepoint_velocity_init.w()
     tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
-    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)  # type: ignore[arg-type]
+    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)  # type: ignore[arg-type]  # serialbox savepoint return type is Any
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
@@ -791,7 +791,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
-    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)  # type: ignore[arg-type]
+    icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)  # type: ignore[arg-type]  # serialbox savepoint return type is Any
     icon_result_cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
@@ -909,7 +909,7 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
     tangential_wind = savepoint_velocity_exit.vt()
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_exit.z_w_con_c_full()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
-    normal_wind_advective_tendency = savepoint_velocity_init.ddt_vn_apc_pc(istep_init - 1)  # type: ignore[arg-type]
+    normal_wind_advective_tendency = savepoint_velocity_init.ddt_vn_apc_pc(istep_init - 1)  # type: ignore[arg-type]  # serialbox savepoint return type is Any
 
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     geofac_rot = interpolation_savepoint.geofac_rot()
@@ -930,7 +930,7 @@ def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-po
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)  # type: ignore[arg-type]
+    icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)  # type: ignore[arg-type]  # serialbox savepoint return type is Any
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()

@@ -91,7 +91,7 @@ def is_sorted(array: np.ndarray) -> bool:
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]  # hashlib.md5 accepts Buffer, np.asarray returns NDArrayObject
 
 
 def get_fixture_value(name: str, item: pytest.Item) -> Any:

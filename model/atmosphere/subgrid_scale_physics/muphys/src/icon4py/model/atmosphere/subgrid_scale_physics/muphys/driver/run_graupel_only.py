@@ -111,7 +111,7 @@ def main() -> None:
     inp = common.GraupelInput.load(
         filename=pathlib.Path(args.input_file),
         allocator=allocator,
-        dtype=dtype,  # type: ignore[arg-type]
+        dtype=dtype,  # type: ignore[arg-type]  # GT4Py Field dtype type-var mismatch
     )
 
     use_inout_buffers = True  # Set to True to reuse input buffers for output.
@@ -133,7 +133,7 @@ def main() -> None:
     out = common.GraupelOutput.allocate(
         allocator=allocator,
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-        dtype=dtype,  # type: ignore[arg-type]
+        dtype=dtype,  # type: ignore[arg-type]  # GT4Py Field dtype type-var mismatch
         references=references,
     )
 

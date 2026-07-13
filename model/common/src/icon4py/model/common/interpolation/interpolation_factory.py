@@ -149,7 +149,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py constructors don't expose .partial in type stubs
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata

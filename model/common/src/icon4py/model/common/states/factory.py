@@ -550,7 +550,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                 return dims.KDim
             return dim
 
-        allocate = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]
+        allocate = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py constructors don't expose .partial in type stubs
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
@@ -604,7 +604,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     def needs_exchange(self) -> bool:
         return self._do_exchange
 
-    def __call__(  # type: ignore[override]
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,
@@ -633,17 +633,17 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
-        self._fields = self._allocate(backend, grid.grid, dtype=dtype)  # type: ignore[assignment,arg-type]
+        self._fields = self._allocate(backend, grid.grid, dtype=dtype)  # type: ignore[assignment,arg-type]  # GT4Py Field type narrowing
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
-        deps.update(self._params)  # type: ignore[arg-type]
-        deps.update({k: self._fields[v] for k, v in self._output.items()})  # type: ignore[misc]
+        deps.update(self._params)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
+        deps.update({k: self._fields[v] for k, v in self._output.items()})  # type: ignore[misc]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
         # runtime invariant: ProgramFieldProvider needs a vertical grid
         assert grid.vertical_grid is not None, "vertical_grid must not be None"
         dims = self._domain_args(grid.grid, grid.vertical_grid)
         offset_providers = self._get_offset_providers(grid.grid)
-        deps.update(dims)  # type: ignore[arg-type]
-        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)  # type: ignore[arg-type]
+        deps.update(dims)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
+        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
 
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:
@@ -695,7 +695,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self._params = params if params is not None else {}
         self._do_exchange = do_exchange
 
-    def __call__(  # type: ignore[override]
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,
@@ -729,7 +729,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             for k, v in self._connectivities.items()
         }
         args.update(offsets)
-        args.update(self._params)  # type: ignore[arg-type]
+        args.update(self._params)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
         results = self._func(**args)
         # convert to tuple
         results = (results,) if not isinstance(results, tuple) else results

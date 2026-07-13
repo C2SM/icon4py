@@ -164,7 +164,7 @@ def setup_program(
     return functools.partial(
         static_args_program,
         **constant_args,  # type: ignore[arg-type]  # GT4Py Program.__call__ uses dynamic **kwargs that mypy cannot verify
-        **horizontal_sizes,  # type: ignore[arg-type]
-        **vertical_sizes,  # type: ignore[arg-type]
+        **horizontal_sizes,  # type: ignore[arg-type]  # GT4Py Program.__call__ uses dynamic **kwargs that mypy cannot verify
+        **vertical_sizes,  # type: ignore[arg-type]  # GT4Py Program.__call__ uses dynamic **kwargs that mypy cannot verify
         offset_provider=offset_provider,
     )

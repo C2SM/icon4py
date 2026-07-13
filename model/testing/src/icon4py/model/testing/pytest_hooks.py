@@ -231,7 +231,7 @@ def pytest_runtest_makereport(
     outcome = yield
     report = outcome.get_result()
     if call.when == "call":
-        benchmark = item.funcargs.get("benchmark", None)  # type: ignore[attr-defined]
+        benchmark = item.funcargs.get("benchmark", None)  # type: ignore[attr-defined]  # pytest internal funcargs not exposed in type stubs
         if benchmark and hasattr(benchmark, "extra_info"):
             info = benchmark.extra_info.get("gtx_metrics", None)
             if info:
@@ -310,7 +310,7 @@ def handle_mpi_options(config: pytest.Config) -> None:
 
         if subcomm_size is not None:
             scheduler = MPISubcommScheduler(subcomm_size)
-            config._mpi_scheduler = scheduler  # type: ignore[attr-defined]
+            config._mpi_scheduler = scheduler  # type: ignore[attr-defined]  # pytest internal _mpi_scheduler not exposed in type stubs
 
             if scheduler.subcomm.Get_rank() == 0:
                 start_rank = scheduler.group_id * scheduler.subcomm_size

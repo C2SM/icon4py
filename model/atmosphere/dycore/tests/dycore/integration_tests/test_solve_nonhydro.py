@@ -2116,7 +2116,7 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
     # Since dwdz_at_cells_on_model_levels is computed for all levels in icon4py, we have to
     # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
-    scaling_factor = metrics_savepoint.scaling_factor_for_3d_divdamp()  # type: ignore[attr-defined]
+    scaling_factor = metrics_savepoint.scaling_factor_for_3d_divdamp()  # type: ignore[attr-defined]  # runtime-only attribute not in type stubs
     starting_vertical_index_for_3d_divdamp = (
         xp.min(xp.where(scaling_factor.ndarray > 0.0))[0] if config.divdamp_type == 32 else 0
     )

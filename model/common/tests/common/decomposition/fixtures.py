@@ -19,4 +19,4 @@ def simple_neighbor_tables() -> dict[str, np.ndarray]:
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
-    return neighbor_tables  # type: ignore[return-value]
+    return neighbor_tables  # type: ignore[return-value]  # NDArrayObject Protocol mismatch
