@@ -30,19 +30,21 @@ from ...grid import utils as grid_utils
 
 
 @pytest.mark.parametrize("process_props", [False], indirect=True)
-def test_create_single_node_runtime_without_mpi(process_props):  # fixture
+def test_create_single_node_runtime_without_mpi(
+    process_props: definitions.ProcessProperties,
+) -> None:  # fixture
     decomposition_info = definitions.DecompositionInfo()
     exchange = definitions.create_exchange(process_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
-def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
+def get_neighbor_tables_for_simple_grid() -> dict[str, np.ndarray]:
     grid = simple.simple_grid()
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
-    return neighbor_tables
+    return neighbor_tables  # type: ignore[return-value]
 
 
 offsets = [dims.E2C, dims.E2V, dims.C2E, dims.C2E2C, dims.V2C, dims.V2E, dims.C2V, dims.E2C2V]
@@ -77,7 +79,9 @@ def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
         (definitions.DecompositionFlag.FIRST_HALO_LEVEL, True),
     ],
 )
-def test_decomposition_info_is_distributed(flag, expected) -> None:
+def test_decomposition_info_is_distributed(
+    flag: definitions.DecompositionFlag, expected: bool
+) -> None:
     mesh = simple.simple_grid(allocator=None, num_levels=10)
     decomp = definitions.DecompositionInfo()
     decomp.set_dimension(

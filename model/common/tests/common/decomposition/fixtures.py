@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
 
@@ -13,9 +14,9 @@ from icon4py.model.common.grid import simple
 
 
 @pytest.fixture(scope="session")
-def simple_neighbor_tables():
+def simple_neighbor_tables() -> dict[str, np.ndarray]:
     grid = simple.simple_grid()
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
-    return neighbor_tables
+    return neighbor_tables  # type: ignore[return-value]

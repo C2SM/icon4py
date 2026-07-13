@@ -178,7 +178,7 @@ def test_writer_append_timeslice_to_existing_var(test_path: pathlib.Path, random
         grid.num_levels,
         grid.num_cells,
     )
-    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
+    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)  # type: ignore[attr-defined]
 
 
 def test_initialize_writer_create_dimensions(

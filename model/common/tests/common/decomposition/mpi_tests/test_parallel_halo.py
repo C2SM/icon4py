@@ -36,14 +36,14 @@ def global_indices(dim: gtx.Dimension) -> np.ndarray:
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_element_ownership_is_unique(
-    dim,
-    process_props,
-    simple_neighbor_tables,
-):
-    parallel_helpers.check_comm_size(process_props, sizes=[4])
+    dim: gtx.Dimension,
+    process_props: decomp_defs.ProcessProperties,
+    simple_neighbor_tables: dict[str, np.ndarray],
+) -> None:
+    parallel_helpers.check_comm_size(process_props, sizes=(4,))
 
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]
         process_props=process_props,
         allocator=backend,
     )
@@ -69,6 +69,7 @@ def test_element_ownership_is_unique(
     # Gatherv does not work if one of the buffers has size-0 (VertexDim)
     comm.Gather(sendbuf=send_buf, recvbuf=recv_buffer, root=0)
     if process_props.rank == 0:
+        assert recv_buffer is not None
         _log.info(f"global indices: {recv_buffer}")
         # check there are no duplicates
         values = recv_buffer[recv_buffer != -1]
