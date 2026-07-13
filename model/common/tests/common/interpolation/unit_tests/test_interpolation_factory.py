@@ -116,7 +116,7 @@ def test_get_c_lin_e(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.C_LIN_E)
-    assert field.shape == (grid.num_edges, E2C_SIZE)
+    assert field.shape == (grid.num_edges, E2C_SIZE)  # type: ignore[attr-defined]  # Field.shape is runtime-only
     assert test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
 
 
@@ -131,7 +131,7 @@ def test_get_geofac_div(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_DIV)
-    assert field.shape == (grid.num_cells, C2E_SIZE)
+    assert field.shape == (grid.num_cells, C2E_SIZE)  # type: ignore[attr-defined]  # Field.shape is runtime-only
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
@@ -227,7 +227,7 @@ def test_e_flx_avg(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG).asnumpy()
-    assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
+    assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])  # type: ignore[attr-defined]  # NeighborTable.shape is runtime-only
     assert test_helpers.dallclose(field, field_ref.asnumpy(), atol=1e-12)
 
 

@@ -96,7 +96,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             zd_vertoffset[:, :, k] = rng.integers(  # type: ignore[index]  # NDArrayObject Protocol limitation
                 low=0 - k,
                 high=grid.num_levels - k - 1,
-                size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
+                size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),  # type: ignore[attr-defined]  # Field.shape is runtime-only
             )
         zd_diffcoef = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         geofac_n2s_c = data_alloc.random_field(grid, dims.CellDim)

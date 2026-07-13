@@ -142,7 +142,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
             ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
                 low=0 - k,
                 high=grid.num_levels - k - 1,
-                size=(ikoffset.shape[0], ikoffset.shape[1]),
+                size=(ikoffset.shape[0], ikoffset.shape[1]),  # type: ignore[attr-defined]  # Field.shape is runtime-only
             )
 
         theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

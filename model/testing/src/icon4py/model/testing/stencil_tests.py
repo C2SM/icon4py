@@ -155,7 +155,7 @@ def test_and_benchmark(
                 f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
             )
 
-            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (
+            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (  # type: ignore[attr-defined]  # introspection of GT4Py compiled programs
                 "Multiple compiled programs found, cannot extract metrics."
             )
             metrics_data = gtx_metrics.sources

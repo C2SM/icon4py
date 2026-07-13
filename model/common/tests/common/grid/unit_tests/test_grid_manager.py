@@ -613,7 +613,7 @@ def test_decomposition_info_single_rank(
 )
 def test_local_connectivity(
     rank: int,
-    caplog: Iterator,
+    caplog: pytest.LogCaptureFixture,
     field_offset: gtx.FieldOffset,
     backend_like: model_backends.BackendLike,
 ) -> None:
