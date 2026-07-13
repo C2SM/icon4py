@@ -103,19 +103,19 @@ def gauss3d(
         axis=1,
     )
     u_field = array_ns.where(mask, u0, 0.0)
-    prognostic_state_now.vn.ndarray[:, :] = u_field * primal_normal_x[:, array_ns.newaxis]
+    prognostic_state_now.vn.ndarray[:, :] = u_field * primal_normal_x[:, array_ns.newaxis]  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
 
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
-        theta_v_ndarray[:, k_index] = t0 * array_ns.exp(z_help)
+        theta_v_ndarray[:, k_index] = t0 * array_ns.exp(z_help)  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
 
     if brunt_vais != 0.0:
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
-        exner_ndarray[:, num_levels - 1] = (
+        exner_ndarray[:, num_levels - 1] = (  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
             phy_const.GRAV / brunt_vais
         ) ** 2 / t0 / phy_const.CPD * (array_ns.exp(-z_help) - 1.0) + 1.0
     else:
-        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / t0
+        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / t0  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
 
     testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
         wgtfac_c=wgtfac_c,
@@ -133,7 +133,7 @@ def gauss3d(
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
 
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,

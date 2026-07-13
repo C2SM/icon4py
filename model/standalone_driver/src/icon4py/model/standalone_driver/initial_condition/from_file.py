@@ -66,16 +66,16 @@ def _fill_prognostics_from_serialbox(
     def read_edge_k(name: str) -> data_alloc.NDArray:
         return array_ns.asarray(array_ns.squeeze(ser.read(name, sp).astype(float))[:num_edges, :])
 
-    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
-    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
-    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
-    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")
-    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
+    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
 
     if ntracer > 0:
         tracers_raw = array_ns.squeeze(ser.read("tracers_now", sp).astype(float))
         for i, tracer in enumerate(prognostic_state.tracer.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])
+            tracer.field.ndarray[:, :] = array_ns.asarray(tracers_raw[:num_cells, :, i])  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
 
 
 def read_from_file(
