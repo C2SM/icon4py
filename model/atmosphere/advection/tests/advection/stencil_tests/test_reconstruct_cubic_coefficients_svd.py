@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 from typing import Any
 
 import gt4py.next as gtx
@@ -306,7 +314,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         lsq_pseudoinv_1_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         lsq_pseudoinv_2_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)

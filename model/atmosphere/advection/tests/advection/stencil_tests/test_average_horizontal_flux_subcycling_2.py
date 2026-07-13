@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 from typing import Any
 
 import gt4py.next as gtx
@@ -15,7 +23,6 @@ from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycl
     average_horizontal_flux_subcycling_2,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
@@ -36,7 +43,7 @@ class TestAverageHorizontalFluxSubcycling2(stencil_tests.StencilTest):
         return dict(p_out_e=p_out_e)
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)

@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -35,7 +43,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
         primal_normal_cell_2: np.ndarray,
         dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         lvn_pos = p_vn >= 0.0
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
@@ -74,7 +82,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)

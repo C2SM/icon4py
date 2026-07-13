@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 from typing import Any
 
 import gt4py.next as gtx
@@ -15,7 +23,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_cou
     compute_ffsl_backtrajectory_counterclockwise_indicator,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
@@ -46,7 +53,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
         return dict(lvn_sys_pos=lvn_sys_pos)
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
         lvn_sys_pos = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)

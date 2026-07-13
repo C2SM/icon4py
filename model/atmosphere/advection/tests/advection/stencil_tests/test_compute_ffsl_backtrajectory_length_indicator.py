@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,7 +38,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
         p_vt: np.ndarray,
         edge_cell_length: np.ndarray,
         p_dt: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         lvn_pos = p_vn >= 0.0
         traj_length = np.sqrt(p_vn**2 + p_vt**2) * p_dt
@@ -48,7 +56,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
         return dict(opt_famask_dsl=opt_famask_dsl)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         edge_cell_length = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)

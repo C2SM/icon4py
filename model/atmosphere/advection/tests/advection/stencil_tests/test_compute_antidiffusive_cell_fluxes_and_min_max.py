@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -39,7 +47,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         z_anti: np.ndarray,
         p_cc: np.ndarray,
         p_dtime: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
         z_anti_c2e = z_anti[c2e]
@@ -79,7 +87,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

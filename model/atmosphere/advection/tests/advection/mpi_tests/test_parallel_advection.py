@@ -6,6 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
 from gt4py.next import typing as gtx_typing
 
@@ -98,26 +102,26 @@ from ..utils import (
 )
 @pytest.mark.mpi
 def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: str,
+    even_timestep: bool,
+    ntracer: int,
+    horizontal_advection_type: advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: advection.VerticalAdvectionType,
+    vertical_advection_limiter: advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    grid_savepoint: Any,
+    icon_grid: base_grid.Grid,
+    interpolation_savepoint: Any,
+    metrics_savepoint: Any,
+    backend: gtx_typing.Backend | None,
+    advection_init_savepoint: Any,
+    advection_exit_savepoint: Any,
     experiment: test_defs.Experiment,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
-    construct_advection_lsq_state,
-):
+    construct_advection_lsq_state: Any,
+) -> None:
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
@@ -145,7 +149,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     metric_state = construct_metric_state(
-        icon_grid=icon_grid, savepoint=metrics_savepoint, backend=backend
+        grid=icon_grid, savepoint=metrics_savepoint, backend=backend
     )
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -153,7 +157,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
     advection_granule = advection.convert_config_to_advection(
         config=config,
-        grid=icon_grid,
+        grid=icon_grid,  # type: ignore[arg-type]  # fixture returns base_grid.Grid but is actually IconGrid
         interpolation_state=interpolation_state,
         least_squares_state=construct_advection_lsq_state,
         metric_state=metric_state,
@@ -165,7 +169,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     diagnostic_state = construct_diagnostic_init_state(
-        icon_grid=icon_grid, savepoint=advection_init_savepoint, ntracer=ntracer, backend=backend
+        grid=icon_grid, savepoint=advection_init_savepoint, ntracer=ntracer, backend=backend
     )
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
@@ -184,7 +188,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid=icon_grid,
+        grid=icon_grid,
         savepoint=advection_exit_savepoint,
         ntracer=ntracer,
         backend=backend,

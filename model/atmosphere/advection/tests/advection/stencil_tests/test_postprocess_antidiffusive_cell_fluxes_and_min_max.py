@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 from typing import Any
 
 import gt4py.next as gtx
@@ -15,7 +23,6 @@ from icon4py.model.atmosphere.advection.stencils.postprocess_antidiffusive_cell_
     postprocess_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
@@ -56,7 +63,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
         )
 
     @pytest.fixture()
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
