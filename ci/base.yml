@@ -217,11 +217,13 @@ variables:
     # collections.
     ICON4PY_NOX_COLLECTION_WORKERS: "128"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
-    # Single task using 32 cores; memory is requested per CPU so the allocation
-    # is 32 cores * 2 GiB/CPU = 64 GiB total.
+    # Run on a single GH200 NUMA node in the shared partition: 1 task, 72 CPUs,
+    # 1 GPU (the GPU is required to get the NUMA node; CPU memory is ~100 GiB).
     SLURM_NTASKS: "1"
-    SLURM_CPUS_PER_TASK: "32"
-    SLURM_MEM_PER_CPU: "2G"
+    SLURM_CPUS_PER_TASK: "72"
+    SLURM_GPUS_PER_TASK: "1"
+    SLURM_PARTITION: "shared"
+    SLURM_TIMELIMIT: "00:05:00"
   script:
     - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
