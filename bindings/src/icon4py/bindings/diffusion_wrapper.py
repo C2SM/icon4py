@@ -170,6 +170,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32, allocator=allocator)
     else:
         # transform lists to fields
+        assert zd_vertidx is not None and zd_intcoef is not None and zd_diffcoef is not None
 
         # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
         zd_cellidx = zd_cellidx[0, :]
