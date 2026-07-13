@@ -166,7 +166,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid
+        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid
         exchange=decomposition.single_node_exchange,
     )
 
