@@ -271,7 +271,6 @@ def _collect_github_prs(
         details = _github_pr_details(pr_number, token=token)
         commits = _github_pr_commits(pr_number, token=token)
         comments = _github_pr_comments(pr_number, token=token)
-        review_comments = _github_pr_review_comments(pr_number, token=token)
         pr_data = {
             "number": pr_number,
             "title": item["title"],
@@ -290,16 +289,11 @@ def _collect_github_prs(
                     "message": (c.get("commit", {}).get("message") or "").split("\n")[0],
                     "url": c.get("html_url", ""),
                 }
-                for c in commits
+                for c in commits[-5:]
             ],
             "comments": [
                 {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
-                for c in comments
-                if c.get("user") and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
-            ],
-            "review_comments": [
-                {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
-                for c in review_comments
+                for c in comments[-10:]
                 if c.get("user") and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
             ],
         }
@@ -313,7 +307,6 @@ def _collect_github_prs(
         pr_number = item["number"]
         commits = _github_pr_commits(pr_number, token=token)
         comments = _github_pr_comments(pr_number, token=token)
-        review_comments = _github_pr_review_comments(pr_number, token=token)
         active_prs.append(
             {
                 "number": pr_number,
@@ -327,17 +320,11 @@ def _collect_github_prs(
                         "message": (c.get("commit", {}).get("message") or "").split("\n")[0],
                         "url": c.get("html_url", ""),
                     }
-                    for c in commits
+                    for c in commits[-5:]
                 ],
                 "comments": [
                     {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
-                    for c in comments
-                    if c.get("user")
-                    and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
-                ],
-                "review_comments": [
-                    {"author": c["user"]["login"], "body": c.get("body", "")[:200]}
-                    for c in review_comments
+                    for c in comments[-10:]
                     if c.get("user")
                     and not _is_noise_comment(c["user"]["login"], c.get("body", ""))
                 ],
@@ -650,7 +637,7 @@ def _format_closed_pr_lines(pr: dict[str, Any]) -> list[str]:
     if pr.get("commits"):
         lines.append("  Commits:")
         lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
-    all_comments = pr.get("comments", []) + pr.get("review_comments", [])
+    all_comments = pr.get("comments", [])
     if all_comments:
         lines.append(f"  Recent comments ({len(all_comments)}):")
         for comment in all_comments:
@@ -667,7 +654,7 @@ def _format_active_pr_lines(pr: dict[str, Any]) -> list[str]:
     if pr.get("commits"):
         lines.append("  Recent commits:")
         lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
-    all_comments = pr.get("comments", []) + pr.get("review_comments", [])
+    all_comments = pr.get("comments", [])
     if all_comments:
         lines.append(f"  Recent comments ({len(all_comments)}):")
         for comment in all_comments:
@@ -967,7 +954,6 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
                         }
                     ],
                     "comments": [],
-                    "review_comments": [],
                 }
             ],
             "active_prs": [
@@ -985,7 +971,6 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
                         }
                     ],
                     "comments": [],
-                    "review_comments": [],
                 }
             ],
             "inactive_prs": [
