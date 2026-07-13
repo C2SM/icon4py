@@ -103,13 +103,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
-):
+) -> None:
     if grid_wrapper.grid_state is None:
         raise Exception(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    xp = theta_ref_mc.array_ns
+    xp = data_alloc.array_namespace(theta_ref_mc)
     on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
@@ -174,9 +174,9 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
         zd_cellidx = zd_cellidx[0, :]
         # these are the three k offsets for the C2E2C neighbors
-        zd_vertoffset = zd_vertidx[1:, :] - zd_vertidx[0, :]
+        zd_vertoffset = zd_vertidx[1:, :] - zd_vertidx[0, :]  # type: ignore[index]
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
-        zd_vertidx = zd_vertidx[0, :]
+        zd_vertidx = zd_vertidx[0, :]  # type: ignore[index]
 
         zd_diffcoef = data_alloc.list2field(
             domain=cell_k_domain,
@@ -199,7 +199,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_vertoffset = data_alloc.list2field(
+        zd_vertoffset = data_alloc.list2field(  # type: ignore[assignment]  # GT4Py Field type narrowing
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -214,7 +214,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Metric state
     metric_state = DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,
-        wgtfac_c=wgtfac_c,
+        wgtfac_c=wgtfac_c,  # type: ignore[arg-type]  # GT4Py Field dim variance
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
@@ -231,13 +231,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=e_bln_c_s,
+        e_bln_c_s=e_bln_c_s,  # type: ignore[arg-type]  # GT4Py Field dim variance
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=geofac_div,
-        geofac_n2s=geofac_n2s,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
+        geofac_div=geofac_div,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        geofac_n2s=geofac_n2s,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        geofac_grg_x=geofac_grg_x,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        geofac_grg_y=geofac_grg_y,  # type: ignore[arg-type]  # GT4Py Field dim variance
         nudgecoeff_e=nudgecoeff_e,
     )
 
@@ -275,13 +275,13 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     dtime: gtx.float64,
     linit: bool,
-):
+) -> None:
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
-        w=w,
+        w=w,  # type: ignore[arg-type]  # GT4Py Field dim variance
         vn=vn,
         exner=exner,
         theta_v=theta_v,
@@ -297,10 +297,10 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     if dwdy is None:
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
     diagnostic_state = DiffusionDiagnosticState(
-        hdef_ic=hdef_ic,
-        div_ic=div_ic,
-        dwdx=dwdx,
-        dwdy=dwdy,
+        hdef_ic=hdef_ic,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        div_ic=div_ic,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        dwdx=dwdx,  # type: ignore[arg-type]  # GT4Py Field dim variance
+        dwdy=dwdy,  # type: ignore[arg-type]  # GT4Py Field dim variance
     )
 
     granule.diffusion.run(
