@@ -172,7 +172,7 @@ def _temperature_update(  # noqa: PLR0917 [too-many-positional-arguments]
     return TempState(t=t, eflx=eflx, activated=current_level_activated)
 
 
-@gtx.scan_operator(
+@gtx.scan_operator(  # type: ignore[call-overload]  # GT4Py scan_operator init doesn't support NamedTuple types
     axis=dims.KDim,
     forward=True,
     init=IntegrationState(
@@ -326,7 +326,13 @@ def sink_saturation(
     x: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
     where_: fa.CellKField[bool],
-):
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+]:
     sink = where(where_, t[0] + t[1] + t[2] + t[3], wpfloat(0.0))
     stot = x / dt
     sink_saturated = (sink > stot) & (x > GraupelConsts.qmin)

@@ -187,6 +187,8 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/driver/run_full_muphys.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/driver/run_graupel_only.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/driver/utils.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/implementations/graupel.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/implementations/graupel_dace_hooks.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/implementations/muphys.py',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
@@ -357,6 +359,13 @@ module = [
 disable_error_code = ["arg-type", "attr-defined", "misc", "type-var", "assignment"]
 module = [
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.common"
+]
+
+[[tool.mypy.overrides]]
+# dace has no type stubs.
+disable_error_code = ["import-untyped"]
+module = [
+  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel_dace_hooks"
 ]
 
 # -- pytest --
