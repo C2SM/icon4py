@@ -136,8 +136,8 @@ def create(
                 backend=backend,
                 exchange=exchange,
             )
-        case from_file_ic.FromFileConfig() as from_file_config:
-            if from_file_config.is_restart:
+        case from_file_ic.FromFileConfig():
+            if config.config.is_restart:
                 if solve_nonhydro_diagnostic_state is None:
                     raise ValueError(
                         "restarting needs the diagnostic state of the dycore to initialize."
@@ -145,7 +145,7 @@ def create(
                 # exner_pr is read from the serialized data, as ICON reads it from its
                 # restart file instead of calling compute_exner_pert.
                 from_file_ic.read_restart_from_file(
-                    config=from_file_config,
+                    config=config.config,
                     grid=grid,
                     prognostic_state_now=prognostic_state_now,
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
@@ -154,7 +154,7 @@ def create(
                 )
                 return
             from_file_ic.read_initial_condition_from_file(
-                config=from_file_config,
+                config=config.config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
                 backend=backend,
