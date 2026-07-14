@@ -7,14 +7,18 @@ on:
   workflow_dispatch:
     inputs:
       dummy_input_data:
-        description: "Use synthetic data instead of calling external APIs (for testing)."
+        description: "Use synthetic data instead of calling external APIs. When true, the summary is printed instead of posted to Slack."
         required: false
         default: false
         type: boolean
 
+permissions:
+  contents: read
+
 jobs:
   weekly-summary:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -46,13 +50,4 @@ jobs:
           CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_API_KEY }}
         run: |
           ./scripts/run weekly-slack-summary generate \
-            ${{ inputs.dummy_input_data == true && '--dummy-input-data' || '' }}
-
-      # Keep the generated files as an artifact for debugging, audit, and as a
-      # fallback if the Slack post needs to be replayed manually.
-      - name: Upload summary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: weekly-slack-summary
-          path: weekly_slack_summary_output/
-          if-no-files-found: error
+            ${{ inputs.dummy_input_data == true && '--dummy-input-data --dummy-output' || '' }}

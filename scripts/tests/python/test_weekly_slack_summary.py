@@ -17,9 +17,10 @@ import urllib.parse
 from typing import Any
 from unittest import mock
 
-import generate_weekly_summary_opencode_config
 import pytest
 import typer
+
+import generate_weekly_summary_opencode_config
 import weekly_slack_summary
 
 
@@ -770,6 +771,24 @@ class TestGenerateCommand:
 
         summary_md = output_dir / "weekly_slack_summary.md"
         assert summary_md.exists()
+
+
+class TestVerifySummaryLength:
+    def test_under_limit_does_not_warn_or_write_oversized_file(self, tmp_path, capsys):
+        weekly_slack_summary._verify_summary_length("short summary", tmp_path)
+        captured = capsys.readouterr()
+        assert captured.err == ""
+        assert not (tmp_path / "weekly_slack_summary_oversized.md").exists()
+
+    def test_over_limit_warns_and_writes_oversized_file(self, tmp_path, capsys):
+        long_summary = "x" * 3801
+        weekly_slack_summary._verify_summary_length(long_summary, tmp_path)
+        captured = capsys.readouterr()
+        assert "Warning: generated summary exceeds recommended limits" in captured.err
+        assert "(3801 characters, 1 lines" in captured.err
+        oversized_path = tmp_path / "weekly_slack_summary_oversized.md"
+        assert oversized_path.exists()
+        assert oversized_path.read_text(encoding="utf-8") == long_summary
 
 
 class TestGenerateOpenCodeConfig:

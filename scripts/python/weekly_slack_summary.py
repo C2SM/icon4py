@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -66,7 +67,7 @@ def _previous_week_bounds(
 ) -> tuple[datetime.datetime, datetime.datetime]:
     """Return the previous Monday 00:00 UTC to Sunday 23:59:59 UTC."""
     if now is None:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
     # Monday of current week
     current_monday = now - datetime.timedelta(days=now.weekday())
     current_monday = current_monday.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -80,7 +81,7 @@ def _current_week_bounds(
 ) -> tuple[datetime.datetime, datetime.datetime]:
     """Return the current Monday 00:00 UTC to Sunday 23:59:59 UTC."""
     if now is None:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
     current_monday = now - datetime.timedelta(days=now.weekday())
     current_monday = current_monday.replace(hour=0, minute=0, second=0, microsecond=0)
     current_sunday = current_monday + datetime.timedelta(days=6, hours=23, minutes=59, seconds=59)
@@ -109,6 +110,8 @@ def _github_api_request(
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"GitHub API request failed ({e.code}): {e.reason}\n{error_body}") from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"GitHub API request failed: {e.reason}.") from e
     return json.loads(body.decode("utf-8"))
 
 
@@ -165,11 +168,6 @@ def _github_pr_commits(pr_number: int, *, token: str | None = None) -> list[dict
 
 def _github_pr_comments(pr_number: int, *, token: str | None = None) -> list[dict[str, Any]]:
     url = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/issues/{pr_number}/comments"
-    return _github_fetch_paginated(url, token=token)
-
-
-def _github_pr_review_comments(pr_number: int, *, token: str | None = None) -> list[dict[str, Any]]:
-    url = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/pulls/{pr_number}/comments"
     return _github_fetch_paginated(url, token=token)
 
 
@@ -420,6 +418,8 @@ def _gitlab_api_request(url: str) -> dict[str, Any] | list[Any]:
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"GitLab API request failed ({e.code}): {e.reason}\n{error_body}") from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"GitLab API request failed: {e.reason}.") from e
     return json.loads(body.decode("utf-8"))
 
 
@@ -437,6 +437,8 @@ def _gitlab_raw_request(url: str, *, token: str | None = None) -> bytes:
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"GitLab API request failed ({e.code}): {e.reason}\n{error_body}") from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"GitLab API request failed: {e.reason}.") from e
 
 
 _CSCI_RUN_RE = re.compile(r"^cscs-ci run\b", re.IGNORECASE)
@@ -451,8 +453,6 @@ def _is_noise_comment(author: str, body: str) -> bool:
 
 
 _ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _strip_ansi(text: str) -> str:
@@ -632,10 +632,12 @@ def _format_pr_line(pr: dict[str, Any], *, merged_status: bool = False) -> str:
     return f"- [{pr['title']}]({pr['url']}) by {pr['author']}"
 
 
-def _format_closed_pr_lines(pr: dict[str, Any]) -> list[str]:
-    lines = [_format_pr_line(pr, merged_status=True)]
+def _format_pr_detail_lines(pr: dict[str, Any], *, closed: bool) -> list[str]:
+    """Format commit and comment detail lines shared by closed and active PRs."""
+    lines: list[str] = []
     if pr.get("commits"):
-        lines.append("  Commits:")
+        commit_heading = "Commits:" if closed else "Recent commits:"
+        lines.append(f"  {commit_heading}")
         lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
     all_comments = pr.get("comments", [])
     if all_comments:
@@ -647,20 +649,17 @@ def _format_closed_pr_lines(pr: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _format_closed_pr_lines(pr: dict[str, Any]) -> list[str]:
+    lines = [_format_pr_line(pr, merged_status=True)]
+    lines.extend(_format_pr_detail_lines(pr, closed=True))
+    return lines
+
+
 def _format_active_pr_lines(pr: dict[str, Any]) -> list[str]:
     lines = [_format_pr_line(pr)]
     if pr.get("updated_at"):
         lines.append(f"  Last updated: {pr['updated_at']}")
-    if pr.get("commits"):
-        lines.append("  Recent commits:")
-        lines.extend(f"  - [{commit['sha']}] {commit['message']}" for commit in pr["commits"])
-    all_comments = pr.get("comments", [])
-    if all_comments:
-        lines.append(f"  Recent comments ({len(all_comments)}):")
-        for comment in all_comments:
-            body = comment.get("body", "")
-            snippet = body[:200].replace("\n", " ")
-            lines.append(f"    - {comment.get('author', 'unknown')}: {snippet}")
+    lines.extend(_format_pr_detail_lines(pr, closed=False))
     return lines
 
 
@@ -842,18 +841,51 @@ def _run_opencode(
         )
 
     # The prompt is a positional [message..] argument; --file attachments must
-    # follow it. See https://opencode.ai/docs/cli
+    # follow it. See https://opencode.ai/docs/cli. Run OpenCode in the output
+    # directory so the agent can write the summary file without needing
+    # permission for an external directory.
+    output_dir = output_path.parent
     cmd = [
         "opencode",
         "run",
-        "Generate the weekly Slack summary following the attached instructions and context.",
+        "Generate the weekly Slack summary following the attached instructions "
+        f"and context. Write the final summary to: {output_path}",
+        "--dir",
+        str(output_dir),
         "--file",
         str(instructions_path),
         "--file",
         str(context_path),
     ]
     result = subprocess.run(cmd, capture_output=True, check=True, text=True)
-    output_path.write_text(result.stdout, encoding="utf-8")
+    if not output_path.exists() or output_path.stat().st_size == 0:
+        raise RuntimeError(
+            f"OpenCode did not write the summary to '{output_path}'.\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+
+
+def _verify_summary_length(summary_text: str, output_dir: pathlib.Path) -> None:
+    """Warn and preserve the summary if it exceeds the recommended Slack limits.
+
+    The summary is still posted (or printed); Slack will auto-split if needed.
+    """
+    char_count = len(summary_text)
+    line_count = summary_text.count("\n") + 1
+    if char_count > 3800 or line_count > 50:
+        over_by_chars = max(0, char_count - 3800)
+        over_by_lines = max(0, line_count - 50)
+        typer.echo(
+            f"Warning: generated summary exceeds recommended limits "
+            f"({char_count} characters, {line_count} lines; "
+            f"limit 3800 characters, 50 lines; "
+            f"over by {over_by_chars} characters, {over_by_lines} lines). "
+            "The summary will still be posted; Slack will auto-split if needed.",
+            err=True,
+        )
+        oversized_path = output_dir / "weekly_slack_summary_oversized.md"
+        oversized_path.write_text(summary_text, encoding="utf-8")
+        typer.echo(f"Wrote oversized summary for inspection: {oversized_path}", err=True)
 
 
 def _post_to_slack(
@@ -877,6 +909,8 @@ def _post_to_slack(
         raise RuntimeError(
             f"Slack webhook request failed ({e.code}): {e.reason}\n{error_body}"
         ) from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Slack webhook request failed: {e.reason}.") from e
 
 
 def _github_token() -> str | None:
@@ -890,7 +924,7 @@ def _collect_all(
     token: str | None = None,
 ) -> dict[str, Any]:
     """Collect all static inputs for the weekly summary."""
-    now = now or datetime.datetime.now(datetime.timezone.utc)
+    now = now or datetime.datetime.now(datetime.UTC)
     week_start, week_end = _previous_week_bounds(now)
     # CI pipeline status reflects the current week (Monday-Sunday), while PRs
     # and issues are reported for the previous week.
@@ -1048,14 +1082,6 @@ def _sample_context(now: datetime.datetime | None = None) -> dict[str, Any]:
 @cli.command(name="generate")
 def generate_cmd(
     *,
-    output_dir: Annotated[
-        pathlib.Path,
-        typer.Option(
-            "--output-dir",
-            "-o",
-            help="Directory where context and generated summary files are written.",
-        ),
-    ] = pathlib.Path("weekly_slack_summary_output"),
     dummy_input_data: Annotated[
         bool,
         typer.Option(
@@ -1068,6 +1094,14 @@ def generate_cmd(
         typer.Option(
             "--dummy-summarization",
             help="Use the deterministic direct Markdown formatter instead of invoking OpenCode.",
+        ),
+    ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option(
+            "--verbose",
+            "-v",
+            help="Print the work directory and final summary to stdout.",
         ),
     ] = False,
     dummy_output: Annotated[
@@ -1087,7 +1121,7 @@ def generate_cmd(
     ] = None,
 ) -> None:
     """Collect activity data and produce a weekly Slack summary."""
-    output_dir = output_dir.resolve()
+    output_dir = pathlib.Path(tempfile.mkdtemp(prefix="weekly-slack-summary-"))
 
     if dummy_input_data:
         typer.echo("Using dummy input data...")
@@ -1106,26 +1140,36 @@ def generate_cmd(
         ci_week_start=datetime.datetime.fromisoformat(context["ci_week_start"]),
     )
     json_path, context_md_path = _write_context_files(output_dir, context, markdown_context)
-    typer.echo(f"Wrote context: {json_path}")
-    typer.echo(f"Wrote context markdown: {context_md_path}")
+    if verbose:
+        typer.echo(f"Work directory: {output_dir}")
+        typer.echo(f"Wrote context: {json_path}")
+        typer.echo(f"Wrote context markdown: {context_md_path}")
 
     summary_path = output_dir / "weekly_slack_summary.md"
     if dummy_summarization:
         summary_path.write_text(markdown_context, encoding="utf-8")
-        typer.echo(f"Wrote summary (dummy summarization): {summary_path}")
+        if verbose:
+            typer.echo(f"Wrote summary (dummy summarization): {summary_path}")
     else:
         instructions = INSTRUCTIONS_FILE
         if not instructions.exists():
             raise RuntimeError(f"OpenCode instructions file not found: {instructions}")
-        typer.echo("Running OpenCode to generate polished summary...")
+        if verbose:
+            typer.echo("Running OpenCode to generate polished summary...")
         _run_opencode(instructions, context_md_path, summary_path)
-        typer.echo(f"Wrote summary: {summary_path}")
+        if verbose:
+            typer.echo(f"Wrote summary: {summary_path}")
+
+    summary_text = summary_path.read_text(encoding="utf-8")
+    _verify_summary_length(summary_text, output_dir)
 
     if dummy_output:
-        summary_text = summary_path.read_text(encoding="utf-8")
         typer.echo(summary_text)
         typer.echo("Dummy output mode: skipping Slack post.")
         raise typer.Exit(code=0)
+
+    if verbose:
+        typer.echo(summary_text)
 
     webhook = slack_webhook_url or os.environ.get("SLACK_WEBHOOK_URL")
     if not webhook:
@@ -1135,7 +1179,6 @@ def generate_cmd(
         )
         raise typer.Exit(code=1)
 
-    summary_text = summary_path.read_text(encoding="utf-8")
     _post_to_slack(webhook, summary_text)
     typer.echo("Summary posted to Slack.")
 
