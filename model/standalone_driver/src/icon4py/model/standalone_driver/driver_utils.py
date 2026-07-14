@@ -18,11 +18,12 @@ from typing import Any, Literal
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.advection import advection, advection_states
+from icon4py.model.atmosphere.advection import advection, advection_states, weno_least_squares
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import (
     constants,
+    dimension as dims,
     field_type_aliases as fa,
     model_backends,
     time,
@@ -209,6 +210,59 @@ def create_static_field_factories(
 
     return static_fields.StaticFieldFactories(
         geometry_field_source, interpolation_field_source, metrics_field_source
+    )
+
+
+def _construct_weno_linear_state(
+    *,
+    grid: icon_grid.IconGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    exchange: decomposition_defs.ExchangeRuntime,
+    backend: gtx_typing.Backend | None,
+) -> advection_states.AdvectionWenoLinearState:
+    """Init-time linear WENO pseudoinverses (ihadv_tracer=102) as a state.
+
+    Only the torus branch on a single rank is ported: the sphere coefficients
+    are unavailable and the coefficient halo exchange is not implemented.
+    """
+    if grid.grid_params.geometry_type != icon_grid.GeometryType.TORUS:
+        raise NotImplementedError(
+            "Linear WENO advection is only implemented on a torus grid; "
+            "the sphere coefficients are not ported."
+        )
+    if exchange.get_size() != 1:
+        raise NotImplementedError(
+            "Linear WENO advection is only implemented on a single rank; "
+            "the halo exchange of the WENO coefficients is not implemented."
+        )
+
+    domain_length = grid.grid_params.domain_length
+    domain_height = grid.grid_params.domain_height
+    assert domain_length is not None and domain_height is not None
+
+    # (n_cells, 3 candidates, 2 [zonal, meridional], 3 C2E2C rows)
+    pseudoinv = weno_least_squares.compute_weno_pseudoinverse_linear(
+        c2e2c=grid.connectivities["C2E2C"].asnumpy(),
+        cell_center_x=geometry_field_source.get(geometry_meta.CELL_CENTER_X).asnumpy(),
+        cell_center_y=geometry_field_source.get(geometry_meta.CELL_CENTER_Y).asnumpy(),
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+
+    def candidate_field(candidate: int, component: int) -> gtx.Field:
+        return gtx.as_field(
+            (dims.CellDim, dims.C2E2CDim),
+            pseudoinv[:, candidate, component, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            allocator=backend,
+        )
+
+    return advection_states.AdvectionWenoLinearState(
+        lsq_pseudoinv_zonal_c1=candidate_field(0, 0),
+        lsq_pseudoinv_zonal_c2=candidate_field(1, 0),
+        lsq_pseudoinv_zonal_c3=candidate_field(2, 0),
+        lsq_pseudoinv_meridional_c1=candidate_field(0, 1),
+        lsq_pseudoinv_meridional_c2=candidate_field(1, 1),
+        lsq_pseudoinv_meridional_c3=candidate_field(2, 1),
     )
 
 
@@ -404,10 +458,25 @@ def initialize_granules(
 
     tracer_advection_granule: advection.Advection | None = None
     if config.tracer_advection is not None:
+        # linear WENO reconstruction (ihadv_tracer=102/103) needs its own init-time
+        # coefficients; 103 is not yet wired and raises in the factory below
+        weno_linear_state: advection_states.AdvectionWenoLinearState | None = None
+        if config.tracer_advection.horizontal_advection_type in (
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO,
+            advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+        ):
+            weno_linear_state = _construct_weno_linear_state(
+                grid=grid,
+                geometry_field_source=geometry_field_source,
+                exchange=exchange,
+                backend=backend,
+            )
+
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
+            weno_linear_state=weno_linear_state,
             interpolation_state=advection_states.AdvectionInterpolationState(
                 geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
                 rbf_vec_coeff_e=interpolation_field_source.get(
