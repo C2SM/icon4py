@@ -27,7 +27,5 @@ build_image_aarch64:
 generate_test_child_pipeline:
   extends: [.generate_test_child_pipeline]
 
-# Temporarily disabled while testing generator changes without spawning the full
-# child pipeline. Re-enable before merging.
-# trigger_test_child_pipeline:
-#   extends: [.trigger_test_child_pipeline]
+trigger_test_child_pipeline:
+  extends: [.trigger_test_child_pipeline]
