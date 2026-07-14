@@ -30,7 +30,10 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    nonhydro_diagnostic_state as nonhydro_states,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox, test_utils
 
@@ -180,7 +183,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
-    diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+    diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
@@ -326,7 +329,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     assert not vn_only
 
-    diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+    diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),

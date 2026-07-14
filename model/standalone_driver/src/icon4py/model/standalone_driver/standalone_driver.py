@@ -42,6 +42,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_diagnostic_state as nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
@@ -223,7 +224,7 @@ class Icon4pyDriver:
         self,
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro | None,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
@@ -279,7 +280,7 @@ class Icon4pyDriver:
 
     def _update_time_levels_for_velocity_tendencies(
         self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
     ) -> None:
@@ -318,7 +319,7 @@ class Icon4pyDriver:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
     ) -> None:
@@ -367,7 +368,7 @@ class Icon4pyDriver:
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     ) -> None:
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(

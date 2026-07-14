@@ -30,6 +30,7 @@ from icon4py.model.common.math.stencils import generic_math_operations as gt4py_
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_diagnostic_state as nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
@@ -60,7 +61,7 @@ class DriverStates(NamedTuple):
     """
 
     prep_advection_prognostic: dycore_states.PrepAdvection | None
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro | None
+    solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState | None
     prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState | None
@@ -284,7 +285,7 @@ def assemble_driver_states(
         else None
     )
     solve_nonhydro_diagnostic_state = (
-        dycore_states.initialize_solve_nonhydro_diagnostic_state(
+        nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
             perturbed_exner_at_cells_on_model_levels=perturbed_exner,
             grid=grid,
             allocator=allocator,
