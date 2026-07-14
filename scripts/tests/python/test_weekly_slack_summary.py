@@ -872,6 +872,14 @@ class TestVerifySummaryLength:
         assert oversized_path.exists()
         assert oversized_path.read_text(encoding="utf-8") == long_summary
 
+    def test_trailing_newline_does_not_overcount_lines(self, tmp_path, capsys):
+        # Two real lines followed by a trailing newline must report 2 lines.
+        summary = "line1\nline2\n"
+        weekly_slack_summary._verify_summary_length(summary, tmp_path)
+        captured = capsys.readouterr()
+        assert captured.err == ""
+        assert not (tmp_path / "weekly_slack_summary_oversized.md").exists()
+
 
 class TestGenerateOpenCodeConfig:
     def test_writes_config_with_model_and_base_url(self, tmp_path):

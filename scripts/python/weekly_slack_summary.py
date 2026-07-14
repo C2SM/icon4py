@@ -871,7 +871,7 @@ def _verify_summary_length(summary_text: str, output_dir: pathlib.Path) -> None:
     The summary is still posted (or printed); Slack will auto-split if needed.
     """
     char_count = len(summary_text)
-    line_count = summary_text.count("\n") + 1
+    line_count = len(summary_text.rstrip("\n").split("\n"))
     if char_count > 3800 or line_count > 50:
         over_by_chars = max(0, char_count - 3800)
         over_by_lines = max(0, line_count - 50)
