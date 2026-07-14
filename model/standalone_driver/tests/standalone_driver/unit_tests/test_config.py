@@ -17,9 +17,11 @@ from icon4py.model.standalone_driver import config as driver_config, driver_stat
 
 
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
+    # fortran dumps the whole namelist, so the variables the driver reads are always
+    # present. Here they only need a value when the test does not care about it.
     atm_dict = {
         "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
-        "run_nml": run_nml,
+        "run_nml": {"ltestcase": True, "ltransport": False} | run_nml,
     }
     master_dict = {
         "master_time_control_nml": {
@@ -73,42 +75,31 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
     assert config.dtime == datetime.timedelta(seconds=120)
 
 
-# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false
-# for the dry testcases (JW, GAUSS3D). The fortran default is false.
-@pytest.mark.parametrize(
-    ("run_nml", "expected"),
-    [
-        ({"dtime": 10.0, "modeltimestep": "  ", "ltransport": True}, True),
-        ({"dtime": 10.0, "modeltimestep": "  ", "ltransport": False}, False),
-        ({"dtime": 10.0, "modeltimestep": "  "}, False),
-    ],
-)
-def test_do_prep_adv_from_ltransport(run_nml: dict, expected: bool) -> None:
-    atm_dict, master_dict = _make_dicts(run_nml)
+# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false for
+# the dry testcases (JW, GAUSS3D).
+@pytest.mark.parametrize("ltransport", [True, False])
+def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
+    atm_dict, master_dict = _make_dicts(
+        {"dtime": 10.0, "modeltimestep": "  ", "ltransport": ltransport}
+    )
     config = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
-    assert config.do_prep_adv is expected
+    assert config.do_prep_adv is ltransport
 
 
-# The extra diffusion call before the time loop is only made for real data runs. The
-# fortran defaults are ltestcase = .TRUE. and ldynamics = .TRUE. (mo_run_nml.f90).
-@pytest.mark.parametrize(
-    ("run_nml", "expected"),
-    [
-        ({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": False, "ldynamics": True}, True),
-        ({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": True, "ldynamics": True}, False),
-        ({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": False, "ldynamics": False}, False),
-        ({"dtime": 10.0, "modeltimestep": "  "}, False),
-    ],
-)
-def test_diffuse_before_time_loop(run_nml: dict, expected: bool) -> None:
-    atm_dict, master_dict = _make_dicts(run_nml)
+# The extra diffusion call before the time loop is only made for real data runs, which
+# are the ones that are not a testcase. MCH_CH_R04B09 is the only one.
+@pytest.mark.parametrize("ltestcase", [True, False])
+def test_diffuse_before_time_loop(ltestcase: bool) -> None:
+    atm_dict, master_dict = _make_dicts(
+        {"dtime": 10.0, "modeltimestep": "  ", "ltestcase": ltestcase}
+    )
     config = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
-    assert config.diffuse_before_time_loop is expected
-    assert config.apply_extra_second_order_divdamp is (not run_nml.get("ltestcase", True))
+    assert config.diffuse_before_time_loop is (not ltestcase)
+    assert config.apply_extra_second_order_divdamp is (not ltestcase)
 
 
 def _driver_config(
@@ -119,6 +110,8 @@ def _driver_config(
     config = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
+    if start_of_timestepping is None:
+        return config
     return dataclasses.replace(config, start_of_timestepping=start_of_timestepping)
 
 
@@ -129,6 +122,11 @@ def test_time_loop_starts_at_the_beginning_of_the_simulation() -> None:
     assert model_time.is_first_step_in_simulation is True
     assert model_time.elapsed_time_in_seconds == 0.0
     assert model_time.n_time_steps == 30
+
+
+def test_the_time_loop_cannot_start_before_the_simulation() -> None:
+    with pytest.raises(ValueError, match="before the beginning of the simulation"):
+        _driver_config(datetime.datetime(1999, 12, 31, tzinfo=datetime.UTC))
 
 
 def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
