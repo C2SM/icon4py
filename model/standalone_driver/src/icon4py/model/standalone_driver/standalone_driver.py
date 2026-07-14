@@ -688,9 +688,6 @@ def run_driver(
         allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
-    # The initial condition fills the perturbed exner pressure of the dycore, and, when
-    # restarting, the advective tendencies of the previous time step, so its diagnostic
-    # state is allocated before it.
     solve_nonhydro_diagnostic_state = (
         nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
             grid=icon4py_driver.grid, allocator=allocator

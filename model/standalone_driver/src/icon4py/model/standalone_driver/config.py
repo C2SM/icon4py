@@ -78,7 +78,6 @@ class DriverConfig:
     profiling_stats: ProfilingStats | None
     dtime: time.RelativeTime
     start_of_simulation: time.AbsoluteTime
-    # Beginning of the time loop. It is the beginning of the simulation, unless restarting.
     start_of_timestepping: time.AbsoluteTime
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
@@ -124,7 +123,7 @@ class DriverConfig:
             .removesuffix("_sb_atm"),
             dtime=dtime,
             start_of_simulation=start_of_simulation,
-            # a restart overrides it with a later date
+            # the time loop starts at the beginning of the simulation; a restart overrides it
             start_of_timestepping=start_of_simulation,
             end_of_simulation=datetime.datetime.fromisoformat(
                 end_datetime_str.replace("Z", "+00:00")
