@@ -19,10 +19,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.states import (
-    nonhydro_diagnostic_state as nonhydro_states,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,

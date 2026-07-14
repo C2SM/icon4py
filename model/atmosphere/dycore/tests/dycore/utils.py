@@ -13,10 +13,7 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-from icon4py.model.common.states import (
-    nonhydro_diagnostic_state as nonhydro_states,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
 

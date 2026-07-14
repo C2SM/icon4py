@@ -21,7 +21,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
-    nonhydro_diagnostic_state as nonhydro_states,
+    nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc

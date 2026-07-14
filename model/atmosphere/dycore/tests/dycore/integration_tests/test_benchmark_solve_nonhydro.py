@@ -31,11 +31,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import (
-    factory,
-    nonhydro_diagnostic_state as nonhydro_states,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import factory, nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,

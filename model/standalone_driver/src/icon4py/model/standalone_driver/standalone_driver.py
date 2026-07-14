@@ -42,7 +42,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
-    nonhydro_diagnostic_state as nonhydro_states,
+    nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )

@@ -30,7 +30,7 @@ from icon4py.model.common.math.stencils import generic_math_operations as gt4py_
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
-    nonhydro_diagnostic_state as nonhydro_states,
+    nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
