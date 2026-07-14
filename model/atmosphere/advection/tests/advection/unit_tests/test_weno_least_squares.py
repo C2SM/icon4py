@@ -403,3 +403,67 @@ def test_linear_candidates_recover_gradient(torus_patch):
     np.testing.assert_allclose(
         recovered, np.broadcast_to(gradient, (n_cells, 3, 2)), rtol=1e-12, atol=1e-13
     )
+
+
+def _linear_weno_blend(pseudoinv: np.ndarray, z_b: np.ndarray) -> np.ndarray:
+    """Smoothness-weighted blend of the 3 linear candidate gradients (f90 995-1019).
+
+    pseudoinv has shape (n_cells, 3 candidates, 2 [zonal, meridional], 3 rows),
+    z_b (n_cells, 3 rows); returns the blended [zonal, meridional] gradient
+    (n_cells, 2).
+    """
+    grads = np.einsum("ncus,ns->ncu", pseudoinv, z_b)  # (n_cells, 3 cand, 2)
+    cx = grads[:, :, 0]
+    cy = grads[:, :, 1]
+    s = 1.0 / ((cx**2 + cy**2) + 1.0e-20) ** 2
+    smooth_sum = s.sum(axis=1)
+    blended_x = (cx * s).sum(axis=1) / smooth_sum
+    blended_y = (cy * s).sum(axis=1) / smooth_sum
+    return np.stack((blended_x, blended_y), axis=1)
+
+
+# 8. on a linear field all 3 candidates coincide, so the WENO blend reduces to
+# the plain least-squares gradient (blend-of-equal-candidates == single candidate)
+def test_linear_weno_blend_equals_plain_lsq(torus_patch):
+    pseudoinv = weno.compute_weno_pseudoinverse_linear(
+        c2e2c=torus_patch.c2e2c,
+        cell_center_x=torus_patch.cell_center_x,
+        cell_center_y=torus_patch.cell_center_y,
+        domain_length=torus_patch.domain_length,
+        domain_height=torus_patch.domain_height,
+    )
+    n_cells = torus_patch.c2e2c.shape[0]
+    z_dist = weno.compute_torus_distance_vectors(
+        cell_center_x=torus_patch.cell_center_x,
+        cell_center_y=torus_patch.cell_center_y,
+        neighbor_table=torus_patch.c2e2c,
+        domain_length=torus_patch.domain_length,
+        domain_height=torus_patch.domain_height,
+    )
+    rng = np.random.default_rng(11)
+    gradient = rng.uniform(-1.0, 1.0, 2)
+    z_b = gradient[0] * z_dist[..., 0] + gradient[1] * z_dist[..., 1]
+
+    # each candidate recovers the exact gradient, so the 3 smoothness weights coincide
+    candidate_grads = np.einsum("ncus,ns->ncu", pseudoinv, z_b)
+    np.testing.assert_allclose(
+        candidate_grads, np.broadcast_to(gradient, (n_cells, 3, 2)), rtol=1e-12, atol=1e-13
+    )
+
+    # the blend equals the exact gradient and the plain single-candidate gradient
+    blended = _linear_weno_blend(pseudoinv, z_b)
+    np.testing.assert_allclose(
+        blended, np.broadcast_to(gradient, (n_cells, 2)), rtol=1e-12, atol=1e-13
+    )
+    np.testing.assert_allclose(blended, candidate_grads[:, 0], rtol=1e-12, atol=1e-13)
+
+    # pure numpy cross-check: blending identical candidate gradients returns them
+    identical = np.broadcast_to(rng.uniform(-1.0, 1.0, 2), (n_cells, 3, 2)).copy()
+    cx = identical[:, :, 0]
+    cy = identical[:, :, 1]
+    s = 1.0 / ((cx**2 + cy**2) + 1.0e-20) ** 2
+    smooth_sum = s.sum(axis=1)
+    blended_identical = np.stack(
+        ((cx * s).sum(axis=1) / smooth_sum, (cy * s).sum(axis=1) / smooth_sum), axis=1
+    )
+    np.testing.assert_allclose(blended_identical, identical[:, 0], rtol=1e-12, atol=1e-13)
