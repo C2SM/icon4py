@@ -75,12 +75,11 @@ ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
 ALL_LEVELS = ["unit", "integration", "validation"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
 
-# Collection tuning. Per-cell timeout should be generous enough for the first
-# cold import of icon4py/GT4Py; total timeout is a safety net for the whole
-# matrix. Values are intentionally conservative and can be reduced once
-# real timings are available.
+# Collection tuning. The per-cell timeout should be generous enough for the
+# first cold import of icon4py/GT4Py; the overall collection run is bounded
+# by the Slurm job time limit (ci/base.yml). Values are intentionally
+# conservative and can be reduced once real timings are available.
 _COLLECTION_TIMEOUT_SECONDS = 5 * 60
-_COLLECTION_TOTAL_TIMEOUT_SECONDS = 30 * 60
 _COLLECTION_MAX_WORKERS = int(os.environ.get("ICON4PY_NOX_COLLECTION_WORKERS", "8"))
 
 
@@ -422,17 +421,12 @@ def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_M
             ): cell
             for cell in cells
         }
-        try:
-            for future in as_completed(futures, timeout=_COLLECTION_TOTAL_TIMEOUT_SECONDS):
-                cell = futures[future]
-                if future.result():
-                    kept.append(cell)
-                else:
-                    dropped.append(cell)
-        except TimeoutError:
-            for future in futures:
-                future.cancel()
-            raise
+        for future in as_completed(futures):
+            cell = futures[future]
+            if future.result():
+                kept.append(cell)
+            else:
+                dropped.append(cell)
 
     return kept, dropped
 

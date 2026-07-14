@@ -57,10 +57,6 @@ def _fake_executor_factory(futures: list[Future]):
     return _FakeExecutor
 
 
-def _as_completed_timeout_immediately(futures, timeout=None):
-    raise TimeoutError
-
-
 class _SubprocessResult:
     def __init__(self, returncode: int, stdout: str = "", stderr: str = ""):
         self.returncode = returncode
@@ -283,16 +279,3 @@ def test_collect_cells_raises_on_future_exception(monkeypatch):
 
     with pytest.raises(RuntimeError, match="boom"):
         gcp._collect_cells([cell])
-
-
-def test_total_timeout_cancels_pending_futures_and_raises(monkeypatch):
-    """A total timeout cancels pending futures and re-raises the error."""
-    cell = _make_cell("pending")
-    pending = Future()
-    futures = [pending]
-    monkeypatch.setattr(gcp, "ThreadPoolExecutor", _fake_executor_factory(futures))
-    monkeypatch.setattr(gcp, "as_completed", _as_completed_timeout_immediately)
-
-    with pytest.raises(TimeoutError):
-        gcp._collect_cells([cell])
-    assert pending.cancelled()
