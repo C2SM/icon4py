@@ -213,9 +213,9 @@ variables:
   timeout: 1h
   variables:
     # Run many collections concurrently. Each pytest collection needs a few
-    # hundred MiB, so the resources below are sized for ~256 parallel
+    # hundred MiB, so the resources below are sized for ~128 parallel
     # collections.
-    ICON4PY_NOX_COLLECTION_WORKERS: "256"
+    ICON4PY_NOX_COLLECTION_WORKERS: "128"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
     # Collection only probes pytest discovery; disable CUDA-aware MPI so that
     # concurrent collection workers do not fight over the same GPU context.
