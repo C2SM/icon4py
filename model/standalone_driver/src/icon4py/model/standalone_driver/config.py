@@ -86,7 +86,6 @@ class DriverConfig:
     apply_extra_second_order_divdamp: bool = False
     # lprep_adv in fortran. The default matches the namelist default of ltransport.
     do_prep_adv: bool = False
-    # Extra diffusion call before the time loop, for real data runs.
     diffuse_before_time_loop: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
