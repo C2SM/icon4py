@@ -131,10 +131,18 @@ class DiagnosticStateNonHydro:
 
 
 def initialize_solve_nonhydro_diagnostic_state(
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
 ) -> DiagnosticStateNonHydro:
+    """
+    Allocate the diagnostic state of the dycore, with all its fields set to zero.
+
+    The initial condition fills the fields that it owns: the perturbed exner pressure
+    and, when restarting, the advective tendencies of the previous time step.
+    """
+    perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator
+    )
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),

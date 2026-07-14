@@ -16,6 +16,7 @@ from icon4py.model.common import initial_condition, model_backends, model_option
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_diagnostic_state as nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.standalone_driver import (
@@ -125,7 +126,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         tracer_config=single_rank_icon4py_driver.config.tracer_config,
     )
-    single_rank_dycore_diagnostic = driver_states.initialize_dycore_diagnostic_state(
+    single_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
     initial_condition.create(
@@ -137,7 +138,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
         global_reductions=single_rank_icon4py_driver.global_reductions,
-        dycore_initial_fields=driver_states.dycore_initial_fields(single_rank_dycore_diagnostic),
+        solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -177,7 +178,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         tracer_config=multi_rank_icon4py_driver.config.tracer_config,
     )
-    multi_rank_dycore_diagnostic = driver_states.initialize_dycore_diagnostic_state(
+    multi_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     initial_condition.create(
@@ -189,7 +190,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
         global_reductions=multi_rank_icon4py_driver.global_reductions,
-        dycore_initial_fields=driver_states.dycore_initial_fields(multi_rank_dycore_diagnostic),
+        solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator

@@ -78,11 +78,10 @@ class DriverConfig:
     profiling_stats: ProfilingStats | None
     dtime: time.RelativeTime
     start_of_simulation: time.AbsoluteTime
+    # Beginning of the time loop. It is the beginning of the simulation, unless restarting.
+    start_of_timestepping: time.AbsoluteTime
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
-    # Beginning of the time loop. None means the beginning of the simulation; set it to
-    # a later date to restart from there.
-    start_of_timestepping: time.AbsoluteTime | None = None
     apply_extra_second_order_divdamp: bool = False
     # lprep_adv in fortran
     do_prep_adv: bool = False
@@ -90,6 +89,13 @@ class DriverConfig:
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     enable_output: bool = False
+
+    def __post_init__(self) -> None:
+        if self.start_of_timestepping < self.start_of_simulation:
+            raise ValueError(
+                f"the time loop cannot start at {self.start_of_timestepping}, before the "
+                f"beginning of the simulation ({self.start_of_simulation})."
+            )
 
     @classmethod
     def from_fortran_dict(
@@ -109,14 +115,17 @@ class DriverConfig:
         )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
+        start_of_simulation = datetime.datetime.fromisoformat(
+            start_datetime_str.replace("Z", "+00:00")
+        )
         return cls(
             experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=dtime,
-            start_of_simulation=datetime.datetime.fromisoformat(
-                start_datetime_str.replace("Z", "+00:00")
-            ),
+            start_of_simulation=start_of_simulation,
+            # a restart overrides it with a later date
+            start_of_timestepping=start_of_simulation,
             end_of_simulation=datetime.datetime.fromisoformat(
                 end_datetime_str.replace("Z", "+00:00")
             ),
@@ -234,8 +243,23 @@ def read_experiment_config_from_fortran(
         else None
     )
 
+    profiling_stats = ProfilingStats() if enable_profiling else None
+    driver_cfg = DriverConfig.from_fortran_dict(
+        atm_dict=atm_dict,
+        master_dict=master_dict,
+        profiling_stats=profiling_stats,
+        enable_statistics_output=enable_statistics_output,
+    )
+
+    # the file-based initial condition needs the clock of the driver to know which
+    # savepoint to read: the initial state, or a later one when restarting
     initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
-        atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
+        atm_dict=atm_dict,
+        input_dict=input_dict,
+        data_path=config_file_path,
+        start_of_simulation=driver_cfg.start_of_simulation,
+        start_of_timestepping=driver_cfg.start_of_timestepping,
+        dtime=driver_cfg.dtime,
     )
 
     if not do_tracer_advection and isinstance(
@@ -245,14 +269,6 @@ def read_experiment_config_from_fortran(
             initial_condition_cfg,
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
-
-    profiling_stats = ProfilingStats() if enable_profiling else None
-    driver_cfg = DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
-        profiling_stats=profiling_stats,
-        enable_statistics_output=enable_statistics_output,
-    )
 
     return ExperimentConfig(
         geometry=geometry_cfg,

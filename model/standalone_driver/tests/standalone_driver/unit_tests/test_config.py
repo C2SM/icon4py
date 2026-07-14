@@ -96,6 +96,8 @@ def _driver_config(
     config = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
     )
+    if start_of_timestepping is None:
+        return config
     return dataclasses.replace(config, start_of_timestepping=start_of_timestepping)
 
 
@@ -106,6 +108,11 @@ def test_time_loop_starts_at_the_beginning_of_the_simulation() -> None:
     assert model_time.is_first_step_in_simulation is True
     assert model_time.elapsed_time_in_seconds == 0.0
     assert model_time.n_time_steps == 30
+
+
+def test_the_time_loop_cannot_start_before_the_simulation() -> None:
+    with pytest.raises(ValueError, match="before the beginning of the simulation"):
+        _driver_config(datetime.datetime(1999, 12, 31, tzinfo=datetime.UTC))
 
 
 def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:

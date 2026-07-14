@@ -266,10 +266,9 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         grid=grid, allocator=allocator
     )
     solve_nonhydro_diagnostic_state = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
-        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
-        grid=grid,
-        allocator=allocator,
+        grid=grid, allocator=allocator
     )
+    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels = perturbed_exner
 
     prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
     log.info("Initialization completed.")
