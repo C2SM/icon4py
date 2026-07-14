@@ -7,8 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-Tendencies that the dycore reads but ICON4Py does not compute, read from file.
-
 The dycore is forced with two sets of tendencies that come from parts of ICON which
 ICON4Py does not have:
 
@@ -22,8 +20,7 @@ ICON4Py does not have:
     dynamics substeps.
 
 Without a lateral boundary reader and without physics, both sets can only be
-prescribed from the serialized data of the reference run, once per time step. They
-are zero for the testcases, which are neither limited area nor forced by physics.
+prescribed from the serialized data of the reference run, once per time step.
 """
 
 from __future__ import annotations
@@ -36,15 +33,14 @@ from typing import TYPE_CHECKING, Any
 import gt4py.next as gtx
 import serialbox  # type: ignore[import-untyped]
 
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import model_backends, time
+from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid
 
 
@@ -53,9 +49,7 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class PrescribedTendenciesConfig:
-    """Parameters for the tendencies read from the serialized data."""
-
-    #: Path to the serialized data directory. None for the testcases, whose tendencies are zero.
+    #: None for the testcases, which are neither limited area nor forced by physics.
     data_path: pathlib.Path | None = None
 
     @classmethod
@@ -65,8 +59,8 @@ class PrescribedTendenciesConfig:
         atm_dict: dict[str, Any],
         data_path: pathlib.Path,
     ) -> PrescribedTendenciesConfig:
-        run_nml = atm_dict.get("run_nml", {})
-        if run_nml.get("ltestcase", True):
+        run_nml = atm_dict["run_nml"]
+        if run_nml["ltestcase"]:
             return cls(data_path=None)
         return cls(data_path=data_path / fortran_config.SER_DATA_SUBDIR)
 
@@ -91,7 +85,7 @@ class SerializedTendencies:
     def update(
         self,
         *,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_datetime: time.AbsoluteTime,
     ) -> None:
         """
@@ -113,7 +107,7 @@ class SerializedTendencies:
         except serialbox.SerialboxError as err:
             raise ValueError(
                 f"there are no serialized tendencies for the time step ending at {date}. "
-                f"The serialized data of this experiment covers: {self._available_dates()}. "
+                f"The serialized data of this experiment covers: {self._available_nonhydro_init_dates()}. "
                 "The lateral boundary and slow physics tendencies of a real data run can "
                 "only be prescribed within that window."
             ) from err
@@ -149,7 +143,7 @@ class SerializedTendencies:
             buffer[:size, :]
         )
 
-    def _available_dates(self) -> str:
+    def _available_nonhydro_init_dates(self) -> str:
         dates = sorted(
             {
                 savepoint.metainfo["date"]
@@ -158,21 +152,3 @@ class SerializedTendencies:
             }
         )
         return ", ".join(dates) if dates else "none"
-
-
-def create(
-    *,
-    config: PrescribedTendenciesConfig,
-    grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend | None,
-    exchange: decomposition_defs.ExchangeRuntime,
-) -> SerializedTendencies | None:
-    """The reader of the prescribed tendencies, or None when they are zero."""
-    if config.data_path is None:
-        return None
-    return SerializedTendencies(
-        data_path=config.data_path,
-        grid=grid,
-        backend=backend,
-        rank=exchange.my_rank(),
-    )

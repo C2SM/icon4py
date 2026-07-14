@@ -160,10 +160,8 @@ class ExperimentConfig:
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
     initial_condition: initial_condition.InitialConditionConfig
+    prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
-    prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig = dataclasses.field(
-        default_factory=prescribed_tendencies.PrescribedTendenciesConfig
-    )
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
     tracer_config: tracer_state.TracerConfig | None = None

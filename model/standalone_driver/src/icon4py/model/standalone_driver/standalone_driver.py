@@ -708,11 +708,15 @@ def initialize_driver(
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,
-        tendencies=prescribed_tendencies.create(
-            config=config.prescribed_tendencies,
-            grid=grid_manager.grid,
-            backend=backend,
-            exchange=exchange,
+        tendencies=(
+            prescribed_tendencies.SerializedTendencies(
+                data_path=config.prescribed_tendencies.data_path,
+                grid=grid_manager.grid,
+                backend=backend,
+                rank=exchange.my_rank(),
+            )
+            if config.prescribed_tendencies.data_path is not None
+            else None
         ),
         io_monitor=io_monitor,
     )
