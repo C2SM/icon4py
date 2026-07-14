@@ -12,7 +12,7 @@ import os
 import re
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, Literal, TypedDict, get_args
 
 import nox
 
@@ -49,7 +49,7 @@ if _rank is not None:
 
 
 # -- Parameter sets --
-ModelSubpackagePath: TypeAlias = Literal[
+type ModelSubpackagePath = Literal[
     "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
@@ -61,22 +61,24 @@ ModelSubpackagePath: TypeAlias = Literal[
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
-    nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
+    nox.param(arg, id=arg.split("/")[-1]) for arg in get_args(ModelSubpackagePath.__value__)
 ]
 
-ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
+type ModelTestsSubset = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
-    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+    nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ModelTestsSubset.__value__)
 ]
 # Stencil tests are by definition serial
 MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
-    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__ if arg != "stencils"
+    nox.param(arg, id=arg, tags=[arg])
+    for arg in get_args(ModelTestsSubset.__value__)
+    if arg != "stencils"
 ]
-ToolsBindingsTestsSubset: TypeAlias = Literal["datatest", "unittest"]
+type ToolsBindingsTestsSubset = Literal["datatest", "unittest"]
 TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
-    nox.param(arg, id=arg, tags=[arg]) for arg in ToolsBindingsTestsSubset.__args__
+    nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ToolsBindingsTestsSubset.__value__)
 ]
-SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.12", "3.13", "3.14"]
 
 
 # -- nox sessions --

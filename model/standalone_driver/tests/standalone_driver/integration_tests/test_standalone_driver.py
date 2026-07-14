@@ -72,12 +72,12 @@ def test_standalone_driver(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
             "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
-                tzinfo=datetime.timezone.utc
+                tzinfo=datetime.UTC
             ),
         }
     )
