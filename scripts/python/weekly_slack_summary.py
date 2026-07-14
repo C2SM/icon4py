@@ -441,7 +441,7 @@ def _gitlab_raw_request(url: str, *, token: str | None = None) -> bytes:
         raise RuntimeError(f"GitLab API request failed: {e.reason}.") from e
 
 
-_CSCI_RUN_RE = re.compile(r"^cscs-ci run\b", re.IGNORECASE)
+_CSCI_RUN_RE = re.compile(r"cscs-ci run\b", re.IGNORECASE)
 _NOISE_AUTHORS = {"github-actions[bot]", "Copilot"}
 
 
@@ -449,7 +449,7 @@ def _is_noise_comment(author: str, body: str) -> bool:
     """Return True for comments that add no summarizable content."""
     if author in _NOISE_AUTHORS:
         return True
-    return bool(_CSCI_RUN_RE.match(body.strip()))
+    return bool(_CSCI_RUN_RE.search(body.strip()))
 
 
 _ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")

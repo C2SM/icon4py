@@ -515,6 +515,23 @@ class TestInactivePRHighlights:
         assert weekly_slack_summary._select_inactive_pr_highlights([]) == []
 
 
+class TestIsNoiseComment:
+    @pytest.mark.parametrize(
+        ("author", "body", "expected"),
+        [
+            ("github-actions[bot]", "some comment", True),
+            ("Copilot", "another comment", True),
+            ("user", "cscs-ci run", True),
+            ("user", "Please trigger cscs-ci run for this PR", True),
+            ("user", "CSCS-CI run now", True),
+            ("user", "cscs-ci runs are failing", False),
+            ("user", "regular discussion", False),
+        ],
+    )
+    def test_noise_comment_filtering(self, author, body, expected):
+        assert weekly_slack_summary._is_noise_comment(author, body) is expected
+
+
 class TestRunOpenCode:
     def test_fails_when_opencode_missing(self, monkeypatch):
         monkeypatch.setattr(weekly_slack_summary.shutil, "which", lambda _name: None)
