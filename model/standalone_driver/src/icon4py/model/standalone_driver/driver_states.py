@@ -202,6 +202,26 @@ class TimerCollection:
                 )
 
 
+def initialize_tracer_advection_states(
+    *,
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.Allocator,
+) -> tuple[advection_states.AdvectionDiagnosticState, advection_states.AdvectionPrepAdvState]:
+    """Zero-allocated tracer advection states, filled by the dycore or a prescribing IC."""
+    diagnostic = advection_states.initialize_advection_diagnostic_state(
+        grid=grid, allocator=allocator
+    )
+    prep_adv = advection_states.AdvectionPrepAdvState(
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        # mass_flx_ic lives on half levels (advection reads it at KDim + 1)
+        mass_flx_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+        ),
+    )
+    return diagnostic, prep_adv
+
+
 def assemble_driver_states(
     *,
     grid: icon_grid.IconGrid,
@@ -212,7 +232,15 @@ def assemble_driver_states(
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
+    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState | None = None,
+    prep_tracer_advection: advection_states.AdvectionPrepAdvState | None = None,
 ) -> DriverStates:
+    """Assemble the driver states.
+
+    ``tracer_advection_diagnostic`` and ``prep_tracer_advection`` may be passed in
+    pre-allocated (e.g. filled by a prescribing initial condition); otherwise they are
+    zero-allocated here when tracer advection is enabled.
+    """
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
         w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
@@ -286,26 +314,16 @@ def assemble_driver_states(
         if solve_nonhydro_enabled
         else None
     )
-    tracer_advection_diagnostic_state = (
-        advection_states.initialize_advection_diagnostic_state(grid=grid, allocator=allocator)
-        if tracer_advection_enabled
-        else None
-    )
-    prep_tracer_adv = (
-        advection_states.AdvectionPrepAdvState(
-            vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-            mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-            mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
+    if tracer_advection_enabled and tracer_advection_diagnostic is None:
+        tracer_advection_diagnostic, prep_tracer_advection = initialize_tracer_advection_states(
+            grid=grid, allocator=allocator
         )
-        if tracer_advection_enabled
-        else None
-    )
 
     return DriverStates(
         prep_advection_prognostic=prep_adv,
         solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
-        prep_tracer_advection_prognostic=prep_tracer_adv,
-        tracer_advection_diagnostic=tracer_advection_diagnostic_state,
+        prep_tracer_advection_prognostic=prep_tracer_advection,
+        tracer_advection_diagnostic=tracer_advection_diagnostic,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
         diagnostic=diagnostic_state,

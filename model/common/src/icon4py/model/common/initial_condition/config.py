@@ -17,6 +17,7 @@ from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
+    tracer_blob as tracer_blob_ic,
 )
 from icon4py.model.common.utils import fortran_config
 
@@ -33,7 +34,12 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+    config: (
+        jw_ic.JablonowskiWilliamsonConfig
+        | gauss_ic.Gauss3DConfig
+        | tracer_blob_ic.TracerBlobConfig
+        | from_file_ic.FromFileConfig
+    )
 
     @classmethod
     def from_fortran_dict(
@@ -57,7 +63,9 @@ class InitialConditionConfig:
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         test_name = testcase_nml.get("nh_test_name")
         config: (
-            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
+            jw_ic.JablonowskiWilliamsonConfig
+            | gauss_ic.Gauss3DConfig
+            | tracer_blob_ic.TracerBlobConfig
         )  # mypy does not automatically catch type
         match test_name:
             case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
@@ -77,6 +85,11 @@ class InitialConditionConfig:
                 config = fortran_config.config_dataclass_from_dict(
                     gauss_ic.Gauss3DConfig, testcase_nml
                 )
+            case "tracer_blob":
+                log.info("Analytical initial condition for tracer blob test case")
+                config = fortran_config.config_dataclass_from_dict(
+                    tracer_blob_ic.TracerBlobConfig, testcase_nml
+                )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
 
@@ -93,8 +106,13 @@ def create(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    tracer_advection_prescription: tracer_blob_ic.TracerAdvectionPrescription | None = None,
 ) -> None:
-    """Fill a PrognosticState by dispatching on the type of ``config.config``."""
+    """Fill a PrognosticState by dispatching on the type of ``config.config``.
+
+    ``tracer_advection_prescription`` is only used by initial conditions that
+    prescribe the advection driving fields (tracer_blob); the other cases ignore it.
+    """
     match config.config:
         case jw_ic.JablonowskiWilliamsonConfig():
             jw_ic.jablonowski_williamson(
@@ -116,6 +134,22 @@ def create(
                 prognostic_state_now=prognostic_state_now,
                 backend=backend,
                 exchange=exchange,
+            )
+        case tracer_blob_ic.TracerBlobConfig():
+            if tracer_advection_prescription is None:
+                raise ValueError(
+                    "The 'tracer_blob' initial condition requires tracer advection to be "
+                    "enabled: 'tracer_advection_prescription' is missing."
+                )
+            tracer_blob_ic.tracer_blob(
+                config=config.config,
+                vertical_config=vertical_config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                backend=backend,
+                exchange=exchange,
+                prescription=tracer_advection_prescription,
             )
         case from_file_ic.FromFileConfig():
             from_file_ic.read_from_file(

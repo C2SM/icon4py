@@ -37,6 +37,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.initial_condition.analytical import tracer_blob
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -682,6 +683,24 @@ def run_driver(
         allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
+    # the tracer advection states are allocated before the initial condition so a
+    # prescribing IC (tracer_blob) can fill the fields the disabled dycore never writes
+    tracer_advection_diagnostic = None
+    prep_tracer_advection = None
+    tracer_advection_prescription = None
+    if icon4py_driver.config.tracer_advection is not None:
+        tracer_advection_diagnostic, prep_tracer_advection = (
+            driver_states.initialize_tracer_advection_states(
+                grid=icon4py_driver.grid, allocator=allocator
+            )
+        )
+        tracer_advection_prescription = tracer_blob.TracerAdvectionPrescription(
+            vn_traj=prep_tracer_advection.vn_traj,
+            mass_flx_me=prep_tracer_advection.mass_flx_me,
+            mass_flx_ic=prep_tracer_advection.mass_flx_ic,
+            airmass_now=tracer_advection_diagnostic.airmass_now,
+            airmass_new=tracer_advection_diagnostic.airmass_new,
+        )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
@@ -691,6 +710,7 @@ def run_driver(
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
+        tracer_advection_prescription=tracer_advection_prescription,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=icon4py_driver.grid, allocator=allocator
@@ -704,6 +724,8 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
+        tracer_advection_diagnostic=tracer_advection_diagnostic,
+        prep_tracer_advection=prep_tracer_advection,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,
