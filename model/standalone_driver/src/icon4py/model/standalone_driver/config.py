@@ -79,20 +79,25 @@ class DriverConfig:
     profiling_stats: ProfilingStats | None
     dtime: time.RelativeTime
     start_of_simulation: time.AbsoluteTime
+    # Beginning of the time loop. It is the beginning of the simulation, unless restarting.
+    start_of_timestepping: time.AbsoluteTime
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
-    # Beginning of the time loop. None means the beginning of the simulation; set it to
-    # a later date to restart from there.
-    start_of_timestepping: time.AbsoluteTime | None = None
     apply_extra_second_order_divdamp: bool = False
-    # lprep_adv in fortran. The default matches the namelist default of ltransport.
+    # lprep_adv in fortran
     do_prep_adv: bool = False
-    # Extra diffusion call before the time loop, for real data runs.
     diffuse_before_time_loop: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     enable_output: bool = False
+
+    def __post_init__(self) -> None:
+        if self.start_of_timestepping < self.start_of_simulation:
+            raise ValueError(
+                f"the time loop cannot start at {self.start_of_timestepping}, before the "
+                f"beginning of the simulation ({self.start_of_simulation})."
+            )
 
     @classmethod
     def from_fortran_dict(
@@ -112,35 +117,35 @@ class DriverConfig:
         )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
-        # The fortran defaults of mo_run_nml.f90 are used for the missing variables.
-        is_real_data_run = not run_nml.get("ltestcase", True)
-        runs_dynamics = run_nml.get("ldynamics", True)
+        is_testcase = run_nml["ltestcase"]
+        start_of_simulation = datetime.datetime.fromisoformat(
+            start_datetime_str.replace("Z", "+00:00")
+        )
         return cls(
             experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=dtime,
-            start_of_simulation=datetime.datetime.fromisoformat(
-                start_datetime_str.replace("Z", "+00:00")
-            ),
+            start_of_simulation=start_of_simulation,
+            # a restart overrides it with a later date
+            start_of_timestepping=start_of_simulation,
             end_of_simulation=datetime.datetime.fromisoformat(
                 end_datetime_str.replace("Z", "+00:00")
             ),
             # apply_extra_second_order_divdamp does not have a namelist
             # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
             # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
-            apply_extra_second_order_divdamp=is_real_data_run,
-            # mo_nh_stepping.f90 (perform_dyn_substepping):
-            # lprep_adv = ltransport .OR. (n_childdom > 0 .AND. grf_intmethod_e == 6)
-            # There are no nested domains in ICON4Py, so lprep_adv is ltransport.
-            do_prep_adv=run_nml.get("ltransport", False),
-            # mo_nh_stepping.f90 (integrate_nh), where linit_dyn is only true at the
-            # first time step of a simulation that is not a restart, and lhdiff_vn is
-            # checked by the driver against the configuration of the diffusion granule:
+            apply_extra_second_order_divdamp=not is_testcase,
+            # mo_nh_stepping.f90 (integrate_nh), where linit_dyn is only true at the first
+            # time step of a simulation that is not a restart, and both ldynamics and
+            # lhdiff_vn are checked by the driver against its granules:
             # IF (ldynamics .AND. .NOT.ltestcase .AND. linit_dyn(jg) .AND.
             #     diffusion_config(jg)%lhdiff_vn .AND. init_mode /= MODE_IAU)
             # The incremental analysis update (MODE_IAU) is not implemented in ICON4Py.
-            diffuse_before_time_loop=is_real_data_run and runs_dynamics,
+            diffuse_before_time_loop=not is_testcase,
+            # lprep_adv is 'ltransport .OR. (n_childdom > 0 .AND. grf_intmethod_e == 6)' in
+            # mo_nh_stepping.f90. ICON4Py has no nested domains, so it is ltransport.
+            do_prep_adv=run_nml["ltransport"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             **overrides,
@@ -251,8 +256,23 @@ def read_experiment_config_from_fortran(
         else None
     )
 
+    profiling_stats = ProfilingStats() if enable_profiling else None
+    driver_cfg = DriverConfig.from_fortran_dict(
+        atm_dict=atm_dict,
+        master_dict=master_dict,
+        profiling_stats=profiling_stats,
+        enable_statistics_output=enable_statistics_output,
+    )
+
+    # the file-based initial condition needs the clock of the driver to know which
+    # savepoint to read: the initial state, or a later one when restarting
     initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
-        atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
+        atm_dict=atm_dict,
+        input_dict=input_dict,
+        data_path=config_file_path,
+        start_of_simulation=driver_cfg.start_of_simulation,
+        start_of_timestepping=driver_cfg.start_of_timestepping,
+        dtime=driver_cfg.dtime,
     )
 
     if not do_tracer_advection and isinstance(
@@ -262,14 +282,6 @@ def read_experiment_config_from_fortran(
             initial_condition_cfg,
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
-
-    profiling_stats = ProfilingStats() if enable_profiling else None
-    driver_cfg = DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
-        profiling_stats=profiling_stats,
-        enable_statistics_output=enable_statistics_output,
-    )
 
     return ExperimentConfig(
         geometry=geometry_cfg,
