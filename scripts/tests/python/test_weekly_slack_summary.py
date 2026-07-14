@@ -726,6 +726,71 @@ class TestGenerateCommand:
         assert opencode_calls == [summary_md]
         assert slack_calls == [("https://hooks.slack.com/test", "polished summary")]
 
+    def test_over_limit_summary_posts_with_warning_and_oversized_file(
+        self, output_dir, monkeypatch, capsys
+    ):
+        def fake_collect_all(*args, **kwargs):
+            return {
+                "week_start": "2024-07-01T00:00:00+00:00",
+                "week_end": "2024-07-07T23:59:59+00:00",
+                "ci_week_start": "2024-07-08T00:00:00+00:00",
+                "repository": "C2SM/icon4py",
+                "github_prs": {
+                    "merged_prs": [],
+                    "closed_without_merge_prs": [],
+                    "active_prs": [],
+                    "inactive_prs": [],
+                    "inactive_pr_highlights": [],
+                },
+                "github_issues": {"opened_issues": [], "closed_issues": []},
+                "gitlab_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+                "gitlab_nightly_ci": {
+                    "status": "no_recent_pipeline",
+                    "url": "https://gitlab.com/pipelines/nightly",
+                    "message": "none",
+                    "failed_jobs": [],
+                    "running_jobs": [],
+                },
+            }
+
+        monkeypatch.setattr(weekly_slack_summary, "_collect_all", fake_collect_all)
+
+        long_summary = "x" * 3801
+
+        def fake_run_opencode(instructions, context, output):
+            output.write_text(long_summary, encoding="utf-8")
+
+        monkeypatch.setattr(weekly_slack_summary, "_run_opencode", fake_run_opencode)
+
+        slack_calls: list[tuple[str, str]] = []
+
+        def fake_post_to_slack(webhook_url, markdown):
+            slack_calls.append((webhook_url, markdown))
+
+        monkeypatch.setattr(weekly_slack_summary, "_post_to_slack", fake_post_to_slack)
+
+        weekly_slack_summary.generate_cmd(
+            slack_webhook_url="https://hooks.slack.com/test",
+        )
+
+        summary_md = output_dir / "weekly_slack_summary.md"
+        assert summary_md.exists()
+        assert summary_md.read_text(encoding="utf-8") == long_summary
+        assert slack_calls == [("https://hooks.slack.com/test", long_summary)]
+
+        oversized_md = output_dir / "weekly_slack_summary_oversized.md"
+        assert oversized_md.exists()
+        assert oversized_md.read_text(encoding="utf-8") == long_summary
+
+        captured = capsys.readouterr()
+        assert "Warning: generated summary exceeds recommended limits" in captured.err
+
     def test_missing_webhook_exits_nonzero(self, output_dir, monkeypatch):
         monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
 
