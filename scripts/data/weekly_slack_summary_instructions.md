@@ -57,8 +57,18 @@ If a section is empty, write `(none)`.
 PR entries: `<URL|short-title>` by author: brief summary (5-10 words).
 Closed PRs: `<URL|short-title>` by author: brief summary (5-10 words).
 Inactive PRs: `<URL|short-title>` by author: no description.
-Issues: `<URL|short-title>` by author: brief summary.
+Issues: `<URL|short-title>` by author: brief summary (5-10 words).
 CI: `<status>: <pipeline URL|pipeline> - failure note`
+
+## Trimming priority
+
+If the content is too long, prioritize removing content as follows:
+
+- Shorten the closed and inactive PRs lists
+- Remove descriptions from closed and inactive PRs
+- Remove URLs from closed and inactive PRs
+- Only refer to closed and inactive PRs by PR number
+- Shorten other lists, combining the overflow into a combined point saying how many other PRs/issues there are
 
 ## Weekly Easter Egg
 
