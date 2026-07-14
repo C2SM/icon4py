@@ -132,7 +132,7 @@ def create_grid_manager(
     )
     grid_manager(
         allocator=allocator,
-        keep_skip_values=False,  # BISECT exp 3: test E2C2V skip value fix
+        keep_skip_values=True,
         process_props=process_props,
         decomposer=decomposer,
     )

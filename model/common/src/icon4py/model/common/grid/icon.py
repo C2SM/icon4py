@@ -167,8 +167,7 @@ def _should_replace_skip_values(
 
     """
     return not keep_skip_values and (
-        (limited_area_or_distributed and offset.target[1] in CONNECTIVITIES_ON_BOUNDARIES)
-        or not _has_skip_values(offset, limited_area_or_distributed)
+        limited_area_or_distributed or not _has_skip_values(offset, limited_area_or_distributed)
     )
 
 

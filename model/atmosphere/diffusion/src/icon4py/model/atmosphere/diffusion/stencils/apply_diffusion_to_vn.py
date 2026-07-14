@@ -50,6 +50,7 @@ def _apply_diffusion_to_vn(
         inv_vert_vert_length,
         inv_primal_edge_length,
     )
+    z_nabla4_e2 = z_nabla4_e2 * vpfloat("0.0")  # BISECT exp 5: zero nabla4
 
     # TODO(): Use if-else statement instead
     vn = (
