@@ -141,6 +141,7 @@ class Icon4pyDriver:
             rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
         )
         state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        state_to_store.update(driver_io.tracer_state_to_dataarrays(prognostic_state.tracer))
         self.io_monitor.store(state_to_store, simulation_current_datetime)
 
     def time_integration(
@@ -645,6 +646,7 @@ def initialize_driver(
                 grid=grid_manager.grid,
                 vertical_grid=vertical_grid,
                 dtime=config.driver.dtime,
+                variables=driver_io.output_variables(config.tracer_config),
                 process_props=process_props,
             )
 

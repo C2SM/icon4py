@@ -33,7 +33,11 @@ from icon4py.model.common.diagnostic_calculations.stencils import diagnose_tempe
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
-from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.states import (
+    data as state_data,
+    prognostic_state as prognostics,
+    tracer_state,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -84,6 +88,31 @@ def prognostic_state_to_dataarrays(
             to_host=True,
         )
     return state
+
+
+# --------------------------------------------------------------------------------------
+# Tracer fields
+# --------------------------------------------------------------------------------------
+
+
+def tracer_state_to_dataarrays(tracers: tracer_state.TracerState) -> dict[str, xr.DataArray]:
+    """Assemble CF/UGRID-annotated DataArrays for the active tracer fields."""
+    state: dict[str, xr.DataArray] = {}
+    for tracer in tracers.active_fields():
+        metadata = state_data.COMMON_TRACER_CF_ATTRIBUTES[tracer.name]
+        state[tracer.name] = io_utils.to_data_array(
+            tracer.field,  # type: ignore[arg-type]  # to_data_array is annotated for 1-dim fields
+            metadata,
+            is_on_half_levels=False,
+            to_host=True,
+        )
+    return state
+
+
+def output_variables(tracer_config: tracer_state.TracerConfig | None) -> list[str]:
+    """The default output variables plus the active tracers."""
+    tracers = () if tracer_config is None else tracer_config.active_names
+    return [*DEFAULT_OUTPUT_VARIABLES, *tracers]
 
 
 # --------------------------------------------------------------------------------------
