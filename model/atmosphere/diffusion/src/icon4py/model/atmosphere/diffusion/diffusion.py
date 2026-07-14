@@ -45,6 +45,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -595,14 +596,26 @@ class Diffusion:
             vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_vn = setup_program(
+        self.calculate_nabla4 = setup_program(
             backend=backend,
-            program=apply_diffusion_to_vn,
+            program=calculate_nabla4,
             constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_v2": self._edge_params.primal_normal_vert[1],
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
                 "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "horizontal_end": self._edge_end_local,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
+        self.apply_diffusion_to_vn = setup_program(
+            backend=backend,
+            program=apply_diffusion_to_vn,
+            constant_args={
                 "area_edge": self._edge_params.edge_areas,
                 "nudgecoeff_e": self._interpolation_state.nudgecoeff_e,
                 "nudgezone_diff": self.nudgezone_diff,
@@ -747,6 +760,9 @@ class Diffusion:
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self.z_nabla2_e = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+        )
+        self.z_nabla4_e2 = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
@@ -925,16 +941,24 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start (BISECT exp 2)")
-        self.apply_diffusion_to_vn(
+        log.debug("running stencil 06 (calculate_nabla4): start")
+        self.calculate_nabla4(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             z_nabla2_e=self.z_nabla2_e,
+            z_nabla4_e2=self.z_nabla4_e2,
+        )
+        log.debug("running stencil 06 (calculate_nabla4): end")
+
+        log.debug("running stencils 04 05 (apply_diffusion_to_vn): start")
+        self.apply_diffusion_to_vn(
+            z_nabla2_e=self.z_nabla2_e,
+            z_nabla4_e2=self.z_nabla4_e2,
             kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
             vn=prognostic_state.vn,
         )
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end (BISECT exp 2)")
+        log.debug("running stencils 04 05 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
