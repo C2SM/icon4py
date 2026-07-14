@@ -269,8 +269,8 @@ def test_compute_lsq_coeffs(
         cell_lon=cell_lon,
         c2e2c=c2e2c,
         cell_owner_mask=cell_owner_mask,
-        domain_length=domain_length,  # type: ignore[arg-type]  # float | None
-        domain_height=domain_height,  # type: ignore[arg-type]  # float | None
+        domain_length=domain_length,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
+        domain_height=domain_height,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
         grid_sphere_radius=grid_sphere_radius,
         lsq_dim_unk=lsq_dim_unk,
         lsq_dim_c=lsq_dim_c,
