@@ -542,7 +542,7 @@ class TestRunOpenCode:
                 pathlib.Path("out.md"),
             )
 
-    def test_runs_opencode_and_writes_stdout(self, tmp_path, monkeypatch):
+    def test_runs_opencode_and_writes_file(self, tmp_path, monkeypatch):
         instructions = tmp_path / "instructions.md"
         context = tmp_path / "context.md"
         output = tmp_path / "out.md"
