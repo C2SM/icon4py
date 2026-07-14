@@ -55,8 +55,8 @@ If a section is empty, write `(none)`.
 ## Content
 
 PR entries: `<URL|short-title>` by author: brief summary (5-10 words).
-Closed PRs: "N PRs closed: reason" — no URLs.
-Inactive PRs: `<URL|short-title>` by author — no description.
+Closed PRs: "N PRs closed: reason": no URLs.
+Inactive PRs: `<URL|short-title>` by author: no description.
 Issues: `<URL|short-title>` by author: brief summary.
 CI: `<status>: <pipeline URL|pipeline> - failure note`
 
