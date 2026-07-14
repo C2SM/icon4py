@@ -525,9 +525,9 @@ class GridManager:
         sphere_radius_attr = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         sphere_radius = float(sphere_radius_attr) if sphere_radius_attr is not None else None
         domain_length_attr = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
-        domain_length = float(domain_length_attr) if domain_length_attr is not None else 0.0
+        domain_length = float(domain_length_attr) if domain_length_attr is not None else None
         domain_height_attr = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
-        domain_height = float(domain_height_attr) if domain_height_attr is not None else 0.0
+        domain_height = float(domain_height_attr) if domain_height_attr is not None else None
 
         match geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
@@ -538,6 +538,8 @@ class GridManager:
                     ),
                 )
             case icon.GeometryType.TORUS:
+                assert domain_length is not None, "domain_length must not be None for torus grid"
+                assert domain_height is not None, "domain_height must not be None for torus grid"
                 return icon.GridParams(
                     icon.TorusParams(
                         domain_length=domain_length,

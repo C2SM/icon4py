@@ -336,6 +336,9 @@ class GridGeometry(factory.FieldSource):
                 self._register_normals_and_tangents_icosahedron()
 
             case icon.GeometryType.TORUS:
+                assert self._backend is not None, (
+                    "backend must not be None for geometry computation"
+                )
                 vertex_vertex_distance = factory.ProgramFieldProvider(
                     func=stencils.compute_distance_of_far_edges_in_diamond_torus,
                     domain={
@@ -364,7 +367,7 @@ class GridGeometry(factory.FieldSource):
                         "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(
                             coriolis_coefficient=0.0,
                             num_edges=self._grid.num_edges,
-                            backend=self._backend,  # type: ignore[arg-type]  # backend could be None
+                            backend=self._backend,
                         )
                     }
                 )
@@ -900,9 +903,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
-            # field_src may be None when the wrapped provider's fields are
-            # already computed; cast preserves the pre-assert pass-through.
-            field_src = cast(factory.FieldSource, field_src)
+            assert field_src is not None, "field_src must not be None when fields are not cached"
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:

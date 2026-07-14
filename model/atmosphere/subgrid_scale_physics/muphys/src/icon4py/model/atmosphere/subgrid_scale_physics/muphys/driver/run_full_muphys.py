@@ -115,7 +115,7 @@ def setup_muphys(
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
-) -> Callable:  # returns compiled program or functools.partial
+) -> Callable[..., None]:
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
         with utils.recursion_limit(10**5):

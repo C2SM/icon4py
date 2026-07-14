@@ -68,7 +68,7 @@ def setup_graupel(
     vertical_end: int,
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
-) -> Callable:  # returns compiled graupel program
+) -> Callable[..., None]:
     if enable_dace_hooks:
         assert model_backends.is_backend_descriptor(backend)
         backend = copy.deepcopy(backend)

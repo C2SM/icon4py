@@ -193,10 +193,12 @@ module = [
 [[tool.mypy.overrides]]
 # GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
 # shape attr, dtype type-var. Cannot be fixed in user code.
+# NOTE: 131 errors across common.py (~90) and dycore_wrapper.py (~35).
+# Per-line ignores would add ~125 lines of identical boilerplate with no
+# type-safety benefit. Module-level override kept per D6 documented-justification rule.
 disable_error_code = ["arg-type", "attr-defined", "misc", "type-var", "assignment"]
 module = [
-  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.common",
-  "icon4py.model.common.initial_condition.*"
+  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.common"
 ]
 
 [[tool.mypy.overrides]]

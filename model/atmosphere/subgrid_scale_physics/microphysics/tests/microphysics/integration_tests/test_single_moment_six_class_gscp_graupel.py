@@ -84,20 +84,44 @@ def test_graupel(
     assert tracer_state.qi is not None
     assert tracer_state.qs is not None
     assert tracer_state.qg is not None
+    vn = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
+    w = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
+    exner = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
+    theta_v = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
     prognostic_state = prognostics.PrognosticState(
         rho=entry_savepoint.rho(),
-        vn=None,  # type: ignore[arg-type] # not used in microphysics test
-        w=None,  # type: ignore[arg-type] # not used in microphysics test
-        exner=None,  # type: ignore[arg-type] # not used in microphysics test
-        theta_v=None,  # type: ignore[arg-type] # not used in microphysics test
+        vn=vn,
+        w=w,
+        exner=exner,
+        theta_v=theta_v,
+    )
+    virtual_temperature = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
+    pressure_ifc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
+    u = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    )
+    v = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=entry_savepoint.temperature(),
-        virtual_temperature=None,  # type: ignore[arg-type] # not used in microphysics test
+        virtual_temperature=virtual_temperature,
         pressure=entry_savepoint.pressure(),
-        pressure_ifc=None,  # type: ignore[arg-type] # not used in microphysics test
-        u=None,  # type: ignore[arg-type] # not used in microphysics test
-        v=None,  # type: ignore[arg-type] # not used in microphysics test
+        pressure_ifc=pressure_ifc,
+        u=u,
+        v=v,
     )
 
     graupel_config = experiment.config.graupel
