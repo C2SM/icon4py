@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
     from icon4py.model.common.states import (
-        nonhydro_diagnostic_state as nonhydro_states,
+        nonhydro_states,
         prognostic_state as prognostics,
         static_fields,
     )

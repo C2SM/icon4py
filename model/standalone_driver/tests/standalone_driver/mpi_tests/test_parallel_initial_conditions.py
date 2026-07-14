@@ -16,7 +16,7 @@ from icon4py.model.common import initial_condition, model_backends, model_option
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
-    nonhydro_diagnostic_state as nonhydro_states,
+    nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.standalone_driver import (

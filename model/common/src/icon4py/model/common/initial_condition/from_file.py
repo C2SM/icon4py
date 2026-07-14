@@ -20,10 +20,7 @@ import serialbox  # type: ignore[import-untyped]
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.states import (
-    nonhydro_diagnostic_state as nonhydro_states,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
