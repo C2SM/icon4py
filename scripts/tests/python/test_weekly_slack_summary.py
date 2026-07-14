@@ -17,10 +17,9 @@ import urllib.parse
 from typing import Any
 from unittest import mock
 
+import generate_weekly_summary_opencode_config
 import pytest
 import typer
-
-import generate_weekly_summary_opencode_config
 import weekly_slack_summary
 
 

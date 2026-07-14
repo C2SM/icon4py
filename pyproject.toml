@@ -350,7 +350,7 @@ extend-immutable-calls = [
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ['icon4py', 'generate_weekly_summary_opencode_config', 'weekly_slack_summary']
+known-first-party = ['icon4py']
 known-third-party = ['gt4py', 'packaging', 'setuptools']
 lines-after-imports = 2
 order-by-type = true
