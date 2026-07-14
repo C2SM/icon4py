@@ -1285,7 +1285,7 @@ def compute_lsq_coeffs(
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
-    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
+    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_stencil, 2))
     match icon_grid.GeometryType(geometry_type):
         case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
@@ -1327,7 +1327,7 @@ def compute_lsq_coeffs(
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
         lsq_dim_unk=lsq_dim_unk,
-        lsq_dim_c=lsq_dim_c,
+        lsq_dim_c=lsq_dim_stencil,
     )
 
     exchange.exchange(dims.CellDim, lsq_weights_c, stream=decomposition.BLOCK)
@@ -1339,7 +1339,7 @@ def compute_lsq_coeffs(
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
         lsq_dim_unk=lsq_dim_unk,
-        lsq_dim_c=lsq_dim_c,
+        lsq_dim_c=lsq_dim_stencil,
     )
     exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 0, :], stream=decomposition.BLOCK)
     exchange.exchange(dims.CellDim, lsq_pseudoinv[:, 1, :], stream=decomposition.BLOCK)
