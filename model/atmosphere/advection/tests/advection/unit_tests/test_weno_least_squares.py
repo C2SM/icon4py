@@ -8,11 +8,9 @@
 
 """Tests for the init-time WENO least-squares coefficient machinery.
 
-All tests run on plain numpy: either the SimpleGrid connectivity tables or a
-small synthetic periodic equilateral-triangle torus patch built here.
+All tests run on plain numpy: either the SimpleGrid connectivity tables or the
+small synthetic periodic equilateral-triangle torus patch from ..utils.
 """
-
-import dataclasses
 
 import numpy as np
 import pytest
@@ -21,6 +19,8 @@ from icon4py.model.atmosphere.advection import weno_least_squares as weno
 from icon4py.model.common.grid import simple
 from icon4py.model.common.interpolation import interpolation_fields
 
+from ..utils import TorusPatch, build_torus_patch
+
 
 # number of quadratic candidates / unknowns / stencil positions
 N_CAND = 27
@@ -28,95 +28,9 @@ N_UNK = 5
 N_STENCIL = 9
 
 
-@dataclasses.dataclass(frozen=True)
-class TorusPatch:
-    edge_length: float
-    domain_length: float
-    domain_height: float
-    vertex_x: np.ndarray
-    vertex_y: np.ndarray
-    c2v: np.ndarray
-    c2e2c: np.ndarray
-    c2e2c2e2c: np.ndarray
-    cell_center_x: np.ndarray
-    cell_center_y: np.ndarray
-    # unwrapped vertex coordinates relative to the cell center (centroid), (n_cells, 3, 2)
-    local_vertices: np.ndarray
-
-
-def _build_torus_patch(nx: int = 8, ny: int = 8, edge_length: float = 1.0) -> TorusPatch:
-    """Periodic equilateral-triangle torus: nx*ny quads, each split into 2 triangles.
-
-    Vertex rows are offset by half an edge length alternately (ny must be even
-    for periodicity in y). Cell centers are the triangle centroids.
-    """
-    assert ny % 2 == 0
-    dx = edge_length
-    dy = edge_length * np.sqrt(3.0) / 2.0
-    domain_length = nx * dx
-    domain_height = ny * dy
-
-    def vertex_id(i: int, j: int) -> int:
-        return (j % ny) * nx + (i % nx)
-
-    def vertex_coord(i: int, j: int) -> tuple[float, float]:
-        # unwrapped coordinates; consistent across the periodic seam for even ny
-        return ((i + 0.5 * (j % 2)) * dx, j * dy)
-
-    vertex_x = np.array([vertex_coord(i, j)[0] for j in range(ny) for i in range(nx)])
-    vertex_y = np.array([vertex_coord(i, j)[1] for j in range(ny) for i in range(nx)])
-
-    triangles = []  # (i, j) vertex index pairs, unwrapped
-    for j in range(ny):
-        for i in range(nx):
-            if j % 2 == 0:
-                # row j not offset, row j+1 offset by +dx/2
-                triangles.append([(i, j), (i + 1, j), (i, j + 1)])  # up
-                triangles.append([(i + 1, j), (i, j + 1), (i + 1, j + 1)])  # down
-            else:
-                # row j offset by +dx/2, row j+1 not offset
-                triangles.append([(i, j), (i + 1, j), (i + 1, j + 1)])  # up
-                triangles.append([(i, j), (i, j + 1), (i + 1, j + 1)])  # down
-    n_cells = len(triangles)
-
-    c2v = np.array([[vertex_id(i, j) for (i, j) in tri] for tri in triangles], dtype=np.int32)
-    coords = np.array([[vertex_coord(i, j) for (i, j) in tri] for tri in triangles])
-    centers = coords.mean(axis=1)
-    local_vertices = coords - centers[:, np.newaxis, :]
-    cell_center_x = centers[:, 0] % domain_length
-    cell_center_y = centers[:, 1] % domain_height
-
-    # neighbors share exactly two vertices; brute force is fine at this size
-    vertex_sets = [frozenset(row) for row in c2v.tolist()]
-    c2e2c = np.array(
-        [
-            [d for d in range(n_cells) if d != c and len(vertex_sets[c] & vertex_sets[d]) == 2]
-            for c in range(n_cells)
-        ],
-        dtype=np.int32,
-    )
-    assert c2e2c.shape == (n_cells, 3)
-    # grid_manager-style butterfly table: c2e2c[c2e2c] (center cell 3x + 6 outer cells)
-    c2e2c2e2c = c2e2c[c2e2c].reshape(n_cells, 9)
-
-    return TorusPatch(
-        edge_length=edge_length,
-        domain_length=domain_length,
-        domain_height=domain_height,
-        vertex_x=vertex_x,
-        vertex_y=vertex_y,
-        c2v=c2v,
-        c2e2c=c2e2c,
-        c2e2c2e2c=c2e2c2e2c,
-        cell_center_x=cell_center_x,
-        cell_center_y=cell_center_y,
-        local_vertices=local_vertices,
-    )
-
-
 @pytest.fixture(scope="module")
 def torus_patch() -> TorusPatch:
-    return _build_torus_patch()
+    return build_torus_patch()
 
 
 def _triangle_average(f, vertices: np.ndarray) -> np.ndarray:
@@ -467,3 +381,72 @@ def test_linear_weno_blend_equals_plain_lsq(torus_patch):
         ((cx * s).sum(axis=1) / smooth_sum, (cy * s).sum(axis=1) / smooth_sum), axis=1
     )
     np.testing.assert_allclose(blended_identical, identical[:, 0], rtol=1e-12, atol=1e-13)
+
+
+# 9. torus patch edge tables: sanity of the synthetic grid the geometry tests run on
+def test_torus_patch_edge_tables(torus_patch):
+    n_cells = torus_patch.c2e2c.shape[0]
+    n_edges = torus_patch.e2c.shape[0]
+    assert n_edges == 3 * n_cells // 2
+
+    # each edge vertex belongs to both adjacent cells
+    for e in range(n_edges):
+        for c in torus_patch.e2c[e]:
+            assert set(torus_patch.e2v[e].tolist()) <= set(torus_patch.c2v[c].tolist())
+
+    # orthonormal edge frames and +-1 orientations
+    pn = np.stack((torus_patch.primal_normal_x, torus_patch.primal_normal_y), axis=1)
+    dn = np.stack((torus_patch.dual_normal_x, torus_patch.dual_normal_y), axis=1)
+    np.testing.assert_allclose(np.linalg.norm(pn, axis=1), 1.0, rtol=1e-12)
+    np.testing.assert_allclose(np.linalg.norm(dn, axis=1), 1.0, rtol=1e-12)
+    np.testing.assert_allclose(np.sum(pn * dn, axis=1), 0.0, atol=1e-12)
+    assert set(np.unique(torus_patch.tangent_orientation).tolist()) == {-1.0, 1.0}
+
+
+# 10. ffsl backtrajectory torus geometry: edge-frame positions of cells and vertices
+def test_ffsl_backtrajectory_geometry_torus(torus_patch):
+    pos_x, pos_y, verts_x, verts_y = weno.compute_ffsl_backtrajectory_geometry_torus(
+        cell_center_x=torus_patch.cell_center_x,
+        cell_center_y=torus_patch.cell_center_y,
+        vertex_x=torus_patch.vertex_x,
+        vertex_y=torus_patch.vertex_y,
+        edge_center_x=torus_patch.edge_center_x,
+        edge_center_y=torus_patch.edge_center_y,
+        primal_normal_x=torus_patch.primal_normal_x,
+        primal_normal_y=torus_patch.primal_normal_y,
+        dual_normal_x=torus_patch.dual_normal_x,
+        dual_normal_y=torus_patch.dual_normal_y,
+        e2c=torus_patch.e2c,
+        e2v=torus_patch.e2v,
+        domain_length=torus_patch.domain_length,
+        domain_height=torus_patch.domain_height,
+    )
+    a = torus_patch.edge_length
+    n_edges = torus_patch.e2c.shape[0]
+
+    # For an equilateral triangle the centroid (= patch cell center) is the circumcenter
+    # and lies on the perpendicular bisector of each edge at distance a/(2*sqrt(3)) from
+    # its midpoint (circumradius R = a/sqrt(3), apothem R/2). The primal normal points
+    # from cell 1 to cell 2, so the normal components of the two cell offsets have
+    # opposite signs and the tangential components vanish.
+    apothem = a / (2.0 * np.sqrt(3.0))
+    np.testing.assert_allclose(pos_x[:, 0], -apothem, rtol=1e-12)
+    np.testing.assert_allclose(pos_x[:, 1], apothem, rtol=1e-12)
+    np.testing.assert_allclose(pos_y, 0.0, atol=1e-12)
+
+    # matches the equilateral shortcut of the existing interpolation field (the cell
+    # centers sit half a dual edge length = one apothem away from the edge midpoint)
+    ref_x, ref_y = interpolation_fields.compute_pos_on_tplane_e_x_y_torus(
+        np.full(n_edges, 2.0 * apothem), torus_patch.e2c
+    )
+    np.testing.assert_allclose(pos_x, ref_x, rtol=1e-12, atol=1e-13)
+    np.testing.assert_allclose(pos_y, ref_y, atol=1e-13)
+
+    # the plane-torus edges are straight segments whose stored center is the midpoint:
+    # the vertex offsets are purely tangential with magnitude a/2, ordered along the
+    # stored tangent by the orientation, (v2 - v1) . T = tangent_orientation * a
+    np.testing.assert_allclose(verts_x, 0.0, atol=1e-12)
+    np.testing.assert_allclose(np.abs(verts_y), a / 2.0, rtol=1e-12)
+    np.testing.assert_allclose(
+        verts_y[:, 1] - verts_y[:, 0], torus_patch.tangent_orientation * a, rtol=1e-12
+    )

@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 import logging
 
 import gt4py.next as gtx
@@ -183,4 +184,193 @@ def verify_advection_fields(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
         atol=1e-16,
+    )
+
+
+# ---- synthetic periodic torus patch (pure numpy, no grid files) ----
+
+
+@dataclasses.dataclass(frozen=True)
+class TorusPatch:
+    edge_length: float
+    domain_length: float
+    domain_height: float
+    vertex_x: np.ndarray
+    vertex_y: np.ndarray
+    c2v: np.ndarray
+    c2e2c: np.ndarray
+    c2e2c2e2c: np.ndarray
+    cell_center_x: np.ndarray
+    cell_center_y: np.ndarray
+    # unwrapped vertex coordinates relative to the cell center (centroid), (n_cells, 3, 2)
+    local_vertices: np.ndarray
+    # edges: E2V ordered by ascending vertex id, E2C by ascending cell id; the primal
+    # normal points from cell 1 to cell 2 and the tangent (dual normal) is
+    # tangent_orientation * normalize(v2 - v1), mirroring the ICON conventions
+    # (mo_advection_traj.f90 660-673 and the icon4py torus geometry stencils)
+    e2v: np.ndarray
+    e2c: np.ndarray
+    edge_center_x: np.ndarray
+    edge_center_y: np.ndarray
+    primal_normal_x: np.ndarray
+    primal_normal_y: np.ndarray
+    dual_normal_x: np.ndarray
+    dual_normal_y: np.ndarray
+    tangent_orientation: np.ndarray
+
+
+def build_torus_patch(nx: int = 8, ny: int = 8, edge_length: float = 1.0) -> TorusPatch:
+    """Periodic equilateral-triangle torus: nx*ny quads, each split into 2 triangles.
+
+    Vertex rows are offset by half an edge length alternately (ny must be even
+    for periodicity in y). Cell centers are the triangle centroids.
+    """
+    assert ny % 2 == 0
+    dx = edge_length
+    dy = edge_length * np.sqrt(3.0) / 2.0
+    domain_length = nx * dx
+    domain_height = ny * dy
+
+    def vertex_id(i: int, j: int) -> int:
+        return (j % ny) * nx + (i % nx)
+
+    def vertex_coord(i: int, j: int) -> tuple[float, float]:
+        # unwrapped coordinates; consistent across the periodic seam for even ny
+        return ((i + 0.5 * (j % 2)) * dx, j * dy)
+
+    vertex_x = np.array([vertex_coord(i, j)[0] for j in range(ny) for i in range(nx)])
+    vertex_y = np.array([vertex_coord(i, j)[1] for j in range(ny) for i in range(nx)])
+
+    triangles = []  # (i, j) vertex index pairs, unwrapped
+    for j in range(ny):
+        for i in range(nx):
+            if j % 2 == 0:
+                # row j not offset, row j+1 offset by +dx/2
+                triangles.append([(i, j), (i + 1, j), (i, j + 1)])  # up
+                triangles.append([(i + 1, j), (i, j + 1), (i + 1, j + 1)])  # down
+            else:
+                # row j offset by +dx/2, row j+1 not offset
+                triangles.append([(i, j), (i + 1, j), (i + 1, j + 1)])  # up
+                triangles.append([(i, j), (i, j + 1), (i + 1, j + 1)])  # down
+    n_cells = len(triangles)
+
+    c2v = np.array([[vertex_id(i, j) for (i, j) in tri] for tri in triangles], dtype=np.int32)
+    coords = np.array([[vertex_coord(i, j) for (i, j) in tri] for tri in triangles])
+    centers = coords.mean(axis=1)
+    local_vertices = coords - centers[:, np.newaxis, :]
+    cell_center_x = centers[:, 0] % domain_length
+    cell_center_y = centers[:, 1] % domain_height
+
+    # neighbors share exactly two vertices; brute force is fine at this size
+    vertex_sets = [frozenset(row) for row in c2v.tolist()]
+    c2e2c = np.array(
+        [
+            [d for d in range(n_cells) if d != c and len(vertex_sets[c] & vertex_sets[d]) == 2]
+            for c in range(n_cells)
+        ],
+        dtype=np.int32,
+    )
+    assert c2e2c.shape == (n_cells, 3)
+    # grid_manager-style butterfly table: c2e2c[c2e2c] (center cell 3x + 6 outer cells)
+    c2e2c2e2c = c2e2c[c2e2c].reshape(n_cells, 9)
+
+    edges = _build_patch_edges(
+        c2v=c2v,
+        coords=coords,
+        centers=centers,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+
+    return TorusPatch(
+        edge_length=edge_length,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        c2v=c2v,
+        c2e2c=c2e2c,
+        c2e2c2e2c=c2e2c2e2c,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        local_vertices=local_vertices,
+        **edges,
+    )
+
+
+def _closest_image(ref: np.ndarray, value: np.ndarray, period: float) -> np.ndarray:
+    # minimal-image wrap of value as seen from ref
+    delta = value - ref
+    return ref + delta - period * np.round(delta / period)
+
+
+def _build_patch_edges(
+    *,
+    c2v: np.ndarray,
+    coords: np.ndarray,
+    centers: np.ndarray,
+    domain_length: float,
+    domain_height: float,
+) -> dict:
+    """Edge tables and edge-local frames for the torus patch.
+
+    E2V is ordered by ascending vertex id and E2C by ascending cell id; the
+    tangent orientation is then derived from those orderings exactly as the
+    grid generator defines it: +1 if ((v2 - v1) x (c2 - c1)) points along +z,
+    else -1. The stored tangent (ICON dual normal) is
+    tangent_orientation * normalize(v2 - v1) and the primal normal is the
+    tangent rotated by +90 degrees (icon4py torus geometry,
+    cartesian_coordinates_of_edge_tangent/normal_torus), which always points
+    from cell 1 to cell 2 (asserted below).
+    """
+    n_cells = c2v.shape[0]
+    # edge key (vertex id pair, ascending) -> list of (cell, unwrapped v1/v2 coordinates)
+    edge_cells: dict = {}
+    for c in range(n_cells):
+        for k in range(3):
+            va, vb = int(c2v[c, k]), int(c2v[c, (k + 1) % 3])
+            pa, pb = coords[c, k], coords[c, (k + 1) % 3]
+            if vb < va:
+                va, vb, pa, pb = vb, va, pb, pa
+            edge_cells.setdefault((va, vb), []).append((c, pa, pb))
+    assert all(len(v) == 2 for v in edge_cells.values())
+
+    n_edges = len(edge_cells)  # == 3 * n_cells / 2
+    e2v = np.empty((n_edges, 2), dtype=np.int32)
+    e2c = np.empty((n_edges, 2), dtype=np.int32)
+    edge_center_x = np.empty(n_edges)
+    edge_center_y = np.empty(n_edges)
+    primal_normal = np.empty((n_edges, 2))
+    dual_normal = np.empty((n_edges, 2))
+    orientation = np.empty(n_edges)
+
+    period = np.array([domain_length, domain_height])
+    for e, ((va, vb), cells) in enumerate(sorted(edge_cells.items())):
+        (c1, pa, pb), (c2, _, _) = sorted(cells)
+        e2v[e] = (va, vb)
+        e2c[e] = (c1, c2)
+        # unwrapped edge midpoint and tangent direction from cell 1's frame
+        midpoint = 0.5 * (pa + pb)
+        tangent = (pb - pa) / np.linalg.norm(pb - pa)
+        # cell centers moved to the closest periodic image of the edge midpoint
+        center_1 = _closest_image(midpoint, centers[c1], period)
+        center_2 = _closest_image(midpoint, centers[c2], period)
+        cell_diff = center_2 - center_1
+        orientation[e] = np.sign(tangent[0] * cell_diff[1] - tangent[1] * cell_diff[0])
+        dual_normal[e] = orientation[e] * tangent
+        primal_normal[e] = (-dual_normal[e, 1], dual_normal[e, 0])  # rotate by +90 degrees
+        assert np.dot(primal_normal[e], cell_diff) > 0.0
+        edge_center_x[e] = midpoint[0] % domain_length
+        edge_center_y[e] = midpoint[1] % domain_height
+
+    return dict(
+        e2v=e2v,
+        e2c=e2c,
+        edge_center_x=edge_center_x,
+        edge_center_y=edge_center_y,
+        primal_normal_x=primal_normal[:, 0],
+        primal_normal_y=primal_normal[:, 1],
+        dual_normal_x=dual_normal[:, 0],
+        dual_normal_y=dual_normal[:, 1],
+        tangent_orientation=orientation,
     )

@@ -11,7 +11,9 @@
 Port of the torus branch of the candidate least-squares setup from ICON
 (mo_intp_coeffs_lsq_bln.f90, icon-exclaim branch transport_ajocksch): 9-point
 stencil construction, torus moments, and the 27 (quadratic) / 3 (linear)
-candidate pseudoinverses. All Fortran line references below are to that file.
+candidate pseudoinverses. All Fortran line references below are to that file
+unless stated otherwise. Also hosts the init-time torus geometry consumed by
+the miura3 FFSL backtrajectory ('compute_ffsl_backtrajectory').
 
 Pure init-time numpy/cupy code (no gt4py); assumes a boundary-free torus grid
 on a single rank. Unknowns are ordered [x, y, x^2, y^2, xy] (f90 1986-1996).
@@ -107,6 +109,77 @@ def compute_torus_distance_vectors(
         center_y, cell_center_y[neighbor_table], domain_height
     )
     return array_ns.stack((neighbor_x - center_x, neighbor_y - center_y), axis=-1)
+
+
+def compute_ffsl_backtrajectory_geometry_torus(
+    *,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    vertex_x: data_alloc.NDArray,
+    vertex_y: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    primal_normal_x: data_alloc.NDArray,
+    primal_normal_y: data_alloc.NDArray,
+    dual_normal_x: data_alloc.NDArray,
+    dual_normal_y: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    e2v: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    """Positions of the E2C cell centers and E2V vertices in the edge-local frame.
+
+    Port of calculate_planar_distance_at_edge (mo_intp_coeffs.f90 2278-2406):
+    the separation vector from the edge midpoint to the closest periodic image
+    of each neighboring cell circumcenter / edge vertex, projected onto the
+    edge primal normal (x component) and dual normal, i.e. tangent
+    (y component). Returns (pos_on_tplane_e_x, pos_on_tplane_e_y, edge_verts_x,
+    edge_verts_y), each (n_edges, 2): ICON's pos_on_tplane_e components 1:2
+    (cells) and 3:4 (vertices). Unlike the equilateral shortcut in
+    interpolation_fields.compute_pos_on_tplane_e_x_y_torus this is the full
+    projection, valid for any planar torus grid.
+
+    The remaining static inputs of 'compute_ffsl_backtrajectory' need no
+    torus-specific setup: primal/dual_normal_cell equal the per-edge
+    primal/dual normal on both E2C slots because cvec2gvec is the identity on
+    the plane torus (iconmath mo_math_utilities.f90 343-346, applied in
+    complete_patchinfo, mo_intp_coeffs.f90 1743-1785) - the grid geometry
+    already broadcasts EDGE_NORMAL/EDGE_TANGENT to the cell slots. lvn_sys_pos
+    is velocity dependent, p_vn * tangent_orientation >= 0 for
+    lcounterclock=.TRUE. (mo_advection_traj.f90 527-537), and is computed at
+    runtime by 'compute_ffsl_backtrajectory_counterclockwise_indicator'.
+    """
+    array_ns = data_alloc.array_namespace(cell_center_x)
+
+    def offsets_in_edge_frame(
+        point_x: data_alloc.NDArray, point_y: data_alloc.NDArray
+    ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+        # f90 2331-2342 / 2348-2359: separation vector between the edge midpoint and the
+        # closest periodic image of the point
+        dx = (
+            _plane_torus_closest_coordinates(
+                edge_center_x[:, array_ns.newaxis], point_x, domain_length
+            )
+            - edge_center_x[:, array_ns.newaxis]
+        )
+        dy = (
+            _plane_torus_closest_coordinates(
+                edge_center_y[:, array_ns.newaxis], point_y, domain_height
+            )
+            - edge_center_y[:, array_ns.newaxis]
+        )
+        # f90 2368-2390: rotate into the local (primal normal, dual normal) system
+        return (
+            dx * primal_normal_x[:, array_ns.newaxis] + dy * primal_normal_y[:, array_ns.newaxis],
+            dx * dual_normal_x[:, array_ns.newaxis] + dy * dual_normal_y[:, array_ns.newaxis],
+        )
+
+    pos_on_tplane_e_x, pos_on_tplane_e_y = offsets_in_edge_frame(
+        cell_center_x[e2c], cell_center_y[e2c]
+    )
+    edge_verts_x, edge_verts_y = offsets_in_edge_frame(vertex_x[e2v], vertex_y[e2v])
+    return pos_on_tplane_e_x, pos_on_tplane_e_y, edge_verts_x, edge_verts_y
 
 
 def create_stencil_c9(c2e2c: data_alloc.NDArray, c2v: data_alloc.NDArray) -> data_alloc.NDArray:
