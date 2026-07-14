@@ -191,7 +191,6 @@ class Icon4pyDriver:
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
-                    # updated once per time step, as in mo_nh_stepping.f90
                     second_order_divdamp_factor=self._second_order_divdamp_factor(),
                 )
                 device_utils.sync(self.backend)
