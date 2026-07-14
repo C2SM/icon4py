@@ -213,10 +213,15 @@ variables:
   timeout: 1h
   variables:
     # Run many collections concurrently. Each pytest collection needs a few
-    # hundred MiB, so the resources below are sized for ~128 parallel
+    # hundred MiB, so the resources below are sized for ~256 parallel
     # collections.
-    ICON4PY_NOX_COLLECTION_WORKERS: "128"
+    ICON4PY_NOX_COLLECTION_WORKERS: "256"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
+    # Collection only probes pytest discovery; disable CUDA-aware MPI so that
+    # concurrent collection workers do not fight over the same GPU context.
+    OMPI_MCA_opal_cuda_support: "0"
+    OMPI_MCA_mpi_cuda_support: "0"
+    MPICH_GPU_SUPPORT_ENABLED: "0"
     # Run on a single GH200 NUMA node in the shared partition: 1 task, 72 CPUs,
     # 1 GPU (the GPU is required to get the NUMA node; CPU memory is ~100 GiB).
     SLURM_NTASKS: "1"

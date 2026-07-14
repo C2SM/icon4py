@@ -224,11 +224,6 @@ def _run_nox_collection(
     ]
     full_env = os.environ.copy()
     full_env.update(env)
-    # Collection only probes pytest discovery; disable CUDA-aware MPI so that
-    # concurrent collection workers do not fight over the same GPU context.
-    full_env.setdefault("OMPI_MCA_opal_cuda_support", "0")
-    full_env.setdefault("OMPI_MCA_mpi_cuda_support", "0")
-    full_env.setdefault("MPICH_GPU_SUPPORT_ENABLED", "0")
     result = subprocess.run(
         cmd,
         capture_output=True,
