@@ -42,6 +42,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_diagnostic_state as nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
@@ -191,8 +192,6 @@ class Icon4pyDriver:
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
-                    # updated once per time step, as in mo_nh_stepping.f90
-                    second_order_divdamp_factor=self._second_order_divdamp_factor(),
                 )
                 device_utils.sync(self.backend)
 
@@ -225,12 +224,11 @@ class Icon4pyDriver:
         self,
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro | None,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
-        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None
@@ -240,7 +238,6 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                second_order_divdamp_factor,
             )
 
         if self.granules.diffusion is not None:
@@ -283,7 +280,7 @@ class Icon4pyDriver:
 
     def _update_time_levels_for_velocity_tendencies(
         self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
     ) -> None:
@@ -322,12 +319,14 @@ class Icon4pyDriver:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
+
+        # updated once per time step, and not cached: it decreases with the elapsed time
+        second_order_divdamp_factor = self._second_order_divdamp_factor()
 
         timer_solve_nh = (
             self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
@@ -369,7 +368,7 @@ class Icon4pyDriver:
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     ) -> None:
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(

@@ -29,6 +29,7 @@ from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_diagnostic_state as nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
@@ -59,7 +60,7 @@ class DriverStates(NamedTuple):
     """
 
     prep_advection_prognostic: dycore_states.PrepAdvection | None
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro | None
+    solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState | None
     prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState | None
@@ -307,6 +308,18 @@ def assemble_driver_states(
         if diffusion_enabled
         else None
     )
+<<<<<<< HEAD
+=======
+    solve_nonhydro_diagnostic_state = (
+        nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+            grid=grid,
+            allocator=allocator,
+        )
+        if solve_nonhydro_enabled
+        else None
+    )
+>>>>>>> jc/common-nonhydro-state
     prep_adv = (
         dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
         if solve_nonhydro_enabled

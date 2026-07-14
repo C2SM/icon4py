@@ -35,7 +35,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    nonhydro_diagnostic_state as nonhydro_states,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -236,7 +239,7 @@ class VelocityAdvection:
         self,
         *,
         skip_compute_predictor_vertical_advection: bool,
-        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
@@ -325,7 +328,7 @@ class VelocityAdvection:
     def run_corrector_step(
         self,
         *,
-        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
         tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],

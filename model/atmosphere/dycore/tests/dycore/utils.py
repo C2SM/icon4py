@@ -13,7 +13,10 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import (
+    nonhydro_diagnostic_state as nonhydro_states,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
 
@@ -97,9 +100,9 @@ def construct_diagnostics(
     grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend | None,
     swap_vertical_wind_advective_tendency: bool = False,
-) -> dycore_states.DiagnosticStateNonHydro:
+) -> nonhydro_states.DiagnosticStateNonHydro:
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
-    return dycore_states.DiagnosticStateNonHydro(
+    return nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),
