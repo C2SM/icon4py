@@ -464,17 +464,6 @@ class Icon4pyDriver:
     def _second_order_divdamp_factor(self) -> ta.wpfloat:
         """
         Second order divergence damping factor (divdamp_fac_o2) for the current time step.
-
-        mo_nh_stepping.f90, in the time loop, before integrate_nh:
-
-            IF (divdamp_order==24) THEN
-              elapsed_time_global = (REAL(jstep,wp)-0.5_wp)*dtime
-              IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase) THEN
-                CALL update_spinup_damping(elapsed_time_global)
-              ELSE
-                divdamp_fac_o2 = 0._wp
-              ENDIF
-            ENDIF
         """
         assert self.config.nonhydrostatic is not None
         fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
