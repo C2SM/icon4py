@@ -228,6 +228,7 @@ variables:
     SLURM_PARTITION: "shared"
     SLURM_TIMELIMIT: "00:10:00"
   script:
+    - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml
   artifacts:
