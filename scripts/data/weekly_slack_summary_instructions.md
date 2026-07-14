@@ -9,9 +9,9 @@ source of facts.
 ## Ground rules
 
 - Write the final summary to the file path given in the prompt. This file is
-  what gets posted to Slack - do not output the summary to stdout.
+  what gets posted to Slack.
 - Use only facts present in the context.
-- Do not use em-dashes (`—`); use hyphens (`-`) or colons instead.
+- Do not use em-dashes (`—`); use simple sentences separated by periods (`.`) or if necessary joined by colons (`:`) or semicolons (`;`).
 - Do not use Markdown headings (`#`, `##`, etc.). Use `*Section Title*` for
   section titles (Slack renders single asterisks as bold).
 - Format every link as Slack mrkdwn: `<URL|display text>`. Do not use raw URLs
@@ -22,19 +22,19 @@ source of facts.
 
 **The summary must be under 3,800 characters and under 50 lines.**
 Slack's hard limit is 4,000 characters. Stay under 3,800 to leave a safety
-margin. Be informative - use the full budget, but do not exceed 3,800.
+margin. Be informative: use the full budget, but do not exceed 3,800.
 
 After writing the summary to the file, verify its length with a shell command
 (e.g. `wc -m <path>`). If it exceeds 3,800 characters, edit the file to trim
 content (drop descriptions before titles, reduce entry counts), then verify
-again. Repeat until it fits. Never guess the length - always measure it.
+again. Repeat until it fits. Never guess the length, always measure it.
 
 Guidelines:
 
 - Merged PRs: list all merged PRs (combine rest into a group bullet if >10)
-- Closed PRs: one group bullet (no individual entries, no URLs)
-- Ongoing PRs: list notable ongoing PRs (up to ~10)
-- Inactive PRs: up to 5 entries (no descriptions)
+- Closed PRs: list all PRs closed without merging (combine rest into group bullet if >5)
+- Ongoing PRs: list notable ongoing PRs (up to ~10), ongoing means commits in the last two weeks
+- Inactive PRs: list notable inactive PRs (up to ~5), inactive means no commits in the last two weeks
 - Issues: list all, keep short
 - CI sections: one line each, include pipeline URL
 
