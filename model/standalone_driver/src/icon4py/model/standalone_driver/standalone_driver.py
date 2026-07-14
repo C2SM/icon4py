@@ -191,7 +191,6 @@ class Icon4pyDriver:
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
-                    second_order_divdamp_factor=self._second_order_divdamp_factor(),
                 )
                 device_utils.sync(self.backend)
 
@@ -229,7 +228,6 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
-        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None
@@ -239,7 +237,6 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                second_order_divdamp_factor,
             )
 
         if self.granules.diffusion is not None:
@@ -324,9 +321,11 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
+
+        # updated once per time step, and not cached: it decreases with the elapsed time
+        second_order_divdamp_factor = self._second_order_divdamp_factor()
 
         timer_solve_nh = (
             self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
@@ -463,6 +462,8 @@ class Icon4pyDriver:
     def _second_order_divdamp_factor(self) -> ta.wpfloat:
         """
         Second order divergence damping factor (divdamp_fac_o2) for the current time step.
+
+        The guards are those of the call to update_spinup_damping in mo_nh_stepping.f90.
         """
         assert self.config.nonhydrostatic is not None
         fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
