@@ -30,10 +30,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.states import (
-    nonhydro_diagnostic_state as nonhydro_states,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox, test_utils
 

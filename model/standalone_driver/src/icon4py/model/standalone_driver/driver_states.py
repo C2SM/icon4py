@@ -28,7 +28,7 @@ from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
-    nonhydro_diagnostic_state as nonhydro_states,
+    nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
