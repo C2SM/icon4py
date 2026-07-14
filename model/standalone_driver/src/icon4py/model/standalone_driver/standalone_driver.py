@@ -42,6 +42,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
@@ -205,8 +206,6 @@ class Icon4pyDriver:
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
-                    # updated once per time step, as in mo_nh_stepping.f90
-                    second_order_divdamp_factor=self._second_order_divdamp_factor(),
                 )
                 device_utils.sync(self.backend)
 
@@ -239,12 +238,11 @@ class Icon4pyDriver:
         self,
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro | None,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
         tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
         tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
-        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None
@@ -254,7 +252,6 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                second_order_divdamp_factor,
             )
 
         if self.granules.diffusion is not None:
@@ -297,7 +294,7 @@ class Icon4pyDriver:
 
     def _update_time_levels_for_velocity_tendencies(
         self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
     ) -> None:
@@ -336,12 +333,14 @@ class Icon4pyDriver:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: ta.wpfloat,
     ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
+
+        # updated once per time step, and not cached: it decreases with the elapsed time
+        second_order_divdamp_factor = self._second_order_divdamp_factor()
 
         timer_solve_nh = (
             self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
@@ -383,7 +382,7 @@ class Icon4pyDriver:
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     ) -> None:
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(
@@ -481,21 +480,20 @@ class Icon4pyDriver:
         prognostic_state: prognostics.PrognosticState,
     ) -> None:
         """
-        Extra diffusion call before the first time step of a real data run.
+        Extra diffusion call before the first time step.
 
-        mo_nh_stepping.f90 (integrate_nh): 'For real-data runs, perform an extra
-        diffusion call before the first time step because no other filtering of the
-        interpolated velocity field is done'. It is called on the current state, with
-        the model time step, and not for a restart (linit_dyn).
+        For real-data runs, perform an extra diffusion call before the first time step
+        because no other filtering of the interpolated velocity field is done. It is
+        called on the current state, with the model time step, and not for a restart.
         """
-        if not self.config.driver.diffuse_before_time_loop:
-            return
-        if not self.model_time_variables.is_first_step_in_simulation:
-            return
-        if self.granules.diffusion is None:
-            return
-        # lhdiff_vn in fortran
-        if not self.granules.diffusion.config.apply_to_horizontal_wind:
+        # ldynamics and lhdiff_vn in fortran are the granules being configured
+        if (
+            not self.config.driver.diffuse_before_time_loop
+            or not self.model_time_variables.is_first_step_in_simulation
+            or self.granules.solve_nonhydro is None
+            or self.granules.diffusion is None
+            or not self.granules.diffusion.config.apply_to_horizontal_wind
+        ):
             return
 
         assert diffusion_diagnostic_state is not None
@@ -710,11 +708,15 @@ def initialize_driver(
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,
-        tendencies=prescribed_tendencies.create(
-            config=config.prescribed_tendencies,
-            grid=grid_manager.grid,
-            backend=backend,
-            exchange=exchange,
+        tendencies=(
+            prescribed_tendencies.SerializedTendencies(
+                data_path=config.prescribed_tendencies.data_path,
+                grid=grid_manager.grid,
+                backend=backend,
+                rank=exchange.my_rank(),
+            )
+            if config.prescribed_tendencies.data_path is not None
+            else None
         ),
         io_monitor=io_monitor,
     )
@@ -741,11 +743,11 @@ def run_driver(
         allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
-    # The initial condition owns the perturbed exner pressure, and, when restarting, the
-    # advective tendencies of the previous time step, so the diagnostic state of the
-    # dycore is allocated before it.
+    # The initial condition fills the perturbed exner pressure of the dycore, and, when
+    # restarting, the advective tendencies of the previous time step, so its diagnostic
+    # state is allocated before it.
     solve_nonhydro_diagnostic_state = (
-        driver_states.initialize_dycore_diagnostic_state(
+        nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
             grid=icon4py_driver.grid, allocator=allocator
         )
         if icon4py_driver.config.nonhydrostatic is not None
@@ -757,14 +759,10 @@ def run_driver(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
-        dycore_initial_fields=(
-            driver_states.dycore_initial_fields(solve_nonhydro_diagnostic_state)
-            if solve_nonhydro_diagnostic_state is not None
-            else None
-        ),
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=icon4py_driver.grid, allocator=allocator

@@ -114,6 +114,8 @@ def test_initial_conditions(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        # only the prognostic state is compared against the reference here
+        solve_nonhydro_diagnostic_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
