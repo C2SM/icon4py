@@ -58,6 +58,10 @@ class HorizontalAdvectionType(Enum):
     NO_ADVECTION = 0
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
+    #: 2nd order MIURA with linear reconstruction and WENO candidate blending
+    LINEAR_2ND_ORDER_WENO = 102
+    #: 3rd order MIURA with quadratic reconstruction and WENO candidate blending
+    QUADRATIC_3RD_ORDER_WENO = 103
 
 
 class HorizontalAdvectionLimiter(Enum):
@@ -428,6 +432,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
+    weno_linear_state: advection_states.AdvectionWenoLinearState | None = None,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     assert exchange is not None, "Exchange runtime must not be None."
     horizontal_limiter: advection_horizontal.HorizontalFluxLimiter | None
@@ -449,9 +454,31 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
         case HorizontalAdvectionType.NO_ADVECTION:
             horizontal_advection = advection_horizontal.NoAdvection(grid=grid, backend=backend)
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
-            tracer_flux = advection_horizontal.SecondOrderMiura(
+            tracer_flux: advection_horizontal.SemiLagrangianTracerFlux = (
+                advection_horizontal.SecondOrderMiura(
+                    grid=grid,
+                    least_squares_state=least_squares_state,
+                    horizontal_limiter=horizontal_limiter,
+                    backend=backend,
+                )
+            )
+            horizontal_advection = advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
                 grid=grid,
-                least_squares_state=least_squares_state,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO:
+            if weno_linear_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'LINEAR_2ND_ORDER_WENO' requires 'weno_linear_state'."
+                )
+            tracer_flux = advection_horizontal.SecondOrderMiuraWeno(
+                grid=grid,
+                weno_linear_state=weno_linear_state,
                 horizontal_limiter=horizontal_limiter,
                 backend=backend,
             )
@@ -464,6 +491,10 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 cell_params=cell_params,
                 backend=backend,
             )
+        case HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO:
+            # TODO(jcanton): wire the quadratic (27-candidate) WENO scheme, i.e. the
+            # miura3 reconstruct_quadratic_coefficients_weno_candidate + candidate flux blending.
+            raise NotImplementedError("Quadratic WENO horizontal advection is not yet wired.")
         case _:
             raise NotImplementedError("Unknown horizontal advection type.")
 
@@ -515,6 +546,7 @@ def convert_config_to_advection(
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
+    weno_linear_state: advection_states.AdvectionWenoLinearState | None = None,
 ) -> Advection:
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
@@ -533,6 +565,7 @@ def convert_config_to_advection(
         cell_params=cell_params,
         backend=backend,
         exchange=exchange,
+        weno_linear_state=weno_linear_state,
     )
 
     advection = GodunovSplittingAdvection(

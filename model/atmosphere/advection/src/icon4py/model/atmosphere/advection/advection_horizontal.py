@@ -35,6 +35,9 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally i
 from icon4py.model.atmosphere.advection.stencils.reconstruct_linear_coefficients_svd import (
     reconstruct_linear_coefficients_svd,
 )
+from icon4py.model.atmosphere.advection.stencils.reconstruct_linear_coefficients_weno_svd import (
+    reconstruct_linear_coefficients_weno_svd,
+)
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -303,6 +306,134 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             p_coeff_3_dsl=self._p_coeff_3,
         )
         log.debug("running stencil reconstruct_linear_coefficients_svd - end")
+
+        # compute reconstructed tracer value at each barycenter and corresponding flux at each edge
+        log.debug(
+            "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - start"
+        )
+        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt(
+            z_lsq_coeff_1=self._p_coeff_1,
+            z_lsq_coeff_2=self._p_coeff_2,
+            z_lsq_coeff_3=self._p_coeff_3,
+            distv_bary_1=p_distv_bary_1,
+            distv_bary_2=p_distv_bary_2,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
+            p_out_e=p_mflx_tracer_h,
+        )
+        log.debug(
+            "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
+        )
+
+        self._horizontal_limiter.apply_flux_limiter(
+            p_tracer_now=p_tracer_now,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            rhodz_now=rhodz_now,
+            dtime=dtime,
+        )
+
+        log.debug("horizontal tracer flux computation - end")
+
+
+class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
+    """Class that computes a Miura-based second-order accurate tracer flux with linear WENO reconstruction (ihadv_tracer=102)."""
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        weno_linear_state: advection_states.AdvectionWenoLinearState,
+        backend: gtx.typing.Backend | None,
+        horizontal_limiter: HorizontalFluxLimiter | None = None,
+    ):
+        self._grid = grid
+        self._weno_linear_state = weno_linear_state
+        self._backend = backend
+        self._horizontal_limiter = horizontal_limiter or NoLimiter()
+
+        # cell indices
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_lateral_boundary_level_2 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+        # edge indices
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        # reconstruction fields
+        allocator = model_backends.get_allocator(self._backend)
+        self._p_coeff_1 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._p_coeff_2 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._p_coeff_3 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+
+        # stencils
+        self._reconstruct_linear_coefficients_weno_svd = model_options.setup_program(
+            backend=self._backend,
+            program=reconstruct_linear_coefficients_weno_svd,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_horizontal_tracer_flux_from_linear_coefficients_alt,
+                horizontal_sizes={
+                    "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                    "horizontal_end": self._end_edge_halo,
+                },
+                vertical_sizes={
+                    "vertical_start": gtx.int32(0),
+                    "vertical_end": gtx.int32(self._grid.num_levels),
+                },
+                offset_provider=self._grid.connectivities,
+            )
+        )
+
+    def compute_tracer_flux(
+        self,
+        *,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        log.debug("horizontal tracer flux computation - start")
+
+        # linear WENO reconstruction blending 3 least-squares candidates
+        log.debug("running stencil reconstruct_linear_coefficients_weno_svd - start")
+        self._reconstruct_linear_coefficients_weno_svd(
+            p_cc=p_tracer_now,
+            lsq_pseudoinv_zonal_c1=self._weno_linear_state.lsq_pseudoinv_zonal_c1,
+            lsq_pseudoinv_zonal_c2=self._weno_linear_state.lsq_pseudoinv_zonal_c2,
+            lsq_pseudoinv_zonal_c3=self._weno_linear_state.lsq_pseudoinv_zonal_c3,
+            lsq_pseudoinv_meridional_c1=self._weno_linear_state.lsq_pseudoinv_meridional_c1,
+            lsq_pseudoinv_meridional_c2=self._weno_linear_state.lsq_pseudoinv_meridional_c2,
+            lsq_pseudoinv_meridional_c3=self._weno_linear_state.lsq_pseudoinv_meridional_c3,
+            p_coeff_1_dsl=self._p_coeff_1,
+            p_coeff_2_dsl=self._p_coeff_2,
+            p_coeff_3_dsl=self._p_coeff_3,
+        )
+        log.debug("running stencil reconstruct_linear_coefficients_weno_svd - end")
 
         # compute reconstructed tracer value at each barycenter and corresponding flux at each edge
         log.debug(

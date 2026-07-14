@@ -83,6 +83,22 @@ class AdvectionLeastSquaresState:
 
 
 @dataclasses.dataclass(frozen=True)
+class AdvectionWenoLinearState:
+    """Represents the linear WENO least squares state (ihadv_tracer=102).
+
+    The zonal/meridional candidate pseudoinverses over the C2E2C rows, one per
+    linear WENO candidate.
+    """
+
+    lsq_pseudoinv_zonal_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_zonal_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_zonal_c3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_meridional_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_meridional_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_meridional_c3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+
+
+@dataclasses.dataclass(frozen=True)
 class AdvectionMetricState:
     """Represents the metric fields needed in advection."""
 
