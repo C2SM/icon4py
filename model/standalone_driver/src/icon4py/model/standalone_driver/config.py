@@ -110,7 +110,6 @@ class DriverConfig:
         )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
-        # The fortran defaults of mo_run_nml.f90 are used for the missing variables.
         is_real_data_run = not run_nml.get("ltestcase", True)
         runs_dynamics = run_nml.get("ldynamics", True)
         return cls(
