@@ -29,11 +29,8 @@ from ..fixtures import *  # noqa: F403
 # Tolerances (atol, rtol) per experiment, measured with the gtfn_cpu backend.
 # rtol is 0.0 where the reference field contains zeros or near-zeros: there no
 # meaningful rtol can cover the difference, only atol.
-# MCH_CH_R04B09 is the only real data experiment, and the only one that does not
-# reproduce the reference to roundoff. Its remaining difference is likely in the
-# metrics and interpolation fields, which ICON4Py computes from the grid file while
-# ICON serializes its own: the dycore does not reproduce this experiment exactly
-# either. Under investigation.
+# TODO(jcanton): MCH_CH_R04B09 does not reach roundoff, and neither does the dycore
+# on this experiment. Under investigation.
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
         "vn": (5.3e-7, 0.0),

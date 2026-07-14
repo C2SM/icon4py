@@ -132,11 +132,8 @@ def create_grid_manager(
     )
     grid_manager(
         allocator=allocator,
-        # The stencils compute over the full domain, including the outermost boundary
-        # lines where some neighbors do not exist, and they dereference the neighbor
-        # tables without guarding against skip values (GT4Py only guards reductions).
-        # On a limited area grid the skip values must therefore be replaced, as the
-        # granule tests do. See '_replace_skip_values' in common/grid/base.py.
+        # the stencils dereference the neighbor tables over the full domain, unguarded:
+        # keeping the skip values reads out of bounds (see _replace_skip_values)
         keep_skip_values=False,
         process_props=process_props,
         decomposer=decomposer,
