@@ -2015,6 +2015,7 @@ testing = [
 dependencies = [
   {name = "gt4py"},
   {name = "icon4py-common"},
+  {name = "numpy"},
   {name = "packaging"}
 ]
 name = "icon4py-atmosphere-advection"
@@ -2025,6 +2026,7 @@ version = "0.2.0"
 requires-dist = [
   {name = "gt4py", specifier = "==1.1.11"},
   {name = "icon4py-common", editable = "model/common"},
+  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
 ]
 
