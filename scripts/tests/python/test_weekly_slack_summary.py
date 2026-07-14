@@ -25,28 +25,28 @@ import weekly_slack_summary
 
 def test_previous_week_bounds_returns_monday_to_sunday():
     # 2024-07-08 is a Monday
-    monday = datetime.datetime(2024, 7, 8, 12, 0, tzinfo=datetime.timezone.utc)
+    monday = datetime.datetime(2024, 7, 8, 12, 0, tzinfo=datetime.UTC)
     start, end = weekly_slack_summary._previous_week_bounds(monday)
-    assert start == datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-    assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+    assert start == datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+    assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
 
 
 def test_previous_week_bounds_sunday_boundary():
     # 2024-07-14 is a Sunday; the most recently completed week is still
     # 2024-07-01 to 2024-07-07 because the current week has not finished.
-    sunday = datetime.datetime(2024, 7, 14, 23, 0, tzinfo=datetime.timezone.utc)
+    sunday = datetime.datetime(2024, 7, 14, 23, 0, tzinfo=datetime.UTC)
     start, end = weekly_slack_summary._previous_week_bounds(sunday)
-    assert start == datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-    assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+    assert start == datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+    assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
 
 
 def test_current_week_bounds_from_thursday():
     # 2024-07-11 is a Thursday; the current week is Mon 2024-07-08 to
     # Sun 2024-07-14.
-    thursday = datetime.datetime(2024, 7, 11, 12, 0, tzinfo=datetime.timezone.utc)
+    thursday = datetime.datetime(2024, 7, 11, 12, 0, tzinfo=datetime.UTC)
     start, end = weekly_slack_summary._current_week_bounds(thursday)
-    assert start == datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.timezone.utc)
-    assert end == datetime.datetime(2024, 7, 14, 23, 59, 59, tzinfo=datetime.timezone.utc)
+    assert start == datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.UTC)
+    assert end == datetime.datetime(2024, 7, 14, 23, 59, 59, tzinfo=datetime.UTC)
 
 
 @pytest.fixture
@@ -159,8 +159,8 @@ class TestCollectGitHubPRs:
         with mock.patch.object(
             weekly_slack_summary, "_github_api_request", side_effect=fake_request
         ):
-            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
             result = weekly_slack_summary._collect_github_prs(start, end, token="fake")
 
         assert len(result["merged_prs"]) == 1
@@ -201,8 +201,8 @@ class TestCollectGitHubIssues:
         with mock.patch.object(
             weekly_slack_summary, "_github_api_request", side_effect=fake_request
         ):
-            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
             result = weekly_slack_summary._collect_github_issues(start, end, token="fake")
 
         assert len(result["opened_issues"]) == 1
@@ -220,8 +220,8 @@ class TestCollectGitLabCI:
         with mock.patch.object(
             weekly_slack_summary, "_gitlab_api_request", side_effect=fake_request
         ):
-            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
             result = weekly_slack_summary._collect_gitlab_ci(start, end)
 
         assert result["status"] == "no_recent_pipeline"
@@ -270,8 +270,8 @@ class TestCollectGitLabCI:
                 weekly_slack_summary, "_gitlab_job_log", return_value="ERROR: test-dycore failed"
             ),
         ):
-            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
             result = weekly_slack_summary._collect_gitlab_ci(start, end)
 
         assert result["status"] == "failed"
@@ -308,8 +308,8 @@ class TestCollectGitLabCI:
         with mock.patch.object(
             weekly_slack_summary, "_gitlab_api_request", side_effect=fake_request
         ):
-            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
+            start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+            end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
             result = weekly_slack_summary._collect_gitlab_ci(start, end)
 
         assert result["status"] == "running"
@@ -319,9 +319,9 @@ class TestCollectGitLabCI:
 
 class TestFormatContextMarkdown:
     def test_contains_all_sections(self):
-        start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.timezone.utc)
-        end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.timezone.utc)
-        ci_start = datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.timezone.utc)
+        start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
+        end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
+        ci_start = datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.UTC)
         github_prs = {
             "merged_prs": [
                 {
@@ -534,12 +534,13 @@ class TestRunOpenCode:
         monkeypatch.setattr(weekly_slack_summary.shutil, "which", lambda _name: "/usr/bin/opencode")
 
         def fake_run(cmd, *, capture_output, check, text):
-            # The prompt is a positional [message..] argument for `opencode run`;
-            # --file attachments must follow it. See https://opencode.ai/docs/cli
             assert cmd == [
                 "opencode",
                 "run",
-                "Generate the weekly Slack summary following the attached instructions and context.",
+                "Generate the weekly Slack summary following the attached instructions "
+                f"and context. Write the final summary to: {output}",
+                "--dir",
+                str(output.parent),
                 "--file",
                 str(instructions),
                 "--file",
@@ -548,6 +549,7 @@ class TestRunOpenCode:
             assert capture_output is True
             assert check is True
             assert text is True
+            output.write_text("polished summary", encoding="utf-8")
             return mock.Mock(stdout="polished summary", stderr="")
 
         monkeypatch.setattr(weekly_slack_summary.subprocess, "run", fake_run)
@@ -557,7 +559,16 @@ class TestRunOpenCode:
 
 
 class TestGenerateCommand:
-    def test_dummy_output_writes_files(self, tmp_path, monkeypatch):
+    @pytest.fixture
+    def output_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(
+            weekly_slack_summary.tempfile,
+            "mkdtemp",
+            lambda *args, **kwargs: str(tmp_path),
+        )
+        return tmp_path
+
+    def test_dummy_output_writes_files(self, output_dir, monkeypatch):
         def fake_collect_all(*args, **kwargs):
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
@@ -592,16 +603,15 @@ class TestGenerateCommand:
 
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
-                output_dir=tmp_path,
                 dummy_input_data=False,
                 dummy_summarization=True,
                 dummy_output=True,
             )
         assert exc_info.value.exit_code == 0
 
-        context_json = tmp_path / "weekly_slack_summary_context.json"
-        context_md = tmp_path / "weekly_slack_summary_context.md"
-        summary_md = tmp_path / "weekly_slack_summary.md"
+        context_json = output_dir / "weekly_slack_summary_context.json"
+        context_md = output_dir / "weekly_slack_summary_context.md"
+        summary_md = output_dir / "weekly_slack_summary.md"
         assert context_json.exists()
         assert context_md.exists()
         assert summary_md.exists()
@@ -609,19 +619,18 @@ class TestGenerateCommand:
         data = json.loads(context_json.read_text())
         assert data["repository"] == "C2SM/icon4py"
 
-    def test_dummy_input_data_and_output_writes_files(self, tmp_path):
+    def test_dummy_input_data_and_output_writes_files(self, output_dir):
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
-                output_dir=tmp_path,
                 dummy_input_data=True,
                 dummy_summarization=True,
                 dummy_output=True,
             )
         assert exc_info.value.exit_code == 0
 
-        context_json = tmp_path / "weekly_slack_summary_context.json"
-        context_md = tmp_path / "weekly_slack_summary_context.md"
-        summary_md = tmp_path / "weekly_slack_summary.md"
+        context_json = output_dir / "weekly_slack_summary_context.json"
+        context_md = output_dir / "weekly_slack_summary_context.md"
+        summary_md = output_dir / "weekly_slack_summary.md"
         assert context_json.exists()
         assert context_md.exists()
         assert summary_md.exists()
@@ -643,23 +652,22 @@ class TestGenerateCommand:
         assert "Closed Issues" in markdown
         assert "GitLab Weekly CI" in markdown
 
-    def test_dummy_output_prints_summary(self, tmp_path, capsys):
+    def test_dummy_output_prints_summary(self, output_dir, capsys):
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
-                output_dir=tmp_path,
                 dummy_input_data=True,
                 dummy_summarization=True,
                 dummy_output=True,
             )
         assert exc_info.value.exit_code == 0
 
-        summary_md = tmp_path / "weekly_slack_summary.md"
+        summary_md = output_dir / "weekly_slack_summary.md"
         assert summary_md.exists()
 
         captured = capsys.readouterr()
         assert summary_md.read_text(encoding="utf-8") in captured.out
 
-    def test_default_mode_calls_opencode_and_posts(self, tmp_path, monkeypatch):
+    def test_default_mode_calls_opencode_and_posts(self, output_dir, monkeypatch):
         def fake_collect_all(*args, **kwargs):
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
@@ -708,17 +716,16 @@ class TestGenerateCommand:
         monkeypatch.setattr(weekly_slack_summary, "_post_to_slack", fake_post_to_slack)
 
         weekly_slack_summary.generate_cmd(
-            output_dir=tmp_path,
             slack_webhook_url="https://hooks.slack.com/test",
         )
 
-        summary_md = tmp_path / "weekly_slack_summary.md"
+        summary_md = output_dir / "weekly_slack_summary.md"
         assert summary_md.exists()
         assert summary_md.read_text(encoding="utf-8") == "polished summary"
         assert opencode_calls == [summary_md]
         assert slack_calls == [("https://hooks.slack.com/test", "polished summary")]
 
-    def test_missing_webhook_exits_nonzero(self, tmp_path, monkeypatch):
+    def test_missing_webhook_exits_nonzero(self, output_dir, monkeypatch):
         monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
 
         def fake_collect_all(*args, **kwargs):
@@ -755,12 +762,14 @@ class TestGenerateCommand:
 
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
-                output_dir=tmp_path,
                 dummy_input_data=False,
                 dummy_summarization=True,
                 dummy_output=False,
             )
         assert exc_info.value.exit_code == 1
+
+        summary_md = output_dir / "weekly_slack_summary.md"
+        assert summary_md.exists()
 
 
 class TestGenerateOpenCodeConfig:
