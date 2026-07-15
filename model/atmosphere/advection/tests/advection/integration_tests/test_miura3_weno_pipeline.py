@@ -201,6 +201,7 @@ def _random_inputs(torus_patch, seed: int) -> dict:
 # candidate reduces to the constant reconstruction coeff = (p_cc, 0, ..., 0), all
 # smoothness indicators vanish, so the blend is exactly that constant and
 # p_out_e = p_cc(upwind cell) * quad_1 * mass_flx on every edge
+@pytest.mark.level("integration")
 def test_reference_constant_reconstruction_closed_form(torus_patch):
     inputs = _random_inputs(torus_patch, seed=1)
     n_cells = torus_patch.c2e2c.shape[0]
@@ -345,6 +346,7 @@ def _run_gt4py_pipeline(
 # main gate: reference (Fortran order) vs pipeline (scattered offsets) on random data.
 # The live L_WEIGHTS_S leaves candidates 4-21 inert (weight 0); the synthetic all-distinct
 # weights additionally pin the candidate/weight pairing across all 27 launches.
+@pytest.mark.level("integration")
 @pytest.mark.parametrize("weights", ["live", "synthetic"])
 def test_pipeline_matches_fortran_reference(torus_patch, patch_coefficients, backend, weights):
     inputs = _random_inputs(torus_patch, seed=2)
@@ -409,6 +411,7 @@ def _smoothness_vector(coeff: np.ndarray, area: float) -> np.ndarray:
 # smooth-field consistency: on an exactly quadratic tracer field every candidate
 # reconstruction is exact, so the candidates form two exactly-known groups (see module
 # docstring) and the WENO flux has a closed form computed from the polynomial alone
+@pytest.mark.level("integration")
 def test_pipeline_smooth_field_closed_form(torus_patch, patch_coefficients, backend):
     n_edges = torus_patch.e2c.shape[0]
     inputs = _random_inputs(torus_patch, seed=4)

@@ -76,7 +76,8 @@ def _translated_disc(
     center_x = (blob_x + config.u0 * elapsed_time) % domain_length
     dx = (cell_x - center_x + 0.5 * domain_length) % domain_length - 0.5 * domain_length
     dy = (cell_y - blob_y + 0.5 * domain_height) % domain_height - 0.5 * domain_height
-    return np.where(np.hypot(dx, dy) <= radius, config.blob_amplitude, 0.0)
+    # squared form (no hypot/sqrt) to match the 'tracer_blob' IC bit-for-bit at the disc boundary
+    return np.where(np.less_equal(dx**2 + dy**2, radius**2), config.blob_amplitude, 0.0)
 
 
 def _read_qv_frames(output_dir: pathlib.Path) -> np.ndarray:

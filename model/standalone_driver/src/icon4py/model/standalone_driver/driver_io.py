@@ -300,13 +300,13 @@ def create_io_monitor(
     signature change.
     """
     del process_props  # reserved for the distributed IO path; unused while single-node
-    output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
+    selected_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
     field_groups = [
         common_io.FieldGroupIOConfig(
             output_interval=output_interval,
             filename=DEFAULT_OUTPUT_FILENAME,
-            variables=output_variables,
+            variables=selected_variables,
             nc_title="ICON4Py output",
             nc_comment="Fields computed by ICON4Py.",
         )

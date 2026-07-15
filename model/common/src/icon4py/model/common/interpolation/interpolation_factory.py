@@ -130,6 +130,8 @@ class InterpolationConfig:
             rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
             rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
             rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+            # TODO(jcanton): WENO namelists set lsq_high_ord=2, but this mapping assumes it
+            # equals the stencil size (3); a value of 2 would mis-size the linear LSQ state.
             lsq_dim_stencil=interpol_nml["lsq_high_ord"],
             **overrides,
         )

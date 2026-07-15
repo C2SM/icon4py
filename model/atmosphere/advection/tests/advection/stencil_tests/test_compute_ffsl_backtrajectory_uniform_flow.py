@@ -66,6 +66,7 @@ def torus_patch() -> utils.TorusPatch:
     return utils.build_torus_patch()
 
 
+@pytest.mark.level("unit")
 def test_compute_ffsl_backtrajectory_uniform_flow(torus_patch, backend):
     n_edges = torus_patch.e2c.shape[0]
     (
