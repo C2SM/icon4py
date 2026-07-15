@@ -213,6 +213,23 @@ def create_static_field_factories(
     )
 
 
+def _check_weno_state_supported(
+    grid: icon_grid.IconGrid, exchange: decomposition_defs.ExchangeRuntime
+) -> None:
+    """Only the torus branch on a single rank is ported: the sphere coefficients
+    are unavailable and the coefficient halo exchange is not implemented."""
+    if grid.grid_params.geometry_type != icon_grid.GeometryType.TORUS:
+        raise NotImplementedError(
+            "WENO advection is only implemented on a torus grid; "
+            "the sphere coefficients are not ported."
+        )
+    if exchange.get_size() != 1:
+        raise NotImplementedError(
+            "WENO advection is only implemented on a single rank; "
+            "the halo exchange of the WENO coefficients is not implemented."
+        )
+
+
 def _construct_weno_linear_state(
     *,
     grid: icon_grid.IconGrid,
@@ -220,21 +237,8 @@ def _construct_weno_linear_state(
     exchange: decomposition_defs.ExchangeRuntime,
     backend: gtx_typing.Backend | None,
 ) -> advection_states.AdvectionWenoLinearState:
-    """Init-time linear WENO pseudoinverses (ihadv_tracer=102) as a state.
-
-    Only the torus branch on a single rank is ported: the sphere coefficients
-    are unavailable and the coefficient halo exchange is not implemented.
-    """
-    if grid.grid_params.geometry_type != icon_grid.GeometryType.TORUS:
-        raise NotImplementedError(
-            "Linear WENO advection is only implemented on a torus grid; "
-            "the sphere coefficients are not ported."
-        )
-    if exchange.get_size() != 1:
-        raise NotImplementedError(
-            "Linear WENO advection is only implemented on a single rank; "
-            "the halo exchange of the WENO coefficients is not implemented."
-        )
+    """Init-time linear WENO pseudoinverses (ihadv_tracer=102) as a state."""
+    _check_weno_state_supported(grid, exchange)
 
     domain_length = grid.grid_params.domain_length
     domain_height = grid.grid_params.domain_height
@@ -263,6 +267,135 @@ def _construct_weno_linear_state(
         lsq_pseudoinv_meridional_c1=candidate_field(0, 1),
         lsq_pseudoinv_meridional_c2=candidate_field(1, 1),
         lsq_pseudoinv_meridional_c3=candidate_field(2, 1),
+    )
+
+
+def _construct_weno_quadratic_state(
+    *,
+    grid: icon_grid.IconGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    exchange: decomposition_defs.ExchangeRuntime,
+    backend: gtx_typing.Backend | None,
+) -> advection_states.AdvectionWenoQuadraticState:
+    """Init-time quadratic (miura3) WENO state (ihadv_tracer=103).
+
+    27 candidate pseudoinverses on the 9-point stencil scattered onto the
+    C2E2C/C2E2C2E2C slots, torus moments, and the ffsl backtrajectory geometry.
+    """
+    _check_weno_state_supported(grid, exchange)
+
+    domain_length = grid.grid_params.domain_length
+    domain_height = grid.grid_params.domain_height
+    assert domain_length is not None and domain_height is not None
+
+    c2e2c = grid.get_connectivity("C2E2C").asnumpy()
+    c2v = grid.get_connectivity("C2V").asnumpy()
+    c2e2c2e2c = grid.get_connectivity("C2E2C2E2C").asnumpy()
+    e2c = grid.get_connectivity("E2C").asnumpy()
+    e2v = grid.get_connectivity("E2V").asnumpy()
+    cell_center_x = geometry_field_source.get(geometry_meta.CELL_CENTER_X).asnumpy()
+    cell_center_y = geometry_field_source.get(geometry_meta.CELL_CENTER_Y).asnumpy()
+    vertex_x = geometry_field_source.get(geometry_meta.VERTEX_X).asnumpy()
+    vertex_y = geometry_field_source.get(geometry_meta.VERTEX_Y).asnumpy()
+
+    stencil_c9 = weno_least_squares.create_stencil_c9(c2e2c, c2v)
+    lsq_moments = weno_least_squares.compute_lsq_moments_torus(
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        c2v=c2v,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    # (n_cells, 27 candidates, 5 unknowns, 9 stencil rows), Fortran stencil order
+    pseudoinv = weno_least_squares.compute_weno_pseudoinverse_quadratic(
+        stencil_c9=stencil_c9,
+        lsq_moments=lsq_moments,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    direct, butterfly = weno_least_squares.scatter_to_offsets(
+        values_fortran_order=pseudoinv,
+        stencil_c9=stencil_c9,
+        c2e2c=c2e2c,
+        c2e2c2e2c=c2e2c2e2c,
+    )
+
+    # edge-local-frame positions of the E2C cell centers and E2V vertices consumed
+    # by compute_ffsl_backtrajectory; on the plane torus the per-edge normals equal
+    # the primal/dual_normal_cell broadcasts registered by GridGeometry
+    (
+        pos_on_tplane_e_x,
+        pos_on_tplane_e_y,
+        edge_verts_x,
+        edge_verts_y,
+    ) = weno_least_squares.compute_ffsl_backtrajectory_geometry_torus(
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        edge_center_x=geometry_field_source.get(geometry_meta.EDGE_CENTER_X).asnumpy(),
+        edge_center_y=geometry_field_source.get(geometry_meta.EDGE_CENTER_Y).asnumpy(),
+        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_X).asnumpy(),
+        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_Y).asnumpy(),
+        dual_normal_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_X).asnumpy(),
+        dual_normal_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_Y).asnumpy(),
+        e2c=e2c,
+        e2v=e2v,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+
+    def cell_field(values: data_alloc.NDArray) -> gtx.Field:
+        return gtx.as_field((dims.CellDim,), values, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+
+    def edge_field(values: data_alloc.NDArray) -> gtx.Field:
+        return gtx.as_field((dims.EdgeDim,), values, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+
+    lsq_pseudoinv_direct = tuple(
+        tuple(
+            gtx.as_field((dims.CellDim, dims.C2E2CDim), direct[:, cand, unk, :], allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            for unk in range(5)
+        )
+        for cand in range(27)
+    )
+    lsq_pseudoinv_butterfly = tuple(
+        tuple(
+            gtx.as_field(
+                (dims.CellDim, dims.C2E2C2E2CDim),
+                butterfly[:, cand, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                allocator=backend,
+            )
+            for unk in range(5)
+        )
+        for cand in range(27)
+    )
+
+    return advection_states.AdvectionWenoQuadraticState(
+        lsq_pseudoinv_direct=lsq_pseudoinv_direct,
+        lsq_pseudoinv_butterfly=lsq_pseudoinv_butterfly,
+        lsq_moments_1=cell_field(lsq_moments[:, 0]),
+        lsq_moments_2=cell_field(lsq_moments[:, 1]),
+        lsq_moments_3=cell_field(lsq_moments[:, 2]),
+        lsq_moments_4=cell_field(lsq_moments[:, 3]),
+        lsq_moments_5=cell_field(lsq_moments[:, 4]),
+        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        pos_on_tplane_e_1_x=edge_field(pos_on_tplane_e_x[:, 0]),
+        pos_on_tplane_e_2_x=edge_field(pos_on_tplane_e_x[:, 1]),
+        pos_on_tplane_e_1_y=edge_field(pos_on_tplane_e_y[:, 0]),
+        pos_on_tplane_e_2_y=edge_field(pos_on_tplane_e_y[:, 1]),
+        edge_verts_1_x=edge_field(edge_verts_x[:, 0]),
+        edge_verts_2_x=edge_field(edge_verts_x[:, 1]),
+        edge_verts_1_y=edge_field(edge_verts_y[:, 0]),
+        edge_verts_2_y=edge_field(edge_verts_y[:, 1]),
+        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
     )
 
 
@@ -458,25 +591,31 @@ def initialize_granules(
 
     tracer_advection_granule: advection.Advection | None = None
     if config.tracer_advection is not None:
-        # linear WENO reconstruction (ihadv_tracer=102/103) needs its own init-time
-        # coefficients; 103 is not yet wired and raises in the factory below
+        # the WENO schemes (ihadv_tracer=102/103) need their own init-time coefficients
         weno_linear_state: advection_states.AdvectionWenoLinearState | None = None
-        if config.tracer_advection.horizontal_advection_type in (
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO,
-            advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
-        ):
-            weno_linear_state = _construct_weno_linear_state(
-                grid=grid,
-                geometry_field_source=geometry_field_source,
-                exchange=exchange,
-                backend=backend,
-            )
+        weno_quadratic_state: advection_states.AdvectionWenoQuadraticState | None = None
+        match config.tracer_advection.horizontal_advection_type:
+            case advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO:
+                weno_linear_state = _construct_weno_linear_state(
+                    grid=grid,
+                    geometry_field_source=geometry_field_source,
+                    exchange=exchange,
+                    backend=backend,
+                )
+            case advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO:
+                weno_quadratic_state = _construct_weno_quadratic_state(
+                    grid=grid,
+                    geometry_field_source=geometry_field_source,
+                    exchange=exchange,
+                    backend=backend,
+                )
 
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
             weno_linear_state=weno_linear_state,
+            weno_quadratic_state=weno_quadratic_state,
             interpolation_state=advection_states.AdvectionInterpolationState(
                 geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
                 rbf_vec_coeff_e=interpolation_field_source.get(
