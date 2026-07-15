@@ -45,7 +45,7 @@ version = "0.2.0"
 all = ["icon4py-common[distributed,io]"]
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 cuda13 = ['cupy-cuda13x>=14.0', 'gt4py[cuda13]']
-distributed = ["ghex @ git+https://github.com/msimberg/GHEX.git@e1a1749d7656f9aead5bd0a074749cb1e67f5608", "mpi4py>=3.1.5"]
+distributed = ["ghex>=0.8.0", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
   "cartopy>=0.22.0",
