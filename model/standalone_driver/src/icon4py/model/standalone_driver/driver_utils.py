@@ -132,7 +132,7 @@ def create_grid_manager(
     )
     grid_manager(
         allocator=allocator,
-        keep_skip_values=True,
+        keep_skip_values=False,
         process_props=process_props,
         decomposer=decomposer,
     )
