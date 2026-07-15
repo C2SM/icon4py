@@ -175,6 +175,15 @@ class ExperimentConfig:
             initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
             initial_condition_config.dtime = self.driver.dtime
 
+        if self.driver.diffuse_before_time_loop and not (
+            self.nonhydrostatic is not None
+            and self.diffusion is not None
+            and self.diffusion.apply_to_horizontal_wind
+        ):
+            object.__setattr__(
+                self, "driver", dataclasses.replace(self.driver, diffuse_before_time_loop=False)
+            )
+
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}
         for key, value in overrides.items():

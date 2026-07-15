@@ -477,13 +477,11 @@ class Icon4pyDriver:
         if (
             not self.config.driver.diffuse_before_time_loop
             or not self.model_time_variables.is_first_step_in_simulation
-            or self.granules.solve_nonhydro is None
-            or self.granules.diffusion is None
-            or not self.granules.diffusion.config.apply_to_horizontal_wind
         ):
             return
 
         assert diffusion_diagnostic_state is not None
+        assert self.granules.diffusion is not None
         log.info("running diffusion to filter the initial state, before the time loop")
         self.granules.diffusion.run(
             diffusion_diagnostic_state,
