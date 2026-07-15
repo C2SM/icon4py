@@ -94,9 +94,9 @@ def _read_qv_frames(output_dir: pathlib.Path) -> np.ndarray:
 
 
 # Observed relative L2 errors vs the translated disc after 24 steps (CFL~0.3, blob
-# defaults, torus_50000mx5000m_res500m, gtfn_cpu): WENO (102) 0.328, plain miura (2)
-# 0.481. The tolerances are frozen at ~1.5x the observed values; a non-moving disc
-# gives ~1.4.
+# defaults, torus_50000mx5000m_res500m, gtfn_cpu): miura3 WENO (103) 0.297,
+# WENO (102) 0.328, plain miura (2) 0.481. The tolerances are frozen at ~1.5x the
+# observed values; a non-moving disc gives ~1.4.
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
@@ -104,6 +104,7 @@ def _read_qv_frames(output_dir: pathlib.Path) -> np.ndarray:
     [
         (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO, 0.50),
         (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER, 0.72),
+        (tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO, 0.45),
     ],
 )
 def test_tracer_blob_translation(
