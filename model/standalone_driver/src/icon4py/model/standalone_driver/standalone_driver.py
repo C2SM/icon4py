@@ -474,7 +474,6 @@ class Icon4pyDriver:
         because no other filtering of the interpolated velocity field is done. It is
         called on the current state, with the model time step, and not for a restart.
         """
-        # ldynamics and lhdiff_vn in fortran are the granules being configured
         if (
             not self.config.driver.diffuse_before_time_loop
             or not self.model_time_variables.is_first_step_in_simulation
