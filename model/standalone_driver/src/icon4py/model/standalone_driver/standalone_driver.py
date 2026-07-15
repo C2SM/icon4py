@@ -26,6 +26,7 @@ from icon4py.model.common import (
     dimension as dims,
     initial_condition,
     model_backends,
+    prescribed_tendencies,
     time,
     topography,
     type_alias as ta,
@@ -53,7 +54,6 @@ from icon4py.model.standalone_driver import (
     driver_io,
     driver_states,
     driver_utils,
-    prescribed_tendencies,
 )
 
 
@@ -74,7 +74,7 @@ class Icon4pyDriver:
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
         io_monitor: common_io.IOMonitor | None = None,
-        tendencies: prescribed_tendencies.SerializedTendencies | None = None,
+        tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
         self.config = config
         self.io_monitor = io_monitor
@@ -486,17 +486,14 @@ class Icon4pyDriver:
         because no other filtering of the interpolated velocity field is done. It is
         called on the current state, with the model time step, and not for a restart.
         """
-        # ldynamics and lhdiff_vn in fortran are the granules being configured
         if (
             not self.config.driver.diffuse_before_time_loop
             or not self.model_time_variables.is_first_step_in_simulation
-            or self.granules.solve_nonhydro is None
-            or self.granules.diffusion is None
-            or not self.granules.diffusion.config.apply_to_horizontal_wind
         ):
             return
 
         assert diffusion_diagnostic_state is not None
+        assert self.granules.diffusion is not None
         log.info("running diffusion to filter the initial state, before the time loop")
         self.granules.diffusion.run(
             diffusion_diagnostic_state,
@@ -709,8 +706,8 @@ def initialize_driver(
         exchange=exchange,
         global_reductions=global_reductions,
         tendencies=(
-            prescribed_tendencies.SerializedTendencies(
-                data_path=config.prescribed_tendencies.data_path,
+            prescribed_tendencies.PrescribedTendencies(
+                config=config.prescribed_tendencies,
                 grid=grid_manager.grid,
                 backend=backend,
                 rank=exchange.my_rank(),

@@ -65,21 +65,21 @@ class PrescribedTendenciesConfig:
         return cls(data_path=data_path / fortran_config.SER_DATA_SUBDIR)
 
 
-class SerializedTendencies:
-    """Reader of the prescribed tendencies of a time step."""
-
+class PrescribedTendencies:
     def __init__(
         self,
         *,
-        data_path: pathlib.Path,
+        config: PrescribedTendenciesConfig,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
         rank: int,
     ) -> None:
+        # data_path is None only for testcases, which do not construct this reader.
+        assert config.data_path is not None
         self._grid = grid
         self._array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
         self._serializer = serialbox.Serializer(
-            serialbox.OpenModeKind.Read, str(data_path), f"icon_pydycore_rank{rank}"
+            serialbox.OpenModeKind.Read, str(config.data_path), f"icon_pydycore_rank{rank}"
         )
 
     def update(
