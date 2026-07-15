@@ -433,6 +433,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
     weno_linear_state: advection_states.AdvectionWenoLinearState | None = None,
+    weno_quadratic_state: advection_states.AdvectionWenoQuadraticState | None = None,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     assert exchange is not None, "Exchange runtime must not be None."
     horizontal_limiter: advection_horizontal.HorizontalFluxLimiter | None
@@ -492,9 +493,25 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 backend=backend,
             )
         case HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO:
-            # TODO(jcanton): wire the quadratic (27-candidate) WENO scheme, i.e. the
-            # miura3 reconstruct_quadratic_coefficients_weno_candidate + candidate flux blending.
-            raise NotImplementedError("Quadratic WENO horizontal advection is not yet wired.")
+            if weno_quadratic_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'QUADRATIC_3RD_ORDER_WENO' requires 'weno_quadratic_state'."
+                )
+            tracer_flux = advection_horizontal.ThirdOrderMiuraWeno(
+                grid=grid,
+                weno_quadratic_state=weno_quadratic_state,
+                horizontal_limiter=horizontal_limiter,
+                backend=backend,
+            )
+            horizontal_advection = advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
         case _:
             raise NotImplementedError("Unknown horizontal advection type.")
 
@@ -547,6 +564,7 @@ def convert_config_to_advection(
     exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
     weno_linear_state: advection_states.AdvectionWenoLinearState | None = None,
+    weno_quadratic_state: advection_states.AdvectionWenoQuadraticState | None = None,
 ) -> Advection:
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
@@ -566,6 +584,7 @@ def convert_config_to_advection(
         backend=backend,
         exchange=exchange,
         weno_linear_state=weno_linear_state,
+        weno_quadratic_state=weno_quadratic_state,
     )
 
     advection = GodunovSplittingAdvection(

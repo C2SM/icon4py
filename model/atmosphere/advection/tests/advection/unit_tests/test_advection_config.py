@@ -68,8 +68,9 @@ def test_linear_weno_requires_weno_linear_state() -> None:
         )
 
 
-def test_quadratic_weno_not_implemented() -> None:
-    with pytest.raises(NotImplementedError, match="Quadratic WENO"):
+def test_quadratic_weno_requires_weno_quadratic_state() -> None:
+    # the ValueError is raised before any of the None-passed states are accessed
+    with pytest.raises(ValueError, match="requires 'weno_quadratic_state'"):
         advection.convert_config_to_horizontal_vertical_advection(
             config=_weno_config(advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO),
             grid=None,
@@ -80,4 +81,5 @@ def test_quadratic_weno_not_implemented() -> None:
             cell_params=None,
             backend=None,
             exchange=decomposition.single_node_exchange,
+            weno_quadratic_state=None,
         )
