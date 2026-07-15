@@ -74,7 +74,7 @@ class Icon4pyDriver:
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
         io_monitor: common_io.IOMonitor | None = None,
-        tendencies: prescribed_tendencies.SerializedTendencies | None = None,
+        tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
         self.config = config
         self.io_monitor = io_monitor
@@ -706,7 +706,7 @@ def initialize_driver(
         exchange=exchange,
         global_reductions=global_reductions,
         tendencies=(
-            prescribed_tendencies.SerializedTendencies(
+            prescribed_tendencies.PrescribedTendencies(
                 config=config.prescribed_tendencies,
                 grid=grid_manager.grid,
                 backend=backend,

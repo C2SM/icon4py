@@ -65,7 +65,7 @@ class PrescribedTendenciesConfig:
         return cls(data_path=data_path / fortran_config.SER_DATA_SUBDIR)
 
 
-class SerializedTendencies:
+class PrescribedTendencies:
     def __init__(
         self,
         *,
