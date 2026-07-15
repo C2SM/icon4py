@@ -66,7 +66,6 @@ class PrescribedTendenciesConfig:
 
 
 class SerializedTendencies:
-    """Reader of the prescribed tendencies of a time step."""
 
     def __init__(
         self,
