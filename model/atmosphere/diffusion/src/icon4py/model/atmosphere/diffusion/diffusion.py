@@ -36,7 +36,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla4_to_vn import apply_nabla4_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     calculate_diagnostic_quantities_for_turbulence,
 )
@@ -631,19 +630,6 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_nabla4_to_vn = setup_program(
-            backend=backend,
-            program=apply_nabla4_to_vn,
-            constant_args={
-                "area_edge": self._edge_params.edge_areas,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_5,
-                "horizontal_end": self._edge_end_local,
-            },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
-            offset_provider=self._grid.connectivities,
-        )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
             backend=backend,
             program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -967,18 +953,12 @@ class Diffusion:
         log.debug("running stencils 04 05 (apply_diffusion_to_vn): start")
         self.apply_diffusion_to_vn(
             z_nabla2_e=self.z_nabla2_e,
-            kh_smag_e=self.kh_smag_e,
-            vn=prognostic_state.vn,
-        )
-        log.debug("running stencils 04 05 (apply_diffusion_to_vn): end")
-
-        log.debug("running nabla4 correction (apply_nabla4_to_vn): start")
-        self.apply_nabla4_to_vn(
             z_nabla4_e2=self.z_nabla4_e2,
+            kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
             vn=prognostic_state.vn,
         )
-        log.debug("running nabla4 correction (apply_nabla4_to_vn): end")
+        log.debug("running stencils 04 05 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(

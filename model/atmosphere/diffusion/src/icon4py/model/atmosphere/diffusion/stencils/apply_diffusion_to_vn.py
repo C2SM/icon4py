@@ -24,8 +24,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _apply_diffusion_to_vn(
     z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
@@ -42,6 +44,8 @@ def _apply_diffusion_to_vn(
                 area_edge,
                 kh_smag_e,
                 z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
                 nudgecoeff_e,
                 vn,
                 nudgezone_diff,
@@ -55,6 +59,8 @@ def _apply_diffusion_to_vn(
                 area_edge,
                 kh_smag_e,
                 z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
                 vn,
             ),
             vn,
@@ -67,8 +73,10 @@ def _apply_diffusion_to_vn(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_diffusion_to_vn(
     z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
@@ -82,8 +90,10 @@ def apply_diffusion_to_vn(
 ) -> None:
     _apply_diffusion_to_vn(
         z_nabla2_e=z_nabla2_e,
+        z_nabla4_e2=z_nabla4_e2,
         area_edge=area_edge,
         kh_smag_e=kh_smag_e,
+        diff_multfac_vn=diff_multfac_vn,
         nudgecoeff_e=nudgecoeff_e,
         vn=vn,
         nudgezone_diff=nudgezone_diff,

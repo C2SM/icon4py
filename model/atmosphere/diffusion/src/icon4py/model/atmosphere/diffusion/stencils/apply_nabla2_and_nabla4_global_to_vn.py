@@ -17,11 +17,15 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    kh_smag_e_wp = astype(kh_smag_e, wpfloat)
+    kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
 
-    vn_wp = vn + area_edge * kh_smag_e_wp * z_nabla2_e
+    vn_wp = vn + area_edge * (
+        kh_smag_e_wp * z_nabla2_e - diff_multfac_vn * z_nabla4_e2_wp * area_edge
+    )
     return vn_wp
 
 
@@ -30,6 +34,8 @@ def apply_nabla2_and_nabla4_global_to_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -40,6 +46,8 @@ def apply_nabla2_and_nabla4_global_to_vn(
         area_edge=area_edge,
         kh_smag_e=kh_smag_e,
         z_nabla2_e=z_nabla2_e,
+        z_nabla4_e2=z_nabla4_e2,
+        diff_multfac_vn=diff_multfac_vn,
         vn=vn,
         out=vn,
         domain={
