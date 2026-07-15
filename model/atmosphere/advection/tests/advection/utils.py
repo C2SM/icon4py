@@ -210,6 +210,7 @@ class TorusPatch:
     # (mo_advection_traj.f90 660-673 and the icon4py torus geometry stencils)
     e2v: np.ndarray
     e2c: np.ndarray
+    c2e: np.ndarray
     edge_center_x: np.ndarray
     edge_center_y: np.ndarray
     primal_normal_x: np.ndarray
@@ -363,9 +364,18 @@ def _build_patch_edges(
         edge_center_x[e] = midpoint[0] % domain_length
         edge_center_y[e] = midpoint[1] % domain_height
 
+    # C2E by inverting E2C (ascending edge id; the order is irrelevant to the consumers)
+    c2e_lists: list[list[int]] = [[] for _ in range(n_cells)]
+    for e in range(n_edges):
+        for c in e2c[e]:
+            c2e_lists[c].append(e)
+    assert all(len(edges) == 3 for edges in c2e_lists)
+    c2e = np.asarray(c2e_lists, dtype=np.int32)
+
     return dict(
         e2v=e2v,
         e2c=e2c,
+        c2e=c2e,
         edge_center_x=edge_center_x,
         edge_center_y=edge_center_y,
         primal_normal_x=primal_normal[:, 0],
