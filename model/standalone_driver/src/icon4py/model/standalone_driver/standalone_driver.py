@@ -26,6 +26,7 @@ from icon4py.model.common import (
     dimension as dims,
     initial_condition,
     model_backends,
+    prescribed_tendencies,
     time,
     topography,
     type_alias as ta,
@@ -53,7 +54,6 @@ from icon4py.model.standalone_driver import (
     driver_io,
     driver_states,
     driver_utils,
-    prescribed_tendencies,
 )
 
 
@@ -707,7 +707,7 @@ def initialize_driver(
         global_reductions=global_reductions,
         tendencies=(
             prescribed_tendencies.SerializedTendencies(
-                data_path=config.prescribed_tendencies.data_path,
+                config=config.prescribed_tendencies,
                 grid=grid_manager.grid,
                 backend=backend,
                 rank=exchange.my_rank(),

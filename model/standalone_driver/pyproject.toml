@@ -32,8 +32,7 @@ dependencies = [
   "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.1.11",
-  "packaging>=20.0",
-  "serialbox4py>=2.6.2"  # needed to prescribe the tendencies of a real data run
+  "packaging>=20.0"
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}

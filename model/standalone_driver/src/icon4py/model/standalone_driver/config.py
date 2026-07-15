@@ -24,7 +24,13 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common import initial_condition, time, topography, type_alias as ta
+from icon4py.model.common import (
+    initial_condition,
+    prescribed_tendencies,
+    time,
+    topography,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
@@ -32,7 +38,6 @@ from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_state
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver import prescribed_tendencies
 
 
 log = logging.getLogger(__name__)
