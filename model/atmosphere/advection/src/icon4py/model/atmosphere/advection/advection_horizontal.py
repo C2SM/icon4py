@@ -7,12 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
+import math
 from abc import ABC, abstractmethod
 
 import gt4py.next as gtx
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.advection import advection_states
+from icon4py.model.atmosphere.advection import advection_states, weno_least_squares
+from icon4py.model.atmosphere.advection.stencils.accumulate_weno_candidate_flux_weights import (
+    accumulate_weno_candidate_flux_weights,
+)
 from icon4py.model.atmosphere.advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -22,21 +26,39 @@ from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtraject
 from icon4py.model.atmosphere.advection.stencils.compute_edge_tangential import (
     compute_edge_tangential,
 )
+from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory import (
+    compute_ffsl_backtrajectory,
+)
+from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_counterclockwise_indicator import (
+    compute_ffsl_backtrajectory_counterclockwise_indicator,
+)
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
+)
+from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_weno_coefficients import (
+    compute_horizontal_tracer_flux_from_weno_coefficients,
 )
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import copy_cell_kdim_field
+from icon4py.model.atmosphere.advection.stencils.init_constant_edge_kdim_field import (
+    init_constant_edge_kdim_field,
+)
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
+)
+from icon4py.model.atmosphere.advection.stencils.prepare_gauss_quadrature_quadratic_miura3 import (
+    prepare_gauss_quadrature_quadratic_miura3,
 )
 from icon4py.model.atmosphere.advection.stencils.reconstruct_linear_coefficients_svd import (
     reconstruct_linear_coefficients_svd,
 )
 from icon4py.model.atmosphere.advection.stencils.reconstruct_linear_coefficients_weno_svd import (
     reconstruct_linear_coefficients_weno_svd,
+)
+from icon4py.model.atmosphere.advection.stencils.reconstruct_quadratic_coefficients_weno_candidate import (
+    reconstruct_quadratic_coefficients_weno_candidate,
 )
 from icon4py.model.common import (
     constants,
@@ -206,9 +228,12 @@ class SemiLagrangianTracerFlux(ABC):
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ) -> None: ...
+    ) -> None:
+        """Compute the tracer flux; p_vt is only consumed by the ffsl-based schemes."""
+        ...
 
 
 class SecondOrderMiura(SemiLagrangianTracerFlux):
@@ -290,6 +315,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
@@ -414,6 +440,7 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
@@ -452,6 +479,316 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         log.debug(
             "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
         )
+
+        self._horizontal_limiter.apply_flux_limiter(
+            p_tracer_now=p_tracer_now,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            rhodz_now=rhodz_now,
+            dtime=dtime,
+        )
+
+        log.debug("horizontal tracer flux computation - end")
+
+
+class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
+    """Miura-based third-order tracer flux with quadratic 27-candidate WENO blending (ihadv_tracer=103).
+
+    Port of upwind_hflux_miura3_weno (mo_advection_hflux.f90 2033-2620), live
+    path only: quadratic reconstruction, SVD, l_out_edgeval=.FALSE. The
+    departure regions and the quadrature vector are recomputed on every call;
+    ICON shares them across tracers under ld_compute.
+    TODO(jcanton): hoist the geometry to a tracer-independent step if more
+    than one tracer is advected.
+    """
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        weno_quadratic_state: advection_states.AdvectionWenoQuadraticState,
+        backend: gtx.typing.Backend | None,
+        horizontal_limiter: HorizontalFluxLimiter | None = None,
+    ):
+        self._grid = grid
+        self._weno_quadratic_state = weno_quadratic_state
+        self._backend = backend
+        self._horizontal_limiter = horizontal_limiter or NoLimiter()
+
+        # cell indices; the Fortran reconstructs from start_blk(3,1) to min_rlcell_int
+        # (f90 2367-2368), here the SecondOrderMiuraWeno zones are kept: on the
+        # boundary-free single-rank torus (the only supported configuration, see
+        # the driver state construction) all cell zones coincide anyway
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_lateral_boundary_level_2 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+        # edge indices (i_rlstart=5, f90 2194-2198)
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        # backtrajectory fields
+        allocator = model_backends.get_allocator(self._backend)
+        self._lvn_sys_pos = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=allocator
+        )
+        self._p_cell_idx = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=allocator
+        )
+        self._p_cell_rel_idx_dsl = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=allocator
+        )
+        self._p_cell_blk = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=allocator
+        )
+        self._dreg_coords = {
+            f"p_coords_dreg_v_{v}_{c}_dsl": data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            )
+            for v in (1, 2, 3, 4)
+            for c in ("lon", "lat")
+        }
+
+        # quadrature fields
+        self._quad_vector_sums = {
+            f"p_quad_vector_sum_{q}": data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            )
+            for q in (1, 2, 3, 4, 5, 6)
+        }
+
+        # candidate reconstruction fields
+        self._p_coeffs = {
+            f"p_coeff_{c}_dsl": data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, allocator=allocator
+            )
+            for c in (1, 2, 3, 4, 5, 6)
+        }
+
+        # WENO accumulator fields
+        self._z_lsq_weighted = {
+            f"z_lsq_weighted_{q}": data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+            )
+            for q in (1, 2, 3, 4, 5, 6)
+        }
+        self._smooth_sum = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+        )
+
+        # E2C line indices for the backtrajectory; blocks are zero in icon4py
+        e2c_table = self._grid.get_connectivity("E2C").asnumpy()
+        cell_idx = gtx.as_field(
+            (dims.EdgeDim, dims.E2CDim),
+            e2c_table.astype(gtx.int32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            allocator=allocator,
+        )
+        cell_blk = gtx.as_field(
+            (dims.EdgeDim, dims.E2CDim),
+            (0 * e2c_table).astype(gtx.int32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            allocator=allocator,
+        )
+
+        # Gauss-Legendre O2 shape functions and weights (init_2D_gauss_quad,
+        # mo_advection_config.f90 1084-1136)
+        gauss = 1.0 / math.sqrt(3.0)
+        zeta = (-gauss, gauss, gauss, -gauss)
+        eta = (-gauss, -gauss, gauss, gauss)
+        quadrature_args: dict = {
+            "wgt_zeta_1": 1.0,
+            "wgt_zeta_2": 1.0,
+            "wgt_eta_1": 1.0,
+            "wgt_eta_2": 1.0,
+        }
+        for jg in range(4):
+            quadrature_args[f"shape_func_1_{jg + 1}"] = 0.25 * (1.0 - zeta[jg]) * (1.0 - eta[jg])
+            quadrature_args[f"shape_func_2_{jg + 1}"] = 0.25 * (1.0 + zeta[jg]) * (1.0 - eta[jg])
+            quadrature_args[f"shape_func_3_{jg + 1}"] = 0.25 * (1.0 + zeta[jg]) * (1.0 + eta[jg])
+            quadrature_args[f"shape_func_4_{jg + 1}"] = 0.25 * (1.0 - zeta[jg]) * (1.0 + eta[jg])
+
+        # stencils
+        edge_sizes = {
+            "horizontal_start": self._start_edge_lateral_boundary_level_5,
+            "horizontal_end": self._end_edge_halo,
+        }
+        vertical_sizes = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+        self._compute_ffsl_backtrajectory_counterclockwise_indicator = model_options.setup_program(
+            backend=self._backend,
+            program=compute_ffsl_backtrajectory_counterclockwise_indicator,
+            constant_args={
+                "tangent_orientation": self._weno_quadratic_state.tangent_orientation,
+                # miura3 calls btraj_dreg with lcounterclock=.TRUE. (f90 2260-2265)
+                "lcounterclock": True,
+            },
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_ffsl_backtrajectory = model_options.setup_program(
+            backend=self._backend,
+            program=compute_ffsl_backtrajectory,
+            constant_args={
+                "cell_idx": cell_idx,
+                "cell_blk": cell_blk,
+                "edge_verts_1_x": self._weno_quadratic_state.edge_verts_1_x,
+                "edge_verts_2_x": self._weno_quadratic_state.edge_verts_2_x,
+                "edge_verts_1_y": self._weno_quadratic_state.edge_verts_1_y,
+                "edge_verts_2_y": self._weno_quadratic_state.edge_verts_2_y,
+                "pos_on_tplane_e_1_x": self._weno_quadratic_state.pos_on_tplane_e_1_x,
+                "pos_on_tplane_e_2_x": self._weno_quadratic_state.pos_on_tplane_e_2_x,
+                "pos_on_tplane_e_1_y": self._weno_quadratic_state.pos_on_tplane_e_1_y,
+                "pos_on_tplane_e_2_y": self._weno_quadratic_state.pos_on_tplane_e_2_y,
+                "primal_normal_cell_x": self._weno_quadratic_state.primal_normal_cell_x,
+                "primal_normal_cell_y": self._weno_quadratic_state.primal_normal_cell_y,
+                "dual_normal_cell_x": self._weno_quadratic_state.dual_normal_cell_x,
+                "dual_normal_cell_y": self._weno_quadratic_state.dual_normal_cell_y,
+            },
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._prepare_gauss_quadrature_quadratic_miura3 = model_options.setup_program(
+            backend=self._backend,
+            program=prepare_gauss_quadrature_quadratic_miura3,
+            constant_args=quadrature_args,
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._init_constant_edge_kdim_field = model_options.setup_program(
+            backend=self._backend,
+            program=init_constant_edge_kdim_field,
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._reconstruct_quadratic_coefficients_weno_candidate = model_options.setup_program(
+            backend=self._backend,
+            program=reconstruct_quadratic_coefficients_weno_candidate,
+            constant_args={
+                "lsq_moments_1": self._weno_quadratic_state.lsq_moments_1,
+                "lsq_moments_2": self._weno_quadratic_state.lsq_moments_2,
+                "lsq_moments_3": self._weno_quadratic_state.lsq_moments_3,
+                "lsq_moments_4": self._weno_quadratic_state.lsq_moments_4,
+                "lsq_moments_5": self._weno_quadratic_state.lsq_moments_5,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._accumulate_weno_candidate_flux_weights = model_options.setup_program(
+            backend=self._backend,
+            program=accumulate_weno_candidate_flux_weights,
+            constant_args={
+                "cell_area": self._weno_quadratic_state.cell_area,
+            },
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_horizontal_tracer_flux_from_weno_coefficients = model_options.setup_program(
+            backend=self._backend,
+            program=compute_horizontal_tracer_flux_from_weno_coefficients,
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+    def compute_tracer_flux(
+        self,
+        *,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        # p_distv_bary_* are unused: miura3 integrates over the full departure region
+        log.debug("horizontal tracer flux computation - start")
+
+        # counterclockwise indicator (mo_advection_traj.f90 527-537)
+        log.debug("running stencil compute_ffsl_backtrajectory_counterclockwise_indicator - start")
+        self._compute_ffsl_backtrajectory_counterclockwise_indicator(
+            p_vn=prep_adv.vn_traj,
+            lvn_sys_pos=self._lvn_sys_pos,
+        )
+        log.debug("running stencil compute_ffsl_backtrajectory_counterclockwise_indicator - end")
+
+        # departure regions swept over the full time step (btraj_dreg, f90 2260-2265)
+        log.debug("running stencil compute_ffsl_backtrajectory - start")
+        self._compute_ffsl_backtrajectory(
+            p_vn=prep_adv.vn_traj,
+            p_vt=p_vt,
+            lvn_sys_pos=self._lvn_sys_pos,
+            p_cell_idx=self._p_cell_idx,
+            p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+            p_cell_blk=self._p_cell_blk,
+            **self._dreg_coords,
+            p_dt=dtime,
+        )
+        log.debug("running stencil compute_ffsl_backtrajectory - end")
+
+        # quadrature vector = departure region area averages of the monomials
+        log.debug("running stencil prepare_gauss_quadrature_quadratic_miura3 - start")
+        self._prepare_gauss_quadrature_quadratic_miura3(
+            **{
+                f"p_coords_dreg_v_{v}_{xy}": self._dreg_coords[f"p_coords_dreg_v_{v}_{lonlat}_dsl"]
+                for v in (1, 2, 3, 4)
+                for xy, lonlat in (("x", "lon"), ("y", "lat"))
+            },
+            **self._quad_vector_sums,
+        )
+        log.debug("running stencil prepare_gauss_quadrature_quadratic_miura3 - end")
+
+        # zero the WENO accumulators (f90 2450-2451)
+        for accumulator in (*self._z_lsq_weighted.values(), self._smooth_sum):
+            self._init_constant_edge_kdim_field(field=accumulator, value=0.0)
+
+        # 27-candidate loop (f90 2458-2512); candidate reconstruction on cells,
+        # then smoothness-weighted accumulation on edges
+        for cand in range(27):
+            direct = self._weno_quadratic_state.lsq_pseudoinv_direct[cand]
+            butterfly = self._weno_quadratic_state.lsq_pseudoinv_butterfly[cand]
+            self._reconstruct_quadratic_coefficients_weno_candidate(
+                p_cc=p_tracer_now,
+                **{f"lsq_pseudoinv_direct_{u + 1}": direct[u] for u in range(5)},
+                **{f"lsq_pseudoinv_butterfly_{u + 1}": butterfly[u] for u in range(5)},
+                **self._p_coeffs,
+            )
+            self._accumulate_weno_candidate_flux_weights(
+                **{f"p_coeff_{c}": self._p_coeffs[f"p_coeff_{c}_dsl"] for c in (1, 2, 3, 4, 5, 6)},
+                p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+                **{
+                    f"z_quad_vector_sum_{q}": self._quad_vector_sums[f"p_quad_vector_sum_{q}"]
+                    for q in (1, 2, 3, 4, 5, 6)
+                },
+                **self._z_lsq_weighted,
+                smooth_sum=self._smooth_sum,
+                l_weight_s=float(weno_least_squares.L_WEIGHTS_S[cand]),
+            )
+
+        # normalize and compute the flux (f90 2513-2521)
+        log.debug("running stencil compute_horizontal_tracer_flux_from_weno_coefficients - start")
+        self._compute_horizontal_tracer_flux_from_weno_coefficients(
+            **self._z_lsq_weighted,
+            smooth_sum=self._smooth_sum,
+            **self._quad_vector_sums,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            p_out_e=p_mflx_tracer_h,
+        )
+        log.debug("running stencil compute_horizontal_tracer_flux_from_weno_coefficients - end")
 
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
@@ -760,6 +1097,7 @@ class SemiLagrangian(FiniteVolume):
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_distv_bary_1=self._p_distv_bary_1,
             p_distv_bary_2=self._p_distv_bary_2,
+            p_vt=self._z_real_vt,
             rhodz_now=rhodz_now,
             dtime=dtime,
         )

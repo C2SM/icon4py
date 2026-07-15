@@ -99,6 +99,60 @@ class AdvectionWenoLinearState:
 
 
 @dataclasses.dataclass(frozen=True)
+class AdvectionWenoQuadraticState:
+    """Represents the quadratic (miura3) WENO state (ihadv_tracer=103).
+
+    The 27 candidate pseudoinverses (unknowns [x, y, x^2, y^2, xy]) are split
+    over the C2E2C and C2E2C2E2C rows by weno_least_squares.scatter_to_offsets
+    and stored as nested tuples indexed [candidate][unknown], so the runtime
+    candidate loop can slice per candidate. Also carries the torus ffsl
+    backtrajectory geometry ('compute_ffsl_backtrajectory' inputs beyond
+    standard grid state) and the quadrature/smoothness cell fields.
+    """
+
+    # candidate pseudoinverse coefficients on the direct neighbor rows, [27][5]
+    lsq_pseudoinv_direct: tuple[
+        tuple[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat], ...], ...
+    ]
+
+    # candidate pseudoinverse coefficients on the butterfly rows, [27][5]
+    lsq_pseudoinv_butterfly: tuple[
+        tuple[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat], ...], ...
+    ]
+
+    # cell averages of the monomials [x, y, x^2, y^2, xy]
+    lsq_moments_1: fa.CellField[ta.wpfloat]
+    lsq_moments_2: fa.CellField[ta.wpfloat]
+    lsq_moments_3: fa.CellField[ta.wpfloat]
+    lsq_moments_4: fa.CellField[ta.wpfloat]
+    lsq_moments_5: fa.CellField[ta.wpfloat]
+
+    # cell area, used by the smoothness indicator
+    cell_area: fa.CellField[ta.wpfloat]
+
+    # E2C cell centers in the edge-local frame (pos_on_tplane_e components 1:2)
+    pos_on_tplane_e_1_x: fa.EdgeField[ta.wpfloat]
+    pos_on_tplane_e_2_x: fa.EdgeField[ta.wpfloat]
+    pos_on_tplane_e_1_y: fa.EdgeField[ta.wpfloat]
+    pos_on_tplane_e_2_y: fa.EdgeField[ta.wpfloat]
+
+    # E2V vertices in the edge-local frame (pos_on_tplane_e components 3:4)
+    edge_verts_1_x: fa.EdgeField[ta.wpfloat]
+    edge_verts_2_x: fa.EdgeField[ta.wpfloat]
+    edge_verts_1_y: fa.EdgeField[ta.wpfloat]
+    edge_verts_2_y: fa.EdgeField[ta.wpfloat]
+
+    # primal/dual normal components on the E2C cells (the per-edge normals on the torus)
+    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+    dual_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+    dual_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+
+    # edge orientation, needed for the counterclockwise indicator lvn_sys_pos
+    tangent_orientation: fa.EdgeField[ta.wpfloat]
+
+
+@dataclasses.dataclass(frozen=True)
 class AdvectionMetricState:
     """Represents the metric fields needed in advection."""
 
