@@ -117,7 +117,7 @@ def _run_standalone_driver_compare_single_multi_rank(
         allocator=allocator,
         process_props=single_rank_process_props,
     )
-    single_rank_ds, _ = standalone_driver.run_driver(
+    single_rank_ds, single_rank_driver = standalone_driver.run_driver(
         config=single_rank_config,
         grid_manager=single_rank_grid_manager,
         process_props=single_rank_process_props,
@@ -156,6 +156,29 @@ def _run_standalone_driver_compare_single_multi_rank(
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        dim = local_field.domain.dims[0]
+        parallel_helpers.check_local_global_field(
+            decomposition_info=multi_rank_driver.decomposition_info,
+            process_props=process_props,
+            dim=dim,
+            global_reference_field=global_reference_field,
+            local_field=local_field.asnumpy(),
+            check_halos=True,
+            atol=atol,
+            rtol=rtol,
+        )
+
+    if (
+        multi_rank_driver.granules.diffusion is not None
+        and single_rank_driver.granules.diffusion is not None
+    ):
+        field_name = "z_nabla4_e2"
+        print(f"\nverifying field {field_name}")
+        global_reference_field = process_props.comm.bcast(
+            single_rank_driver.granules.diffusion.z_nabla4_e2.asnumpy(),
+            root=0,
+        )
+        local_field = multi_rank_driver.granules.diffusion.z_nabla4_e2
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_driver.decomposition_info,

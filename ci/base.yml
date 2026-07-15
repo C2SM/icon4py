@@ -172,7 +172,7 @@ variables:
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' && $LEVEL == 'validation'
+    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' && ($LEVEL == 'validation' || $LEVEL == 'integration')
       variables:
         # Signal to (selected) tests that they should expect bitwise identical
         # results between single- and multi-rank runs. This goes hand-in-hand with
