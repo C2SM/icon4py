@@ -212,7 +212,7 @@ variables:
   needs: [build_image_aarch64]
   timeout: 8h
   variables:
-    ICON4PY_NOX_COLLECTION_WORKERS: "256"
+    ICON4PY_NOX_COLLECTION_WORKERS: "128"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
     # MPI is initialized during test discovery, but disable GPU-aware
     # MPI since it's not necessary for test discovery. This avoids
