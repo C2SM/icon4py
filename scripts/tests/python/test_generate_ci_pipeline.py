@@ -130,14 +130,22 @@ def test_run_nox_collection_constructs_command(monkeypatch):
     assert captured["env"]["ICON4PY_NOX_USE_ACTIVE_VENV"] == "1"
 
 
-def test_run_nox_collection_false_on_exit_1(monkeypatch):
+def test_run_nox_collection_false_on_exit_1_when_no_tests_collected(monkeypatch):
     def mock_run(cmd, **kwargs):
-        return _SubprocessResult(1)
+        # Simulate nox reporting a pytest NO_TESTS_COLLECTED (=5) failure.
+        return _SubprocessResult(1, stderr="returned non-zero exit code 5")
 
     monkeypatch.setattr("subprocess.run", mock_run)
     assert gcp._run_nox_collection("session", ["--collect-only"], {}, 300) is False
 
 
+def test_run_nox_collection_raises_on_exit_1_for_other_failures(monkeypatch):
+    def mock_run(cmd, **kwargs):
+        return _SubprocessResult(1, stderr="ImportError: boom")
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+    with pytest.raises(subprocess.CalledProcessError):
+        gcp._run_nox_collection("session", ["--collect-only"], {}, 300)
 def test_run_nox_collection_raises_on_nonzero_exit(monkeypatch):
     def mock_run(cmd, **kwargs):
         return _SubprocessResult(2, stdout="stdout text", stderr="stderr text")
