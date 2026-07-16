@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -20,7 +21,8 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     diff_multfac_vn: fa.KField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    return vn + 1.0
+    z_nabla4_e2_wp = astype(z_nabla4_e2, wpfloat)
+    return vn - diff_multfac_vn * z_nabla4_e2_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
