@@ -416,8 +416,7 @@ def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_M
         return cells, []
 
     env = _collection_env()
-    kept: list[_MatrixCell] = []
-    dropped: list[_MatrixCell] = []
+    results: list[bool] = [False] * len(cells)
 
     with ThreadPoolExecutor(max_workers=_COLLECTION_MAX_WORKERS) as executor:
         futures = {
@@ -427,16 +426,14 @@ def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_M
                 cell.pytest_args,
                 env,
                 _COLLECTION_TIMEOUT_SECONDS,
-            ): cell
-            for cell in cells
+            ): i
+            for i, cell in enumerate(cells)
         }
         for future in as_completed(futures):
-            cell = futures[future]
-            if future.result():
-                kept.append(cell)
-            else:
-                dropped.append(cell)
+            results[futures[future]] = future.result()
 
+    kept = [cell for cell, ok in zip(cells, results) if ok]
+    dropped = [cell for cell, ok in zip(cells, results) if not ok]
     return kept, dropped
 
 
