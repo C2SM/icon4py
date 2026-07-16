@@ -15,8 +15,6 @@ classifiers = [
   'Programming Language :: Python',
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.10',
-  'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: 3.12',
   'Programming Language :: Python :: 3.13',
   'Programming Language :: Python :: 3.14',
@@ -29,7 +27,6 @@ dependencies = [
   'array-api-compat>=1.13.0',
   'gt4py==1.1.11',
   'packaging>=20.0',
-  'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
   "serialbox4py>=2.6.2"  # needed to read topography from file until IO is done
 ]
@@ -37,7 +34,7 @@ description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}
 name = "icon4py-common"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 # managed by bump-my-version:
 version = "0.2.0"
 
