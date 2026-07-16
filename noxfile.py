@@ -35,6 +35,7 @@ type ModelSubpackagePath = Literal[
     "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
+    "atmosphere/subgrid_scale_physics/amps",
     "atmosphere/subgrid_scale_physics/microphysics",
     "atmosphere/subgrid_scale_physics/muphys",
     "common",

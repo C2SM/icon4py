@@ -31,6 +31,7 @@ version = 1
 members = [
   "icon4py",
   "icon4py-atmosphere-advection",
+  "icon4py-atmosphere-amps",
   "icon4py-atmosphere-diffusion",
   "icon4py-atmosphere-dycore",
   "icon4py-atmosphere-microphysics",
@@ -1757,6 +1758,7 @@ wheels = [
 [[package]]
 dependencies = [
   {name = "icon4py-atmosphere-advection"},
+  {name = "icon4py-atmosphere-amps"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
@@ -1868,6 +1870,7 @@ provides-extras = ["all", "cuda12", "cuda13", "distributed", "fortran", "io", "p
 requires-dist = [
   {name = "icon4py", extras = ["distributed", "fortran", "io", "testing", "profiling"], marker = "extra == 'all'"},
   {name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection"},
+  {name = "icon4py-atmosphere-amps", editable = "model/atmosphere/subgrid_scale_physics/amps"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
@@ -2025,6 +2028,25 @@ version = "0.2.0"
 requires-dist = [
   {name = "gt4py", specifier = "==1.1.11"},
   {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common", extra = ["io"]},
+  {name = "numpy"},
+  {name = "packaging"}
+]
+name = "icon4py-atmosphere-amps"
+source = {editable = "model/atmosphere/subgrid_scale_physics/amps"}
+version = "0.2.0"
+
+[package.metadata]
+requires-dist = [
+  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "icon4py-common", extras = ["io"], editable = "model/common"},
+  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
 ]
 

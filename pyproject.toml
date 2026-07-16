@@ -89,6 +89,7 @@ classifiers = [
 ]
 dependencies = [
   "icon4py-atmosphere-advection~=0.2.0",
+  "icon4py-atmosphere-amps~=0.2.0",
   "icon4py-atmosphere-diffusion~=0.2.0",
   "icon4py-atmosphere-dycore~=0.2.0",
   "icon4py-atmosphere-microphysics~=0.2.0",
@@ -189,6 +190,7 @@ mypy_path = '''
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/amps/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
@@ -269,6 +271,7 @@ pythonpath = [
   "model/atmosphere/advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
+  "model/atmosphere/subgrid_scale_physics/amps",
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
@@ -417,6 +420,7 @@ url = 'https://gridtools.github.io/pypi/'
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
+icon4py-atmosphere-amps = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
@@ -434,6 +438,7 @@ members = [
   "model/atmosphere/advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
+  "model/atmosphere/subgrid_scale_physics/amps",
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
