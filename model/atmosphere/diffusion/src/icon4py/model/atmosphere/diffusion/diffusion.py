@@ -519,11 +519,6 @@ class Diffusion:
         self._edge_params = edge_params
         self._cell_params = cell_params
         self.edge_areas = edge_params.edge_areas
-        self.area_edge_sq = gtx.as_field(
-            (dims.EdgeDim,),
-            self.edge_areas.asnumpy() ** 2,  # type: ignore[arg-type]
-            allocator=self._allocator,
-        )
 
         assert self._cell_params.area is not None
 
@@ -623,7 +618,6 @@ class Diffusion:
             program=apply_diffusion_to_vn,
             constant_args={
                 "area_edge": self._edge_params.edge_areas,
-                "area_edge_sq": self.area_edge_sq,
                 "nudgecoeff_e": self._interpolation_state.nudgecoeff_e,
                 "nudgezone_diff": self.nudgezone_diff,
                 "fac_bdydiff_v": self.fac_bdydiff_v,

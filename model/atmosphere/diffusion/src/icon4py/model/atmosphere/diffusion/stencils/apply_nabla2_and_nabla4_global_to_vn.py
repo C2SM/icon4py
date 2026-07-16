@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _apply_nabla2_and_nabla4_global_to_vn(
-    area_edge_sq: fa.EdgeField[wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
@@ -22,12 +22,12 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     vn: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     z_nabla4_e2_wp = astype(z_nabla4_e2, wpfloat)
-    return vn - diff_multfac_vn * z_nabla4_e2_wp * area_edge_sq
+    return vn - diff_multfac_vn * z_nabla4_e2_wp * area_edge
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_nabla2_and_nabla4_global_to_vn(
-    area_edge_sq: fa.EdgeField[wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
@@ -39,7 +39,7 @@ def apply_nabla2_and_nabla4_global_to_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_nabla2_and_nabla4_global_to_vn(
-        area_edge_sq=area_edge_sq,
+        area_edge=area_edge,
         kh_smag_e=kh_smag_e,
         z_nabla2_e=z_nabla2_e,
         z_nabla4_e2=z_nabla4_e2,

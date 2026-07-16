@@ -26,7 +26,6 @@ def _apply_diffusion_to_vn(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
     area_edge: fa.EdgeField[wpfloat],
-    area_edge_sq: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
@@ -57,7 +56,7 @@ def _apply_diffusion_to_vn(
         else concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_global_to_vn(
-                area_edge_sq,
+                area_edge,
                 kh_smag_e,
                 z_nabla2_e,
                 z_nabla4_e2,
@@ -76,7 +75,6 @@ def apply_diffusion_to_vn(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
     area_edge: fa.EdgeField[wpfloat],
-    area_edge_sq: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
@@ -94,7 +92,6 @@ def apply_diffusion_to_vn(
         z_nabla2_e=z_nabla2_e,
         z_nabla4_e2=z_nabla4_e2,
         area_edge=area_edge,
-        area_edge_sq=area_edge_sq,
         kh_smag_e=kh_smag_e,
         diff_multfac_vn=diff_multfac_vn,
         nudgecoeff_e=nudgecoeff_e,
