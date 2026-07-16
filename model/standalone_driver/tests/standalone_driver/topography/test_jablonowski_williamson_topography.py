@@ -54,10 +54,10 @@ def test_jablonowski_williamson_topography(
         config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.single_node_exchange
     )
 
-    topo_c_ref = topography_savepoint.topo_c().asnumpy()
+    topo_c_ref = topography_savepoint.topo_c()
 
     test_utils.assert_dallclose(
         data_alloc.as_numpy(topo_c),
-        topo_c_ref,
+        data_alloc.as_numpy(topo_c_ref),
         err_msg="topo_c",
     )
