@@ -180,7 +180,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
-        dtype=ta.vpfloat,
+        dtype=ta.wpfloat,
     )
     exner_tendency_due_to_slow_physics = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
