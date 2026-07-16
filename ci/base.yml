@@ -212,12 +212,9 @@ variables:
   needs: [build_image_aarch64]
   timeout: 8h
   variables:
-    # Run many collections concurrently. Each pytest collection needs a few
-    # hundred MiB, so the resources below are sized for ~128 parallel
-    # collections.
-    ICON4PY_NOX_COLLECTION_WORKERS: "128"
+    ICON4PY_NOX_COLLECTION_WORKERS: "256"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
-    # MPI is initialized during test discover, but disable GPU-aware
+    # MPI is initialized during test discovery, but disable GPU-aware
     # MPI since it's not necessary for test discovery. This avoids
     # initializing CUDA on each worker.
     OMPI_MCA_opal_cuda_support: "0"
