@@ -173,7 +173,14 @@ def _run_standalone_driver_compare_single_multi_rank(
         multi_rank_driver.granules.diffusion is not None
         and single_rank_driver.granules.diffusion is not None
     ):
-        diffusion_fields = ["vn_before", "edge_areas", "kh_smag_e", "z_nabla2_e", "z_nabla4_e2"]
+        diffusion_fields = [
+            "vn_before",
+            "edge_areas",
+            "edge_areas_dup",
+            "kh_smag_e",
+            "z_nabla2_e",
+            "z_nabla4_e2",
+        ]
         for field_name in diffusion_fields:
             print(f"\nverifying field {field_name}")
             single_rank_field = getattr(single_rank_driver.granules.diffusion, field_name)
