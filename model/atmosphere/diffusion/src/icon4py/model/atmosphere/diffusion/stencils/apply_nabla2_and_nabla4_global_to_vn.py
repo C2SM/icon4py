@@ -22,7 +22,7 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     vn: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     z_nabla4_e2_wp = astype(z_nabla4_e2, wpfloat)
-    return vn - diff_multfac_vn * z_nabla4_e2_wp * area_edge
+    return vn - diff_multfac_vn * z_nabla4_e2_wp * area_edge * area_edge
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
