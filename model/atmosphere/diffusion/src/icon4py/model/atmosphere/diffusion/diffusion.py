@@ -518,6 +518,7 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+        self.edge_areas = edge_params.edge_areas
 
         assert self._cell_params.area is not None
 
@@ -765,6 +766,9 @@ class Diffusion:
         self.z_nabla4_e2 = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
+        self.vn_before = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+        )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
@@ -851,6 +855,8 @@ class Diffusion:
             diff_multfac_vn = self.diff_multfac_vn
             smag_limit = self.smag_limit
             smag_offset = self.smag_offset
+
+        self.copy_field(prognostic_state.vn, self.vn_before)
 
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 

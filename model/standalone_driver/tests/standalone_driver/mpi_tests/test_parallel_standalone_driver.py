@@ -172,21 +172,22 @@ def _run_standalone_driver_compare_single_multi_rank(
         multi_rank_driver.granules.diffusion is not None
         and single_rank_driver.granules.diffusion is not None
     ):
-        field_name = "z_nabla4_e2"
-        print(f"\nverifying field {field_name}")
-        global_reference_field = process_props.comm.bcast(
-            single_rank_driver.granules.diffusion.z_nabla4_e2.asnumpy(),
-            root=0,
-        )
-        local_field = multi_rank_driver.granules.diffusion.z_nabla4_e2
-        dim = local_field.domain.dims[0]
-        parallel_helpers.check_local_global_field(
-            decomposition_info=multi_rank_driver.decomposition_info,
-            process_props=process_props,
-            dim=dim,
-            global_reference_field=global_reference_field,
-            local_field=local_field.asnumpy(),
-            check_halos=True,
-            atol=atol,
-            rtol=rtol,
-        )
+        diffusion_fields = ["vn_before", "edge_areas", "kh_smag_e", "z_nabla2_e", "z_nabla4_e2"]
+        for field_name in diffusion_fields:
+            print(f"\nverifying field {field_name}")
+            global_reference_field = process_props.comm.bcast(
+                getattr(single_rank_driver.granules.diffusion, field_name).asnumpy(),
+                root=0,
+            )
+            local_field = getattr(multi_rank_driver.granules.diffusion, field_name)
+            dim = local_field.domain.dims[0]
+            parallel_helpers.check_local_global_field(
+                decomposition_info=multi_rank_driver.decomposition_info,
+                process_props=process_props,
+                dim=dim,
+                global_reference_field=global_reference_field,
+                local_field=local_field.asnumpy(),
+                check_halos=True,
+                atol=atol,
+                rtol=rtol,
+            )
