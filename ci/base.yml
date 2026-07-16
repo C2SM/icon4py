@@ -113,6 +113,7 @@ variables:
     NCCL_SOCKET_NTHREADS: 4
     NCCL_NSOCKS_PERTHREAD: 1
     NCCL_MAX_CTAS: 16
+    # This is enabled to allow multiple concurrent subcommunicators on the same GPU
     NCCL_MULTI_RANK_GPU_ENABLE: 1
     NCCL_DEBUG: WARN
     SLURM_NETWORK: disable_rdzv_get
