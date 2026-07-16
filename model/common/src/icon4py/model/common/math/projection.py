@@ -51,24 +51,16 @@ def gnomonic_proj(
 
 def diff_on_edges_torus_numpy(
     *,
-    cc_cv_x: float,
-    cc_cv_y: float,
-    cc_cell_x: float,
-    cc_cell_y: float,
+    cc_cv_x: data_alloc.NDArray,
+    cc_cv_y: data_alloc.NDArray,
+    cc_cell_x: data_alloc.NDArray,
+    cc_cell_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
-) -> tuple[float, float]:
-    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
-        x1 = cc_cell_x
-    elif cc_cv_x > cc_cell_x:
-        x1 = cc_cell_x + domain_length
-    else:
-        x1 = cc_cell_x - domain_length
-
-    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
-        y1 = cc_cell_y
-    elif cc_cv_y > cc_cell_y:
-        y1 = cc_cell_y + domain_height
-    else:
-        y1 = cc_cell_y - domain_height
-    return x1, y1
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    array_ns = data_alloc.array_namespace(cc_cv_x)
+    x_diff = cc_cell_x - cc_cv_x
+    y_diff = cc_cell_y - cc_cv_y
+    x_diff = array_ns.minimum(x_diff, domain_length - x_diff)
+    y_diff = array_ns.minimum(y_diff, domain_height - y_diff)
+    return x_diff, y_diff

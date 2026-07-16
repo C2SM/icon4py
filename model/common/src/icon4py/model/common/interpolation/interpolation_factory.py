@@ -86,24 +86,25 @@ class InterpolationConfig:
     lsq_dim_unk: int = 2
     """
     Number of unknowns in the least-squares reconstruction.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    Hardcoded in Fortran mo_interpol_config.f90 under lqs_lin_set data structure, not a namelist parameter.
     """
 
     lsq_dim_c: int = 3
     """
     Dimension of the least-squares coefficient space.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    Hardcoded in Fortran mo_interpol_config.f90 under lqs_lin_set data structure, not a namelist parameter.
     """
 
     lsq_wgt_exp: int = 2
     """
     Exponent used in distance-based least-squares weighting.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    Derived in Fortran mo_interpol_config.f90 under lqs_lin_set data structure, not a namelist parameter.
     """
 
-    lsq_dim_stencil: int = 3
+    lsq_high_ord: int = 1
     """
-    Stencil size used for least-squares reconstruction.
+    Complexity of least-squares reconstruction in terms of the polynomial order and stencil size.
+    This is not used in the current implementation, but is kept for higher-order reconstruction in the future.
     """
 
     def __post_init__(self):
@@ -130,7 +131,7 @@ class InterpolationConfig:
             rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
             rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
             rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
-            lsq_dim_stencil=interpol_nml["lsq_high_ord"],
+            lsq_high_ord=interpol_nml["lsq_high_ord"],
             **overrides,
         )
 
@@ -337,7 +338,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "lsq_dim_unk": self._config.lsq_dim_unk,
                 "lsq_dim_c": self._config.lsq_dim_c,
                 "lsq_wgt_exp": self._config.lsq_wgt_exp,
-                "lsq_dim_stencil": self._config.lsq_dim_stencil,
                 "start_idx": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),

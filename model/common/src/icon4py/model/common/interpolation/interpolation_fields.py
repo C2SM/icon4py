@@ -1225,11 +1225,11 @@ def compute_lsq_pseudoinv(
 
 def compute_lsq_weights_c(
     z_dist_g: data_alloc.NDArray,
-    lsq_dim_stencil: int,
+    lsq_dim_c: int,
     lsq_wgt_exp: int,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(z_dist_g)
-    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g[:, :lsq_dim_stencil, :] ** 2, axis=2))
+    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g[:, :lsq_dim_c, :] ** 2, axis=2))
     lsq_weights_c = 1.0 / (z_norm**lsq_wgt_exp)
     lsq_weights_c = lsq_weights_c / array_ns.max(lsq_weights_c, axis=1)[:, array_ns.newaxis]
     return lsq_weights_c
@@ -1278,17 +1278,17 @@ def compute_lsq_coeffs(
     lsq_dim_unk: int,
     lsq_dim_c: int,
     lsq_wgt_exp: int,
-    lsq_dim_stencil: int,
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
-    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
+    cell_size = cell_owner_mask.shape[0]
+    z_dist_g = array_ns.zeros((cell_size, lsq_dim_c, 2))
     match icon_grid.GeometryType(geometry_type):
         case icon_grid.GeometryType.ICOSAHEDRON:
-            for js in range(lsq_dim_stencil):
+            for js in range(lsq_dim_c):
                 z_dist_g[:, js, :] = array_ns.asarray(
                     projection.gnomonic_proj(
                         cell_lon,
@@ -1297,28 +1297,23 @@ def compute_lsq_coeffs(
                         cell_lat[c2e2c[:, js]],
                     )
                 ).T
-
             z_dist_g *= grid_sphere_radius
 
         case icon_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
-                ilc_s = c2e2c[jc, :lsq_dim_stencil]
-                cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
-                cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
-                for js in range(lsq_dim_stencil):
-                    cc_cell[js, :] = array_ns.asarray(
+                for js in range(lsq_dim_c):
+                    z_dist_g[:, js, :] = array_ns.asarray(
                         projection.diff_on_edges_torus_numpy(
-                            cc_cv_x=cell_center_x[jc],
-                            cc_cv_y=cell_center_y[jc],
-                            cc_cell_x=cell_center_x[ilc_s][js],
-                            cc_cell_y=cell_center_y[ilc_s][js],
+                            cc_cv_x=cell_center_x,
+                            cc_cv_y=cell_center_y,
+                            cc_cell_x=cell_center_x[c2e2c[:, js]],
+                            cc_cell_y=cell_center_y[c2e2c[:, js]],
                             domain_length=domain_length,
                             domain_height=domain_height,
                         )
                     )
-                z_dist_g[jc, :, :] = cc_cell - cc_cv
 
-    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_dim_stencil, lsq_wgt_exp)
+    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_dim_c, lsq_wgt_exp)
 
     z_lsq_mat_c = compute_z_lsq_mat_c(
         cell_owner_mask=cell_owner_mask,
