@@ -177,6 +177,7 @@ def _run_standalone_driver_compare_single_multi_rank(
             "vn_before",
             "edge_areas",
             "edge_areas_dup",
+            "edge_areas_dup_sq",
             "kh_smag_e",
             "z_nabla2_e",
             "z_nabla4_e2",
