@@ -217,8 +217,9 @@ variables:
     # collections.
     ICON4PY_NOX_COLLECTION_WORKERS: "128"
     ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
-    # Collection only probes pytest discovery; disable CUDA-aware MPI so that
-    # concurrent collection workers do not fight over the same GPU context.
+    # MPI is initialized during test discover, but disable GPU-aware
+    # MPI since it's not necessary for test discovery. This avoids
+    # initializing CUDA on each worker.
     OMPI_MCA_opal_cuda_support: "0"
     OMPI_MCA_mpi_cuda_support: "0"
     # Run on a single GH200 NUMA node in the shared partition: 1 task, 72 CPUs,
