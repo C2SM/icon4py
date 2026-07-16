@@ -77,7 +77,8 @@ def test_collection_env_uses_configured_venv(monkeypatch):
     assert env["VIRTUAL_ENV"] == "/icon4py/.venv"
 
 
-def test_collection_max_workers_default():
+def test_collection_max_workers_default(monkeypatch):
+    monkeypatch.delenv("ICON4PY_NOX_COLLECTION_WORKERS", raising=False)
     importlib.reload(gcp)
     assert gcp._COLLECTION_MAX_WORKERS == 8
 
