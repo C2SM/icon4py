@@ -206,7 +206,7 @@ variables:
 .generate_test_child_pipeline:
   stage: generate_test
   # Run the generator on a GH200 container runner so it can use more than the
-  # 4 CPU / 4 Gi limit of the lightweight K8s runner.
+  # CPU/memory limits of the lightweight K8s runner.
   extends: .container-runner-santis-gh200
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   needs: [build_image_aarch64]
