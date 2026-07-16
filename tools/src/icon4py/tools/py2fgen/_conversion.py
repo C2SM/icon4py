@@ -47,7 +47,7 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     """Return a NumPy view of a CFFI pointer, sharing memory with the Fortran allocation."""
     length = math.prod(sizes)
     dtype = _resolve_dtype(ffi, ptr)
-    return np.frombuffer(ffi.buffer(ptr, length * dtype.itemsize), dtype=dtype).reshape(  # type: ignore[call-overload]
+    return np.frombuffer(ffi.buffer(ptr, length * dtype.itemsize), dtype=dtype).reshape(
         sizes, order="F"
     )
 

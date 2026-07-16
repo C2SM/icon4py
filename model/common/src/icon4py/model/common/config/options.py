@@ -8,13 +8,9 @@
 
 import dataclasses
 import typing
-
-from typing_extensions import Self
+from typing import Self
 
 from icon4py.model.common.utils import fortran_config
-
-
-T = typing.TypeVar("T")
 
 
 class NotDataclassError(Exception): ...
@@ -46,8 +42,8 @@ class IconOption:
     def convert(
         self: Self,
         icon_config: dict,
-        fallback_converter: typing.Callable[[typing.Any], T] | None,
-    ) -> T | type[NotRead]:
+        fallback_converter: typing.Callable[[typing.Any], typing.Any] | None,
+    ) -> typing.Any | type[NotRead]:
         """
         Convert from ICON namelist value.
 
@@ -95,7 +91,7 @@ class IconMultiOption:
     options: list[IconOption]
     converter: typing.Callable[..., typing.Any]
 
-    def convert(self: Self, icon_config: dict, fallback_converter: type[T]) -> T:
+    def convert(self: Self, icon_config: dict, fallback_converter: type) -> typing.Any:
         """
         Merge and convert from multiple ICON namelist values
 
@@ -223,8 +219,8 @@ def iter_pairs_from_icon(
 
 
 def construct_config_from_icon(
-    config_cls: type[T], icon_config: dict[str, typing.Any], **overrides: typing.Any
-) -> T:
+    config_cls: type, icon_config: dict[str, typing.Any], **overrides: typing.Any
+) -> typing.Any:
     """
     Construct a configuration instance from a fortran ICON config dict.
 

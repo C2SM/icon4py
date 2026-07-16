@@ -16,12 +16,12 @@ import json
 import logging
 import pathlib
 import sys
-from typing import Any, TypeAlias
+from typing import Any
 
 import typer
 
 
-VariantDescriptor: TypeAlias = tuple[str, dict[str, Any]]
+type VariantDescriptor = tuple[str, dict[str, Any]]
 
 cli = typer.Typer()
 
