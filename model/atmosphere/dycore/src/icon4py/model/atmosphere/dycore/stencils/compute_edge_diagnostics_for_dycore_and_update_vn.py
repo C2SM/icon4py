@@ -228,7 +228,7 @@ def _compute_rho_theta_pgrad_and_update_vn(
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
         ),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        broadcast(ta.vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
     )
 
     # Note: we overcompute `next_vn`, which is only needed
