@@ -176,6 +176,10 @@ def _collection_env() -> dict[str, str]:
         env["VIRTUAL_ENV"] = configured_venv
     elif pytest_path := shutil.which("pytest"):
         env["VIRTUAL_ENV"] = str(pathlib.Path(pytest_path).parent.parent)
+    else:
+        raise RuntimeError(
+            "Cannot determine collection virtualenv. Set ICON4PY_COLLECTION_VENV or ensure pytest is on PATH."
+        )
     return env
 
 
