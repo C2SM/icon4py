@@ -49,5 +49,4 @@ jobs:
           OPENCODE_CONFIG: /tmp/weekly-slack-summary-opencode-config.json
           CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_API_KEY }}
         run: |
-          ./scripts/run weekly-slack-summary generate \
-            ${{ inputs.dummy_input_data == true && '--dummy-input-data --dummy-output' || '' }}
+          ./scripts/run weekly-slack-summary generate
