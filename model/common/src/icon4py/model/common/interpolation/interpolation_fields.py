@@ -1225,11 +1225,10 @@ def compute_lsq_pseudoinv(
 
 def compute_lsq_weights_c(
     z_dist_g: data_alloc.NDArray,
-    lsq_dim_c: int,
     lsq_wgt_exp: int,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(z_dist_g)
-    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g[:, :lsq_dim_c, :] ** 2, axis=2))
+    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g ** 2, axis=2))
     lsq_weights_c = 1.0 / (z_norm**lsq_wgt_exp)
     lsq_weights_c = lsq_weights_c / array_ns.max(lsq_weights_c, axis=1)[:, array_ns.newaxis]
     return lsq_weights_c
@@ -1284,8 +1283,7 @@ def compute_lsq_coeffs(
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
-    cell_size = cell_owner_mask.shape[0]
-    z_dist_g = array_ns.zeros((cell_size, lsq_dim_c, 2))
+    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
     match icon_grid.GeometryType(geometry_type):
         case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_c):
@@ -1313,7 +1311,7 @@ def compute_lsq_coeffs(
                         )
                     )
 
-    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_dim_c, lsq_wgt_exp)
+    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 
     z_lsq_mat_c = compute_z_lsq_mat_c(
         cell_owner_mask=cell_owner_mask,

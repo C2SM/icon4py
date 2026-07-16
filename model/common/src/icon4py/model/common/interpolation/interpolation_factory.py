@@ -86,19 +86,19 @@ class InterpolationConfig:
     lsq_dim_unk: int = 2
     """
     Number of unknowns in the least-squares reconstruction.
-    Hardcoded in Fortran mo_interpol_config.f90 under lqs_lin_set data structure, not a namelist parameter.
+    Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
     """
 
     lsq_dim_c: int = 3
     """
     Dimension of the least-squares coefficient space.
-    Hardcoded in Fortran mo_interpol_config.f90 under lqs_lin_set data structure, not a namelist parameter.
+    Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
     """
 
     lsq_wgt_exp: int = 2
     """
     Exponent used in distance-based least-squares weighting.
-    Derived in Fortran mo_interpol_config.f90 under lqs_lin_set data structure, not a namelist parameter.
+    Derived in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
     """
 
     lsq_high_ord: int = 1
