@@ -766,9 +766,6 @@ class Diffusion:
         self.z_nabla4_e2 = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
-        self.vn_before = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
@@ -856,7 +853,7 @@ class Diffusion:
             smag_limit = self.smag_limit
             smag_offset = self.smag_offset
 
-        self.copy_field(prognostic_state.vn, self.vn_before)
+        self.vn_before = prognostic_state.vn.asnumpy().copy()
 
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 

@@ -10,9 +10,10 @@ import logging
 import pathlib
 
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
@@ -175,18 +176,26 @@ def _run_standalone_driver_compare_single_multi_rank(
         diffusion_fields = ["vn_before", "edge_areas", "kh_smag_e", "z_nabla2_e", "z_nabla4_e2"]
         for field_name in diffusion_fields:
             print(f"\nverifying field {field_name}")
-            global_reference_field = process_props.comm.bcast(
-                getattr(single_rank_driver.granules.diffusion, field_name).asnumpy(),
-                root=0,
-            )
+            single_rank_field = getattr(single_rank_driver.granules.diffusion, field_name)
+            if isinstance(single_rank_field, np.ndarray):
+                global_reference_field = process_props.comm.bcast(single_rank_field, root=0)
+            else:
+                global_reference_field = process_props.comm.bcast(
+                    single_rank_field.asnumpy(), root=0
+                )
             local_field = getattr(multi_rank_driver.granules.diffusion, field_name)
-            dim = local_field.domain.dims[0]
+            local_ndarray = (
+                local_field if isinstance(local_field, np.ndarray) else local_field.asnumpy()
+            )
+            dim = (
+                dims.EdgeDim if isinstance(local_field, np.ndarray) else local_field.domain.dims[0]
+            )
             parallel_helpers.check_local_global_field(
                 decomposition_info=multi_rank_driver.decomposition_info,
                 process_props=process_props,
                 dim=dim,
                 global_reference_field=global_reference_field,
-                local_field=local_field.asnumpy(),
+                local_field=local_ndarray,
                 check_halos=True,
                 atol=atol,
                 rtol=rtol,
