@@ -26,7 +26,9 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
-# Tolerances (atol, rtol) per experiment, measured with the gtfn_cpu backend.
+# Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
+# (gtfn_cpu, gtfn_gpu, dace_cpu; dace_gpu still pending, its job hits the SLURM
+# time limit when run sequentially).
 # rtol is 0.0 where the reference field contains zeros or near-zeros: there no
 # meaningful rtol can cover the difference, only atol.
 # TODO(jcanton): MCH_CH_R04B09 does not reach roundoff, and neither does the dycore
@@ -41,17 +43,17 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
     },
     test_defs.Experiments.GAUSS3D: {
         "vn": (4.1e-13, 0.0),
-        "w": (8e-14, 0.0),
+        "w": (8.1e-14, 0.0),
         "exner": (1.3e-10, 1.3e-10),
         "theta_v": (9.3e-8, 3.1e-10),
-        "rho": (1.6e-15, 2.4e-15),
+        "rho": (1.8e-15, 3.7e-15),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": (3.5e-3, 0.0),
-        "w": (7e-4, 0.0),
-        "exner": (5e-7, 6.4e-7),
-        "theta_v": (1.1e-3, 3.3e-6),
-        "rho": (3.2e-6, 3.4e-6),
+        "w": (7.9e-4, 0.0),
+        "exner": (6.8e-7, 9.9e-7),
+        "theta_v": (1.2e-3, 3.6e-6),
+        "rho": (3.5e-6, 3.7e-6),
     },
 }
 
