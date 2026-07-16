@@ -1298,18 +1298,17 @@ def compute_lsq_coeffs(
             z_dist_g *= grid_sphere_radius
 
         case icon_grid.GeometryType.TORUS:
-            for jc in range(start_idx, min_rlcell_int):
-                for js in range(lsq_dim_c):
-                    z_dist_g[:, js, :] = array_ns.asarray(
-                        projection.diff_on_edges_torus_numpy(
-                            cc_cv_x=cell_center_x,
-                            cc_cv_y=cell_center_y,
-                            cc_cell_x=cell_center_x[c2e2c[:, js]],
-                            cc_cell_y=cell_center_y[c2e2c[:, js]],
-                            domain_length=domain_length,
-                            domain_height=domain_height,
-                        )
+            for js in range(lsq_dim_c):
+                z_dist_g[:, js, :] = array_ns.asarray(
+                    projection.diff_on_edges_torus_numpy(
+                        cc_cv_x=cell_center_x,
+                        cc_cv_y=cell_center_y,
+                        cc_cell_x=cell_center_x[c2e2c[:, js]],
+                        cc_cell_y=cell_center_y[c2e2c[:, js]],
+                        domain_length=domain_length,
+                        domain_height=domain_height,
                     )
+                )
 
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 
