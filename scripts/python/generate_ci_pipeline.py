@@ -238,7 +238,11 @@ def _run_nox_collection(
 
     if result.returncode == 0:
         return True
-    if result.returncode == 1:
+
+    combined = f"{result.stdout}\n{result.stderr}".strip()
+    if result.returncode == 1 and re.search(
+        r"(?:exit code|returned non-zero exit code) 5\b", combined
+    ):
         _log_collection_output(
             "DEBUG: nox collection returned exit 1 (zero tests)",
             cmd,
@@ -255,8 +259,9 @@ def _run_nox_collection(
         result.stdout,
         result.stderr,
     )
-    output = (result.stdout + "\n" + result.stderr).strip()
-    raise subprocess.CalledProcessError(result.returncode, cmd, output=output, stderr=result.stderr)
+    raise subprocess.CalledProcessError(
+        result.returncode, cmd, output=combined, stderr=result.stderr
+    )
 
 
 @dataclass(frozen=True)
