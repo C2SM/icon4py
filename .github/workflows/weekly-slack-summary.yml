@@ -4,13 +4,6 @@ on:
   schedule:
     # Every Monday at 08:00 UTC
     - cron: "0 8 * * 1"
-  workflow_dispatch:
-    inputs:
-      dummy_input_data:
-        description: "Use synthetic data instead of calling external APIs. When true, the summary is printed instead of posted to Slack."
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
