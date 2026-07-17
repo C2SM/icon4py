@@ -578,7 +578,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         return offset_providers
 
     def _domain_args(
-        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
+        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid | None
     ) -> dict[str, gtx.int32]:
         domain_args = {}
 
@@ -591,6 +591,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
+                assert vertical_grid is not None, (
+                    "vertical_grid must not be None for vertical-domain programs"
+                )
                 domain_args.update(
                     {
                         "vertical_start": vertical_grid.index(self._compute_domain[dim][0]),
@@ -638,8 +641,10 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
         deps.update({k: self._fields[v] for k, v in self._output.items()})  # type: ignore[misc]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
-        # runtime invariant: ProgramFieldProvider needs a vertical grid
-        assert grid.vertical_grid is not None, "vertical_grid must not be None"
+        if any(dim.kind == gtx.DimensionKind.VERTICAL for dim in self._compute_domain):
+            assert grid.vertical_grid is not None, (
+                "vertical_grid must not be None for vertical-domain programs"
+            )
         dims = self._domain_args(grid.grid, grid.vertical_grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
