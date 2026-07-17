@@ -1089,10 +1089,18 @@ def compute_pos_on_tplane_e_x_y(
     xyloc_plane_n1 = array_ns.zeros([e2c.shape[0], 2])
     xyloc_plane_n2 = array_ns.zeros([e2c.shape[0], 2])
     xyloc_plane_n1[llb:, :] = projection.gnomonic_proj(
-        edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]], grid_sphere_radius
+        edges_lon[llb:],
+        edges_lat[llb:],
+        cells_lon[e2c[llb:, 0]],
+        cells_lat[e2c[llb:, 0]],
+        grid_sphere_radius,
     )
     xyloc_plane_n2[llb:, :] = projection.gnomonic_proj(
-        edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]], grid_sphere_radius
+        edges_lon[llb:],
+        edges_lat[llb:],
+        cells_lon[e2c[llb:, 1]],
+        cells_lat[e2c[llb:, 1]],
+        grid_sphere_radius,
     )
 
     pos_on_tplane_e_x[llb:, 0] = array_ns.where(
@@ -1284,23 +1292,23 @@ def compute_lsq_coeffs(
         case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_c):
                 neighbor_center_dist[:, js, :] = projection.gnomonic_proj(
-                        cell_lon,
-                        cell_lat,
-                        cell_lon[c2e2c[:, js]],
-                        cell_lat[c2e2c[:, js]],
-                        grid_sphere_radius,
-                    )
+                    cell_lon,
+                    cell_lat,
+                    cell_lon[c2e2c[:, js]],
+                    cell_lat[c2e2c[:, js]],
+                    grid_sphere_radius,
+                )
 
         case icon_grid.GeometryType.TORUS:
             for js in range(lsq_dim_c):
                 neighbor_center_dist[:, js, :] = projection.compute_cell_distance_on_torus(
-                        source_cell_x=cell_center_x,
-                        source_cell_y=cell_center_y,
-                        target_cell_x=cell_center_x[c2e2c[:, js]],
-                        target_cell_y=cell_center_y[c2e2c[:, js]],
-                        domain_length=domain_length,
-                        domain_height=domain_height,
-                    )
+                    source_cell_x=cell_center_x,
+                    source_cell_y=cell_center_y,
+                    target_cell_x=cell_center_x[c2e2c[:, js]],
+                    target_cell_y=cell_center_y[c2e2c[:, js]],
+                    domain_length=domain_length,
+                    domain_height=domain_height,
+                )
 
     lsq_weights_c = compute_lsq_weights_c(neighbor_center_dist, lsq_wgt_exp)
 

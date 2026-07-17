@@ -42,12 +42,12 @@ def gnomonic_proj(
     ) * array_ns.cos(lon - lon_c)
     zk = 1.0 / cosc
 
-    lon_diff = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
-    lat_diff = zk * (
+    x = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
+    y = zk * (
         array_ns.cos(lat_c) * array_ns.sin(lat)
         - array_ns.sin(lat_c) * array_ns.cos(lat) * array_ns.cos(lon - lon_c)
     )
-    return array_ns.column_stack((lon_diff, lat_diff)) * sphere_radius
+    return array_ns.column_stack((x, y)) * sphere_radius
 
 
 def compute_cell_distance_on_torus(
