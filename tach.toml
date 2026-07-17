@@ -21,11 +21,6 @@ forbid_circular_dependencies = true
 exclude = [
     # workspace member: tach resolves this import via source_roots, so the external pip dep appears unused
     "icon4py_tools",
-    # icon4py-atmosphere-amps (scaffold, Task 6) declares these ahead of the GT4Py spikes
-    # (Tasks 7-11) that will import them; no source file uses them yet. Remove once they do.
-    "icon4py_common",
-    "numpy",
-    "gt4py",
     "fprettify",
     "configargparse",
     "cupy",
