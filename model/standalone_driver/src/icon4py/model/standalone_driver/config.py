@@ -84,12 +84,11 @@ class DriverConfig:
     profiling_stats: ProfilingStats | None
     dtime: time.RelativeTime
     start_of_simulation: time.AbsoluteTime
-    start_of_timestepping: time.AbsoluteTime
+    start_of_timestepping: time.AbsoluteTime  # = start_of_simulation for an initial run; start_of_simulation < start_of_timestepping < end_of_simulation when restarting
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
-    # lprep_adv in fortran
-    do_prep_adv: bool = False
+    do_prep_adv: bool = False  # lprep_adv in fortran
     diffuse_before_time_loop: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
