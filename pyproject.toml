@@ -218,6 +218,16 @@ ignore_missing_imports = true
 # muphys graupel module can be checked consistently whether dace is installed.
 module = ["dace", "dace.*"]
 
+[[tool.mypy.overrides]]
+# GT4Py Field dim type variance: constructing graupel.Q with concrete-dimension
+# fields is rejected by mypy even though the program accepts them at runtime.
+# Single occurrence in this file; per-line ignore is unstable across environments
+# where dace is/isn't installed, so a module-level override is used instead.
+disable_error_code = ["arg-type"]
+module = [
+  "icon4py.bindings.muphys_wrapper"
+]
+
 # -- pytest --
 [tool.pytest]
 

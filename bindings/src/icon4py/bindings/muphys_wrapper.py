@@ -66,7 +66,7 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
             enable_dace_hooks=enable_dace_hooks,
         )
 
-    q = graupel.Q(qv, qc, qr, qs, qi, qg)  # type: ignore[arg-type]  # GT4Py Field dim type variance (_DimA/_AnyDim)
+    q = graupel.Q(qv, qc, qr, qs, qi, qg)
 
     # The precipitation fields (pr, ps, pi, pg, pre) are defined as 1D-fields with
     # horizontal domain, in the driver, because they represent precipitation at the
