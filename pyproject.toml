@@ -213,11 +213,10 @@ module = [
 ]
 
 [[tool.mypy.overrides]]
-# dace has no type stubs.
-disable_error_code = ["import-untyped"]
-module = [
-  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel_dace_hooks"
-]
+ignore_missing_imports = true
+# dace is an optional dependency with no type stubs. Treat it as Any so the
+# muphys graupel module can be checked consistently whether dace is installed.
+module = ["dace", "dace.*"]
 
 # -- pytest --
 [tool.pytest]
