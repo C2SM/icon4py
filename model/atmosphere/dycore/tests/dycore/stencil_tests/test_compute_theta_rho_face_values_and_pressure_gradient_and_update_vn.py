@@ -134,6 +134,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             "start_edge_lateral_boundary_level_7",
             "start_edge_nudging_level_2",
             "end_edge_nudging",
+            "end_edge_local",
             "end_edge_halo",
             "nflatlev",
             "nflat_gradp",
@@ -196,6 +197,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         start_edge_lateral_boundary_level_7: gtx.int32,
         start_edge_nudging_level_2: gtx.int32,
         end_edge_nudging: gtx.int32,
+        end_edge_local: gtx.int32,
         end_edge_halo: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
@@ -391,6 +393,15 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             horizontal_pressure_gradient + hydrostatic_correction * pg_exdist
         )
 
+        # The stencil only computes the pressure gradient on
+        # [start_edge_nudging_level_2, end_edge_local) and writes 0.0 outside; mask before
+        # next_vn so the reference reads the same masked field.
+        horizontal_pressure_gradient = np.where(
+            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+            horizontal_pressure_gradient,
+            0.0,
+        )
+
         next_vn = np.where(
             start_edge_nudging_level_2 <= horz_idx,
             current_vn
@@ -510,6 +521,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         )
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
+        end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
         end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
         nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         nflat_gradp = 34  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
@@ -557,6 +569,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=start_edge_nudging_level_2,
             end_edge_nudging=end_edge_nudging,
+            end_edge_local=end_edge_local,
             end_edge_halo=end_edge_halo,
             horizontal_start=0,
             horizontal_end=grid.num_edges,
