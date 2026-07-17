@@ -27,6 +27,15 @@ worktree root, as used by the documented run command) before each gtfn_cpu
 compile so first-call timings are genuine cold-compile numbers, not artifacts
 of a warm on-disk cache from a previous run/spike.
 
+WARNING: with the muphys-precedented recursion-limit raise below, nbins=40's
+gtfn_cpu compile SUCCEEDS but takes ~2579s (~43 minutes, measured) instead of
+crashing in ~13s. Running this script end-to-end via the documented command
+will therefore take on the order of 45-50 minutes total (dominated by that
+one compile). This is an intentional, verified-necessary trade: without the
+raised limit, nbins=40 crashes with RecursionError instead (see the task-8
+report for both numbers). There is no way to get nbins=40's real gtfn_cpu
+number without paying one or the other.
+
 Run: uv run --frozen python model/atmosphere/subgrid_scale_physics/amps/spikes/spike_b_collection_codegen.py
 """
 
@@ -38,6 +47,10 @@ from pathlib import Path
 
 import common
 import numpy as np
+
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import (
+    utils as muphys_driver_utils,
+)
 
 
 HEADER = """\
@@ -176,7 +189,22 @@ def run(nbins: int) -> bool:
             bound(*inputs, out=outs, offset_provider={})
 
         try:
-            first, steady = common.time_first_and_steady(call, n_steady=5)
+            # gt4py 1.1.11's ITIR transform pipeline (the `eve`-framework tree
+            # visitors, e.g. MergeLet) recurses per-node and can exceed
+            # Python's default recursion limit (1000) for large generated
+            # expression trees (see nbins=40's RecursionError, first
+            # observed and recorded without this wrapper). This mirrors an
+            # existing icon4py precedent: muphys's own drivers hit the same
+            # gt4py limitation and work around it identically --
+            # `icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.
+            # utils.recursion_limit` (a `sys.setrecursionlimit` context
+            # manager that restores the original limit on exit) wraps
+            # program compilation in `run_graupel_only.py` (limit `10**4`)
+            # and `run_full_muphys.py` (limit `10**5`); both carry the same
+            # `# TODO(havogt): make an option in gt4py?` note this mirrors.
+            # 10**5 matches the higher of the two precedents.
+            with muphys_driver_utils.recursion_limit(10**5):
+                first, steady = common.time_first_and_steady(call, n_steady=5)
         except Exception as exc:  # a backend/compiler failure is itself a valid spike datum
             ok = False
             print(f"RESULT collection nbins={nbins} backend={name} FAILED: {exc!r}")
