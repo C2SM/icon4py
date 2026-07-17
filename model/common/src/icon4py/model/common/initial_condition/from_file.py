@@ -99,6 +99,18 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
     return ", ".join(dates) if dates else "none"
 
 
+def _read_prognostic_state(
+    prognostic_state: prognostics.PrognosticState,
+    read_cell_k: Callable[[str], data_alloc.NDArray],
+    read_edge_k: Callable[[str], data_alloc.NDArray],
+):
+    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
+    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
+    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
+    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")
+    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
+
+
 def read_initial_condition_from_file(
     *,
     config: FromFileConfig,
@@ -119,11 +131,7 @@ def read_initial_condition_from_file(
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
     read_cell_k, read_edge_k = _define_field_readers(serializer, savepoint, grid, array_ns)
 
-    prognostic_state_now.rho.ndarray[:, :] = read_cell_k("rho_now")
-    prognostic_state_now.exner.ndarray[:, :] = read_cell_k("exner_now")
-    prognostic_state_now.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
-    prognostic_state_now.vn.ndarray[:, :] = read_edge_k("vn_now")
-    prognostic_state_now.w.ndarray[:, :] = read_cell_k("w_now")
+    _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
     if config.ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
@@ -187,11 +195,9 @@ def read_restart_from_file(
         ) from err
 
     read_cell_k, read_edge_k = _define_field_readers(serializer, nonhydro_savepoint, grid, array_ns)
-    prognostic_state_now.rho.ndarray[:, :] = read_cell_k("rho_now")
-    prognostic_state_now.exner.ndarray[:, :] = read_cell_k("exner_now")
-    prognostic_state_now.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
-    prognostic_state_now.vn.ndarray[:, :] = read_edge_k("vn_now")
-    prognostic_state_now.w.ndarray[:, :] = read_cell_k("w_now")
+
+    _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
+
     solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
         read_cell_k("exner_pr")
     )
