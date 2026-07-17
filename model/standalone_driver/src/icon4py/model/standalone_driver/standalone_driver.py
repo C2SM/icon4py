@@ -90,7 +90,6 @@ class Icon4pyDriver:
         )
         self.exchange = exchange
         self.global_reductions = global_reductions
-        # Lateral boundary and slow physics tendencies, prescribed for real data runs.
         self.tendencies = tendencies
 
         driver_utils.display_driver_setup_in_log_file(
