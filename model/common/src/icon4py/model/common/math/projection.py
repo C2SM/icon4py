@@ -26,7 +26,7 @@ def gnomonic_proj(
         lat: lattitude point to be projected
         sphere_radius: radius of the sphere
     Returns:
-        x, y: x and y coordinates of the projected point on the tangent plane
+        x and y coordinates of the projected point on the tangent plane
 
     Variables:
         zk: scale factor perpendicular to the radius from the center of the map

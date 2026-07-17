@@ -1200,7 +1200,7 @@ def compute_lsq_pseudoinv(
     let lsq_dim_c = c, lsq_dim_unk = k, where c is the number of neighboring cells for the least squares fit,
     and k is the number of unknowns we want to solve for (e.g. k=2 for a linear fit in 2D: f(x) = a + b*x)
 
-    lsq_matrix is a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of lsq_matrix.
+    lsq_matrix can be a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of lsq_matrix.
     let lsq_pseudoinv be the inverse matrix of lsq_matrix.
     lsq_matrix has dimensions (c, k), lsq_pseudoinv has (k, c), and lsq_weights_c has (c)
     singular value decomposition of the matrix lsq_matrix gives u_matrix (c, k), s_matrix (k), v_t_matrix (k, k)

@@ -27,6 +27,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_geofac_grg,
     compute_geofac_n2s,
     compute_geofac_rot,
+    compute_lsq_coeffs,
     compute_mass_conserving_bilinear_cell_average_weight,
     compute_mass_conserving_bilinear_cell_average_weight_torus,
     compute_pos_on_tplane_e_x_y,
@@ -441,3 +442,54 @@ def test_compute_pos_on_tplane_e(
             )
     assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)
     assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-8, rtol=1e-9)
+
+
+@pytest.mark.level("unit")
+@pytest.mark.datatest
+def test_compute_lsq_coeffs(
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    experiment: definitions.Experiment,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
+    c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
+    cell_owner_mask = grid_savepoint.c_owner_mask().ndarray
+    cell_center_x = grid_savepoint.cell_center_cart_x().ndarray
+    cell_center_y = grid_savepoint.cell_center_cart_y().ndarray
+    cell_lat = grid_savepoint.cell_center_lat().ndarray
+    cell_lon = grid_savepoint.cell_center_lon().ndarray
+    domain_length = experiment.grid.params.domain_length
+    domain_height = experiment.grid.params.domain_height
+    start_idx = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    min_rlcell_int = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+    lsq_pseudoinv = compute_lsq_coeffs(
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        cell_lat=cell_lat,
+        cell_lon=cell_lon,
+        c2e2c=c2e2c,
+        cell_owner_mask=cell_owner_mask,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        grid_sphere_radius=constants.EARTH_RADIUS,
+        lsq_dim_unk=experiment.config.interpolation.lsq_dim_unk,
+        lsq_dim_c=experiment.config.interpolation.lsq_dim_c,
+        lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
+        start_idx=start_idx,
+        min_rlcell_int=min_rlcell_int,
+        geometry_type=icon_grid.grid_params.geometry_type,
+        exchange=decomposition.single_node_exchange,
+    )
+
+    assert test_helpers.dallclose(
+        data_alloc.as_numpy(lsq_pseudoinv[:, 0, :]),
+        interpolation_savepoint.lsq_pseudoinv_1().asnumpy(),
+        atol=1e-15,
+    )
+    assert test_helpers.dallclose(
+        data_alloc.as_numpy(lsq_pseudoinv[:, 1, :]),
+        interpolation_savepoint.lsq_pseudoinv_2().asnumpy(),
+        atol=1e-15,
+    )
