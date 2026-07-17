@@ -360,7 +360,7 @@ class ExchangeRuntime(Protocol):
         ex_req = self.start(
             dim,
             *fields,
-            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
+            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]  # BLOCK is a blocking sentinel
         )
         ex_req.finish(stream)
 
@@ -403,7 +403,7 @@ class ExchangeRuntime(Protocol):
         ex_req = self.start(
             dim,
             *fields,
-            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
+            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]  # BLOCK is a blocking sentinel
         )
         if not full_exchange:
             return ex_req

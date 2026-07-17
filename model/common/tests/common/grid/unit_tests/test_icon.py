@@ -253,7 +253,7 @@ def test_grid_params(
         case icon.GeometryType.ICOSAHEDRON:
             params = icon.GridParams(
                 icon.IcosahedronParams(
-                    subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),  # type: ignore[arg-type]
+                    subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),  # type: ignore[arg-type]  # grid_root and grid_level are int for icosahedron grids
                 ),
             )
         case icon.GeometryType.TORUS:
@@ -267,7 +267,7 @@ def test_grid_params(
     assert geometry_type == params.geometry_type
     match geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
-            assert params.subdivision == icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
+            assert params.subdivision == icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]  # grid_root and grid_level are int for icosahedron grids
             assert pytest.approx(params.radius) == constants.EARTH_RADIUS
             assert params.domain_length is None
             assert params.domain_height is None

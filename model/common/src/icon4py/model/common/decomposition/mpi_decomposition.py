@@ -98,15 +98,15 @@ class MPICommProcessProperties(decomp_defs.ProcessProperties):
     comm: mpi4py.MPI.Comm
 
     @functools.cached_property
-    def rank(self) -> int:  # type: ignore [override]  # Protocol attributes are fields; implementation uses cached_property
+    def rank(self) -> int:  # type: ignore[override]  # Protocol attributes are fields; implementation uses cached_property
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self) -> str:  # type: ignore [override]  # Protocol attributes are fields; implementation uses cached_property
+    def comm_name(self) -> str:  # type: ignore[override]  # Protocol attributes are fields; implementation uses cached_property
         return self.comm.Get_name()
 
     @functools.cached_property
-    def comm_size(self) -> int:  # type: ignore [override]  # Protocol attributes are fields; implementation uses cached_property
+    def comm_size(self) -> int:  # type: ignore[override]  # Protocol attributes are fields; implementation uses cached_property
         return self.comm.Get_size()
 
 

@@ -76,8 +76,8 @@ def assert_dallclose(
         print(f"{color}{err_msg} max diff {max_diff}\033[0m")
     else:
         np_testing.assert_allclose(
-            actual,  # type: ignore[arg-type]
-            desired,  # type: ignore[arg-type]
+            actual,  # type: ignore[arg-type]  # GT4Py field compared as ndarray
+            desired,  # type: ignore[arg-type]  # GT4Py field compared as ndarray
             rtol=rtol,
             atol=atol,
             equal_nan=equal_nan,
@@ -95,9 +95,9 @@ def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
 
 
 def get_fixture_value(name: str, item: pytest.Item) -> Any:
-    if name in item.fixturenames:  # type: ignore[attr-defined]
+    if name in item.fixturenames:  # type: ignore[attr-defined]  # pytest internal attribute
         # Get the fixture value using the item's fixture manager
-        return item._request.getfixturevalue(name)  # type: ignore[attr-defined]
+        return item._request.getfixturevalue(name)  # type: ignore[attr-defined]  # pytest internal attribute
 
     return None
 
