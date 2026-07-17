@@ -26,10 +26,9 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
-from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
 )
@@ -60,7 +59,7 @@ class DriverStates(NamedTuple):
     """
 
     prep_advection_prognostic: dycore_states.PrepAdvection | None
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro | None
+    solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState | None
     prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState | None
@@ -89,24 +88,28 @@ class ModelTimeVariables:
 
     def _init_from_config(self, config: driver_config.DriverConfig) -> None:
         self.simulation_start_datetime = config.start_of_simulation
+        # The time loop starts at the beginning of the simulation, unless restarting.
+        self.simulation_current_datetime = config.start_of_timestepping
         match config.end_of_simulation:
             case time.NumTimeSteps() as n:
                 self.n_time_steps = n
-                self.simulation_current_datetime = config.start_of_simulation
-                self.simulation_end_datetime = config.start_of_simulation + n * config.dtime
+                self.simulation_end_datetime = config.start_of_timestepping + n * config.dtime
             case time.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_current_datetime = config.start_of_simulation
-                self.simulation_end_datetime = config.start_of_simulation + relative
+                self.simulation_end_datetime = config.start_of_timestepping + relative
             case time.AbsoluteTime() as absolute:
-                self.n_time_steps = int((absolute - config.start_of_simulation) / config.dtime)
-                self.simulation_current_datetime = config.start_of_simulation
+                self.n_time_steps = int((absolute - config.start_of_timestepping) / config.dtime)
                 self.simulation_end_datetime = absolute
         self.dtime = config.dtime
-        self.elapsed_time_in_seconds = ta.wpfloat("0.0")
+        # measured from the beginning of the simulation, also when restarting (just for consistency with fortran)
+        self.elapsed_time_in_seconds = ta.wpfloat(
+            (config.start_of_timestepping - config.start_of_simulation).total_seconds()
+        )
         self.ndyn_substeps_var = config.ndyn_substeps
         self.max_ndyn_substeps = config.ndyn_substeps + 7
-        self.is_first_step_in_simulation = True
+        self.is_first_step_in_simulation = (
+            config.start_of_timestepping == config.start_of_simulation
+        )
         self.cfl_watch_mode = False
 
         if self.n_time_steps <= 0:
@@ -119,6 +122,17 @@ class ModelTimeVariables:
     @property
     def substep_timestep(self) -> ta.wpfloat:
         return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
+
+    @property
+    def elapsed_time_at_step_midpoint_in_seconds(self) -> ta.wpfloat:
+        """
+        Elapsed time at the middle of the current time step.
+
+        elapsed_time_global = (jstep - 0.5) * dtime in mo_nh_stepping.f90, with a
+        one-based jstep. 'advance_simulation_datetime' is called before the step is
+        integrated, so 'elapsed_time_in_seconds' is already at the end of it.
+        """
+        return ta.wpfloat(self.elapsed_time_in_seconds - 0.5 * self.dtime_in_seconds)
 
     def advance_simulation_datetime(self) -> None:
         self.simulation_current_datetime += self.dtime
@@ -212,6 +226,7 @@ def assemble_driver_states(
     prognostic_state_now: prognostics.PrognosticState,
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
+    solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -251,18 +266,6 @@ def assemble_driver_states(
     )
     exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
-    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
-        field_a=prognostic_states.current.exner,
-        field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
-        output_field=perturbed_exner,
-        horizontal_start=0,
-        horizontal_end=grid.num_cells,
-        vertical_start=0,
-        vertical_end=grid.num_levels,
-        offset_provider={},
-    )
-
     diffusion_enabled = experiment_config.diffusion is not None
     solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
     tracer_advection_enabled = experiment_config.tracer_advection is not None
@@ -270,15 +273,6 @@ def assemble_driver_states(
     diffusion_diagnostic_state = (
         diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
         if diffusion_enabled
-        else None
-    )
-    solve_nonhydro_diagnostic_state = (
-        dycore_states.initialize_solve_nonhydro_diagnostic_state(
-            perturbed_exner_at_cells_on_model_levels=perturbed_exner,
-            grid=grid,
-            allocator=allocator,
-        )
-        if solve_nonhydro_enabled
         else None
     )
     prep_adv = (

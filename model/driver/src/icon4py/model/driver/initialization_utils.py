@@ -21,6 +21,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -85,7 +86,7 @@ def model_initialization_serialbox(
     rank: int = 0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
-    dycore_states.DiagnosticStateNonHydro,
+    nonhydro_states.DiagnosticStateNonHydro,
     dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,
@@ -123,7 +124,7 @@ def model_initialization_serialbox(
         dwdx=diffusion_init_savepoint.dwdx(),
         dwdy=diffusion_init_savepoint.dwdy(),
     )
-    solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+    solve_nonhydro_diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=solve_nonhydro_init_savepoint.exner_pr(),
@@ -232,7 +233,7 @@ def read_initial_state(
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
-    dycore_states.DiagnosticStateNonHydro,
+    nonhydro_states.DiagnosticStateNonHydro,
     dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,

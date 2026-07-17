@@ -25,6 +25,7 @@ from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import device_utils
@@ -115,7 +116,7 @@ class TimeLoop:
         self,
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
@@ -203,7 +204,7 @@ class TimeLoop:
         self,
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
@@ -232,7 +233,7 @@ class TimeLoop:
 
     def _update_time_levels_for_velocity_tendencies(
         self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
     ) -> None:
@@ -272,7 +273,7 @@ class TimeLoop:
     def _do_dyn_substepping(
         self,
         *,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
@@ -324,7 +325,7 @@ class DriverStates(NamedTuple):
     """
 
     prep_advection_prognostic: dycore_states.PrepAdvection
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
+    solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState

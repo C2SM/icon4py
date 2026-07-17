@@ -48,13 +48,25 @@ _log = logging.getLogger(__file__)
             test_defs.Experiments.JW,
             time.NumTimeSteps(1),
             marks=[pytest.mark.level("integration")],
-            id="integration",
+            id="integration-jw",
+        ),
+        pytest.param(
+            test_defs.Experiments.GAUSS3D,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-gauss3d",
+        ),
+        pytest.param(
+            test_defs.Experiments.MCH_CH_R04B09,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-mch-ch-r04b09",
         ),
         pytest.param(
             test_defs.Experiments.JW,
             time.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
-            id="validation",
+            id="validation-jw",
         ),
     ],
 )
