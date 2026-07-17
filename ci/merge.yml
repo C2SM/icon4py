@@ -21,15 +21,15 @@ variables:
   GRIDS: "simple:icon_regional"
   TOOLS_SUBSETS: "datatest:unittest"
 
-.merge_queue_only:
+.merge_queue_only: &merge_queue_only
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue\//
+    - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
       when: always
     - when: never
 
-.pr_only:
+.pr_only: &pr_only
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue\//
+    - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
       when: never
@@ -37,22 +37,28 @@ variables:
 
 merge_check:
   stage: .pre
-  extends: [.container-runner-lightweight-zen2, .pr_only]
+  extends: [.container-runner-lightweight-zen2]
+  rules: *pr_only
   image: alpine:latest
   script:
     - echo "Skipping full CSCS merge tests on PR; will run in merge queue"
 
 build_baseimage_aarch64:
-  extends: [.build_baseimage_aarch64, .merge_queue_only]
+  extends: [.build_baseimage_aarch64]
+  rules: *merge_queue_only
 
 build_venv_aarch64:
-  extends: [.build_venv_aarch64, .merge_queue_only]
+  extends: [.build_venv_aarch64]
+  rules: *merge_queue_only
 
 build_image_aarch64:
-  extends: [.build_image_aarch64, .merge_queue_only]
+  extends: [.build_image_aarch64]
+  rules: *merge_queue_only
 
 generate_test_child_pipeline:
-  extends: [.generate_test_child_pipeline, .merge_queue_only]
+  extends: [.generate_test_child_pipeline]
+  rules: *merge_queue_only
 
 trigger_test_child_pipeline:
-  extends: [.trigger_test_child_pipeline, .merge_queue_only]
+  extends: [.trigger_test_child_pipeline]
+  rules: *merge_queue_only
