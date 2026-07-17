@@ -197,8 +197,8 @@ variables:
         # DaCe uses for nvcc invocations). Without this, DaCe would use its
         # own default args (which GT4Py already strips --use_fast_math from,
         # but this ensures the FMA/precision flags are explicit).
-        CUDAFLAGS: "-O3 -Xcompiler -march=native -Xcompiler -Wno-unused-parameter -fmad=false -prec-div=true -prec-sqrt=true"
-        NVCC_APPEND_FLAGS: "--fmad=false -prec-div=true -prec-sqrt=true"
+        CUDAFLAGS: "-O3 -Xcompiler -march=native -Xcompiler -Wno-unused-parameter -fmad=false -prec-div=true -prec-sqrt=true --ptxas-options=--opt-level=0"
+        NVCC_APPEND_FLAGS: "--fmad=false -prec-div=true -prec-sqrt=true --ptxas-options=--opt-level=0"
         CUPY_ACCELERATORS: ""
         CUBLAS_WORKSPACE_CONFIG: ":4096:8"
         # Override the .test_template_aarch64 default ("persistent") so the
