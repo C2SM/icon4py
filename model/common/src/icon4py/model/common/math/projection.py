@@ -13,9 +13,10 @@ def gnomonic_proj(
     lat_c: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     lat: data_alloc.NDArray,
+    sphere_radius: float,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
-    Compute gnomonic projection.
+    Compute gnomonic projection onto a tangent plane with origin at (lon_c, lat_c).
 
     gnomonic_proj
     Args:
@@ -23,8 +24,9 @@ def gnomonic_proj(
         lat_c: lattitude center on tangent plane
         lon: longitude point to be projected
         lat: lattitude point to be projected
+        sphere_radius: radius of the sphere
     Returns:
-        x, y: coordinates of projected point
+        x, y: x and y coordinates of the projected point on the tangent plane
 
     Variables:
         zk: scale factor perpendicular to the radius from the center of the map
@@ -40,27 +42,34 @@ def gnomonic_proj(
     ) * array_ns.cos(lon - lon_c)
     zk = 1.0 / cosc
 
-    x = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
-    y = zk * (
+    lon_diff = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
+    lat_diff = zk * (
         array_ns.cos(lat_c) * array_ns.sin(lat)
         - array_ns.sin(lat_c) * array_ns.cos(lat) * array_ns.cos(lon - lon_c)
     )
+    return array_ns.column_stack((lon_diff, lat_diff)) * sphere_radius
 
-    return x, y
 
-
-def diff_on_edges_torus_numpy(
+def compute_cell_distance_on_torus(
     *,
-    cc_cv_x: data_alloc.NDArray,
-    cc_cv_y: data_alloc.NDArray,
-    cc_cell_x: data_alloc.NDArray,
-    cc_cell_y: data_alloc.NDArray,
+    source_cell_x: data_alloc.NDArray,
+    source_cell_y: data_alloc.NDArray,
+    target_cell_x: data_alloc.NDArray,
+    target_cell_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    array_ns = data_alloc.array_namespace(cc_cv_x)
-    x_diff = cc_cell_x - cc_cv_x
-    y_diff = cc_cell_y - cc_cv_y
-    x_diff = array_ns.minimum(x_diff, domain_length - x_diff)
-    y_diff = array_ns.minimum(y_diff, domain_height - y_diff)
-    return x_diff, y_diff
+    array_ns = data_alloc.array_namespace(source_cell_x)
+    x_diff = target_cell_x - source_cell_x
+    y_diff = target_cell_y - source_cell_y
+    x_diff = array_ns.where(
+        domain_length - array_ns.abs(x_diff) > array_ns.abs(x_diff),
+        x_diff,
+        x_diff - array_ns.sign(x_diff) * domain_length,
+    )
+    y_diff = array_ns.where(
+        domain_height - array_ns.abs(y_diff) > array_ns.abs(y_diff),
+        y_diff,
+        y_diff - array_ns.sign(y_diff) * domain_height,
+    )
+    return array_ns.column_stack((x_diff, y_diff))

@@ -1086,48 +1086,44 @@ def compute_pos_on_tplane_e_x_y(
     llb = horizontal_start
     pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
-    xyloc_plane_n1 = array_ns.zeros([2, e2c.shape[0]])
-    xyloc_plane_n2 = array_ns.zeros([2, e2c.shape[0]])
-    xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = projection.gnomonic_proj(
-        edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]]
+    xyloc_plane_n1 = array_ns.zeros([e2c.shape[0], 2])
+    xyloc_plane_n2 = array_ns.zeros([e2c.shape[0], 2])
+    xyloc_plane_n1[llb:, :] = projection.gnomonic_proj(
+        edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]], grid_sphere_radius
     )
-    xyloc_plane_n2[0, llb:], xyloc_plane_n2[1, llb:] = projection.gnomonic_proj(
-        edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
+    xyloc_plane_n2[llb:, :] = projection.gnomonic_proj(
+        edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]], grid_sphere_radius
     )
 
     pos_on_tplane_e_x[llb:, 0] = array_ns.where(
         owner_mask[llb:],
-        grid_sphere_radius
-        * (
-            xyloc_plane_n1[0, llb:] * primal_normal_v1[llb:]
-            + xyloc_plane_n1[1, llb:] * primal_normal_v2[llb:]
+        (
+            xyloc_plane_n1[llb:, 0] * primal_normal_v1[llb:]
+            + xyloc_plane_n1[llb:, 1] * primal_normal_v2[llb:]
         ),
         pos_on_tplane_e_x[llb:, 0],
     )
     pos_on_tplane_e_y[llb:, 0] = array_ns.where(
         owner_mask[llb:],
-        grid_sphere_radius
-        * (
-            xyloc_plane_n1[0, llb:] * dual_normal_v1[llb:]
-            + xyloc_plane_n1[1, llb:] * dual_normal_v2[llb:]
+        (
+            xyloc_plane_n1[llb:, 0] * dual_normal_v1[llb:]
+            + xyloc_plane_n1[llb:, 1] * dual_normal_v2[llb:]
         ),
         pos_on_tplane_e_y[llb:, 0],
     )
     pos_on_tplane_e_x[llb:, 1] = array_ns.where(
         owner_mask[llb:],
-        grid_sphere_radius
-        * (
-            xyloc_plane_n2[0, llb:] * primal_normal_v1[llb:]
-            + xyloc_plane_n2[1, llb:] * primal_normal_v2[llb:]
+        (
+            xyloc_plane_n2[llb:, 0] * primal_normal_v1[llb:]
+            + xyloc_plane_n2[llb:, 1] * primal_normal_v2[llb:]
         ),
         pos_on_tplane_e_x[llb:, 1],
     )
     pos_on_tplane_e_y[llb:, 1] = array_ns.where(
         owner_mask[llb:],
-        grid_sphere_radius
-        * (
-            xyloc_plane_n2[0, llb:] * dual_normal_v1[llb:]
-            + xyloc_plane_n2[1, llb:] * dual_normal_v2[llb:]
+        (
+            xyloc_plane_n2[llb:, 0] * dual_normal_v1[llb:]
+            + xyloc_plane_n2[llb:, 1] * dual_normal_v2[llb:]
         ),
         pos_on_tplane_e_y[llb:, 1],
     )
@@ -1183,7 +1179,7 @@ def compute_pos_on_tplane_e_x_y_torus(
 def compute_lsq_pseudoinv(
     *,
     cell_owner_mask: data_alloc.NDArray,
-    z_lsq_mat_c: data_alloc.NDArray,
+    lsq_matrix: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
@@ -1196,10 +1192,10 @@ def compute_lsq_pseudoinv(
     let lsq_dim_c = c, lsq_dim_unk = k, where c is the number of neighboring cells for the least squares fit,
     and k is the number of unknowns we want to solve for (e.g. k=2 for a linear fit in 2D: f(x) = a + b*x)
 
-    z_lsq_mat_c is a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of z_lsq_mat_c.
-    let lsq_pseudoinv be the inverse matrix of z_lsq_mat_c.
-    z_lsq_mat_c has dimensions (c, k), lsq_pseudoinv has (k, c), and lsq_weights_c has (c)
-    singular value decomposition of the matrix z_lsq_mat_c gives u_matrix (c, k), s_matrix (k), v_t_matrix (k, k)
+    lsq_matrix is a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of lsq_matrix.
+    let lsq_pseudoinv be the inverse matrix of lsq_matrix.
+    lsq_matrix has dimensions (c, k), lsq_pseudoinv has (k, c), and lsq_weights_c has (c)
+    singular value decomposition of the matrix lsq_matrix gives u_matrix (c, k), s_matrix (k), v_t_matrix (k, k)
     lsq_pseudoinv = v_t_matrix^T u_matrix^T / s * lsq_weights_c
     """
     array_ns = data_alloc.array_namespace(cell_owner_mask)
@@ -1209,7 +1205,7 @@ def compute_lsq_pseudoinv(
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
     lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_unk, lsq_dim_c), dtype=ta.wpfloat)
-    u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(z_lsq_mat_c[valid_cell_mask, :, :])
+    u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(lsq_matrix[valid_cell_mask, :, :])
     v_t_over_s = (
         v_t_matrix[:, :lsq_dim_unk, :lsq_dim_unk] / s_matrix[:, :lsq_dim_unk, array_ns.newaxis]
     )  # (n_valid_cells, lsq_dim_unk, lsq_dim_unk)
@@ -1224,21 +1220,21 @@ def compute_lsq_pseudoinv(
 
 
 def compute_lsq_weights_c(
-    z_dist_g: data_alloc.NDArray,
+    neighbor_center_dist: data_alloc.NDArray,
     lsq_wgt_exp: int,
 ) -> data_alloc.NDArray:
-    array_ns = data_alloc.array_namespace(z_dist_g)
-    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g ** 2, axis=2))
+    array_ns = data_alloc.array_namespace(neighbor_center_dist)
+    z_norm = array_ns.sqrt(array_ns.sum(neighbor_center_dist**2, axis=2))
     lsq_weights_c = 1.0 / (z_norm**lsq_wgt_exp)
     lsq_weights_c = lsq_weights_c / array_ns.max(lsq_weights_c, axis=1)[:, array_ns.newaxis]
     return lsq_weights_c
 
 
-def compute_z_lsq_mat_c(
+def compute_lsq_matrix(
     *,
     cell_owner_mask: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
-    z_dist_g: data_alloc.NDArray,
+    neighbor_center_dist: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
     lsq_dim_unk: int,
@@ -1248,19 +1244,19 @@ def compute_z_lsq_mat_c(
     cell_size = cell_owner_mask.shape[0]
     cell_sequence = array_ns.arange(cell_size)
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
+    lsq_matrix = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
 
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
-    z_lsq_mat_c[valid_cell_mask, :min_lsq_bound, :min_lsq_bound] = 1.0
+    lsq_matrix[valid_cell_mask, :min_lsq_bound, :min_lsq_bound] = 1.0
     valid_cell_mask_with_halo = (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
 
-    z_lsq_mat_c[valid_cell_mask_with_halo, :lsq_dim_c, :lsq_dim_unk] = (
+    lsq_matrix[valid_cell_mask_with_halo, :lsq_dim_c, :lsq_dim_unk] = (
         lsq_weights_c[valid_cell_mask_with_halo, :lsq_dim_c, array_ns.newaxis]
-        * z_dist_g[valid_cell_mask_with_halo, :lsq_dim_c, :]
+        * neighbor_center_dist[valid_cell_mask_with_halo, :lsq_dim_c, :]
     )
-    return z_lsq_mat_c
+    return lsq_matrix
 
 
 def compute_lsq_coeffs(
@@ -1283,39 +1279,35 @@ def compute_lsq_coeffs(
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(cell_center_x)
-    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
+    neighbor_center_dist = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
     match icon_grid.GeometryType(geometry_type):
         case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_c):
-                z_dist_g[:, js, :] = array_ns.asarray(
-                    projection.gnomonic_proj(
+                neighbor_center_dist[:, js, :] = projection.gnomonic_proj(
                         cell_lon,
                         cell_lat,
                         cell_lon[c2e2c[:, js]],
                         cell_lat[c2e2c[:, js]],
+                        grid_sphere_radius,
                     )
-                ).T
-            z_dist_g *= grid_sphere_radius
 
         case icon_grid.GeometryType.TORUS:
             for js in range(lsq_dim_c):
-                z_dist_g[:, js, :] = array_ns.asarray(
-                    projection.diff_on_edges_torus_numpy(
-                        cc_cv_x=cell_center_x,
-                        cc_cv_y=cell_center_y,
-                        cc_cell_x=cell_center_x[c2e2c[:, js]],
-                        cc_cell_y=cell_center_y[c2e2c[:, js]],
+                neighbor_center_dist[:, js, :] = projection.compute_cell_distance_on_torus(
+                        source_cell_x=cell_center_x,
+                        source_cell_y=cell_center_y,
+                        target_cell_x=cell_center_x[c2e2c[:, js]],
+                        target_cell_y=cell_center_y[c2e2c[:, js]],
                         domain_length=domain_length,
                         domain_height=domain_height,
                     )
-                )
 
-    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
+    lsq_weights_c = compute_lsq_weights_c(neighbor_center_dist, lsq_wgt_exp)
 
-    z_lsq_mat_c = compute_z_lsq_mat_c(
+    lsq_matrix = compute_lsq_matrix(
         cell_owner_mask=cell_owner_mask,
         lsq_weights_c=lsq_weights_c,
-        z_dist_g=z_dist_g,
+        neighbor_center_dist=neighbor_center_dist,
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
         lsq_dim_unk=lsq_dim_unk,
@@ -1326,7 +1318,7 @@ def compute_lsq_coeffs(
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask=cell_owner_mask,
-        z_lsq_mat_c=z_lsq_mat_c,
+        lsq_matrix=lsq_matrix,
         lsq_weights_c=lsq_weights_c,
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
