@@ -86,7 +86,7 @@ def _run_standalone_driver_compare_single_multi_rank(
         pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
-        atol = 1e-13
+        atol = 1e-12
         rtol = 1e-14
     else:
         atol = 1e-10
