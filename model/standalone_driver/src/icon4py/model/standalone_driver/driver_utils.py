@@ -132,9 +132,7 @@ def create_grid_manager(
     )
     grid_manager(
         allocator=allocator,
-        # the stencils dereference the neighbor tables over the full domain, unguarded:
-        # keeping the skip values reads out of bounds (see _replace_skip_values)
-        keep_skip_values=False,
+        keep_skip_values=True,
         process_props=process_props,
         decomposer=decomposer,
     )
