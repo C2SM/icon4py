@@ -384,12 +384,17 @@ class TestThetaIlClosure:
         sets; here they are driven with numerically-consistent equivalents
         (p0 = p00 converted Pa<->CGS via the exact 1 g/(cm s^2) = 0.1 Pa
         factor; cp, r as the exact CGS->MKS conversions of C_pa, R_d; l_e,
-        l_s already match exactly between the two constant sets) and with
-        pt == p0 (so the Exner/pressure term is exactly 1.0 on both sides),
-        isolating this as a closed-form-inversion test of the shared closure
-        formula rather than a test of the two subroutines' independent,
-        deliberately-different literal constants (see F1 §5 note quoted in
-        thermo.py; see task-2 report for the full derivation)."""
+        l_s already match exactly between the two constant sets).
+
+        NOTE on what this proves and what it doesn't: with pt == p0 the
+        Exner ratio (pt/p0)**(r/cp) is exactly 1.0 on both sides, so this
+        case validates FORMULA TRANSCRIPTION only (the heat/(cp*max(T,253))
+        closure algebra) -- it says nothing about p0's magnitude, since any
+        p0 used consistently forward and backward would round-trip
+        identically here. See test_..._pressure_ratio_exercised below for a
+        pt != p0 case that genuinely exercises the Exner term (and would
+        catch a bug where pt/P were silently ignored, which this degenerate
+        case cannot)."""
         t_known = 260.0
         qr, qi = 0.002, 0.001
         p0_pa = 100000.0  # == AmpsConst.p00 (1.0e6 CGS) converted to Pa exactly
@@ -410,7 +415,7 @@ class TestThetaIlClosure:
 
     def test_cal_thetail_diag_t_round_trip_linear_branch(self):
         """Same construction, but T < 253 K so diag_t takes the linear
-        branch."""
+        branch. Same pt == p0 caveat as the quadratic-branch case above."""
         t_known = 240.0
         qr, qi = 0.0005, 0.0002
         p0_pa = 100000.0
@@ -423,6 +428,37 @@ class TestThetaIlClosure:
             qr, qi, p0_pa, t_known, p0=p0_pa, cp=cp_mks, r=r_mks, l_e=l_e_mks, l_s=l_s_mks
         )
         p_cgs = float(AmpsConst.p00)
+        t_recovered, ierror = thermo.diag_t(thetail, p_cgs, qr, qi)
+
+        assert t_recovered == pytest.approx(t_known, rel=1e-9)
+        assert ierror == 0
+
+    def test_cal_thetail_diag_t_round_trip_pressure_ratio_exercised(self):
+        """pt != p0 (pt=8.5e4 Pa vs p0=1.0e5 Pa default), so the Exner ratio
+        (pt/p0)**(r/cp) is a genuine non-1.0 factor (~0.955) on both the
+        cal_thetail and diag_t sides. Algebraically the ratio still cancels
+        exactly for ANY p0 used consistently (theta = T*(p0/pt)**(r/cp),
+        then til = thetail*(pt/p0)**(r/cp) recombines to T/(1+heat/(cp*max))
+        regardless of p0's value) -- so, like the pt==p0 cases above, this
+        still doesn't validate p0's *magnitude* against Fortran output. What
+        it adds: it exercises the pressure argument non-trivially, so it
+        would catch a bug where cal_thetail/diag_t silently dropped pt/P
+        (treated the Exner term as always 1.0), which the pt==p0 cases
+        cannot detect since they're degenerate (ratio == 1.0) by
+        construction either way."""
+        t_known = 260.0
+        qr, qi = 0.002, 0.001
+        pt_pa = 8.5e4  # != CAL_THETAIL_P0_PA (1.0e5)
+        cp_mks = float(AmpsConst.C_pa) * 1.0e-4
+        r_mks = float(AmpsConst.R_d) * 1.0e-4
+        l_e_mks = float(AmpsConst.L_e) * 1.0e-4
+        l_s_mks = float(AmpsConst.L_s) * 1.0e-4
+
+        thetail = thermo.cal_thetail(
+            qr, qi, pt_pa, t_known, cp=cp_mks, r=r_mks, l_e=l_e_mks, l_s=l_s_mks
+        )
+
+        p_cgs = pt_pa * 10.0  # Pa -> CGS pressure (g/s^2/cm), consistent with pt_pa
         t_recovered, ierror = thermo.diag_t(thetail, p_cgs, qr, qi)
 
         assert t_recovered == pytest.approx(t_known, rel=1e-9)

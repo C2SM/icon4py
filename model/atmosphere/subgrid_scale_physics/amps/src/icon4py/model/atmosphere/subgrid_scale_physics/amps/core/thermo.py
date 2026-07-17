@@ -189,7 +189,9 @@ def t_from_esat_lk(
 
         passes = (
             range(max(1, i_guess - 5), min(cap, i_guess + 5) + 1),
-            range(1, i_guess - 4),
+            # Fortran `do k=1,I-4` is inclusive of I-4; range()'s stop is
+            # exclusive, so the upper bound is i_guess-3, not i_guess-4.
+            range(1, i_guess - 3),
             range(i_guess + 5, cap + 1),
         )
         for window in passes:
@@ -389,16 +391,22 @@ def diag_t(
     return t_out, ierror1
 
 
-# F1 §5b's local Fortran PARAMETER values for cal_thetail (MKS). `p0` is
-# deliberately absent from these defaults: F1's cal_thetail/cal_til
-# reference a bare `p0` via implicit host-module association that is never
-# declared/passed in the quoted subroutines (mod_amps_lib.F90:2217-2257) --
-# a genuine fact-file gap (see task-2 report). cal_thetail/cal_til below
-# therefore require `p0` as an explicit keyword argument rather than
-# guessing its value; `cp`, `r`, `l_e`, `l_s` DO have F1-quoted verbatim
-# defaults and are exposed as overridable keyword arguments purely so a
-# caller can drive them with CGS-consistent equivalents (see
+# F1 §5b's local Fortran PARAMETER values for cal_thetail (MKS). `p0`
+# (reference pressure, Pa) is not itself declared/passed in the quoted
+# cal_thetail/cal_til subroutines (mod_amps_lib.F90:2217-2257) -- it would
+# come from implicit Fortran host-module association -- but IS pinned by a
+# sibling fact file: docs/superpowers/facts/m1/state-packing-si-cgs.md §3.4
+# quotes AMPS' own moistthermo2 using the *same* Exner-function shape with
+# the reference pressure hardcoded as the literal 1.e5 (Pa):
+# `pi=(pi0(k)+pb(k))/cpd; ptot(k)=pi**cpr*1.e5_RP; t(k)=thp(k)*pi`
+# (mod_amps_utility.F90:5530-5532); corroborated independently by SCALE's
+# own reference pressure constant, CONST_PRE00 = 100000.0 (Pa). `p0`
+# therefore defaults to 1.0e5 below (CAL_THETAIL_P0_PA) rather than being a
+# required keyword argument. `cp`, `r`, `l_e`, `l_s` DO have F1-quoted
+# verbatim defaults and are exposed as overridable keyword arguments purely
+# so a caller can drive them with CGS-consistent equivalents (see
 # test_cal_thetail_diag_t_round_trip_* in test_thermo.py).
+CAL_THETAIL_P0_PA = 1.0e5  # Pa; state-packing-si-cgs.md §3.4 + SCALE CONST_PRE00
 CAL_THETAIL_L_E_MKS = 2.5e6  # J/kg
 CAL_THETAIL_L_S_MKS = 2.8337e6  # J/kg
 CAL_THETAIL_RA_MKS = 287.0  # J/K/kg
@@ -411,14 +419,14 @@ def cal_thetail(
     pt: npt.ArrayLike,
     t: npt.ArrayLike,
     *,
-    p0: float,
+    p0: float = CAL_THETAIL_P0_PA,
     cp: float = CAL_THETAIL_CP_MKS,
     r: float = CAL_THETAIL_RA_MKS,
     l_e: float = CAL_THETAIL_L_E_MKS,
     l_s: float = CAL_THETAIL_L_S_MKS,
 ) -> np.ndarray:
     """theta_il parcel-model closure, verbatim from cal_thetail (F1 §5b,
-    mod_amps_lib.F90:2217-2257). See the `p0` note above CAL_THETAIL_L_E_MKS.
+    mod_amps_lib.F90:2217-2257). See the `p0` note above CAL_THETAIL_P0_PA.
     """
     qr_arr = np.asarray(qr, dtype=np.float64)
     qi_arr = np.asarray(qi, dtype=np.float64)
@@ -434,13 +442,13 @@ def cal_til(
     thetail: npt.ArrayLike,
     pt: npt.ArrayLike,
     *,
-    p0: float,
+    p0: float = CAL_THETAIL_P0_PA,
     cp: float = CAL_THETAIL_CP_MKS,
     r: float = CAL_THETAIL_RA_MKS,
 ) -> np.ndarray:
     """theta_il -> T_il (Exner-function) conversion, verbatim from cal_til
     (F1 §5b, mod_amps_lib.F90:2217-2257). See the `p0` note above
-    CAL_THETAIL_L_E_MKS.
+    CAL_THETAIL_P0_PA.
     """
     thetail_arr = np.asarray(thetail, dtype=np.float64)
     pt_arr = np.asarray(pt, dtype=np.float64)
