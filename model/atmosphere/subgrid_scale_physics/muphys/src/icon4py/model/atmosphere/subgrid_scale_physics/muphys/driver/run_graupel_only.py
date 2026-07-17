@@ -69,6 +69,8 @@ def setup_graupel(
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
 ) -> Callable[..., None]:
+    # GT4Py programs update their output fields in place; the returned callable is called
+    # for side effects only.
     if enable_dace_hooks:
         assert model_backends.is_backend_descriptor(backend)
         backend = copy.deepcopy(backend)

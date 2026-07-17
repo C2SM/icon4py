@@ -116,6 +116,8 @@ def setup_muphys(
     *,
     single_program: bool = False,
 ) -> Callable[..., None]:
+    # GT4Py programs update their output fields in place; the returned callable is called
+    # for side effects only.
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
         with utils.recursion_limit(10**5):
