@@ -15,38 +15,59 @@ Two kinds of tables:
   tables, diagnostic maps, `lmt_mass_*`, and `znorm`, converted offline by
   `../../codegen/convert_luts.py` (repo-relative:
   `model/atmosphere/subgrid_scale_physics/amps/codegen/convert_luts.py`)
-  from the real AMPS_DATA files into the packaged `data/amps_luts.npz`
-  (see `data/README.md` for provenance), loaded here via
-  `importlib.resources` (F5 SS3 packaged-data pattern).
+  from the real AMPS_DATA files into two packaged npz archives,
+  `data/amps_luts_collision.npz` (the 7 collision-efficiency LUTs) and
+  `data/amps_luts_misc.npz` (everything else) -- split so each individually
+  clears the repo's `check-added-large-files` pre-commit hook (default
+  500 KB; see `data/README.md` for provenance and the size numbers that
+  drove the split) -- loaded here via `importlib.resources` (F5 SS3
+  packaged-data pattern) and merged transparently; `load_luts()`'s own
+  signature/return type is unaffected by the two-file detail.
 * Computed at load time, no data file (F3 SS5): osmotic-coefficient LUTs
   (`init_osmo_par`), the normal/inverse-normal CDF LUTs
   (`init_normal_lut`/`init_inv_normal_lut`), and the Inherent Growth
   Parameterization spline knots (`init_inherent_growth_par`) -- all pure
   constants, transcribed VERBATIM where F3 quotes exact Fortran source.
 
+`init_osmo_par`'s x-grid NEEDS_CONTEXT (flagged in the M1 Task 5 report) is
+RESOLVED: `osm_ammsul`/`osm_sodchl` were read directly in
+`mod_amps_utility.F90` (~line 12988/13054, coordinator-authorized) and
+transcribed verbatim below -- the real interpolation-node x-grid is
+non-uniform (dense 0.1 up to molality 1.0, medium 0.2 up to 2.0, coarse 0.5
+to the domain end), not the uniform grid the original (F3-only) submission
+had inferred.
+
 One exception, NOT computed as part of `load_luts()`: the Low-List
 collisional-breakup fragment tables (`bu_fd`/`bu_tmass`, F3 SS5.5). F3's
 quoted `cal_breakfragment` needs a runtime bin-count `NRBIN` (config-
 dependent, unknown here) AND `jmin_bk` (the smallest liquid bin whose
-diameter clears the `D_0=0.01cm` breakup cutoff) -- the latter has no
-F3-quoted formula at all (it depends on the liquid Group's mass -> diameter
-conversion, not given anywhere in F3; NEEDS_CONTEXT). `jmin_bk` is
-therefore a REQUIRED argument to `breakup_fragment_table_sizes`/
-`make_breakup_fragment_tables` below, the same "no compile-time default,
-caller must supply it" pattern `bin_grid.py` already uses for `nbin_h`
-(see that module's docstring). Only the SIZE/allocation of `bu_fd`/
-`bu_tmass` is provided (zero-filled, matching the Fortran pre-loop state
-`bu_fd=0.0_PS; bu_tmass=0.0_PS`); the actual fragment-mass/-count physics
-fill calls `cal_Coalescence_Efficiency` + `cal_breakup_dis_LL`
-(`mod_amps_core.F90`), neither quoted in F3 -- out of scope for this LUT-
-conversion task.
-
-A second, narrower NEEDS_CONTEXT applies to `init_osmo_par`'s two
-interpolation-curve helper functions (`_osm_ammsul`/`_osm_sodchl`): F3
-quotes their y-data verbatim but only PARAPHRASES the interpolation-node
-x-grid (internally inconsistent -- see `_osm_ammsul`'s docstring). The
-x-grid used here is a documented, unique-under-the-given-constraints
-INFERENCE, not a verbatim transcription.
+diameter clears the `D_0=0.01cm` breakup cutoff). Per coordinator
+authorization, the call chain was followed directly in the Fortran beyond
+what F3 quotes: `cal_Coalescence_Efficiency` and `cal_breakup_dis_LL`
+(`mod_amps_core.F90`, the fragment-distribution math itself, ~429 lines,
+not further reducible) each call additional helpers
+(`cal_sig_sf`/`cal_Hmusig`/`zbrent`/`getznorm2`), and BOTH need `%len`
+(diameter) and `%vtm` (terminal velocity) per liquid bin, which the
+Fortran computes via `ini_group_mp` -> `cal_meanmass_vec` -> `diag_pq`'s
+liquid branch -> `cal_den_aclen_vec` + `cal_terminal_vel_vec`, which in
+turn need a steady-state air/thermo object built by `make_AirGroup_2` ->
+`Make_Thermo_Var3_2`. That is 13 additional named routines across 6 files
+(mod_amps_core.F90, class_Group.F90, class_Mass_Bin.F90,
+class_AirGroup.F90, class_Thermo_Var.F90, mod_amps_utility.F90) and
+roughly 1200-1400 lines of Fortran once trimmed to only the liquid/
+spherical branches actually exercised -- well past the ~400-line transcription
+budget for this task. Per the coordinator's own scope guard ("if the
+transcription balloons past ~400 lines, STOP and report BLOCKED with the
+call-tree inventory instead"), the FILL is left BLOCKED (still
+zero-initialized, matching the Fortran's own pre-loop state
+`bu_fd=0.0_PS; bu_tmass=0.0_PS`) -- see the M1 Task 5 report's call-tree
+inventory for the full routine list, each with its file:line range, as a
+scoped follow-up task. Only the SIZE/allocation formula
+(`breakup_fragment_table_sizes`/`make_breakup_fragment_tables`, verbatim
+and exact, cross-checked against F3's own quoted 80-bin declaration) is
+provided here, unchanged from the original submission. `jmin_bk` is a
+REQUIRED argument to both functions -- the same "no compile-time default,
+caller must supply it" pattern `bin_grid.py` already uses for `nbin_h`.
 """
 
 from __future__ import annotations
@@ -173,7 +194,14 @@ class AmpsLuts:
 # ---------------------------------------------------------------------------
 
 _PACKAGE = "icon4py.model.atmosphere.subgrid_scale_physics.amps.data"
-_NPZ_NAME = "amps_luts.npz"
+# Two npz files, not one: each individually must clear the repo's
+# `check-added-large-files` pre-commit hook (default 500 KB). Split by
+# codegen/convert_luts.py's `split_tables()`: `_COLLISION_NPZ_NAME` holds
+# the 7 collision-efficiency LUTs (the largest tables), `_MISC_NPZ_NAME`
+# holds everything else. This API (`load_luts() -> AmpsLuts`) is unchanged
+# by the split -- callers never see the two-file detail.
+_COLLISION_NPZ_NAME = "amps_luts_collision.npz"
+_MISC_NPZ_NAME = "amps_luts_misc.npz"
 
 
 def _col_lut_aux(raw: np.ndarray) -> ColLutAux:
@@ -186,13 +214,20 @@ def _grid_aux(raw: np.ndarray) -> GridAux:
     return GridAux(nr=int(nr), nc=int(nc))
 
 
+def _load_npz(name: str) -> dict[str, np.ndarray]:
+    resource = importlib.resources.files(_PACKAGE).joinpath(name)
+    with importlib.resources.as_file(resource) as path, np.load(path) as npz:
+        return {key: npz[key] for key in npz.files}
+
+
 def load_luts() -> AmpsLuts:
     """Load the packaged AMPS_DATA-derived lookup tables (via
-    `importlib.resources` on this package's `data/` directory) plus the
-    pure-constant computed tables (F3 SS5)."""
-    resource = importlib.resources.files(_PACKAGE).joinpath(_NPZ_NAME)
-    with importlib.resources.as_file(resource) as path, np.load(path) as npz:
-        raw = {key: npz[key] for key in npz.files}
+    `importlib.resources` on this package's `data/` directory, transparently
+    merging the two split npz files -- see `_COLLISION_NPZ_NAME`/
+    `_MISC_NPZ_NAME` above) plus the pure-constant computed tables (F3 SS5).
+    """
+    raw = _load_npz(_COLLISION_NPZ_NAME)
+    raw.update(_load_npz(_MISC_NPZ_NAME))
 
     osm_nh42so4, osm_sodchl = init_osmo_par()
 
@@ -235,16 +270,55 @@ def load_luts() -> AmpsLuts:
 
 
 # ---------------------------------------------------------------------------
-# Osmotic-coefficient LUTs, init_osmo_par (mod_amps_utility.F90:12923-12986,
-# F3 SS5.1).
+# Osmotic-coefficient LUTs, init_osmo_par (mod_amps_utility.F90:12923-12986),
+# osm_ammsul (mod_amps_utility.F90:12988-13051), osm_sodchl
+# (mod_amps_utility.F90:13054-13085), F3 SS5.1.
+#
+# F3 SS5.1 only paraphrased the interpolation-node x-grid ("x = (/
+# 0.0,0.1,0.2,...,5.5 /) (23 pts)", internally inconsistent -- see the
+# superseded NEEDS_CONTEXT note this replaces, in the M1 Task 5 report).
+# Per coordinator authorization, read `init_osmo_par`/`osm_ammsul`/
+# `osm_sodchl` directly in mod_amps_utility.F90 (~line 12923) to settle it.
+# The real x-grid is NOT uniform: dense (0.1) up to 1.0, medium (0.2) up to
+# 2.0, coarse (0.5) up to the domain end. Quoted verbatim below (both `x`
+# and `y` are literal Fortran array constructors in the real source, unlike
+# the earlier paraphrase).
 # ---------------------------------------------------------------------------
 
-# F3 SS5.1: "Hard-coded curve data (osm_ammsul): x = (/ 0.0,0.1,0.2,...,5.5 /)
-# (23 pts)". The y-data below is a verbatim transcription (23 comma-
-# separated literals, F3's own quote). The x-line is NOT verbatim: it is an
-# ellipsis paraphrase, not valid Fortran array-literal syntax (unlike the y
-# line right next to it), and it is internally inconsistent -- 0.0 to 5.5 in
-# steps of 0.1 would be 56 points, not 23.
+# osm_ammsul (mod_amps_utility.F90:12988-13051), verbatim:
+#   x = (/ 0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.2,1.4,1.6,1.8,2.0,
+#          2.5,3.0,3.5,4.0,4.5,5.0,5.5/)
+#   y = (/ 1.0,0.767,0.731,0.707,0.690,0.677,0.667,0.658,0.652,0.646,0.640,
+#          0.632,0.628,0.624,0.623,0.623,0.626,0.635,0.647,0.660,0.673,
+#          0.686,0.699/)
+_OSM_AMMSUL_X = np.array(
+    [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0,
+        1.2,
+        1.4,
+        1.6,
+        1.8,
+        2.0,
+        2.5,
+        3.0,
+        3.5,
+        4.0,
+        4.5,
+        5.0,
+        5.5,
+    ],
+    dtype=np.float64,
+)
 _OSM_AMMSUL_Y = np.array(
     [
         1.0,
@@ -272,9 +346,16 @@ _OSM_AMMSUL_Y = np.array(
         0.699,
     ],
     dtype=np.float64,
-)  # F3 SS5.1, osm_ammsul y-data, 23 points
+)
 
-# F3 SS5.1: "osm_sodchl: 24 pts" -- same verbatim-y/paraphrased-x situation.
+# osm_sodchl (mod_amps_utility.F90:13054-13085), verbatim: same 23-point
+# prefix as osm_ammsul's x-grid, plus one more node at 6.0.
+#   x = (/ 0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.2,1.4,1.6,1.8,2.0,
+#          2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0/)
+#   y = (/ 1.0,0.932,0.925,0.922,0.920,0.921,0.923,0.926,0.929,0.932,0.936,
+#          0.943,0.951,0.962,0.972,0.983,1.013,1.045,1.080,1.116,1.153,
+#          1.192,1.231,1.271/)
+_OSM_SODCHL_X = np.concatenate([_OSM_AMMSUL_X, np.array([6.0], dtype=np.float64)])
 _OSM_SODCHL_Y = np.array(
     [
         1.0,
@@ -303,43 +384,37 @@ _OSM_SODCHL_Y = np.array(
         1.271,
     ],
     dtype=np.float64,
-)  # F3 SS5.1, osm_sodchl y-data, 24 points
+)
 
 
 def _osm_ammsul(x: np.ndarray) -> np.ndarray:
-    """(NH4)2SO4 osmotic coefficient: piecewise-linear interpolation of the
-    experimental curve, flat extrapolation beyond the ends (F3 SS5.1: "flat
-    extrapolation beyond ends, linear interpolation inside").
-
-    NEEDS_CONTEXT: the true interpolation-node x-grid is not verbatim in
-    F3 (see module docstring). The x-grid used here,
-    `np.linspace(0.0, 5.5, 23)`, is the UNIQUE uniformly-spaced grid
-    consistent with the only hard facts F3 gives (23 points, curve's own
-    stated domain 0.0 to 5.5 -- the same `xmax` `init_osmo_par` uses for
-    the (NH4)2SO4 LUT) -- a documented inference, not a transcription.
-    `np.interp` already implements flat-extrapolation-beyond-ends /
-    linear-inside, matching F3's stated behavior exactly.
+    """(NH4)2SO4 osmotic coefficient, transcribed VERBATIM from
+    `osm_ammsul` (`mod_amps_utility.F90:12988-13051`, F3 SS5.1): for
+    `molality >= x(nt)`, `out = y(nt)` (flat, the LAST node value, not a
+    linear extrapolation); for `molality < x(1)`, `out = y(1)`; otherwise
+    linear interpolation between the bracketing nodes `x(i) <= molality <
+    x(i+1)`. `np.interp`'s default behavior (flat-beyond-ends,
+    linear-inside) matches this exactly given the verbatim `_OSM_AMMSUL_X`/
+    `_OSM_AMMSUL_Y` node arrays above.
     """
-    x_nodes = np.linspace(0.0, 5.5, len(_OSM_AMMSUL_Y), dtype=np.float64)
-    return np.interp(x, x_nodes, _OSM_AMMSUL_Y)
+    return np.interp(x, _OSM_AMMSUL_X, _OSM_AMMSUL_Y)
 
 
 def _osm_sodchl(x: np.ndarray) -> np.ndarray:
-    """NaCl osmotic coefficient; same NEEDS_CONTEXT caveat as
-    `_osm_ammsul` (F3 SS5.1) -- x-grid inferred as
-    `np.linspace(0.0, 6.0, 24)` (24 points, domain 0.0 to 6.0, the `xmax`
-    `init_osmo_par` uses for the NaCl LUT)."""
-    x_nodes = np.linspace(0.0, 6.0, len(_OSM_SODCHL_Y), dtype=np.float64)
-    return np.interp(x, x_nodes, _OSM_SODCHL_Y)
+    """NaCl osmotic coefficient, transcribed VERBATIM from `osm_sodchl`
+    (`mod_amps_utility.F90:13054-13085`, F3 SS5.1); same
+    flat-beyond-ends/linear-inside semantics as `_osm_ammsul`."""
+    return np.interp(x, _OSM_SODCHL_X, _OSM_SODCHL_Y)
 
 
 def init_osmo_par() -> tuple[Data1DLut, Data1DLut]:
-    """Osmotic-coefficient LUTs, transcribed from `init_osmo_par`
+    """Osmotic-coefficient LUTs, transcribed VERBATIM from `init_osmo_par`
     (`mod_amps_utility.F90:12923-12986`, F3 SS5.1): molality grids
     `0:5.5:0.1` ((NH4)2SO4) and `0:6.0:0.1` (NaCl), `n=(xmax-xmin)/dx+1`.
-    The grid bookkeeping is verbatim; the underlying `osm_ammsul`/
-    `osm_sodchl` interpolation nodes are a documented inference -- see
-    their docstrings (NEEDS_CONTEXT).
+    Both the outer LUT-grid bookkeeping AND the underlying `osm_ammsul`/
+    `osm_sodchl` interpolation nodes are now verbatim (read directly from
+    mod_amps_utility.F90 per coordinator authorization; see those
+    functions' docstrings) -- no remaining NEEDS_CONTEXT here.
     """
     xmin, xmax, dx = 0.0, 5.5, 0.1
     n = round((xmax - xmin) / dx) + 1

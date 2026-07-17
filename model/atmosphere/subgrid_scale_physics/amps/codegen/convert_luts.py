@@ -7,9 +7,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Offline converter: AMPS_DATA Fortran lookup-table files -> a single
-packaged `amps_luts.npz` archive consumed at runtime by
-`core/lookup_tables.py` via `importlib.resources`.
+"""Offline converter: AMPS_DATA Fortran lookup-table files -> two packaged
+npz archives consumed at runtime by `core/lookup_tables.py` via
+`importlib.resources`: `amps_luts_collision.npz` (the 7 collision-
+efficiency LUTs -- the largest tables) and `amps_luts_misc.npz` (everything
+else: habit-frequency tables, diagnostic maps, `lmt_mass_*`, `znorm`). Split
+into two files so each individually clears the repo's
+`check-added-large-files` pre-commit hook (default 500 KB; the original
+single-file `amps_luts.npz`, 586.8 KiB, did not -- see the M1 Task 5
+report's "Pre-commit conflict" section for the measurements that led to
+this split, which was authorized as the resolution once found to exceed
+that limit).
 
 Parses the ASCII LUT files per the exact reader-subroutine formats
 transcribed VERBATIM in docs/superpowers/facts/m1/lut-files.md ("F3" in
@@ -22,8 +30,8 @@ therefore deliberately NOT read or converted.
 This script is NOT part of the installed `icon4py-atmosphere-amps` package
 (same status as ../spikes/): a one-off dev tool, run ONCE against the real
 AMPS_DATA directory, with its output committed to
-`src/icon4py/model/atmosphere/subgrid_scale_physics/amps/data/amps_luts.npz`
-(see data/README.md for provenance).
+`src/icon4py/model/atmosphere/subgrid_scale_physics/amps/data/` (see
+data/README.md for provenance).
 
 Run (from the icon4py worktree root):
     uv run --frozen python \
@@ -41,7 +49,7 @@ import numpy as np
 DEFAULT_AMPS_DATA = pathlib.Path(
     "/Users/jcanton/projects/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA"
 )
-DEFAULT_OUTPUT = (
+DEFAULT_OUTPUT_DIR = (
     pathlib.Path(__file__).resolve().parents[1]
     / "src"
     / "icon4py"
@@ -50,8 +58,9 @@ DEFAULT_OUTPUT = (
     / "subgrid_scale_physics"
     / "amps"
     / "data"
-    / "amps_luts.npz"
 )
+COLLISION_NPZ_NAME = "amps_luts_collision.npz"
+MISC_NPZ_NAME = "amps_luts_misc.npz"
 
 # Collision-efficiency 2D LUTs read by RDCETB (F3 SS2.1, lines 79-158): 2
 # comment lines + a "nr nc xs dx ys dy" header line + nr rows of nc floats
@@ -212,6 +221,36 @@ def convert(amps_data_dir: pathlib.Path) -> dict[str, np.ndarray]:
     return out
 
 
+def split_tables(
+    tables: dict[str, np.ndarray],
+) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
+    """Partition `convert()`'s flat `{key: array}` mapping into (collision,
+    misc): `collision` holds the 7 collision-efficiency LUTs (`_COL_LUT_FILES`
+    keys) plus their `_aux` companions -- the largest tables, dominated by
+    `drpdrp`'s 201x201 grid; `misc` holds everything else (habit-frequency
+    tables, diagnostic maps, `lmt_mass_*`, `znorm`, all `_aux` companions).
+    Both a `<name>` and its `<name>_aux` key always land in the same file.
+    """
+    collision: dict[str, np.ndarray] = {}
+    misc: dict[str, np.ndarray] = {}
+    for key, arr in tables.items():
+        base = key[: -len("_aux")] if key.endswith("_aux") else key
+        (collision if base in _COL_LUT_FILES else misc)[key] = arr
+    return collision, misc
+
+
+def _write_npz(path: pathlib.Path, tables: dict[str, np.ndarray]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # mypy false positive: savez_compressed's stub has a keyword-only
+    # `allow_pickle: bool` between `*args` and `**kwds`, which makes mypy
+    # (incorrectly) worry that **tables could supply `allow_pickle` with a
+    # non-bool value -- it never does (see `convert()`'s key names).
+    np.savez_compressed(path, **tables)  # type: ignore[arg-type]
+    size_kb = path.stat().st_size / 1024
+    print(f"Wrote {len(tables)} arrays ({len(tables) // 2} tables) to {path}")
+    print(f"Output size: {size_kb:.1f} KiB")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -223,24 +262,17 @@ def main() -> None:
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--output-dir",
         type=pathlib.Path,
-        default=DEFAULT_OUTPUT,
-        help=f"output .npz path (default: {DEFAULT_OUTPUT})",
+        default=DEFAULT_OUTPUT_DIR,
+        help=f"output directory for both npz files (default: {DEFAULT_OUTPUT_DIR})",
     )
     args = parser.parse_args()
 
     tables = convert(args.amps_data_dir)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    # mypy false positive: savez_compressed's stub has a keyword-only
-    # `allow_pickle: bool` between `*args` and `**kwds`, which makes mypy
-    # (incorrectly) worry that **tables could supply `allow_pickle` with a
-    # non-bool value -- it never does (see `convert()`'s key names).
-    np.savez_compressed(args.output, **tables)  # type: ignore[arg-type]
-
-    size_kb = args.output.stat().st_size / 1024
-    print(f"Wrote {len(tables)} arrays ({len(tables) // 2} tables) to {args.output}")
-    print(f"Output size: {size_kb:.1f} KiB")
+    collision, misc = split_tables(tables)
+    _write_npz(args.output_dir / COLLISION_NPZ_NAME, collision)
+    _write_npz(args.output_dir / MISC_NPZ_NAME, misc)
 
 
 if __name__ == "__main__":

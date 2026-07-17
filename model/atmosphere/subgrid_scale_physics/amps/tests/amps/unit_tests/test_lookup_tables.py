@@ -308,6 +308,91 @@ class TestComputedTableSanity:
 
 
 # ---------------------------------------------------------------------------
+# Osmotic x-grid: read `init_osmo_par`/`osm_ammsul`/`osm_sodchl` directly in
+# mod_amps_utility.F90 (~line 12923, coordinator-authorized) to settle the
+# interpolation-node x-grid exactly (it is NOT uniform, unlike an earlier
+# F3-only inference this supersedes -- see lookup_tables.py module
+# docstring). First/last x values and spot interpolated values recomputed
+# here independently from the transcribed node arrays, not copy-pasted from
+# lookup_tables.py's own literals.
+# ---------------------------------------------------------------------------
+
+# Independently re-typed from mod_amps_utility.F90:12996/13062 (osm_ammsul's
+# x, and its 6.0-appended osm_sodchl counterpart), kept separate from
+# lookup_tables.py's own module constants per the same "expected side
+# shouldn't share a transcription bug with the code side" convention as
+# test_bin_grid.py.
+_EXPECTED_AMMSUL_X_FIRST_ELEVEN = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+_EXPECTED_AMMSUL_X_LAST_SEVEN = [2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5]
+
+
+class TestOsmoticXGrid:
+    def test_ammsul_node_count_and_domain(self):
+        assert len(lookup_tables._OSM_AMMSUL_X) == 23
+        assert lookup_tables._OSM_AMMSUL_X[0] == pytest.approx(0.0)
+        assert lookup_tables._OSM_AMMSUL_X[-1] == pytest.approx(5.5)
+
+    def test_sodchl_node_count_and_domain(self):
+        assert len(lookup_tables._OSM_SODCHL_X) == 24
+        assert lookup_tables._OSM_SODCHL_X[0] == pytest.approx(0.0)
+        assert lookup_tables._OSM_SODCHL_X[-1] == pytest.approx(6.0)
+
+    def test_ammsul_x_grid_is_nonuniform_dense_then_coarse(self):
+        # 0.1 step up to 1.0 (indices 0-10), then 0.2 step up to 2.0
+        # (indices 10-15), then 0.5 step to the end (indices 15-22).
+        np.testing.assert_allclose(
+            lookup_tables._OSM_AMMSUL_X[:11], _EXPECTED_AMMSUL_X_FIRST_ELEVEN
+        )
+        np.testing.assert_allclose(lookup_tables._OSM_AMMSUL_X[-7:], _EXPECTED_AMMSUL_X_LAST_SEVEN)
+        np.testing.assert_allclose(np.diff(lookup_tables._OSM_AMMSUL_X[:11]), 0.1)
+        np.testing.assert_allclose(np.diff(lookup_tables._OSM_AMMSUL_X[10:16]), 0.2)
+        np.testing.assert_allclose(np.diff(lookup_tables._OSM_AMMSUL_X[15:]), 0.5)
+
+    def test_sodchl_x_grid_is_ammsul_grid_plus_one_node(self):
+        # osm_sodchl's x array is osm_ammsul's 23-node array with a single
+        # extra node (6.0) appended (mod_amps_utility.F90:13062 vs :12996).
+        np.testing.assert_array_equal(lookup_tables._OSM_SODCHL_X[:23], lookup_tables._OSM_AMMSUL_X)
+        assert lookup_tables._OSM_SODCHL_X[23] == pytest.approx(6.0)
+
+    def test_ammsul_exact_at_first_and_last_node(self):
+        # osm_ammsul(x(1))=y(1), osm_ammsul(x(nt))=y(nt) exactly (no
+        # interpolation needed at the nodes themselves).
+        assert lookup_tables._osm_ammsul(np.array([0.0]))[0] == pytest.approx(1.0)
+        assert lookup_tables._osm_ammsul(np.array([5.5]))[0] == pytest.approx(0.699)
+
+    def test_sodchl_exact_at_first_and_last_node(self):
+        assert lookup_tables._osm_sodchl(np.array([0.0]))[0] == pytest.approx(1.0)
+        assert lookup_tables._osm_sodchl(np.array([6.0]))[0] == pytest.approx(1.271)
+
+    def test_ammsul_flat_extrapolation_beyond_domain(self):
+        # mod_amps_utility.F90:13003-13009 (osm_ammsul): molality>=x(nt) ->
+        # out=y(nt) (flat, not linear extrapolation); molality<x(1) ->
+        # out=y(1).
+        assert lookup_tables._osm_ammsul(np.array([10.0]))[0] == pytest.approx(0.699)
+        assert lookup_tables._osm_ammsul(np.array([-1.0]))[0] == pytest.approx(1.0)
+
+    def test_ammsul_interpolated_between_nonaligned_nodes(self):
+        # x=1.1 falls strictly between nodes (1.0, 0.640) and (1.2, 0.632)
+        # (the 0.2-step region) -- recomputed here from the transcribed
+        # linear-interpolation formula independently of np.interp.
+        x0, y0 = 1.0, 0.640
+        x1, y1 = 1.2, 0.632
+        expected = (y1 - y0) / (x1 - x0) * (1.1 - x0) + y0
+        assert lookup_tables._osm_ammsul(np.array([1.1]))[0] == pytest.approx(expected)
+
+    def test_osm_nh42so4_lut_first_and_last_match_node_values(self, luts):
+        # The outer LUT grid (xs=0.0, dx=0.1, n=56) exactly aligns with
+        # osm_ammsul's node grid at both ends (x=0.0 and x=5.5 are nodes),
+        # so no interpolation is exercised there.
+        assert luts.osm_nh42so4.y[0] == pytest.approx(1.0)
+        assert luts.osm_nh42so4.y[-1] == pytest.approx(0.699)
+
+    def test_osm_sodchl_lut_first_and_last_match_node_values(self, luts):
+        assert luts.osm_sodchl.y[0] == pytest.approx(1.0)
+        assert luts.osm_sodchl.y[-1] == pytest.approx(1.271)
+
+
+# ---------------------------------------------------------------------------
 # load_luts() dataclass is frozen, matching the rest of M1's dataclasses.
 # ---------------------------------------------------------------------------
 
