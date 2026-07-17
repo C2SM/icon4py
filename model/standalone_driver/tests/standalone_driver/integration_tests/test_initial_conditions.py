@@ -28,10 +28,6 @@ from icon4py.model.testing.fixtures.datatest import (
 
 # Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
 # (gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu).
-# rtol is 0.0 where the reference field contains zeros or near-zeros: there no
-# meaningful rtol can cover the difference, only atol.
-# MCH_CH_R04B09 reads its initial state from the serialized data, hence the
-# exact reproduction.
 _TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, float]]] = {
     definitions.Experiments.JW: {
         "rho": (6.5e-15, 1.3e-14),
