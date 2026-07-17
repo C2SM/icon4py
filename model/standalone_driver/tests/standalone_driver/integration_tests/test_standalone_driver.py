@@ -28,10 +28,6 @@ from ..fixtures import *  # noqa: F403
 
 # Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
 # (gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu).
-# rtol is 0.0 where the reference field contains zeros or near-zeros: there no
-# meaningful rtol can cover the difference, only atol.
-# TODO(jcanton): MCH_CH_R04B09 does not reach roundoff, and neither does the dycore
-# on this experiment. Under investigation.
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
         "vn": (5.3e-7, 0.0),
