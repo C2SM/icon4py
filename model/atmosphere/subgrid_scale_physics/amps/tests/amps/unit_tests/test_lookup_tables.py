@@ -218,23 +218,35 @@ class TestBreakupFragmentTables:
         assert i1d_pair_max == 780
         assert kk_max == 62400
 
+    def test_make_breakup_fragment_tables_refuses_without_allow_placeholder(self):
+        # Hard guard: the fill is BLOCKED (zero-filled only, see module
+        # docstring and .superpowers/sdd/m1-task-5-report.md's call-tree
+        # inventory) -- calling without explicit acknowledgement must not
+        # silently hand back physically-meaningless zeros.
+        with pytest.raises(NotImplementedError):
+            lookup_tables.make_breakup_fragment_tables(nrbin=80, jmin_bk=41)
+
     @pytest.mark.parametrize(
         "nrbin,jmin_bk",
         [(80, 41), (40, 20), (40, 1), (10, 1)],
     )
     def test_make_breakup_fragment_tables_shapes(self, nrbin, jmin_bk):
         i1d_pair_max, kk_max = lookup_tables.breakup_fragment_table_sizes(nrbin, jmin_bk)
-        bu_fd, bu_tmass = lookup_tables.make_breakup_fragment_tables(nrbin, jmin_bk)
-        assert bu_fd.shape == (2, kk_max)
-        assert bu_tmass.shape == (i1d_pair_max,)
+        tables = lookup_tables.make_breakup_fragment_tables(nrbin, jmin_bk, allow_placeholder=True)
+        assert tables.bu_fd.shape == (2, kk_max)
+        assert tables.bu_tmass.shape == (i1d_pair_max,)
+        assert tables.is_placeholder is True
 
     def test_make_breakup_fragment_tables_zero_filled(self):
         # cal_breakfragment's pre-loop state (F3 SS5.5): bu_fd=0.0_PS;
         # bu_tmass=0.0_PS. This module deliberately does not fill them
-        # further (NEEDS_CONTEXT, see lookup_tables.py module docstring).
-        bu_fd, bu_tmass = lookup_tables.make_breakup_fragment_tables(nrbin=80, jmin_bk=41)
-        np.testing.assert_array_equal(bu_fd, 0.0)
-        np.testing.assert_array_equal(bu_tmass, 0.0)
+        # further (BLOCKED, see lookup_tables.py module docstring).
+        tables = lookup_tables.make_breakup_fragment_tables(
+            nrbin=80, jmin_bk=41, allow_placeholder=True
+        )
+        np.testing.assert_array_equal(tables.bu_fd, 0.0)
+        np.testing.assert_array_equal(tables.bu_tmass, 0.0)
+        assert tables.is_placeholder is True
 
 
 # ---------------------------------------------------------------------------

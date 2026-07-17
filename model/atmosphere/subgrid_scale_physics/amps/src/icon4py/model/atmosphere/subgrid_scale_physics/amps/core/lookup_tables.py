@@ -65,9 +65,17 @@ inventory for the full routine list, each with its file:line range, as a
 scoped follow-up task. Only the SIZE/allocation formula
 (`breakup_fragment_table_sizes`/`make_breakup_fragment_tables`, verbatim
 and exact, cross-checked against F3's own quoted 80-bin declaration) is
-provided here, unchanged from the original submission. `jmin_bk` is a
-REQUIRED argument to both functions -- the same "no compile-time default,
-caller must supply it" pattern `bin_grid.py` already uses for `nbin_h`.
+provided here. `jmin_bk` is a REQUIRED argument to both functions -- the
+same "no compile-time default, caller must supply it" pattern `bin_grid.py`
+already uses for `nbin_h`.
+
+Hard guard against silently consuming the placeholder: `make_breakup_
+fragment_tables` raises `NotImplementedError` unless called with
+`allow_placeholder=True`, and its return value
+(`BreakupFragmentTables(bu_tmass, bu_fd, is_placeholder=True)`) carries
+`is_placeholder` as a second, runtime-checkable marker -- a caller has to
+defeat both the explicit opt-in argument AND ignore the returned flag to
+end up treating zero-filled arrays as real physics output.
 """
 
 from __future__ import annotations
@@ -595,25 +603,78 @@ def breakup_fragment_table_sizes(nrbin: int, jmin_bk: int) -> tuple[int, int]:
     return i1d_pair_max, kk_max
 
 
-def make_breakup_fragment_tables(nrbin: int, jmin_bk: int) -> tuple[np.ndarray, np.ndarray]:
+@dataclasses.dataclass(frozen=True)
+class BreakupFragmentTables:
+    """Low-List collisional-breakup fragment tables, `bu_fd`/`bu_tmass`
+    (F3 SS5.5). `is_placeholder=True` (currently the ONLY value this
+    dataclass is ever constructed with -- see `make_breakup_fragment_tables`)
+    means `bu_fd`/`bu_tmass` are correctly-SIZED but zero-filled, not real
+    physics output; check it before using the arrays numerically."""
+
+    bu_tmass: np.ndarray
+    bu_fd: np.ndarray
+    is_placeholder: bool
+
+
+def make_breakup_fragment_tables(
+    nrbin: int, jmin_bk: int, *, allow_placeholder: bool = False
+) -> BreakupFragmentTables:
     """Allocate the Low-List breakup fragment tables `bu_fd`, `bu_tmass`
     (F3 SS5.5), zero-initialized exactly as `cal_breakfragment` does before
     its fill loop (`bu_fd=0.0_PS; bu_tmass=0.0_PS`).
 
-    NEEDS_CONTEXT: only the correctly-SIZED, zero-filled allocation is
-    provided. The actual FILL (the Low-List fragment mass/count physics)
-    calls `cal_Coalescence_Efficiency` and `cal_breakup_dis_LL`
-    (`mod_amps_core.F90`), neither of which is quoted in F3 -- out of
-    scope for this LUT-conversion task (a later physics-port task owns
-    them). This satisfies this task's own test requirement ("breakup
-    tables sized per bin count formula from F3"); it does NOT compute
-    physically meaningful fragment distributions.
+    BLOCKED, not merely NEEDS_CONTEXT: only the correctly-SIZED, zero-filled
+    allocation is implemented. The actual FILL (the Low-List fragment mass/
+    count physics) requires 13 additional routines across 6 files
+    (`cal_Coalescence_Efficiency`, `cal_breakup_dis_LL`, `cal_sig_sf`,
+    `cal_Hmusig`, `zbrent`, `getznorm2`, `ini_group_mp`, `cal_meanmass_vec`,
+    `diag_pq`'s liquid branch, `cal_den_aclen_vec`, `cal_terminal_vel_vec`,
+    `make_AirGroup_2`, `Make_Thermo_Var3_2`; none quoted in F3), roughly
+    1200-1400 lines even trimmed to the liquid/spherical branches
+    `cal_breakfragment`'s specific call pattern exercises -- well past this
+    task's transcription budget. Full routine-by-routine call-tree
+    inventory (every entry with its file:line range) is in the M1 Task 5
+    report's "Item 1: breakup fragment tables -- BLOCKED" section
+    (`.superpowers/sdd/m1-task-5-report.md`); the real fill is tracked as a
+    scoped follow-up task for M2 (cloudlab runs with rain collisional
+    breakup ON, `micexfg[18]`, so M2 needs the real values, not zeros).
+
+    Because a silently-zero `bu_fd`/`bu_tmass` would be numerically
+    indistinguishable from "no breakup happens" if a caller used it without
+    reading this docstring, this function refuses to run unless
+    `allow_placeholder=True` is passed explicitly, and the returned
+    dataclass carries `is_placeholder=True` as a second, runtime-checkable
+    guard against silent misuse -- both must be defeated deliberately for
+    the placeholder to reach downstream code.
+
+    Args:
+        nrbin: total liquid bin count (cloudlab: 40).
+        jmin_bk: smallest liquid-bin index whose diameter clears the
+            `D_0=0.01cm` breakup cutoff (see `breakup_fragment_table_sizes`
+            docstring -- no F3-quoted formula, caller must supply it).
+        allow_placeholder: must be `True` to acknowledge the tables are
+            zero-filled, not physically meaningful; raises
+            `NotImplementedError` otherwise.
 
     Returns:
-        (bu_fd, bu_tmass): `bu_fd` has shape `(2, kk_max)`, `bu_tmass` has
-        shape `(i1d_pair_max,)`, per `breakup_fragment_table_sizes`.
+        `BreakupFragmentTables(bu_tmass, bu_fd, is_placeholder=True)`:
+        `bu_fd` has shape `(2, kk_max)`, `bu_tmass` has shape
+        `(i1d_pair_max,)`, per `breakup_fragment_table_sizes`.
+
+    Raises:
+        NotImplementedError: if `allow_placeholder` is not `True`.
     """
+    if not allow_placeholder:
+        raise NotImplementedError(
+            "make_breakup_fragment_tables() only allocates zero-filled placeholder "
+            "bu_fd/bu_tmass -- the real Low-List fragment-mass/-count fill is BLOCKED "
+            "(13 routines across 6 files, ~1200-1400 lines, not quoted in F3; see the "
+            "call-tree inventory in .superpowers/sdd/m1-task-5-report.md, 'Item 1: "
+            "breakup fragment tables -- BLOCKED'), tracked as a scoped follow-up task "
+            "for M2. Pass allow_placeholder=True to acknowledge this and receive the "
+            "zero-filled tables anyway (e.g. for shape-only testing)."
+        )
     i1d_pair_max, kk_max = breakup_fragment_table_sizes(nrbin, jmin_bk)
     bu_fd = np.zeros((2, kk_max), dtype=np.float64)
     bu_tmass = np.zeros(i1d_pair_max, dtype=np.float64)
-    return bu_fd, bu_tmass
+    return BreakupFragmentTables(bu_tmass=bu_tmass, bu_fd=bu_fd, is_placeholder=True)
