@@ -41,6 +41,7 @@ Run: uv run --frozen python model/atmosphere/subgrid_scale_physics/amps/spikes/s
 
 from __future__ import annotations
 
+import os
 import shutil
 import time
 from pathlib import Path
@@ -51,6 +52,17 @@ import numpy as np
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import (
     utils as muphys_driver_utils,
 )
+
+
+# nbins=8/20's sums show ordinary float64 rounding (per-bin max relative diff
+# ~1e-15/1e-16 during the original embedded sanity check -- comfortably under
+# the brief's original rtol=1e-12), so the brief's own tolerance is kept for
+# them. nbins=40 needs a looser tolerance -- see the long comment at the
+# assert below for why (catastrophic cancellation between the ~1e9-magnitude
+# gain/loss terms of the top bin, verified via exact-rational arithmetic, not
+# a logic bug); scoped narrowly to the one size that actually needs it rather
+# than loosened globally.
+RTOL_BY_NBINS: dict[int, float] = {8: 1e-12, 20: 1e-12, 40: 1e-6}
 
 
 HEADER = """\
@@ -143,6 +155,20 @@ def gen_source(nbins: int) -> str:
     )
 
 
+def active_backends() -> dict:
+    """common.backends(), optionally filtered to embedded-only when
+    AMPS_SPIKE_B_EMBEDDED_ONLY is set (any non-empty value). For re-verifying
+    numerics/tolerances without paying gtfn_cpu's compile cost (nbins=40's
+    gtfn_cpu compile alone takes ~45 min with the recursion limit raised, or
+    crashes without it) -- e.g.
+    `AMPS_SPIKE_B_EMBEDDED_ONLY=1 uv run --frozen python spike_b_collection_codegen.py`.
+    """
+    backends = common.backends()
+    if os.environ.get("AMPS_SPIKE_B_EMBEDDED_ONLY"):
+        backends = {"embedded": backends["embedded"]}
+    return backends
+
+
 def numpy_reference(n: np.ndarray, nbins: int) -> np.ndarray:
     kern = kernel_table(nbins)
     weights = pair_weights(nbins)
@@ -179,7 +205,7 @@ def run(nbins: int) -> bool:
     expected = numpy_reference(n_np, nbins)
 
     ok = True
-    for name, backend in common.backends().items():
+    for name, backend in active_backends().items():
         if name == "gtfn_cpu":
             clear_gt4py_cache()
         outs = tuple(common.zeros_field() for _ in range(nbins))
@@ -211,21 +237,40 @@ def run(nbins: int) -> bool:
             continue
 
         got = np.stack([o.asnumpy() for o in outs])
-        # rtol=1e-12 (the brief's original value) is unreachable in float64 for
-        # nbins=40: the mass-doubling grid (2^0..2^39) gives the ~1600-term gain
-        # sum and 40-term loss sum a huge dynamic range, so the generated
-        # operator's summation order (flat left-to-right per the generated
-        # source text) and numpy_reference's order (per-pair-then-einsum)
-        # disagree at the ~1e-9-relative level from ordinary floating-point
-        # non-associativity, not a logic bug -- verified independently via
-        # exact Fraction (infinite-precision rational) arithmetic at the
-        # worst-case point (nbins=40, bin 39): both the generated-operator
-        # result and the numpy-reference result individually round-trip to
-        # within a few ULPs of the exact rational answer, they just round
-        # differently. 1e-6 comfortably tolerates that reordering noise (max
-        # observed relative diff ~7.7e-10) while still gating any real
-        # multi-order-of-magnitude logic bug.
-        assert np.allclose(got, expected, rtol=1e-6), f"collection nbins={nbins} {name} wrong"
+        # Per-nbins tolerance (RTOL_BY_NBINS): the brief's original rtol=1e-12
+        # holds for nbins=8/20 (ordinary float64 rounding, per-bin max
+        # relative diff ~1e-15/1e-16). It is unreachable for nbins=40 only,
+        # and only because of catastrophic cancellation, not a logic bug --
+        # verified via exact Fraction (infinite-precision rational)
+        # arithmetic at the TRUE argmax of relative diff across the whole
+        # (40, NCELLS, NLEV) array for nbins=40: bin=39, cell=205, lev=38
+        # (found via np.unravel_index(rel.argmax(), ...), not assumed from
+        # the argmax of *absolute* diff, which is a different, misleading
+        # point -- an earlier version of this comment analyzed the wrong
+        # point and got numbers that didn't reconcile with the reported
+        # rel-diff max; this is the corrected analysis). At that point the
+        # bin-39 gain (~8.9418814e9) and loss*n_39 (~8.9418879e9) are two
+        # ~1e9-magnitude terms that cancel down to dn=2488.79 -- a ~3.6e6:1
+        # cancellation ratio, consuming ~22 of float64's 52 mantissa bits.
+        # The exact rational dn is 2488.7875416858897; the generated
+        # operator's float64 result (got) differs from it by relative
+        # 1.03e-9, numpy_reference's (expected) by relative 2.64e-10 -- both
+        # individually correct to within a few ULPs of what's left after the
+        # cancellation, they just round differently because the generated
+        # operator sums its ~1600 gain terms + 40 loss terms in a different
+        # order (flat left-to-right, as emitted into source text) than
+        # numpy_reference's per-pair-then-einsum order. got vs. expected
+        # differ by relative 7.66e-10, matching the previously-measured
+        # global max relative diff exactly (cross-validating this is indeed
+        # the argmax point). rtol=1e-6 comfortably tolerates that
+        # cancellation-amplified reordering noise while still failing hard
+        # on any real logic bug (which would show up at O(1) relative
+        # error, not 1e-9) -- scoped to nbins=40 only via RTOL_BY_NBINS, not
+        # loosened globally.
+        rtol = RTOL_BY_NBINS[nbins]
+        assert np.allclose(got, expected, rtol=rtol), (
+            f"collection nbins={nbins} {name} wrong (rtol={rtol})"
+        )
         print(
             f"RESULT collection nbins={nbins} backend={name} "
             f"first={first:.1f}s steady={steady * 1e3:.1f}ms"
