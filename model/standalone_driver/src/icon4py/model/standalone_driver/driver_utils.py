@@ -47,7 +47,7 @@ from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory, static_fields
 from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.standalone_driver import config as driver_config, driver_constants, driver_states
 
 
 log = logging.getLogger(__name__)
@@ -446,6 +446,33 @@ def initialize_granules(
     )
 
 
+def spinup_second_order_divdamp_factor(
+    *,
+    elapsed_time_in_seconds: ta.wpfloat,
+    fourth_order_divdamp_factor: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Second order divergence damping factor (divdamp_fac_o2) during the spin-up phase.
+
+    update_spinup_damping in mo_nh_stepping.f90: the damping is enhanced during
+    the first half hour of integration and then decreases linearly to zero.
+    """
+    initial_period = driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    transition_end_period = driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    enhanced_factor = (
+        driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP * fourth_order_divdamp_factor
+    )
+    if elapsed_time_in_seconds <= initial_period:
+        return enhanced_factor
+    if elapsed_time_in_seconds <= transition_end_period:
+        return (
+            enhanced_factor
+            * (transition_end_period - elapsed_time_in_seconds)
+            / (transition_end_period - initial_period)
+        )
+    return ta.wpfloat("0.0")
+
+
 def find_maximum_from_field(
     input_field: gtx.Field,
 ) -> tuple[tuple[int, ...], float]:
@@ -541,6 +568,8 @@ def display_driver_setup_in_log_file(
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
+    log.info(f"Prepare advection      : {config.do_prep_adv}")
+    log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
     log.info(f"Statistics enabled     : {config.enable_statistics_output}")
     log.info(f"Active tracers         : {tracer_config}")
     log.info("")
