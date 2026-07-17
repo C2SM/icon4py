@@ -11,16 +11,12 @@ from __future__ import annotations
 import logging
 import pathlib
 import urllib.parse
-from typing import TYPE_CHECKING
 
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import data_handling, definitions, serialbox
-
-
-if TYPE_CHECKING:
-    from icon4py.model.standalone_driver import config as driver_config
 
 
 logger = logging.getLogger(__name__)
@@ -140,7 +136,5 @@ def create_experiment_configuration(
     experiment_description: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
-    from icon4py.model.standalone_driver import config as driver_config  # noqa: PLC0415
-
     experiment_path = get_path_for_experiment(experiment_description, processor_props)
     return driver_config.read_experiment_config_from_fortran(experiment_path)
