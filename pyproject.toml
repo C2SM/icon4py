@@ -193,8 +193,8 @@ module = [
 [[tool.mypy.overrides]]
 # GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
 # shape attr, dtype type-var. Cannot be fixed in user code.
-# NOTE: 131 errors across common.py (~90) and dycore_wrapper.py (~35).
-# Per-line ignores would add ~125 lines of identical boilerplate with no
+# NOTE: ~90 errors in muphys/driver/common.py.
+# Per-line ignores would add ~90 lines of identical boilerplate with no
 # type-safety benefit. Module-level override kept per D6 documented-justification rule.
 disable_error_code = ["arg-type", "attr-defined", "misc", "type-var", "assignment"]
 module = [
@@ -204,6 +204,9 @@ module = [
 [[tool.mypy.overrides]]
 # GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
 # shape attr, dtype type-var. Cannot be fixed in user code.
+# NOTE: ~35 errors in bindings/dycore_wrapper.py.
+# Per-line ignores would add ~35 lines of identical boilerplate with no
+# type-safety benefit. Module-level override kept per D6 documented-justification rule.
 disable_error_code = ["arg-type", "attr-defined", "assignment"]
 module = [
   "icon4py.bindings.dycore_wrapper"
