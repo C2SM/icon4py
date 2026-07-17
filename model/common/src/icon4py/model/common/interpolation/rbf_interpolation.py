@@ -8,13 +8,15 @@
 
 import enum
 import math
+from types import ModuleType
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid, icon as icon_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, env
 
 
 class RBFDimension(enum.Enum):
@@ -295,6 +297,33 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
             return u, v, array_ns.zeros_like(u)
 
 
+def _solve_rbf_systems(
+    mat_batch: data_alloc.NDArray,
+    rhs_batch: data_alloc.NDArray,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Solve the batched RBF linear systems.
+
+    cupy's batched ``linalg.solve`` is not bitwise batch-size-independent:
+    identical matrices yield slightly different solutions depending on the
+    batch extent, so runtime-computed RBF coefficients depend on the domain
+    decomposition (single- vs multi-rank and rank count). With
+    ``ICON4PY_DETERMINISTIC_RBF_COEFFS`` enabled the solve runs on the host
+    with numpy, which is batch-size-independent, at the cost of a
+    device-host round trip at initialization.
+    """
+    if array_ns is not np and env.flag_to_bool("ICON4PY_DETERMINISTIC_RBF_COEFFS", False):
+        sol = np.linalg.solve(
+            data_alloc.as_numpy(mat_batch), data_alloc.as_numpy(rhs_batch)[..., np.newaxis]
+        ).squeeze(-1)
+        return array_ns.asarray(sol)
+    # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
+    # batched column vector (core dims (nv, 1)) rather than a matrix
+    # (core dims (B, nv)), which would mismatch m=nv from the LHS.
+    # This problem is well explained in https://github.com/numpy/numpy/issues/26598
+    return array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
+
+
 def _compute_rbf_interpolation_coeffs(
     *,
     element_center_lat: data_alloc.NDArray,
@@ -442,17 +471,11 @@ def _compute_rbf_interpolation_coeffs(
         mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
             rhs_batch = rhs[j][array_ns.ix_(group_idx, valid_cols)]
-            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
-            # rhs_batch (B, nv, 1). The solution of mat_batch x = rhs_batch is sol.
-            # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
-            # batched column vector (core dims (nv,1)) rather than a matrix
-            # (core dims (B, nv)), which would mismatch m=nv from the LHS.
-            # This problem is well explained in https://github.com/numpy/numpy/issues/26598
             # The RBF matrix is symmetric and positive definite. However,
             # the Cholesky method is not chosen, as in ICON, simply because scipy
             # does not support batched solving of the linear equation,
             # necessitating a Python loop and resulting in poor performance.
-            sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
+            sol = _solve_rbf_systems(mat_batch, rhs_batch, array_ns)
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
     rbf_vec_coeff = tuple(rbf_vec_coeff)

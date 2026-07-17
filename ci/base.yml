@@ -186,6 +186,12 @@ variables:
         # non-zero mismatch, so remaining CPU/GPU divergences are observable
         # while the reproducibility flags mature.
         ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: "1"
+        # Compute RBF interpolation coefficients with a host (numpy) linear
+        # solve instead of batched cupy.linalg.solve, whose results depend on
+        # the batch extent (= rank-local element count) and therefore on the
+        # domain decomposition. Required for bitwise identical single- vs
+        # multi-rank results on GPU; production runs keep the GPU solve.
+        ICON4PY_DETERMINISTIC_RBF_COEFFS: "1"
         CXXFLAGS: "-ffp-contract=off"
         # GPU reproducibility flags (no-op on CPU backends where the related
         # tooling is unused):
