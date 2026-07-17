@@ -29,3 +29,7 @@ generate_test_child_pipeline:
 
 trigger_test_child_pipeline:
   extends: [.trigger_test_child_pipeline]
+
+update_tolerances_aarch64:
+  extends: [.update_tolerances_aarch64]
+  needs: [build_image_aarch64]

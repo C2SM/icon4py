@@ -1,0 +1,17 @@
+{
+  "Cell": {
+    "exclaim_ape_R02B04": 3.1e-09,
+    "exclaim_ch_r04b09_dsl": 0.04,
+    "exclaim_gauss3d": 1e-14
+  },
+  "Edge": {
+    "exclaim_ape_R02B04": 8e-14,
+    "exclaim_ch_r04b09_dsl": 2e-09,
+    "exclaim_gauss3d": 0
+  },
+  "Vertex": {
+    "exclaim_ape_R02B04": 3e-10,
+    "exclaim_ch_r04b09_dsl": 0.003,
+    "exclaim_gauss3d": 1e-15
+  }
+}

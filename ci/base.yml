@@ -203,6 +203,30 @@ variables:
     paths:
       - pytest-log-rank-*.txt
 
+# Measures test tolerances on the deterministic CPU backends and reports which tolerances could be
+# tightened, as a pipeline artifact ('tolerance-updates.patch'). This job never commits or pushes:
+# a human reviews the patch and applies it. It is instantiated only in the weekly 'all' pipeline
+# (see ci/all.yml). See scripts/python/update_tolerances.py.
+.update_tolerances_aarch64:
+  extends: [.test_runner_serial, .test_template_aarch64]
+  variables:
+    SLURM_TIMELIMIT: '00:40:00'
+  script:
+    - nox -s "update_tolerances-${PYVERSION_SHORT}"
+    - git diff -- '*tolerances.json' > tolerance-updates.patch
+    - |
+      if [ -s tolerance-updates.patch ]; then
+        echo "Proposed tolerance tightenings (see the tolerance-updates.patch artifact):"
+        cat tolerance-updates.patch
+      else
+        echo "No tolerances to tighten."
+      fi
+  artifacts:
+    when: always
+    paths:
+      - tolerance-updates.patch
+      - tolerance-measurements-*.jsonl
+
 .generate_test_child_pipeline:
   stage: generate_test
   # Run the generator on a GH200 container runner so it can use more than the

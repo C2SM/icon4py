@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import math
+import pathlib
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -22,6 +23,7 @@ from icon4py.model.testing import (
     definitions,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
+    tolerances,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -41,23 +43,12 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox
 
-RBF_TOLERANCES = {
-    dims.CellDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 3.1e-9,
-        definitions.Experiments.MCH_CH_R04B09.name: 4e-2,
-        definitions.Experiments.GAUSS3D.name: 1e-14,
-    },
-    dims.EdgeDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 8e-14,
-        definitions.Experiments.MCH_CH_R04B09.name: 2e-9,
-        definitions.Experiments.GAUSS3D.name: 0,
-    },
-    dims.VertexDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 3e-10,
-        definitions.Experiments.MCH_CH_R04B09.name: 3e-3,
-        definitions.Experiments.GAUSS3D.name: 1e-15,
-    },
-}
+# Absolute tolerances for the RBF interpolation coefficients, keyed by dimension and experiment
+# name. Maintained via the tolerance-tightening tooling (see 'scripts/python/update_tolerances.py');
+# edit 'rbf_tolerances.json' rather than hardcoding values here.
+RBF_TOLERANCES = tolerances.load_dimension_keyed_tolerances(
+    pathlib.Path(__file__).parent / "rbf_tolerances.json"
+)
 
 
 @pytest.mark.level("unit")
@@ -223,11 +214,13 @@ def test_rbf_interpolation_coeffs_cell(
         rbf_vec_coeff_c1[horizontal_start:],
         rbf_vec_coeff_c1_ref[horizontal_start:],
         atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        key=dims.CellDim.value,
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_c2[horizontal_start:],
         rbf_vec_coeff_c2_ref[horizontal_start:],
         atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        key=dims.CellDim.value,
     )
 
 
@@ -298,11 +291,13 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf_vec_coeff_v1[horizontal_start:],
         rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
         atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        key=dims.VertexDim.value,
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_v2[horizontal_start:],
         rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:],
         atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        key=dims.VertexDim.value,
     )
 
 
@@ -369,4 +364,5 @@ def test_rbf_interpolation_coeffs_edge(
         rbf_vec_coeff_e[horizontal_start:],
         rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
         atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
+        key=dims.EdgeDim.value,
     )
