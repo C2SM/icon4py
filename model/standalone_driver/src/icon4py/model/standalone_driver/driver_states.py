@@ -101,8 +101,7 @@ class ModelTimeVariables:
                 self.n_time_steps = int((absolute - config.start_of_timestepping) / config.dtime)
                 self.simulation_end_datetime = absolute
         self.dtime = config.dtime
-        # elapsed_time_global in fortran is measured from the beginning of the simulation,
-        # also when restarting
+        # measured from the beginning of the simulation, also when restarting (just for consistency with fortran)
         self.elapsed_time_in_seconds = ta.wpfloat(
             (config.start_of_timestepping - config.start_of_simulation).total_seconds()
         )
