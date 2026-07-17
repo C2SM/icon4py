@@ -527,7 +527,7 @@ class Diffusion:
         )
         self.edge_areas_dup_sq = gtx.as_field(
             (dims.EdgeDim,),
-            np.asarray(self.edge_areas.asnumpy()) ** 2,
+            np.ones(self.edge_areas.asnumpy().shape),
             allocator=self._allocator,
         )
 
