@@ -14,7 +14,7 @@ def gnomonic_proj(
     lon: data_alloc.NDArray,
     lat: data_alloc.NDArray,
     sphere_radius: float,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> data_alloc.NDArray:
     """
     Compute gnomonic projection onto a tangent plane with origin at (lon_c, lat_c).
 
