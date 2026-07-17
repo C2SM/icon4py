@@ -19,7 +19,6 @@ from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -520,16 +519,6 @@ class Diffusion:
         self._edge_params = edge_params
         self._cell_params = cell_params
         self.edge_areas = edge_params.edge_areas
-        self.edge_areas_dup = gtx.as_field(
-            (dims.EdgeDim,),
-            self.edge_areas.asnumpy().copy(),  # type: ignore[arg-type]
-            allocator=self._allocator,
-        )
-        self.edge_areas_dup_sq = gtx.as_field(
-            (dims.EdgeDim,),
-            np.ones(self.edge_areas.asnumpy().shape),
-            allocator=self._allocator,
-        )
 
         assert self._cell_params.area is not None
 
@@ -628,7 +617,7 @@ class Diffusion:
             backend=backend,
             program=apply_diffusion_to_vn,
             constant_args={
-                "area_edge": self.edge_areas_dup_sq,
+                "area_edge": self._edge_params.edge_areas,
                 "nudgecoeff_e": self._interpolation_state.nudgecoeff_e,
                 "nudgezone_diff": self.nudgezone_diff,
                 "fac_bdydiff_v": self.fac_bdydiff_v,

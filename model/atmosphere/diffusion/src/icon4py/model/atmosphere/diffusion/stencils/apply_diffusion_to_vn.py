@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
@@ -37,9 +36,6 @@ def _apply_diffusion_to_vn(
     limited_area: bool,
 ) -> fa.EdgeKField[wpfloat]:
 
-    z_nabla4_e2_wp = astype(z_nabla4_e2, wpfloat)
-    nabla4_coeff = diff_multfac_vn * area_edge
-
     vn = (
         concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
@@ -58,7 +54,14 @@ def _apply_diffusion_to_vn(
         if limited_area
         else concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
-            vn - nabla4_coeff * z_nabla4_e2_wp,
+            _apply_nabla2_and_nabla4_global_to_vn(
+                area_edge,
+                kh_smag_e,
+                z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
+                vn,
+            ),
             vn,
         )
     )
