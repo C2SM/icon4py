@@ -110,7 +110,7 @@ def create(
     """
     Fill the prognostic state by dispatching on the type of ``config.config``.
 
-    The perturbed exner pressure of the dycore is initialized too, when its diagnostic
+    The perturbed exner function of the dycore is initialized too, when its diagnostic
     state is given: diagnosed from the initial state, or, when restarting, read from the
     serialized data together with the advective tendencies of the previous time step.
     """
@@ -142,8 +142,6 @@ def create(
                     raise ValueError(
                         "restarting needs the diagnostic state of the dycore to initialize."
                     )
-                # exner_pr is read from the serialized data, as ICON reads it from its
-                # restart file instead of calling compute_exner_pert.
                 from_file_ic.read_restart_from_file(
                     config=config.config,
                     grid=grid,

@@ -117,7 +117,7 @@ class DiagnosticStateNonHydro:
     """
     Declared as exner_incr in ICON.
     """
-    exner_dynamical_increment: fa.CellKField[ta.vpfloat]  # exner pressure dynamics increment
+    exner_dynamical_increment: fa.CellKField[ta.vpfloat]  # exner function dynamics increment
     """
     Declared as exner_dyn_incr in ICON.
     """
@@ -137,7 +137,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     """
     Allocate the diagnostic state of the dycore, with all its fields set to zero.
 
-    The initial condition fills the fields that it owns: the perturbed exner pressure
+    The initial condition fills the fields that it owns: the perturbed exner function
     and, when restarting, the advective tendencies of the previous time step.
     """
     perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(

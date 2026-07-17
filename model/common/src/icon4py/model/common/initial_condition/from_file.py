@@ -152,11 +152,11 @@ def read_restart_from_file(
     Initialise the prognostic state from the serialized state of a later time step.
 
     On a restart (isRestart() in mo_nh_stepping.f90) ICON reads the prognostic
-    variables, the perturbed exner pressure and the advective tendencies of the
-    previous time step from its restart file, and skips both compute_exner_pert and
-    the initial diffusion call. The same quantities are read here from the savepoints
-    written at the beginning of the time step that starts at 'start_of_timestepping'.
-    Those savepoints are stamped with the date of the end of their time step.
+    variables, the perturbed exner function and the advective tendencies of the
+    previous time step from its restart file, and skips compute_exner_pert. The
+    same quantities are read here from the savepoints written at the beginning
+    of the time step that starts at 'start_of_timestepping'. Those savepoints
+    are stamped with the date of the end of their time step.
     """
     if config.ntracer > 0:
         raise NotImplementedError(
