@@ -101,7 +101,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
+            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]  # NDArrayObject Protocol limitation
                 low=0 - k,
                 high=grid.num_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),  # type: ignore[attr-defined]  # Field.shape is runtime-only

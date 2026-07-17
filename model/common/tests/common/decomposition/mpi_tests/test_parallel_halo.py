@@ -43,7 +43,7 @@ def test_element_ownership_is_unique(
     parallel_helpers.check_comm_size(process_props, sizes=(4,))
 
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # dict[str, np.ndarray] is runtime-compatible with NDArray
         process_props=process_props,
         allocator=backend,
     )
