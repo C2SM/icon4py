@@ -58,46 +58,73 @@ default):
   compile-time Fortran default, but the sole value F2 evidences), that
   value is used as the dataclass default and documented as such.
 
-Micexfg index-16/17 naming conflict: this module follows F2 §5's own
-LITERAL, primary quoted Fortran comment text --
+Micexfg index-16/17 naming: RESOLVED against call-site ground truth (this
+supersedes an earlier draft of this docstring that followed F2 §5's
+comment text and got it backwards -- comments lose to code). F2 §5's own
+primary quoted Fortran comment text reads:
 
     ! 16: ice nucleation; homogenious freezing
     ! 17: ice nucleation; immersion freezing (heterogenious freezing)
 
--- per the task instruction to "prefer F2's text where they conflict".
-Three OTHER sources disagree and assert the opposite assignment (16 =
-immersion, 17 = homogeneous): (a) F2 §5's own trailing editorial "Note"
-appended below that same comment block (which misquotes it -- compare the
-Note's claimed order against the literal text quoted above); (b) the
-`micexfg`-semantics process mapping supplied as this task's ground truth
-(attributed there to the design spec); (c)
-`docs/superpowers/facts/verification/rngv_other-run-quirks.md`, which
-assigns "contact (14), splinter (15), immersion (16), homogeneous (17)"
-from actual Fortran call-path evidence, not comments. Suggestive (but not
-conclusive) supporting evidence for THAT reading: F2 §5 also shows a
-commented-out alternate `micexfg` line,
-`1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,2,0,1,1,1`, with value `2` at slot 16 --
-consistent with the ground truth's claim that slot 16 is a 3-way switch
-("0 off/1 KC04/2 standard") for immersion freezing, since a simple
-homogeneous-freezing on/off switch would have no obvious use for a third
-value. F2 itself never defines what `2` means at that slot, so this is
-corroborating pattern-evidence, not a citation -- and does not, on its
-own, outweigh the primary text quoted above per the task's explicit
-"prefer F2's text" instruction. Net: `ice_nucleation_homogeneous` (slot
-16) and `ice_nucleation_immersion` (slot 17) below carry F2's literal
-comment-text naming; the cloudlab array sets BOTH slots to `0`, so this
-choice has ZERO effect on any numeric value produced by
-`cloudlab()`/`micexfg_array()` -- only on which of the two
-identically-valued dataclass fields carries which name. A future reviewer
-with stronger Fortran call-path evidence can swap the two names/docstrings
-with no test or numeric impact.
+but this is a STALE Fortran comment, contradicted by the actual call
+path:
+
+* `class_Cloud_Micro.F90:1131-1135` passes `CM%micexfg(14), CM%micexfg(15),
+  CM%micexfg(16), CM%micexfg(17)` POSITIONALLY into `Ice_Nucleation1`'s
+  dummy arguments `iflg_cfz, iflg_spl, iflg_ifz, iflg_hfz`
+  (`mod_amps_core.F90:3078-3081`) -- i.e. slot 16 binds to `iflg_ifz`
+  ("ifz" = immersion freezing) and slot 17 binds to `iflg_hfz` ("hfz" =
+  homogeneous freezing), by dummy-argument name alone.
+* Inside `Ice_Nucleation1`, `iflg_ifz` drives
+  `select case(iflg_ifz)`: `case(2)` calls `immersion_mode` (the
+  "standard" scheme), `case(1)` calls `immersion_mode_KC04`
+  (`mod_amps_core.F90:3161-3171`) -- confirming slot 16 is the 3-way
+  immersion-freezing scheme selector (`0`=off, `1`=KC04, `2`=standard),
+  exactly as this task's ground-truth process mapping (design spec) and
+  `docs/superpowers/facts/verification/rngv_other-run-quirks.md` both
+  independently asserted.
+* `iflg_hfz` drives a plain `if(iflg_hfz/=0)` guard around
+  `homfreez_mode` (`mod_amps_core.F90:3176-3181`) -- any nonzero value
+  triggers it, consistent with slot 17 being a simple on/off homogeneous-
+  freezing switch (not a 3-way selector like slot 16).
+
+So: slot 16 = immersion freezing (`ice_nucleation_immersion`, `int`,
+0=off/1=KC04/2=standard -- see `ImmersionFreezingMode` below), slot 17 =
+homogeneous freezing (`ice_nucleation_homogeneous`, `int`, any-nonzero=on).
+F2 §5's own trailing editorial "Note" (appended below its comment block)
+and the commented-out alternate `micexfg` line with value `2` at slot 16
+(both noted in an earlier draft of this docstring as corroborating, not
+conclusive, evidence) are now corroborated by direct call-site proof
+rather than pattern-matching. The cloudlab array sets BOTH slots to `0`
+(off), so this resolution has ZERO effect on any numeric value already
+produced by `cloudlab()`/`micexfg_array()` -- it only fixes which
+dataclass field carries which name/semantics.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import enum
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import bin_grid
+
+
+class ImmersionFreezingMode(enum.IntEnum):
+    """Immersion-freezing scheme selector, `micexfg` slot 16
+    (`AmpsConfig.ice_nucleation_immersion`). Confirmed by call-site ground
+    truth: `class_Cloud_Micro.F90:1131-1135` passes `CM%micexfg(16)`
+    positionally as `Ice_Nucleation1`'s `iflg_ifz` dummy argument
+    (`mod_amps_core.F90:3078-3081`); `select case(iflg_ifz)` there
+    dispatches `case(2)` to `immersion_mode` (standard) and `case(1)` to
+    `immersion_mode_KC04` (`mod_amps_core.F90:3161-3171`). The dataclass
+    field itself stays typed `int` (not this enum) so any legacy/unknown
+    integer value round-trips through `micexfg_array()` unchanged; use
+    `ImmersionFreezingMode(cfg.ice_nucleation_immersion)` to interpret it.
+    """
+
+    OFF = 0
+    KC04 = 1
+    STANDARD = 2
 
 
 @dataclasses.dataclass(frozen=True)
@@ -263,10 +290,9 @@ class AmpsConfig:
     n_step_vp: int = 10
 
     # -- 9. micexfg(1:20) -- named process on/off flags, F2 §5 lines 894-920 -
-    # Comment-block index labels quoted VERBATIM from F2 §5 (lines 899-916);
-    # see the module docstring for the 16/17 naming conflict and why F2's
-    # literal text (not the ground-truth mapping or F2's own trailing
-    # "Note") was followed.
+    # Comment-block index labels quoted VERBATIM from F2 §5 (lines 899-916)
+    # EXCEPT slots 16/17, whose F2 header comment is stale -- see the
+    # module docstring for the call-site ground truth that resolves them.
     #: index 1: printing; F2 §5 line 899.
     print_flag: bool = True
     #: index 2: liq-liq (rain-rain) collision-coalescence process; F2 §5 line 900.
@@ -297,21 +323,23 @@ class AmpsConfig:
     ice_nucleation_contact: bool = False
     #: index 15: ice nucleation, splinter nucleation (Hallett-Mossop); F2 §5 line 913.
     ice_nucleation_hallett_mossop: bool = False
-    #: index 16: ice nucleation, HOMOGENEOUS freezing per F2's literal comment
-    #: text (F2 §5 line 914: "16: ice nucleation; homogenious freezing").
-    #: `int`, not `bool`: F2 §5 also shows a commented-out alternate
-    #: `micexfg` line with value `2` at this exact slot position (see
-    #: module docstring), evidence the underlying Fortran `integer` can
-    #: take values beyond 0/1 here even though no F2 text defines what `2`
-    #: means. See module docstring for the 16-vs-17 naming conflict with
-    #: the task's ground-truth mapping.
-    ice_nucleation_homogeneous: int = 0
-    #: index 17: ice nucleation, IMMERSION freezing (heterogeneous) per F2's
-    #: literal comment text (F2 §5 line 915: "17: ice nucleation; immersion
-    #: freezing (heterogenious freezing)"). `int` for the same reason as
-    #: `ice_nucleation_homogeneous` above (shared ambiguity as to which of
-    #: the two slots is the one the commented `...,2,...` example refers to).
+    #: index 16: ice nucleation, IMMERSION freezing scheme selector.
+    #: Resolved from call-site ground truth (F2's own header comment at
+    #: this slot is stale -- see module docstring):
+    #: `class_Cloud_Micro.F90:1131-1135` passes `CM%micexfg(16)`
+    #: positionally as `Ice_Nucleation1`'s `iflg_ifz` dummy
+    #: (`mod_amps_core.F90:3078-3081`), which `select case`s to
+    #: `immersion_mode`/`immersion_mode_KC04`
+    #: (`mod_amps_core.F90:3161-3171`). `int`, not `bool`: genuinely
+    #: 3-valued (0=off, 1=KC04, 2=standard) -- see `ImmersionFreezingMode`.
     ice_nucleation_immersion: int = 0
+    #: index 17: ice nucleation, HOMOGENEOUS freezing (any nonzero value
+    #: triggers `homfreez_mode` via a plain `if(iflg_hfz/=0)` guard,
+    #: `mod_amps_core.F90:3176-3181`; `iflg_hfz` is `CM%micexfg(17)`,
+    #: `class_Cloud_Micro.F90:1131-1135` / `mod_amps_core.F90:3078-3081`).
+    #: `int` for namelist-type fidelity, though only 0/nonzero is
+    #: meaningful (unlike slot 16's genuine 3-way selector).
+    ice_nucleation_homogeneous: int = 0
     #: index 18: rain collisional breakup (Low-List). No F2 §5 comment text
     #: exists for index 18 (the header list stops at 17); name taken from
     #: the task's ground-truth process mapping (design spec), uncontradicted
@@ -436,8 +464,8 @@ class AmpsConfig:
             int(self.ice_nucleation_deposition),
             int(self.ice_nucleation_contact),
             int(self.ice_nucleation_hallett_mossop),
-            int(self.ice_nucleation_homogeneous),
             int(self.ice_nucleation_immersion),
+            int(self.ice_nucleation_homogeneous),
             int(self.rain_collisional_breakup),
             int(self.unused_19),
             int(self.unused_20),
@@ -536,8 +564,8 @@ class AmpsConfig:
             ice_nucleation_deposition=True,
             ice_nucleation_contact=False,
             ice_nucleation_hallett_mossop=False,
-            ice_nucleation_homogeneous=0,
             ice_nucleation_immersion=0,
+            ice_nucleation_homogeneous=0,
             rain_collisional_breakup=True,
             unused_19=0,
             unused_20=1,

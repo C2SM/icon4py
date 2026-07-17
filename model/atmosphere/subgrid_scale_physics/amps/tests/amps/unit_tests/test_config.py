@@ -101,8 +101,12 @@ CLOUDLAB_AMPSTASK: dict[str, object] = {
 
 # micexfg = 1,1,1,1,1,1,1,1,0,1,0,0,1,0,0,0,0,1,0,1 (F2 §5 line 920, the
 # ACTIVE line -- two other candidate lines are commented out immediately
-# above it, lines 918-919). Field names per config.py's F2-literal-comment
-# naming (see its module docstring for the 16/17 naming conflict).
+# above it, lines 918-919). Field names per config.py's naming, which for
+# slots 16/17 follows call-site ground truth rather than F2 §5's stale
+# header comment (see config.py module docstring: slot 16 =
+# ice_nucleation_immersion, slot 17 = ice_nucleation_homogeneous). Both
+# are 0 in the cloudlab array, so this resolution has no effect on the
+# values asserted here.
 CLOUDLAB_MICEXFG: dict[str, object] = {
     "print_flag": True,
     "rain_rain_coalescence": True,
@@ -199,6 +203,41 @@ class TestMicexfgArray:
         # (see config.py module docstring), so its micexfg defaults are
         # ALSO the cloudlab F2 §5 values.
         assert config.AmpsConfig().micexfg_array() == CLOUDLAB_MICEXFG_TUPLE
+
+    def test_slot_16_is_immersion_slot_17_is_homogeneous(self):
+        """Positional regression guard for the call-site-resolved 16/17
+        semantics (config.py module docstring): tuple position 15
+        (Fortran index 16) must come from `ice_nucleation_immersion`,
+        position 16 (Fortran index 17) from `ice_nucleation_homogeneous`
+        -- not the other way around."""
+        cfg = config.AmpsConfig(ice_nucleation_immersion=2, ice_nucleation_homogeneous=1)
+        array = cfg.micexfg_array()
+        assert array[15] == 2  # Fortran slot 16
+        assert array[16] == 1  # Fortran slot 17
+
+
+class TestImmersionFreezingMode:
+    """`config.ImmersionFreezingMode`: resolved from call-site ground
+    truth (class_Cloud_Micro.F90:1131-1135, mod_amps_core.F90:3078-3081,
+    3161-3171) -- micexfg slot 16 (`ice_nucleation_immersion`) is a 3-way
+    scheme selector, not a boolean."""
+
+    def test_members(self):
+        assert config.ImmersionFreezingMode.OFF == 0
+        assert config.ImmersionFreezingMode.KC04 == 1
+        assert config.ImmersionFreezingMode.STANDARD == 2
+
+    def test_cloudlab_immersion_is_off(self):
+        cfg = config.AmpsConfig.cloudlab()
+        assert config.ImmersionFreezingMode(cfg.ice_nucleation_immersion) == (
+            config.ImmersionFreezingMode.OFF
+        )
+
+    def test_interprets_dataclass_field_value(self):
+        cfg = config.AmpsConfig(ice_nucleation_immersion=1)
+        assert config.ImmersionFreezingMode(cfg.ice_nucleation_immersion) == (
+            config.ImmersionFreezingMode.KC04
+        )
 
 
 # ---------------------------------------------------------------------------
