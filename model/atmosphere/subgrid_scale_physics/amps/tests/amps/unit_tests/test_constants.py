@@ -156,3 +156,22 @@ class TestAmpsConst:
     def test_coefpi180(self):
         """pi/180."""
         assert AmpsConst.coefpi180 == 0.0174532925199433
+
+    def test_known_enum_aliases(self):
+        """Python Enum creates aliases for members with identical values.
+
+        coedsq2p and coed3sq3 have the same values as coefsq2p and coef3sq3
+        respectively (from the Fortran source). Enum treats these as aliases.
+        This test documents the expected behavior so any future change that
+        breaks this assumption fails loudly.
+        """
+        # coedsq2p is an alias of coefsq2p
+        assert AmpsConst.coedsq2p is AmpsConst.coefsq2p
+        assert AmpsConst.coedsq2p.name == "coefsq2p"
+
+        # coed3sq3 is an alias of coef3sq3
+        assert AmpsConst.coed3sq3 is AmpsConst.coef3sq3
+        assert AmpsConst.coed3sq3.name == "coef3sq3"
+
+        # When iterating, only the 33 canonical (non-alias) members appear
+        assert len(list(AmpsConst)) == 33

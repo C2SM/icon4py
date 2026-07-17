@@ -60,7 +60,14 @@ class AmpsConst(float, enum.Enum):
     coef3sq3 = 5.19615242270663  # 3*sqrt(3)
     coef4p = 1.25663706144e1  # 4*pi
     coef3i4p1i3 = 0.62035049089940  # (3/(4*pi))^(1/3)
+
+    # Note: coedsq2p and coed3sq3 have identical values to coefsq2p and coef3sq3
+    # respectively (from the Fortran source). Python's Enum class treats members
+    # with identical values as aliases to the first-defined member. Consequently:
+    # coedsq2p is an alias of coefsq2p, coed3sq3 is an alias of coef3sq3,
+    # and iteration over the enum yields only 33 distinct members. This is by
+    # design and matches the Fortran values exactly.
     coedpi6 = 0.523598775598299  # pi/6 (double precision)
-    coedsq2p = 2.506628274631  # sqrt(2*pi) (double precision)
-    coed3sq3 = 5.19615242270663  # 3*sqrt(3) (double precision)
+    coedsq2p = 2.506628274631  # sqrt(2*pi) (double precision) — alias of coefsq2p
+    coed3sq3 = 5.19615242270663  # 3*sqrt(3) (double precision) — alias of coef3sq3
     coefpi180 = 0.0174532925199433  # pi/180
