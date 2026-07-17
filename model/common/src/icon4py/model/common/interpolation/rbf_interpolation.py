@@ -11,7 +11,6 @@ import math
 from types import ModuleType
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -302,21 +301,6 @@ def _solve_rbf_systems(
     rhs_batch: data_alloc.NDArray,
     array_ns: ModuleType,
 ) -> data_alloc.NDArray:
-    """Solve the batched RBF linear systems.
-
-    cupy's batched ``linalg.solve`` is not bitwise batch-size-independent:
-    identical matrices yield slightly different solutions depending on the
-    batch extent, so runtime-computed RBF coefficients depend on the domain
-    decomposition (single- vs multi-rank and rank count). With
-    ``ICON4PY_DETERMINISTIC_RBF_COEFFS`` enabled the solve runs on the host
-    with numpy, which is batch-size-independent, at the cost of a
-    device-host round trip at initialization.
-    """
-    if array_ns is not np and env.flag_to_bool("ICON4PY_DETERMINISTIC_RBF_COEFFS", False):
-        sol = np.linalg.solve(
-            data_alloc.as_numpy(mat_batch), data_alloc.as_numpy(rhs_batch)[..., np.newaxis]
-        ).squeeze(-1)
-        return array_ns.asarray(sol)
     # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
     # batched column vector (core dims (nv, 1)) rather than a matrix
     # (core dims (B, nv)), which would mismatch m=nv from the LHS.
@@ -348,6 +332,40 @@ def _compute_rbf_interpolation_coeffs(
     domain_height: ta.wpfloat,
 ) -> tuple[data_alloc.NDArray, ...]:
     array_ns = data_alloc.array_namespace(element_center_lat)
+    # array_namespace returns array_api_compat wrapper modules, so detect the
+    # device by name rather than by module identity.
+    on_gpu = "cupy" in getattr(array_ns, "__name__", "")
+    if on_gpu and env.flag_to_bool("ICON4PY_DETERMINISTIC_RBF_COEFFS", False):
+        # cupy's batched kernels (matmul in the matrix assembly, linalg.solve,
+        # axis reductions in the normalization) are not bitwise
+        # batch-size-independent, and the batch extent is the rank-local
+        # element count: on GPU the coefficients depend on the domain
+        # decomposition. Compute them entirely on the host instead; input and
+        # output copies are bit-exact, so the result is decomposition
+        # independent at the cost of a device round trip at initialization.
+        host_coeffs = _compute_rbf_interpolation_coeffs(
+            element_center_lat=data_alloc.as_numpy(element_center_lat),
+            element_center_lon=data_alloc.as_numpy(element_center_lon),
+            element_center_x=data_alloc.as_numpy(element_center_x),
+            element_center_y=data_alloc.as_numpy(element_center_y),
+            element_center_z=data_alloc.as_numpy(element_center_z),
+            edge_center_x=data_alloc.as_numpy(edge_center_x),
+            edge_center_y=data_alloc.as_numpy(edge_center_y),
+            edge_center_z=data_alloc.as_numpy(edge_center_z),
+            edge_normal_x=data_alloc.as_numpy(edge_normal_x),
+            edge_normal_y=data_alloc.as_numpy(edge_normal_y),
+            edge_normal_z=data_alloc.as_numpy(edge_normal_z),
+            uv=tuple(tuple(data_alloc.as_numpy(component) for component in pair) for pair in uv),
+            rbf_offset=data_alloc.as_numpy(rbf_offset),
+            rbf_kernel=rbf_kernel,
+            geometry_type=geometry_type,
+            scale_factor=scale_factor,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            domain_length=domain_length,
+            domain_height=domain_height,
+        )
+        return tuple(array_ns.asarray(coeff) for coeff in host_coeffs)
     rbf_offset_shape_full = rbf_offset.shape
     assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
