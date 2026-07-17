@@ -29,7 +29,8 @@ dependencies = [
   # external dependencies
   "numpy>=1.23.3",
   "gt4py==1.1.11",
-  "packaging>=20.0"
+  "packaging>=20.0",
+  "scipy>=1.15.0"
 ]
 description = "AMPS spectral bin (habit-predicting) microphysics parameterization."
 license = {text = "BSD-3 License"}
@@ -77,7 +78,7 @@ known-third-party = ['gt4py']
 
 # -- setuptools --
 [tool.setuptools.package-data]
-'*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
+'*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed', 'data/*.npz', 'data/*.md']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}

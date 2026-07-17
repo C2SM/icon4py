@@ -2036,7 +2036,8 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "numpy"},
-  {name = "packaging"}
+  {name = "packaging"},
+  {name = "scipy"}
 ]
 name = "icon4py-atmosphere-amps"
 source = {editable = "model/atmosphere/subgrid_scale_physics/amps"}
@@ -2047,7 +2048,8 @@ requires-dist = [
   {name = "gt4py", specifier = "==1.1.11"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
-  {name = "packaging", specifier = ">=20.0"}
+  {name = "packaging", specifier = ">=20.0"},
+  {name = "scipy", specifier = ">=1.15.0"}
 ]
 
 [[package]]
