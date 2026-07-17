@@ -19,6 +19,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
@@ -109,7 +110,7 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
 def get_grid_geometry(
     backend: gtx_typing.Backend | None,
     grid: definitions.GridDescription,
-    experiment_config: definitions.ExperimentConfig,
+    experiment_config: driver_config.ExperimentConfig,
 ) -> geometry.GridGeometry:
     register_name = "_".join(
         (

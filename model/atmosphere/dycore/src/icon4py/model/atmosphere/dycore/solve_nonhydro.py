@@ -582,6 +582,7 @@ class SolveNonhydro:
                 "start_edge_lateral_boundary_level_7": self._start_edge_lateral_boundary_level_7,
                 "start_edge_nudging_level_2": self._start_edge_nudging_level_2,
                 "end_edge_nudging": self._end_edge_nudging,
+                "end_edge_local": self._end_edge_local,
                 "end_edge_halo": self._end_edge_halo,
                 "horizontal_start": gtx.int32(0),
                 "horizontal_end": self._end_edge_halo_level_2,
