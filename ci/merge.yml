@@ -21,14 +21,14 @@ variables:
   GRIDS: "simple:icon_regional"
   TOOLS_SUBSETS: "datatest:unittest"
 
-.merge_queue_only: &merge_queue_only
-  rules:
+.merge_queue_only:
+  rules: &merge_queue_only
     - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
       when: always
     - when: never
 
-.pr_only: &pr_only
-  rules:
+.pr_only:
+  rules: &pr_only
     - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
@@ -36,7 +36,6 @@ variables:
     - when: always
 
 merge_check:
-  stage: .pre
   extends: [.container-runner-lightweight-zen2]
   rules: *pr_only
   image: alpine:latest
