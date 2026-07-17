@@ -11,11 +11,14 @@ from __future__ import annotations
 import copy
 import dataclasses
 import pathlib
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config
+
+
+if TYPE_CHECKING:
+    from icon4py.model.standalone_driver import config as driver_config
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"

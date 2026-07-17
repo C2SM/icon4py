@@ -5,7 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import pathlib
+from typing import TYPE_CHECKING
 
 import gt4py.next.typing as gtx_typing
 
@@ -19,8 +22,11 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
+
+
+if TYPE_CHECKING:
+    from icon4py.model.standalone_driver import config as driver_config
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
