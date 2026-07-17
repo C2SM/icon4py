@@ -106,7 +106,10 @@ CLOUDLAB_AMPSTASK: dict[str, object] = {
 # header comment (see config.py module docstring: slot 16 =
 # ice_nucleation_immersion, slot 17 = ice_nucleation_homogeneous). Both
 # are 0 in the cloudlab array, so this resolution has no effect on the
-# values asserted here.
+# values asserted here. Slot 19 (ice_nucleation_dhf) is likewise NOT the
+# "unused" slot the design spec claims -- see config.py module docstring
+# (class_Cloud_Micro.F90:1285 -> mod_amps_core.F90 iflg_dhf); slot 20
+# (unused_20) is genuinely unused.
 CLOUDLAB_MICEXFG: dict[str, object] = {
     "print_flag": True,
     "rain_rain_coalescence": True,
@@ -126,7 +129,7 @@ CLOUDLAB_MICEXFG: dict[str, object] = {
     "ice_nucleation_homogeneous": 0,
     "ice_nucleation_immersion": 0,
     "rain_collisional_breakup": True,
-    "unused_19": 0,
+    "ice_nucleation_dhf": 0,
     "unused_20": 1,
 }
 

@@ -99,6 +99,23 @@ rather than pattern-matching. The cloudlab array sets BOTH slots to `0`
 (off), so this resolution has ZERO effect on any numeric value already
 produced by `cloudlab()`/`micexfg_array()` -- it only fixes which
 dataclass field carries which name/semantics.
+
+Micexfg slot 19 is NOT unused: this OVERRIDES the design spec's "index
+19-20 unused/dead" claim, which is wrong for slot 19 (a spec correction is
+tracked separately; this module follows the call-site evidence).
+`class_Cloud_Micro.F90:1285` passes `CM%micexfg(19)` into
+`cal_aptact_var8_kc04dep`'s `iflg_dhf` dummy argument
+(`mod_amps_core.F90:5776-5781`, whose own comment lists "iflg: 10, 13, 19"
+as the three flags that procedure consumes), which then gates branches at
+`mod_amps_core.F90` lines 6335, 6707, 7863, and 8958 -- all reachable in
+cloudlab's `act_type=1` path (`cal_aptact_var8_kc04dep`, not the `_vec`
+sibling, is the KC04-deposition variant; `act_type=1` selects the
+implicit-vapor-prediction branch that calls it). So slot 19 is modeled as
+`ice_nucleation_dhf` (the "DHF" flag `iflg_dhf`'s own dummy-argument name
+implies -- F2 does not further define the acronym), cloudlab value `0`.
+Slot 20 IS genuinely unused (repo-grep-confirmed: no call site anywhere
+binds `micexfg(20)` to any dummy argument) -- `unused_20` is unaffected by
+this correction.
 """
 
 from __future__ import annotations
@@ -145,7 +162,12 @@ class AmpsConfig:
     """
 
     # -- 1. complexity / debug / output settings (F2 §4/§5) -----------------
-    #: level of complexity (1=bulk .. 7=full); F2 §5 line 649.
+    #: level of complexity. F2 §5's own comment (lines 642-647) documents
+    #: only 1-5 (1=base; 2=+a/c-axis+dendritic length predicted; 3=+rosette
+    #: /irregular length; 4=+aerosol mass components to level 2; 5=+aerosol
+    #: mass components to level 3); the active cloudlab value is 7, but F2
+    #: gives NO comment defining 6 or 7 -- not cited/documented, do not
+    #: infer a meaning for them. F2 §5 line 649 (the `level_comp = 7` literal).
     level_comp: int = 7
     #: master debug switch. NEEDS_CONTEXT -- see module docstring.
     debug: bool = False
@@ -345,10 +367,19 @@ class AmpsConfig:
     #: the task's ground-truth process mapping (design spec), uncontradicted
     #: by anything in F2. F2 §5 line 920 (active `micexfg` line) value only.
     rain_collisional_breakup: bool = True
-    #: index 19: unused/dead (per the design spec: "index 19-20
-    #: unused/dead"). Raw passthrough of the F2 §5 line 920 literal value.
-    unused_19: int = 0
-    #: index 20: unused/dead, see `unused_19`. F2 §5 line 920 literal value.
+    #: index 19: NOT dead, despite the design spec's "index 19-20 unused/
+    #: dead" claim (that claim is WRONG for slot 19 -- see module
+    #: docstring; a spec correction is tracked separately). Call-site
+    #: proof: `class_Cloud_Micro.F90:1285` passes `CM%micexfg(19)` into
+    #: `cal_aptact_var8_kc04dep`'s `iflg_dhf` dummy argument
+    #: (`mod_amps_core.F90:5776-5781`, whose own comment lists
+    #: "iflg: 10, 13, 19"), which gates branches at `mod_amps_core.F90`
+    #: lines 6335, 6707, 7863, 8958 -- reachable in cloudlab's `act_type=1`
+    #: path. F2 §5 line 920 (active `micexfg` line) cloudlab value: `0`.
+    ice_nucleation_dhf: int = 0
+    #: index 20: unused/dead -- repo-grep-confirmed (unlike slot 19 above,
+    #: no call site binds `micexfg(20)` to anything). F2 §5 line 920
+    #: literal value.
     unused_20: int = 1
 
     # -- 10. PARAM_ATMOS_PHY_MP_AMPS_bin -- genuine Fortran defaults from ----
@@ -467,7 +498,7 @@ class AmpsConfig:
             int(self.ice_nucleation_immersion),
             int(self.ice_nucleation_homogeneous),
             int(self.rain_collisional_breakup),
-            int(self.unused_19),
+            int(self.ice_nucleation_dhf),
             int(self.unused_20),
         )
 
@@ -567,7 +598,7 @@ class AmpsConfig:
             ice_nucleation_immersion=0,
             ice_nucleation_homogeneous=0,
             rain_collisional_breakup=True,
-            unused_19=0,
+            ice_nucleation_dhf=0,
             unused_20=1,
             # PARAM_ATMOS_PHY_MP_AMPS_bin, run.conf lines 144-159.
             num_h_bins=(40, 20),

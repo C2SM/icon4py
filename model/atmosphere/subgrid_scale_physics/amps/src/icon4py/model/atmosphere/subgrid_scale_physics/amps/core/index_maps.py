@@ -196,15 +196,27 @@ class AerosolMassIndex(FortranIndex):
 
 
 # ---------------------------------------------------------------------------
-# maxdims.F90 TRUE compile-time `integer,parameter` constants only (F2 §3,
-# quoted FULL). Every other name declared in maxdims.F90 (n1mx, n2mx, n3mx,
-# n4mx, mxln, mxlh, mxlv, nxpmax, nypmax, nzpmax, nzgmax, nprmx, nbrmx,
-# ncrmx, npimx, nbimx, ncimx, npamx, nbamx, ncamx, LMAX, mxnbinr, mxnbini,
-# mxnbina, mxnbin, mxnbinb) is a plain runtime-set `integer ::` variable
-# (no `parameter` attribute) that "is set in init_AMPS subroutine" (F2 §3's
-# own module-docstring comment) from the active bin-grid configuration --
-# NOT ported here. See `config.py` (AmpsConfig.num_h_bins/nbin_h) and
-# `bin_grid.py` for the runtime-derived equivalents.
+# maxdims.F90 constants PORTED HERE (F2 §3, quoted FULL): only the
+# `integer,parameter` group tied to PPV/bin indexing (mxnmasscomp, mxnvol,
+# mxntend, mxnaxis, mxnnonmc, mxnmasscomp_r) -- this module's actual scope.
+#
+# Two other kinds of names appear in maxdims.F90 but are NOT ported here,
+# for two DIFFERENT reasons -- do not conflate them:
+#
+# 1. Plain runtime-set `integer ::` variables, no `parameter` attribute at
+#    all (n1mx, n2mx, n3mx, n4mx, mxln, mxlh, mxlv, nxpmax, nypmax, nzpmax,
+#    nzgmax, nprmx, nbrmx, ncrmx, npimx, nbimx, ncimx, npamx, nbamx, ncamx,
+#    LMAX, mxnbinr, mxnbini, mxnbina, mxnbin, mxnbinb) that "is set in
+#    init_AMPS subroutine" (F2 §3's own module-docstring comment) from the
+#    active bin-grid configuration -- genuinely not constants. See
+#    `config.py` (AmpsConfig.num_h_bins/nbin_h) and `bin_grid.py` for the
+#    runtime-derived equivalents.
+# 2. Other names that ARE genuine `integer,parameter`/`real,parameter`
+#    Fortran constants (`maxgrds=2`, `ntrgrds=maxgrds-1`, `nstyp=12`,
+#    `maxhfils=50`, `dzcrit=1.0_RP`) but are unrelated to PPV/bin indexing
+#    (grid-nesting, soil-type count, file-count limit, z-spacing floor) --
+#    excluded by this task's/module's scope, not because they aren't
+#    Fortran parameters.
 # ---------------------------------------------------------------------------
 
 MXNMASSCOMP = 8  # F2 §3 line 511: max # of mass components (ice)
