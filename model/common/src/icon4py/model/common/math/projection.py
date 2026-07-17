@@ -58,7 +58,7 @@ def compute_cell_distance_on_torus(
     target_cell_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(source_cell_x)
     x_diff = target_cell_x - source_cell_x
     y_diff = target_cell_y - source_cell_y
