@@ -17,14 +17,20 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn i
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
     _apply_nabla2_to_vn_in_lateral_boundary,
 )
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _apply_diffusion_to_vn(
+    u_vert: fa.VertexKField[vpfloat],
+    v_vert: fa.VertexKField[vpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
-    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
@@ -35,7 +41,17 @@ def _apply_diffusion_to_vn(
     start_2nd_nudge_line_idx_e: gtx.int32,
     limited_area: bool,
 ) -> fa.EdgeKField[wpfloat]:
+    z_nabla4_e2 = _calculate_nabla4(
+        u_vert,
+        v_vert,
+        primal_normal_vert_v1,
+        primal_normal_vert_v2,
+        z_nabla2_e,
+        inv_vert_vert_length,
+        inv_primal_edge_length,
+    )
 
+    # TODO(): Use if-else statement instead
     vn = (
         concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
@@ -71,8 +87,13 @@ def _apply_diffusion_to_vn(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_diffusion_to_vn(
+    u_vert: fa.VertexKField[vpfloat],
+    v_vert: fa.VertexKField[vpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
-    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
@@ -88,8 +109,13 @@ def apply_diffusion_to_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_diffusion_to_vn(
+        u_vert=u_vert,
+        v_vert=v_vert,
+        primal_normal_vert_v1=primal_normal_vert_v1,
+        primal_normal_vert_v2=primal_normal_vert_v2,
         z_nabla2_e=z_nabla2_e,
-        z_nabla4_e2=z_nabla4_e2,
+        inv_vert_vert_length=inv_vert_vert_length,
+        inv_primal_edge_length=inv_primal_edge_length,
         area_edge=area_edge,
         kh_smag_e=kh_smag_e,
         diff_multfac_vn=diff_multfac_vn,

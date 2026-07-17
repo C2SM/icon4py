@@ -17,8 +17,6 @@ import sys
 import typing
 from typing import Any, Final
 
-import numpy as np
-
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
@@ -47,7 +45,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -520,12 +517,6 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
-        self.edge_areas = edge_params.edge_areas
-        self.edge_areas_dup_sq = gtx.as_field(
-            (dims.EdgeDim,),
-            np.asarray(self.edge_areas.asnumpy()) ** 2,
-            allocator=self._allocator,
-        )
 
         assert self._cell_params.area is not None
 
@@ -604,27 +595,15 @@ class Diffusion:
             vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.calculate_nabla4 = setup_program(
+        self.apply_diffusion_to_vn = setup_program(
             backend=backend,
-            program=calculate_nabla4,
+            program=apply_diffusion_to_vn,
             constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_v2": self._edge_params.primal_normal_vert[1],
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
                 "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_5,
-                "horizontal_end": self._edge_end_local,
-            },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
-            offset_provider=self._grid.connectivities,
-        )
-        self.apply_diffusion_to_vn = setup_program(
-            backend=backend,
-            program=apply_diffusion_to_vn,
-            constant_args={
-                "area_edge": self.edge_areas_dup_sq,
+                "area_edge": self._edge_params.edge_areas,
                 "nudgecoeff_e": self._interpolation_state.nudgecoeff_e,
                 "nudgezone_diff": self.nudgezone_diff,
                 "fac_bdydiff_v": self.fac_bdydiff_v,
@@ -770,9 +749,6 @@ class Diffusion:
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
-        self.z_nabla4_e2 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
@@ -859,8 +835,6 @@ class Diffusion:
             diff_multfac_vn = self.diff_multfac_vn
             smag_limit = self.smag_limit
             smag_offset = self.smag_offset
-
-        self.vn_before = prognostic_state.vn.asnumpy().copy()
 
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
@@ -951,24 +925,16 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug("running stencil 06 (calculate_nabla4): start")
-        self.calculate_nabla4(
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
+        self.apply_diffusion_to_vn(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             z_nabla2_e=self.z_nabla2_e,
-            z_nabla4_e2=self.z_nabla4_e2,
-        )
-        log.debug("running stencil 06 (calculate_nabla4): end")
-
-        log.debug("running stencils 04 05 (apply_diffusion_to_vn): start")
-        self.apply_diffusion_to_vn(
-            z_nabla2_e=self.z_nabla2_e,
-            z_nabla4_e2=self.z_nabla4_e2,
             kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
             vn=prognostic_state.vn,
         )
-        log.debug("running stencils 04 05 (apply_diffusion_to_vn): end")
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
@@ -1003,7 +969,39 @@ class Diffusion:
         log.debug("communication of prognostic.vn - end")
 
         if self.config.apply_to_temperature:
-            pass  # BISECT: temperature diffusion disabled (enhanced + apply)
+            log.debug(
+                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+            )
+            self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+                theta_v=prognostic_state.theta_v,
+                kh_smag_e=self.kh_smag_e,
+            )
+            log.debug(
+                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+            )
+            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
+            self.copy_field(
+                prognostic_state.theta_v, self.theta_v_tmp
+            )  # TODO(): write in a way that we can avoid the copy
+            self.apply_diffusion_to_theta_and_exner(
+                kh_smag_e=self.kh_smag_e,
+                theta_v_in=self.theta_v_tmp,
+                theta_v=prognostic_state.theta_v,
+                exner=prognostic_state.exner,
+            )
+            # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+            # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+            # is another halo exchange after the physics are applied.
+            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
+            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+                log.debug("communication of prognostic cell fields: theta and exner - start")
+                self._exchange.exchange(
+                    dims.CellDim,
+                    prognostic_state.theta_v,
+                    prognostic_state.exner,
+                    stream=decomposition.DEFAULT_STREAM,
+                )
+                log.debug("communication of prognostic cell fields: theta and exner - done")
 
         # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
         # computations, which happen right after diffusion, do not require the halo lines to be correct and there
