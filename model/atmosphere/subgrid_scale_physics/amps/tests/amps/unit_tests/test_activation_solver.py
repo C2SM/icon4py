@@ -131,6 +131,55 @@ class TestZbrentActVec:
         )
         np.testing.assert_array_equal(result.ierror1, 2)
 
+    def test_fast_failing_lane_matches_single_lane_result(self) -> None:
+        """Regression: a lane that fails bracket-expansion quickly (root
+        at -100.0, `b` crosses the -2.0 failure bound after ~8 additive
+        `-0.2` steps) batched with a lane that only brackets much later
+        (root at 5.0, needs ~24 `+0.2` steps) must give EACH lane the
+        SAME result as running it alone. A prior implementation
+        unconditionally recomputed `fa`/`fb` for every lane every
+        iteration (instead of freezing them the instant a lane goes
+        inactive, matching Fortran's immediate removal from the
+        compacted `mbx2`), which let the fast-failing lane's `fa`/`fb`
+        drift to the JUST-failed (out-of-bounds) `a`/`b` while the batch
+        kept iterating for the slower lane -- silently changing the
+        returned (best-effort, ierror1!=0) root for the failed lane
+        depending on what it happened to be batched with."""
+        roots = np.array([-100.0, 5.0])
+
+        def resid(x: np.ndarray) -> np.ndarray:
+            return np.asarray(x, dtype=np.float64) - roots
+
+        batched = activation.zbrent_act_vec(
+            resid,
+            iphase=np.full(2, 1),
+            iswitch=1,
+            sw_o=np.zeros(2),
+            t_a_o=np.full(2, 260.0),
+            estbar=ESTBAR,
+            esitbar=ESITBAR,
+        )
+
+        for lane in range(2):
+            single = activation.zbrent_act_vec(
+                _residual_fn(float(roots[lane])),
+                iphase=np.full(1, 1),
+                iswitch=1,
+                sw_o=np.zeros(1),
+                t_a_o=np.full(1, 260.0),
+                estbar=ESTBAR,
+                esitbar=ESITBAR,
+            )
+            np.testing.assert_allclose(batched.sw_n[lane], single.sw_n[0], rtol=0, atol=0)
+            np.testing.assert_array_equal(batched.ierror1[lane], single.ierror1[0])
+
+        # Lane 0 (root=-100.0) never brackets -> bracket-expansion failure
+        # (ierror1==2, per test_bracket_never_forms_flags_ierror1's own
+        # b<-2.0 mechanism); lane 1 (root=5.0) brackets and converges
+        # exactly, unaffected by lane 0's failure.
+        np.testing.assert_array_equal(batched.ierror1, [2, 0])
+        np.testing.assert_allclose(batched.sw_n[1], 5.0, atol=1.0e-6)
+
     def test_iphase2_bracket_uses_ice_reference_temperature(self) -> None:
         """iphase==2's `b` bracket is `(-0.5+1.0)/r_e - 1.0`,
         `r_e=e_satw(T_a_o)/e_sati(min(T_0,T_a_o))` -- verify the seeded
@@ -575,6 +624,67 @@ class TestFuncIcevapVec:
         np.testing.assert_array_equal(result.nodhft, [0])
         np.testing.assert_array_equal(result.used_mi_vap, [0.0])
         np.testing.assert_array_equal(result.used_mi_vapliq, [0.0])
+
+    def test_kc04_deposition_classical_mode_flg1_per_box(self) -> None:
+        """`iflg_dep==1` ("classical nucleation theory") mode: `flg1`
+        gates the sink to `flg1<0.0`. This module deliberately computes
+        `flg1` PER BOX (`x_arr`) rather than replicating the Fortran's
+        stale-scalar-outside-the-loop artifact (see the module's inline
+        comment above `flg1 = x_arr if ...` and
+        docs/superpowers/facts/m1/fortran-mapping.md's "known
+        divergences" entry) -- this test exercises BOTH sides of that
+        per-box gate directly: a box with a NEGATIVE trial supersaturation
+        (`flg1<0`) can fire the sink; a box with a POSITIVE one (the
+        typical case) cannot, matching the "Meyers-only in practice"
+        comment in G2 (classical CNT is otherwise precomputed by the
+        driver, not by this sink)."""
+        y = np.array([260.0, 260.0])  # < T_0, needed for the gate
+        box = _box_ice(
+            t=np.array([260.0, 260.0]),
+            aerosol_dep_con=np.array([100.0, 100.0]),
+            aerosol_dep_mass=np.array([1.0e-6, 1.0e-6]),
+            si_alldep=np.array([0.3, 0.3]),
+            used_ma_dep=np.array([5.0e-8, 5.0e-8]),
+        )
+        ice = _ice_bin(
+            con=np.array([[0.0, 0.0]]),
+            mass_total=np.array([[0.0, 0.0]]),
+            mass_aerosol=np.array([[0.0, 0.0]]),
+            mass_meltwater=np.array([[0.0, 0.0]]),
+            mean_mass=np.array([[0.0, 0.0]]),
+            coef1=np.array([[0.0, 0.0]]),
+            coef2=np.array([[0.0, 0.0]]),
+            phase2=np.array([[1, 1]]),
+            ts_a1=np.array([[1.0, 1.0]]),
+            ts_b11=np.array([[0.0, 0.0]]),
+            ts_b12=np.array([[0.0, 0.0]]),
+            ts_b13=np.array([[0.0, 0.0]]),
+            ts_d1=np.array([[1.0, 1.0]]),
+            tmax=np.array([[300.0, 300.0]]),
+            tmp_prev=np.array([[260.0, 260.0]]),
+            ldmassdt2=np.array([[0.0, 0.0]]),
+            e_l01=np.array([[0.0, 0.0]]),
+        )  # invalid bins (con=0) -> bin_loop1 contributes nothing at either box
+        flags = activation.ActivationFlags(
+            flagp_r=1, flagp_s=1, iflg_inuc=1, iflg_dep=1, iflg_dhf=0, level=1, dt=1.0
+        )
+
+        # box 0: x<0 -> flg1=x<0 -> classical-mode sink CAN fire.
+        # box 1: x>0 (the typical trial-supersaturation sign) -> flg1=x>=0
+        # -> sink stays off, per box, independent of box 0.
+        x = np.array([-0.05, 0.05])
+        result = activation.func_icevap_vec(x, y, box, ice, flags, ESTBAR, ESITBAR)
+
+        e_satw = thermo.esat_lk(1, y, ESTBAR, ESITBAR)
+        e_sati = thermo.esat_lk(2, np.minimum(float(AmpsConst.T_0), y), ESTBAR, ESITBAR)
+        xi = e_satw / e_sati * (x + 1.0) - 1.0
+        assert xi[0] > 0.0 and xi[1] > 0.0  # sanity: both boxes clear the xi>0 gate
+
+        akk_dep_expected = min(1.0, xi[0] / 0.3)
+        expected_used_mi_act = np.array([akk_dep_expected * 5.0e-8, 0.0])
+
+        np.testing.assert_allclose(result.used_mi_act, expected_used_mi_act, rtol=1.0e-10)
+        np.testing.assert_array_equal(result.noindep, [0, 1])
 
     def test_partial_melt_shed_raises_without_opt_in(self) -> None:
         """A bin with substantial ice mass, warm box temperature (so

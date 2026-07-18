@@ -870,6 +870,26 @@ def func_icevap_vec(  # noqa: PLR0915, PLR0912, PLR0917 -- single verbatim Fortr
 
         # ---- KC04 deposition-freezing branch ----
         if flags.iflg_inuc > 0 and flags.iflg_dep > 0:
+            # DELIBERATE DIVERGENCE from the literal Fortran, documented per
+            # this project's divergence policy (port the INTENT, document
+            # the divergence, flag upstream -- do not replicate an
+            # accidental aliasing bug). Fortran (`mod_amps_core.F90:
+            # 8919-8925`) computes `flg1=x(n)` OUTSIDE (before) the
+            # `do m=1,Lbx` box loop it is later tested inside, using
+            # whatever `n` happens to be left over from a PRECEDING loop in
+            # the same subroutine -- i.e. every box's classical-nucleation
+            # (`iflg_dep==1`) gate is keyed off ONE arbitrary, stale box
+            # index's supersaturation, not its own. That reads as an
+            # accidental Fortran scalar-aliasing artifact (a leftover loop
+            # variable reused post-loop), not intended physics -- there is
+            # no plausible physical reason box A's deposition gate should
+            # depend on box B's `x`. This port instead evaluates `flg1`
+            # per-box (`x_arr`, the array of EACH box's own trial
+            # supersaturation), which is what the surrounding code's own
+            # intent (a per-box classical-vs-Meyers selector) clearly
+            # requires. Flagged upstream:
+            # docs/superpowers/facts/m1/fortran-mapping.md "known
+            # divergences" section (scale_amps repo).
             flg1 = x_arr if flags.iflg_dep == 1 else np.full(npoints, -1.0)
             dep_mask = (
                 (xi > 0.0)
@@ -1051,6 +1071,10 @@ def zbrent_act_vec(  # noqa: PLR0915, PLR0917 -- single verbatim Fortran subrout
     `iphase`: int array, 1 (pure-liquid bracket) or 2 (ice-referenced
     bracket, needs `t_a_o`/`estbar`/`esitbar` to convert the `-0.5`
     ice-supersaturation seed to an equivalent liquid supersaturation).
+    G2 only documents these two values (the Fortran `if/elseif` has no
+    `else`); any other `iphase` value here silently collapses to the
+    `iphase==1` bracket (`b=-0.5`), not an error -- callers must only
+    ever pass 1 or 2.
     `iswitch`: passed through unchanged to `residual_fn` calls in the
     ORIGINAL Fortran (via `func_vec`'s own `iswitch` argument) -- here it
     only controls the bracket-expansion step's doubling-vs-additive
@@ -1108,8 +1132,22 @@ def zbrent_act_vec(  # noqa: PLR0915, PLR0917 -- single verbatim Fortran subrout
 
         if not active.any():
             break
-        fa = residual_fn(a)
-        fb = residual_fn(b)
+        # IMPORTANT: gate the refresh by the (just-updated) `active` mask,
+        # not unconditional. A lane that goes inactive THIS iteration
+        # (bracketed, or just failed via fail_a/fail_b) must have its
+        # fa/fb FROZEN at the pre-update values (matching Fortran's
+        # instant removal from the compacted `mbx2` -- that lane never
+        # receives another `call func_vec`, so its fa(n)/fb(n) stay at
+        # whatever they were computed as BEFORE the failing/bracketing
+        # update). Recomputing unconditionally here would instead evaluate
+        # `residual_fn` at the JUST-updated (possibly out-of-bounds, e.g.
+        # `b<-2.0`) a/b for that lane -- a real divergence from Fortran
+        # when a fast-failing/fast-bracketing lane is batched with a
+        # still-active (slower) lane (a lane-by-lane loop has no such
+        # issue; only the vectorized/batched case can expose it). See
+        # `TestZbrentActVec.test_fast_failing_lane_matches_single_lane_result`.
+        fa = np.where(active, residual_fn(a), fa)
+        fb = np.where(active, residual_fn(b), fb)
 
     ierror1 = np.where(active, 3, ierror1)
 
@@ -1196,6 +1234,14 @@ def zbrent_act_vec(  # noqa: PLR0915, PLR0917 -- single verbatim Fortran subrout
         active = still
         if not active.any():
             break
-        fb = residual_fn(b)
+        # Same defensive gating as the bracket-expansion phase above (see
+        # its comment). Provably a no-op HERE specifically: `b` is only
+        # ever updated where `still` is True (the assignment two lines
+        # above), so a lane that just went inactive (converged) this
+        # iteration has an unchanged `b`, and `residual_fn(b)` would
+        # recompute the identical value anyway -- gated regardless, for
+        # symmetry with the bracket-expansion fix and to stay robust
+        # against a future edit that adds another inactivation path here.
+        fb = np.where(active, residual_fn(b), fb)
 
     return ZbrentResult(sw_n=sw_n, ierror1=ierror1)
