@@ -423,6 +423,105 @@ class TestDropletPlacement:
 
 
 # ---------------------------------------------------------------------------
+# Zbrent stages (G2 sections 1i/1j) -- every OTHER test in this module
+# converges via the backward-Euler loop alone (imethod=-1) and never
+# reaches zbrent at all, so this path had ZERO coverage before (found in
+# review). Scenario forces the section-1j "water-saturation-adjustment"
+# gate (`qr_0>1e-10 AND sw>SW_ALLOW` after backward-Euler convergence): a
+# pre-existing liquid bin with NO CCN aerosol to activate (so nothing
+# draws the initial ~30% supersaturation down), strongly supersaturated --
+# backward-Euler converges directly at that high supersaturation (well
+# above SW_ALLOW=0.02), which is exactly the section-1j trigger.
+# ---------------------------------------------------------------------------
+
+
+class TestZbrentPath:
+    BIN_IDX = 20
+
+    def _scenario(self):
+        config = _base_config()
+        luts_ = load_luts()
+        estbar, esitbar = thermo.make_esat_tables()
+        esat0 = float(thermo.esat_lk(1, np.array([T_STD]), estbar, esitbar)[0])
+        rdv = float(AmpsConst.Rdvchiarui)
+        qv_sat = rdv * esat0 / (P_STD - esat0)
+
+        binb = bin_grid.make_bin_grid("liquid", LIQ_NBINS, nbin_h=NBIN_H).binb
+        mean_mass = float((binb[self.BIN_IDX] * binb[self.BIN_IDX + 1]) ** 0.5)
+        liquid = _liquid_state_40bin({self.BIN_IDX: (0.5 * mean_mass, 0.5, 0.0, 0.0)})
+
+        qv = qv_sat * 1.3  # ~30% supersaturated -- well above SW_ALLOW=0.02
+        thermo_state = _thermo_state(p=P_STD, t=T_STD, den=DEN_STD, qv=qv)
+        aerosol = _aerosol_state_single_bin((0.0, 0.0, 0.0))  # no CCN -> nothing activates
+        diag = _diag_for(liquid, thermo_state, config, luts_)
+        return liquid, aerosol, thermo_state, config, luts_, diag
+
+    def test_routes_through_zbrent_stage2(self, monkeypatch) -> None:
+        """Instrumentation confirming the scenario actually EXERCISES the
+        zbrent path (not just a plausible-looking setup that happens to
+        converge via backward-Euler like every other test in this module)
+        -- spies on `activation.zbrent_act_vec` (unpatched pass-through)
+        and asserts it was called with `iswitch==2` (the section-1j
+        water-saturation-adjustment stage)."""
+        liquid, aerosol, thermo_state, config, luts_, diag = self._scenario()
+
+        real_zbrent = activation.zbrent_act_vec
+        iswitches_seen = []
+
+        def _spy(residual_fn, iphase, iswitch, sw_o, t_a_o, estbar, esitbar):  # noqa: PLR0917
+            iswitches_seen.append(iswitch)
+            return real_zbrent(residual_fn, iphase, iswitch, sw_o, t_a_o, estbar, esitbar)
+
+        monkeypatch.setattr(activation, "zbrent_act_vec", _spy)
+
+        activation.activate_and_advance_vapor(
+            liquid, aerosol, thermo_state, config, dt_vp=1.0, luts=luts_, diag=diag
+        )
+
+        assert 2 in iswitches_seen, (
+            f"scenario did not reach zbrent stage 2 (iswitch==2); saw {iswitches_seen} -- "
+            "this test's whole point is exercising that path, see class docstring"
+        )
+
+    def test_final_t_n_is_the_stale_pre_zbrent_temperature(self) -> None:
+        """The reviewer-flagged behavior (fixed in this same change):
+        literal Fortran resets `T_a_n(n)=ag%TV(n)%T` at BOTH zbrent-stage
+        inits (`mod_amps_core.F90:7292,7424`) and NEVER reassigns it
+        before writing it out as `ag%TV(n)%T_n` at finalize (`:8311`) --
+        exactly 5 `T_a_n(n)=` write sites exist in this subroutine, none
+        between a zbrent call and finalize. So for ANY zbrent-routed box
+        the output `T_n` is the STALE start-of-call temperature, not a
+        value re-diagnosed from the solved supersaturation. Verified
+        bit-exact here (not just close), matching `activate_and_advance_
+        vapor`'s own documented per-call-replay-fidelity goal."""
+        liquid, aerosol, thermo_state, config, luts_, diag = self._scenario()
+        _, _, thermo_after = activation.activate_and_advance_vapor(
+            liquid, aerosol, thermo_state, config, dt_vp=1.0, luts=luts_, diag=diag
+        )
+        t_after = thermo_after.values[list(ThermoState.PROPS).index(ThermoProp.tv), 0, 0, 0]
+        assert t_after == T_STD  # bit-exact, not just np.isclose
+
+    def test_activated_liquid_and_vapor_are_finite_and_sane(self) -> None:
+        """The zbrent-routed box's own outputs are finite and physically
+        sane: no CCN aerosol in this scenario, so NO newly activated
+        droplets (liquid state unchanged); some vapor is consumed by the
+        pre-existing bin's own condensational growth (qv decreases)."""
+        liquid, aerosol, thermo_state, config, luts_, diag = self._scenario()
+        liquid_after, _, thermo_after = activation.activate_and_advance_vapor(
+            liquid, aerosol, thermo_state, config, dt_vp=1.0, luts=luts_, diag=diag
+        )
+        assert np.all(np.isfinite(liquid_after.values))
+        assert np.all(np.isfinite(thermo_after.values))
+
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        qv_after = float(thermo_after.values[qvv_idx, 0, 0, 0])
+        qv_before = float(thermo_state.values[qvv_idx, 0, 0, 0])
+        assert 0.0 <= qv_after < qv_before
+
+        np.testing.assert_array_equal(liquid_after.values, liquid.values)
+
+
+# ---------------------------------------------------------------------------
 # DHF toggle.
 # ---------------------------------------------------------------------------
 

@@ -36,14 +36,17 @@ an EXPLICIT parameter here, grouped into small frozen dataclasses
 so call sites stay readable; each dataclass field's docstring cites the
 exact Fortran variable it stands in for. Task 4 (the driver) is
 responsible for computing/marshaling these arrays from the real
-`LiquidState`/`IceState`/`AmpsConfig`/etc. -- this module intentionally
-does NOT import `core.lookup_tables`/`config.AmpsConfig`/`core.index_maps`/
-`state` (listed as "available for reuse" by the dispatch, not "must
-import"): none of G2's contained-primitive bodies touch the osmotic-
-coefficient LUTs or normal/inverse-normal CDF LUTs (those feed the DHF/
-deposition Gauss-quadrature precompute in G2 section 1d/1e, which is
-squarely driver/Task-4 territory), and the primitives operate on plain
-`(nbins, npoints)`/`(npoints,)` numpy arrays rather than the `LiquidState`/
+`LiquidState`/`IceState`/`AmpsConfig`/etc. -- PART 1 (this section; see
+the "PART 2" heading further down for the driver itself, which DOES
+import `core.lookup_tables`/`config.AmpsConfig`/`core.index_maps`/`state`,
+per its own module docstring) intentionally does NOT import
+`core.lookup_tables`/`config.AmpsConfig`/`core.index_maps`/`state` (listed
+as "available for reuse" by the dispatch, not "must import"): none of G2's
+contained-primitive bodies touch the osmotic-coefficient LUTs or normal/
+inverse-normal CDF LUTs (those feed the DHF/deposition Gauss-quadrature
+precompute in G2 section 1d/1e, which is squarely driver/Task-4
+territory), and the primitives operate on plain `(nbins, npoints)`/
+`(npoints,)` numpy arrays rather than the `LiquidState`/
 `IceState` PPV layout (a design choice explained below).
 
 All arithmetic is CGS, float64. Solvers use MASKED FIXED-ITERATION numpy
@@ -1307,12 +1310,14 @@ def zbrent_act_vec(  # noqa: PLR0915, PLR0917 -- single verbatim Fortran subrout
 #    not quoted, by G2) was resolved from a commented-out INLINE
 #    equivalent immediately above its own call site in the Fortran (see
 #    `_interp_data1d_lut_big`'s docstring) -- so this section is now FULLY
-#    ported, not simplified; the one remaining, explicitly documented
-#    ASSUMPTION is WHICH of `diag_pardis_ap`'s branches applies
-#    (`flagp` IN `{1,2,-1,-2,-3}`, "fixed standard deviation" -- see
-#    `_ccn_precompute`'s own docstring for the justification), since G2
-#    itself never names `diag_pardis_ap` at all (read purely to resolve
-#    this driver's own precompute, out of G2's own quoted scope).
+#    ported, not simplified. WHICH of `diag_pardis_ap`'s branches applies
+#    (`flagp==2`, "fixed standard deviation") is CONFIRMED, not assumed:
+#    `class_Cloud_Micro.F90:966-972` calls `diag_pq` for the aerosol group
+#    with `CM%flagp_a` passed positionally as `diag_pardis_ap`'s own
+#    `flagp` dummy (alongside `CM%ap_lnsig`/`CM%ap_mean`), and
+#    `config.flagp_a` defaults to (and cloudlab sets) `2` -- read purely to
+#    resolve this driver's own precompute, since G2 itself never names
+#    `diag_pardis_ap` at all (out of G2's own quoted scope).
 #
 # 2. `sw_allact`/`ds_allDHF`/`si_alldep` (G2 section 1f, narrated as "the
 #    'all-activated' saturation offsets" but not quoted): read directly
@@ -1568,20 +1573,19 @@ def _ccn_precompute(  # noqa: PLR0915 -- single verbatim G2 section 1c transcrip
     `p(1)` (geometric mean radius)/`p(2)` (ln-sigma) -- the category's
     lognormal shape, read directly (`diag_pardis_ap`,
     `class_Mass_Bin.F90:1743-1789`, named nowhere in G2): this uses the
-    `flagp` IN `{1,2,-1,-2,-3}` ("fixed standard deviation") branch --
+    `flagp==2` ("fixed standard deviation") branch --
     `p(1)=exp((ln(mean_mass/coef4pi3/den)-4.5*ap_lnsig^2)/3)`,
-    `p(2)=ap_lnsig(icat)` -- an ASSUMPTION documented here since G2 itself
-    never names `diag_pardis_ap` or its own `flagp` dummy argument (out of
-    G2's own scope, read purely to resolve this driver's own precompute):
-    `config.flagp_a` defaults to (and cloudlab sets) `2`, and cloudlab's
-    own `config.ap_lnsig`/`config.ap_mean` are BOTH populated with
-    distinct, physically-plausible per-category values -- if `flagp` were
-    instead in `{3,-4,-5,-6}` ("fixed mean radius", `p(1)=ap_mean(icat)`
-    directly), `ap_lnsig` would be irrelevant, which its distinct nonzero
-    cloudlab values argue against. `mean_mass`/`den` are the category's
-    OWN prognostic bulk state (`AerosolState` bin 0's `amt_q/acon_q`, and
-    `den_ap` from the soluble-fraction mixing formula already used
-    elsewhere in this module), not re-derived.
+    `p(2)=ap_lnsig(icat)`. `flagp==2` is CONFIRMED, not assumed:
+    `class_Cloud_Micro.F90:966-972` calls `diag_pq` for the aerosol group
+    with `CM%flagp_a` passed positionally as `diag_pardis_ap`'s own
+    `flagp` dummy (alongside `CM%ap_lnsig`/`CM%ap_mean`), and
+    `config.flagp_a` defaults to (and cloudlab sets) `2` -- read purely to
+    resolve this driver's own precompute, since G2 itself never names
+    `diag_pardis_ap` or its own `flagp` dummy argument at all (out of G2's
+    own quoted scope). `mean_mass`/`den` are the category's OWN prognostic
+    bulk state (`AerosolState` bin 0's `amt_q/acon_q`, and `den_ap` from
+    the soluble-fraction mixing formula already used elsewhere in this
+    module), not re-derived.
 
     `interp_data1d_lut_big(luts.snrml, ...)` (`_interp_data1d_lut_big`
     above) integrates the MASS-weighted quantile shift (`xi=zn-3*p(2)`,
@@ -2248,6 +2252,16 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     final_t = be.t_a_b.copy()
 
     # ---- section 1i: zbrent stage 1 (Til-Qt vapor-advance root) ------------
+    # `iphase` is hardcoded to 1 (pure-liquid bracket) at BOTH zbrent calls
+    # below: G2's own iphase selection (`iphase(n)=2` iff `mes_rc(n)==3`,
+    # i.e. PURE ice, `mod_amps_core.F90:7268-7270`) is provably unreachable
+    # here -- this driver's own `mes_rc` (`_diag_mes_rc_and_qr0`) is
+    # collapsed to {0,1,2} (no ice group, see module docstring item 4), so
+    # `mes_rc==3` can never hold. STALE ASSUMPTION RISK: if a future task
+    # adds a real ice group to this driver's inputs, `mes_rc` gains value 3
+    # again and this hardcoded 1 must be revisited (compute `iphase` from
+    # `mes_rc` properly at that point, matching Part 1's `zbrent_act_vec`
+    # `iphase==2` branch, already ported and tested).
     needs_zbrent1 = icycle_active & (be.imethod == 1)
     if needs_zbrent1.any():
         t_a_ref1 = np.where(needs_zbrent1, t, be.t_a_b)  # T_a_o=T_a_b=ag%TV(n)%T at zbrent-1 init
@@ -2269,7 +2283,13 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
         z1 = zbrent_act_vec(
             _residual1, np.ones(npoints, dtype=np.int64), 1, sw, t_a_ref1, estbar, esitbar
         )
-        _x_n1, y_n1, qr2, qi2 = _self_consistent_condensate(
+        # qr2/qi2 (Fortran `func_vec`'s own self-consistent second pass, G2
+        # section 1i: `qr_b(n)=qr2(n); qi_b(n)=qi2(n)`) ARE still needed
+        # (feed the oscillation check's box.qr_b/box.qi_b below). The
+        # SELF-CONSISTENTLY-DIAGNOSED `y_n` this call also returns is
+        # DELIBERATELY NOT used for `final_t` -- see the T_a_n staleness
+        # note below.
+        _x_n1, _y_n1, qr2, qi2 = _self_consistent_condensate(
             z1.sw_n,
             t_a_ref1,
             box,
@@ -2280,7 +2300,6 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
             esitbar,
             allow_shed_placeholder=allow_shed_placeholder,
         )
-        t_a_after1 = y_n1
 
         box = dataclasses.replace(
             box,
@@ -2328,7 +2347,30 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
         sw_m1 = osc2.x_n
 
         final_sw = np.where(needs_zbrent1, sw_n1, final_sw)
-        final_t = np.where(needs_zbrent1, np.where(oscillating1, t, t_a_after1), final_t)
+        # T_a_n STALENESS (verbatim Fortran, NOT a re-diagnosis): G2's own
+        # zbrent-stage-1 box init resets `T_a_n(n)=ag%TV(n)%T`
+        # (`mod_amps_core.F90:7292`, right before the `call
+        # zbrent_act_vec(...)` at 7297) and NEVER reassigns `T_a_n` again
+        # before it is written out as `ag%TV(n)%T_n` at finalize (`:8311`)
+        # -- confirmed by an exhaustive grep of every `T_a_n(n)=` site in
+        # this subroutine (exactly 5: 6444 per-box init, 7177/7214 inside
+        # the backward-Euler loop, 7292/7424 the two zbrent-stage resets;
+        # none between a zbrent call and finalize). The oscillation-reset
+        # block above (G2 section 1i) only touches `T_a_b`/`sw_n`/`qr_b`/
+        # `qi_b`, not `T_a_n`, so this holds REGARDLESS of `oscillating1`.
+        # `zbrent_act_vec`'s own internal `func_vec` calls write their
+        # `y_n` output to LOCAL dummy variables (`dum1`/`dum2`/`dum3`,
+        # `mod_amps_core.F90:9020` area), never to the host-scope `T_a_n`
+        # -- so for EVERY box that ever enters zbrent stage 1, the FINAL
+        # `T_n` written out is the STALE start-of-call `ag%TV(n)%T`, not a
+        # value re-diagnosed from the solved `sw_n`. `T_n` feeds real
+        # downstream physics (`mod_amps_core.F90:505/514`,
+        # `class_Group.F90:4443/4483-4486`) and this port's own goal is
+        # bit-close per-call replay against real dumps, so this MATCHES
+        # the Fortran (a plausible accidental omission in the original,
+        # not "fixed" here) rather than diverging toward the physically
+        # more sensible re-diagnosed value.
+        final_t = np.where(needs_zbrent1, t, final_t)
     else:
         sw_m1 = final_sw.copy()
 
@@ -2356,20 +2398,16 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
         z2 = zbrent_act_vec(
             _residual2, np.ones(npoints, dtype=np.int64), 2, sw, t_a_ref2, estbar, esitbar
         )
-        qr3, qi3 = _diagnose_condensate(
-            z2.sw_n,
-            t_a_ref2,
-            box,
-            liq,
-            ice,
-            flags,
-            estbar,
-            esitbar,
-            allow_shed_placeholder=allow_shed_placeholder,
-        )
-        t_a_after2 = cal_air_temp(box.til, qr3, qi3)
         final_sw = np.where(needs_zbrent2, z2.sw_n, final_sw)
-        final_t = np.where(needs_zbrent2, t_a_after2, final_t)
+        # Same T_a_n staleness as zbrent stage 1 (see the long note above):
+        # G2's stage-2 box init ALSO resets `T_a_n(n)=ag%TV(n)%T`
+        # (`mod_amps_core.F90:7424`, right before ITS `call
+        # zbrent_act_vec(...)`), unconditionally -- including for boxes
+        # that reach stage 2 via the backward-Euler-converged (`iqvlmt==0`)
+        # path, overriding whatever `T_a_n` backward-Euler itself had
+        # produced. So `t` (the original, start-of-call `ag%TV(n)%T`) is
+        # correct here too, not a value re-diagnosed from `z2.sw_n`.
+        final_t = np.where(needs_zbrent2, t, final_t)
 
     # ---- section 1k: placement of activated droplets into liquid bins -----
     new_n = np.zeros((liquid.nbins, npoints), dtype=np.float64)
