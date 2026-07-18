@@ -18,9 +18,13 @@ Groups, matching the task brief's test list:
   precondition + no-water no-op.
 * TestVaporDepositionLiquid -- `_vapor_deposition_liquid` (M2a Task 5,
   DONE): `state.diag` precondition + no-water no-op.
-* TestRepair -- `_repair` (M2a Task 6, DONE): delegates to
-  `core.repair.repair_liquid` regardless of `phase`, no `state.diag`
-  precondition, leaves every other field untouched.
+* TestRepair -- `_repair` (M2a Task 6, DONE): dispatches `phase="collision"`
+  to `core.repair.repair_liquid` (af_col) and `phase="vapor"` to
+  `core.repair.repair_vapor` (af_vap) -- these are DIFFERENT algorithms
+  (code-review-caught: an earlier draft called `repair_liquid` for both,
+  incorrectly clipping concentration on every vapor substep); no
+  `state.diag` precondition, each phase leaves the other phase's own
+  fields untouched.
 * TestRefreshStateDiagT -- `_refresh_state` reproduces `core.thermo.diag_t`
   (F1 §5) on a known state.
 * TestWarmLoopStateValidation -- npoints-consistency guard.
@@ -282,19 +286,22 @@ class TestVaporDepositionLiquid:
 
 
 # ---------------------------------------------------------------------------
-# _repair (M2a Task 6, DONE): no longer a stub -- delegates to
-# core.repair.repair_liquid regardless of `phase` (see warm_loop.py's own
-# _repair docstring for why the two G1 call sites collapse to one
-# behavior here).
+# _repair (M2a Task 6, DONE): no longer a stub -- dispatches phase=
+# "collision" to core.repair.repair_liquid (af_col, per-bin mass/
+# concentration non-negativity) and phase="vapor" to core.repair.
+# repair_vapor (af_vap, point-level vapor-supply closure). These are
+# DIFFERENT algorithms in G5 -- see warm_loop.py's own _repair docstring
+# and core/repair.py's module docstring. A code-review-caught earlier
+# draft of this wiring incorrectly called repair_liquid for both phases.
 # ---------------------------------------------------------------------------
 
 
 class TestRepair:
-    def test_repair_clips_negative_mass_bin(self):
-        """`_repair` delegates to `core.repair.repair_liquid` -- a state
-        with a small negative bin mass comes back non-negative, matching
-        `test_repair.py`'s own `TestRepairLiquid` at the `WarmLoopState`
-        integration level."""
+    def test_collision_phase_clips_negative_mass_bin(self):
+        """`phase="collision"` delegates to `core.repair.repair_liquid` --
+        a state with a small negative bin mass comes back non-negative,
+        matching `test_repair.py`'s own `TestRepairLiquid` at the
+        `WarmLoopState` integration level."""
         config = AmpsConfig.cloudlab()
         state = _make_warm_state(rmt=-1.0e-8)
 
@@ -305,10 +312,10 @@ class TestRepair:
 
     def test_repair_does_not_require_diag(self):
         """Unlike `_activation`/`_vapor_deposition_liquid`, `_repair`
-        operates directly on `state.liquid` -- it has no `state.diag`
-        precondition (matching `run_warm_micro_tendency`'s own G1 §1
-        wiring: the FIRST col-loop `_repair` call happens BEFORE any
-        refresh, `it_cl>1` being false on the first iteration)."""
+        operates directly on `state.liquid`/`state.thermo` -- it has no
+        `state.diag` precondition (matching `run_warm_micro_tendency`'s
+        own G1 §1 wiring: the FIRST col-loop `_repair` call happens BEFORE
+        any refresh, `it_cl>1` being false on the first iteration)."""
         config = AmpsConfig.cloudlab()
         state = _make_warm_state(rmt=-1.0e-8)
         assert state.diag is None
@@ -318,16 +325,63 @@ class TestRepair:
         lp = index_maps.LiquidPPV
         assert repaired.liquid.values[lp.rmt_q.py_idx, 0, 0, 0] == 0.0
 
-    def test_phase_argument_does_not_change_behavior(self):
-        """`repair_liquid` has no phase-dependent branching (module
-        docstring) -- 'collision' and 'vapor' produce identical output."""
+    def test_vapor_phase_enforces_qvv_nonnegativity(self):
+        """`phase="vapor"` delegates to `core.repair.repair_vapor` (af_vap)
+        -- a state with negative `thermo.qvv` (over-condensation this
+        substep) comes back with `qvv>=0`, matching `test_repair.py`'s own
+        `TestRepairVapor` at the `WarmLoopState` integration level."""
         config = AmpsConfig.cloudlab()
-        state = _make_warm_state(rmt=-1.0e-8)
+        state = _make_warm_state(rmt=5.0e-6, qvv=-1.0e-6)
+
+        repaired = warm_loop._repair(state, config, phase="vapor")
+
+        qvv_after = get_thermo_prop(repaired.thermo, ThermoProp.qvv)[0]
+        assert qvv_after == pytest.approx(0.0, abs=1e-20)
+
+    def test_vapor_phase_never_touches_concentration(self):
+        """THE property the code review flagged as broken: af_vap's real
+        Fortran algorithm (`cal_mass_budget_vapor`) has no `dcondt`
+        anywhere in its body -- `rcon_q` must be bit-for-bit unchanged
+        after `phase="vapor"`, unlike `phase="collision"` (which DOES clip
+        `rcon_q`, see `TestRepairLiquid`)."""
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state(rmt=5.0e-6, qvv=-1.0e-6)
+
+        repaired = warm_loop._repair(state, config, phase="vapor")
+
+        lp = index_maps.LiquidPPV
+        np.testing.assert_array_equal(
+            repaired.liquid.values[lp.rcon_q.py_idx], state.liquid.values[lp.rcon_q.py_idx]
+        )
+
+    def test_collision_and_vapor_phases_are_different_algorithms(self):
+        """Negative regression for the code-review bug (an earlier draft
+        called `repair_liquid` for both phases). Given a state with
+        POSITIVE bin mass (already non-negative -- outside af_col's own
+        trigger) but negative `qvv` (a vapor-supply problem, outside
+        af_col's scope entirely): collision phase is a complete no-op;
+        vapor phase actively reduces liquid mass and repairs `qvv`. The
+        two phases must genuinely diverge, not just differ by
+        happenstance."""
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state(rmt=5.0e-6, qvv=-1.0e-6)
 
         collision = warm_loop._repair(state, config, phase="collision")
         vapor = warm_loop._repair(state, config, phase="vapor")
 
-        np.testing.assert_array_equal(collision.liquid.values, vapor.liquid.values)
+        lp = index_maps.LiquidPPV
+        # collision: no-op (mass/con already non-negative, qvv out of scope).
+        np.testing.assert_array_equal(collision.liquid.values, state.liquid.values)
+        np.testing.assert_array_equal(collision.thermo.values, state.thermo.values)
+        # vapor: mass reduced to repay the deficit, qvv repaired to 0.
+        assert (
+            vapor.liquid.values[lp.rmt_q.py_idx, 0, 0, 0]
+            < state.liquid.values[lp.rmt_q.py_idx, 0, 0, 0]
+        )
+        qvv_after = get_thermo_prop(vapor.thermo, ThermoProp.qvv)[0]
+        assert qvv_after == pytest.approx(0.0, abs=1e-20)
+        # The two phases therefore produce genuinely different output.
+        assert not np.array_equal(collision.liquid.values, vapor.liquid.values)
 
     def test_repair_leaves_other_fields_untouched(self):
         config = AmpsConfig.cloudlab()
@@ -339,6 +393,22 @@ class TestRepair:
         np.testing.assert_array_equal(repaired.aerosol.values, state.aerosol.values)
         np.testing.assert_array_equal(repaired.thil, state.thil)
         np.testing.assert_array_equal(repaired.qtp, state.qtp)
+
+    def test_vapor_phase_leaves_aerosol_and_column_scalars_untouched(self):
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state(rmt=5.0e-6, qvv=-1.0e-6)
+
+        repaired = warm_loop._repair(state, config, phase="vapor")
+
+        np.testing.assert_array_equal(repaired.aerosol.values, state.aerosol.values)
+        np.testing.assert_array_equal(repaired.thil, state.thil)
+        np.testing.assert_array_equal(repaired.qtp, state.qtp)
+
+    def test_invalid_phase_raises(self):
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state()
+        with pytest.raises(ValueError, match="phase"):
+            warm_loop._repair(state, config, phase="bogus")
 
     def test_run_warm_micro_tendency_no_longer_raises_notimplementederror(self, luts):
         """cloudlab (n_step_cl=1): the FIRST col-loop iteration calls

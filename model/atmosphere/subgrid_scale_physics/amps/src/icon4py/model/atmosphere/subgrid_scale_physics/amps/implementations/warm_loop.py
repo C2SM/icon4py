@@ -52,16 +52,15 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   `_refresh_state` always populates it immediately before this hook
   fires, exactly as for `_activation`.
 * Task 6 (DONE): `_repair` (repair, G1 §1, called once per col_loop
-  iteration and once per vap_loop iteration with different tendency masks/
-  tags) -- `core.repair.repair_liquid`
+  iteration and once per vap_loop iteration with DIFFERENT algorithms,
+  not just different tendency masks) -- `core.repair.repair_liquid` (af_col,
+  per-bin mass/concentration non-negativity) and `core.repair.repair_vapor`
+  (af_vap, point-level vapor-supply closure protecting `state.thermo.qvv`)
   (`core/repair.py`, `docs/superpowers/facts/m2/sedimentation-terminalvel.md`
-  ("G5") §4). G1's `irep_col`/`irep_vap` masks (`iupdate_gr`/`iupdate_gs`/
-  `iupdate_ga`, distinguishing the col-loop 'af_col' call from the vap-loop
-  'af_vap' call) have no analogue here: `repair_liquid` operates directly
-  on `state.liquid`'s current mass/concentration values (no per-process
-  `dmassdt` tendency ledger exists in this port to mask -- see
-  `core/repair.py`'s own module docstring), so both `phase` values invoke
-  the identical closure.
+  ("G5") §4 + `cal_mass_budget_vapor`, `mod_amps_check.F90:2034-3145`, read
+  directly). A code-review-caught earlier draft of this hook incorrectly
+  called `repair_liquid` for BOTH phases; see `core/repair.py`'s own module
+  docstring for the two algorithms' actual differences.
 
 `update_group_all`/`cal_dmtend_scale` (G1 §4c, tendency bookkeeping) are
 likewise NOT modeled here -- no M1 port exists for them and they are not
@@ -103,7 +102,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     pack_scale_to_amps,
     unpack_amps_to_scale,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.repair import repair_liquid
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.repair import (
+    repair_liquid,
+    repair_vapor,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.thermo import diag_t as _diag_t_f1
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.vapor_deposition import (
     vapor_deposition_liquid,
@@ -340,21 +342,26 @@ def _repair(state: WarmLoopState, config: AmpsConfig, phase: str) -> WarmLoopSta
     """`repair` (G1 §1: called once per col_loop iteration with tag
     `'af_col'`/masks `(.false.,.true.)`, and once per vap_loop iteration
     with tag `'af_vap'`/masks `(.true.,.false.)`) -- M2a Task 6's
-    `core.repair.repair_liquid` (mass/concentration non-negativity closure,
-    G5 §4).
+    `core.repair.repair_liquid`/`core.repair.repair_vapor`.
 
-    `phase`: `"collision"` or `"vapor"`, distinguishing the two G1 call
-    sites (one Python function standing in for both, matching the task
-    brief's single named `_repair` hook). Both phases invoke the SAME
-    closure -- `repair_liquid` has no phase-dependent branching (it
-    operates directly on `state.liquid`'s current values, not on a masked
-    `dmassdt` tendency ledger the way G1's `iupdate_gr(.,.,.)`/`irep_col`/
-    `irep_vap` arguments do; see `core/repair.py`'s own module docstring
-    and this module's own docstring, Task 6 item, for why).
+    `phase`: `"collision"` (af_col) or `"vapor"` (af_vap), distinguishing
+    the two G1 call sites -- these are TWO DIFFERENT algorithms in G5
+    (`core/repair.py`'s own module docstring, and `repair_vapor`'s own
+    docstring, spell out exactly how and why; a code-review-caught earlier
+    draft of this function incorrectly called `repair_liquid` for both).
+    `"collision"` -> `repair_liquid` (per-bin mass/concentration
+    non-negativity closure, `cal_mass_budget_col`/`cal_con_budget_col`).
+    `"vapor"` -> `repair_vapor` (point-level vapor-supply closure,
+    `cal_mass_budget_vapor` -- protects `state.thermo.qvv` from going
+    negative from over-condensation; never touches concentration).
     """
-    del phase
-    liquid = repair_liquid(state.liquid, config)
-    return dataclasses.replace(state, liquid=liquid)
+    if phase == "collision":
+        liquid = repair_liquid(state.liquid, config)
+        return dataclasses.replace(state, liquid=liquid)
+    if phase == "vapor":
+        liquid, thermo = repair_vapor(state.liquid, state.thermo, config)
+        return dataclasses.replace(state, liquid=liquid, thermo=thermo)
+    raise ValueError(f"_repair: phase must be 'collision' or 'vapor'; got {phase!r}")
 
 
 # ---------------------------------------------------------------------------

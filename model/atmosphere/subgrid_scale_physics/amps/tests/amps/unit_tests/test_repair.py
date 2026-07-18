@@ -6,23 +6,35 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for core/repair.py (M2a Task 6): `repair`'s liquid mass/
-concentration non-negativity closure, per
-docs/superpowers/facts/m2/sedimentation-terminalvel.md ("G5") §4. See
-`core/repair.py`'s own module docstring for the full derivation of why this
-port is a state-level non-negativity clip (with G5's exact `0.99999`/
-`total_limit` trigger and `NITER`/`NITER_TOTAL` loop bounds), not a literal
-per-process `dmassdt` tendency rescale.
+"""Tests for core/repair.py (M2a Task 6): `repair`'s TWO independent
+liquid-budget-closure phases, per
+docs/superpowers/facts/m2/sedimentation-terminalvel.md ("G5") §4 +
+`cal_mass_budget_vapor` (`mod_amps_check.F90:2034-3145`, read directly). See
+`core/repair.py`'s own module docstring for the full derivation of why both
+are state-level closures (with G5's exact `0.99999`/`total_limit` trigger
+and `NITER`/`NITER_TOTAL` loop bounds where applicable), not literal
+per-process `dmassdt` tendency rescales -- and for why `repair_liquid`
+(af_col) and `repair_vapor` (af_vap) are DIFFERENT algorithms, not
+interchangeable (a code-review-caught bug in an earlier draft called
+`repair_liquid` for both).
 
 Groups:
 * TestConstants -- NITER/NITER_TOTAL/TOTAL_LIMIT match G5 exactly.
 * TestNonnegRescaleLeg -- the private per-leg convergence loop in isolation.
-* TestRepairLiquid -- the public `repair_liquid` deliverable: negative mass/
-  concentration bins clipped to non-negative, untouched elements preserved
-  bit-for-bit, total change bounded by exactly the clipped deficit (G5's own
-  degree of conservation -- see module docstring's "don't impose stricter
-  conservation than Fortran" note), no input mutation, multi-point
-  independence, and the documented rmat_q/rmas_q/volume out-of-scope no-ops.
+* TestRepairLiquid -- the public `repair_liquid` (af_col) deliverable:
+  negative mass/concentration bins clipped to non-negative, untouched
+  elements preserved bit-for-bit, total change bounded by exactly the
+  clipped deficit (G5's own degree of conservation -- see module
+  docstring's "don't impose stricter conservation than Fortran" note), no
+  input mutation, multi-point independence, and the documented
+  rmat_q/rmas_q/volume out-of-scope no-ops.
+* TestRepairVapor -- the public `repair_vapor` (af_vap) deliverable:
+  negative `thermo.qvv` (vapor deficit) repaired to non-negative by taking
+  water mass back from `liquid.rmt_q`, concentration (`rcon_q`) NEVER
+  touched (the property this class exists to lock in -- af_vap's real
+  Fortran algorithm has no `dcondt` in its array list at all), no-op when
+  vapor is already non-negative, and the honest "insufficient liquid mass"
+  edge case.
 """
 
 from __future__ import annotations
@@ -33,7 +45,11 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import repair
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.index_maps import LiquidPPV
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import LiquidState
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
+    LiquidState,
+    ThermoProp,
+    ThermoState,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +71,16 @@ def _liquid_state(*, rmt: np.ndarray, rcon: np.ndarray, rmat=None, rmas=None) ->
     if rmas is not None:
         values[lp.rmas_q.py_idx, :, 0, :] = rmas
     return LiquidState(values=values)
+
+
+def _thermo_state(*, qvv: np.ndarray) -> ThermoState:
+    """`(npoints,)` qvv array -> a `ThermoState` with every other field
+    zero (irrelevant to `repair_vapor`, which reads only `qvv`)."""
+    npoints = qvv.shape[0]
+    values = np.zeros((len(ThermoState.PROPS), 1, 1, npoints), dtype=np.float64)
+    qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+    values[qvv_idx, 0, 0, :] = qvv
+    return ThermoState(values=values)
 
 
 # ---------------------------------------------------------------------------
@@ -278,3 +304,199 @@ class TestRepairLiquid:
         lp = LiquidPPV
         assert np.all(out.values[lp.rmt_q.py_idx] >= 0.0)
         assert np.all(out.values[lp.rcon_q.py_idx] >= 0.0)
+
+
+# ---------------------------------------------------------------------------
+# TestRepairVapor -- the public af_vap (`cal_mass_budget_vapor`) deliverable.
+# ---------------------------------------------------------------------------
+
+
+class TestRepairVapor:
+    def test_negative_qvv_repaired_to_nonneg(self):
+        """The core af_vap invariant: a vapor deficit (negative `qvv`,
+        af_vap's own failure mode) is repaired to non-negative."""
+        rmt = np.array([[5.0e-6]])
+        rcon = np.array([[10.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        thermo_state = _thermo_state(qvv=np.array([-1.0e-6]))
+        config = AmpsConfig.cloudlab()
+
+        _liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        assert thermo_out.values[qvv_idx, 0, 0, 0] == pytest.approx(0.0, abs=1e-20)
+
+    def test_deficit_taken_from_liquid_mass_conserving_total(self):
+        """The vapor deficit is given back by removing EXACTLY that much
+        water mass from `liquid.rmt_q` -- qvv+liquid mass total is
+        conserved (unlike af_col's own repair_liquid, which the module
+        docstring explicitly does NOT require to conserve)."""
+        rmt = np.array([[5.0e-6]])
+        rcon = np.array([[10.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        deficit = 8.0e-7
+        thermo_state = _thermo_state(qvv=np.array([-deficit]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        qvv_after = thermo_out.values[qvv_idx, 0, 0, 0]
+        mass_after = liquid_out.values[lp.rmt_q.py_idx, 0, 0, 0]
+
+        assert qvv_after == pytest.approx(0.0, abs=1e-20)
+        assert mass_after == pytest.approx(5.0e-6 - deficit)
+        # Total (qvv + liquid mass) conserved exactly.
+        assert (qvv_after + mass_after) == pytest.approx(-deficit + 5.0e-6)
+
+    def test_concentration_never_touched(self):
+        """THE property this test class exists to lock in (code review):
+        af_vap's real Fortran algorithm (`cal_mass_budget_vapor`) has no
+        `dcondt` anywhere in its body -- `rcon_q` must be bit-for-bit
+        unchanged, regardless of how large the vapor deficit is."""
+        rmt = np.array([[5.0e-6], [3.0e-6]])
+        rcon = np.array([[10.0], [7.5]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        thermo_state = _thermo_state(qvv=np.array([-2.0e-6]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, _thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        np.testing.assert_array_equal(
+            liquid_out.values[lp.rcon_q.py_idx], liquid.values[lp.rcon_q.py_idx]
+        )
+
+    def test_rmat_rmas_never_touched(self):
+        rmt = np.array([[5.0e-6]])
+        rcon = np.array([[10.0]])
+        rmat = np.array([[1.0e-8]])
+        rmas = np.array([[5.0e-9]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon, rmat=rmat, rmas=rmas)
+        thermo_state = _thermo_state(qvv=np.array([-2.0e-6]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, _thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        assert liquid_out.values[lp.rmat_q.py_idx, 0, 0, 0] == pytest.approx(1.0e-8)
+        assert liquid_out.values[lp.rmas_q.py_idx, 0, 0, 0] == pytest.approx(5.0e-9)
+
+    def test_nonnegative_qvv_is_exact_noop(self):
+        rmt = np.array([[5.0e-6], [3.0e-6]])
+        rcon = np.array([[10.0], [7.5]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        thermo_state = _thermo_state(qvv=np.array([1.0e-2]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        np.testing.assert_array_equal(liquid_out.values, liquid.values)
+        np.testing.assert_array_equal(thermo_out.values, thermo_state.values)
+
+    def test_give_back_distributed_proportionally_to_mass_share(self):
+        """G5's own `modc_v` applies the SAME scalar to every bin's
+        condensational gain -- this port's closest state-level analogue is
+        a proportional-by-mass-share give-back (module docstring): a bin
+        with 3x the mass of another gives back 3x as much water."""
+        rmt = np.array([[6.0e-6], [2.0e-6]])
+        rcon = np.array([[10.0], [10.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        deficit = 4.0e-7
+        thermo_state = _thermo_state(qvv=np.array([-deficit]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, _thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        mass_after = liquid_out.values[lp.rmt_q.py_idx, :, 0, 0]
+        taken = rmt[:, 0] - mass_after
+        # bin 0 has 3x bin 1's mass -> should give back 3x as much.
+        assert taken[0] == pytest.approx(3.0 * taken[1])
+        assert taken.sum() == pytest.approx(deficit)
+
+    def test_insufficient_liquid_mass_leaves_honest_residual(self):
+        """When available liquid mass cannot cover the full deficit, this
+        function gives back everything it has and stops (module docstring:
+        a genuine physical limit, not a non-convergence bug) -- no
+        exception, no infinite loop, and no negative liquid mass."""
+        rmt = np.array([[1.0e-7]])
+        rcon = np.array([[10.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        deficit = 5.0e-6  # far more than the 1e-7 of liquid mass available
+        thermo_state = _thermo_state(qvv=np.array([-deficit]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        assert liquid_out.values[lp.rmt_q.py_idx, 0, 0, 0] == pytest.approx(0.0, abs=1e-20)
+        assert liquid_out.values[lp.rmt_q.py_idx, 0, 0, 0] >= 0.0
+        # Residual deficit honestly remains negative (not silently zeroed).
+        assert thermo_out.values[qvv_idx, 0, 0, 0] == pytest.approx(-deficit + 1.0e-7)
+
+    def test_no_liquid_mass_at_all_is_a_safe_noop(self):
+        """Zero liquid mass everywhere: nothing to give back -- no
+        exception, qvv passes through unchanged."""
+        rmt = np.array([[0.0]])
+        rcon = np.array([[0.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        thermo_state = _thermo_state(qvv=np.array([-1.0e-6]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        np.testing.assert_array_equal(liquid_out.values, liquid.values)
+        assert thermo_out.values[qvv_idx, 0, 0, 0] == pytest.approx(-1.0e-6)
+
+    def test_does_not_mutate_inputs(self):
+        rmt = np.array([[5.0e-6]])
+        rcon = np.array([[10.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        thermo_state = _thermo_state(qvv=np.array([-1.0e-6]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_values_before = liquid.values.copy()
+        thermo_values_before = thermo_state.values.copy()
+
+        repair.repair_vapor(liquid, thermo_state, config)
+
+        np.testing.assert_array_equal(liquid.values, liquid_values_before)
+        np.testing.assert_array_equal(thermo_state.values, thermo_values_before)
+
+    def test_multipoint_vectorized_independent(self):
+        rmt = np.array([[4.0e-6, 6.0e-6]])
+        rcon = np.array([[10.0, 10.0]])
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        thermo_state = _thermo_state(qvv=np.array([-1.0e-6, 5.0e-3]))
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        # Point 0: deficit repaired.
+        assert thermo_out.values[qvv_idx, 0, 0, 0] == pytest.approx(0.0, abs=1e-20)
+        assert liquid_out.values[lp.rmt_q.py_idx, 0, 0, 0] == pytest.approx(4.0e-6 - 1.0e-6)
+        # Point 1: already non-negative, untouched.
+        assert thermo_out.values[qvv_idx, 0, 0, 1] == pytest.approx(5.0e-3)
+        assert liquid_out.values[lp.rmt_q.py_idx, 0, 0, 1] == pytest.approx(6.0e-6)
+
+    def test_finite_result_from_random_state(self):
+        rng = np.random.default_rng(4)
+        rmt = rng.uniform(0.0, 1.0e-4, size=(20, 5))
+        rcon = rng.uniform(0.0, 50.0, size=(20, 5))
+        liquid = _liquid_state(rmt=rmt, rcon=rcon)
+        qvv = rng.uniform(-1.0e-5, 1.0e-2, size=5)
+        thermo_state = _thermo_state(qvv=qvv)
+        config = AmpsConfig.cloudlab()
+
+        liquid_out, thermo_out = repair.repair_vapor(liquid, thermo_state, config)
+
+        lp = LiquidPPV
+        assert np.all(np.isfinite(liquid_out.values))
+        assert np.all(np.isfinite(thermo_out.values))
+        assert np.all(liquid_out.values[lp.rmt_q.py_idx] >= 0.0)
