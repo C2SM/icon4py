@@ -14,8 +14,12 @@ Groups, matching the task brief's test list:
 * TestSubstepDts -- dt_cl/dt_vp exact (G1 §3).
 * TestRefreshStateCallCount -- substep counts (n_step_cl x n_step_vp) drive
   the right number of `_refresh_state` calls.
-* TestProcessStubsRaise -- `_activation`/`_vapor_deposition_liquid`/
-  `_repair` raise NotImplementedError naming their task.
+* TestActivation -- `_activation` (M2a Task 4, DONE): `state.diag`
+  precondition + no-water no-op.
+* TestVaporDepositionLiquid -- `_vapor_deposition_liquid` (M2a Task 5,
+  DONE): `state.diag` precondition + no-water no-op.
+* TestProcessStubsRaise -- `_repair` raises NotImplementedError naming
+  its task (the only remaining stub).
 * TestRefreshStateDiagT -- `_refresh_state` reproduces `core.thermo.diag_t`
   (F1 §5) on a known state.
 * TestWarmLoopStateValidation -- npoints-consistency guard.
@@ -240,16 +244,43 @@ class TestActivation:
 
 
 # ---------------------------------------------------------------------------
+# _vapor_deposition_liquid (M2a Task 5, DONE): no longer a stub -- requires
+# state.diag (populated by _refresh_state), then delegates to
+# core.vapor_deposition.vapor_deposition_liquid.
+# ---------------------------------------------------------------------------
+
+
+class TestVaporDepositionLiquid:
+    def test_raises_without_diag(self, luts):
+        """Calling `_vapor_deposition_liquid` directly on a state that
+        skipped `_refresh_state` (`diag=None`, `WarmLoopState`'s own
+        default) must raise a clear `ValueError`, not silently misbehave
+        -- matching `_activation`'s own precondition check."""
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state()
+        assert state.diag is None
+        with pytest.raises(ValueError, match="state\\.diag"):
+            warm_loop._vapor_deposition_liquid(state, config, 0.01, luts)
+
+    def test_no_water_box_is_a_no_op_after_refresh(self, luts):
+        """A `diag`-populated, no-water box: no active bins (`diag.
+        mean_mass<=0` everywhere) -> every bin is a passthrough ->
+        liquid unchanged."""
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state(qtp=0.0, rmt=0.0, rmat=0.0, qvv=0.0)
+        refreshed = warm_loop._refresh_state(state, config, luts)
+        assert refreshed.diag is not None
+
+        deposited = warm_loop._vapor_deposition_liquid(refreshed, config, 0.01, luts)
+        np.testing.assert_array_equal(deposited.liquid.values, refreshed.liquid.values)
+
+
+# ---------------------------------------------------------------------------
 # Process stubs raise NotImplementedError, naming their task.
 # ---------------------------------------------------------------------------
 
 
 class TestProcessStubsRaise:
-    def test_vapor_deposition_liquid_raises_task_5(self, luts):
-        config = AmpsConfig.cloudlab()
-        with pytest.raises(NotImplementedError, match="Task 5"):
-            warm_loop._vapor_deposition_liquid(_make_warm_state(), config, 0.01, luts)
-
     def test_repair_raises_task_6_collision_phase(self):
         config = AmpsConfig.cloudlab()
         with pytest.raises(NotImplementedError, match="Task 6"):

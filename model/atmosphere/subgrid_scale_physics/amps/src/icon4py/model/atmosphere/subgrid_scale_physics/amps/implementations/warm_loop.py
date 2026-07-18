@@ -43,8 +43,14 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   (`core/activation.py`). Requires `state.diag` (Task 2's `diag_pq_liquid`
   output); `_refresh_state` always populates it immediately before this
   hook fires.
-* Task 5: `_vapor_deposition_liquid` (vapor deposition on rain,
-  `vapor_deposition(CM%rain,...)`, G1 §1 vap_loop).
+* Task 5 (DONE): `_vapor_deposition_liquid` (vapor deposition on rain,
+  `vapor_deposition(CM%rain,...)`, G1 §1 vap_loop) --
+  `core.vapor_deposition.vapor_deposition_liquid` (`core/
+  vapor_deposition.py`). Requires `state.diag` (Task 2's
+  `diag_pq_liquid` output, deliberately STALE relative to Task 4's own
+  activation-added droplets -- see that module's own docstring item 2);
+  `_refresh_state` always populates it immediately before this hook
+  fires, exactly as for `_activation`.
 * Task 6: `_repair` (repair, G1 §1, called once per col_loop iteration and
   once per vap_loop iteration with different tendency masks/tags).
 
@@ -89,6 +95,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     unpack_amps_to_scale,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.thermo import diag_t as _diag_t_f1
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.vapor_deposition import (
+    vapor_deposition_liquid,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
     AerosolState,
     LiquidState,
@@ -286,14 +295,31 @@ def _vapor_deposition_liquid(
     state: WarmLoopState, config: AmpsConfig, dt_vp: float, luts: AmpsLuts
 ) -> WarmLoopState:
     """Vapor deposition on rain (G1 §1 vap_loop: `vapor_deposition(CM%rain,
-    ...)`, guarded by `micexfg(6)==1 .and. flagp_r>0`) -- Task 5 scope. NOT
-    implemented here."""
-    del state, config, dt_vp, luts
-    raise NotImplementedError(
-        "_vapor_deposition_liquid is a Task 5 stub (vapor deposition on rain: "
-        "vapor_deposition(CM%rain,...), G1 §1 vap_loop) -- not implemented in "
-        "this M2a Task 1 warm-phase host-loop skeleton."
-    )
+    ...)`, guarded by `micexfg(6)==1 .and. flagp_r>0`) -- M2a Task 5's
+    `core.vapor_deposition.vapor_deposition_liquid` (Chen-Lamb semidiscrete
+    condensation/evaporation growth + mass-space bin remap).
+
+    `luts` is accepted for interface parity with the other two process
+    hooks (`_activation`, `_repair`) but UNUSED -- `vapor_deposition_liquid`
+    consumes `diag.vapdep_coef1`/`vapdep_coef2` (already fully computed by
+    `diag_pq_liquid`, no LUT lookups of its own on the liquid path).
+
+    Requires `state.diag` (populated by `_refresh_state(state, config,
+    luts)`, always called immediately before this hook in
+    `run_warm_micro_tendency`'s own vap-loop head) -- raises `ValueError`
+    naming the missing precondition if called directly on a state that
+    skipped that refresh, matching `_activation`'s own precondition check.
+    """
+    del luts
+    if state.diag is None:
+        raise ValueError(
+            "_vapor_deposition_liquid requires state.diag (core.liquid_diag.LiquidDiag) to be "
+            "populated -- call _refresh_state(state, config, luts) first "
+            "(run_warm_micro_tendency's own vap-loop head always does, immediately "
+            "before this hook)."
+        )
+    liquid = vapor_deposition_liquid(state.liquid, state.thermo, config, dt_vp, state.diag)
+    return dataclasses.replace(state, liquid=liquid)
 
 
 def _repair(state: WarmLoopState, config: AmpsConfig, phase: str) -> WarmLoopState:
