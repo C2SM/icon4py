@@ -177,8 +177,11 @@ def case_from_micro_record(
       matching what the record pair itself spans).
 
     Raises:
-        ValueError: if `rec.phase != ref_data.MicroRecord.PHASE_PRE`, or
-            if `rec.npr/npi/npa` don't match the PPV enum lengths.
+        ValueError: if `rec.phase != ref_data.MicroRecord.PHASE_PRE`, if
+            `rec.npr/npi/npa` don't match the PPV enum lengths, or if
+            `rec.ncr/nci/nca` != 1 (state.py's `ncat` convention -- every
+            category loop is "assume(d) to be 1" per F4, see state.py's
+            module docstring).
     """
     if rec.phase != ref_data.MicroRecord.PHASE_PRE:
         raise ValueError(
@@ -190,15 +193,30 @@ def case_from_micro_record(
             f"rec.npr={rec.npr} != len(LiquidPPV)={len(LiquidState.PROPS)}; "
             "qrpvm's leading axis wouldn't match LiquidState.PROPS order"
         )
+    if rec.ncr != 1:
+        raise ValueError(
+            f"rec.ncr={rec.ncr} != 1; qrpvm's category axis must be 1 (state.py's ncat "
+            "convention -- every category loop is 'assume(d) to be 1' per F4)"
+        )
     if rec.npi != len(IceState.PROPS):
         raise ValueError(
             f"rec.npi={rec.npi} != len(IcePPV)={len(IceState.PROPS)}; "
             "qipvm's leading axis wouldn't match IceState.PROPS order"
         )
+    if rec.nci != 1:
+        raise ValueError(
+            f"rec.nci={rec.nci} != 1; qipvm's category axis must be 1 (state.py's ncat "
+            "convention -- every category loop is 'assume(d) to be 1' per F4)"
+        )
     if rec.npa != len(AerosolState.PROPS):
         raise ValueError(
             f"rec.npa={rec.npa} != len(AerosolPPV)={len(AerosolState.PROPS)}; "
             "qapvm's leading axis wouldn't match AerosolState.PROPS order"
+        )
+    if rec.nca != 1:
+        raise ValueError(
+            f"rec.nca={rec.nca} != 1; qapvm's category axis must be 1 (state.py's ncat "
+            "convention -- every category loop is 'assume(d) to be 1' per F4)"
         )
 
     if config is None:

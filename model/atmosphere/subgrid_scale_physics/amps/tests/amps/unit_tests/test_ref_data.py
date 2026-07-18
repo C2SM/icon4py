@@ -605,6 +605,14 @@ class TestCaseFromMicroRecord:
         with pytest.raises(ValueError, match="npa"):
             box.case_from_micro_record(rec)
 
+    def test_rejects_ncr_not_one(self):
+        """A dump record with ncat != 1 (e.g. ncr=2) must fail at this
+        data-entry seam, not silently misinterpret qrpvm's category axis
+        downstream (state.py's `_BinnedState`/F4 both pin ncat=1)."""
+        rec = dataclasses.replace(_make_pre_micro_record(), ncr=2)
+        with pytest.raises(ValueError, match="ncr"):
+            box.case_from_micro_record(rec)
+
 
 # ---------------------------------------------------------------------------
 # BoxCase validation + run_box skeleton behavior.

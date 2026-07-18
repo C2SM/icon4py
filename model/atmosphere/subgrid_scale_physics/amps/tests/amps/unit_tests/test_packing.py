@@ -288,6 +288,33 @@ class TestPackEmoist:
 
 
 # ---------------------------------------------------------------------------
+# Latent-heat constant anchor: SCALE_LHV0/SCALE_LHS0/SCALE_LHF0 (F4 SS1.5
+# Emoist, SS2.7 RHOE_t) against bare numeral literals -- mirrors the
+# Exner-constant anchor pattern in test_ref_data.py's TestCaseFromMicroRecord
+# .test_field_mapping (its own `rdry, cpdry, pre00 = 287.04, 1004.64, 1.0e5`
+# literals). Every OTHER test in this module re-derives its expected value
+# from these SAME `packing.SCALE_LH*` module constants, so a silent
+# regression in one of them (e.g. a typo'd exponent or digit) would
+# otherwise pass every test here -- these anchor the constants themselves
+# against independent literals traced to scale_const.F90 (see this module's
+# own docstring/comments: SCALE_LHV0 -> scale_const.F90:82, SCALE_LHS0 ->
+# scale_const.F90:84, SCALE_LHF0 = SCALE_LHS0 - SCALE_LHV0 ->
+# scale_const.F90:206).
+# ---------------------------------------------------------------------------
+
+
+class TestScaleLatentHeatConstantsAnchor:
+    def test_scale_lhv0(self):
+        assert packing.SCALE_LHV0 == 2.501e6
+
+    def test_scale_lhs0(self):
+        assert packing.SCALE_LHS0 == 2.834e6
+
+    def test_scale_lhf0(self):
+        assert packing.SCALE_LHF0 == 2.834e6 - 2.501e6
+
+
+# ---------------------------------------------------------------------------
 # Sentinel test: the x0.001 factor hits EXACTLY the F4-listed indices.
 # ---------------------------------------------------------------------------
 

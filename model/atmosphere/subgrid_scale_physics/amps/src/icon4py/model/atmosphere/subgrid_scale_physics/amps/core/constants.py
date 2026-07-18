@@ -6,6 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""CGS-unit physical constants for AMPS microphysics, transcribed verbatim
+from AMPS Fortran (scale_amps repo): base/derived constants from
+`mod_amps_const.F90`, precomputed geometric coefficients from `acc_amps.F90`
+-- see `AmpsConst`'s own docstring and the per-member comments below for
+which source each constant traces to.
+"""
+
 import enum
 
 

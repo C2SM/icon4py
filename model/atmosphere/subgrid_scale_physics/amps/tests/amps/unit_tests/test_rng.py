@@ -126,3 +126,37 @@ class TestQuadraticCollision:
         m31 = rng.M31
         fixed = ((m31 - 1) * pow(2, -1, m31)) % m31
         assert (2 * fixed) % m31 == (m31 - 1) % m31
+
+    def test_real_quadratic_round_collides_through_module_function(self):
+        """Direct check of the SHIPPED quadratic round (embedded inline in
+        `counter_hash01_numpy`, module docstring's "Quadratic-round 2-to-1
+        collision caveat"), not a test-local replica like `test_pair_collision`
+        above.
+
+        The initial affine combine `x = (cell*C_CELL + k*C_K + bin*C_BIN +
+        step*C_STEP + 1) % M31` is a bijection mod the prime `M31` (every
+        mixing constant is nonzero, hence invertible), so two DIFFERENT
+        `bin_id` inputs (cell_id=k_id=step=0 held fixed) can be solved to
+        land EXACTLY on a genuine collision pair `{x1, M31-1-x1}` right
+        before the quadratic round. The 3 following Lehmer rounds are each
+        a bijection, so equality survives them iff it already held right
+        after the quadratic round -- i.e. if `counter_hash01_numpy`'s two
+        calls below return the IDENTICAL output, that can only be because
+        its actual quadratic round collided `x1`/`x2`, exactly as the
+        module docstring claims.
+        """
+        m31 = rng.M31
+        inv_c_bin = pow(rng.C_BIN, -1, m31)
+
+        bin1 = 12345
+        x1 = (bin1 * rng.C_BIN + 1) % m31  # combine() with cell=k=step=0
+        x2 = (m31 - 1 - x1) % m31
+        assert x1 != x2  # sanity: a genuine distinct pair, not the self-paired fixed point
+        bin2 = ((x2 - 1) * inv_c_bin) % m31  # solve combine(bin2) == x2
+
+        cell_id = np.array([0])
+        k_id = np.array([0])
+        out1 = rng.counter_hash01_numpy(cell_id, k_id, bin_id=bin1, step=0)
+        out2 = rng.counter_hash01_numpy(cell_id, k_id, bin_id=bin2, step=0)
+
+        assert np.array_equal(out1, out2)
