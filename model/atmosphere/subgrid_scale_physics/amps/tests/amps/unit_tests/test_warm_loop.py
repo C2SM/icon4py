@@ -1,0 +1,450 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Tests for implementations/warm_loop.py (M2a Task 1): the warm-phase
+operator-split host-loop skeleton, per
+docs/superpowers/facts/m2/micro-tendency-orchestration.md ("G1" below).
+
+Groups, matching the task brief's test list:
+* TestSubstepDts -- dt_cl/dt_vp exact (G1 §3).
+* TestRefreshStateCallCount -- substep counts (n_step_cl x n_step_vp) drive
+  the right number of `_refresh_state` calls.
+* TestProcessStubsRaise -- `_activation`/`_vapor_deposition_liquid`/
+  `_repair` raise NotImplementedError naming their task.
+* TestRefreshStateDiagT -- `_refresh_state` reproduces `core.thermo.diag_t`
+  (F1 §5) on a known state.
+* TestWarmLoopStateValidation -- npoints-consistency guard.
+* TestIfcWarm -- end-to-end wiring smoke test (process stubs mocked out).
+"""
+
+from __future__ import annotations
+
+import dataclasses
+
+import numpy as np
+import pytest
+
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps, thermo
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import AmpsConst
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
+    AmpsLuts,
+    load_luts,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
+    ScaleRawState,
+    get_thermo_prop,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.implementations import warm_loop
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
+    AerosolState,
+    IceState,
+    LiquidState,
+    ThermoProp,
+    ThermoState,
+)
+
+
+# ---------------------------------------------------------------------------
+# Fixtures / helpers
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def luts() -> AmpsLuts:
+    return load_luts()
+
+
+def _thermo_state(
+    *, ptotv: float, tv: float, qvv: float = 1.0e-2, moist_denv: float = 1.2e-3
+) -> ThermoState:
+    """Single-point ThermoState; only ptotv/tv/qvv/moist_denv are given
+    physically meaningful values (the rest default to `tv`/0, unused by
+    anything under test here)."""
+    values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
+    by_prop = {
+        ThermoProp.ptotv: ptotv,
+        ThermoProp.tv: tv,
+        ThermoProp.thv: tv,
+        ThermoProp.piv: 0.0,
+        ThermoProp.pbv: 0.0,
+        ThermoProp.moist_denv: moist_denv,
+        ThermoProp.qvv: qvv,
+        ThermoProp.thetav: tv,
+        ThermoProp.wbv: 0.0,
+        ThermoProp.momv: 0.0,
+    }
+    for idx, prop in enumerate(ThermoState.PROPS):
+        values[idx, 0, 0, 0] = by_prop[ThermoProp(int(prop))]
+    return ThermoState(values=values)
+
+
+def _liquid_state_one_bin(*, rmt: float, rmat: float = 0.0) -> LiquidState:
+    """Single-point, single-bin LiquidState with only rmt_q/rmat_q set."""
+    lp = index_maps.LiquidPPV
+    values = np.zeros((len(LiquidState.PROPS), 1, 1, 1), dtype=np.float64)
+    values[lp.rmt_q.py_idx, 0, 0, 0] = rmt
+    values[lp.rmat_q.py_idx, 0, 0, 0] = rmat
+    return LiquidState(values=values)
+
+
+def _zero_aerosol_state(npoints: int = 1) -> AerosolState:
+    return AerosolState(values=np.zeros((len(AerosolState.PROPS), 1, 1, npoints), dtype=np.float64))
+
+
+def _make_warm_state(
+    *,
+    ptotv: float = float(AmpsConst.p00),
+    tv: float = 260.0,
+    thil: float = 260.0,
+    qtp: float = 1.0e-2,
+    rmt: float = 0.0,
+    rmat: float = 0.0,
+    qvv: float = 1.0e-2,
+) -> warm_loop.WarmLoopState:
+    return warm_loop.WarmLoopState(
+        thermo=_thermo_state(ptotv=ptotv, tv=tv, qvv=qvv),
+        liquid=_liquid_state_one_bin(rmt=rmt, rmat=rmat),
+        aerosol=_zero_aerosol_state(),
+        thil=np.array([thil], dtype=np.float64),
+        qtp=np.array([qtp], dtype=np.float64),
+        mes_rc=np.zeros(1, dtype=np.int64),
+    )
+
+
+def _no_op_process_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Patch _repair/_activation/_vapor_deposition_liquid to pass-throughs
+    so run_warm_micro_tendency can run to completion (used by tests that
+    are probing the LOOP STRUCTURE, not the stubs' own raise behavior)."""
+    monkeypatch.setattr(warm_loop, "_repair", lambda s, c, phase: s)
+    monkeypatch.setattr(warm_loop, "_activation", lambda s, c, dt, luts_: s)
+    monkeypatch.setattr(warm_loop, "_vapor_deposition_liquid", lambda s, c, dt, luts_: s)
+
+
+# ---------------------------------------------------------------------------
+# dt_cl / dt_vp -- G1 §3, exact.
+# ---------------------------------------------------------------------------
+
+
+class TestSubstepDts:
+    def test_cloudlab_values(self):
+        config = AmpsConfig.cloudlab()  # n_step_cl=1, n_step_vp=10
+        dts = warm_loop._substep_dts(1.0, config)
+        assert dts.dt_cl == 1.0 / 1
+        assert dts.dt_vp == (1.0 / 1) / 10
+
+    def test_exact_for_arbitrary_dt_and_counts(self):
+        config = dataclasses.replace(AmpsConfig.cloudlab(), n_step_cl=4, n_step_vp=3)
+        dt = 7.5
+        dts = warm_loop._substep_dts(dt, config)
+        assert dts.dt_cl == dt / 4
+        assert dts.dt_vp == (dt / 4) / 3
+
+    def test_run_warm_micro_tendency_passes_exact_dt_vp_to_process_stubs(self, monkeypatch, luts):
+        config = AmpsConfig.cloudlab()
+        monkeypatch.setattr(warm_loop, "_repair", lambda s, c, phase: s)
+        monkeypatch.setattr(warm_loop, "_vapor_deposition_liquid", lambda s, c, dt, luts_: s)
+        seen_dts = []
+
+        def _capture_activation(s, c, dt, luts_):
+            seen_dts.append(dt)
+            return s
+
+        monkeypatch.setattr(warm_loop, "_activation", _capture_activation)
+
+        dt = 3.0
+        expected_dt_vp = (dt / config.n_step_cl) / config.n_step_vp
+        warm_loop.run_warm_micro_tendency(_make_warm_state(), config, dt, luts)
+
+        assert len(seen_dts) == config.n_step_cl * config.n_step_vp
+        assert all(seen == expected_dt_vp for seen in seen_dts)
+
+
+# ---------------------------------------------------------------------------
+# Substep counts drive the right number of _refresh_state calls.
+# ---------------------------------------------------------------------------
+
+
+class TestRefreshStateCallCount:
+    def _run_and_count(self, monkeypatch, config, luts, dt=1.0):
+        _no_op_process_stubs(monkeypatch)
+        calls = {"n": 0}
+
+        def _counting_refresh(s):
+            calls["n"] += 1
+            return s
+
+        monkeypatch.setattr(warm_loop, "_refresh_state", _counting_refresh)
+        warm_loop.run_warm_micro_tendency(_make_warm_state(), config, dt, luts)
+        return calls["n"]
+
+    def test_cloudlab_n_step_cl_1_n_step_vp_10(self, monkeypatch, luts):
+        config = AmpsConfig.cloudlab()
+        assert config.n_step_cl == 1
+        assert config.n_step_vp == 10
+        n_calls = self._run_and_count(monkeypatch, config, luts)
+        # (n_step_cl - 1) [col-loop it_cl>1, conditional] + n_step_cl*n_step_vp
+        # [vap-loop head, unconditional] + 1 [final post-loop refresh].
+        assert n_calls == (1 - 1) + 1 * 10 + 1
+        assert n_calls == 11
+
+    def test_n_step_cl_3_n_step_vp_2(self, monkeypatch, luts):
+        config = dataclasses.replace(AmpsConfig.cloudlab(), n_step_cl=3, n_step_vp=2)
+        n_calls = self._run_and_count(monkeypatch, config, luts)
+        assert n_calls == (3 - 1) + 3 * 2 + 1
+        assert n_calls == 9
+
+    def test_n_step_cl_1_n_step_vp_1(self, monkeypatch, luts):
+        config = dataclasses.replace(AmpsConfig.cloudlab(), n_step_cl=1, n_step_vp=1)
+        n_calls = self._run_and_count(monkeypatch, config, luts)
+        assert n_calls == (1 - 1) + 1 * 1 + 1
+        assert n_calls == 2
+
+
+# ---------------------------------------------------------------------------
+# Process stubs raise NotImplementedError, naming their task.
+# ---------------------------------------------------------------------------
+
+
+class TestProcessStubsRaise:
+    def test_activation_raises_task_4(self, luts):
+        config = AmpsConfig.cloudlab()
+        with pytest.raises(NotImplementedError, match="Task 4"):
+            warm_loop._activation(_make_warm_state(), config, 0.01, luts)
+
+    def test_vapor_deposition_liquid_raises_task_5(self, luts):
+        config = AmpsConfig.cloudlab()
+        with pytest.raises(NotImplementedError, match="Task 5"):
+            warm_loop._vapor_deposition_liquid(_make_warm_state(), config, 0.01, luts)
+
+    def test_repair_raises_task_6_collision_phase(self):
+        config = AmpsConfig.cloudlab()
+        with pytest.raises(NotImplementedError, match="Task 6"):
+            warm_loop._repair(_make_warm_state(), config, phase="collision")
+
+    def test_repair_raises_task_6_vapor_phase(self):
+        config = AmpsConfig.cloudlab()
+        with pytest.raises(NotImplementedError, match="Task 6"):
+            warm_loop._repair(_make_warm_state(), config, phase="vapor")
+
+    def test_repair_error_message_names_phase(self):
+        config = AmpsConfig.cloudlab()
+        with pytest.raises(NotImplementedError, match="'vapor'"):
+            warm_loop._repair(_make_warm_state(), config, phase="vapor")
+
+    def test_run_warm_micro_tendency_raises_on_first_repair_when_unmocked(self, luts):
+        """cloudlab (n_step_cl=1): the FIRST col-loop iteration calls
+        _repair unconditionally (G1 §1, before any refresh -- it_cl>1 is
+        False), so an un-mocked run raises immediately, matching "loud"
+        stub behavior (binding constraints: "process stubs raise
+        NotImplementedError (loud)")."""
+        config = AmpsConfig.cloudlab()
+        with pytest.raises(NotImplementedError, match="Task 6"):
+            warm_loop.run_warm_micro_tendency(_make_warm_state(), config, 1.0, luts)
+
+
+# ---------------------------------------------------------------------------
+# _refresh_state reproduces core.thermo.diag_t (F1 §5) on a known state.
+# ---------------------------------------------------------------------------
+
+
+class TestRefreshStateDiagT:
+    def test_matches_diag_t_quadratic_branch_with_rain(self):
+        """P == p00 removes the Exner term (til == thil); rmt-rmat gives a
+        known qr contributing latent heat, taking diag_t's quadratic
+        branch (T >= 253 K) -- mirrors test_thermo.py's own round-trip
+        cases but through _refresh_state's full mes_rc -> qr -> diag_t
+        pipeline instead of calling thermo.diag_t directly."""
+        p = float(AmpsConst.p00)
+        thil_val = 260.0
+        rmt, rmat = 3.0e-3, 5.0e-4
+        state = _make_warm_state(ptotv=p, thil=thil_val, rmt=rmt, rmat=rmat)
+
+        refreshed = warm_loop._refresh_state(state)
+
+        qr_expected = max(0.0, rmt - rmat)
+        t_expected, ierror_expected = thermo.diag_t(thil_val, p, qr_expected, 0.0)
+        t_actual = get_thermo_prop(refreshed.thermo, ThermoProp.tv)[0]
+
+        assert t_actual == pytest.approx(t_expected, rel=1e-13)
+        assert ierror_expected == 0
+        assert refreshed.mes_rc[0] == 2  # rain present
+
+    def test_matches_diag_t_linear_branch_no_rain(self):
+        """rmt=rmat=0 -> no rain mass -> mes_rc=1 (vapor only) -> qr=0 ->
+        diag_t's linear branch (til == T directly, T < 253)."""
+        p = float(AmpsConst.p00)
+        thil_val = 240.0
+        state = _make_warm_state(ptotv=p, thil=thil_val, rmt=0.0, rmat=0.0)
+
+        refreshed = warm_loop._refresh_state(state)
+
+        t_expected, ierror_expected = thermo.diag_t(thil_val, p, 0.0, 0.0)
+        t_actual = get_thermo_prop(refreshed.thermo, ThermoProp.tv)[0]
+
+        assert t_actual == pytest.approx(t_expected, rel=1e-13)
+        assert ierror_expected == 0
+        assert refreshed.mes_rc[0] == 1  # vapor only, no rain
+
+    def test_no_water_gives_mes_rc_zero(self):
+        """qvv=0 and rmt=0 -> M_tot<=0 -> mes_rc=0 (no water), G1 §4a."""
+        state = _make_warm_state(rmt=0.0, rmat=0.0, qvv=0.0)
+        refreshed = warm_loop._refresh_state(state)
+        assert refreshed.mes_rc[0] == 0
+
+    def test_thil_and_qtp_held_fixed_across_refresh(self):
+        """G1 §1: thil(*)/qtp(*) are plain incoming arguments, never
+        reassigned by the refresh preamble -- only T is re-diagnosed."""
+        state = _make_warm_state(thil=255.0, qtp=0.0123)
+        refreshed = warm_loop._refresh_state(state)
+        assert refreshed.thil == pytest.approx(state.thil)
+        assert refreshed.qtp == pytest.approx(state.qtp)
+
+    def test_vectorized_matches_per_point_diag_t(self):
+        """Multi-point WarmLoopState: each point's diag_t inversion must be
+        independent (no cross-point leakage in the mes_rc/qr reduction)."""
+        p = float(AmpsConst.p00)
+        thil_vals = np.array([240.0, 260.0, 265.0])
+        rmt_vals = np.array([0.0, 2.0e-3, 5.0e-3])
+        rmat_vals = np.array([0.0, 1.0e-4, 1.0e-3])
+
+        lp = index_maps.LiquidPPV
+        liquid_values = np.zeros((len(LiquidState.PROPS), 1, 1, 3))
+        liquid_values[lp.rmt_q.py_idx, 0, 0, :] = rmt_vals
+        liquid_values[lp.rmat_q.py_idx, 0, 0, :] = rmat_vals
+
+        state = warm_loop.WarmLoopState(
+            thermo=_thermo_state_multi(ptotv=p, tv=thil_vals, npoints=3),
+            liquid=LiquidState(values=liquid_values),
+            aerosol=_zero_aerosol_state(npoints=3),
+            thil=thil_vals.copy(),
+            qtp=np.full(3, 1.0e-2),
+            mes_rc=np.zeros(3, dtype=np.int64),
+        )
+
+        refreshed = warm_loop._refresh_state(state)
+        t_actual = get_thermo_prop(refreshed.thermo, ThermoProp.tv)
+
+        qr_expected = np.maximum(0.0, rmt_vals - rmat_vals)
+        t_expected, _ = thermo.diag_t(thil_vals, p, qr_expected, 0.0)
+        np.testing.assert_allclose(t_actual, t_expected, rtol=1e-13)
+
+
+def _thermo_state_multi(*, ptotv: float, tv: np.ndarray, npoints: int) -> ThermoState:
+    values = np.zeros((len(ThermoState.PROPS), 1, 1, npoints), dtype=np.float64)
+    by_prop = {
+        ThermoProp.ptotv: np.full(npoints, ptotv),
+        ThermoProp.tv: tv,
+        ThermoProp.thv: tv,
+        ThermoProp.piv: np.zeros(npoints),
+        ThermoProp.pbv: np.zeros(npoints),
+        ThermoProp.moist_denv: np.full(npoints, 1.2e-3),
+        ThermoProp.qvv: np.full(npoints, 1.0e-2),
+        ThermoProp.thetav: tv,
+        ThermoProp.wbv: np.zeros(npoints),
+        ThermoProp.momv: np.zeros(npoints),
+    }
+    for idx, prop in enumerate(ThermoState.PROPS):
+        values[idx, 0, 0, :] = by_prop[ThermoProp(int(prop))]
+    return ThermoState(values=values)
+
+
+# ---------------------------------------------------------------------------
+# WarmLoopState -- npoints-consistency validation.
+# ---------------------------------------------------------------------------
+
+
+class TestWarmLoopStateValidation:
+    def test_mismatched_npoints_raises(self):
+        with pytest.raises(ValueError, match="npoints"):
+            warm_loop.WarmLoopState(
+                thermo=_thermo_state(ptotv=float(AmpsConst.p00), tv=260.0),
+                liquid=_liquid_state_one_bin(rmt=0.0),
+                aerosol=_zero_aerosol_state(npoints=2),  # mismatched
+                thil=np.array([260.0]),
+                qtp=np.array([1.0e-2]),
+                mes_rc=np.zeros(1, dtype=np.int64),
+            )
+
+    def test_consistent_npoints_constructs_ok(self):
+        state = _make_warm_state()
+        assert state.thermo.npoints == 1
+
+
+# ---------------------------------------------------------------------------
+# ifc_warm -- end-to-end wiring smoke test (process stubs mocked out).
+# ---------------------------------------------------------------------------
+
+
+class TestIfcWarm:
+    NBR = 2
+    NBI = 2
+    NBA = 2
+    NPOINTS = 2
+
+    def _make_scale_raw(self) -> ScaleRawState:
+        rng = np.random.default_rng(0)
+        npoints = self.NPOINTS
+        dens = rng.uniform(0.9, 1.1, size=npoints)
+        qdry = rng.uniform(0.95, 0.999, size=npoints)
+        qv = rng.uniform(1.0e-4, 5.0e-3, size=npoints)
+        pres = np.full(npoints, float(AmpsConst.p00) * 0.1)  # CGS p00 -> Pa
+        temp = rng.uniform(260.0, 285.0, size=npoints)
+        w = np.zeros(npoints)
+        momz = np.zeros(npoints)
+        ql = rng.uniform(1.0e-6, 1.0e-4, size=(self.NBR, npoints))
+        qi = np.zeros((self.NBI, npoints))
+
+        liquid_raw = LiquidState(
+            values=rng.uniform(1.0e-7, 1.0e-5, size=(len(LiquidState.PROPS), self.NBR, 1, npoints))
+        )
+        ice_raw = IceState(values=np.zeros((len(IceState.PROPS), self.NBI, 1, npoints)))
+        aerosol_raw = AerosolState(
+            values=rng.uniform(1.0e-8, 1.0e-6, size=(len(AerosolState.PROPS), self.NBA, 1, npoints))
+        )
+
+        return ScaleRawState(
+            dens=dens,
+            qdry=qdry,
+            qv=qv,
+            pres=pres,
+            temp=temp,
+            w=w,
+            momz=momz,
+            ql=ql,
+            qi=qi,
+            liquid_ppv=liquid_raw,
+            ice_ppv=ice_raw,
+            aerosol_ppv=aerosol_raw,
+        )
+
+    def test_runs_end_to_end_with_process_stubs_mocked(self, monkeypatch, luts):
+        _no_op_process_stubs(monkeypatch)
+        monkeypatch.setattr(warm_loop, "_refresh_state", lambda s: s)
+
+        scale = self._make_scale_raw()
+        config = AmpsConfig.cloudlab()
+        thil = np.full(self.NPOINTS, 270.0)
+        qtp = np.full(self.NPOINTS, 1.0e-2)
+        dens_t = np.zeros(self.NPOINTS)
+
+        tendencies = warm_loop.ifc_warm(scale, thil, qtp, config, dt=1.0, luts=luts, dens_t=dens_t)
+
+        assert tendencies.dqv.shape == (self.NPOINTS,)
+        assert tendencies.dql.shape == (self.NBR, self.NPOINTS)
+        assert np.all(np.isfinite(tendencies.dqv))
+
+    def test_raises_on_first_repair_when_process_stubs_unmocked(self, luts):
+        scale = self._make_scale_raw()
+        config = AmpsConfig.cloudlab()
+        thil = np.full(self.NPOINTS, 270.0)
+        qtp = np.full(self.NPOINTS, 1.0e-2)
+        dens_t = np.zeros(self.NPOINTS)
+
+        with pytest.raises(NotImplementedError, match="Task 6"):
+            warm_loop.ifc_warm(scale, thil, qtp, config, dt=1.0, luts=luts, dens_t=dens_t)
