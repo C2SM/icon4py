@@ -20,6 +20,10 @@ Three groups, matching the task brief:
   numerically).
 * TestGaxisVersionStub -- l_gaxis_version in {2, 3} raises NotImplementedError
   in both pack and unpack (F4 SS1.3/SS2.4 v2/v3 -- M5 stubs).
+* TestAxisLimitClip -- F4 SS2.4 v1's iag_q/icg_q l_axis_limit clip-overwrite,
+  both the triggering (ratio > 1) and non-triggering (ratio <= 1) cases;
+  NOT exercised by TestRoundTrip (whose fixture deliberately keeps ratios
+  <=1, see _make_scale_raw's comment).
 * TestMoistThermoMask -- micptr cloudy mask + thil/qtp diagnosis, F4 SS3.2,
   recomputed independently in-test from F4's quoted formula.
 """
@@ -484,6 +488,113 @@ class TestGaxisVersionStub:
                 l_no_ice_heat=False,
                 l_gaxis_version=version,
             )
+
+
+# ---------------------------------------------------------------------------
+# l_axis_limit clip (F4 SS2.4 v1, packing.py:_apply_axis_limit_clip):
+# iag_q/icg_q RHOQ_t is overwritten with the a/c-axis value instead of its
+# own whenever the AFTER-state axis ratio exceeds 1. TestRoundTrip's fixture
+# deliberately keeps ratios <=1 (see _make_scale_raw's comment) so it never
+# exercises this branch -- these tests construct ratios >1 (trigger) and
+# <=1 (control, confirming no spurious overwrite) directly.
+# ---------------------------------------------------------------------------
+
+
+class TestAxisLimitClip:
+    def _scale_and_packed(self, nbi=1, npoints=3, seed=100):
+        scale = _make_scale_raw(seed=seed, nbi=nbi, npoints=npoints)
+        packed = packing.pack_scale_to_amps(scale, l_no_ice_heat=False)
+        return scale, packed
+
+    def _amps_after_with_cog(self, packed, iag_values, icg_values):
+        ip = index_maps.IcePPV
+        values = packed.ice.values.copy()
+        values[ip.iag_q.py_idx] = iag_values
+        values[ip.icg_q.py_idx] = icg_values
+        return packing.PackedAmpsState(
+            thermo=packed.thermo,
+            liquid=packed.liquid,
+            ice=IceState(values=values),
+            aerosol=packed.aerosol,
+            emoist_before=packed.emoist_before,
+            liquid_heat_before=packed.liquid_heat_before,
+            ice_heat_before=packed.ice_heat_before,
+        )
+
+    def test_clip_triggers_for_both_iag_and_icg_when_ratio_exceeds_one(self):
+        scale, packed = self._scale_and_packed()
+        ip = index_maps.IcePPV
+        dt = 20.0
+
+        iacr_after = packed.ice.values[ip.iacr_q.py_idx]
+        iccr_after = packed.ice.values[ip.iccr_q.py_idx]
+        # Force both ratios strictly > 1 (2x / 3x the axis value).
+        amps_after = self._amps_after_with_cog(packed, iacr_after * 2.0, iccr_after * 3.0)
+
+        tend = packing.unpack_amps_to_scale(
+            scale,
+            packed,
+            amps_after,
+            dens_t=np.zeros_like(scale.dens),
+            dt=dt,
+            l_no_ice_heat=False,
+        )
+
+        factor_mxr1 = scale.qdry + scale.qv
+        moist_denv_after = scale.dens * factor_mxr1
+        dens = scale.dens
+        iag_raw = scale.ice_ppv.values[ip.iag_q.py_idx]
+        icg_raw = scale.ice_ppv.values[ip.icg_q.py_idx]
+
+        # Hand-computed clipped result: cross-referencing iacr_q's/iccr_q's
+        # OWN after-value into iag_q's/icg_q's tendency (F4 SS2.4 v1,
+        # packing.py:430-452), NOT iag_q's/icg_q's own after-value.
+        expected_iag = (iacr_after * moist_denv_after * 0.001 - iag_raw * dens) / dt
+        expected_icg = (iccr_after * moist_denv_after * 0.001 - icg_raw * dens) / dt
+
+        np.testing.assert_allclose(tend.d_ice_ppv.values[ip.iag_q.py_idx], expected_iag, atol=1e-9)
+        np.testing.assert_allclose(tend.d_ice_ppv.values[ip.icg_q.py_idx], expected_icg, atol=1e-9)
+
+        # Sanity: the clipped result must differ from the (wrong) plain
+        # formula that would use iag_q's/icg_q's own after-value -- if a
+        # future edit swapped axis_after/cog_after or flipped the mask/ratio
+        # comparison, this catches it (the clip would silently no-op).
+        plain_iag = (iacr_after * 2.0 * moist_denv_after * 0.001 - iag_raw * dens) / dt
+        assert not np.allclose(tend.d_ice_ppv.values[ip.iag_q.py_idx], plain_iag)
+
+    def test_no_clip_when_ratio_is_at_most_one(self):
+        scale, packed = self._scale_and_packed(seed=101)
+        ip = index_maps.IcePPV
+        dt = 20.0
+
+        iacr_after = packed.ice.values[ip.iacr_q.py_idx]
+        iccr_after = packed.ice.values[ip.iccr_q.py_idx]
+        iag_after = iacr_after * 0.5  # ratio 0.5 <= 1: must NOT trigger the clip
+        icg_after = iccr_after * 0.5
+        amps_after = self._amps_after_with_cog(packed, iag_after, icg_after)
+
+        tend = packing.unpack_amps_to_scale(
+            scale,
+            packed,
+            amps_after,
+            dens_t=np.zeros_like(scale.dens),
+            dt=dt,
+            l_no_ice_heat=False,
+        )
+
+        factor_mxr1 = scale.qdry + scale.qv
+        moist_denv_after = scale.dens * factor_mxr1
+        dens = scale.dens
+        iag_raw = scale.ice_ppv.values[ip.iag_q.py_idx]
+        icg_raw = scale.ice_ppv.values[ip.icg_q.py_idx]
+
+        # Plain (unclipped) RHOQ_t formula, using iag_q's/icg_q's OWN
+        # after-value -- i.e. confirming NO overwrite happened.
+        expected_iag = (iag_after * moist_denv_after * 0.001 - iag_raw * dens) / dt
+        expected_icg = (icg_after * moist_denv_after * 0.001 - icg_raw * dens) / dt
+
+        np.testing.assert_allclose(tend.d_ice_ppv.values[ip.iag_q.py_idx], expected_iag, atol=1e-9)
+        np.testing.assert_allclose(tend.d_ice_ppv.values[ip.icg_q.py_idx], expected_icg, atol=1e-9)
 
 
 # ---------------------------------------------------------------------------

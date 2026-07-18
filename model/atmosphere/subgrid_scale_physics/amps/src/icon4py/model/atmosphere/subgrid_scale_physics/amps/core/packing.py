@@ -140,8 +140,14 @@ CV_ICE = _SCALE_CVVAP
 
 # `EPS => CONST_EPS` (scale_atmos_phy_mp_amps.F90:25), used bare in F4 SS2.4's
 # v1 `l_axis_limit` clip guard (`qipv(iacr_q,...) > EPS`). scale_const.F90:35
-# `CONST_EPS = 1.E-16_RP`.
-EPS = 1.0e-16
+# declares `CONST_EPS = 1.E-16_RP` as the field's initializer, but
+# `CONST_setup` (scale_const.F90:192) OVERWRITES it at runtime, before any
+# physics runs: `CONST_EPS = epsilon(0.0_RP)` -- Fortran double-precision
+# machine epsilon, 2^-52 = 2.220446049250313e-16, not the declared 1e-16.
+# The guard is ~16 orders of magnitude below any physical axis-length-cubed
+# value either way, so this has no behavioral consequence here; using the
+# genuine runtime value for citation accuracy.
+EPS = 2.220446049250313e-16  # double-precision machine epsilon, 2**-52
 
 # F4 SS3.1 "for bin" thresholds (moistthermo2_scale), literal in F4 -- no
 # gap here.
