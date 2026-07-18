@@ -51,8 +51,17 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   activation-added droplets -- see that module's own docstring item 2);
   `_refresh_state` always populates it immediately before this hook
   fires, exactly as for `_activation`.
-* Task 6: `_repair` (repair, G1 §1, called once per col_loop iteration and
-  once per vap_loop iteration with different tendency masks/tags).
+* Task 6 (DONE): `_repair` (repair, G1 §1, called once per col_loop
+  iteration and once per vap_loop iteration with different tendency masks/
+  tags) -- `core.repair.repair_liquid`
+  (`core/repair.py`, `docs/superpowers/facts/m2/sedimentation-terminalvel.md`
+  ("G5") §4). G1's `irep_col`/`irep_vap` masks (`iupdate_gr`/`iupdate_gs`/
+  `iupdate_ga`, distinguishing the col-loop 'af_col' call from the vap-loop
+  'af_vap' call) have no analogue here: `repair_liquid` operates directly
+  on `state.liquid`'s current mass/concentration values (no per-process
+  `dmassdt` tendency ledger exists in this port to mask -- see
+  `core/repair.py`'s own module docstring), so both `phase` values invoke
+  the identical closure.
 
 `update_group_all`/`cal_dmtend_scale` (G1 §4c, tendency bookkeeping) are
 likewise NOT modeled here -- no M1 port exists for them and they are not
@@ -94,6 +103,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     pack_scale_to_amps,
     unpack_amps_to_scale,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.repair import repair_liquid
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.thermo import diag_t as _diag_t_f1
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.vapor_deposition import (
     vapor_deposition_liquid,
@@ -255,10 +265,8 @@ def _refresh_state(
 
 
 # ---------------------------------------------------------------------------
-# Process hooks -- Tasks 4/5/6. `_activation` (Task 4) is now implemented;
-# `_vapor_deposition_liquid`/`_repair` (Tasks 5/6) still raise
-# NotImplementedError naming the task that fills them in (per the M2a
-# Task 1 brief).
+# Process hooks -- Tasks 4/5/6. `_activation` (Task 4), `_vapor_deposition_
+# liquid` (Task 5), and `_repair` (Task 6) are all now implemented.
 # ---------------------------------------------------------------------------
 
 
@@ -331,18 +339,22 @@ def _vapor_deposition_liquid(
 def _repair(state: WarmLoopState, config: AmpsConfig, phase: str) -> WarmLoopState:
     """`repair` (G1 §1: called once per col_loop iteration with tag
     `'af_col'`/masks `(.false.,.true.)`, and once per vap_loop iteration
-    with tag `'af_vap'`/masks `(.true.,.false.)`) -- Task 6 scope. NOT
-    implemented here.
+    with tag `'af_vap'`/masks `(.true.,.false.)`) -- M2a Task 6's
+    `core.repair.repair_liquid` (mass/concentration non-negativity closure,
+    G5 §4).
 
     `phase`: `"collision"` or `"vapor"`, distinguishing the two G1 call
     sites (one Python function standing in for both, matching the task
-    brief's single named `_repair` hook).
+    brief's single named `_repair` hook). Both phases invoke the SAME
+    closure -- `repair_liquid` has no phase-dependent branching (it
+    operates directly on `state.liquid`'s current values, not on a masked
+    `dmassdt` tendency ledger the way G1's `iupdate_gr(.,.,.)`/`irep_col`/
+    `irep_vap` arguments do; see `core/repair.py`'s own module docstring
+    and this module's own docstring, Task 6 item, for why).
     """
-    del state, config
-    raise NotImplementedError(
-        f"_repair is a Task 6 stub (repair, G1 §1, phase={phase!r}) -- not "
-        "implemented in this M2a Task 1 warm-phase host-loop skeleton."
-    )
+    del phase
+    liquid = repair_liquid(state.liquid, config)
+    return dataclasses.replace(state, liquid=liquid)
 
 
 # ---------------------------------------------------------------------------
@@ -376,7 +388,15 @@ def run_warm_micro_tendency(
     `n_step_cl` collision substeps, dt=`dt_cl`) x `vap_loop` (over
     `n_step_vp` vapor substeps, dt=`dt_vp`) structure, with the refresh
     preamble (`_refresh_state`) at every G1-identified refresh point and
-    the Task 4/5/6 process stubs at their G1-identified call sites.
+    the Task 4/5/6 process hooks (`_activation`, `_vapor_deposition_liquid`,
+    `_repair` -- all implemented, Tasks 4/5/6) at their G1-identified call
+    sites: `_activation` then `_vapor_deposition_liquid` inside the
+    vap_loop body (G1 §1's own CCN-activation-then-vapor-deposition
+    ordering), `_repair` once per col_loop iteration (before the vap_loop)
+    and once per vap_loop iteration (after `_vapor_deposition_liquid`) --
+    `update_group_all` is inlined-by-design (module docstring): each
+    process hook already returns its own advanced `WarmLoopState`, so there
+    is no separate "apply accumulated tendencies" step to model.
 
     Per G1 §1 (warm-only reduction, module docstring): the collision-substep
     physics (`coalescence(rain,rain)`, `hydrodyn_breakup(rain)`, Task 3) and

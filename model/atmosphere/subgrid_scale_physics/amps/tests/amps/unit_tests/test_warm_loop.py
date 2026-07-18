@@ -18,12 +18,18 @@ Groups, matching the task brief's test list:
   precondition + no-water no-op.
 * TestVaporDepositionLiquid -- `_vapor_deposition_liquid` (M2a Task 5,
   DONE): `state.diag` precondition + no-water no-op.
-* TestProcessStubsRaise -- `_repair` raises NotImplementedError naming
-  its task (the only remaining stub).
+* TestRepair -- `_repair` (M2a Task 6, DONE): delegates to
+  `core.repair.repair_liquid` regardless of `phase`, no `state.diag`
+  precondition, leaves every other field untouched.
 * TestRefreshStateDiagT -- `_refresh_state` reproduces `core.thermo.diag_t`
   (F1 §5) on a known state.
 * TestWarmLoopStateValidation -- npoints-consistency guard.
-* TestIfcWarm -- end-to-end wiring smoke test (process stubs mocked out).
+* TestIfcWarm -- end-to-end wiring smoke test (mocked AND, since M2a Task 6,
+  fully UN-mocked over real `bin_grid.LIQUID_NBINS`-sized bins).
+* TestEndToEndSupersaturatedSpinUp -- M2a Task 6's own explicit "Tests"
+  requirement: a synthetic multi-bin supersaturated spin-up-like state runs
+  `run_warm_micro_tendency` end-to-end (all three process hooks real) and
+  produces a finite, non-negative liquid state.
 """
 
 from __future__ import annotations
@@ -276,35 +282,79 @@ class TestVaporDepositionLiquid:
 
 
 # ---------------------------------------------------------------------------
-# Process stubs raise NotImplementedError, naming their task.
+# _repair (M2a Task 6, DONE): no longer a stub -- delegates to
+# core.repair.repair_liquid regardless of `phase` (see warm_loop.py's own
+# _repair docstring for why the two G1 call sites collapse to one
+# behavior here).
 # ---------------------------------------------------------------------------
 
 
-class TestProcessStubsRaise:
-    def test_repair_raises_task_6_collision_phase(self):
+class TestRepair:
+    def test_repair_clips_negative_mass_bin(self):
+        """`_repair` delegates to `core.repair.repair_liquid` -- a state
+        with a small negative bin mass comes back non-negative, matching
+        `test_repair.py`'s own `TestRepairLiquid` at the `WarmLoopState`
+        integration level."""
         config = AmpsConfig.cloudlab()
-        with pytest.raises(NotImplementedError, match="Task 6"):
-            warm_loop._repair(_make_warm_state(), config, phase="collision")
+        state = _make_warm_state(rmt=-1.0e-8)
 
-    def test_repair_raises_task_6_vapor_phase(self):
+        repaired = warm_loop._repair(state, config, phase="collision")
+
+        lp = index_maps.LiquidPPV
+        assert repaired.liquid.values[lp.rmt_q.py_idx, 0, 0, 0] == 0.0
+
+    def test_repair_does_not_require_diag(self):
+        """Unlike `_activation`/`_vapor_deposition_liquid`, `_repair`
+        operates directly on `state.liquid` -- it has no `state.diag`
+        precondition (matching `run_warm_micro_tendency`'s own G1 §1
+        wiring: the FIRST col-loop `_repair` call happens BEFORE any
+        refresh, `it_cl>1` being false on the first iteration)."""
         config = AmpsConfig.cloudlab()
-        with pytest.raises(NotImplementedError, match="Task 6"):
-            warm_loop._repair(_make_warm_state(), config, phase="vapor")
+        state = _make_warm_state(rmt=-1.0e-8)
+        assert state.diag is None
 
-    def test_repair_error_message_names_phase(self):
+        repaired = warm_loop._repair(state, config, phase="collision")
+
+        lp = index_maps.LiquidPPV
+        assert repaired.liquid.values[lp.rmt_q.py_idx, 0, 0, 0] == 0.0
+
+    def test_phase_argument_does_not_change_behavior(self):
+        """`repair_liquid` has no phase-dependent branching (module
+        docstring) -- 'collision' and 'vapor' produce identical output."""
         config = AmpsConfig.cloudlab()
-        with pytest.raises(NotImplementedError, match="'vapor'"):
-            warm_loop._repair(_make_warm_state(), config, phase="vapor")
+        state = _make_warm_state(rmt=-1.0e-8)
 
-    def test_run_warm_micro_tendency_raises_on_first_repair_when_unmocked(self, luts):
+        collision = warm_loop._repair(state, config, phase="collision")
+        vapor = warm_loop._repair(state, config, phase="vapor")
+
+        np.testing.assert_array_equal(collision.liquid.values, vapor.liquid.values)
+
+    def test_repair_leaves_other_fields_untouched(self):
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state(rmt=-1.0e-8)
+
+        repaired = warm_loop._repair(state, config, phase="collision")
+
+        np.testing.assert_array_equal(repaired.thermo.values, state.thermo.values)
+        np.testing.assert_array_equal(repaired.aerosol.values, state.aerosol.values)
+        np.testing.assert_array_equal(repaired.thil, state.thil)
+        np.testing.assert_array_equal(repaired.qtp, state.qtp)
+
+    def test_run_warm_micro_tendency_no_longer_raises_notimplementederror(self, luts):
         """cloudlab (n_step_cl=1): the FIRST col-loop iteration calls
-        _repair unconditionally (G1 §1, before any refresh -- it_cl>1 is
-        False), so an un-mocked run raises immediately, matching "loud"
-        stub behavior (binding constraints: "process stubs raise
-        NotImplementedError (loud)")."""
+        _repair unconditionally (G1 §1, before any refresh), which used to
+        raise (Task 1-5 stub) -- now that Task 6 implements it, a truly
+        no-water state (`qtp=rmt=rmat=qvv=0`, `TestActivation`'s/
+        `TestVaporDepositionLiquid`'s own no-op precedent -- `_activation`/
+        `_vapor_deposition_liquid` skip before ever needing a real
+        `bin_grid.LIQUID_NBINS`-sized liquid state, so the single-bin
+        `_make_warm_state()` fixture is safe here) runs to completion
+        without raising and returns a finite state."""
         config = AmpsConfig.cloudlab()
-        with pytest.raises(NotImplementedError, match="Task 6"):
-            warm_loop.run_warm_micro_tendency(_make_warm_state(), config, 1.0, luts)
+        state = _make_warm_state(qtp=0.0, rmt=0.0, rmat=0.0, qvv=0.0)
+        result = warm_loop.run_warm_micro_tendency(state, config, 1.0, luts)
+        assert np.all(np.isfinite(result.liquid.values))
+        assert np.all(np.isfinite(result.thermo.values))
 
 
 # ---------------------------------------------------------------------------
@@ -441,7 +491,13 @@ class TestWarmLoopStateValidation:
 
 
 class TestIfcWarm:
-    NBR = 2
+    # NBR (liquid bins) must be a valid bin_grid.LIQUID_NBINS count (40 or
+    # 80) for the UNMOCKED end-to-end test below, which exercises real
+    # `core.activation`/`core.vapor_deposition` physics that call
+    # `bin_grid.make_bin_grid("liquid", ...)`; the mocked test doesn't care
+    # (process stubs bypass real physics entirely) so this enlargement is
+    # safe for both.
+    NBR = 40
     NBI = 2
     NBA = 2
     NPOINTS = 2
@@ -498,12 +554,116 @@ class TestIfcWarm:
         assert tendencies.dql.shape == (self.NBR, self.NPOINTS)
         assert np.all(np.isfinite(tendencies.dqv))
 
-    def test_raises_on_first_repair_when_process_stubs_unmocked(self, luts):
+    def test_runs_end_to_end_without_mocking_process_stubs(self, luts):
+        """M2a Task 6: with all three process hooks (`_activation`,
+        `_vapor_deposition_liquid`, `_repair`) now implemented, a full,
+        UN-mocked `ifc_warm` run over `NBR=40` real liquid bins (the
+        `bin_grid.LIQUID_NBINS` requirement `core.activation`/`core.
+        vapor_deposition` enforce) completes without `NotImplementedError`
+        and returns finite tendencies -- this superseded the old M2a
+        Task 1-5 "raises on first repair" smoke test now that the whole
+        warm loop is wired end-to-end."""
         scale = self._make_scale_raw()
         config = AmpsConfig.cloudlab()
         thil = np.full(self.NPOINTS, 270.0)
         qtp = np.full(self.NPOINTS, 1.0e-2)
         dens_t = np.zeros(self.NPOINTS)
 
-        with pytest.raises(NotImplementedError, match="Task 6"):
-            warm_loop.ifc_warm(scale, thil, qtp, config, dt=1.0, luts=luts, dens_t=dens_t)
+        tendencies = warm_loop.ifc_warm(scale, thil, qtp, config, dt=1.0, luts=luts, dens_t=dens_t)
+
+        assert np.all(np.isfinite(tendencies.dqv))
+        assert np.all(np.isfinite(tendencies.dql))
+
+
+# ---------------------------------------------------------------------------
+# End-to-end: a synthetic multi-bin supersaturated spin-up-like state runs
+# run_warm_micro_tendency with all three M2a Task 4/5/6 process hooks REAL
+# (no monkeypatching) -- the task's own explicit "Tests" requirement.
+# ---------------------------------------------------------------------------
+
+
+class TestEndToEndSupersaturatedSpinUp:
+    """A cloudlab-shaped (40 liquid bins, `nbin_h=20`), single-column,
+    supersaturated, no-pre-existing-liquid state -- a "spin-up-like"
+    scenario (droplets nucleate from CCN as the run proceeds), reusing
+    `test_activation.py`'s own PROVEN-supersaturated setup
+    (`TestMassConservation`: `T_STD=280K`, `P_STD=p00`, `qv=1.15e-2`, CCN
+    population `(amt,acon,ams)=(3.164e-13,300.0,3.164e-13)`) -- exercises
+    `_activation` -> `_vapor_deposition_liquid` -> `_repair` for real,
+    across all `n_step_cl*n_step_vp` substeps."""
+
+    LIQ_NBINS = 40
+    NBIN_H = 20
+
+    def _config(self) -> AmpsConfig:
+        base = AmpsConfig.cloudlab()
+        assert base.num_h_bins[0] == self.LIQ_NBINS
+        assert base.nbin_h == self.NBIN_H
+        return base
+
+    def _state(self) -> warm_loop.WarmLoopState:
+        p = float(AmpsConst.p00)
+        t = 280.0
+        qv = 1.15e-2  # supersaturated at (p, t) -- test_activation.py's own sanity check
+
+        thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
+        by_prop = {
+            ThermoProp.ptotv: p,
+            ThermoProp.tv: t,
+            ThermoProp.thv: t,
+            ThermoProp.piv: 0.0,
+            ThermoProp.pbv: 0.0,
+            ThermoProp.moist_denv: 1.2e-3,
+            ThermoProp.qvv: qv,
+            ThermoProp.thetav: t,
+            ThermoProp.wbv: 0.0,
+            ThermoProp.momv: 0.0,
+        }
+        for idx, prop in enumerate(ThermoState.PROPS):
+            thermo_values[idx, 0, 0, 0] = by_prop[ThermoProp(int(prop))]
+
+        liquid = LiquidState(
+            values=np.zeros((len(LiquidState.PROPS), self.LIQ_NBINS, 1, 1), dtype=np.float64)
+        )
+
+        aerosol_values = np.zeros((len(AerosolState.PROPS), 1, 1, 1), dtype=np.float64)
+        aerosol_values[0, 0, 0, 0] = 3.164e-13  # amt_q
+        aerosol_values[1, 0, 0, 0] = 300.0  # acon_q
+        aerosol_values[2, 0, 0, 0] = 3.164e-13  # ams_q
+        aerosol = AerosolState(values=aerosol_values)
+
+        return warm_loop.WarmLoopState(
+            thermo=ThermoState(values=thermo_values),
+            liquid=liquid,
+            aerosol=aerosol,
+            thil=np.array([t]),
+            qtp=np.array([qv]),
+            mes_rc=np.zeros(1, dtype=np.int64),
+        )
+
+    def test_runs_to_completion_and_produces_finite_nonnegative_state(self, luts):
+        config = self._config()
+        state = self._state()
+
+        result = warm_loop.run_warm_micro_tendency(state, config, dt=1.0, luts=luts)
+
+        assert np.all(np.isfinite(result.liquid.values))
+        assert np.all(np.isfinite(result.thermo.values))
+        assert np.all(np.isfinite(result.aerosol.values))
+
+        lp = index_maps.LiquidPPV
+        assert np.all(result.liquid.values[lp.rmt_q.py_idx] >= 0.0)
+        assert np.all(result.liquid.values[lp.rcon_q.py_idx] >= 0.0)
+
+    def test_activation_actually_occurred(self, luts):
+        """Sanity: the supersaturated setup is not vacuous -- some liquid
+        mass exists after the run (droplets nucleated from CCN, matching
+        the "spin-up-like" framing -- otherwise the non-negativity
+        assertions above would be trivially true of an all-zero state)."""
+        config = self._config()
+        state = self._state()
+
+        result = warm_loop.run_warm_micro_tendency(state, config, dt=1.0, luts=luts)
+
+        lp = index_maps.LiquidPPV
+        assert result.liquid.values[lp.rmt_q.py_idx].sum() > 0.0
