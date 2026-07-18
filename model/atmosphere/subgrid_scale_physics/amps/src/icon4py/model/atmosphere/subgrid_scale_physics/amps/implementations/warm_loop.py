@@ -20,16 +20,20 @@ below), §1/§2, restricted to the warm-phase call subset G1's own
     melting_shedding and the mv_ice2liq (level>=6) block are ice-sourced
     and only fire when flagp_s>0.
 
-SKELETON ONLY (M2a Task 1): this module delivers the col_loop x n_step_cl /
-vap_loop x n_step_vp substep structure, the dt_cl/dt_vp setup (G1 §3), and
-the refresh preamble (G1 §1: `update_mesrc` -> `diag_t` -> `update_airgroup`
--> `diag_pq`, duplicated 4x in the Fortran) collapsed into ONE function,
-`_refresh_state`. The warm-phase PROCESS kernels are explicitly OUT of
-scope here and land in later tasks:
+SKELETON (M2a Task 1) + `diag_pq` liquid-branch wiring (M2a Task 2): this
+module delivers the col_loop x n_step_cl / vap_loop x n_step_vp substep
+structure, the dt_cl/dt_vp setup (G1 §3), and the refresh preamble (G1 §1:
+`update_mesrc` -> `diag_t` -> `update_airgroup` -> `diag_pq`, duplicated 4x
+in the Fortran) collapsed into ONE function, `_refresh_state`. The warm-phase
+PROCESS kernels are explicitly OUT of scope here and land in later tasks:
 
-* Task 2: `diag_pq` for the liquid (rain) group -- `_refresh_state` calls a
-  local no-op stub, `_diag_pq_liquid_stub`, in its place (see that
-  function's docstring for why it is a pass-through, not a raiser).
+* Task 2 (DONE): `diag_pq` for the liquid (rain) group --
+  `core.liquid_diag.diag_pq_liquid` (`core/liquid_diag.py`).
+  `_refresh_state` now calls it directly whenever it is given a `config`/
+  `luts` (both optional, default `None` -- see `_refresh_state`'s own
+  docstring for why), populating `WarmLoopState.diag`.
+  `update_airgroup` itself (imported by name in G1 §1 but not quoted
+  verbatim anywhere in G1) still has no M1 port -- see below.
 * Task 3: collision-substep warm physics (`coalescence(rain,rain)`,
   `hydrodyn_breakup(rain)`) -- NOT modeled at all in this skeleton (no
   stub hook exists for them here); Task 3 is expected to splice its calls
@@ -65,6 +69,10 @@ import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.liquid_diag import (
+    LiquidDiag,
+    diag_pq_liquid,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import AmpsLuts
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     PackedAmpsState,
@@ -108,7 +116,16 @@ class WarmLoopState:
     §4a `update_mesrc`, warm-only reduction, see `_update_mesrc_warm`).
 
     All arrays share one `npoints` (validated in `__post_init__`, mirroring
-    `driver/box.py`'s `BoxCase` pattern).
+    `driver/box.py`'s `BoxCase` pattern) -- EXCEPT `diag`, whose shape is
+    `(nbins, npoints)` (one entry per bin, not per column); not included in
+    the `npoints` cross-check below.
+
+    `diag`: `core.liquid_diag.LiquidDiag`, `diag_pq`'s liquid-branch output
+    (M2a Task 2), refreshed by `_refresh_state` whenever it is called with a
+    `config`/`luts` (see that function's docstring); `None` before the
+    first such refresh (e.g. right after `WarmLoopState.__init__`, or in
+    tests that call `_refresh_state(state)` with no `config`/`luts` to
+    probe only the `diag_t` refresh -- see `test_warm_loop.py`).
     """
 
     thermo: ThermoState
@@ -117,6 +134,7 @@ class WarmLoopState:
     thil: np.ndarray  # (npoints,) theta_il, G1 §1 `thil(*)`
     qtp: np.ndarray  # (npoints,) total water mixing ratio, G1 §1 `qtp(*)`
     mes_rc: np.ndarray  # (npoints,) hydrometeor phase flag, G1 §4a
+    diag: LiquidDiag | None = None  # (nbins, npoints) per field; see above
 
     def __post_init__(self) -> None:
         npoints = {
@@ -182,29 +200,25 @@ def _rain_specific_humidity(liquid: LiquidState, mes_rc: np.ndarray) -> np.ndarr
     return np.where(is_rain, qr, 0.0)
 
 
-def _diag_pq_liquid_stub(state: WarmLoopState) -> WarmLoopState:
-    """`diag_pq` for the liquid (rain) group -- G1 §1's per-refresh
-    `diag_pq(CM%rain, ...)` call, guarded by `flagp_r>0` in the Fortran.
-    Task 2 scope (`diag_pq_liquid`); NOT implemented here.
-
-    Unlike `_activation`/`_vapor_deposition_liquid`/`_repair` (Tasks 4/5/6,
-    whose NotImplementedError-raise IS this task's own test surface), this
-    is a true identity pass-through, not a raiser: `_refresh_state` must
-    stay runnable (and its `diag_t` reproduction testable) from every call
-    site BEFORE Task 2 lands, per the task brief ("_refresh_state ... leaves
-    diag_pq as a stub call ... stub it").
-    """
-    return state
-
-
-def _refresh_state(state: WarmLoopState) -> WarmLoopState:
+def _refresh_state(
+    state: WarmLoopState, config: AmpsConfig | None = None, luts: AmpsLuts | None = None
+) -> WarmLoopState:
     """The refresh preamble, G1 §1: `update_mesrc` -> `diag_t` ->
     `update_airgroup` -> `diag_pq`, collapsed into ONE function reused at
     every refresh point (`run_warm_micro_tendency`'s col-loop `it_cl>1`
     block, vap-loop head, and final post-loop refresh) instead of G1's
     4x-duplicated inline block. See the module docstring for exactly which
-    of the four preamble steps are real here (`update_mesrc`, `diag_t`) vs.
-    unmodeled/stubbed (`update_airgroup`, `diag_pq`).
+    of the four preamble steps are real here (`update_mesrc`, `diag_t`,
+    `diag_pq`'s liquid branch) vs. unmodeled (`update_airgroup`).
+
+    `config`/`luts`: OPTIONAL, default `None`. When both are given, `diag_pq`
+    (`core.liquid_diag.diag_pq_liquid`, M2a Task 2) is run and its result
+    stored on the returned state's `diag` field; when either is omitted,
+    `diag_pq` is skipped and `diag` is carried through unchanged (`None` if
+    never populated). This keeps `_refresh_state(state)` -- no config/luts
+    -- valid for callers that only care about the `update_mesrc`/`diag_t`
+    refresh (e.g. `test_warm_loop.py`'s `TestRefreshStateDiagT`, predating
+    Task 2); `run_warm_micro_tendency`/`ifc_warm` (below) always pass both.
     """
     mes_rc = _update_mesrc_warm(state.thermo, state.liquid)
     qr = _rain_specific_humidity(state.liquid, mes_rc)
@@ -217,7 +231,12 @@ def _refresh_state(state: WarmLoopState) -> WarmLoopState:
     new_thermo = ThermoState(values=thermo_values)
 
     refreshed = dataclasses.replace(state, thermo=new_thermo, mes_rc=mes_rc)
-    return _diag_pq_liquid_stub(refreshed)
+
+    if config is not None and luts is not None:
+        diag = diag_pq_liquid(refreshed.liquid, refreshed.thermo, config, luts)
+        refreshed = dataclasses.replace(refreshed, diag=diag)
+
+    return refreshed
 
 
 # ---------------------------------------------------------------------------
@@ -324,19 +343,19 @@ def run_warm_micro_tendency(
 
     for it_cl in range(1, config.n_step_cl + 1):
         if it_cl > 1:
-            state = _refresh_state(state)
+            state = _refresh_state(state, config, luts)
 
         # Collision substep: G1 §1's warm-phase coalescence/breakup calls
         # (Task 3) are NOT modeled here -- see module/function docstrings.
         state = _repair(state, config, phase="collision")
 
         for _it_vp in range(1, config.n_step_vp + 1):
-            state = _refresh_state(state)
+            state = _refresh_state(state, config, luts)
             state = _activation(state, config, dts.dt_vp, luts)
             state = _vapor_deposition_liquid(state, config, dts.dt_vp, luts)
             state = _repair(state, config, phase="vapor")
 
-    state = _refresh_state(state)
+    state = _refresh_state(state, config, luts)
     return state
 
 
@@ -398,7 +417,7 @@ def ifc_warm(  # noqa: PLR0917 [too-many-positional-arguments]
         mes_rc=np.zeros(packed_before.thermo.npoints, dtype=np.int64),
     )
     warm_state = _reality_check_stub(warm_state)
-    warm_state = _refresh_state(warm_state)
+    warm_state = _refresh_state(warm_state, config, luts)
     warm_state = run_warm_micro_tendency(warm_state, config, dt, luts)
 
     amps_after = PackedAmpsState(

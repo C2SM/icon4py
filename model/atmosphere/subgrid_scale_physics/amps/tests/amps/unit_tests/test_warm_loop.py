@@ -175,7 +175,7 @@ class TestRefreshStateCallCount:
         _no_op_process_stubs(monkeypatch)
         calls = {"n": 0}
 
-        def _counting_refresh(s):
+        def _counting_refresh(s, config=None, luts=None):
             calls["n"] += 1
             return s
 
@@ -425,7 +425,7 @@ class TestIfcWarm:
 
     def test_runs_end_to_end_with_process_stubs_mocked(self, monkeypatch, luts):
         _no_op_process_stubs(monkeypatch)
-        monkeypatch.setattr(warm_loop, "_refresh_state", lambda s: s)
+        monkeypatch.setattr(warm_loop, "_refresh_state", lambda s, config=None, luts=None: s)
 
         scale = self._make_scale_raw()
         config = AmpsConfig.cloudlab()
