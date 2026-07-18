@@ -297,7 +297,11 @@ def _vapor_deposition_liquid(
     """Vapor deposition on rain (G1 §1 vap_loop: `vapor_deposition(CM%rain,
     ...)`, guarded by `micexfg(6)==1 .and. flagp_r>0`) -- M2a Task 5's
     `core.vapor_deposition.vapor_deposition_liquid` (Chen-Lamb semidiscrete
-    condensation/evaporation growth + mass-space bin remap).
+    condensation/evaporation growth, the full `cal_lincubprms_vec`
+    linear/cubic mass-space bin remap, and aerosol/vapor diversion on
+    evaporation -- updates `state.liquid`, `state.aerosol`, AND
+    `state.thermo` (net vapor exchanged this substep), matching
+    `_activation`'s own 3-field update shape).
 
     `luts` is accepted for interface parity with the other two process
     hooks (`_activation`, `_repair`) but UNUSED -- `vapor_deposition_liquid`
@@ -318,8 +322,10 @@ def _vapor_deposition_liquid(
             "(run_warm_micro_tendency's own vap-loop head always does, immediately "
             "before this hook)."
         )
-    liquid = vapor_deposition_liquid(state.liquid, state.thermo, config, dt_vp, state.diag)
-    return dataclasses.replace(state, liquid=liquid)
+    liquid, aerosol, thermo = vapor_deposition_liquid(
+        state.liquid, state.aerosol, state.thermo, config, dt_vp, state.diag
+    )
+    return dataclasses.replace(state, liquid=liquid, aerosol=aerosol, thermo=thermo)
 
 
 def _repair(state: WarmLoopState, config: AmpsConfig, phase: str) -> WarmLoopState:
