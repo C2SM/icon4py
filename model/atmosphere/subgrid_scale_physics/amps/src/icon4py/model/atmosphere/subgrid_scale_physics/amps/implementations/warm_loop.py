@@ -38,8 +38,11 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   `hydrodyn_breakup(rain)`) -- NOT modeled at all in this skeleton (no
   stub hook exists for them here); Task 3 is expected to splice its calls
   into `run_warm_micro_tendency`'s col_loop body directly.
-* Task 4: `_activation` (CCN activation, `cal_aptact_var8_vec` /
-  `cal_aptact_var8_kc04dep`, G1 §1 vap_loop).
+* Task 4 (DONE): `_activation` (CCN activation, `cal_aptact_var8_kc04dep`,
+  G1 §1 vap_loop) -- `core.activation.activate_and_advance_vapor`
+  (`core/activation.py`). Requires `state.diag` (Task 2's `diag_pq_liquid`
+  output); `_refresh_state` always populates it immediately before this
+  hook fires.
 * Task 5: `_vapor_deposition_liquid` (vapor deposition on rain,
   `vapor_deposition(CM%rain,...)`, G1 §1 vap_loop).
 * Task 6: `_repair` (repair, G1 §1, called once per col_loop iteration and
@@ -69,6 +72,9 @@ import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.activation import (
+    activate_and_advance_vapor,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.liquid_diag import (
     LiquidDiag,
     diag_pq_liquid,
@@ -240,8 +246,10 @@ def _refresh_state(
 
 
 # ---------------------------------------------------------------------------
-# STUBBED process hooks -- Tasks 4/5/6. Each raises NotImplementedError
-# naming the task that fills it in (per the M2a Task 1 brief).
+# Process hooks -- Tasks 4/5/6. `_activation` (Task 4) is now implemented;
+# `_vapor_deposition_liquid`/`_repair` (Tasks 5/6) still raise
+# NotImplementedError naming the task that fills them in (per the M2a
+# Task 1 brief).
 # ---------------------------------------------------------------------------
 
 
@@ -250,13 +258,28 @@ def _activation(
 ) -> WarmLoopState:
     """CCN activation (G1 §1 vap_loop: `cal_aptact_var8_vec`, `act_type==2`,
     or `cal_aptact_var8_kc04dep`, the `else`/default branch cloudlab's own
-    `act_type=1` selects) -- Task 4 scope. NOT implemented here."""
-    del state, config, dt_vp, luts
-    raise NotImplementedError(
-        "_activation is a Task 4 stub (CCN activation: cal_aptact_var8_vec / "
-        "cal_aptact_var8_kc04dep, G1 §1 vap_loop) -- not implemented in this M2a "
-        "Task 1 warm-phase host-loop skeleton."
+    `act_type=1` selects) -- M2a Task 4's `core.activation.
+    activate_and_advance_vapor` (`cal_aptact_var8_kc04dep`, KC04-deposition
+    variant, matching cloudlab's `act_type=1`).
+
+    Requires `state.diag` (populated by `_refresh_state(state, config,
+    luts)`, always called immediately before this hook in
+    `run_warm_micro_tendency`'s own vap-loop head) -- raises `ValueError`
+    naming the missing precondition if called directly on a state that
+    skipped that refresh (e.g. a bare `WarmLoopState(...)`, `diag=None` by
+    default).
+    """
+    if state.diag is None:
+        raise ValueError(
+            "_activation requires state.diag (core.liquid_diag.LiquidDiag) to be "
+            "populated -- call _refresh_state(state, config, luts) first "
+            "(run_warm_micro_tendency's own vap-loop head always does, immediately "
+            "before this hook)."
+        )
+    liquid, aerosol, thermo = activate_and_advance_vapor(
+        state.liquid, state.aerosol, state.thermo, config, dt_vp, luts, state.diag
     )
+    return dataclasses.replace(state, liquid=liquid, aerosol=aerosol, thermo=thermo)
 
 
 def _vapor_deposition_liquid(

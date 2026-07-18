@@ -132,8 +132,22 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import thermo
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import bin_grid, thermo
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import AmpsConst
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.index_maps import (
+    LiquidMassIndex,
+    LiquidPPV,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.liquid_diag import LiquidDiag
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import AmpsLuts
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import get_thermo_prop
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
+    AerosolState,
+    LiquidState,
+    ThermoProp,
+    ThermoState,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -1245,3 +1259,1249 @@ def zbrent_act_vec(  # noqa: PLR0915, PLR0917 -- single verbatim Fortran subrout
         fb = np.where(active, residual_fn(b), fb)
 
     return ZbrentResult(sw_n=sw_n, ierror1=ierror1)
+
+
+# =============================================================================
+# PART 2 (M2a Task 4): cal_aptact_var8_kc04dep -- the OUTER DRIVER.
+#
+# Ground truth: G2 (docs/superpowers/facts/m2/activation.md), sections
+# 1a-1n ("OUTER STRUCTURE") + section 3 (`add_simple_vec`, quoted FULL).
+# Several G2 sections are NARRATED, not fully quoted (1c's mass-bin-
+# boundary construction, 1d/1e's Gauss-quadrature DHF/deposition
+# precompute, 1f's `sw_allact`/`ds_allDHF`/`si_alldep` formula, 1k's
+# post-`add_simple_vec` `cal_lincubprms_vec`/`cal_transbin_vec` machinery)
+# -- per this task's dispatch ("dispatch authorizes reading the named
+# Fortran directly, quoting into report"), these were read directly from
+# `mod_amps_core.F90` (scale_amps repo) and `class_Mass_Bin.F90`; each
+# resulting divergence/simplification is documented at its own point below
+# AND summarized here:
+#
+# 1. CCN mass-bin quadrature (G2 section 1c's `zn`/`fact_c`/
+#    `interp_data1d_lut_big(snrml,...)` machinery,
+#    `mod_amps_core.F90:6564-6644`, read directly): this numerically
+#    re-partitions ONE bulk lognormal aerosol population per category
+#    (`ga(ica)%MS(1,n)` -- ALWAYS Fortran bin index 1; the Fortran's own
+#    aerosol Group carries only a SINGLE lognormal-summary bin per
+#    category, not a discretized population -- `AerosolState` bin index 0
+#    stands in for it here, its own bin axis beyond index 0 UNUSED by this
+#    driver) into `N_bin_a=10` pieces via a fixed 10-point Gauss-Hermite
+#    quadrature (`ZN_QUADRATURE`/`FACT_C_QUADRATURE`, G2 section 0,
+#    verbatim) driven by the category's own lognormal shape parameters
+#    `p(1)` (geometric mean radius)/`p(2)` (ln-sigma). `p(1)`/`p(2)` are
+#    THEMSELVES diagnosed (read directly: `diag_pardis_ap`,
+#    `class_Mass_Bin.F90:1743-1789`, named nowhere in G2) from the
+#    category's prognostic `mean_mass`/`den` (from `AerosolState` bin 0's
+#    own `amt_q`/`acon_q`) plus a per-category ln-sigma constant
+#    `ap_lnsig` -- initially believed to be an unported namelist parameter
+#    (the ONLY per-category "mean/sigma" fields this module's own author
+#    first found, `ap_mean_cp`/`ap_sig_cp`, are used EXCLUSIVELY by G2
+#    section 1d's DHF contact-angle Gauss-quadrature,
+#    `mod_amps_core.F90:6836,6961`; `ap_sig_cp`'s cloudlab values, 20.0
+#    for 3 of 4 categories, are implausible as a lognormal geometric-sigma
+#    but match a Savre & Ekman 2014 contact-angle sigma in degrees
+#    exactly) -- but `config.py` DOES carry the correct fields under
+#    different names: `config.ap_lnsig`/`config.ap_mean`
+#    ("log of standard deviation (natural log of radius, microns)" /
+#    "geometrical mean radius (cm)", both already M1-ported with real
+#    per-category cloudlab values). `interp_data1d_lut_big` itself (named,
+#    not quoted, by G2) was resolved from a commented-out INLINE
+#    equivalent immediately above its own call site in the Fortran (see
+#    `_interp_data1d_lut_big`'s docstring) -- so this section is now FULLY
+#    ported, not simplified; the one remaining, explicitly documented
+#    ASSUMPTION is WHICH of `diag_pardis_ap`'s branches applies
+#    (`flagp` IN `{1,2,-1,-2,-3}`, "fixed standard deviation" -- see
+#    `_ccn_precompute`'s own docstring for the justification), since G2
+#    itself never names `diag_pardis_ap` at all (read purely to resolve
+#    this driver's own precompute, out of G2's own quoted scope).
+#
+# 2. `sw_allact`/`ds_allDHF`/`si_alldep` (G2 section 1f, narrated as "the
+#    'all-activated' saturation offsets" but not quoted): read directly
+#    (`mod_amps_core.F90:7055-7079`) and ported verbatim below
+#    (`_all_activated_supersaturation`).
+#
+# 3. Activated-droplet bin placement (G2 section 1k): the literal Fortran
+#    calls `add_simple_vec` (G2 section 3, quoted FULL) ONLY for the "mean
+#    mass falls outside its own shifted per-particle bin" edge case
+#    (`icond4==1`, `mod_amps_core.F90:7620-7663`); the common case goes
+#    through `cal_lincubprms_vec`/`cal_transbin_vec`
+#    (`mod_amps_core.F90:7682,7745`), NEITHER quoted by G2 NOR ported
+#    anywhere in this codebase -- read directly, confirmed genuinely
+#    un-quotable within this task's scope (a general sub-bin linear/cubic
+#    mass-redistribution engine reused by most AMPS bin processes, not
+#    specific to activation, per its own module comment "calculation of
+#    parameters for linear distribution in the shifted bin"). Per this
+#    project's missing-prerequisite precedent (Task 3's ice-shape shed
+#    branch), this port uses `add_simple_vec` (fully quoted, genuine
+#    Fortran physics) for ALL activated-droplet placement, not just the
+#    narrow edge case -- correctly conserving number and mass
+#    (`add_simple_vec`'s own placement algorithm does this by
+#    construction) at the cost of not reproducing the sub-bin linear
+#    redistribution the literal Fortran uses for the common case.
+#    Documented prominently; see the task report.
+#
+# 4. Deliquescence-heterogeneous-freezing (`DHF_IF1`/`DHF_IF2`, G2 section
+#    4) and the classical-CNT deposition-nucleation precompute (`Dep_IF1`,
+#    G2 section 1e's `iflg_dep==1` branch): both are full Savre & Ekman
+#    (2014)/classical-nucleation-theory 40-point Gauss-quadrature
+#    integrals G2 narrates (names the intermediate quantities: haze
+#    radius, molality, `sigma_iv/sigma_sv/sigma_is`, `Lmef`, `Gn`, `Hvfr`,
+#    `r_cr`, `dFact`, `r_d`) but does not quote the formulas for -- a
+#    second genuine missing-prerequisite, comparable in scope to Task 3's
+#    ice-shape gap. `iflg_dhf`/`iflg_dep` gate these branches independent
+#    of `flagp_s` in the literal Fortran, but BOTH are physically
+#    freezing/deposition processes that deposit mass into ICE bins -- this
+#    port's actual integration point (`implementations/warm_loop.py`'s
+#    warm-phase-only `_activation`) has no ice group at all, and
+#    cloudlab's own config defaults DHF off (`ice_nucleation_dhf=0`) and
+#    gates deposition on a genuine dust (category-2) aerosol population
+#    this port's warm-only wiring never supplies. Matching Task 3's
+#    `allow_shed_placeholder` precedent: the DHF/deposition precompute
+#    below raises `NotImplementedError` when its flag is genuinely on AND
+#    applicable (DHF: `iflg_dhf>0`; deposition: `iflg_dep>0 AND
+#    aerosol.ncat>=2`, i.e. a dust category is actually present) UNLESS
+#    `allow_dhf_placeholder=True`/`allow_dep_placeholder=True`, in which
+#    case it degrades to a provably-inert no-op (matching the Fortran's
+#    own pre-loop-init values, `s_c_dhfmin=999.0`,
+#    `used_Ma_dhf=used_Ma_dep=0`) -- never silently skipped.
+# =============================================================================
+
+MIN_EPS_CCN = 1.0e-6  # min soluble mass fraction for CCN eligibility (mod_amps_core.F90:36)
+DRIVER_MAX_R_N = 10.0  # micron; max dry radius for CCN eligibility (G2 section 0)
+MAX_FACT = 1.0  # clamp on the CCN number/mass integration fraction (G2 section 0)
+OUTER_ITMAX = 200  # backward-Euler Til-Qt loop iteration budget (G2 section 0)
+ALIM1 = 1.0e-5  # backward-Euler vapor-mixing-ratio convergence tolerance (G2 section 0)
+ALIM2 = 1.0e-5  # backward-Euler temperature convergence tolerance (G2 section 0)
+S_C_DHFMIN_INIT = 999.0  # Fortran pre-loop init value, mod_amps_core.F90:6466
+
+#: `N_bin_a`, the number of on-the-fly CCN mass-quadrature bins (G2 section
+#: 0/1c) -- fixed at 10 by the `zn`/`fact_c` node counts below, not a
+#: runtime `AmpsConfig` field.
+N_BIN_A = 10
+#: 10-point Gauss-Hermite quadrature BOUNDARIES in standardized
+#: log-radius z-score space (`zn`, `mod_amps_core.F90:6307-6309`, verbatim,
+#: 11 values bounding `N_BIN_A=10` bins).
+ZN_QUADRATURE = np.array(
+    [
+        -3.090232306,
+        -2.472185845,
+        -1.854139384,
+        -1.236092922,
+        -0.618046461,
+        0.0,
+        0.618046461,
+        1.236092922,
+        1.854139384,
+        2.472185845,
+        3.090232306,
+    ]
+)
+#: per-bin NUMBER-fraction weights (`fact_c`, `mod_amps_core.F90:6310-6311`,
+#: verbatim; sums to ~1.0).
+FACT_C_QUADRATURE = np.array(
+    [
+        0.005714484,
+        0.025145127,
+        0.076352402,
+        0.160060344,
+        0.231727644,
+        0.231727644,
+        0.160060344,
+        0.076352402,
+        0.025145127,
+        0.005714484,
+    ]
+)
+
+
+def _interp_data1d_lut_big(lut, x: np.ndarray) -> np.ndarray:
+    """`interp_data1d_lut_big`, a linear-interpolation lookup into a
+    `Data1DLut` (`y[i]` sampled at `xs+dx*i`). G2 does not quote this
+    function's body (named, not shown); its call site
+    (`mod_amps_core.F90:~6598-6612`) has a commented-out INLINE equivalent
+    immediately above the actual call, read directly and transcribed
+    verbatim here (0-based, `i1_fortran-1`):
+
+        i1=max(1,min(n-1,int((x-xs)/dx)+1))   ! 1-based, clamped to [1,n-1]
+        x1=real(i1-1)*dx+xs
+        wx=min(1,max(0,(x-x1)/dx))
+        y_out=min(1,max(0,(1-wx)*y(i1)+wx*y(i1+1)))
+    """
+    i1 = np.clip(np.floor((x - lut.xs) / lut.dx).astype(np.int64), 0, lut.n - 2)
+    x1 = i1 * lut.dx + lut.xs
+    wx = np.clip((x - x1) / lut.dx, 0.0, 1.0)
+    return np.clip((1.0 - wx) * lut.y[i1] + wx * lut.y[i1 + 1], 0.0, 1.0)
+
+
+# ---------------------------------------------------------------------------
+# Small thermo helpers standing in for Fortran `AirGroup` diagnostic fields
+# (`ag%TV(n)%rv_sat`, `%s_v`) this port's simpler `ThermoState` does not
+# carry persistently -- all derived from first principles (P/T/qv/esat),
+# using the SAME formula `func_vec`'s own diagnosis uses (G2's own
+# `x_n`/`xi_n` assignments), not guessed.
+# ---------------------------------------------------------------------------
+
+
+def _rv_saturation(
+    p: np.ndarray, t: np.ndarray, estbar: np.ndarray, esitbar: np.ndarray
+) -> np.ndarray:
+    """Saturation vapor mixing ratio, standing in for `ag%TV(n)%rv_sat(1)`:
+    the `sw=0` inverse of `sw=P*qv/(Rdvchiarui+qv)/e_satw-1`, i.e.
+    `rv_sat=Rdvchiarui*e_satw/(P-e_satw)`."""
+    e_satw = thermo.esat_lk(1, t, estbar, esitbar)
+    rdv = float(AmpsConst.Rdvchiarui)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return rdv * e_satw / np.where(p > e_satw, p - e_satw, 1.0)
+
+
+def _liquid_supersaturation(
+    p: np.ndarray, qv: np.ndarray, t: np.ndarray, estbar: np.ndarray, esitbar: np.ndarray
+) -> np.ndarray:
+    """`sw=P*qv/(Rdvchiarui+qv)/e_satw(T)-1`, standing in for the initial
+    `ag%TV(n)%s_v(1)` -- same formula as `func_vec`'s own `x_n`."""
+    e_satw = thermo.esat_lk(1, t, estbar, esitbar)
+    rdv = float(AmpsConst.Rdvchiarui)
+    return p * qv / (rdv + qv) / e_satw - 1.0
+
+
+def _ice_supersaturation(
+    sw: np.ndarray, t: np.ndarray, estbar: np.ndarray, esitbar: np.ndarray
+) -> np.ndarray:
+    """`si=r_e*(sw+1)-1`, `r_e=e_satw(T)/e_sati(min(T_0,T))` -- standing in
+    for the initial `ag%TV(n)%s_v(2)`, same formula as `func_vec`'s
+    `xi_n`."""
+    t_0 = float(AmpsConst.T_0)
+    e_satw = thermo.esat_lk(1, t, estbar, esitbar)
+    e_sati = thermo.esat_lk(2, np.minimum(t_0, t), estbar, esitbar)
+    return e_satw / e_sati * (sw + 1.0) - 1.0
+
+
+def _invert_cal_air_temp(t: np.ndarray, qr: np.ndarray, qi: np.ndarray) -> np.ndarray:
+    """Closed-form inverse of `cal_air_temp` (Part 1) for `til`:
+    `activate_and_advance_vapor`'s own dispatched signature is given
+    (T, qr, qi) via `ThermoState`/derived `qr_0`/`qi_0`, not `til` itself
+    (unlike `WarmLoopState`, which carries `thil` as a SEPARATE per-column
+    scalar the Fortran's outer `cal_micro_tendency` threads through --
+    out of this function's own signature). `cal_air_temp`'s two branches
+    invert in closed form: linear (`T=Til*(1+heat/(c_pa*253))` ->
+    `Til=T/(1+heat/(c_pa*253))`) and quadratic
+    (`T=0.5*(Til+sqrt(Til^2+4*Til/c_pa*heat))` -> `Til=T^2/(T+heat/c_pa)`,
+    from squaring `2T-Til=sqrt(...)`). Branch selection mirrors
+    `cal_air_temp`'s own `T>253.0` (not `t_lin>253.0` -- the correct
+    `til` root reproduces `T` exactly by construction, making the two
+    conditions equivalent here)."""
+    l_e = float(AmpsConst.L_e)
+    l_s = float(AmpsConst.L_s)
+    c_pa = float(AmpsConst.C_pa)
+    heat = l_e * qr + l_s * qi
+    til_lin = t / (1.0 + heat / (c_pa * 253.0))
+    denom = t + heat / c_pa
+    with np.errstate(divide="ignore", invalid="ignore"):
+        til_quad = t * t / np.where(denom > 0.0, denom, 1.0)
+    return np.where(t > 253.0, til_quad, til_lin)
+
+
+def _diag_mes_rc_and_qr0(
+    liquid: LiquidState, qvv: np.ndarray, moist_denv: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """`mes_rc`/`qr_0`, DUPLICATED (not imported -- `core/` must not depend
+    on `implementations/`) from `implementations/warm_loop.py`'s
+    `_update_mesrc_warm`/`_rain_specific_humidity`, collapsed to the 3
+    reachable values (0=no water,1=vapor only,2=rain) since this driver's
+    own inputs carry no ice group either. Matching this module's OWN
+    `_safe_div`-duplication precedent from `core/liquid_diag.py` for small
+    module-private helpers."""
+    lp = LiquidPPV
+    rmt = liquid.values[lp.rmt_q.py_idx]
+    rmat = liquid.values[lp.rmat_q.py_idx]
+    m_v = qvv * moist_denv
+    m_tr = np.sum(rmt, axis=(0, 1))
+    mes_rc = np.where(m_v + m_tr <= 0.0, 0, np.where(m_tr > 0.0, 2, 1)).astype(np.int64)
+    qr_0 = np.sum(np.maximum(0.0, rmt - rmat), axis=(0, 1))
+    qr_0 = np.where(mes_rc == 2, qr_0, 0.0)
+    return mes_rc, qr_0
+
+
+# ---------------------------------------------------------------------------
+# CCN critical-supersaturation precompute (G2 section 1c), simplified per
+# module docstring item 1: `AerosolState`'s own bins stand in directly for
+# `N_act`/`M_act`.
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class _CcnPrecompute:
+    """Per (aerosol bin, CCN-eligible category, point) CCN diagnostics,
+    G2 section 1c."""
+
+    noccn0: np.ndarray  # bool (nbins_a, ncat_ccn, npoints); True == "activates to liquid"
+    n_act: np.ndarray  # (nbins_a, ncat_ccn, npoints)
+    m_act: np.ndarray  # (nbins_a, ncat_ccn, npoints)
+    mean_mass_grown: np.ndarray  # (nbins_a, ncat_ccn, npoints); Fortran `mean_mass(i,ica,n)`
+    eps_map: np.ndarray  # (nbins_a, ncat_ccn, npoints); soluble mass fraction of this bin
+    s_c: (
+        np.ndarray
+    )  # (nbins_a, ncat_ccn, npoints); Koehler critical supersaturation, `s_c(i,ica,n)`
+
+
+def _ccn_precompute(  # noqa: PLR0915 -- single verbatim G2 section 1c transcription
+    aerosol: AerosolState,
+    ccn_cat_indices: tuple[int, ...],
+    *,
+    config: AmpsConfig,
+    luts: AmpsLuts,
+    icycle_active: np.ndarray,
+    sw: np.ndarray,
+    t: np.ndarray,
+    sig_wa: np.ndarray,
+    liquid_binb1: float,
+) -> _CcnPrecompute:
+    """G2 section 1c's Koehler activation test: the `N_bin_a=10`-point
+    Gauss-Hermite mass-quadrature partition of ONE bulk lognormal aerosol
+    population per category (`ga(ica)%MS(1,n)`, i.e. `AerosolState` bin
+    INDEX 0 for each category -- the Fortran's own aerosol Group carries
+    only a single lognormal-summary bin per category; `AerosolState`'s own
+    bin axis beyond index 0 is unused here, matching that Fortran
+    convention) into `N_act(i,ica,n)`/`M_act(i,ica,n)`, `i=0..N_BIN_A-1`,
+    followed by the per-quadrature-bin Koehler activation test (Part 1's
+    `kohler_critical_radius`, verbatim).
+
+    `p(1)` (geometric mean radius)/`p(2)` (ln-sigma) -- the category's
+    lognormal shape, read directly (`diag_pardis_ap`,
+    `class_Mass_Bin.F90:1743-1789`, named nowhere in G2): this uses the
+    `flagp` IN `{1,2,-1,-2,-3}` ("fixed standard deviation") branch --
+    `p(1)=exp((ln(mean_mass/coef4pi3/den)-4.5*ap_lnsig^2)/3)`,
+    `p(2)=ap_lnsig(icat)` -- an ASSUMPTION documented here since G2 itself
+    never names `diag_pardis_ap` or its own `flagp` dummy argument (out of
+    G2's own scope, read purely to resolve this driver's own precompute):
+    `config.flagp_a` defaults to (and cloudlab sets) `2`, and cloudlab's
+    own `config.ap_lnsig`/`config.ap_mean` are BOTH populated with
+    distinct, physically-plausible per-category values -- if `flagp` were
+    instead in `{3,-4,-5,-6}` ("fixed mean radius", `p(1)=ap_mean(icat)`
+    directly), `ap_lnsig` would be irrelevant, which its distinct nonzero
+    cloudlab values argue against. `mean_mass`/`den` are the category's
+    OWN prognostic bulk state (`AerosolState` bin 0's `amt_q/acon_q`, and
+    `den_ap` from the soluble-fraction mixing formula already used
+    elsewhere in this module), not re-derived.
+
+    `interp_data1d_lut_big(luts.snrml, ...)` (`_interp_data1d_lut_big`
+    above) integrates the MASS-weighted quantile shift (`xi=zn-3*p(2)`,
+    the lognormal 3rd-moment shift identity) to get each quadrature bin's
+    mass fraction `fact_m`, verbatim (`mod_amps_core.F90:6595-6614`):
+
+        xi2=zn(i+1)-3*p(2); yi2=interp_data1d_lut_big(snrml,abs(xi2))
+        xi1=zn(i)-3*p(2);   yi1=interp_data1d_lut_big(snrml,abs(xi1))
+        if(xi1>=0) then; fm2=yi1-yi2
+        elseif(xi1<=0.and.xi2>0) then; fm2=1.0-yi1-yi2
+        else; fm2=yi2-yi1; endif
+        fact_m=min(max_fact,fm2)
+
+    `ccn_cat_indices`: 0-based category indices to test (all categories
+    except the dust/deposition category, `ica/=2` in G2).
+    """
+    coef4pi3 = float(AmpsConst.coef4pi3)
+    den_w = float(AmpsConst.den_w)
+    r_v = float(AmpsConst.R_v)
+    m_w = float(AmpsConst.M_w)
+    coef_a = 2.0 / (den_w * r_v)
+
+    ncat_ccn = len(ccn_cat_indices)
+    npoints = aerosol.npoints
+
+    n_act = np.zeros((N_BIN_A, ncat_ccn, npoints), dtype=np.float64)
+    m_act = np.zeros((N_BIN_A, ncat_ccn, npoints), dtype=np.float64)
+    eps_map = np.zeros((N_BIN_A, ncat_ccn, npoints), dtype=np.float64)
+    noccn0 = np.zeros((N_BIN_A, ncat_ccn, npoints), dtype=bool)
+    mean_mass_grown = np.zeros((N_BIN_A, ncat_ccn, npoints), dtype=np.float64)
+    s_c_all = np.zeros((N_BIN_A, ncat_ccn, npoints), dtype=np.float64)
+
+    aa_over_t = coef_a * sig_wa / t  # (npoints,), `AA/ag%TV(n)%T`
+
+    for k, cat in enumerate(ccn_cat_indices):
+        # AerosolPPV order is (amt_q, acon_q, ams_q); bin 0 == Fortran
+        # `MS(1,n)`, the category's single bulk lognormal-summary bin.
+        amt1 = aerosol.values[0, 0, cat, :]
+        acon1 = aerosol.values[1, 0, cat, :]
+        ams1 = aerosol.values[2, 0, cat, :]
+
+        eps_bulk = np.clip(_safe_div(ams1, amt1), 0.0, 1.0)
+        eps_bulk = np.where(amt1 > 1.0e-30, eps_bulk, float(config.eps_ap[cat]))
+
+        den_as = float(config.den_aps[cat])
+        den_ai = float(config.den_api[cat])
+        den_ap = _safe_div(np.full_like(eps_bulk, den_ai), 1.0 - eps_bulk * (1.0 - den_ai / den_as))
+
+        mean_mass_bulk = _safe_div(amt1, acon1)
+        ap_lnsig_cat = float(config.ap_lnsig[cat])
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            log_arg = _safe_div(mean_mass_bulk, coef4pi3 * den_ap)
+            p1 = np.where(
+                log_arg > 0.0,
+                np.exp(
+                    (np.log(np.where(log_arg > 0.0, log_arg, 1.0)) - 4.5 * ap_lnsig_cat**2) / 3.0
+                ),
+                0.0,
+            )
+            dum1 = coef4pi3 * den_ap * np.exp(ap_lnsig_cat) * p1**3
+
+        eligible_bulk = (
+            icycle_active
+            & (sw > 0.0)
+            & (acon1 >= NLMT)
+            & (amt1 >= MLMT)
+            & (eps_bulk >= MIN_EPS_CCN)
+        )
+        del dum1  # mass-bin-boundary `binba`, computed for G2 fidelity but unused downstream (see docstring)
+
+        for i in range(N_BIN_A):
+            n_act_i = FACT_C_QUADRATURE[i] * acon1
+
+            xi2 = ZN_QUADRATURE[i + 1] - 3.0 * ap_lnsig_cat
+            xi1 = ZN_QUADRATURE[i] - 3.0 * ap_lnsig_cat
+            yi2 = _interp_data1d_lut_big(luts.snrml, np.abs(xi2))
+            yi1 = _interp_data1d_lut_big(luts.snrml, np.abs(xi1))
+            if xi1 >= 0.0:
+                fm2 = yi1 - yi2
+            elif xi2 > 0.0:
+                fm2 = 1.0 - yi1 - yi2
+            else:
+                fm2 = yi2 - yi1
+            fact_m = min(MAX_FACT, float(fm2))
+            m_act_i = fact_m * mean_mass_bulk * acon1
+
+            valid_i = eligible_bulk & (n_act_i >= NLMT) & (m_act_i >= MLMT)
+
+            with np.errstate(divide="ignore", invalid="ignore"):
+                r_n_micron = 1.0e4 * (
+                    _safe_div(m_act_i, n_act_i) / np.where(den_ap > 0.0, den_ap, 1.0) / coef4pi3
+                ) ** (1.0 / 3.0)
+                sb = (
+                    float(config.nu_aps[cat])
+                    * eps_bulk
+                    * m_w
+                    * den_ap
+                    / (float(config.M_aps[cat]) * den_w)
+                    * float(config.phi_aps[cat])
+                )
+                beta = 0.5
+                r_n_cm = r_n_micron * 1.0e-4
+                rd_c_micron = 1.0e4 * kohler_critical_radius(aa_over_t, sb, beta, r_n_cm)
+                s_c = (
+                    np.exp(
+                        aa_over_t * 1.0e4 / np.where(rd_c_micron != 0.0, rd_c_micron, 1.0)
+                        - sb
+                        * r_n_micron ** (2.0 * (1.0 + beta))
+                        / np.where(
+                            rd_c_micron**3 - r_n_micron**3 != 0.0,
+                            rd_c_micron**3 - r_n_micron**3,
+                            1.0,
+                        )
+                    )
+                    - 1.0
+                )
+                activates = (
+                    valid_i & (s_c <= sw) & (r_n_micron <= DRIVER_MAX_R_N) & (s_c <= SW_ALLOW)
+                )
+
+                mean_mass_ap = _safe_div(m_act_i, n_act_i)
+                grown = np.maximum(liquid_binb1 * 1.05, mean_mass_ap * 1.05)
+
+            n_act[i, k, :] = np.where(activates, n_act_i, 0.0)
+            m_act[i, k, :] = np.where(activates, m_act_i, 0.0)
+            eps_map[i, k, :] = eps_bulk
+            noccn0[i, k, :] = activates
+            mean_mass_grown[i, k, :] = np.where(activates, grown, 0.0)
+            s_c_all[i, k, :] = s_c
+
+    return _CcnPrecompute(
+        noccn0=noccn0,
+        n_act=n_act,
+        m_act=m_act,
+        mean_mass_grown=mean_mass_grown,
+        eps_map=eps_map,
+        s_c=s_c_all,
+    )
+
+
+def _all_activated_supersaturation(
+    used_ma_act: np.ndarray, p: np.ndarray, rv_sat: np.ndarray, den: np.ndarray, e_satw: np.ndarray
+) -> np.ndarray:
+    """`sw_allact` (G2 section 1f, read directly, `mod_amps_core.F90:
+    7055-7057`), verbatim:
+
+        e_n=P*(rv_sat(1)+used_Ma_act/den)/(Rdvchiarui+(rv_sat(1)+used_Ma_act/den))
+        sw_allact=e_n/e_sat(1)-1.0
+    """
+    rdv = float(AmpsConst.Rdvchiarui)
+    rv_eff = rv_sat + used_ma_act / den
+    e_n = p * rv_eff / (rdv + rv_eff)
+    return e_n / e_satw - 1.0
+
+
+# ---------------------------------------------------------------------------
+# DHF / deposition-nucleation precompute -- genuine missing prerequisites
+# (module docstring item 4): inert no-op unless the caller opts into the
+# placeholder AND the branch is genuinely reachable.
+# ---------------------------------------------------------------------------
+
+
+def _dhf_precompute(
+    npoints: int, *, iflg_dhf: int, allow_dhf_placeholder: bool
+) -> dict[str, np.ndarray]:
+    """`DHF_IF1` (G2 section 1d / section 4) -- see module docstring item
+    4. Returns the box-level fields `ActivationBoxState` needs
+    (`s_c_dhfmin`, `ds_alldhf`, `used_ma_dhf`, `akk_lmt_dhf`), all at their
+    Fortran pre-loop-init ("DHF never fires") values."""
+    if iflg_dhf > 0 and not allow_dhf_placeholder:
+        raise NotImplementedError(
+            "cal_aptact_var8_kc04dep's DHF_IF1 precompute (deliquescence-heterogeneous "
+            "freezing, Savre & Ekman 2014 40-point Gauss-quadrature contact-angle-PDF "
+            "integral, mod_amps_core.F90:6707-6908) is a genuine missing prerequisite -- "
+            "not fully quoted by G2 (docs/superpowers/facts/m2/activation.md) and not "
+            "ported anywhere in this codebase (see core/activation.py's Part 2 module "
+            "docstring item 4). Pass allow_dhf_placeholder=True to treat DHF as "
+            "inactive (no ice bins ever receive DHF-frozen mass) for the affected call."
+        )
+    return {
+        "s_c_dhfmin": np.full(npoints, S_C_DHFMIN_INIT, dtype=np.float64),
+        "ds_alldhf": np.zeros(npoints, dtype=np.float64),
+        "used_ma_dhf": np.zeros(npoints, dtype=np.float64),
+        "akk_lmt_dhf": np.ones(npoints, dtype=np.float64),
+    }
+
+
+def _deposition_precompute(
+    npoints: int, *, iflg_dep: int, has_dust_category: bool, allow_dep_placeholder: bool
+) -> dict[str, np.ndarray]:
+    """`Dep_IF1` (G2 section 1e) -- see module docstring item 4. Only
+    genuinely reachable when a dust (category-2) aerosol population is
+    actually present (`has_dust_category`); otherwise a vacuous no-op
+    regardless of `iflg_dep` (deposition nucleation is fundamentally a
+    dust-aerosol process -- with no dust category in the state, there is
+    nothing to nucleate from)."""
+    if iflg_dep > 0 and has_dust_category and not allow_dep_placeholder:
+        raise NotImplementedError(
+            "cal_aptact_var8_kc04dep's Dep_IF1 precompute (classical-nucleation-theory "
+            "40-point Gauss-quadrature deposition-freezing integral, mod_amps_core.F90:"
+            "6912-7035) is a genuine missing prerequisite -- not fully quoted by G2 and "
+            "not ported anywhere in this codebase (see core/activation.py's Part 2 module "
+            "docstring item 4). Pass allow_dep_placeholder=True to treat deposition "
+            "nucleation as inactive for the affected call."
+        )
+    return {
+        "used_ma_dep": np.zeros(npoints, dtype=np.float64),
+        "si_alldep": np.zeros(npoints, dtype=np.float64),
+        "aerosol_dep_con": np.zeros(npoints, dtype=np.float64),
+        "aerosol_dep_mass": np.zeros(npoints, dtype=np.float64),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Shared condensate diagnosis -- the common first half of `func_vec`'s own
+# body (`mod_amps_core.F90:9284-9298`), reused by BOTH the backward-Euler
+# loop (G2 section 1h, which calls `func_liqvap_vec`/`func_icevap_vec`
+# directly, not through `func_vec`) and this driver's own zbrent
+# qr_b/qi_b/T recovery (G2 section 1i: `qr_b(n)=qr2(n); qi_b(n)=qi2(n)`).
+# ---------------------------------------------------------------------------
+
+
+def _diagnose_condensate(  # noqa: PLR0917
+    x: np.ndarray,
+    y: np.ndarray,
+    box: ActivationBoxState,
+    liq: LiquidBinState,
+    ice: IceBinState,
+    flags: ActivationFlags,
+    estbar: np.ndarray,
+    esitbar: np.ndarray,
+    *,
+    allow_shed_placeholder: bool,
+) -> tuple[np.ndarray, np.ndarray]:
+    liqvap = func_liqvap_vec(x, box, liq, flagp_r=flags.flagp_r, dt=flags.dt)
+    icevap = func_icevap_vec(
+        x, y, box, ice, flags, estbar, esitbar, allow_shed_placeholder=allow_shed_placeholder
+    )
+    with np.errstate(all="ignore"):
+        trans_mi = icevap.loss_mi_mlt - np.minimum(
+            liqvap.liq_left, box.gain_mi_rim + box.gain_mi_frn
+        )
+        qr = np.maximum(
+            0.0, box.qr_0 + (liqvap.used_mr_act + liqvap.used_mr_vap + trans_mi) / box.den
+        )
+        qi = np.maximum(
+            0.0,
+            box.qi_0
+            + (icevap.used_mi_vap + icevap.used_mi_vapliq + icevap.used_mi_act - trans_mi)
+            / box.den,
+        )
+    return qr, qi
+
+
+def _self_consistent_condensate(  # noqa: PLR0917
+    x: np.ndarray,
+    y: np.ndarray,
+    box: ActivationBoxState,
+    liq: LiquidBinState,
+    ice: IceBinState,
+    flags: ActivationFlags,
+    estbar: np.ndarray,
+    esitbar: np.ndarray,
+    *,
+    allow_shed_placeholder: bool,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """`func_vec`'s FULL body up through its `iswitch==1` second pass
+    (`mod_amps_core.F90:9284-9298,9302-9313`): diagnose condensate at the
+    trial `(x, y)`, re-diagnose the self-consistent `(x_n, y_n)` from that,
+    then diagnose condensate AGAIN at `(x_n, y_n)` -- Fortran's own
+    `qr2`/`qi2`. Needed here (not just `func_vec`'s own `.residual`)
+    because `zbrent_act_vec`'s host-scope `qr2`/`qi2`/`y_n` side effects
+    (its LAST internal `func_vec` call, at the converged root) have no
+    Python equivalent -- G2 section 1i's `qr_b(n)=qr2(n); qi_b(n)=qi2(n)`
+    is reproduced here as an EXPLICIT recovery call at the converged
+    root, not a return-value `zbrent_act_vec` doesn't have. Returns
+    `(x_n, y_n, qr2, qi2)`."""
+    qr, qi = _diagnose_condensate(
+        x, y, box, liq, ice, flags, estbar, esitbar, allow_shed_placeholder=allow_shed_placeholder
+    )
+    y_n = cal_air_temp(box.til, qr, qi)
+    with np.errstate(all="ignore"):
+        e_satw = thermo.esat_lk(1, y_n, estbar, esitbar)
+        qv_n = np.maximum(0.0, box.qtp - qr - qi)
+        x_n = box.pressure * qv_n / (float(AmpsConst.Rdvchiarui) + qv_n) / e_satw - 1.0
+    qr2, qi2 = _diagnose_condensate(
+        x_n,
+        y_n,
+        box,
+        liq,
+        ice,
+        flags,
+        estbar,
+        esitbar,
+        allow_shed_placeholder=allow_shed_placeholder,
+    )
+    return x_n, y_n, qr2, qi2
+
+
+# ---------------------------------------------------------------------------
+# Backward-Euler Til-Qt vapor-advance stepping (G2 section 1h), masked
+# fixed-iteration over OUTER_ITMAX=200.
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class _BackwardEulerResult:
+    sw_b: np.ndarray
+    t_a_b: np.ndarray
+    imethod: np.ndarray  # int: -1 converged, 0 never touched (icycle==1), 1 -> zbrent
+
+
+def _advance_vapor_backward_euler(  # noqa: PLR0917
+    box: ActivationBoxState,
+    liq: LiquidBinState,
+    ice: IceBinState,
+    flags: ActivationFlags,
+    estbar: np.ndarray,
+    esitbar: np.ndarray,
+    *,
+    icycle_active: np.ndarray,
+    qv_init: np.ndarray,
+    allow_shed_placeholder: bool,
+) -> _BackwardEulerResult:
+    """G2 section 1h, verbatim structure: masked fixed-iteration numpy
+    (all lanes run the full OUTER_ITMAX=200 budget; a boolean `active`
+    mask freezes lanes that converged, oscillated, or over-consumed
+    water), matching this codebase's own established idiom (Part 1's
+    `zbrent_act_vec`)."""
+    npoints = box.sw.shape[0]
+    sw_b = box.sw.copy()
+    t_a_b = box.t.copy()
+    qr_b = box.qr_0.copy()
+    qi_b = box.qi_0.copy()
+    qr_b2 = box.qr_0.copy()
+    qi_b2 = box.qi_0.copy()
+    qv = qv_init.copy()
+
+    imethod = np.zeros(npoints, dtype=np.int64)
+    active = icycle_active.copy()
+
+    for iteration in range(OUTER_ITMAX):
+        if not active.any():
+            break
+
+        qr, qi = _diagnose_condensate(
+            sw_b,
+            t_a_b,
+            box,
+            liq,
+            ice,
+            flags,
+            estbar,
+            esitbar,
+            allow_shed_placeholder=allow_shed_placeholder,
+        )
+        with np.errstate(all="ignore"):
+            em = qr + qi >= box.qtp
+
+            t_a_n = cal_air_temp(box.til, qr, qi)
+            e_satw = thermo.esat_lk(1, t_a_n, estbar, esitbar)
+            qv_n = np.maximum(0.0, box.qtp - qr - qi)
+            sw_n = box.pressure * qv_n / (float(AmpsConst.Rdvchiarui) + qv_n) / e_satw - 1.0
+
+            dif = np.abs(_safe_div(qv_n - qv, qv))
+            dif_t = np.abs(_safe_div(t_a_n - t_a_b, t_a_b))
+
+            oscillating = (
+                (qi > 1.0e-20) & (qi_b < qi) & (qi_b2 > qi_b) & (t_a_b < float(AmpsConst.T_0))
+            ) | ((qr > 1.0e-20) & (qr_b < qr) & (qr_b2 > qr_b))
+            oscillating = oscillating & (iteration >= 9)  # Fortran `iter>=10`, 1-based
+
+            hand_to_zbrent = active & (oscillating | em)
+            converged = active & ~hand_to_zbrent & (dif <= ALIM1) & (dif_t <= ALIM2)
+            still_iterating = active & ~hand_to_zbrent & ~converged
+
+        imethod = np.where(hand_to_zbrent, 1, imethod)
+        imethod = np.where(converged, -1, imethod)
+
+        sw_b = np.where(still_iterating, sw_n, sw_b)
+        t_a_b = np.where(still_iterating, t_a_n, t_a_b)
+        qr_b2 = np.where(still_iterating, qr_b, qr_b2)
+        qi_b2 = np.where(still_iterating, qi_b, qi_b2)
+        qr_b = np.where(still_iterating, qr, qr_b)
+        qi_b = np.where(still_iterating, qi, qi_b)
+        qv = np.where(still_iterating, qv_n, qv)
+        # `converged` lanes take the Fortran's own end-of-branch reassignment
+        # (`sw_n(n)=sw_b(n); ...`, a no-op relative to their pre-branch sw_b/T_a_b).
+        sw_b = np.where(converged, sw_b, sw_b)
+        t_a_b = np.where(converged, t_a_b, t_a_b)
+
+        active = still_iterating
+
+    # Remaining unconverged boxes are handed to zbrent (G2 lines 7261-7267).
+    imethod = np.where(icycle_active & (imethod == 0), 1, imethod)
+
+    return _BackwardEulerResult(sw_b=sw_b, t_a_b=t_a_b, imethod=imethod)
+
+
+# ---------------------------------------------------------------------------
+# add_simple_vec (mod_amps_core.F90:15452-15577, class_Mass_Bin.F90 sibling
+# file), verbatim for the liquid (token==2) branch -- see module docstring
+# item 3 for why this is used for ALL activated-droplet placement.
+# ---------------------------------------------------------------------------
+
+
+def _add_simple(  # noqa: PLR0917
+    binb: np.ndarray,
+    np_placed: np.ndarray,
+    mp_placed: np.ndarray,
+    ratio_mp: np.ndarray,
+    valid: np.ndarray,
+    new_n: np.ndarray,
+    new_m: np.ndarray,
+) -> None:
+    """`add_simple_vec`, liquid (`g%token==2`) branch: `g%N_nonmass==0` for
+    liquid (`LiquidPPV` has no axis fields), so the `new_Q` non-mass update
+    is unconditionally a no-op and is not ported. Mutates `new_n`
+    `(nbins_liq, npoints)` and `new_m` `(nbins_liq, npoints, 4)` IN PLACE
+    (accumulating across repeated calls, matching the literal Fortran's own
+    `category_loop1` -- `new_N`/`new_M` are zeroed ONCE before the category
+    loop, then each category's `add_simple_vec` call accumulates into
+    them)."""
+    nbins_liq = new_n.shape[0]
+    n_source = np_placed.shape[0]
+    for i in range(n_source):
+        with np.errstate(divide="ignore", invalid="ignore"):
+            mean_mass = _safe_div(mp_placed[i], np_placed[i])
+        ok = valid[i] & (np_placed[i] > 1.0e-25) & (mp_placed[i] > 1.0e-25)
+        if not ok.any():
+            continue
+
+        j0 = np.searchsorted(binb, mean_mass, side="left") - 1
+        j0 = np.clip(j0, 0, nbins_liq - 1)
+
+        n_clamped = np.maximum(
+            mp_placed[i] / 0.99 / binb[j0 + 1],
+            np.minimum(mp_placed[i] / 1.01 / binb[j0], np_placed[i]),
+        )
+
+        points = np.nonzero(ok)[0]
+        j_ok = j0[points]
+        np.add.at(new_n, (j_ok, points), n_clamped[points])
+        np.add.at(new_m, (j_ok, points, 0), mp_placed[i][points])
+        for jj_idx in range(3):
+            np.add.at(
+                new_m, (j_ok, points, 1 + jj_idx), (mp_placed[i] * ratio_mp[i, :, jj_idx])[points]
+            )
+
+
+# ---------------------------------------------------------------------------
+# activate_and_advance_vapor -- the M2a Task 4 deliverable.
+# ---------------------------------------------------------------------------
+
+
+def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many G2 sub-steps
+    liquid: LiquidState,
+    aerosol: AerosolState,
+    thermo_state: ThermoState,
+    config: AmpsConfig,
+    dt_vp: float,
+    luts: AmpsLuts,
+    diag: LiquidDiag,
+    *,
+    allow_shed_placeholder: bool = False,
+    allow_dhf_placeholder: bool = False,
+    allow_dep_placeholder: bool = False,
+) -> tuple[LiquidState, AerosolState, ThermoState]:
+    """`cal_aptact_var8_kc04dep`, the outer driver (G2 sections 1a-1n):
+    activate dry aerosol into liquid droplets (Koehler), advance vapor
+    over `dt_vp` via the backward-Euler Til-Qt loop + Brent
+    supersaturation solve (G2 section 1h/1i/1j, Part 1 primitives), place
+    activated droplets into liquid bins (`add_simple_vec`, G2 section 1k),
+    and finalize the liquid/ice-phase thermo diagnostics (G2 section 1n).
+
+    `luts.snrml` (the standard-normal survival-function LUT) drives the
+    CCN mass-quadrature's `interp_data1d_lut_big` calls -- see
+    `_ccn_precompute`'s own docstring.
+
+    The DHF (`config.ice_nucleation_dhf`) and classical-CNT deposition
+    (`config.ice_nucleation_deposition`) branches are genuine missing
+    prerequisites -- see module docstring item 4 and
+    `allow_dhf_placeholder`/`allow_dep_placeholder`.
+
+    Returns `(liquid', aerosol', thermo')`: `aerosol'` and `thermo'` (T_n,
+    s_v_n) are updated; the aerosol-mass sink from activation
+    (`ga(ica)%MS(1,n)%dcondt/dmassdt`, G2 section 1k) is applied to
+    `aerosol'`.
+    """
+    estbar, esitbar = thermo.make_esat_tables()
+
+    npoints = liquid.npoints
+    t_0 = float(AmpsConst.T_0)
+
+    p = get_thermo_prop(thermo_state, ThermoProp.ptotv)
+    t = get_thermo_prop(thermo_state, ThermoProp.tv)
+    den = get_thermo_prop(thermo_state, ThermoProp.moist_denv)
+    qvv = get_thermo_prop(thermo_state, ThermoProp.qvv)
+
+    mes_rc, qr_0 = _diag_mes_rc_and_qr0(liquid, qvv, den)
+    qi_0 = np.zeros(npoints, dtype=np.float64)  # no ice group, see module docstring item 4
+    qtp = qvv + qr_0 + qi_0
+    sw = _liquid_supersaturation(p, qvv, t, estbar, esitbar)
+    si = _ice_supersaturation(sw, t, estbar, esitbar)
+
+    # ---- section 1a: grid-box skip mask -----------------------------------
+    flagp_r = int(config.flagp_r)
+    flagp_s = int(config.flagp_s)
+    iflg_inuc = int(config.ice_nucleation_master)
+    iflg_dep = int(config.ice_nucleation_deposition)
+    iflg_dhf = int(config.ice_nucleation_dhf)
+
+    liquid_eligible = (flagp_r > 0) & (sw > 0.0)
+    ice_eligible = (
+        (flagp_s > 0)
+        & (iflg_inuc > 0)
+        & (((iflg_dep > 0) | (iflg_dhf > 0)) & (si > 0.0) & (t < t_0))
+    )
+    icycle_active = (mes_rc != 0) & np.where(
+        mes_rc == 1, (qtp > 1.0e-20) & (liquid_eligible | ice_eligible), True
+    )
+
+    if not icycle_active.any():
+        return liquid, aerosol, thermo_state
+
+    # ---- section 1b: per-box init ------------------------------------------
+    e_satw0 = thermo.esat_lk(1, t, estbar, esitbar)
+    rv_sat = _rv_saturation(p, t, estbar, esitbar)
+    til = _invert_cal_air_temp(t, qr_0, qi_0)
+
+    # ---- section 1c: CCN critical-supersaturation precompute --------------
+    ncat = aerosol.ncat
+    dust_cat_idx = 1 if ncat >= 2 else None  # Fortran category 2 (1-based) -> 0-based index 1
+    ccn_cat_indices = tuple(c for c in range(ncat) if c != dust_cat_idx)
+    sig_wa = thermo.sfc_tension(t)
+    liquid_binb = bin_grid.make_bin_grid("liquid", liquid.nbins, nbin_h=config.nbin_h).binb
+
+    ccn = _ccn_precompute(
+        aerosol,
+        ccn_cat_indices,
+        config=config,
+        luts=luts,
+        icycle_active=icycle_active,
+        sw=sw,
+        t=t,
+        sig_wa=sig_wa,
+        liquid_binb1=float(liquid_binb[0]),
+    )
+
+    # ---- section 1f: activated totals + akk_lmt ----------------------------
+    used_ma_act = np.maximum(0.0, ccn.n_act * ccn.mean_mass_grown - ccn.m_act).sum(axis=(0, 1))
+    used_na_act = ccn.n_act.sum(axis=(0, 1))
+
+    sw_allact = _all_activated_supersaturation(used_ma_act, p, rv_sat, den, e_satw0)
+
+    dhf_fields = _dhf_precompute(
+        npoints, iflg_dhf=iflg_dhf, allow_dhf_placeholder=allow_dhf_placeholder
+    )
+    dep_fields = _deposition_precompute(
+        npoints,
+        iflg_dep=iflg_dep,
+        has_dust_category=dust_cat_idx is not None,
+        allow_dep_placeholder=allow_dep_placeholder,
+    )
+
+    nr_0 = np.where(mes_rc == 2, liquid.values[LiquidPPV.rcon_q.py_idx].sum(axis=(0, 1)), 0.0)
+    ccn_max = float(config.CCNMAX)
+    akk_lmt = np.maximum(
+        0.0, (np.minimum(ccn_max, used_na_act) - nr_0) / np.maximum(1.0e-30, used_na_act)
+    )
+
+    # ---- assemble ActivationBoxState / LiquidBinState / trivial IceBinState
+    gain_mi_rim = np.zeros(
+        npoints, dtype=np.float64
+    )  # no freezing tendencies upstream (no ice group)
+    gain_mi_frn = np.zeros(npoints, dtype=np.float64)
+
+    box = ActivationBoxState(
+        mes_rc=mes_rc,
+        t=t,
+        til=til,
+        qr_0=qr_0,
+        qi_0=qi_0,
+        gain_mi_rim=gain_mi_rim,
+        gain_mi_frn=gain_mi_frn,
+        den=den,
+        qtp=qtp,
+        pressure=p,
+        qr_b=qr_0.copy(),
+        qi_b=qi_0.copy(),
+        rv=rv_sat,
+        sw=sw,
+        used_ma_act=used_ma_act,
+        akk_lmt=akk_lmt,
+        sw_allact=sw_allact,
+        si_alldep=dep_fields["si_alldep"],
+        used_ma_dep=dep_fields["used_ma_dep"],
+        aerosol_dep_con=dep_fields["aerosol_dep_con"],
+        aerosol_dep_mass=dep_fields["aerosol_dep_mass"],
+        s_c_dhfmin=dhf_fields["s_c_dhfmin"],
+        ds_alldhf=dhf_fields["ds_alldhf"],
+        akk_lmt_dhf=dhf_fields["akk_lmt_dhf"],
+        used_ma_dhf=dhf_fields["used_ma_dhf"],
+    )
+
+    liq = LiquidBinState(
+        con=liquid.values[LiquidPPV.rcon_q.py_idx, :, 0, :],
+        mass_total=liquid.values[LiquidPPV.rmt_q.py_idx, :, 0, :],
+        mass_aerosol=liquid.values[LiquidPPV.rmat_q.py_idx, :, 0, :],
+        coef1=diag.vapdep_coef1,
+        coef2=diag.vapdep_coef2,
+        r_act=_liquid_activation_radius(liquid, config, t, sig_wa),
+        mean_mass=diag.mean_mass,
+        density=diag.density,
+    )
+
+    nbins_ice_trivial = 1
+    zeros_ice = np.zeros((nbins_ice_trivial, npoints), dtype=np.float64)
+    ice = IceBinState(
+        con=zeros_ice,
+        mass_total=zeros_ice,
+        mass_aerosol=zeros_ice,
+        mass_meltwater=zeros_ice,
+        mean_mass=zeros_ice,
+        coef1=zeros_ice,
+        coef2=zeros_ice,
+        phase2=np.ones((nbins_ice_trivial, npoints), dtype=np.int64),
+        ts_a1=zeros_ice,
+        ts_b11=zeros_ice,
+        ts_b12=zeros_ice,
+        ts_b13=zeros_ice,
+        ts_d1=np.ones((nbins_ice_trivial, npoints), dtype=np.float64),
+        tmax=np.full((nbins_ice_trivial, npoints), t_0, dtype=np.float64),
+        tmp_prev=np.full((nbins_ice_trivial, npoints), t_0, dtype=np.float64),
+        ldmassdt2=zeros_ice,
+        e_l01=zeros_ice,
+    )
+
+    flags = ActivationFlags(
+        flagp_r=flagp_r,
+        flagp_s=flagp_s,
+        iflg_inuc=iflg_inuc,
+        iflg_dep=iflg_dep,
+        iflg_dhf=iflg_dhf,
+        level=int(config.level_comp),
+        dt=dt_vp,
+    )
+
+    # ---- section 1h: backward-Euler Til-Qt loop ----------------------------
+    be = _advance_vapor_backward_euler(
+        box,
+        liq,
+        ice,
+        flags,
+        estbar,
+        esitbar,
+        icycle_active=icycle_active,
+        qv_init=qvv,
+        allow_shed_placeholder=allow_shed_placeholder,
+    )
+
+    final_sw = be.sw_b.copy()
+    final_t = be.t_a_b.copy()
+
+    # ---- section 1i: zbrent stage 1 (Til-Qt vapor-advance root) ------------
+    needs_zbrent1 = icycle_active & (be.imethod == 1)
+    if needs_zbrent1.any():
+        t_a_ref1 = np.where(needs_zbrent1, t, be.t_a_b)  # T_a_o=T_a_b=ag%TV(n)%T at zbrent-1 init
+
+        def _residual1(x: np.ndarray) -> np.ndarray:
+            return func_vec(
+                x,
+                t_a_ref1,
+                1,
+                box,
+                liq,
+                ice,
+                flags,
+                estbar,
+                esitbar,
+                allow_shed_placeholder=allow_shed_placeholder,
+            ).residual
+
+        z1 = zbrent_act_vec(
+            _residual1, np.ones(npoints, dtype=np.int64), 1, sw, t_a_ref1, estbar, esitbar
+        )
+        _x_n1, y_n1, qr2, qi2 = _self_consistent_condensate(
+            z1.sw_n,
+            t_a_ref1,
+            box,
+            liq,
+            ice,
+            flags,
+            estbar,
+            esitbar,
+            allow_shed_placeholder=allow_shed_placeholder,
+        )
+        t_a_after1 = y_n1
+
+        box = dataclasses.replace(
+            box,
+            qr_b=np.where(needs_zbrent1, qr2, box.qr_b),
+            qi_b=np.where(needs_zbrent1, qi2, box.qi_b),
+        )
+
+        # oscillation check: func_vec(iswitch=0) at (sw_n, T_a_b=t_a_ref1).
+        osc = func_vec(
+            z1.sw_n,
+            t_a_ref1,
+            0,
+            box,
+            liq,
+            ice,
+            flags,
+            estbar,
+            esitbar,
+            allow_shed_placeholder=allow_shed_placeholder,
+        )
+        oscillating1 = needs_zbrent1 & (np.abs(osc.residual) > 0.1)
+
+        sw_n1 = np.where(oscillating1, sw, z1.sw_n)
+        t_a_b1 = np.where(oscillating1, t, t_a_ref1)
+        box = dataclasses.replace(
+            box,
+            qr_b=np.where(oscillating1, qr_0, box.qr_b),
+            qi_b=np.where(oscillating1, qi_0, box.qi_b),
+        )
+
+        # sw_m for the section-1j gate: re-run func_vec(iswitch=0) at the
+        # (possibly reset) state.
+        osc2 = func_vec(
+            sw_n1,
+            t_a_b1,
+            0,
+            box,
+            liq,
+            ice,
+            flags,
+            estbar,
+            esitbar,
+            allow_shed_placeholder=allow_shed_placeholder,
+        )
+        sw_m1 = osc2.x_n
+
+        final_sw = np.where(needs_zbrent1, sw_n1, final_sw)
+        final_t = np.where(needs_zbrent1, np.where(oscillating1, t, t_a_after1), final_t)
+    else:
+        sw_m1 = final_sw.copy()
+
+    # ---- section 1j: zbrent stage 2 (water-saturation adjustment) ---------
+    iqvlmt_is_zbrent = needs_zbrent1
+    sw_ref_1j = np.where(iqvlmt_is_zbrent, sw_m1, final_sw)
+    needs_zbrent2 = icycle_active & (qr_0 > 1.0e-10) & (sw_ref_1j > SW_ALLOW)
+    if needs_zbrent2.any():
+        t_a_ref2 = np.where(needs_zbrent2, t, final_t)
+
+        def _residual2(x: np.ndarray) -> np.ndarray:
+            return func_vec(
+                x,
+                t_a_ref2,
+                2,
+                box,
+                liq,
+                ice,
+                flags,
+                estbar,
+                esitbar,
+                allow_shed_placeholder=allow_shed_placeholder,
+            ).residual
+
+        z2 = zbrent_act_vec(
+            _residual2, np.ones(npoints, dtype=np.int64), 2, sw, t_a_ref2, estbar, esitbar
+        )
+        qr3, qi3 = _diagnose_condensate(
+            z2.sw_n,
+            t_a_ref2,
+            box,
+            liq,
+            ice,
+            flags,
+            estbar,
+            esitbar,
+            allow_shed_placeholder=allow_shed_placeholder,
+        )
+        t_a_after2 = cal_air_temp(box.til, qr3, qi3)
+        final_sw = np.where(needs_zbrent2, z2.sw_n, final_sw)
+        final_t = np.where(needs_zbrent2, t_a_after2, final_t)
+
+    # ---- section 1k: placement of activated droplets into liquid bins -----
+    new_n = np.zeros((liquid.nbins, npoints), dtype=np.float64)
+    new_m = np.zeros((liquid.nbins, npoints, 4), dtype=np.float64)  # LiquidMassIndex order
+
+    aerosol_after = aerosol.values.copy()
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sw_allact_safe = np.where(box.sw_allact > 1.0e-25, box.sw_allact, 1.0)
+        akk = np.where(
+            box.sw_allact > 1.0e-25,
+            np.clip(np.minimum(box.akk_lmt, final_sw / sw_allact_safe), 0.0, 1.0),
+            np.clip(box.akk_lmt, 0.0, 1.0),
+        )
+
+    for k, cat in enumerate(ccn_cat_indices):
+        noccn0_k = ccn.noccn0[:, k, :]
+        n_act_k = ccn.n_act[:, k, :]
+        m_act_k = ccn.m_act[:, k, :]
+        mean_mass_k = ccn.mean_mass_grown[:, k, :]
+        eps_k = ccn.eps_map[:, k, :]
+
+        np_placed = np.where(noccn0_k, n_act_k * akk[None, :], 0.0)
+        mp_placed = np.where(noccn0_k, n_act_k * akk[None, :] * mean_mass_k, 0.0)
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratio_rmat = _safe_div(m_act_k * akk[None, :], mp_placed)
+        ratio_rmas = eps_k * ratio_rmat
+        ratio_rmai = np.maximum(0.0, ratio_rmat - ratio_rmas)
+        ratio_mp = np.stack([ratio_rmat, ratio_rmas, ratio_rmai], axis=-1)
+
+        _add_simple(liquid_binb, np_placed, mp_placed, ratio_mp, noccn0_k, new_n, new_m)
+
+        # ---- aerosol mass/number sink from activation, G2 section 1k
+        # verbatim (`mod_amps_core.F90:7663-7666`):
+        #   ga(ica)%MS(1,n)%dcondt(pro_type)=-sum_ac(n,ica)/gr%dt
+        #   ga(ica)%MS(1,n)%dmassdt(j,pro_type)=-sum_am(n,ica)*mass(j)/mass(1)/gr%dt
+        # `sum_ac`/`sum_am` are POINT-LEVEL scalars per category, summed
+        # over ALL N_BIN_A quadrature bins -- applied to `AerosolState` bin
+        # 0 ONLY (Fortran `MS(1,n)`, this category's single real bulk bin;
+        # see `_ccn_precompute`'s docstring for why the quadrature bins
+        # `i` are a SYNTHETIC partition of that one bin, not distinct
+        # `AerosolState` bins). `sum_am`'s per-particle-mass analogue is
+        # `M_act(i,ica,n)*akk(n)` -- the ORIGINAL, ungrown aerosol mass of
+        # the activated fraction, distinct from `used_Ma_act` (the VAPOR
+        # consumed by post-activation growth).
+        activated_num = np.where(noccn0_k, n_act_k * akk[None, :], 0.0)
+        activated_mass = np.where(noccn0_k, m_act_k * akk[None, :], 0.0)
+        sum_ac = activated_num.sum(axis=0)
+        sum_am = activated_mass.sum(axis=0)
+
+        amt1 = aerosol.values[0, 0, cat, :]
+        ams1 = aerosol.values[2, 0, cat, :]
+        ams_frac1 = _safe_div(ams1, amt1)
+
+        aerosol_after[0, 0, cat, :] -= sum_am
+        aerosol_after[2, 0, cat, :] -= sum_am * ams_frac1
+        aerosol_after[1, 0, cat, :] -= sum_ac
+    aerosol_after = np.maximum(0.0, aerosol_after)
+
+    liquid_after = liquid.values.copy()
+    liquid_after[LiquidPPV.rmt_q.py_idx, :, 0, :] += new_m[:, :, 0]
+    liquid_after[LiquidPPV.rcon_q.py_idx, :, 0, :] += new_n
+    liquid_after[LiquidPPV.rmat_q.py_idx, :, 0, :] += new_m[:, :, LiquidMassIndex.rmat.py_idx]
+    liquid_after[LiquidPPV.rmas_q.py_idx, :, 0, :] += new_m[:, :, LiquidMassIndex.rmas.py_idx]
+
+    # ---- section 1n: finalize thermo ---------------------------------------
+    thermo_values = thermo_state.values.copy()
+    tv_idx = list(ThermoState.PROPS).index(ThermoProp.tv)
+    thermo_values[tv_idx, 0, 0, :] = np.where(icycle_active, final_t, t)
+    qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+    qr_final, qi_final = _diagnose_condensate(
+        final_sw,
+        final_t,
+        box,
+        liq,
+        ice,
+        flags,
+        estbar,
+        esitbar,
+        allow_shed_placeholder=allow_shed_placeholder,
+    )
+    del qi_final  # no ice group; qtp-qr-qi collapses to qtp-qr here
+    qv_final = np.maximum(0.0, box.qtp - qr_final)
+    thermo_values[qvv_idx, 0, 0, :] = np.where(icycle_active, qv_final, qvv)
+    thermo_out = ThermoState(values=thermo_values)
+
+    return LiquidState(values=liquid_after), AerosolState(values=aerosol_after), thermo_out
+
+
+def _liquid_activation_radius(
+    liquid: LiquidState, config: AmpsConfig, t: np.ndarray, sig_wa: np.ndarray
+) -> np.ndarray:
+    """`gr%MS(j,n)%r_act` (Koehler activation radius of a liquid bin's own
+    aerosol content, `func_liqvap_vec`'s `cond2` shrink-below-critical-
+    radius check) -- NOT exposed by `core.liquid_diag.LiquidDiag` (Task 2's
+    own documented scope: "r_crt/r_act ... not in the task's named field
+    list"). Recomputed here from `LiquidState`'s own aerosol-mass PPV
+    slots using the SAME formula `core/liquid_diag.py`'s private
+    `_den_aclen`/`_vapdep_coef` helpers already use internally (den_ap
+    from soluble-fraction mixing, `r_n` from aerosol mass/density,
+    `kohler_critical_radius` -- Part 1, verbatim) -- not a new formula,
+    just re-deriving the ONE field Task 2 chose not to return. Category 1
+    (0-based index 0), matching `core/liquid_diag.py`'s own hardcoded
+    single-category convention (see that module's docstring)."""
+    coef4pi3 = float(AmpsConst.coef4pi3)
+    den_w = float(AmpsConst.den_w)
+    r_v = float(AmpsConst.R_v)
+    m_w = float(AmpsConst.M_w)
+
+    mass_aero_total = liquid.values[LiquidPPV.rmat_q.py_idx, :, 0, :]
+    mass_aero_soluble = liquid.values[LiquidPPV.rmas_q.py_idx, :, 0, :]
+    con = liquid.values[LiquidPPV.rcon_q.py_idx, :, 0, :]
+
+    eps_map = np.clip(_safe_div(mass_aero_soluble, mass_aero_total), 0.0, 1.0)
+    eps_map = np.where(mass_aero_total > 1.0e-30, eps_map, float(config.eps_ap[0]))
+
+    den_as = float(config.den_aps[0])
+    den_ai = float(config.den_api[0])
+    den_ap = _safe_div(np.full_like(eps_map, den_ai), 1.0 - eps_map * (1.0 - den_ai / den_as))
+
+    map_ = _safe_div(mass_aero_total, con)  # per-particle aerosol mass
+    r_n = _safe_div(map_, coef4pi3 * den_ap) ** (1.0 / 3.0)
+
+    aa = 2.0 * sig_wa[None, :] / (r_v * t[None, :] * den_w)
+    sb = (
+        float(config.nu_aps[0])
+        * eps_map
+        * m_w
+        * den_ap
+        / (float(config.M_aps[0]) * den_w)
+        * float(config.phi_aps[0])
+    )
+    beta = 0.5
+    return kohler_critical_radius(np.broadcast_to(aa, r_n.shape), sb, beta, r_n)

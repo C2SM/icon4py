@@ -207,16 +207,44 @@ class TestRefreshStateCallCount:
 
 
 # ---------------------------------------------------------------------------
+# _activation (M2a Task 4, DONE): no longer a stub -- requires state.diag
+# (populated by _refresh_state), then delegates to
+# core.activation.activate_and_advance_vapor.
+# ---------------------------------------------------------------------------
+
+
+class TestActivation:
+    def test_raises_without_diag(self, luts):
+        """Calling `_activation` directly on a state that skipped
+        `_refresh_state` (`diag=None`, `WarmLoopState`'s own default) must
+        raise a clear `ValueError`, not silently misbehave."""
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state()
+        assert state.diag is None
+        with pytest.raises(ValueError, match="state\\.diag"):
+            warm_loop._activation(state, config, 0.01, luts)
+
+    def test_no_water_box_is_a_no_op_after_refresh(self, luts):
+        """A `diag`-populated, no-water box (mes_rc==0): CCN activation's
+        own grid-box skip mask (G2 section 1a) leaves liquid/aerosol/thermo
+        unchanged."""
+        config = AmpsConfig.cloudlab()
+        state = _make_warm_state(qtp=0.0, rmt=0.0, rmat=0.0, qvv=0.0)
+        refreshed = warm_loop._refresh_state(state, config, luts)
+        assert refreshed.diag is not None
+
+        activated = warm_loop._activation(refreshed, config, 0.01, luts)
+        np.testing.assert_array_equal(activated.liquid.values, refreshed.liquid.values)
+        np.testing.assert_array_equal(activated.aerosol.values, refreshed.aerosol.values)
+        np.testing.assert_array_equal(activated.thermo.values, refreshed.thermo.values)
+
+
+# ---------------------------------------------------------------------------
 # Process stubs raise NotImplementedError, naming their task.
 # ---------------------------------------------------------------------------
 
 
 class TestProcessStubsRaise:
-    def test_activation_raises_task_4(self, luts):
-        config = AmpsConfig.cloudlab()
-        with pytest.raises(NotImplementedError, match="Task 4"):
-            warm_loop._activation(_make_warm_state(), config, 0.01, luts)
-
     def test_vapor_deposition_liquid_raises_task_5(self, luts):
         config = AmpsConfig.cloudlab()
         with pytest.raises(NotImplementedError, match="Task 5"):
