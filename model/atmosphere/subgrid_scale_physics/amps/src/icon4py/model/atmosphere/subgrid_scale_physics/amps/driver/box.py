@@ -6,17 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Box-driver skeleton: `BoxCase` bundles one runnable single-column AMPS
+"""Box-driver: `BoxCase` bundles one runnable single-column AMPS
 microphysics case (thermo profile + initial liquid/ice/aerosol spectra +
 `AmpsConfig` + timestep size/count); `run_box(case)` is the entry point a
-real per-timestep driver loop would use, but is not implemented here (see
-its own docstring for the M2 wiring it needs); `case_from_micro_record`
-IS implemented -- it is the M2 replay entry point, turning one dumped
-`ref_data.MicroRecord` (phase=1, "pre") into a runnable `BoxCase` so a
-captured reference column can eventually be re-run standalone against the
-ported Python/DSL physics and diffed against that same record pair's
-phase=2 "post" `MicroRecord` (`ref_data.RefDataset.micro_pairs()` gives
-both halves of the pair together).
+real per-timestep driver loop uses -- implemented for the WARM path (M2a
+Task 7: `implementations.warm_loop.run_warm_micro_tendency`, see `run_box`'s
+own docstring for the exact bridge from `case`'s AMPS-packed state to a
+`WarmLoopState`); a case carrying ice mass raises `NotImplementedError`
+(M3 scope, the ice/mixed-phase call subset `implementations/warm_loop.py`
+does not model -- see that module's own docstring).
+`case_from_micro_record` IS implemented -- it is the M2 replay entry point,
+turning one dumped `ref_data.MicroRecord` (phase=1, "pre") into a runnable
+`BoxCase` so a captured reference column can be re-run standalone against
+the ported Python/DSL physics (`run_box(case_from_micro_record(pre))`) and
+diffed against that same record pair's phase=2 "post" `MicroRecord`
+(`ref_data.RefDataset.micro_pairs()` gives both halves of the pair
+together; `tests/amps/integration_tests/test_warm_replay.py` is the
+per-call replay harness that does exactly this).
 
 Scope note: a "box" run is single-column (`ncells=1` in every state
 bundle's flattened `npoints` axis, per `state.py`'s `to_fields()`
@@ -45,12 +51,19 @@ import dataclasses
 import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
+    AmpsLuts,
+    load_luts,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     SCALE_CPDRY,
     SCALE_PRE00,
     SCALE_RDRY,
+    get_thermo_prop,
+    moistthermo_mask,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.driver import ref_data
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.implementations import warm_loop
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
     AerosolState,
     IceState,
@@ -62,10 +75,15 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
 
 @dataclasses.dataclass(frozen=True)
 class BoxResult:
-    """Placeholder result bundle for `run_box` -- shape is PROVISIONAL,
-    to be finalized by whichever M2 task implements `run_box` (e.g. it may
-    need to carry tendency diagnostics alongside the final state, not just
-    the state itself). Not populated until `run_box` exists."""
+    """`run_box`'s result bundle: the advanced state after `case.n_steps`
+    warm-phase microphysics steps (see `run_box`'s own docstring for
+    exactly which fields are genuinely advanced vs. carried through
+    unchanged -- `final_ice` is always `case.ice`, untouched, since the
+    warm path runs no ice process; `final_thermo`'s `thv`/`piv`/
+    `moist_denv` are likewise carried through unchanged, a documented
+    `implementations.warm_loop` scope gap, not new here). Does not (yet)
+    carry tendency diagnostics alongside the final state -- a future task
+    may extend this if a caller needs them."""
 
     final_thermo: ThermoState
     final_liquid: LiquidState
@@ -109,25 +127,116 @@ class BoxCase:
             raise ValueError(f"n_steps must be positive; got {self.n_steps}")
 
 
-def run_box(case: BoxCase) -> BoxResult:
-    """Run `case.n_steps` microphysics steps of size `case.dt` on
-    `case`'s single column and return the final state.
+def run_box(case: BoxCase, *, luts: AmpsLuts | None = None) -> BoxResult:
+    """Run `case.n_steps` warm-phase microphysics steps of size `case.dt`
+    on `case`'s single column and return the final state -- the WARM path
+    only (M2a Task 7). A case carrying ice mass raises
+    `NotImplementedError` (M3 scope, the ice/mixed-phase call subset
+    `implementations/warm_loop.py` does not model -- see that module's own
+    docstring).
 
-    NOT YET IMPLEMENTED -- this is the M2 wiring point. It needs the
-    ported DSL/numpy microphysics process kernels (collision-coalescence,
-    vapor deposition, ice nucleation, autoconversion, ... -- the processes
-    `AmpsConfig.micexfg_array()` switches on) assembled into an actual
-    per-timestep driver loop, none of which exist yet as of this task
-    (M1 Task 8: only the typed reference-data reader and this skeleton are
-    in scope). See the M1 plan's Task 8 brief and the M2 plan for the
-    concrete process-kernel wiring this function is expected to call once
-    those kernels exist.
+    Bridging `case` (whose `thermo`/`liquid`/`ice`/`aerosol` are ALREADY
+    AMPS-packed state -- `case_from_micro_record`'s own docstring: `qrpvm`/
+    `qipvm`/`qapvm` are direct copies into `LiquidState`/`IceState`/
+    `AerosolState`, so `implementations.warm_loop.ifc_warm`'s
+    `pack_scale_to_amps` step would be WRONG here, it expects raw
+    pre-conversion SCALE state) onto
+    `implementations.warm_loop.run_warm_micro_tendency` (which additionally
+    needs `thil`/`qtp`, the per-column scalars G1 §1
+    (`docs/superpowers/facts/m2/micro-tendency-orchestration.md`) threads
+    through `cal_micro_tendency` -- `BoxCase` does not carry them;
+    `case_from_micro_record`'s own docstring explicitly does not map the
+    record's `trpv_thil`/`trpv_qtp` fields, leaving this the open bridge
+    this function closes):
+
+    1. Derive `thil`/`qtp` (and a cloudy-mask-passed `liquid`) via
+       `core.packing.moistthermo_mask` (F4 SS3.2,
+       `docs/superpowers/facts/m1/state-packing-si-cgs.md`:
+       `moistthermo2_scale`'s own "qc/qr/qi bin partition + cloudy mask +
+       thil/qtp diagnosis") from `case.thermo`/`liquid`/`ice` -- the SAME
+       algorithm that produces the Fortran's own `trpv_thil`/`trpv_qtp` in
+       the first place, not an approximation of it.
+    2. If the derived `qi` (total ice mixing ratio) is nonzero anywhere,
+       raise `NotImplementedError`: an ice-bearing/mixed-phase column is
+       M3 scope -- `WarmLoopState` has no ice group to advance it with, so
+       silently dropping nonzero ice mass would be wrong, not merely
+       incomplete.
+    3. Build a `WarmLoopState` from `case.thermo`/`case.aerosol` + the
+       masked liquid + the derived `thil`/`qtp`, `mes_rc` seeded to 0
+       (harmless: `run_warm_micro_tendency`'s only step before its first
+       `_refresh_state` call -- which recomputes `mes_rc` from scratch --
+       is `_repair(phase="collision")`, which does not consume `mes_rc`;
+       see `core/repair.py`).
+    4. Call `run_warm_micro_tendency` `case.n_steps` times (one call per
+       `case.dt`-sized step, matching `case_from_micro_record`'s own
+       "n_steps ... one 'pre'->'post' step" convention for a replayed
+       record pair).
+    5. Return a `BoxResult` with the advanced `thermo`/`liquid`/`aerosol`
+       and `case`'s OWN (untouched) `ice` -- matching `ifc_warm`'s own
+       "ice after == ice before" convention (that function's docstring):
+       this path runs no ice process, so ice cannot have changed.
+
+    KNOWN GAP, carried from `implementations/warm_loop.py` (not introduced
+    here): `update_airgroup` has no M1/M2 port (see that module's own
+    docstring), so `final_thermo`'s `thv`/`piv`/`moist_denv` come back
+    bit-identical to `case.thermo`'s own values -- NOT a reproduction of
+    whatever the real Fortran's `update_airgroup` would have computed.
+    Only `tv`/`qvv` (via `_refresh_state`'s `diag_t` call and the
+    activation/vapor-deposition/repair process hooks) and `liquid`/
+    `aerosol` are genuinely advanced. Callers comparing `BoxResult` against
+    a real dumped "post" `MicroRecord` (`tests/amps/integration_tests/
+    test_warm_replay.py`) must restrict the comparison to `tv`/`qvv`/
+    `liquid`/`aerosol` for this reason -- comparing `thv`/`piv`/
+    `moist_denv` would fail on this documented, pre-existing scope gap,
+    not a bug in this function.
+
+    Args:
+        case: the `BoxCase` to run (must be ice-free to succeed; see above).
+        luts: optional pre-loaded `AmpsLuts`. `core.lookup_tables.load_luts`
+            reads two packaged `.npz` archives from disk on every call --
+            callers making MANY `run_box` calls (e.g. a per-call replay
+            harness iterating `ref_data.RefDataset.micro_pairs()`) should
+            load once and pass the same `AmpsLuts` through rather than
+            paying that cost per case. Defaults to loading internally.
+
+    Raises:
+        NotImplementedError: if `case` carries nonzero ice mass (the
+            ice/mixed-phase path, M3 scope).
     """
-    raise NotImplementedError(
-        "run_box is the M2 wiring point: it needs the ported DSL/numpy microphysics "
-        "process kernels (collision-coalescence, vapor deposition, ice nucleation, ...) "
-        "that later tasks provide, assembled into a per-timestep driver loop over "
-        "case.n_steps. See box.py's module docstring and run_box's own docstring."
+    if luts is None:
+        luts = load_luts()
+
+    qv = get_thermo_prop(case.thermo, ThermoProp.qvv)
+    th = get_thermo_prop(case.thermo, ThermoProp.thv)
+    t = get_thermo_prop(case.thermo, ThermoProp.tv)
+    mask = moistthermo_mask(case.liquid, case.ice, qv, th, t, nbhzcl=case.config.nbin_h)
+
+    if np.any(mask.qi > 0.0):
+        raise NotImplementedError(
+            "run_box: case carries ice mass (moistthermo_mask's qi>0 for at least one "
+            "column point) -- the ice/mixed-phase warm loop is M3 scope (see G1's "
+            "[ICE-ONLY]/[MIXED] call-subset notes in "
+            "docs/superpowers/facts/m2/micro-tendency-orchestration.md and "
+            "implementations/warm_loop.py's own module docstring); only ice-free "
+            "('warm') cases run today, via implementations.warm_loop."
+        )
+
+    state = warm_loop.WarmLoopState(
+        thermo=case.thermo,
+        liquid=mask.liquid,
+        aerosol=case.aerosol,
+        thil=mask.thp,
+        qtp=mask.qtp,
+        mes_rc=np.zeros(case.thermo.npoints, dtype=np.int64),
+    )
+    for _ in range(case.n_steps):
+        state = warm_loop.run_warm_micro_tendency(state, case.config, case.dt, luts)
+
+    return BoxResult(
+        final_thermo=state.thermo,
+        final_liquid=state.liquid,
+        final_ice=case.ice,
+        final_aerosol=state.aerosol,
     )
 
 
