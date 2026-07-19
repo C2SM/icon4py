@@ -7,116 +7,236 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """`coalesce_rain` -- the rain-rain (`token 1-1`) bin-pair collection
-engine, transcribed (with an explicitly-sanctioned simplification, see
-below) from AMPS Fortran (scale_amps repo) per
-docs/superpowers/facts/m2b/coalescence-engine.md ("H1" below, the gap-fill
-supplement, SS0/SS1.6/SS5) and docs/superpowers/facts/m2/coalescence.md
-("G4" below, the base extraction, SS1/SS4.1/SS6). M2b Task 3.
+engine, transcribed VERBATIM (structurally) from AMPS Fortran (scale_amps
+repo) per docs/superpowers/facts/m2b/coalescence-engine.md ("H1" below,
+the gap-fill supplement, SS0/SS1.6/SS5) and
+docs/superpowers/facts/m2/coalescence.md ("G4" below, the base
+extraction, SS1/SS4.1/SS6). M2b Task 3, REVISED per code review: this
+module now ports the REAL `collector_loop1` (H/F/LM rate categorization
+-> fortunate/unfortunate split -> Mc mass-component seed -> three
+accumulation passes -> `cal_ratio_mass_col_vec` -> shifted-boundary
+construction -> multi-bin PDF fit/scatter), NOT the single-target-bin
+"2 parents in, 1 merged child out" fallback the first revision used
+(that fallback is what H1's own "M2b codegen notes" section calls out as
+`add_simple_vec` being merely "the reference for the simpler mean-mass
+jbin search M2 MAY emit as a fallback" -- a citation the ORIGINAL
+dispatch mis-cited as authorizing it as the PRIMARY engine; code review
+corrected this, see the M2b Task 3 report's revision section).
 
-SCOPE AND SIMPLIFICATION (read this first): the real Fortran
-`collector_loop1` (H1 SS1.6, G4 SS1.6, "the hardest M2 kernel") builds, for
-EACH collector bin `i`, a ragged set of sub-bins categorized by collection
-RATE ("high"/"fortunate"/"low-medium" -- `jbin_h`/`jbin_lm`), accumulates a
-mass/number PDF per sub-bin, remaps it onto shifted bin boundaries via a
-linear/cubic fit (`cal_lincubprms_vec`/`cal_linprms_vec_s`), and scatters
-via `cal_transbin_vec`. This task's own dispatch explicitly authorizes a
-SIMPLER model instead, quoting H1's own "M2b codegen notes": "The
-add_simple_vec boundary-search (G4 SS4.1) is the reference for the simpler
-mean-mass jbin search M2 may emit as a fallback" -- and the dispatch's own
-Deliverable bullet list names exactly this fallback's ingredients directly
-("coalesced mass m_i+m_j, destination-bin search + scatter
-(add_simple_vec/add_samebin_vec)"), not the sub-bin PDF machinery.
+`contrib/AMPS/mod_amps_core.F90` line ranges below were read DIRECTLY
+(dispatch-authorized) beyond what H1/G4 quote, to resolve structural
+ambiguities H1's own summary left underspecified (`n_f_min`, the exact
+`used_marker`/`used_M_2` reset-and-reuse semantics, `pro_type` for
+rain-rain, `assign_tendency_vec`'s `(nN-aNd)/dt` interpretation of
+`new_N_1`) -- each cited at its own point of use below.
 
-The model this module implements, per ORDERED bin PAIR `(i, j)` (`i` the
-collector, `j` the collectee, exactly as H1/G4's own axis convention) and
-per column point:
+===========================================================================
+THE ALGORITHM (per collector bin `i`, H1 SS1.6 loop order, descending
+`i=g_1%N_bin` down to `icolbin_min` -- `_icolbin_min`'s own docstring):
+===========================================================================
 
-    n_ij = N_col(i,j) * E_coal(i,j)   -- number of COALESCENCE EVENTS
+For collector bin `i` and EVERY collectee bin `j`, `col_ratio(j)
+=E_coal(i,j)*N_col(i,j)/con_i` measures how many `j`-drops (on average)
+EACH `i`-drop absorbs this timestep (G4 `:2028-2054`, verbatim):
 
-Each event is a literal "2 parents in, 1 merged child out" transformation
-(the standard discretized stochastic-collection-equation picture -- ANY
-two colliding, coalescing drops of different bins cease to exist as
-separate entities and become exactly ONE new drop; this is not a modeling
-choice specific to this port, it is what "coalescence" means): bin `i`
-loses `n_ij` drops (mass `mean_mass_i` each), bin `j` loses `n_ij` drops
-(mass `mean_mass_j` each), and `n_ij` NEW drops of mass
-`mean_mass_i+mean_mass_j` each are scattered into the destination bin found
-by `add_simple_vec`'s own boundary search (G4 SS4.1 verbatim,
-`_find_destination_bin` below). This exactly conserves mass BY
-CONSTRUCTION (removed mass `n_ij*(mean_mass_i+mean_mass_j)` telescopes
-identically against added mass, summed over every pair -- see
-`_needgive_repair`'s own docstring and the task report for the full
-derivation) and strictly DEPLETES number (2 removed, ~1 added, net -1 per
-event) -- matching this task's own conservation requirements exactly.
+  * `col_ratio>10`: "high" only.
+  * `1<=col_ratio<=10`: BOTH "high" AND "low-medium" (dual membership --
+    the deterministic INTEGER part `floor(col_ratio)` goes through the
+    "H" pass, the stochastic FRACTIONAL remainder through "F" or "LM").
+  * `0<col_ratio<1`: "low-medium" only.
 
-This DIFFERS from the true Fortran's own bin-`i`-preserving picture (where
-a single massive collector bin literally keeps its particle count and only
-grows in mean mass, feeding many `ndrop_B>1` collectee absorptions per
-collector particle in the "H" pass) -- but is EXACTLY the fallback H1's own
-"M2b codegen notes" name, and is the standard formulation used by
-textbook/other bin-microphysics stochastic-collection schemes (e.g. Bott
-1998's own flux method is a different discretization of the SAME
-underlying two-body physics). Flagged here, not silently substituted; see
-the task report for the full account of what is and is not modeled by this
-simplification (in particular: the H/F/LM rate categorization, `iter_loop1`
-over-depletion PRE-normalization, and `used_marker`/`left_N`/`left_M`
-leftover-repopulation machinery are ALL folded into this module's simpler
-per-pair depletion + `_needgive_repair` post-hoc fix-up instead).
+**Fortunate/unfortunate split** (G4 `:2060-2096`, a SEQUENTIAL scan over
+low-medium `j` in DESCENDING bin-index order, `_fortunate_scan` below):
+each low-medium `j`'s fractional collision probability `p_F` is
+accumulated into a running `sum_ndrop_B`; the FIRST `j` (processed in
+descending order) whose acceptance would push `sum_ndrop_B>=1` is
+EXCLUDED (latched -- every SMALLER `j` for that column is skipped
+entirely, `icond2_n(n)==0` gate, `:2069`) instead of accepted as
+"fortunate". Every ACCEPTED low-medium `j` gets its OWN DEDICATED
+sub-population (`Np(jj,n)=p_F*left_N(i,n)`, i.e. that FRACTION of the
+collector's OWN surviving population, `left_N`, is deemed to have
+collided with EXACTLY one `j`-drop); the REMAINING
+`(1-sum_ndrop_B)*left_N(i,n)` fraction is the "unfortunate" sub-population
+(collided with nothing this timestep). **This is the reviewer's #1
+requirement**: the collector bin's OWN `con` is NEVER destroyed by a
+merge event the way the reverted single-bin model did -- `left_N(i,n)`
+(the collector's surviving population) is exactly PARTITIONED across
+these sub-populations (`sum_k Np_sub(k)==left_N(i,n)` by construction,
+verified algebraically in `_collector_scatter`'s own docstring), each
+KEEPING its own count while GROWING in mean mass, then scattered by mass
+into (possibly several) NEW destination bins -- NOT destroyed 2-for-1.
 
-PER-VOLUME basis (H1 SS5, the M2a-lesson-driven convention `core/
-collision_kernel.py` already documents at length): this module's INPUT
-`liquid_pv` AND its OUTPUT are per-VOLUME quantities -- `con`/`mass` =
-`q_state * den` (mixing ratio times air density), NOT per-mass mixing
-ratios. Exactly like `collision_kernel.py`, this module itself contains NO
-`den` factor anywhere ("no stray `/den` or `*den` appears anywhere inside
-`coalescence`" -- H1 SS5); the `*den`/`/den` round-trip at the
-mixing-ratio/per-volume boundary is the CALLER's job (M2b Task 7's wiring
-into `implementations/warm_loop.py`), mirroring `class_Group.F90:756-758`/
-`:3910-3921` exactly. Do not multiply/divide by density anywhere in this
-module or its tests.
+**Three accumulation passes**, all adding to the sub-population `Mp`
+seeded from `Np*mean_mass_i` (the collector's OWN pre-collision mass) --
+G4 `:2213-2382`, `mod_amps_core.F90:2213-2382` read directly for the
+LM-pass verbatim (H1 quotes H+F in full; the LM-pass differs from H1's
+own summary only in confirming it independently, see `mod_amps_core.F90:
+2335-2382`):
 
-Loop bounds/order, H1 SS1.6 verbatim (`mod_amps_core.F90:1971`,
-`icolbin_min` construction `:1518-1523`):
+  * **H** ("high"): `ndrop_B=floor(col_ratio)` if `col_ratio` in `[1,10]`
+    else `col_ratio` itself (`>10`); `dM_dum=ndrop_B*con_i*mean_mass_j`,
+    distributed ACROSS EVERY sub-population `k` proportional to its own
+    share `Np_sub(k)/left_N(i)` (`:2213-2260`) -- every collector
+    particle, dedicated-fortunate or not, deterministically absorbs the
+    SAME high-rate growth. **Sets `used_marker(j,n)=1`** when the
+    RUNNING `used_M_2(j,n)` (see below) reaches `mass(j,1)` -- the ONLY
+    one of the three passes that does (confirmed by direct comparison of
+    all three pass bodies, `mod_amps_core.F90:2213-2382`: F `:2299-2302`
+    and LM `:2358-2361` both clamp `used_M_2` but NEITHER sets
+    `used_marker`).
+  * **F** ("fortunate"): for each ACCEPTED low-medium `j`, `dM_dum
+    =p_F*con_i*mean_mass_j` (H1's own two branches, `col_ratio<1` vs
+    `col_ratio` in `[1,10]`, algebraically identical -- see
+    `_collector_scatter`'s own derivation), added ONLY to `j`'s OWN
+    DEDICATED sub-population (`:2275-2322`).
+  * **LM** ("low-medium leftover"): the SAME formula as H (`ndrop_B=p_F`
+    now), for low-medium `j`'s NOT accepted as fortunate, distributed
+    across ALL sub-populations exactly like H (`:2335-2382`, verbatim
+    read directly, see above).
 
-    icolbin_min=1
-    do i=1,g_1%N_bin
-      if(g_1%binb(i+1)<amin_mass) then
-        icolbin_min=i
-      endif
-    enddo
+`cal_ratio_mass_col_vec` (G4 SS5, `mod_amps_core.F90:17633-17687`): each
+sub-population's aerosol-mass FRACTION after growth is `(Mc+dM_1)/Mp`,
+`Mc` the SEED's own aerosol share (collector `i`'s OWN
+`mass_aero_tot/mass_tot` ratio, applied to the SEED mass BEFORE any
+pass runs -- Mc-seed code, `:2126-2154`, runs strictly before the H-pass)
+and `dM_1` the collected aerosol mass, weighted by EACH CONTRIBUTING
+COLLECTEE `j`'s OWN aerosol FRACTION (`ratio_M_2(j)=mass_aero_tot(j)/
+mass_tot(j)`, a dimensionless ratio -- NOT a per-drop mass, unlike the
+reverted model's own aerosol formula).
 
-    collector_loop1: do i=g_1%N_bin,icolbin_min,-1
+**Shifted-boundary construction + PDF reconstruction + multi-bin scatter**
+(G4 `:2537-2758`) -- **the reviewer's #2/#3 requirement, REUSING the M2a
+ports verbatim, not reimplementing them**: each sub-population's shifted
+mass interval is `[binb(i)+dmass_min(k), binb(i+1)+dmass_max(k)]`
+(`dmass_min`/`dmass_max` accumulate `ndrop*binb(j)`/`ndrop*binb(j+1)`
+from every contributing collectee, mirroring the mass-growth
+accounting exactly); `cal_lincubprms_vec` fits a number-density PDF over
+that interval from `(Np_sub,Mp_sub)`, and `cal_transbin_vec` GATHERS the
+overlap of that PDF against EVERY original destination bin -- genuinely
+spreading one sub-population's mass across MULTIPLE bins when its
+shifted interval crosses more than one boundary. This module imports
+`core.vapor_deposition._linear_fit` (=`cal_lincubprms_vec`'s base +
+truncated-support linear fit, M2a Task 5) and
+`core.vapor_deposition._gather_remap` (=`cal_transbin_vec`'s multi-bin
+gather, M2a Task 5) DIRECTLY -- an explicit, reviewer-directed exception
+to the general "core/ modules do not cross-import each other's private
+helpers" convention (`core/repair.py`'s own documented precedent): the
+reviewer's own instruction was to REUSE these exact, already-tested
+routines, not re-derive a second, subtly-different copy.
 
-`amin_mass=4.188790d-12` (H1's own quoted parameter, G4 SS1.1) is the
-minimum COLLECTOR mass; bins below `icolbin_min` may still act as
-COLLECTEES (only the collector role, axis 0 / `i`, is restricted -- see
-`_icolbin_min`'s own docstring for the Fortran's own off-by-one framing,
-preserved verbatim, not "fixed"). Since this module is fully vectorized
-(no Python loop over collector bins is needed -- there is no sequential
-dependency between different `i` in this simplified per-pair model, unlike
-the true Fortran's `left_N`/`used_marker` threading), `icolbin_min` is
-applied as a boolean mask over axis 0 rather than a literal `for` loop --
-mathematically identical to the Fortran's own descending `do i=N_bin,
-icolbin_min,-1` (order does not matter for a purely per-pair-elementwise
-computation with no cross-`i` state).
+**One deliberate, documented reduction**: `_cubic_upgrade` (M2a's own
+Dinh & Durran 2012 interior-cubic refinement) is NOT reused here --
+that routine's own "neighbor" concept (`np.roll` on the SOURCE-bin axis)
+assumes a sequential, size-ordered array of ADJACENT bins (true for
+`vapor_deposition`'s own one-sub-interval-per-original-bin usage); this
+module's sub-population axis (fortunate-per-`j` sub-bins, ordered by
+COLLECTEE bin index, plus one "unfortunate" slot) has no such adjacency
+relationship -- applying `_cubic_upgrade`'s neighbor logic here would
+graft a physically ungrounded relationship onto bins that are not
+actually adjacent size classes. Every sub-population's PDF is
+reconstructed via `_linear_fit` alone (base 2-moment linear fit +
+truncated-support re-fit on negative density -- STILL a genuine,
+non-degenerate multi-bin-capable PDF, just not cubic-upgraded).
+Sub-populations whose `_linear_fit` itself fails (`ok=False`, the
+genuinely-rare tail `core/vapor_deposition.py`'s own docstring
+documents) fall back to a SAME-BIN (nearest, via `_find_destination_bin`)
+concentrated placement -- matching `vapor_deposition_liquid`'s own
+documented precedent for that identical tail case, not a new invention.
 
-Self-collection (`i==j`) + kernel (a)symmetry: the kernel is NOT symmetric
-(`KC(i,j) != KC(j,i)` in general -- H1's own `KC=E_c*(vtm_i-vtm_j)*A_c*
-con_j*dt` formula uses `con_j`, not `con_i`, and the `vtm_i-vtm_j` term
-flips sign under `i<->j`), so this module computes the FULL `(nbins,
-nbins)` pair grid, never assuming an upper-triangle shortcut. `i==j` is a
-proven, automatic no-op: `KC(i,i)=E_c*(vtm_i-vtm_i)*A_c*con_i*dt=0`
-identically (the `vtm_i-vtm_i` factor is exactly zero since `diag_i` and
-`diag_j` are the SAME data at the SAME bin) -- so `N_col(i,i)=0` via the
-`KC>0` branch's own `else` default, for ANY con/mass/dt magnitude; see
-`TestActiveBinsAndSelfCollection.test_self_collection_is_a_no_op`.
+===========================================================================
+STRUCTURAL PIECES NOT PART OF H1's OWN QUOTED EXCERPT, RESOLVED BY READING
+`mod_amps_core.F90`/`assign_tendency_vec` DIRECTLY:
+===========================================================================
 
-ibreak (collisional breakup) hook: `ibreak=True` is M2b Task 5 scope
-(`add_fragments_col_vec`, H1 SS1.6j/G4 SS2.3, gated by
-`pro_type==2.and.ibreak==1` -- ITSELF gated OFF for the warm rain-rain
-`pro_type` in this port's own scope) -- this engine only implements the
-`ibreak=0` (no-breakup) path; passing `ibreak=True` raises
-`NotImplementedError` immediately rather than silently ignoring the flag.
+* **`pro_type` for rain-rain is `2`** (`mod_amps_core.F90:1495-1496`:
+  `if(g_1%token==g_2%token) pro_type=2`) -- so `collector_loop1`'s OWN
+  `icond1` redefinition (`:1955-1966`, distinct from
+  `cal_collision_kernel_func`'s simpler `icond1`, see `_ACTIVE_FLOOR`
+  below) genuinely applies its `used_marker(i,n)/=1 .or. pro_type/=2`
+  clause as `used_marker(i,n)/=1` (the OR's second disjunct is always
+  FALSE for rain-rain): a bin whose ENTIRE mass was already consumed as
+  a COLLECTEE is EXCLUDED from ALSO acting as its own COLLECTOR.
+* **`used_M_2` (NOT `used_N_2`) is reset to zero immediately before
+  `collector_loop1` starts** (`mod_amps_core.F90:1938`:
+  `used_M_2(:,:) = 0.0_PS`) -- collector_loop1's OWN H/F/LM-pass
+  accounting is a FRESH tally, independent of the earlier O(n^2)
+  kernel-loop's own `used_M_2` accumulation (which only feeds `left_N`/
+  `left_M` via `used_N_2`, itself NOT reset). `used_marker`'s STARTING
+  state entering `collector_loop1` (before any fresh H/F/LM contribution)
+  is seeded from the EARLIER `iter_loop1` over-depletion fix's own
+  used_marker-setting (G4 SS1.4) -- this module's own simplified,
+  non-iterative `left_N`/`left_M` (see PER-VOLUME/simplification note
+  below) makes `left_N<=0 or left_M<=0` an exact proxy for that seed
+  (iter_loop1 sets `used_marker=1` PRECISELY when its own clamp forces
+  `used_N_2>=con` or `used_M_2>=mass(1)`, i.e. precisely when `left_N`/
+  `left_M` would be zero).
+* **`assign_tendency_vec` (`mod_amps_core.F90:20891-21486`, read
+  directly) confirms `new_N_1`/`new_M_1` are the FULL new bin population,
+  not a delta**: `dcondt=(nN(i,n)-g%MS(i,n)%con)/dt` (`:21005`). This
+  module's own `coalesce_rain` therefore returns a REPLACEMENT
+  `LiquidState`, matching the ORIGINAL (pre-review) module's own
+  contract -- unchanged by this revision.
+* **`icolbin_min`-excluded bins (too small to ever act as a collector)
+  and the post-loop leftover re-add**: the post-loop re-add
+  (`mod_amps_core.F90:2899-2925`, quoted FULL in H1 SS1.6k) only fires
+  for `used_marker(i,n)==1` bins. A bin below `icolbin_min` NEVER runs
+  its own `collector_loop1` iteration (so its OWN `left_N`/`left_M`
+  never gets scattered via the "unfortunate" sub-population route
+  either) -- if such a bin is ALSO never `used_marker`-flagged, H1/G4's
+  own quoted excerpt does not show ANY mechanism re-adding its `left_N`/
+  `left_M`. Rather than risk a silent mass-loss bug for an ambiguity
+  H1/G4 do not resolve, this module treats EVERY bin below `icolbin_min`
+  as ALSO eligible for the post-loop re-add (`used_marker(i,n) OR
+  i<icolbin_min`) -- a documented, MASS-SAFE (never loses number/mass),
+  physically reasonable choice (such bins are inert as collectors by
+  construction; their surviving population landing back at their own
+  bin is the physically expected outcome) for a genuinely underspecified
+  corner, flagged here and in the task report rather than silently
+  guessed.
+
+===========================================================================
+PER-VOLUME basis (H1 SS5) and SIMPLIFICATIONS RELATIVE TO THE FULL FORTRAN
+(each flagged, not silent):
+===========================================================================
+
+* This module's INPUT `liquid_pv` and OUTPUT are BOTH per-VOLUME
+  (`con`/`mass=q*den`), exactly as before this revision -- no `den`
+  factor appears anywhere in this module.
+* **`iter_loop1` (G4 SS1.4, the O(n^2)-phase over-depletion
+  PRE-normalization) IS ported, as an EXACT single-pass proportional
+  rescale rather than the Fortran's own iterative loop** -- see
+  `coalesce_rain`'s own inline comment at the rescale site for the full
+  derivation: `mean_mass(j)=mass_tot(j)/con(j)` exactly, so the
+  Fortran's own number-limit and mass-limit halves are mathematically
+  IDENTICAL conditions in this formulation, closing in a single
+  simultaneous pass (discovered necessary during hardening -- an
+  earlier draft skipped this, relying on `_needgive_repair` alone as a
+  post-hoc safety net; that is insufficient in general, since an
+  UN-rescaled over-claim manufactures excess mass in DESTINATION bins
+  rather than merely leaving the SOURCE bin negative, which
+  `_needgive_repair`'s own negative-mass trigger cannot see or correct).
+  `_needgive_repair` (`cal_needgive`, G4 SS6, KEPT per the reviewer's
+  explicit instruction) remains as a residual safety net for any OTHER
+  source of negative mass (e.g. floating-point edge cases in the PDF
+  fit/scatter round trip), not as the primary over-depletion guard.
+* **`add_fragments_col_vec` (collisional breakup, `ibreak=1`) is NOT
+  ported** -- M2b Task 5 scope, `ibreak=True` raises `NotImplementedError`
+  immediately (unchanged from the original revision).
+* **The KiD autoconversion/accretion diagnostic second scatter**
+  (H1 SS1.6i, `dM_auto`/`dM_accr`) is NOT computed -- not part of this
+  task's Deliverable return signature (a `LiquidState`, not a
+  diagnostic tuple); flagged, not silently included then discarded.
+* **`checker`/`Qp`/`cal_Qp2_vec`** (H1 SS1.6e) are SKIPPED entirely --
+  H1's own note: the `checker`-driven no-collision rollback this
+  produces is guarded `g_1%token==2.and.g_2%token==1`, "NOT executed
+  for warm rain" (H1 SS1.6e verbatim).
+
+Self-collection (`i==j`) remains a proven, automatic no-op: `KC(i,i)
+=E_c*(vtm_i-vtm_i)*A_c*con_i*dt=0` identically (same `diag` data at the
+same bin) -> `N_col(i,i)=0` -> `col_ratio(i,i)=0` -> contributes to
+neither "high" nor "low-medium" -- unaffected by this revision, still
+covered by `TestActiveBinsAndSelfCollection.test_self_collection_is_a_
+no_op`.
 """
 
 from __future__ import annotations
@@ -131,6 +251,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import (
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.index_maps import LiquidPPV
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.liquid_diag import LiquidDiag
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import AmpsLuts
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.vapor_deposition import (
+    _gather_remap as _cal_transbin_gather_remap,
+    _linear_fit as _cal_lincubprms_linear_fit,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import LiquidState, ThermoState
 
 
@@ -138,11 +262,16 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import LiquidStat
 # considered", `real(PS),parameter :: amin_mass=4.188790d-12`.
 AMIN_MASS = 4.188790e-12
 
-# G4 SS2 (`mod_amps_core.F90:15894-15907`): icond1 activation floor, shared
-# by both `con` and `mass(1)` -- matches `core/collision_kernel.py`'s own
-# module docstring, which names this exact mask ("icond1") as the caller's
-# responsibility to apply.
+# `cal_collision_kernel_func`'s OWN icond1 floor (G4 SS2, `:15894-15907`),
+# used for the O(n^2) kernel/efficiency computation -- matches
+# `core/collision_kernel.py`'s own module docstring, which names this
+# exact mask ("icond1") as the caller's responsibility to apply.
 _ACTIVE_FLOOR = 1.0e-30
+
+# `collector_loop1`'s OWN, STRICTER icond1 redefinition (`mod_amps_core.
+# F90:1955-1966`) additionally requires `mean_mass>1e-15` -- distinct from
+# `_ACTIVE_FLOOR` above; see module docstring's "STRUCTURAL PIECES" section.
+_MEAN_MASS_FLOOR = 1.0e-15
 
 
 def _pairwise(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -150,8 +279,9 @@ def _pairwise(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     shape `(nbins_i, nbins_j, npoints)` -- `a` (group 1/"i"/collector)
     along axis 0, `b` (group 2/"j"/collectee) along axis 1. A local copy
     of `collision_kernel.py`'s own identical-purpose helper (`core/`
-    modules do not cross-import each other's private helpers -- matches
-    `core/repair.py`'s own documented precedent for `_safe_div`)."""
+    modules do not cross-import each other's PRIVATE helpers as a
+    general rule -- see module docstring for the one explicit exception
+    this module makes, `_linear_fit`/`_gather_remap`)."""
     a_b, b_b = np.broadcast_arrays(a[:, None, :], b[None, :, :])
     return a_b, b_b
 
@@ -206,20 +336,18 @@ def _find_destination_bin(binb: np.ndarray, target_mass: np.ndarray) -> np.ndarr
         elif binb(1) > target:    jbin = 1             (at/below the bottom -> first bin)
         else: jbin = the j with binb(j) < target <= binb(j+1)
 
-    `binb` is 1D (`nbins+1` bin-mass boundaries, shared by both the
-    collector and collectee axes -- rain-rain is a single species/group);
-    `target_mass` is any shape. Returns the 0-based bin index, same shape
-    as `target_mass`, ALWAYS a valid index in `[0, nbins-1]` (this port's
-    own defensible substitute for the Fortran's own undefined behavior at
-    an exact `target==binb(1)` boundary match -- an unreachable
-    floating-point coincidence in practice, see the task report).
+    NOTE (post-review): this is now used ONLY as `_collector_scatter`'s
+    OWN same-bin fallback for sub-populations whose `_linear_fit` itself
+    fails (see module docstring) -- it is NOT the primary destination
+    mechanism (that is the multi-bin `_cal_transbin_gather_remap`,
+    reused from `core/vapor_deposition.py`).
 
-    Implemented via `np.searchsorted` (binb is sorted/monotonic by
-    construction, `core/bin_grid.py`): for `target` in
-    `(binb[b], binb[b+1]]`, `searchsorted(binb, target, side="left")`
-    returns `b+1` (the first boundary `>= target`), so `-1` gives the
-    0-based bin index `b` directly -- exactly the Fortran's own strict-
-    lower/non-strict-upper bin semantics.
+    `binb` is 1D (`nbins+1` bin-mass boundaries); `target_mass` is any
+    shape. Returns the 0-based bin index, same shape as `target_mass`,
+    ALWAYS a valid index in `[0, nbins-1]` (this port's own defensible
+    substitute for the Fortran's own undefined behavior at an exact
+    `target==binb(1)` boundary match -- an unreachable floating-point
+    coincidence in practice, see the task report).
     """
     nbins = binb.shape[0] - 1
     idx = np.searchsorted(binb, target_mass, side="left") - 1
@@ -292,6 +420,251 @@ def _needgive_repair(
     return new_number, new_mass_tot, new_extra
 
 
+# ---------------------------------------------------------------------------
+# collector_loop1's categorization + fortunate/unfortunate split, G4
+# `:2028-2096` verbatim -- see module docstring's algorithm section.
+# ---------------------------------------------------------------------------
+
+
+def _categorize_collectees(
+    col_ratio: np.ndarray, active_pair: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """The categorization loop, G4 `:2028-2054` verbatim (vectorized over
+    the full `(nbins_j, npoints)` grid at once -- the Fortran's own
+    `do j=jmax,1,-1` order does not affect this PART, only
+    `_fortunate_scan`'s sequential exclusion below does).
+
+    Returns `(is_high, is_lm, frac_part, ndrop_high)`, each
+    `(nbins_j, npoints)`:
+
+    * `is_high`: `col_ratio>=1` (covers both `[1,10]` and `>10`).
+    * `is_lm`: `0<col_ratio<=10` (covers `(0,1)` and `[1,10]` --
+      DELIBERATE dual membership with `is_high` for `[1,10]`, matching
+      the Fortran's own `jbin_h`/`jbin_lm` dual-list append, `:2044-2049`).
+    * `frac_part`: `col_ratio-floor(col_ratio)` for `[1,10]`, `col_ratio`
+      itself for `(0,1)`, else `0` -- the "p_F"/"ndrop_B" (LM-pass alias)
+      quantity, meaningful only where `is_lm`.
+    * `ndrop_high`: `floor(col_ratio)` for `[1,10]`, `col_ratio` itself
+      for `>10` (NOT floored -- G4's own H-pass verbatim,
+      `ndrop_B=col_ratio` in the `else` branch), meaningful only where
+      `is_high`.
+    """
+    in_1_10 = (col_ratio >= 1.0) & (col_ratio <= 10.0)
+    in_0_1 = (col_ratio > 0.0) & (col_ratio < 1.0)
+    is_high = active_pair & (col_ratio >= 1.0)
+    is_lm = active_pair & (col_ratio > 0.0) & (col_ratio <= 10.0)
+    frac_part = np.where(in_1_10, col_ratio - np.floor(col_ratio), np.where(in_0_1, col_ratio, 0.0))
+    ndrop_high = np.where(in_1_10, np.floor(col_ratio), np.where(col_ratio > 10.0, col_ratio, 0.0))
+    return is_high, is_lm, frac_part, ndrop_high
+
+
+def _fortunate_scan(is_lm: np.ndarray, frac_part: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """The "non-overlapping fraction" sequential scan, G4 `:2060-2096`
+    verbatim: low-medium collectee bins `j` are visited in DESCENDING
+    bin-index order (matching `jbin_lm`'s own construction order, itself
+    built by a descending `do j=jmax,1,-1` categorization loop, `:2028`),
+    accumulating `sum_ndrop_B`; the FIRST `j` whose acceptance would push
+    `sum_ndrop_B>=1` is EXCLUDED (and every SMALLER `j` for that column
+    is skipped entirely from then on -- `icond2_n(n)==0` gate, `:2069`,
+    a LATCH, not a per-`j` independent check).
+
+    A genuinely SEQUENTIAL scan (unlike `_categorize_collectees`) -- an
+    excluded bin's `p_F` is NOT added to the running total, so a later
+    (smaller) bin's own acceptance test uses the SAME running total the
+    excluded bin saw, not a monotonically-larger one. Implemented as an
+    explicit Python loop over the (at most ~80) bin axis, vectorized over
+    columns at each step -- not reducible to a plain `np.cumsum` (see the
+    task report's derivation).
+
+    Returns `(is_fortunate, sum_ndrop_b_final)`: `is_fortunate` is
+    `(nbins_j, npoints)` bool (which `j`'s got their OWN dedicated
+    sub-population); `sum_ndrop_b_final` is `(npoints,)`, the running
+    total AFTER the full scan (feeds the "unfortunate" sub-population's
+    own size, `(1-sum_ndrop_b_final)*left_N`).
+    """
+    nbins, npoints = is_lm.shape
+    is_fortunate = np.zeros((nbins, npoints), dtype=bool)
+    total = np.zeros(npoints)
+    excluded_latch = np.zeros(npoints, dtype=bool)
+    for j in range(nbins - 1, -1, -1):
+        active_j = is_lm[j] & ~excluded_latch
+        candidate = total + frac_part[j]
+        would_exceed = active_j & (candidate >= 1.0)
+        fortunate_j = active_j & ~would_exceed
+        is_fortunate[j] = fortunate_j
+        total = np.where(fortunate_j, candidate, total)
+        excluded_latch = excluded_latch | (active_j & would_exceed)
+    return is_fortunate, total
+
+
+# ---------------------------------------------------------------------------
+# One collector_loop1 iteration (fixed collector bin `i`): Mc seed, H/F/LM
+# accumulation, cal_ratio_mass_col_vec, shifted boundaries, PDF fit
+# (reusing core.vapor_deposition._linear_fit) + multi-bin scatter (reusing
+# core.vapor_deposition._gather_remap). See module docstring's algorithm
+# section for the full derivation.
+# ---------------------------------------------------------------------------
+
+
+def _collector_scatter(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine step, many H1/G4 sub-steps
+    i: int,
+    binb: np.ndarray,
+    con_i: np.ndarray,
+    mean_mass_i: np.ndarray,
+    mass_tot_i: np.ndarray,
+    mass_aero_tot_i: np.ndarray,
+    mass_aero_sol_i: np.ndarray,
+    left_n_i: np.ndarray,
+    n_col_i: np.ndarray,
+    e_coal_i: np.ndarray,
+    mean_mass_all: np.ndarray,
+    ratio_aero_tot: np.ndarray,
+    ratio_aero_sol: np.ndarray,
+    icond1_i: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """One `collector_loop1` iteration for collector bin `i` (0-based).
+
+    `con_i`/`mean_mass_i`/`mass_tot_i`/`mass_aero_tot_i`/
+    `mass_aero_sol_i`/`left_n_i`: `(npoints,)`, collector bin `i`'s own
+    per-column fields. `n_col_i`/`e_coal_i`: `(nbins_j, npoints)`, row
+    `i` of the full bin-pair `N_col`/`E_coal` grids. `mean_mass_all`/
+    `ratio_aero_tot`/`ratio_aero_sol`: `(nbins, npoints)`, EVERY bin's
+    own mean mass / aerosol-mass FRACTION (`mass_aero_tot/mass_tot`,
+    `cal_ratio_mass_col_vec`'s own `ratio_M_2` -- a dimensionless ratio,
+    not a per-drop mass). `icond1_i`: `(npoints,)` bool, collector-role
+    eligibility for THIS `i` (the STRICTER `collector_loop1`-own icond1,
+    caller's responsibility -- see `_MEAN_MASS_FLOOR` and the
+    `used_marker`-exclusion note in the module docstring).
+
+    Population-preservation identity (verified here, not just asserted):
+    `Np_sub` sums EXACTLY to `left_n_i` by construction --
+    `sum_k(Np_fortunate(k)) + Np_unfortunate = (sum_ndrop_b_final)*
+    left_n_i + (1-sum_ndrop_b_final)*left_n_i = left_n_i` -- which is
+    exactly why the H/LM-pass "distributed proportional to
+    `Np_sub(k)/left_n_i`" formula telescopes to `used_M_2(j)+=dM_dum_total(j)`
+    EXACTLY when summed over `k` (`sum_k(Np_sub(k)/left_n_i)=1`), matching
+    G4's own per-`k`-loop accumulation without needing an explicit
+    `(n_sub, nbins_j)` intermediate array.
+
+    Returns `(add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain,
+    lm_gain)`: the first four are `(nbins, npoints)` scatter
+    contributions (already summed over every sub-population, ready to
+    add into the caller's running `new_N_1`/`new_M_1(rmt/rmat/rmas)`);
+    the last three are `(nbins_j, npoints)`, THIS collector's own H-pass/
+    F-pass/LM-pass mass contribution to EACH collectee `j`'s `used_M_2`
+    -- returned SEPARATELY (not pre-summed) because only the H-pass
+    contribution may trigger `used_marker` (module docstring's
+    "STRUCTURAL PIECES" section) -- the caller sequences H before F
+    before LM per column, matching the Fortran's own pass ORDER.
+    """
+    nbins = binb.shape[0] - 1
+    npoints = con_i.shape[0]
+
+    safe_con_i = np.where(con_i > 0.0, con_i, 1.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        col_ratio = np.where(icond1_i[None, :], e_coal_i * n_col_i / safe_con_i[None, :], 0.0)
+    active_pair = icond1_i[None, :] & (n_col_i > 0.0)
+    is_high, is_lm, frac_part, ndrop_high = _categorize_collectees(col_ratio, active_pair)
+    is_fortunate, sum_ndrop_b_final = _fortunate_scan(is_lm, frac_part)
+    is_lm_leftover = is_lm & ~is_fortunate
+
+    unit_gain = con_i[None, :] * mean_mass_all  # (nbins_j, npoints): con_i*mean_mass(j)
+
+    h_gain = np.where(is_high, ndrop_high * unit_gain, 0.0)
+    lm_gain = np.where(is_lm_leftover, frac_part * unit_gain, 0.0)
+    dedicated_gain = np.where(is_fortunate, frac_part * unit_gain, 0.0)  # F-pass, own sub-bin only
+    f_gain = dedicated_gain
+
+    distributed_gain_per_j = h_gain + lm_gain
+    distributed_ndrop = np.where(is_high, ndrop_high, 0.0) + np.where(
+        is_lm_leftover, frac_part, 0.0
+    )
+    distributed_gain_total = distributed_gain_per_j.sum(axis=0)  # (npoints,)
+    dmass_min_distributed = (distributed_ndrop * binb[:-1, None]).sum(axis=0)
+    dmass_max_distributed = (distributed_ndrop * binb[1:, None]).sum(axis=0)
+    dm1_distributed = (distributed_gain_per_j * ratio_aero_tot).sum(axis=0)
+    dm2_distributed = (distributed_gain_per_j * ratio_aero_sol).sum(axis=0)
+
+    # --- Sub-population axis: 0..nbins-1 = "fortunate" dedicated to
+    # collectee j (zero where not fortunate); index nbins = "unfortunate".
+    n_sub = nbins + 1
+    np_sub = np.zeros((n_sub, npoints))
+    np_sub[:nbins] = np.where(is_fortunate, frac_part * left_n_i[None, :], 0.0)
+    valid_unfortunate = icond1_i & (left_n_i > 0.0)
+    np_sub[nbins] = np.where(valid_unfortunate, (1.0 - sum_ndrop_b_final) * left_n_i, 0.0)
+
+    seed_mass = np_sub * mean_mass_i[None, :]  # Mc-seed timing: BEFORE any pass, module docstring.
+    safe_left_n_i = np.where(left_n_i > 0.0, left_n_i, 1.0)
+    share = (
+        np_sub / safe_left_n_i[None, :]
+    )  # Np_sub(k)/left_N(i), the H/LM-pass distribution weight
+
+    mp_sub = seed_mass.copy()
+    mp_sub[:nbins] += dedicated_gain  # F-pass: own sub-bin only
+    mp_sub += share * distributed_gain_total[None, :]  # H+LM-pass: every sub-bin, proportional
+
+    dmass_min = np.zeros((n_sub, npoints))
+    dmass_max = np.zeros((n_sub, npoints))
+    dmass_min[:nbins] = np.where(is_fortunate, binb[:-1, None], 0.0)  # F-pass: ndrop_F=1.0
+    dmass_max[:nbins] = np.where(is_fortunate, binb[1:, None], 0.0)
+    dmass_min += dmass_min_distributed[None, :]
+    dmass_max += dmass_max_distributed[None, :]
+
+    ratio_aero_tot_i = _safe_div(mass_aero_tot_i, mass_tot_i)  # (npoints,), collector i's OWN ratio
+    ratio_aero_sol_i = _safe_div(mass_aero_sol_i, mass_tot_i)
+    mc_rmat = seed_mass * ratio_aero_tot_i[None, :]
+    mc_rmas = seed_mass * ratio_aero_sol_i[None, :]
+
+    dm_1 = np.zeros((n_sub, npoints))
+    dm_1[:nbins] = np.where(is_fortunate, ratio_aero_tot * dedicated_gain, 0.0)
+    dm_1 += share * dm1_distributed[None, :]
+    dm_2 = np.zeros((n_sub, npoints))
+    dm_2[:nbins] = np.where(is_fortunate, ratio_aero_sol * dedicated_gain, 0.0)
+    dm_2 += share * dm2_distributed[None, :]
+
+    ratio_mp_rmat = _safe_div(mc_rmat + dm_1, mp_sub)
+    ratio_mp_rmas = _safe_div(mc_rmas + dm_2, mp_sub)
+
+    binb3d_lo = binb[i] + dmass_min
+    binb3d_hi = binb[i + 1] + dmass_max
+
+    valid_sub = (np_sub > 1.0e-30) & (mp_sub > 1.0e-30)
+
+    a1, a2, a3, ok = _cal_lincubprms_linear_fit(np_sub, mp_sub, binb3d_lo, binb3d_hi)
+    ok = ok & valid_sub
+
+    intercept = np.where(a1 >= 0.0, a1, 0.0)
+    poly_a0 = np.where(ok, intercept - a3 * a2, 0.0)
+    poly_a1 = np.where(ok, a3, 0.0)
+    poly_a2 = np.zeros_like(poly_a0)
+    poly_a3 = np.zeros_like(poly_a0)
+    truncated_left = ok & (a1 == -1.0)
+    truncated_right = ok & (a1 == -2.0)
+    eff_bd1 = np.where(truncated_right, binb3d_lo, np.where(truncated_left, a2, binb3d_lo))
+    eff_bd2 = np.where(truncated_left, binb3d_hi, np.where(truncated_right, a2, binb3d_hi))
+    ok = ok & (eff_bd2 > eff_bd1)
+
+    add_n, add_rmt, add_rmat, add_rmas = _cal_transbin_gather_remap(
+        binb, poly_a0, poly_a1, poly_a2, poly_a3, eff_bd1, eff_bd2, ratio_mp_rmat, ratio_mp_rmas, ok
+    )
+
+    # Fallback for sub-populations whose linear fit itself failed (module
+    # docstring's "one deliberate, documented reduction"): same-bin
+    # (nearest, by mean mass) concentrated placement, still exactly
+    # N/M-conserving.
+    fallback = valid_sub & ~ok
+    if fallback.any():
+        mean_mass_sub = _safe_div(mp_sub, np_sub)
+        dest_fb = _find_destination_bin(binb, mean_mass_sub)
+        pts = np.broadcast_to(np.arange(npoints)[None, :], dest_fb.shape)
+        np.add.at(add_n, (dest_fb, pts), np.where(fallback, np_sub, 0.0))
+        np.add.at(add_rmt, (dest_fb, pts), np.where(fallback, mp_sub, 0.0))
+        np.add.at(add_rmat, (dest_fb, pts), np.where(fallback, mp_sub * ratio_mp_rmat, 0.0))
+        np.add.at(add_rmas, (dest_fb, pts), np.where(fallback, mp_sub * ratio_mp_rmas, 0.0))
+
+    return add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain, lm_gain
+
+
 def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, many H1/G4 sub-steps
     liquid_pv: LiquidState,
     diag: LiquidDiag,
@@ -303,10 +676,12 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     ibreak: bool = False,
 ) -> LiquidState:
     """The rain-rain (`token 1-1`) bin-pair collection engine --
-    `collector_loop1`'s simplified fallback, per this module's own
-    docstring (read it first: the "2 parents in, 1 merged child out"
-    model, PER-VOLUME contract, `icolbin_min` loop bound, self-collection
-    proof, and `ibreak` hook are all documented there, not repeated here).
+    `collector_loop1` ported in full (H/F/LM categorization, multi-bin
+    PDF scatter), per this module's own docstring (read it first: the
+    full algorithm derivation, the `pro_type`/`used_marker`/
+    `assign_tendency_vec` structural resolutions, PER-VOLUME contract,
+    and every documented simplification are all there, not repeated
+    here).
 
     Signature deviation from the dispatch's literal
     `coalesce_rain(liquid_pv, diag, config, dt, luts)` text (same
@@ -315,8 +690,8 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     ThermoState` was added -- `coalescence_efficiency` (Task 2,
     `core/collision_kernel.py`) needs the column temperature for its own
     `th_var%sig_wa` surface-tension term, and there is no way to compute
-    `E_coal` (load-bearing for `n_ij`, the used_N_2/used_M_2 depletion
-    accounting, G4 SS1.2) without it.
+    `E_coal` (load-bearing for `col_ratio`, the H/F/LM categorization
+    driver) without it.
 
     Args:
         liquid_pv: PER-VOLUME `LiquidState` (`con`/`mass` = `q*den`,
@@ -370,11 +745,14 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     mass_tot = liquid_pv.values[lp.rmt_q.py_idx, :, 0, :]
     mass_aero_tot = liquid_pv.values[lp.rmat_q.py_idx, :, 0, :]
     mass_aero_sol = liquid_pv.values[lp.rmas_q.py_idx, :, 0, :]
+    mean_mass = diag.mean_mass
 
-    # icond1 (H1 SS0 quoting G4 SS2, `mod_amps_core.F90:15894-15907`):
-    # active where BOTH con and mass(1) clear the floor, for BOTH bins of
-    # the pair. Applied around every Task 2 efficiency/kernel call output
-    # below, per this task's own dispatch instruction.
+    # icond1 (cal_collision_kernel_func's OWN mask, H1 SS0 quoting G4 SS2,
+    # `mod_amps_core.F90:15894-15907`): active where BOTH con and mass(1)
+    # clear the floor, for BOTH bins of the pair -- used ONLY for the O(n^2)
+    # kernel/efficiency computation below, per this task's own dispatch
+    # instruction. `collector_loop1`'s OWN, stricter icond1 is separate,
+    # see `active_collector_base` further below.
     active = (con > _ACTIVE_FLOOR) & (mass_tot > _ACTIVE_FLOOR)
     active_i, active_j = _pairwise(active, active)
     icond1_active = active_i & active_j
@@ -394,19 +772,11 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
             f"config's own liquid bin grid."
         )
 
-    # --- Task 2 kernel / efficiency, icond1-masked (G4 SS2's own
-    # init-then-conditionally-overwrite pattern: KC/E_c/E_coal default to
-    # 0 for inactive pairs, matching `:15894-15907`'s own `KC(i,j)=0.0;
-    # E_c(i,j)=0.0; E_coal(i,j)=0.0` pre-loop init). ---
-    # `errstate` suppresses benign 0/0 or x/0 RuntimeWarnings from
-    # `collision_efficiency`'s own `rrat=len_j/len_i` computation
-    # (`core/collision_kernel.py:226-232`) across the MANY inactive
-    # (zero-length) bin pairs a realistic 40-bin grid contains -- Task 2's
-    # own tests never exercised the full bin-pair grid at once (single-bin
-    # fixtures only), so this call pattern (a full nbins x nbins pass,
-    # most pairs inactive) is new here; the results are masked to 0 via
-    # `icond1_active` immediately below regardless, matching Task 2's own
-    # documented degenerate-path handling.
+    # --- Task 2 kernel / efficiency, icond1-masked. `errstate` suppresses
+    # benign 0/0 or x/0 RuntimeWarnings from `collision_efficiency`'s own
+    # `rrat=len_j/len_i` computation across the MANY inactive (zero-length)
+    # bin pairs a realistic 40-bin grid contains -- masked to 0 via
+    # `icond1_active` immediately below regardless. ---
     with np.errstate(divide="ignore", invalid="ignore"):
         kc = ck.collision_kernel(diag, diag, con, dt, luts, col_level=config.coll_level)
         e_coal, *_rest = ck.coalescence_efficiency(diag, diag, thermo)
@@ -418,120 +788,122 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     # the KC>0 branch applies for rain-rain (token_i==token_j, so the
     # abs(KC) riming branch, `:1668` guarded by `token /= token`, never
     # fires); clamp N_col<=con_j. ---
-    con_i, con_j = _pairwise(con, con)
-    n_col = np.where(kc > 0.0, con_i * kc, 0.0)
-    n_col = np.minimum(n_col, con_j)
+    con_i_pair, con_j_pair = _pairwise(con, con)
+    n_col = np.where(kc > 0.0, con_i_pair * kc, 0.0)
+    n_col = np.minimum(n_col, con_j_pair)
     n_col = np.where(icond1_active, n_col, 0.0)
 
-    # --- icolbin_min collector floor, H1 SS1.6 verbatim (loop bound
-    # applied as a mask over axis 0/"i", the collector role only -- see
-    # module docstring). ---
+    # --- iter_loop1 (G4 SS1.4, `mod_amps_core.F90:1713-1890`): the
+    # PER-PAIR `N_col<=con_j` clamp above bounds each INDIVIDUAL
+    # collector's own claim, but NOT the SUM across every collector `i`
+    # targeting the SAME collectee `j` -- with >2 active bins, MULTIPLE
+    # collectors independently claiming up to `con_j` each can (and does,
+    # caught by TestManyActiveBins during hardening) manufacture more
+    # growth mass downstream than bin `j` actually has, a real mass
+    # CREATION bug, not just a bin going negative (`_needgive_repair`
+    # only fixes the latter). Ported here as an EXACT single-pass
+    # proportional rescale, not the Fortran's own iterative loop --
+    # provably the SAME fixed point in this formulation: `mean_mass(j)
+    # =mass_tot(j)/con(j)` exactly (`core/liquid_diag.py`'s own
+    # definition), so `used_M_2(j)=used_N_2(j)*mean_mass(j)>=mass_tot(j)`
+    # iff `used_N_2(j)>=con(j)` -- the Fortran's OWN number-limit and
+    # mass-limit halves (`:1713-1799`/`:1801-1884`) are mathematically
+    # IDENTICAL conditions here (both close in a single pass, no
+    # cross-iteration needed, unlike the general ice/mixed-token case
+    # where mean_mass need not be so uniformly defined). Rescaling
+    # `N_col(i,j,:)` for every collector `i` by `con_j/used_N_2(j)`
+    # (`mod_amps_core.F90:1748`: `N_col(j,i,n)=N_col(j,i,n)*
+    # min(1,mod_ratio(n))`) drives `used_N_2(j)` to EXACTLY `con(j)`
+    # (not merely bounded), so a second pass would be a no-op.
+    used_n_2_raw = (n_col * e_coal).sum(axis=0)  # (nbins_j, npoints), summed over collector i
+    over_claimed = used_n_2_raw > con
+    rescale = np.where(over_claimed, _safe_div(con, used_n_2_raw), 1.0)
+    n_col = n_col * rescale[None, :, :]
+
+    used_n_2_initial = (n_col * e_coal).sum(axis=0)
+    used_m_2_initial = used_n_2_initial * mean_mass  # mean_mass(j) doesn't depend on i, factor out
+
+    left_n = np.maximum(con - used_n_2_initial, 0.0)
+    left_m = np.maximum(mass_tot - used_m_2_initial, 0.0)
+
+    ratio_aero_tot = _safe_div(mass_aero_tot, mass_tot)  # (nbins, npoints), dimensionless FRACTION
+    ratio_aero_sol = _safe_div(mass_aero_sol, mass_tot)
+
+    # `collector_loop1`'s OWN, stricter icond1 (`mod_amps_core.F90:
+    # 1955-1966`): adds the mean_mass floor, plus (for rain-rain,
+    # pro_type=2, see module docstring) `used_marker/=1`.
+    active_collector_base = active & (mean_mass > _MEAN_MASS_FLOOR)
+    used_marker = active_collector_base & ((left_n <= 1.0e-30) | (left_m <= 1.0e-30))
+
+    used_m_2_total = np.zeros((nbins, npoints))
+    new_n_1 = np.zeros((nbins, npoints))
+    new_m_rmt = np.zeros((nbins, npoints))
+    new_m_rmat = np.zeros((nbins, npoints))
+    new_m_rmas = np.zeros((nbins, npoints))
+
     icolbin_min = _icolbin_min(binb)
-    collector_mask = np.zeros(nbins, dtype=bool)
-    collector_mask[icolbin_min:] = True
-    n_col = n_col * collector_mask[:, None, None]
 
-    n_ij = n_col * e_coal  # coalescence EVENTS per (i, j, point)
+    # collector_loop1: do i=g_1%N_bin,icolbin_min,-1 (H1 SS1.6 verbatim,
+    # Fortran 1-based descending) -- Python 0-based descending equivalent:
+    for i in range(nbins - 1, icolbin_min - 1, -1):
+        icond1_i = active_collector_base[i] & ~used_marker[i]
+        if not icond1_i.any():
+            continue
 
-    # This module's OWN necessary addition, beyond G4's own literal
-    # N_col<=con_j clamp (H1 SS1.2 only clamps against the COLLECTEE's
-    # population): the "2 parents in, 1 child out" per-event model (see
-    # module docstring) requires ONE i-drop per event just as much as one
-    # j-drop, so a SINGLE pair's event count cannot exceed EITHER parent
-    # bin's own population -- unlike the true Fortran, which allows one
-    # collector particle to absorb MANY collectee particles per particle
-    # (`ndrop_B>1` in the "H" pass, G4 SS1.6), a case this simplified
-    # model does not represent (see module docstring's own account of
-    # what collector_loop1's rate categorization is NOT reproduced by
-    # this fallback). Without this, a single (i,j) pair could deplete
-    # bin i below zero even before any OTHER pair is considered -- caught
-    # in code review via TestPropertyTransfer's own conservation check
-    # (n_ij(120.4) > con_i(100) for a real drpdrp-LUT-driven pair).
-    # Residual over-subscription from SUMMING multiple pairs against the
-    # SAME bin (the con_j clamp above is also only a per-pair bound) is
-    # still handled by `_needgive_repair` below, per the dispatch's own
-    # "cal_needgive inter-bin borrowing" requirement.
-    n_ij = np.minimum(n_ij, con_i)
-
-    # --- coalesced mass m_i+m_j (H1's own Deliverable-bullet phrasing)
-    # and destination-bin search (add_simple_vec, G4 SS4.1). ---
-    mean_mass = diag.mean_mass
-    mean_mass_i, mean_mass_j = _pairwise(mean_mass, mean_mass)
-    merged_mass = mean_mass_i + mean_mass_j
-    dest = _find_destination_bin(binb, merged_mass)
-
-    mp_ij = n_ij * merged_mass  # mass carried by the merge events, RAW (unclamped)
-
-    # add_simple_vec's own Np boundary-safety clamp (G4 SS4.1 verbatim,
-    # `mod_amps_core.F90:15505-15528`): Np=max(Mp/0.99/binb(j+1),
-    # min(Mp/1.01/binb(j),Np)) -- applied ONLY to the scattered NUMBER,
-    # never to Mp itself (mass is always added raw, see module docstring
-    # for why this makes mass conservation exact regardless).
-    binb_lo = binb[dest]
-    binb_hi = binb[dest + 1]
-    with np.errstate(divide="ignore", invalid="ignore"):
-        term_hi = np.where(
-            binb_hi > 0.0, mp_ij / (0.99 * np.where(binb_hi > 0.0, binb_hi, 1.0)), 0.0
+        add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain, lm_gain = _collector_scatter(
+            i,
+            binb,
+            con[i],
+            mean_mass[i],
+            mass_tot[i],
+            mass_aero_tot[i],
+            mass_aero_sol[i],
+            left_n[i],
+            n_col[i],
+            e_coal[i],
+            mean_mass,
+            ratio_aero_tot,
+            ratio_aero_sol,
+            icond1_i,
         )
-        term_lo_cap = np.where(
-            binb_lo > 0.0, mp_ij / (1.01 * np.where(binb_lo > 0.0, binb_lo, 1.0)), n_ij
-        )
-    n_ij_scattered = np.maximum(term_hi, np.minimum(term_lo_cap, n_ij))
+        new_n_1 = new_n_1 + add_n
+        new_m_rmt = new_m_rmt + add_rmt
+        new_m_rmat = new_m_rmat + add_rmat
+        new_m_rmas = new_m_rmas + add_rmas
 
-    # --- aerosol per-drop shares (cal_ratio_mass_col_vec's simplified,
-    # per-pair analogue, H1 SS1.6f/G4 SS5): each merge event's child
-    # inherits BOTH parents' aerosol mass, additively. RAW n_ij (matching
-    # mp_ij's own raw-value precedent, mass-like quantities), so aerosol
-    # mass conservation is exact by the identical telescoping argument. ---
-    aero_tot_per_drop = _safe_div(mass_aero_tot, con)
-    aero_sol_per_drop = _safe_div(mass_aero_sol, con)
-    aero_tot_i, aero_tot_j = _pairwise(aero_tot_per_drop, aero_tot_per_drop)
-    aero_sol_i, aero_sol_j = _pairwise(aero_sol_per_drop, aero_sol_per_drop)
-    aero_tot_gain_pair = n_ij * (aero_tot_i + aero_tot_j)
-    aero_sol_gain_pair = n_ij * (aero_sol_i + aero_sol_j)
+        # Sequenced used_M_2 update, H then F then LM (module docstring's
+        # "STRUCTURAL PIECES" section) -- ONLY the H-pass may set
+        # used_marker; F/LM clamp used_M_2 without setting it.
+        used_m_2_after_h = used_m_2_total + h_gain
+        newly_marked = used_m_2_after_h >= mass_tot
+        used_m_2_total = np.where(newly_marked, mass_tot, used_m_2_after_h)
+        used_marker = used_marker | newly_marked
 
-    # --- Scatter: accumulate every (i, j) pair's contribution into its
-    # destination bin, per column point (np.add.at handles duplicate
-    # (dest, point) targets correctly -- multiple pairs landing in the
-    # SAME destination bin at the SAME point are summed, not overwritten).
-    # ---
-    point_idx = np.broadcast_to(np.arange(npoints)[None, None, :], dest.shape)
-    gain_number = np.zeros((nbins, npoints))
-    gain_mass_tot = np.zeros((nbins, npoints))
-    gain_mass_aero_tot = np.zeros((nbins, npoints))
-    gain_mass_aero_sol = np.zeros((nbins, npoints))
-    np.add.at(gain_number, (dest, point_idx), n_ij_scattered)
-    np.add.at(gain_mass_tot, (dest, point_idx), mp_ij)
-    np.add.at(gain_mass_aero_tot, (dest, point_idx), aero_tot_gain_pair)
-    np.add.at(gain_mass_aero_sol, (dest, point_idx), aero_sol_gain_pair)
+        used_m_2_total = np.minimum(used_m_2_total + f_gain, mass_tot)
+        used_m_2_total = np.minimum(used_m_2_total + lm_gain, mass_tot)
 
-    # --- Depletion: bin k loses n_ij as COLLECTOR (axis 0, sum over j)
-    # PLUS as COLLECTEE (axis 1, sum over i) -- RAW n_ij, exactly
-    # proportional to mean_mass[k]/aero_*_per_drop[k] (uniform per bin
-    # regardless of role), which is what makes mass conservation exact
-    # (see module docstring's telescoping-sum derivation). ---
-    loss_number = n_ij.sum(axis=1) + n_ij.sum(axis=0)
-    loss_mass_tot = loss_number * mean_mass
-    loss_mass_aero_tot = loss_number * aero_tot_per_drop
-    loss_mass_aero_sol = loss_number * aero_sol_per_drop
-
-    new_con = con - loss_number + gain_number
-    new_mass_tot = mass_tot - loss_mass_tot + gain_mass_tot
-    new_mass_aero_tot = mass_aero_tot - loss_mass_aero_tot + gain_mass_aero_tot
-    new_mass_aero_sol = mass_aero_sol - loss_mass_aero_sol + gain_mass_aero_sol
+    # --- Post-loop leftover re-add, G4 SS1.6k verbatim
+    # (`mod_amps_core.F90:2899-2925`) PLUS this module's own documented,
+    # mass-safe extension to icolbin_min-excluded bins (module docstring's
+    # "STRUCTURAL PIECES" section). ---
+    below_icolbin_min = np.zeros(nbins, dtype=bool)
+    below_icolbin_min[:icolbin_min] = True
+    re_add = used_marker | below_icolbin_min[:, None]
+    new_n_1 = new_n_1 + np.where(re_add, left_n, 0.0)
+    new_m_rmt = new_m_rmt + np.where(re_add, left_m, 0.0)
+    new_m_rmat = new_m_rmat + np.where(re_add, left_m * ratio_aero_tot, 0.0)
+    new_m_rmas = new_m_rmas + np.where(re_add, left_m * ratio_aero_sol, 0.0)
 
     # --- cal_needgive inter-bin borrowing (G4 SS6), within-group repair
-    # for any bin over-depleted by summing multiple pairs (this module's
-    # per-pair N_col<=con_j clamp bounds each INDIVIDUAL pair, not the
-    # SUM over every collector `i` depleting the SAME bin `j` -- see
-    # `_needgive_repair`'s own docstring). ---
-    new_con, new_mass_tot, (new_mass_aero_tot, new_mass_aero_sol) = _needgive_repair(
-        new_con, new_mass_tot, new_mass_aero_tot, new_mass_aero_sol
+    # for any bin over-depleted by the non-iterative left_N/left_M
+    # approximation (module docstring's own flagged reduction). ---
+    new_n_1, new_m_rmt, (new_m_rmat, new_m_rmas) = _needgive_repair(
+        new_n_1, new_m_rmt, new_m_rmat, new_m_rmas
     )
 
     out_values = liquid_pv.values.copy()
-    out_values[lp.rcon_q.py_idx, :, 0, :] = new_con
-    out_values[lp.rmt_q.py_idx, :, 0, :] = new_mass_tot
-    out_values[lp.rmat_q.py_idx, :, 0, :] = new_mass_aero_tot
-    out_values[lp.rmas_q.py_idx, :, 0, :] = new_mass_aero_sol
+    out_values[lp.rcon_q.py_idx, :, 0, :] = new_n_1
+    out_values[lp.rmt_q.py_idx, :, 0, :] = new_m_rmt
+    out_values[lp.rmat_q.py_idx, :, 0, :] = new_m_rmat
+    out_values[lp.rmas_q.py_idx, :, 0, :] = new_m_rmas
     return LiquidState(values=out_values)

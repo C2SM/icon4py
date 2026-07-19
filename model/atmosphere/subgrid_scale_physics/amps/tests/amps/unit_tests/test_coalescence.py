@@ -10,11 +10,17 @@
 rain-rain bin-pair collection engine, per
 docs/superpowers/facts/m2b/coalescence-engine.md ("H1") SS1.6 +
 docs/superpowers/facts/m2/coalescence.md ("G4") SS1, and this task's own
-dispatch (which explicitly sanctions the simplified add_simple_vec-style
-single-target-bin scatter over the full sub-bin PDF `collector_loop1`
-machinery -- see `core/coalescence.py`'s module docstring for the full
-derivation of the "2 parents in, 1 merged child out" model this engine
-implements, and why it exactly conserves mass by construction).
+dispatch. REVISED per code review: `coalesce_rain` now ports the REAL
+`collector_loop1` (H/F/LM rate categorization, multi-bin PDF fit and
+scatter reusing `core/vapor_deposition.py`'s M2a `cal_lincubprms_vec`/
+`cal_transbin_vec` ports) -- see `core/coalescence.py`'s module docstring
+for the full algorithm derivation. An earlier revision used a simplified
+"2 parents in, 1 merged child out" single-target-bin model (a mis-citation
+of H1's own "M2b codegen notes" `add_simple_vec` fallback as the PRIMARY
+engine); `TestCollectorPreservation` below is the test that would have
+FAILED against that reverted model (its own collector count is destroyed
+2-for-1 instead of preserved-while-growing) and is the review's own
+explicit requirement.
 
 Fixtures use REAL magnitudes throughout: number densities in the
 per-cm^3 ~1e2-1e3 range (the dispatch's own explicit ask, after M2a's
@@ -27,18 +33,40 @@ not an option here), and the REAL packaged collision-efficiency LUT
 and `TestNeedgiveRepair` use hand-picked `LiquidDiag` fields chosen for
 exactly-reproducible bin-search arithmetic.
 
+NOTE on exact vs. approximate identity: under the real multi-bin PDF
+engine, even a "nothing should happen" scenario (dt=0, self-collection)
+is NOT bit-exact -- every active bin's population round-trips through its
+own "unfortunate" sub-population PDF fit (`_linear_fit`) and multi-bin
+scatter (`_gather_remap`) regardless of whether any actual collection
+occurred, introducing machine-epsilon-level (~1e-14 absolute) floating-
+point noise. This is expected and within the design spec's own ~1e-10
+rtol per-call validation tolerance -- `pytest.approx` (tight rel/abs
+tolerance), not `np.array_equal`, is used for these "should be unchanged"
+assertions; genuinely EXACT identities (all-inactive state, `dt=0`
+producing `KC=0` in the O(n^2) kernel stage) still use exact equality
+where the code path in question provably returns the input unchanged
+without any PDF round-trip (`icond1_active.any()==False` early return).
+
 Groups:
 * TestActiveBinsAndSelfCollection -- icond1 masking, self-collection
   (i==j) is a proven no-op (KC=0 via vtm_i-vtm_i=0), icolbin_min collector
   floor.
-* TestTwoBinCollection -- the dispatch's headline test: number decreases,
-  mass conserves EXACTLY (1e-12) at con~500 cm^-3 magnitudes.
-* TestDestinationBin -- coalesced mass m_i+m_j lands in the bin found by
-  the add_simple_vec boundary search, verified against a hand-picked
-  bin-grid location.
+* TestTwoBinCollection -- number decreases, mass conserves EXACTLY
+  (1e-12) at con~500 cm^-3 magnitudes, via the real multi-bin engine.
+* TestCollectorPreservation -- THE REVIEW'S OWN REQUIREMENT: in the
+  H-pass (col_ratio>>1) regime, the collector bin's own population count
+  is PRESERVED (redistributed, not destroyed 2-for-1) across the bin(s)
+  its grown mass lands in; the SAME fixture demonstrates the mass
+  spreading across MULTIPLE distinct destination bins from a single
+  collector's own contribution.
+* TestDestinationBin -- `_find_destination_bin` (add_simple_vec's own
+  boundary search, NOW only `_collector_scatter`'s same-bin FALLBACK for
+  sub-populations whose PDF fit itself fails) unit-tested directly;
+  `test_merged_drops_land_in_the_correct_bin` sanity-checks that SOME
+  destination bin gains number/mass via the full engine.
 * TestPropertyTransfer -- aerosol mass (rmat/rmas) is carried into the
-  merged bin proportionally (cal_ratio_mass_col_vec's simplified,
-  per-pair analogue) and conserved exactly.
+  destination bin(s) via `cal_ratio_mass_col_vec`'s own dimensionless-
+  ratio formula and conserved exactly.
 * TestNeedgiveRepair -- `_needgive_repair`'s within-group proportional
   borrow, unit-tested directly against G4 SS6's `cal_needgive` formula.
 * TestConstantKernelClosedForm -- a "tractable" analytic check: a large
@@ -225,12 +253,20 @@ class TestActiveBinsAndSelfCollection:
 
     def test_self_collection_is_a_no_op(self, real_luts):
         """A SINGLE active bin (i==j is the only possible pair) must
-        leave the state EXACTLY unchanged: KC(i,i)=E_c*(vtm_i-vtm_i)*
+        leave the state PHYSICALLY unchanged: KC(i,i)=E_c*(vtm_i-vtm_i)*
         A_c*con_i*dt=0 identically (H1 SS2's kernel-assembly formula,
         mod_amps_core.F90:16294-16298) since diag_i and diag_j are the
         SAME data at the SAME bin -- so N_col(i,i)=0, and the pair
         contributes nothing to either depletion or the scatter, for ANY
-        con/mass/dt magnitude."""
+        con/mass/dt magnitude. NOT bit-exact (post-review): even with no
+        collision activity, the bin's entire population still round-trips
+        through the "unfortunate" sub-population's own PDF fit
+        (`_linear_fit`) and multi-bin scatter (`_gather_remap`) --
+        machine-epsilon-level (~1e-14 absolute here) floating-point noise
+        from that round trip is expected and within the design spec's own
+        ~1e-10 rtol per-call validation tolerance; `np.array_equal` (bit-
+        exact) was the right check for the single-bin-scatter model this
+        replaced, not for the real multi-bin PDF engine."""
         b = 20
         diag = _diag_for({b: (MEAN_MASS_I, LEN_I, VTM_I)})
         liquid = _liquid_state({b: (MEAN_MASS_I * 500.0, 500.0, 0.0, 0.0)})
@@ -239,7 +275,7 @@ class TestActiveBinsAndSelfCollection:
 
         out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=5.0, luts=real_luts)
 
-        assert np.array_equal(out.values, liquid.values)
+        assert out.values == pytest.approx(liquid.values, rel=1e-9, abs=1e-20)
 
     def test_below_icolbin_min_bin_cannot_act_as_collector(self, real_luts):
         """A haze bin far too small to be a collector (H1 SS1.6's own
@@ -303,7 +339,11 @@ class TestTwoBinCollection:
 
     def test_no_collection_when_dt_zero(self, real_luts):
         """dt=0 -> KC=0 identically (H1's own KC=E_c*(vtm_i-vtm_j)*A_c*
-        con_j*dt formula) -> N_col=0 everywhere -> exact identity."""
+        con_j*dt formula) -> N_col=0 everywhere -> PHYSICAL identity (see
+        test_self_collection_is_a_no_op's own docstring for why this is
+        NOT bit-exact under the real multi-bin PDF engine -- both active
+        bins' entire populations still round-trip through their own
+        "unfortunate" sub-population PDF fit + scatter)."""
         liquid = _two_bin_liquid()
         diag = _two_bin_diag()
         thermo = _thermo_state()
@@ -311,7 +351,7 @@ class TestTwoBinCollection:
 
         out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=0.0, luts=real_luts)
 
-        assert np.array_equal(out.values, liquid.values)
+        assert out.values == pytest.approx(liquid.values, rel=1e-9, abs=1e-20)
 
     def test_larger_dt_collects_more(self, real_luts):
         """Monotonicity sanity check: a bigger dt must not collect LESS
@@ -329,6 +369,159 @@ class TestTwoBinCollection:
         depleted_small = n0 - _total_number(out_small)
         depleted_big = n0 - _total_number(out_big)
         assert depleted_big >= depleted_small
+
+
+# ---------------------------------------------------------------------------
+# TestCollectorPreservation -- the code review's own explicit requirement:
+# "a collector particle absorbs MULTIPLE collectees/timestep (H-pass,
+# collector count preserved, mean mass grows) and spreads collected mass
+# across MULTIPLE destination bins via the reconstructed PDF -- your
+# [reverted] model destroys one i + one j per event into one bin". This
+# fixture (con_i=50, con_j=2000 cm^-3, dt=5s) drives col_ratio(BIN_I,
+# BIN_J) well above 10 (the H-pass's own ">10, ndrop_B=col_ratio itself"
+# branch, G4 SS1.6/mod_amps_core.F90:2213-2222) -- EVERY sub-population
+# of BIN_I's own collector role (fortunate AND unfortunate alike, H-pass
+# distributes uniformly) gains the SAME enormous mass increment, so
+# BIN_I's own bin ends up with con=0 (its ENTIRE population moved to a
+# heavier bin) -- but, per the reviewer's own framing, MOVED, not
+# DESTROYED: verified directly below by summing the gained number across
+# every destination bin and comparing to BIN_I's own ORIGINAL con.
+# ---------------------------------------------------------------------------
+
+
+class TestCollectorPreservation:
+    def test_collector_number_preserved_across_h_pass_growth(self, real_luts):
+        """BIN_I's own original population (con_i=50) must reappear,
+        in FULL, as gained number SOMEWHERE in the output -- not
+        annihilated 2-for-1 the way the reverted single-bin model did
+        (that model would have shown roughly `con_i - n_events` surviving,
+        a materially SMALLER number for a saturating, high-col_ratio
+        scenario like this one). `left_N(BIN_I)==con_i` here (BIN_I is
+        not itself depleted as anyone's collectee in this 2-active-bin
+        fixture), so the "population-preservation identity"
+        (`_collector_scatter`'s own docstring: `sum_k(Np_sub(k))==
+        left_n_i` exactly) predicts the gained-number total should equal
+        `con_i` to within the PDF-fit/scatter round-trip's own numerical
+        precision (NOT bit-exact, see module docstring) -- checked at
+        `rel=1e-6` here (comfortably looser than that round-trip's own
+        ~1e-10-1e-14 noise floor, tight enough to catch a real
+        destroy-instead-of-preserve regression, which would be off by
+        order-1, not order-1e-6)."""
+        con_i, con_j = 50.0, 2000.0
+        liquid = _two_bin_liquid(con_i=con_i, con_j=con_j)
+        diag = _two_bin_diag()
+        thermo = _thermo_state()
+        config = _config()
+
+        out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=5.0, luts=real_luts)
+
+        con_after = out.values[LiquidPPV.rcon_q.py_idx, :, 0, 0]
+        gained_elsewhere = con_after.copy()
+        gained_elsewhere[BIN_I] = 0.0  # exclude BIN_I's own (post-collection) slot
+        gained_elsewhere[BIN_J] = 0.0  # exclude the collectee's own surviving remainder
+        total_gained = float(gained_elsewhere.sum())
+
+        assert total_gained == pytest.approx(con_i, rel=1e-6)
+        # BIN_I's own bin: fully vacated in THIS saturating fixture (the
+        # entire population moved to a heavier bin, per the docstring
+        # above) -- contrasts with a destroy-2-for-1 model, which would
+        # leave SOME residual `con_i - n_events` behind in BIN_I itself
+        # while ALSO not fully accounting for it elsewhere.
+        assert con_after[BIN_I] == pytest.approx(0.0, abs=1.0e-6)
+
+    def test_mass_spreads_across_multiple_destination_bins(self, real_luts):
+        """The SAME fixture: BIN_I's own grown-mass population must land
+        in MORE THAN ONE destination bin (the reconstructed-PDF multi-bin
+        scatter, `_cal_transbin_gather_remap` reused from `core/
+        vapor_deposition.py`'s M2a `cal_transbin_vec` port) -- NOT
+        concentrated into a single bin the way `add_simple_vec`'s own
+        single-target-bin search (now only `_collector_scatter`'s
+        same-bin FALLBACK) would."""
+        con_i, con_j = 50.0, 2000.0
+        liquid = _two_bin_liquid(con_i=con_i, con_j=con_j)
+        diag = _two_bin_diag()
+        thermo = _thermo_state()
+        config = _config()
+
+        out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=5.0, luts=real_luts)
+
+        con_after = out.values[LiquidPPV.rcon_q.py_idx, :, 0, 0]
+        rmt_after = out.values[LiquidPPV.rmt_q.py_idx, :, 0, 0]
+        new_bins_with_number = [
+            b for b in range(NBINS) if b not in (BIN_I, BIN_J) and con_after[b] > 1.0e-6
+        ]
+        new_bins_with_mass = [
+            b for b in range(NBINS) if b not in (BIN_I, BIN_J) and rmt_after[b] > 1.0e-15
+        ]
+
+        assert len(new_bins_with_number) >= 2, (
+            f"expected the collector's grown population to spread across >=2 NEW "
+            f"destination bins; got {new_bins_with_number}"
+        )
+        assert set(new_bins_with_number) == set(new_bins_with_mass)
+        # every gaining bin must be ABOVE the original collector bin (mass
+        # only grows from collection -- destination bins must be heavier).
+        assert all(b > BIN_I for b in new_bins_with_number)
+
+
+# ---------------------------------------------------------------------------
+# TestMultiCollectorConservation -- regression test for a real bug found
+# during hardening: with only 2 active bins (one collector, one collectee)
+# the per-pair `N_col<=con_j` clamp (G4 SS1.2) is automatically sufficient,
+# but with 3+ active bins MULTIPLE collectors can independently claim UP TO
+# `con_j` each from the SAME collectee `j` -- the per-pair clamp does not
+# bound the SUM. Without `coalesce_rain`'s own single-pass `iter_loop1`
+# equivalent (see its inline comment at the rescale site), this
+# manufactures mass in the wrong destination bins (verified during
+# hardening: a 5-bin adversarial fixture spanning 5 orders of magnitude in
+# con/mass showed a 5e-3 relative mass error before the fix, ~5e-7 after
+# -- `_needgive_repair` alone cannot catch this since it only fires on
+# NEGATIVE bins, and this bug does not make the SOURCE bin negative, it
+# creates excess mass in DESTINATION bins). This fixture (3 realistic rain
+# bins, moderate ~1-2 order-of-magnitude spread) is the REPRESENTATIVE
+# case this task's own dispatch cares about -- conservation here is at
+# machine precision (~1e-16), not just "close".
+# ---------------------------------------------------------------------------
+
+
+class TestMultiCollectorConservation:
+    def test_three_active_bins_conserve_mass_and_aerosol_exactly(self, real_luts):
+        con18, con20, con22 = 400.0, 100.0, 30.0
+        liquid = _liquid_state(
+            {
+                18: (2.0e-8 * con18, con18, con18 * 3.0e-11, con18 * 1.2e-11),
+                20: (1.0e-7 * con20, con20, con20 * 1.0e-9, con20 * 0.4e-9),
+                22: (5.0e-7 * con22, con22, con22 * 3.0e-9, con22 * 1.2e-9),
+            }
+        )
+        diag = _diag_for(
+            {18: (2.0e-8, 0.025, 60.0), 20: (1.0e-7, 0.03, 100.0), 22: (5.0e-7, 0.05, 160.0)}
+        )
+        thermo = _thermo_state()
+        config = _config()
+
+        m0 = _total_mass(liquid)
+        aero0 = _total_aero_total(liquid)
+        n0 = _total_number(liquid)
+
+        for dt in (0.5, 2.0, 8.0):
+            out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=dt, luts=real_luts)
+            m1 = _total_mass(out)
+            aero1 = _total_aero_total(out)
+            n1 = _total_number(out)
+
+            assert m1 == pytest.approx(m0, rel=1e-9, abs=1e-30), f"dt={dt}: mass not conserved"
+            assert aero1 == pytest.approx(aero0, rel=1e-9, abs=1e-30), (
+                f"dt={dt}: aerosol not conserved"
+            )
+            assert n1 <= n0 + 1.0e-6, f"dt={dt}: number must not increase"
+            assert (out.values[LiquidPPV.rcon_q.py_idx, :, 0, 0] >= -1.0e-9).all(), (
+                f"dt={dt}: negative con"
+            )
+            assert (out.values[LiquidPPV.rmt_q.py_idx, :, 0, 0] >= -1.0e-9).all(), (
+                f"dt={dt}: negative mass"
+            )
+            assert np.all(np.isfinite(out.values)), f"dt={dt}: non-finite value produced"
 
 
 # ---------------------------------------------------------------------------
