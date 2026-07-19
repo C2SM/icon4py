@@ -37,45 +37,28 @@ non-uniform (dense 0.1 up to molality 1.0, medium 0.2 up to 2.0, coarse 0.5
 to the domain end), not the uniform grid the original (F3-only) submission
 had inferred.
 
-One exception, NOT computed as part of `load_luts()`: the Low-List
-collisional-breakup fragment tables (`bu_fd`/`bu_tmass`, F3 SS5.5). F3's
-quoted `cal_breakfragment` needs a runtime bin-count `NRBIN` (config-
-dependent, unknown here) AND `jmin_bk` (the smallest liquid bin whose
-diameter clears the `D_0=0.01cm` breakup cutoff). Per coordinator
-authorization, the call chain was followed directly in the Fortran beyond
-what F3 quotes: `cal_Coalescence_Efficiency` and `cal_breakup_dis_LL`
-(`mod_amps_core.F90`, the fragment-distribution math itself, ~429 lines,
-not further reducible) each call additional helpers
-(`cal_sig_sf`/`cal_Hmusig`/`zbrent`/`getznorm2`), and BOTH need `%len`
-(diameter) and `%vtm` (terminal velocity) per liquid bin, which the
-Fortran computes via `ini_group_mp` -> `cal_meanmass_vec` -> `diag_pq`'s
-liquid branch -> `cal_den_aclen_vec` + `cal_terminal_vel_vec`, which in
-turn need a steady-state air/thermo object built by `make_AirGroup_2` ->
-`Make_Thermo_Var3_2`. That is 13 additional named routines across 6 files
-(mod_amps_core.F90, class_Group.F90, class_Mass_Bin.F90,
-class_AirGroup.F90, class_Thermo_Var.F90, mod_amps_utility.F90) and
-roughly 1200-1400 lines of Fortran once trimmed to only the liquid/
-spherical branches actually exercised -- well past the ~400-line transcription
-budget for this task. Per the coordinator's own scope guard ("if the
-transcription balloons past ~400 lines, STOP and report BLOCKED with the
-call-tree inventory instead"), the FILL is left BLOCKED (still
-zero-initialized, matching the Fortran's own pre-loop state
-`bu_fd=0.0_PS; bu_tmass=0.0_PS`) -- see the M1 Task 5 report's call-tree
-inventory for the full routine list, each with its file:line range, as a
-scoped follow-up task. Only the SIZE/allocation formula
-(`breakup_fragment_table_sizes`/`make_breakup_fragment_tables`, verbatim
-and exact, cross-checked against F3's own quoted 80-bin declaration) is
-provided here. `jmin_bk` is a REQUIRED argument to both functions -- the
-same "no compile-time default, caller must supply it" pattern `bin_grid.py`
-already uses for `nbin_h`.
-
-Hard guard against silently consuming the placeholder: `make_breakup_
-fragment_tables` raises `NotImplementedError` unless called with
-`allow_placeholder=True`, and its return value
-(`BreakupFragmentTables(bu_tmass, bu_fd, is_placeholder=True)`) carries
-`is_placeholder` as a second, runtime-checkable marker -- a caller has to
-defeat both the explicit opt-in argument AND ignore the returned flag to
-end up treating zero-filled arrays as real physics output.
+One exception, NOT computed inline in `load_luts()`: the Low-List
+collisional-breakup fragment tables (`bu_fd`/`bu_tmass`, F3 SS5.5). The M1
+placeholder here allocated correctly-SIZED, zero-filled arrays only (the
+real fill needed 13 additional routines across 6 files, ~1200-1400 lines,
+past that task's transcription budget -- see the M1 Task 5 report's
+call-tree inventory). M2b Task 6 completed the real port, per
+docs/superpowers/facts/m2b/breakfragment-full-chain.md ("H3"): the actual
+`cal_breakfragment` driver + Low-List math now live in
+`core/breakfragment.py`, NOT in this file -- `core.collision_kernel.
+coalescence_efficiency` and `core.liquid_diag._terminal_velocity` (both
+REUSED by the real fill) already import THIS module (`AmpsLuts`/
+`ColLutAux`), so a module-level import the other way would be a genuine
+Python circular import. `make_breakup_fragment_tables` below is kept as
+this module's public entry point (a thin function-LOCAL-import delegator
+-- see its own docstring for why the deferred import is safe) so existing
+callers don't need to know `core/breakfragment.py` exists. Only the SIZE/
+allocation formula (`breakup_fragment_table_sizes`, verbatim and exact,
+cross-checked against F3's own quoted 80-bin declaration) and the
+`BreakupFragmentTables` dataclass itself live in this file, unchanged in
+shape from M1 plus the four index scalars (`jmin_bk`/`imin_bk`/
+`imax_bk`/`jmax_bk`) M2b Task 6 adds (previously caller-supplied/absent;
+now derived by the real generator and carried on the return value).
 """
 
 from __future__ import annotations
@@ -606,75 +589,69 @@ def breakup_fragment_table_sizes(nrbin: int, jmin_bk: int) -> tuple[int, int]:
 @dataclasses.dataclass(frozen=True)
 class BreakupFragmentTables:
     """Low-List collisional-breakup fragment tables, `bu_fd`/`bu_tmass`
-    (F3 SS5.5). `is_placeholder=True` (currently the ONLY value this
-    dataclass is ever constructed with -- see `make_breakup_fragment_tables`)
-    means `bu_fd`/`bu_tmass` are correctly-SIZED but zero-filled, not real
-    physics output; check it before using the arrays numerically."""
+    (F3 SS5.5), plus the four index scalars `cal_breakfragment` derives
+    alongside them (`mod_amps_lib.F90:1949-1958`, H3 §7): `jmin_bk` (the
+    smallest liquid-bin index whose diameter clears the `D_0=0.01cm`
+    breakup cutoff), `imin_bk=jmin_bk+1`, `imax_bk=NRBIN`,
+    `jmax_bk=NRBIN-1` (all 1-based, matching the Fortran's own convention
+    -- `bu_tmass`/`bu_fd`'s OWN indexing, via `breakup_fragment_table_sizes`'
+    `i1d_pair`/`kk` formulas, is likewise 1-based-derived, 0-based-stored).
+
+    `is_placeholder`: `False` for `make_breakup_fragment_tables`'s real
+    output (M2b Task 6, `core/breakfragment.py`) -- kept as a field (not
+    removed) so any code that still checks it (a carry-forward from the M1
+    placeholder era) continues to see an explicit, correct signal rather
+    than an attribute error.
+    """
 
     bu_tmass: np.ndarray
     bu_fd: np.ndarray
     is_placeholder: bool
+    jmin_bk: int
+    imin_bk: int
+    imax_bk: int
+    jmax_bk: int
 
 
-def make_breakup_fragment_tables(
-    nrbin: int, jmin_bk: int, *, allow_placeholder: bool = False
-) -> BreakupFragmentTables:
-    """Allocate the Low-List breakup fragment tables `bu_fd`, `bu_tmass`
-    (F3 SS5.5), zero-initialized exactly as `cal_breakfragment` does before
-    its fill loop (`bu_fd=0.0_PS; bu_tmass=0.0_PS`).
+def make_breakup_fragment_tables(nrbin: int, nbin_h: int) -> BreakupFragmentTables:
+    """Compute the REAL Low-List (1982) collisional-breakup fragment
+    tables `bu_fd`/`bu_tmass` (F3 SS5.5, `cal_breakfragment`,
+    `mod_amps_lib.F90:1831-2017`) -- M2b Task 6, replacing the M1
+    zero-filled placeholder that used to live directly in this function.
 
-    BLOCKED, not merely NEEDS_CONTEXT: only the correctly-SIZED, zero-filled
-    allocation is implemented. The actual FILL (the Low-List fragment mass/
-    count physics) requires 13 additional routines across 6 files
-    (`cal_Coalescence_Efficiency`, `cal_breakup_dis_LL`, `cal_sig_sf`,
-    `cal_Hmusig`, `zbrent`, `getznorm2`, `ini_group_mp`, `cal_meanmass_vec`,
-    `diag_pq`'s liquid branch, `cal_den_aclen_vec`, `cal_terminal_vel_vec`,
-    `make_AirGroup_2`, `Make_Thermo_Var3_2`; none quoted in F3), roughly
-    1200-1400 lines even trimmed to the liquid/spherical branches
-    `cal_breakfragment`'s specific call pattern exercises -- well past this
-    task's transcription budget. Full routine-by-routine call-tree
-    inventory (every entry with its file:line range) is in the M1 Task 5
-    report's "Item 1: breakup fragment tables -- BLOCKED" section
-    (`.superpowers/sdd/m1-task-5-report.md`); the real fill is tracked as a
-    scoped follow-up task for M2 (cloudlab runs with rain collisional
-    breakup ON, `micexfg[18]`, so M2 needs the real values, not zeros).
-
-    Because a silently-zero `bu_fd`/`bu_tmass` would be numerically
-    indistinguishable from "no breakup happens" if a caller used it without
-    reading this docstring, this function refuses to run unless
-    `allow_placeholder=True` is passed explicitly, and the returned
-    dataclass carries `is_placeholder=True` as a second, runtime-checkable
-    guard against silent misuse -- both must be defeated deliberately for
-    the placeholder to reach downstream code.
+    Deferred (function-LOCAL) import, not a module-level one: the real
+    generator (`core/breakfragment.py`) needs `core.collision_kernel.
+    coalescence_efficiency` and `core.liquid_diag._terminal_velocity`
+    (both REUSED, H3 §3/§8.2), and BOTH of those modules already import
+    THIS module (`AmpsLuts`/`ColLutAux`) at their own module level -- a
+    module-level import of `breakfragment` here would therefore be a
+    genuine Python circular import (`lookup_tables -> breakfragment ->
+    collision_kernel -> lookup_tables`). Deferring the import to inside
+    this function body is the standard, safe way to break that cycle:
+    Python only evaluates module-level statements at import time, not
+    function bodies, so by the time this function is actually CALLED,
+    `lookup_tables` (this module) is already fully present and initialized
+    in `sys.modules` -- `breakfragment.py`'s own (module-level) import of
+    `lookup_tables` then resolves against that already-complete module
+    object, not a partially-initialized one, regardless of which module
+    was imported first by the caller.
 
     Args:
-        nrbin: total liquid bin count (cloudlab: 40).
-        jmin_bk: smallest liquid-bin index whose diameter clears the
-            `D_0=0.01cm` breakup cutoff (see `breakup_fragment_table_sizes`
-            docstring -- no F3-quoted formula, caller must supply it).
-        allow_placeholder: must be `True` to acknowledge the tables are
-            zero-filled, not physically meaningful; raises
-            `NotImplementedError` otherwise.
+        nrbin: total liquid bin count (cloudlab: `AmpsConfig.cloudlab().
+            num_h_bins[0]` == 40).
+        nbin_h: haze-split bin count (cloudlab: `AmpsConfig.cloudlab().
+            nbin_h` == 20) -- see `core.bin_grid.make_bin_grid`'s own
+            docstring for why this has no compile-time default.
 
     Returns:
-        `BreakupFragmentTables(bu_tmass, bu_fd, is_placeholder=True)`:
-        `bu_fd` has shape `(2, kk_max)`, `bu_tmass` has shape
-        `(i1d_pair_max,)`, per `breakup_fragment_table_sizes`.
-
-    Raises:
-        NotImplementedError: if `allow_placeholder` is not `True`.
+        `BreakupFragmentTables(bu_tmass, bu_fd, is_placeholder=False,
+        jmin_bk, imin_bk, imax_bk, jmax_bk)`: `bu_fd` has shape
+        `(2, kk_max)`, `bu_tmass` has shape `(i1d_pair_max,)`, per
+        `breakup_fragment_table_sizes(nrbin, jmin_bk)` (`jmin_bk` itself
+        now DERIVED, not caller-supplied -- see `core/breakfragment.py`).
     """
-    if not allow_placeholder:
-        raise NotImplementedError(
-            "make_breakup_fragment_tables() only allocates zero-filled placeholder "
-            "bu_fd/bu_tmass -- the real Low-List fragment-mass/-count fill is BLOCKED "
-            "(13 routines across 6 files, ~1200-1400 lines, not quoted in F3; see the "
-            "call-tree inventory in .superpowers/sdd/m1-task-5-report.md, 'Item 1: "
-            "breakup fragment tables -- BLOCKED'), tracked as a scoped follow-up task "
-            "for M2. Pass allow_placeholder=True to acknowledge this and receive the "
-            "zero-filled tables anyway (e.g. for shape-only testing)."
-        )
-    i1d_pair_max, kk_max = breakup_fragment_table_sizes(nrbin, jmin_bk)
-    bu_fd = np.zeros((2, kk_max), dtype=np.float64)
-    bu_tmass = np.zeros(i1d_pair_max, dtype=np.float64)
-    return BreakupFragmentTables(bu_tmass=bu_tmass, bu_fd=bu_fd, is_placeholder=True)
+    from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import (  # noqa: PLC0415
+        breakfragment,
+    )
+
+    return breakfragment.make_breakup_fragment_tables(nrbin, nbin_h)

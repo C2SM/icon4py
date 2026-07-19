@@ -209,44 +209,27 @@ class TestIgp:
 # Breakup fragment table sizing (F3 SS5.5 formula), cross-checked against
 # F3 SS4's quoted class_Cloud_Micro.F90 declaration for 80 bins:
 # bu_fd(2,62400), bu_tmass(780).
+#
+# The REAL `make_breakup_fragment_tables` generator (M2b Task 6) is tested
+# in test_breakfragment.py, alongside core/breakfragment.py's own unit
+# tests -- this class keeps only the pure sizing-formula tests, which are
+# unaffected by the M1-placeholder -> M2b-real-generator swap (the
+# formula/signature of `breakup_fragment_table_sizes` itself didn't change).
 # ---------------------------------------------------------------------------
 
 
-class TestBreakupFragmentTables:
+class TestBreakupFragmentTableSizes:
     def test_80_bin_sizes_match_f3_declaration(self):
         i1d_pair_max, kk_max = lookup_tables.breakup_fragment_table_sizes(nrbin=80, jmin_bk=41)
         assert i1d_pair_max == 780
         assert kk_max == 62400
 
-    def test_make_breakup_fragment_tables_refuses_without_allow_placeholder(self):
-        # Hard guard: the fill is BLOCKED (zero-filled only, see module
-        # docstring and .superpowers/sdd/m1-task-5-report.md's call-tree
-        # inventory) -- calling without explicit acknowledgement must not
-        # silently hand back physically-meaningless zeros.
-        with pytest.raises(NotImplementedError):
-            lookup_tables.make_breakup_fragment_tables(nrbin=80, jmin_bk=41)
-
     @pytest.mark.parametrize(
-        "nrbin,jmin_bk",
-        [(80, 41), (40, 20), (40, 1), (10, 1)],
+        "nrbin,jmin_bk,expected",
+        [(80, 41, (780, 62400)), (40, 11, (435, 17400)), (40, 1, (780, 31200)), (10, 1, (45, 450))],
     )
-    def test_make_breakup_fragment_tables_shapes(self, nrbin, jmin_bk):
-        i1d_pair_max, kk_max = lookup_tables.breakup_fragment_table_sizes(nrbin, jmin_bk)
-        tables = lookup_tables.make_breakup_fragment_tables(nrbin, jmin_bk, allow_placeholder=True)
-        assert tables.bu_fd.shape == (2, kk_max)
-        assert tables.bu_tmass.shape == (i1d_pair_max,)
-        assert tables.is_placeholder is True
-
-    def test_make_breakup_fragment_tables_zero_filled(self):
-        # cal_breakfragment's pre-loop state (F3 SS5.5): bu_fd=0.0_PS;
-        # bu_tmass=0.0_PS. This module deliberately does not fill them
-        # further (BLOCKED, see lookup_tables.py module docstring).
-        tables = lookup_tables.make_breakup_fragment_tables(
-            nrbin=80, jmin_bk=41, allow_placeholder=True
-        )
-        np.testing.assert_array_equal(tables.bu_fd, 0.0)
-        np.testing.assert_array_equal(tables.bu_tmass, 0.0)
-        assert tables.is_placeholder is True
+    def test_sizes_formula(self, nrbin, jmin_bk, expected):
+        assert lookup_tables.breakup_fragment_table_sizes(nrbin, jmin_bk) == expected
 
 
 # ---------------------------------------------------------------------------

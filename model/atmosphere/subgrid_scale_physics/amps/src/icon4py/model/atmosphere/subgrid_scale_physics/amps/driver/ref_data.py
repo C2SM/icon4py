@@ -128,6 +128,7 @@ import numpy as np
 
 MAGIC_MICRO = 1095586131
 MAGIC_SED = 1095586132
+MAGIC_SETUP = 1095586133
 
 # ---------------------------------------------------------------------------
 # Record field layout (v1) -- keep in sync with scale_amps's
@@ -633,3 +634,80 @@ def _load_reference_npz(npz_path: Path) -> RefDataset:
             dataset.sed.append(_sed_record_from_fields(rank, fields))
 
     return dataset
+
+
+# ---------------------------------------------------------------------------
+# SetupRecord: one-shot `AMPS_DUMP_setup` dump (magic `MAGIC_SETUP`) --
+# the Low-List collisional-breakup fragment tables (`bu_fd`/`bu_tmass`) +
+# their four index scalars + the liquid bin boundaries, computed ONCE at
+# AMPS setup (M2b Task 6 validation instrumentation, NOT part of the
+# per-column micro/sed record stream above: one record, one dedicated file
+# `amps_dump_setup.bin`, rank 0 only -- see `scale_atmos_phy_mp_amps.F90`'s
+# own `AMPS_DUMP_setup` subroutine docstring for the write side).
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class SetupRecord:
+    """One `AMPS_DUMP_setup` dump record: `cal_breakfragment`'s output
+    for one liquid bin-grid/air-state configuration (cloudlab: `nbr=40`).
+    `bu_tmass` has shape `(i1d_pair_max,)`, `bu_fd` has shape `(2,
+    kk_max)`, `binbr` has shape `(nbr+1,)` -- ALL as the Fortran
+    ALLOCATED them (a fixed, possibly-oversized capacity per
+    `mod_amps_lib.F90`'s own `nbr==40`/`nbr==80` branch, NOT tightly
+    sized to `i1d_pair_max`/`kk_max` -- compare against
+    `core.lookup_tables.breakup_fragment_table_sizes(nbr, jmin_bk)`-sliced
+    prefixes, not the raw arrays' own `.shape`)."""
+
+    nbr: int
+    jmin_bk: int
+    imin_bk: int
+    imax_bk: int
+    jmax_bk: int
+    binbr: np.ndarray
+    bu_tmass: np.ndarray
+    bu_fd: np.ndarray
+
+
+def read_setup_dump(path: str | Path) -> SetupRecord:
+    """Parse one `amps_dump_setup.bin` file (written by
+    `AMPS_DUMP_setup`) into a `SetupRecord`. Single-record file (no
+    magic-tagged stream loop, unlike `read_dump_file`); byte order is
+    auto-detected off the leading magic, same convention as
+    `_detect_byte_order`."""
+    buf = Path(path).read_bytes()
+    raw = int(np.frombuffer(buf, dtype="<i4", count=1, offset=0)[0])
+    if raw == MAGIC_SETUP:
+        bo = "<"
+    else:
+        swapped = int(np.frombuffer(buf, dtype=">i4", count=1, offset=0)[0])
+        if swapped != MAGIC_SETUP:
+            raise ValueError(
+                f"{path}: bad magic {raw} at byte 0 (expected MAGIC_SETUP={MAGIC_SETUP})"
+            )
+        bo = ">"
+
+    c = _Cursor(buf, bo)
+    magic = c.i4()
+    assert magic == MAGIC_SETUP
+    version = int(c.i4())
+    if version != 1:
+        raise ValueError(f"unsupported setup record version {version}")
+    nbr = int(c.i4())
+    jmin_bk = int(c.i4())
+    imin_bk = int(c.i4())
+    imax_bk = int(c.i4())
+    jmax_bk = int(c.i4())
+    binbr = c.rn_arr(1)
+    bu_tmass = c.rn_arr(1)
+    bu_fd = c.rn_arr(2)
+    return SetupRecord(
+        nbr=nbr,
+        jmin_bk=jmin_bk,
+        imin_bk=imin_bk,
+        imax_bk=imax_bk,
+        jmax_bk=jmax_bk,
+        binbr=binbr,
+        bu_tmass=bu_tmass,
+        bu_fd=bu_fd,
+    )
