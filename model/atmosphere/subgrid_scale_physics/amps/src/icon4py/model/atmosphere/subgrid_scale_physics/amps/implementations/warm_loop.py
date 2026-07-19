@@ -336,7 +336,14 @@ def _refresh_state(
 
 
 def _activation(
-    state: WarmLoopState, config: AmpsConfig, dt_vp: float, luts: AmpsLuts
+    state: WarmLoopState,
+    config: AmpsConfig,
+    dt_vp: float,
+    luts: AmpsLuts,
+    *,
+    allow_shed_placeholder: bool = False,
+    allow_dhf_placeholder: bool = False,
+    allow_dep_placeholder: bool = False,
 ) -> WarmLoopState:
     """CCN activation (G1 §1 vap_loop: `cal_aptact_var8_vec`, `act_type==2`,
     or `cal_aptact_var8_kc04dep`, the `else`/default branch cloudlab's own
@@ -350,6 +357,33 @@ def _activation(
     naming the missing precondition if called directly on a state that
     skipped that refresh (e.g. a bare `WarmLoopState(...)`, `diag=None` by
     default).
+
+    `allow_shed_placeholder`/`allow_dhf_placeholder`/`allow_dep_placeholder`:
+    threaded straight through to `activate_and_advance_vapor` (all default
+    `False`, this function's OWN prior behavior -- adding these three
+    keyword-only parameters is not a behavior change for any existing
+    caller). `activate_and_advance_vapor`'s own module docstring item 4
+    documents the DHF/classical-CNT-deposition ice-nucleation branches as
+    genuine missing prerequisites that raise `NotImplementedError` unless
+    the caller opts into treating them as inactive -- REAL-DATA FINDING
+    (M2a real-dump smoke test): a real cloudlab column, even from the
+    nominally ice-free `warm` spin-up run (bulk ice hydrometeor mass is
+    empty throughout, per that run's own dump), still has cold,
+    ice-supersaturated LEVELS that trip `activate_and_advance_vapor`'s
+    `ice_eligible` gate (temperature/supersaturation alone, independent of
+    whether any ice mass yet exists) -- so `run_warm_micro_tendency`,
+    called on a REAL record without these placeholders set, raises this
+    NotImplementedError on very nearly every real "warm" pre-record, not
+    just the ice-bearing ones `run_box`'s own (separate, `moistthermo_
+    mask`-driven) ice-mass guard already anticipates. `driver.box.run_box`
+    exposes these same three flags (plumbed through here) for exactly this
+    reason -- real-data callers (the replay harness, this task's own smoke
+    test) pass them `True` to get PAST this known gap and exercise the
+    warm loop's actual (activation + vapor-deposition + repair, M2a) scope;
+    doing so does NOT model ice nucleation, it forces it inactive, which is
+    the documented, correct treatment for a run where ice physics is
+    already known a priori to never matter (see module docstring's own
+    "drop the four [ICE-ONLY] calls" scope note).
 
     B1 (deferred-apply, see module docstring): `aerosol`/`thermo` are
     applied immediately (unchanged threading); the returned state's
@@ -380,7 +414,16 @@ def _activation(
             "would silently drop that pending increment."
         )
     liquid_after, aerosol, thermo = activate_and_advance_vapor(
-        state.liquid, state.aerosol, state.thermo, config, dt_vp, luts, state.diag
+        state.liquid,
+        state.aerosol,
+        state.thermo,
+        config,
+        dt_vp,
+        luts,
+        state.diag,
+        allow_shed_placeholder=allow_shed_placeholder,
+        allow_dhf_placeholder=allow_dhf_placeholder,
+        allow_dep_placeholder=allow_dep_placeholder,
     )
     # B1: defer the liquid bin increment -- state.liquid stays at its
     # PRE-activation value; the increment itself is stashed for
@@ -496,7 +539,14 @@ def _substep_dts(dt: float, config: AmpsConfig) -> _SubstepDts:
 
 
 def run_warm_micro_tendency(
-    state: WarmLoopState, config: AmpsConfig, dt: float, luts: AmpsLuts
+    state: WarmLoopState,
+    config: AmpsConfig,
+    dt: float,
+    luts: AmpsLuts,
+    *,
+    allow_shed_placeholder: bool = False,
+    allow_dhf_placeholder: bool = False,
+    allow_dep_placeholder: bool = False,
 ) -> WarmLoopState:
     """Warm subset of `cal_micro_tendency` (G1 §1): the `col_loop1` (over
     `n_step_cl` collision substeps, dt=`dt_cl`) x `vap_loop` (over
@@ -532,6 +582,12 @@ def run_warm_micro_tendency(
       3. vap-loop head (1206-1214) -- unconditional, every
          `(it_cl, it_vp)` pair, `n_step_cl*n_step_vp` times total.
       4. final post-loop refresh (1374-1381) -- unconditional, once.
+
+    `allow_shed_placeholder`/`allow_dhf_placeholder`/`allow_dep_placeholder`:
+    threaded straight through to every `_activation` call (all default
+    `False`, unchanged prior behavior) -- see `_activation`'s own docstring
+    for why a REAL dump needs these set `True` (a known, documented
+    ice-nucleation-precompute gap, unrelated to collision/M2b).
     """
     dts = _substep_dts(dt, config)
 
@@ -545,7 +601,15 @@ def run_warm_micro_tendency(
 
         for _it_vp in range(1, config.n_step_vp + 1):
             state = _refresh_state(state, config, luts)
-            state = _activation(state, config, dts.dt_vp, luts)
+            state = _activation(
+                state,
+                config,
+                dts.dt_vp,
+                luts,
+                allow_shed_placeholder=allow_shed_placeholder,
+                allow_dhf_placeholder=allow_dhf_placeholder,
+                allow_dep_placeholder=allow_dep_placeholder,
+            )
             state = _vapor_deposition_liquid(state, config, dts.dt_vp, luts)
             state = _repair(state, config, phase="vapor")
 

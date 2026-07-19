@@ -160,7 +160,7 @@ def _no_op_process_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
     so run_warm_micro_tendency can run to completion (used by tests that
     are probing the LOOP STRUCTURE, not the stubs' own raise behavior)."""
     monkeypatch.setattr(warm_loop, "_repair", lambda s, c, phase: s)
-    monkeypatch.setattr(warm_loop, "_activation", lambda s, c, dt, luts_: s)
+    monkeypatch.setattr(warm_loop, "_activation", lambda s, c, dt, luts_, **kwargs: s)
     monkeypatch.setattr(warm_loop, "_vapor_deposition_liquid", lambda s, c, dt, luts_: s)
 
 
@@ -189,7 +189,7 @@ class TestSubstepDts:
         monkeypatch.setattr(warm_loop, "_vapor_deposition_liquid", lambda s, c, dt, luts_: s)
         seen_dts = []
 
-        def _capture_activation(s, c, dt, luts_):
+        def _capture_activation(s, c, dt, luts_, **kwargs):
             seen_dts.append(dt)
             return s
 

@@ -127,13 +127,32 @@ class BoxCase:
             raise ValueError(f"n_steps must be positive; got {self.n_steps}")
 
 
-def run_box(case: BoxCase, *, luts: AmpsLuts | None = None) -> BoxResult:
+def run_box(
+    case: BoxCase,
+    *,
+    luts: AmpsLuts | None = None,
+    allow_shed_placeholder: bool = False,
+    allow_dhf_placeholder: bool = False,
+    allow_dep_placeholder: bool = False,
+) -> BoxResult:
     """Run `case.n_steps` warm-phase microphysics steps of size `case.dt`
     on `case`'s single column and return the final state -- the WARM path
     only (M2a Task 7). A case carrying ice mass raises
     `NotImplementedError` (M3 scope, the ice/mixed-phase call subset
     `implementations/warm_loop.py` does not model -- see that module's own
     docstring).
+
+    `allow_shed_placeholder`/`allow_dhf_placeholder`/`allow_dep_placeholder`:
+    threaded straight through to every `implementations.warm_loop.
+    _activation` call (all default `False`, this function's OWN prior
+    behavior -- see `_activation`'s own docstring for the REAL-DATA finding
+    that motivated exposing these here: a real cloudlab column, even from
+    the nominally ice-free `warm` spin-up run, can still trip
+    `activate_and_advance_vapor`'s unported DHF/classical-CNT-deposition
+    ice-nucleation branches on cold, supersaturated LEVELS, raising
+    `NotImplementedError` regardless of `case`'s own ice-mass guard above).
+    A real-data caller (the replay harness, `case_from_micro_record`-driven
+    smoke tests) sets these `True` to get past that known gap.
 
     Bridging `case` (whose `thermo`/`liquid`/`ice`/`aerosol` are ALREADY
     AMPS-packed state -- `case_from_micro_record`'s own docstring: `qrpvm`/
@@ -250,7 +269,15 @@ def run_box(case: BoxCase, *, luts: AmpsLuts | None = None) -> BoxResult:
     # result.
     state = warm_loop._refresh_state(state, case.config, luts)
     for _ in range(case.n_steps):
-        state = warm_loop.run_warm_micro_tendency(state, case.config, case.dt, luts)
+        state = warm_loop.run_warm_micro_tendency(
+            state,
+            case.config,
+            case.dt,
+            luts,
+            allow_shed_placeholder=allow_shed_placeholder,
+            allow_dhf_placeholder=allow_dhf_placeholder,
+            allow_dep_placeholder=allow_dep_placeholder,
+        )
 
     return BoxResult(
         final_thermo=state.thermo,
@@ -275,14 +302,50 @@ def case_from_micro_record(
     Field mapping (`rec` -> `BoxCase`, `nmic` = the record's compressed
     column length -- see `MicroRecord`'s own docstring on `kmicvm`):
 
-    * `liquid = LiquidState(values=rec.qrpvm)`, `ice = IceState(values=rec.qipvm)`,
-      `aerosol = AerosolState(values=rec.qapvm)` -- direct copies: `qrpvm`/
-      `qipvm`/`qapvm` are already shaped `(nprops, nbins, ncat, nmic)`,
-      exactly `LiquidState`/`IceState`/`AerosolState`'s own convention
-      (`state.py`'s `_BinnedState`), PROVIDED `rec.npr/npi/npa` equal
-      `len(LiquidPPV)/len(IcePPV)/len(AerosolPPV)` -- validated here
-      (raises `ValueError` on mismatch rather than silently
-      misinterpreting the array axes).
+    * `liquid = LiquidState(values=rec.qrpvm[:len(LiquidPPV)])`, similarly
+      `ice`/`aerosol` from `rec.qipvm`/`rec.qapvm` -- a PROPERTY-AXIS SLICE
+      (a no-op when `rec.npr/npi/npa` already equal `len(LiquidPPV/IcePPV/
+      AerosolPPV)` exactly, as every synthetic test fixture in this repo
+      builds them), not always a direct copy: a REAL cluster dump instead
+      has `rec.npr/npi/npa == len(LiquidPPV/IcePPV/AerosolPPV) + 2`.
+      `scale_atmos_phy_mp_amps.F90:410/418/426` sets `npr/npi/npa =
+      num_h_moments(i) + 2  ! two terminal velocity variables`, and
+      confirms which 2: `AMPS_tv(k,i,j,ibr,m) = qrpv(npr-m+1,ibr,1,k)`
+      (line 2238, `m=1,2`) reads exactly the LAST two property-axis slots
+      as `m=1`: mass-weighted, `m=2`: con-weighted terminal velocity
+      (`class_Cloud_Micro.F90:1784-1787` comment) -- diagnostics appended
+      AFTER the true `len(...PPV)`-sized property vector, not consumed by
+      `ifc_cloud_micro`'s activation/vapor-deposition/collision physics
+      (which only ever reads Fortran indices `1..num_h_moments(i)`, i.e.
+      this port's own `LiquidPPV`/`IcePPV`/`AerosolPPV` range) and not
+      reproduced by this port's own `core.liquid_diag` terminal-velocity
+      formulas either (they compute it fresh from bin mass/number, never
+      read it as state) -- safe to drop for building a `BoxCase`.
+      Confirmed empirically: `rec.npr/npi/npa - 2 == len(LiquidPPV/IcePPV/
+      AerosolPPV)` on every inspected real `warm` record (`6-2=4`,
+      `18-2=16`, `5-2=3`). Validated as EITHER `len(...)` (fixture
+      convention) OR `len(...) + 2` (real-dump convention) -- raises
+      `ValueError`, naming both the actual and both accepted counts, on
+      anything else (a genuinely malformed record, not a fixture-vs-real
+      shape difference this function is designed to absorb).
+    * `rec.ncr/nci` must still be `1` (matches `state.py`'s liquid/ice
+      `ncat` convention -- true of every real `warm` record inspected:
+      `ncr=nci=1`, the category axis genuinely IS a singleton for these two
+      groups). `rec.nca`, by contrast, is NOT required to be `1` --
+      `scale_atmos_phy_mp_amps.F90:426-441`: `nca` is the config-selected
+      AEROSOL category count (cloudlab's `ini_aerosol_prf=3` ->
+      `nca=4`: "category 1,3,4 are CCN; category 2 is IN" -- matching
+      `AmpsConfig.cloudlab()`'s own `dtype_a`/`fix_aerosol_type` 4-tuples,
+      state.py's "ncat=1 everywhere" note was never true for aerosol in a
+      real cloudlab run). `AerosolState` (a plain `(nprops, nbins, ncat,
+      npoints)` numpy bundle, not one of `state.py`'s `to_fields()`-bound
+      DSL paths -- the ncat==1 restriction lives THERE, not on the
+      dataclass itself) carries the real `rec.nca`-sized category axis
+      through unchanged; `core.activation.activate_and_advance_vapor`
+      already consumes `aerosol.ncat` generically (`ncat = aerosol.ncat`,
+      `dust_cat_idx = 1 if ncat >= 2 else None` -- the exact category-2-is-
+      dust exclusion the Fortran comment above describes), so no further
+      change was needed there to accept a real 4-category aerosol state.
     * `thermo.tv = rec.tvm`, `.qvv = rec.qvvm`, `.wbv = rec.wbvm` -- direct
       copies (all dumped, `Z_LOOP_01` lines 1643/1653/1664).
     * `thermo.ptotv = rec.ptotvm * 10.0`, `.moist_denv = rec.moist_denvm *
@@ -313,54 +376,81 @@ def case_from_micro_record(
       matching what the record pair itself spans).
 
     Raises:
-        ValueError: if `rec.phase != ref_data.MicroRecord.PHASE_PRE`, if
-            `rec.npr/npi/npa` don't match the PPV enum lengths, or if
-            `rec.ncr/nci/nca` != 1 (state.py's `ncat` convention -- every
-            category loop is "assume(d) to be 1" per F4, see state.py's
-            module docstring).
+        ValueError: if `rec.phase != ref_data.MicroRecord.PHASE_PRE`; if
+            `rec.npr/npi/npa` aren't EITHER `len(LiquidPPV/IcePPV/
+            AerosolPPV)` (fixture convention) OR that same count `+ 2`
+            (the real-dump "+2 terminal-velocity slots" convention above --
+            a genuinely malformed record, not a fixture-vs-real difference,
+            fails this); or if `rec.ncr/nci` != 1 (state.py's liquid/ice
+            `ncat` convention -- still exactly 1 in every real record
+            inspected; `rec.nca` is deliberately NOT checked against 1, see
+            above).
     """
     if rec.phase != ref_data.MicroRecord.PHASE_PRE:
         raise ValueError(
             f"case_from_micro_record expects a phase={ref_data.MicroRecord.PHASE_PRE} "
             f"('pre') record; got phase={rec.phase}"
         )
-    if rec.npr != len(LiquidState.PROPS):
+    # Two accepted npr/npi/npa conventions, per the docstring section above:
+    # every synthetic fixture in this repo (test_ref_data.py's
+    # `_make_pre_micro_record`, this module's own tests) builds `rec.npr ==
+    # len(LiquidPPV)` exactly; a REAL cluster dump instead has `rec.npr ==
+    # len(LiquidPPV) + 2` (2 trailing terminal-velocity diagnostic slots,
+    # traced to scale_atmos_phy_mp_amps.F90:410/418/426 + the AMPS_tv
+    # readback at line 2238). Both are accepted so this function keeps
+    # working, unchanged, against every existing fixture while ALSO
+    # accepting real dumps; anything else (e.g. a corrupted record) still
+    # raises.
+    n_liquid_props = len(LiquidState.PROPS)
+    if rec.npr not in (n_liquid_props, n_liquid_props + 2):
         raise ValueError(
-            f"rec.npr={rec.npr} != len(LiquidPPV)={len(LiquidState.PROPS)}; "
-            "qrpvm's leading axis wouldn't match LiquidState.PROPS order"
+            f"rec.npr={rec.npr} not in {{len(LiquidPPV)={n_liquid_props}, "
+            f"len(LiquidPPV)+2={n_liquid_props + 2}}} (the '+2' real-dump terminal-velocity-"
+            "slots convention, see this function's own docstring); qrpvm's leading axis "
+            "wouldn't match LiquidState.PROPS order"
         )
     if rec.ncr != 1:
         raise ValueError(
             f"rec.ncr={rec.ncr} != 1; qrpvm's category axis must be 1 (state.py's ncat "
-            "convention -- every category loop is 'assume(d) to be 1' per F4)"
+            "convention -- true for liquid in every real record inspected)"
         )
-    if rec.npi != len(IceState.PROPS):
+    n_ice_props = len(IceState.PROPS)
+    if rec.npi not in (n_ice_props, n_ice_props + 2):
         raise ValueError(
-            f"rec.npi={rec.npi} != len(IcePPV)={len(IceState.PROPS)}; "
-            "qipvm's leading axis wouldn't match IceState.PROPS order"
+            f"rec.npi={rec.npi} not in {{len(IcePPV)={n_ice_props}, "
+            f"len(IcePPV)+2={n_ice_props + 2}}} (the '+2' real-dump terminal-velocity-slots "
+            "convention, see this function's own docstring); qipvm's leading axis wouldn't "
+            "match IceState.PROPS order"
         )
     if rec.nci != 1:
         raise ValueError(
             f"rec.nci={rec.nci} != 1; qipvm's category axis must be 1 (state.py's ncat "
-            "convention -- every category loop is 'assume(d) to be 1' per F4)"
+            "convention -- true for ice in every real record inspected)"
         )
-    if rec.npa != len(AerosolState.PROPS):
+    n_aero_props = len(AerosolState.PROPS)
+    if rec.npa not in (n_aero_props, n_aero_props + 2):
         raise ValueError(
-            f"rec.npa={rec.npa} != len(AerosolPPV)={len(AerosolState.PROPS)}; "
-            "qapvm's leading axis wouldn't match AerosolState.PROPS order"
+            f"rec.npa={rec.npa} not in {{len(AerosolPPV)={n_aero_props}, "
+            f"len(AerosolPPV)+2={n_aero_props + 2}}} (the '+2' real-dump terminal-velocity-"
+            "slots convention, see this function's own docstring); qapvm's leading axis "
+            "wouldn't match AerosolState.PROPS order"
         )
-    if rec.nca != 1:
-        raise ValueError(
-            f"rec.nca={rec.nca} != 1; qapvm's category axis must be 1 (state.py's ncat "
-            "convention -- every category loop is 'assume(d) to be 1' per F4)"
-        )
+    # rec.nca is intentionally NOT validated against 1 -- a real cloudlab
+    # aerosol state genuinely carries 4 categories (see docstring above);
+    # `nba` (aerosol bins) is likewise unchecked, exactly as before this
+    # fix (AerosolState's shape is whatever rec.qapvm's own axes say).
 
     if config is None:
         config = AmpsConfig.cloudlab()
 
-    liquid = LiquidState(values=rec.qrpvm)
-    ice = IceState(values=rec.qipvm)
-    aerosol = AerosolState(values=rec.qapvm)
+    # Property-axis slice: keep the first `len(...PPV)` entries, dropping
+    # the trailing 2 terminal-velocity diagnostic slots this function's own
+    # docstring documents (NOT part of the property vector `ifc_cloud_
+    # micro`'s physics reads, and not reproduced from state by this port's
+    # `core.liquid_diag` terminal-velocity formulas either -- see above).
+    liquid = LiquidState(values=rec.qrpvm[:n_liquid_props])
+    ice = IceState(values=rec.qipvm[:n_ice_props])
+    aerosol = AerosolState(values=rec.qapvm[:n_aero_props])
 
     # `rec.ptotvm`/`rec.moist_denvm` are the RAW dumped SI values (`Z_LOOP_01`
     # lines 1641/1651: `ptotv(k) = PRES(k,i,j)` Pa, `moist_denv(k) =
