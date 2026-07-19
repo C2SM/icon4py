@@ -465,22 +465,34 @@ class TestCollectorPreservation:
 
 
 # ---------------------------------------------------------------------------
-# TestMultiCollectorConservation -- regression test for a real bug found
-# during hardening: with only 2 active bins (one collector, one collectee)
-# the per-pair `N_col<=con_j` clamp (G4 SS1.2) is automatically sufficient,
-# but with 3+ active bins MULTIPLE collectors can independently claim UP TO
-# `con_j` each from the SAME collectee `j` -- the per-pair clamp does not
-# bound the SUM. Without `coalesce_rain`'s own single-pass `iter_loop1`
-# equivalent (see its inline comment at the rescale site), this
-# manufactures mass in the wrong destination bins (verified during
-# hardening: a 5-bin adversarial fixture spanning 5 orders of magnitude in
-# con/mass showed a 5e-3 relative mass error before the fix, ~5e-7 after
-# -- `_needgive_repair` alone cannot catch this since it only fires on
-# NEGATIVE bins, and this bug does not make the SOURCE bin negative, it
-# creates excess mass in DESTINATION bins). This fixture (3 realistic rain
-# bins, moderate ~1-2 order-of-magnitude spread) is the REPRESENTATIVE
-# case this task's own dispatch cares about -- conservation here is at
-# machine precision (~1e-16), not just "close".
+# TestMultiCollectorConservation -- regression tests for TWO real,
+# DISTINCT mass-conservation bugs found during hardening (both in
+# `coalesce_rain`'s own iter_loop1 fixed-point section, see its inline
+# comment there for the full derivation):
+#
+# (1) With only 2 active bins (one collector, one collectee) the per-pair
+#     `N_col<=con_j` clamp (G4 SS1.2) is automatically sufficient, but
+#     with 3+ active bins MULTIPLE collectors can independently claim UP
+#     TO `con_j` each from the SAME collectee -- the per-pair clamp does
+#     not bound the SUM. `_needgive_repair` cannot catch this (it only
+#     fires on NEGATIVE bins; this bug manufactures excess mass in
+#     DESTINATION bins instead). Fixed by a proportional rescale.
+# (2) With 4+ active bins, a collector that itself ends up fully claimed
+#     by an even bigger collector is excluded from ever running its own
+#     collector_loop1 body -- but its ORIGINAL claim on smaller
+#     collectees was already baked into their own surviving-population
+#     accounting, a "phantom" claim that never actually executes,
+#     silently vanishing mass. Fixed by iterating the exclusion
+#     (used_marker) to a fixed point, releasing an excluded collector's
+#     own outgoing claims each round.
+#
+# `test_three_active_bins...` below exercises ONLY (1) (3 active bins,
+# moderate 1-2 order-of-magnitude spread -- the representative case this
+# task's own dispatch cares about); `test_five_active_bins...` exercises
+# BOTH (1) AND (2) (needs >=4 active bins with >=2 collectors
+# over-claiming a shared, smaller bin to trigger (2) at all -- verified
+# during hardening: this exact 5-bin configuration leaked 14.8% of total
+# mass before the (2) fix, machine precision after).
 # ---------------------------------------------------------------------------
 
 
@@ -510,8 +522,66 @@ class TestMultiCollectorConservation:
             aero1 = _total_aero_total(out)
             n1 = _total_number(out)
 
-            assert m1 == pytest.approx(m0, rel=1e-9, abs=1e-30), f"dt={dt}: mass not conserved"
-            assert aero1 == pytest.approx(aero0, rel=1e-9, abs=1e-30), (
+            assert m1 == pytest.approx(m0, rel=1e-12, abs=1e-30), f"dt={dt}: mass not conserved"
+            assert aero1 == pytest.approx(aero0, rel=1e-12, abs=1e-30), (
+                f"dt={dt}: aerosol not conserved"
+            )
+            assert n1 <= n0 + 1.0e-6, f"dt={dt}: number must not increase"
+            assert (out.values[LiquidPPV.rcon_q.py_idx, :, 0, 0] >= -1.0e-9).all(), (
+                f"dt={dt}: negative con"
+            )
+            assert (out.values[LiquidPPV.rmt_q.py_idx, :, 0, 0] >= -1.0e-9).all(), (
+                f"dt={dt}: negative mass"
+            )
+            assert np.all(np.isfinite(out.values)), f"dt={dt}: non-finite value produced"
+
+    def test_five_active_bins_conserve_mass_and_aerosol_exactly(self, real_luts):
+        """The exact class of configuration that triggers bug (2) above
+        (per this module's own docstring section): 5 active bins
+        (16,18,20,22,24), con 10-400 cm^-3 (descending with bin index,
+        biggest-bin-smallest-count -- realistic for a rain spectrum),
+        vtm increasing with bin size so larger bins are always the
+        collectors. `mean_mass` per bin taken from the REAL bin-grid
+        midpoint (`BINB`) rather than hand-picked, so the fixture
+        represents genuine bin-grid masses, not synthetic round numbers.
+        Before the (2) fix this leaked 14.8% of total mass at dt=2s;
+        after, mass and aerosol mass conserve to 1e-12 (measured: machine
+        precision, ~1e-16) at every dt tried, including the saturating
+        regime (dt=8, where results stop changing with further dt
+        increases -- the `TestConstantKernelClosedForm` saturation
+        pattern)."""
+
+        def mean_mass_of(bin_index: int) -> float:
+            return 0.5 * (BINB[bin_index] + BINB[bin_index + 1])
+
+        bin_indices = (16, 18, 20, 22, 24)
+        cons = {16: 400.0, 18: 200.0, 20: 80.0, 22: 30.0, 24: 10.0}
+        bins = {}
+        diag_bins = {}
+        for idx, b in enumerate(bin_indices):
+            con_b = cons[b]
+            m = mean_mass_of(b)
+            bins[b] = (m * con_b, con_b, m * con_b * 1.0e-2, m * con_b * 0.4e-2)
+            length = (6.0 * m / np.pi) ** (1.0 / 3.0)  # cm, density~1 g/cm^3 sphere
+            vtm = 50.0 + 100.0 * idx  # cm/s, strictly increasing with bin size
+            diag_bins[b] = (m, length, vtm)
+        liquid = _liquid_state(bins)
+        diag = _diag_for(diag_bins)
+        thermo = _thermo_state()
+        config = _config()
+
+        m0 = _total_mass(liquid)
+        aero0 = _total_aero_total(liquid)
+        n0 = _total_number(liquid)
+
+        for dt in (0.5, 2.0, 8.0):
+            out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=dt, luts=real_luts)
+            m1 = _total_mass(out)
+            aero1 = _total_aero_total(out)
+            n1 = _total_number(out)
+
+            assert m1 == pytest.approx(m0, rel=1e-12, abs=1e-30), f"dt={dt}: mass not conserved"
+            assert aero1 == pytest.approx(aero0, rel=1e-12, abs=1e-30), (
                 f"dt={dt}: aerosol not conserved"
             )
             assert n1 <= n0 + 1.0e-6, f"dt={dt}: number must not increase"

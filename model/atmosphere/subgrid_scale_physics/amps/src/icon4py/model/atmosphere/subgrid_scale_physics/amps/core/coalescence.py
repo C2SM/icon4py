@@ -203,18 +203,55 @@ PER-VOLUME basis (H1 SS5) and SIMPLIFICATIONS RELATIVE TO THE FULL FORTRAN
   (`con`/`mass=q*den`), exactly as before this revision -- no `den`
   factor appears anywhere in this module.
 * **`iter_loop1` (G4 SS1.4, the O(n^2)-phase over-depletion
-  PRE-normalization) IS ported, as an EXACT single-pass proportional
-  rescale rather than the Fortran's own iterative loop** -- see
-  `coalesce_rain`'s own inline comment at the rescale site for the full
-  derivation: `mean_mass(j)=mass_tot(j)/con(j)` exactly, so the
-  Fortran's own number-limit and mass-limit halves are mathematically
-  IDENTICAL conditions in this formulation, closing in a single
-  simultaneous pass (discovered necessary during hardening -- an
-  earlier draft skipped this, relying on `_needgive_repair` alone as a
-  post-hoc safety net; that is insufficient in general, since an
-  UN-rescaled over-claim manufactures excess mass in DESTINATION bins
-  rather than merely leaving the SOURCE bin negative, which
-  `_needgive_repair`'s own negative-mass trigger cannot see or correct).
+  PRE-normalization) IS ported, PLUS an outer fixed-point iteration this
+  port's own hardening found necessary for mass conservation with 4+
+  active bins.** Full derivation at `coalesce_rain`'s own inline comment
+  at the fixed-point loop; summary of the two distinct issues it closes:
+
+  (1) The per-pair `N_col<=con_j` clamp bounds each INDIVIDUAL
+      collector's own claim on a collectee, but not the SUM across every
+      collector targeting the SAME collectee -- ported as a proportional
+      rescale, provably an EXACT single-pass equivalent of the Fortran's
+      own iterative `do ii=1,iter` alternation IN THIS FORMULATION
+      (`mean_mass(j)=mass_tot(j)/con(j)` exactly, so the number-limit and
+      mass-limit halves, `:1713-1799`/`:1801-1884`, are mathematically
+      IDENTICAL conditions here -- unlike the general ice/mixed-token
+      case the Fortran's own alternation is built for).
+  (2) **A collector that itself ends up fully claimed by an even bigger
+      collector (`used_marker=1`, excluded from ever running its own
+      `collector_loop1` body) still has its ORIGINAL, un-diminished claim
+      on smaller collectees baked into their `left_N`/`left_M` -- a
+      "phantom" claim that never actually executes** (the excluded
+      collector never scatters anything), silently vanishing mass with
+      no negative bin for `_needgive_repair` to catch. Discovered during
+      hardening: a 5-active-bin fixture (con 10-400 cm^-3, dt=2s)
+      leaked 14.8% of total mass; a realistic-magnitude 3-bin fixture
+      leaked nothing (needs >=4 active bins with >=2 collectors
+      over-claiming a shared, smaller bin to trigger). Fixed by
+      ITERATING: zero an excluded collector's own outgoing claims, redo
+      (1), re-determine `used_marker`, repeat until it stops changing
+      (converges in <= `nbins` rounds; the 5-bin repro converges in 2).
+      Post-fix, that same 5-bin fixture conserves mass/aerosol mass to
+      machine precision (~1e-16), `TestMultiCollectorConservation`.
+
+  **Fidelity note on (2), stated plainly**: literal `ibreak=0`
+  Fortran does NOT release an excluded collector's own outgoing claims
+  -- that release exists in the source but is gated behind
+  `if(ibreak==1)` (`mod_amps_core.F90:1748-1786`/`:1836-1874`), which
+  never fires for rain-rain (`ibreak=0` throughout this module's scope).
+  This port applies the SAME release UNCONDITIONALLY (not gated by
+  `ibreak`) as a deliberate, physically-motivated correction: a fully-
+  depleted collector cannot ALSO be independently collecting elsewhere,
+  regardless of whether collisional breakup accounting happens to be
+  active. Read as literally as possible, the real Fortran's own
+  `ibreak=0` path may therefore leak mass in this same class of
+  configuration -- this is flagged as an open question for per-call
+  dump validation (Task 7, real dumps now available) to confirm one way
+  or the other; this port prioritizes GUARANTEED conservation (the
+  task's own explicit, paramount bar) over bit-for-bit fidelity to a
+  control-flow gap whose own conservation properties for `ibreak=0` are,
+  as far as this task's own re-reading of `mod_amps_core.F90` can tell,
+  genuinely unresolved without running the real code.
   `_needgive_repair` (`cal_needgive`, G4 SS6, KEPT per the reviewer's
   explicit instruction) remains as a residual safety net for any OTHER
   source of negative mass (e.g. floating-point edge cases in the PDF
@@ -793,47 +830,76 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     n_col = np.minimum(n_col, con_j_pair)
     n_col = np.where(icond1_active, n_col, 0.0)
 
-    # --- iter_loop1 (G4 SS1.4, `mod_amps_core.F90:1713-1890`): the
-    # PER-PAIR `N_col<=con_j` clamp above bounds each INDIVIDUAL
-    # collector's own claim, but NOT the SUM across every collector `i`
-    # targeting the SAME collectee `j` -- with >2 active bins, MULTIPLE
-    # collectors independently claiming up to `con_j` each can (and does,
-    # caught by TestManyActiveBins during hardening) manufacture more
-    # growth mass downstream than bin `j` actually has, a real mass
-    # CREATION bug, not just a bin going negative (`_needgive_repair`
-    # only fixes the latter). Ported here as an EXACT single-pass
-    # proportional rescale, not the Fortran's own iterative loop --
-    # provably the SAME fixed point in this formulation: `mean_mass(j)
-    # =mass_tot(j)/con(j)` exactly (`core/liquid_diag.py`'s own
-    # definition), so `used_M_2(j)=used_N_2(j)*mean_mass(j)>=mass_tot(j)`
-    # iff `used_N_2(j)>=con(j)` -- the Fortran's OWN number-limit and
-    # mass-limit halves (`:1713-1799`/`:1801-1884`) are mathematically
-    # IDENTICAL conditions here (both close in a single pass, no
-    # cross-iteration needed, unlike the general ice/mixed-token case
-    # where mean_mass need not be so uniformly defined). Rescaling
-    # `N_col(i,j,:)` for every collector `i` by `con_j/used_N_2(j)`
-    # (`mod_amps_core.F90:1748`: `N_col(j,i,n)=N_col(j,i,n)*
-    # min(1,mod_ratio(n))`) drives `used_N_2(j)` to EXACTLY `con(j)`
-    # (not merely bounded), so a second pass would be a no-op.
-    used_n_2_raw = (n_col * e_coal).sum(axis=0)  # (nbins_j, npoints), summed over collector i
-    over_claimed = used_n_2_raw > con
-    rescale = np.where(over_claimed, _safe_div(con, used_n_2_raw), 1.0)
-    n_col = n_col * rescale[None, :, :]
-
-    used_n_2_initial = (n_col * e_coal).sum(axis=0)
-    used_m_2_initial = used_n_2_initial * mean_mass  # mean_mass(j) doesn't depend on i, factor out
-
-    left_n = np.maximum(con - used_n_2_initial, 0.0)
-    left_m = np.maximum(mass_tot - used_m_2_initial, 0.0)
-
+    # --- iter_loop1 (G4 SS1.4, `mod_amps_core.F90:1713-1890`) PLUS this
+    # module's own hardening-driven fixed-point extension -- see module
+    # docstring's "iter_loop1 fixed point" section for the full
+    # derivation and the two DISTINCT bugs this closes. Summary:
+    #
+    # (1) The per-pair `N_col<=con_j` clamp above bounds each INDIVIDUAL
+    #     collector's own claim, but NOT the SUM across every collector
+    #     `i` targeting the SAME collectee `j` -- with >=3 active bins,
+    #     MULTIPLE collectors independently claiming up to `con_j` each
+    #     manufactures more growth mass downstream than bin `j` actually
+    #     has (a mass CREATION bug -- `_needgive_repair` cannot catch
+    #     this, it only fires on NEGATIVE bins). Fixed by a proportional
+    #     rescale of every collector's claim on an over-subscribed `j`,
+    #     driving `used_N_2(j)` to EXACTLY `con(j)`.
+    # (2) A collector `i` that ITSELF ends up fully claimed by an even
+    #     bigger collector (`used_marker(i)=1`, excluded from ever
+    #     running its own `collector_loop1` body, `mod_amps_core.F90:
+    #     1955-1966`) still has its ORIGINAL, un-diminished claim on
+    #     smaller collectees baked into THEIR `left_N`/`left_M` -- a
+    #     "phantom" claim that never actually executes (since `i` never
+    #     runs to scatter anything into any destination bin), silently
+    #     vanishing mass with no negative bin for `_needgive_repair` to
+    #     catch either. Fixed by ITERATING to a fixed point: zero an
+    #     excluded collector's own OUTGOING claims, re-run fix (1), and
+    #     re-determine `used_marker`; repeat until `used_marker` stops
+    #     changing.
+    #
+    # `mean_mass(j)=mass_tot(j)/con(j)` exactly (`core/liquid_diag.py`'s
+    # own definition), so `used_M_2(j)=used_N_2(j)*mean_mass(j)
+    # >=mass_tot(j)` iff `used_N_2(j)>=con(j)` -- the Fortran's OWN
+    # number-limit and mass-limit halves (`:1713-1799`/`:1801-1884`) are
+    # mathematically IDENTICAL conditions here, so EACH round of fix (1)
+    # is a single pass, not the Fortran's own `do ii=1,iter` alternation
+    # (needed in the general ice/mixed-token case where mean_mass need
+    # not be so uniformly defined). The OUTER fixed-point loop (over (2))
+    # converges in at most `nbins` rounds (each round either marks >=1
+    # NEW bin `used_marker` or the state stops changing and the loop
+    # exits) -- `TestMultiCollectorConservation`'s own 5-bin fixture
+    # converges in 2 rounds.
     ratio_aero_tot = _safe_div(mass_aero_tot, mass_tot)  # (nbins, npoints), dimensionless FRACTION
     ratio_aero_sol = _safe_div(mass_aero_sol, mass_tot)
 
-    # `collector_loop1`'s OWN, stricter icond1 (`mod_amps_core.F90:
-    # 1955-1966`): adds the mean_mass floor, plus (for rain-rain,
-    # pro_type=2, see module docstring) `used_marker/=1`.
+    # `collector_loop1`'s OWN, stricter icond1 base (`mod_amps_core.F90:
+    # 1955-1966`): adds the mean_mass floor -- the `used_marker/=1` half
+    # (for rain-rain, pro_type=2, see module docstring) is the fixed
+    # point this loop iterates on.
     active_collector_base = active & (mean_mass > _MEAN_MASS_FLOOR)
-    used_marker = active_collector_base & ((left_n <= 1.0e-30) | (left_m <= 1.0e-30))
+
+    used_marker = np.zeros((nbins, npoints), dtype=bool)
+    left_n = con.copy()
+    left_m = mass_tot.copy()
+    for _round in range(nbins):
+        n_col = np.where(
+            used_marker[:, None, :], 0.0, n_col
+        )  # release excluded i's outgoing claims
+        used_n_2 = (n_col * e_coal).sum(axis=0)  # (nbins_j, npoints), summed over collector i
+        over_claimed = used_n_2 > con
+        rescale = np.where(over_claimed, _safe_div(con, used_n_2), 1.0)
+        n_col = n_col * rescale[None, :, :]
+
+        used_n_2 = (n_col * e_coal).sum(axis=0)
+        used_m_2 = used_n_2 * mean_mass  # mean_mass(j) doesn't depend on i, factor out
+        left_n = np.maximum(con - used_n_2, 0.0)
+        left_m = np.maximum(mass_tot - used_m_2, 0.0)
+
+        new_used_marker = active_collector_base & ((left_n <= 1.0e-30) | (left_m <= 1.0e-30))
+        converged = np.array_equal(new_used_marker, used_marker)
+        used_marker = new_used_marker
+        if converged:
+            break
 
     used_m_2_total = np.zeros((nbins, npoints))
     new_n_1 = np.zeros((nbins, npoints))
