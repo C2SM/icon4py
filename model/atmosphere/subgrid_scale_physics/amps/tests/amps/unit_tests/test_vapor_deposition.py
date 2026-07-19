@@ -158,6 +158,7 @@ def _zero_diag(nbins: int, npoints: int = 1) -> LiquidDiag:
         ventilation_fkn=np.ones((nbins, npoints)),
         vapdep_coef1=z.copy(),
         vapdep_coef2=z.copy(),
+        nre=z.copy(),
     )
 
 

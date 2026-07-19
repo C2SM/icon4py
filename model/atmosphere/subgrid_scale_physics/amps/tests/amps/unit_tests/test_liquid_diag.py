@@ -158,6 +158,7 @@ def _golden_bin(
             "ventilation_fkn": 1.0,
             "vapdep_coef1": 0.0,
             "vapdep_coef2": 0.0,
+            "nre": 0.0,
         }
 
     den_w = float(AmpsConst.den_w)
@@ -303,6 +304,7 @@ def _golden_bin(
         "ventilation_fkn": fkn,
         "vapdep_coef1": coef1,
         "vapdep_coef2": coef2,
+        "nre": max(nre_bin, 0.0),
     }
 
 
@@ -518,6 +520,7 @@ class TestInactiveBinDefaults:
         assert _diag_field(diag, "ventilation_fkn", 0) == 1.0
         assert _diag_field(diag, "vapdep_coef1", 0) == 0.0
         assert _diag_field(diag, "vapdep_coef2", 0) == 0.0
+        assert _diag_field(diag, "nre", 0) == 0.0
 
     def test_below_threshold_con_or_mass(self, luts):
         """con or mass(1) <= 1e-30 alone (not both zero) is still inactive."""

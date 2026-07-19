@@ -47,6 +47,19 @@ density, terminal_velocity, capacitance, ventilation coefficient,
 vapor-deposition coefficient) -- two `diag_pq` phase==1 outputs are
 DELIBERATELY NOT exposed on `LiquidDiag`:
 
+M2b Task 2 addendum: `nre` (droplet Reynolds number, `g%MS(i,n)%Nre`) was
+added to `LiquidDiag` -- it is NOT part of `diag_pq`'s own field list (that
+scope note above is otherwise unchanged) but IS computed internally by
+`cal_ventilation_coef_vec`'s phase==1 branch (`g%MS(i,n)%Nre =
+g%MS(i,n)%len*g%MS(i,n)%vtm*ag%TV(n)%den/ag%TV(n)%d_vis`,
+`class_Group.F90:7624-7625`, quoted in
+`docs/superpowers/facts/m2/vapor-deposition.md:1267-1269`) and was already
+computed-then-discarded by `_ventilation` below (its own local `nre`) --
+`core/collision_kernel.py`'s collision-efficiency `drpdrp` bilinear gather
+(`docs/superpowers/facts/m2b/coalescence-engine.md` §3) needs it
+(`NreL_p=max(g_1%MS(i,n)%Nre,1.0e-10)`), so `_ventilation` now returns it
+as a fourth value instead of dropping it.
+
 * `eps_map` (soluble aerosol mass fraction) and `r_n`/`r_n3` (dry aerosol
   radius) are computed internally (needed by `cal_den_aclen_vec` and
   `cal_coef_vapdep2_vec`) but not returned -- not in the task's named field
@@ -131,7 +144,9 @@ class LiquidDiag:
     `vapdep_coef1=vapdep_coef2=0.0`, `mean_mass=length=a_len=c_len=0.0`
     (the last two are NOT explicitly re-initialized in the Fortran itself
     for a masked-out bin -- see module docstring's `a_len`/`c_len` note --
-    0.0 is this module's own, documented, stateless-diag choice).
+    0.0 is this module's own, documented, stateless-diag choice). `nre=0.0`
+    matches the Fortran's own pre-loop init (`g%MS(i,n)%Nre=0.0_PS`,
+    `mod_amps_core.F90:12727`, module docstring's M2b addendum).
     """
 
     mean_mass: np.ndarray  # g; g%MS%mean_mass
@@ -146,6 +161,7 @@ class LiquidDiag:
     ventilation_fkn: np.ndarray  # g%MS%fkn (kinetic correction factor)
     vapdep_coef1: np.ndarray  # g%MS%coef(1); vapor-deposition growth coeff
     vapdep_coef2: np.ndarray  # g%MS%coef(2); vapor-deposition growth coeff
+    nre: np.ndarray  # dimensionless; g%MS%Nre (droplet Reynolds number, M2b addendum)
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +388,12 @@ def _ventilation(
     d_v: np.ndarray,
     k_a: np.ndarray,
     t: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Returns `(fv, fh, fkn, nre)` -- `nre` (droplet Reynolds number) is
+    computed here (it feeds `x_v`/`x_h` below, verbatim
+    `cal_ventilation_coef_vec`, `class_Group.F90:7624-7625`) and, since M2b
+    Task 2, also returned rather than discarded -- see module docstring's
+    M2b addendum and `LiquidDiag.nre`."""
     r_v = float(AmpsConst.R_v)
     pi = float(AmpsConst.PI)
     beta_w = 0.036
@@ -395,7 +416,7 @@ def _ventilation(
     )
     fkn = 1.0 / fkn_inv
 
-    return fv, fh, fkn
+    return fv, fh, fkn, nre
 
 
 # ---------------------------------------------------------------------------
@@ -555,7 +576,7 @@ def diag_pq_liquid(
     k_a_b = np.broadcast_to(k_a, length.shape)
 
     vtm = _terminal_velocity(length, p_b, t_b, den_a=den_a_b, d_vis=d_vis_b, sig_wa=sig_wa_b)
-    fv, fh, fkn = _ventilation(length, vtm, den_b, d_vis=d_vis_b, d_v=d_v_b, k_a=k_a_b, t=t_b)
+    fv, fh, fkn, nre = _ventilation(length, vtm, den_b, d_vis=d_vis_b, d_v=d_v_b, k_a=k_a_b, t=t_b)
     cap = 0.5 * length  # cal_capacitance_vec, phase==1: CAP = 0.5*len
 
     coef1, coef2 = _vapdep_coef(
@@ -591,4 +612,5 @@ def diag_pq_liquid(
         ventilation_fkn=_select(fkn, 1.0),
         vapdep_coef1=_select(coef1, 0.0),
         vapdep_coef2=_select(coef2, 0.0),
+        nre=_select(nre, 0.0),
     )
